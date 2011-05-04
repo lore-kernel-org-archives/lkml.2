@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1EDOOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:14:31 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60199 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab1EDOOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:14:30 -0400
-Date: Wed, 4 May 2011 16:14:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110504141413.GA14127@elte.hu>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <20110504083559.GB25724@elte.hu>
- <alpine.LFD.2.02.1105041124080.3005@ionos>
- <20110504101932.GA3392@elte.hu>
- <alpine.LFD.2.02.1105041233280.3005@ionos>
- <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
- <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos>
- <20110504132022.GA17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041539050.3005@ionos>
+	id S1754045Ab1EDOQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:16:09 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:39580 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab1EDOQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 10:16:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=DDtfgUyNzh2Hv25u7Nas/1+ckpJ8tDYv/pv1a370vOOI2OUQzpdIfUjomUKX6PRN04
+         r20EDzjyPAg+mlRrIr1NKOUgfxp5quSTg68Bxg4JeSt7BCzRSU3/Zo/k7lC3TAbBnfJw
+         Uz+QE5K01dOb1aliHynrDv5IvBLtGl2/i7wAI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105041539050.3005@ionos>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Date: Wed, 4 May 2011 15:16:05 +0100
+Message-ID: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
+Subject: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which is
+ always true
+From: Maxin John <maxin.john@gmail.com>
+To: m.nazarewicz@samsung.com
+Cc: gregkh@suse.de, stern@rowland.harvard.edu, mina86@mina86.com,
+        m-sonasath@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, roger.quadros@nokia.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+Since comparing an unsigned int (common->lun)  greater than or equal
+to zero is always true, I think it is safe to remove this check.
+Please let me know your comments.
 
-> Patch below. Ingo, can you test that please ?
+Thanks to Coverity for pointing this out.
 
-Sure - test underway.
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/drivers/usb/gadget/f_mass_storage.c
+b/drivers/usb/gadget/f_mass_storage.c
+index 6d8e533..cade79e 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -1910,7 +1910,7 @@ static int check_command(struct fsg_common
+*common, int cmnd_size,
+                    common->lun, lun);
 
-Thanks,
-
-	Ingo
+        /* Check the LUN */
+-       if (common->lun >= 0 && common->lun < common->nluns) {
++       if (common->lun < common->nluns) {
+                curlun = &common->luns[common->lun];
+                common->curlun = curlun;
+                if (common->cmnd[0] != REQUEST_SENSE) {
