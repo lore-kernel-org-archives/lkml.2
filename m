@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751074Ab1EDHbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 03:31:34 -0400
-Received: from christianhoffmann.info ([88.175.101.52]:48596 "EHLO
-	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab1EDHbd (ORCPT
+	id S1751244Ab1EDHc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 03:32:57 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:34940 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab1EDHc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 03:31:33 -0400
-Message-ID: <4DC100D0.1030302@christianhoffmann.info>
-Date: Wed, 04 May 2011 09:31:28 +0200
-From: Christian Hoffmann <email@christianhoffmann.info>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Long timeout when booting >= 2.6.38
-References: <4DBEFCBA.3070501@christianhoffmann.info>	 <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>	 <1304372955.3226.15.camel@work-vm>	 <4DBF2FB4.8000304@christianhoffmann.info> <1304470839.3037.12.camel@work-vm>
-In-Reply-To: <1304470839.3037.12.camel@work-vm>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 May 2011 03:32:56 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 1/1] coredump: use task comm instead of (unknown)
+Date: Wed,  4 May 2011 09:32:34 +0200
+Message-Id: <1304494354-21487-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <4DC0FFAB.1000805@gmail.com>
+References: <4DC0FFAB.1000805@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2011 03:00 AM, john stultz wrote:
-> On Tue, 2011-05-03 at 00:27 +0200, Christian Hoffmann wrote:
->>>
->>> Can you reproduce the hang booting with "clocksource=hpet" and
->>> "clocksource=acpi_pm" ?
->>
->> Both hang also.
->
-> Sorry, one more clarifying point here:
->
-> When you used either clocksource=hpet/clocksource=acpi_pm did the
-> behavior of the system seem different after booting? In other words:
-> does running time waiting a few seconds and then running time again show
-> the expected passage of time?  Were any following hangs seen, or was it
-> only the first one at boot?
+If we don't know the file corresponding to the binary (i.e. exe_file
+is unknown), use "task->comm (path unknown)" instead of simple
+"(unknown)" as suggested by ak.
 
-Hi,
+The fallback is the same as %e except it will append "(path unknown)".
 
-with hpet no problems seen. No further hangs either.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>
+---
+ fs/exec.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-In fact, switching to acpi_pm doesn't seem to work:
-
-$ dmesg | grep clock
-
-[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ 
-root=/dev/mapper/vg-root ro quiet splash vt.handoff=7 clocksource=acpi_pm
-[    0.000000] Kernel command line: 
-BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ root=/dev/mapper/vg-root ro 
-quiet splash vt.handoff=7 clocksource=acpi_pm
-[    0.000000] hpet clockevent registered
-[    1.413835] Switching to clocksource hpet
-[    1.420762] Override clocksource acpi_pm is not HRT compatible. 
-Cannot switch while in HRT/NOHZ mode
-[  147.940143] Refined TSC clocksource calibration: 2809.409 MHz.
-[  147.940147] Switching to clocksource tsc
+diff --git a/fs/exec.c b/fs/exec.c
+index 5ee7562..0a4d281 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1555,7 +1555,7 @@ static int cn_print_exe_file(struct core_name *cn)
+ 
+ 	exe_file = get_mm_exe_file(current->mm);
+ 	if (!exe_file)
+-		return cn_printf(cn, "(unknown)");
++		return cn_printf(cn, "%s (path unknown)", current->comm);
+ 
+ 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+ 	if (!pathbuf) {
+-- 
+1.7.4.2
 
 
-Regards,
-Chris
