@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab1EDUSV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 16:18:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30701 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754411Ab1EDUSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 16:18:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,316,1301900400"; 
-   d="scan'208";a="742436674"
-Message-ID: <4DC1B47B.1010209@linux.intel.com>
-Date: Wed, 04 May 2011 13:18:03 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1755423Ab1EDUSF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:18:05 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:42656 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1EDUSC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 16:18:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=MnVfeccd1xoagIa8zZX9ESORnnTJhJZzUOZob753X/T7Ghaa
+	DfuV/SJv+FP+KLi4g7YQzmPi+ZYcaFJ/v6YZsv7QQ3VM7CRAs/P/pBiXimgqULz3
+	Qvqa7sakSrPcO8IiECqbimZbq2iO62gstGg545ODBQiCNIcusYt2yfGdVW8=
+Date: Wed, 4 May 2011 13:18:34 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 2.6.39-rc7
+Message-ID: <Pine.LNX.4.64.1105041316490.748@cobra.newdream.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Balbir Singh <balbir@in.ibm.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] Allocate memory cgroup structures in local nodes
-References: <1304533058-18228-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.00.1105041213310.22426@chino.kir.corp.google.com> <4DC1B151.7010300@linux.intel.com> <alpine.DEB.2.00.1105041309001.24395@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1105041309001.24395@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-> Completely agreed, I think that's how it should be patched instead of only
-> touching the alloc_pages() allocation; we care much more about local node
-> than whether we're using vmalloc.
+Please pull the following Ceph fixes from
 
-Right now the problem is you end up in node 0 always and then run out of 
-memory
-later on it on a large system. That's the problem I'm trying to solve ASAP
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-The rest is much less important.
+There are some error paths that weren't handling ENOMEM properly, and a 
+few more locking fixes that are fallout from Dave's inode_lock->i_lock 
+changes.
+
+Thanks!
+sage
 
 
--Andi
+Henry C Chang (2):
+      libceph: fix ceph_msg_new error path
+      ceph: handle ceph_osdc_new_request failure in ceph_writepages_start
 
+Sage Weil (3):
+      ceph: use ihold() when i_lock is held
+      libceph: fix ceph_osdc_alloc_request error checks
+      ceph: do not call __mark_dirty_inode under i_lock
+
+ drivers/block/rbd.c   |    4 ++--
+ fs/ceph/addr.c        |    7 +++++++
+ fs/ceph/caps.c        |   14 +++++++-------
+ fs/ceph/file.c        |    5 ++++-
+ fs/ceph/inode.c       |    6 +++++-
+ fs/ceph/super.h       |    2 +-
+ fs/ceph/xattr.c       |   12 ++++++++----
+ net/ceph/messenger.c  |   26 +++++++++++++-------------
+ net/ceph/osd_client.c |    4 ++--
+ 9 files changed, 49 insertions(+), 31 deletions(-)
