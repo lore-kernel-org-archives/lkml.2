@@ -1,143 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab1EDTQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:16:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:55014 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab1EDTQP (ORCPT
+	id S1754387Ab1EDTR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:17:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:15911 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab1EDTR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:16:15 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-CC: <linux-kernel@vger.kernel.org>, Vladimir Davydov <vdavydov@parallels.com>
-Subject: [PATCH] sched: fix erroneous sysct_sched_nr_migrate logic
-Date: Wed, 4 May 2011 23:15:48 +0400
-Message-ID: <1304536548-3052-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 4 May 2011 15:17:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=o4Kp/ETnKqZryZzZTm1x1w5dGOBhNhIKBddDpSOFH8sYWrYb2krF2ewwAq81jcxpSk
+         IkvLXP1UR9gSYqsL9lDQ==
+Date: Wed, 4 May 2011 12:17:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andi Kleen <andi@firstfloor.org>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
+        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@in.ibm.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] Allocate memory cgroup structures in local nodes
+In-Reply-To: <1304533058-18228-1-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1105041213310.22426@chino.kir.corp.google.com>
+References: <1304533058-18228-1-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During load balance, the scheduler must not iterate more than
-sysctl_sched_nr_migrate (32 by default) tasks, but at present this limit is held
-only for tasks in a task group. That means if there is the only task group in
-the system, the scheduler never iterates more than 32 tasks in a single balance
-run, but if there are N task groups, it can iterate up to N * 32 tasks. This
-patch makes the limit system-wide as it should be.
----
- kernel/sched_fair.c |   35 +++++++++++++++++------------------
- 1 files changed, 17 insertions(+), 18 deletions(-)
+On Wed, 4 May 2011, Andi Kleen wrote:
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 37f2262..a8fe580 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2142,9 +2142,9 @@ static unsigned long
- balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 	      unsigned long max_load_move, struct sched_domain *sd,
- 	      enum cpu_idle_type idle, int *all_pinned,
--	      struct cfs_rq *busiest_cfs_rq)
-+	      unsigned int *loops_left, struct cfs_rq *busiest_cfs_rq)
- {
--	int loops = 0, pulled = 0;
-+	int pulled = 0;
- 	long rem_load_move = max_load_move;
- 	struct task_struct *p, *n;
- 
-@@ -2152,8 +2152,9 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		goto out;
- 
- 	list_for_each_entry_safe(p, n, &busiest_cfs_rq->tasks, se.group_node) {
--		if (loops++ > sysctl_sched_nr_migrate)
-+		if (!*loops_left)
- 			break;
-+		--*loops_left;
- 
- 		if ((p->se.load.weight >> 1) > rem_load_move ||
- 		    !can_migrate_task(p, busiest, this_cpu, sd, idle,
-@@ -2170,8 +2171,10 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		 * kernels will stop after the first task is pulled to minimize
- 		 * the critical section.
- 		 */
--		if (idle == CPU_NEWLY_IDLE)
-+		if (idle == CPU_NEWLY_IDLE) {
-+			*loops_left = 0;
- 			break;
-+		}
- #endif
- 
- 		/*
-@@ -2239,7 +2242,7 @@ static unsigned long
- load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		  unsigned long max_load_move,
- 		  struct sched_domain *sd, enum cpu_idle_type idle,
--		  int *all_pinned)
-+		  int *all_pinned, unsigned int *loops_left)
- {
- 	long rem_load_move = max_load_move;
- 	int busiest_cpu = cpu_of(busiest);
-@@ -2264,9 +2267,12 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		rem_load = div_u64(rem_load, busiest_h_load + 1);
- 
- 		moved_load = balance_tasks(this_rq, this_cpu, busiest,
--				rem_load, sd, idle, all_pinned,
-+				rem_load, sd, idle, all_pinned, loops_left,
- 				busiest_cfs_rq);
- 
-+		if (!*loops_left)
-+			break;
-+
- 		if (!moved_load)
- 			continue;
- 
-@@ -2290,11 +2296,11 @@ static unsigned long
- load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		  unsigned long max_load_move,
- 		  struct sched_domain *sd, enum cpu_idle_type idle,
--		  int *all_pinned)
-+		  int *all_pinned, unsigned int *loops_left)
- {
- 	return balance_tasks(this_rq, this_cpu, busiest,
- 			max_load_move, sd, idle, all_pinned,
--			&busiest->cfs);
-+			loops_left, &busiest->cfs);
- }
- #endif
- 
-@@ -2311,28 +2317,21 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		      int *all_pinned)
- {
- 	unsigned long total_load_moved = 0, load_moved;
-+	unsigned int loops_left = sysctl_sched_nr_migrate;
- 
- 	do {
- 		load_moved = load_balance_fair(this_rq, this_cpu, busiest,
- 				max_load_move - total_load_moved,
--				sd, idle, all_pinned);
-+				sd, idle, all_pinned, &loops_left);
- 
- 		total_load_moved += load_moved;
- 
- #ifdef CONFIG_PREEMPT
--		/*
--		 * NEWIDLE balancing is a source of latency, so preemptible
--		 * kernels will stop after the first task is pulled to minimize
--		 * the critical section.
--		 */
--		if (idle == CPU_NEWLY_IDLE && this_rq->nr_running)
--			break;
--
- 		if (raw_spin_is_contended(&this_rq->lock) ||
- 				raw_spin_is_contended(&busiest->lock))
- 			break;
- #endif
--	} while (load_moved && max_load_move > total_load_moved);
-+	} while (load_moved && max_load_move > total_load_moved && loops_left);
- 
- 	return total_load_moved > 0;
- }
--- 
-1.7.0.4
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> [Andrew: since this is a regression and a very simple fix
+> could you still consider it for .39? Thanks]
+> 
 
+Before that's considered, the order of the arguments to 
+alloc_pages_exact_node() needs to be fixed.
+
+> dde79e005a769 added a regression that the memory cgroup data structures
+> all end up in node 0 because the first attempt at allocating them
+> would not pass in a node hint. Since the initialization runs on CPU #0
+> it would all end up node 0. This is a problem on large memory systems,
+> where node 0 would lose a lot of memory.
+> 
+> Change the alloc_pages_exact to alloc_pages_exact_node. This will
+> still fall back to other nodes if not enough memory is available.
+> 
+
+The vmalloc_node() calls ensure that the nid is actually set in 
+N_HIGH_MEMORY and fails otherwise (we don't fallback to using vmalloc()), 
+so it looks like the failures for alloc_pages_exact_node() and 
+vmalloc_node() would be different?  Why do we want to fallback for one and 
+not the other?
+
+> [RED-PEN: right now it would fall back first before trying
+> vmalloc_node. Probably not the best strategy ... But I left it like
+> that for now.]
+> 
+> Reported-by: Doug Nelson
+> CC: Michal Hocko <mhocko@suse.cz>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Balbir Singh <balbir@in.ibm.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  mm/page_cgroup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 9905501..1f4e20f 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -134,7 +134,7 @@ static void *__init_refok alloc_page_cgroup(size_t size, int nid)
+>  {
+>  	void *addr = NULL;
+>  
+> -	addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
+> +	addr = alloc_pages_exact_node(nid, size, GFP_KERNEL | __GFP_NOWARN);
+>  	if (addr)
+>  		return addr;
+>  
