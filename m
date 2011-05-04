@@ -1,100 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab1EDEzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 00:55:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab1EDEzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 00:55:47 -0400
-Subject: Re: [PATCH 2/2] drm/nouveau: Check that the device is enabled
- before processing interrupt
-From: Dave Airlie <airlied@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-In-Reply-To: <1304484421.3255.150.camel@x201>
-References: <20110502004806.2307.34136.stgit@ul30vt.home>
-	 <20110502004940.2307.71738.stgit@ul30vt.home>
-	 <BANLkTi==E4wgRDY3DCDejAZtVvOGjOtbgA@mail.gmail.com>
-	 <1304482712.3255.135.camel@x201>  <1304482950.3676.24.camel@clockmaker-el6>
-	 <1304484421.3255.150.camel@x201>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 May 2011 14:55:42 +1000
-Message-ID: <1304484942.3676.26.camel@clockmaker-el6>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754742Ab1EDFN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 01:13:58 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:39150 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab1EDFN5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 01:13:57 -0400
+Date: Wed, 4 May 2011 15:13:51 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] hwrng: manage resource allocation in amd driver
+Message-ID: <20110504051351.GA7040@gondor.apana.org.au>
+References: <1303932076-7428-1-git-send-email-dbaryshkov@gmail.com> <1304020313.20288.1.camel@calx>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304020313.20288.1.camel@calx>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 22:47 -0600, Alex Williamson wrote:
-> On Wed, 2011-05-04 at 14:22 +1000, Dave Airlie wrote:
-> > On Tue, 2011-05-03 at 22:18 -0600, Alex Williamson wrote:
-> > > On Wed, 2011-05-04 at 13:50 +1000, Dave Airlie wrote:
-> > > > On Mon, May 2, 2011 at 10:49 AM, Alex Williamson
-> > > > <alex.williamson@redhat.com> wrote:
-> > > > > We're likely to be sharing an interrupt line with other devices,
-> > > > > which means our handler might get called after we've turned off
-> > > > > the device via vga switcheroo.  This can lead to all sorts of
-> > > > > badness, like nv04_fifo_isr() spewing "PFIFO still angry after
-> > > > > 100 spins, halt" to the console before the system enters a hard
-> > > > > hang.
-> > > > >
-> > > > > We can avoid this by simply checking if the device is still
-> > > > > enabled before processing an interrupt.  To avoid races, flush
-> > > > > any inflight interrupts using synchronize_irq().  Note that
-> > > > > since pci_intx() is called after pci_save_state(),
-> > > > > pci_restore_state() will automatically re-enable INTx.
-> > > > 
-> > > > I still think we should just need the synchronize_irq followed by a
-> > > > check in the irq handler for all fs,
-> > > > 
-> > > > or is there a race there I'm missing?
-> > > 
-> > > The synchronize_irq by itself doesn't guarantee anything.  The irq
-> > > handler could be immediately started on another CPU once that returns
-> > > and be well past the first device read before we make it far enough
-> > > through pci_set_power_state that the device becomes unresponsive.  Can
-> > > we guarantee that first device read in the interrupt handler will always
-> > > be 0 or -1 in the suspend path?  Even as the last milliamperes of charge
-> > > drain out of the device?
-> > 
-> > It should always be a valid irq or 0xffffffff. It got nothing to do with
-> > milliamperes of charge, and all to do with the PCI BAR decodes being
-> > turned off.
+On Thu, Apr 28, 2011 at 02:51:53PM -0500, Matt Mackall wrote:
+> On Wed, 2011-04-27 at 23:21 +0400, Dmitry Eremin-Solenikov wrote:
+> > As amd driver doesn't bind to PCI device, we'd better manage reource
+> > allocation on our own to disallow (possible) conflicts.
 > 
-> Unfortunately this depends on the platform behavior for a master abort.
-> But maybe this bring up another issue; we really want to make sure we're
-> turning off decode after we've flushed any inflight interrupts.  We
-> can't guarantee that w/o some kind of synchronization and the device
-> being enabled is probably too late... are you sure you don't want to
-> uninstall the interrupt handler? ;)
-
-The x86 behaviour is all we care about btw, don't even think about worry
-about someone creating a powerpc with hybrid graphics.
-
-As I said OLPC does this lots. I'm hoping there is some example of how
-this should work, maybe it should work like this, but in that case I'd
-like a previous example of it.
-
-
-> > The theory is lots. OLPC does this sort of things for its breakfast I'd
-> > have thought.
-> > 
-> > which is why I still think we are missing something, when we D3 the
-> > device it should be the same as suspend/resume cycle pretty much,
+> These two look good to me.
 > 
-> Except the whole system goes down for a suspend/resume and we don't
-> typically have to worry about stray interrupt during the down time.  If
-> our vga switcheroo handler is doing the right thing, we're not only
-> going to D3, we're entirely removing power from the device.  Some
-> platforms (probably not ones we care about for switcheroo, but
-> nonetheless) won't put up with a master abort on the bus that would be
-> caused by reading from an effectively non-existent device.  Thanks,
+> Acked-by: Matt Mackall <mpm@selenic.com>
 
-Again OLPC and lots of other embedded systems D3 devices without D3ing
-the whole system, and AFAIK without deinstalling the irq handlers.
-
-I'll try and find some time to look into it deeper later this week.
-
-Dave.
-
+All applied.  Thanks a lot.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
