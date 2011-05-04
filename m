@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab1EDP57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:57:59 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:60793 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750909Ab1EDP55 (ORCPT
+	id S1752361Ab1EDP7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 11:59:10 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:54384 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1EDP7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:57:57 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EABl3wU1tgmbn/2dsb2JhbACEUKFJeIhyqySRNYEqg1yBAQSTbooD
-Date: Wed, 4 May 2011 17:57:50 +0200
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, Netdev@vger.kernel.org,
-        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-Message-ID: <20110504155750.GC322@e-circ.dyndns.org>
-Mail-Followup-To: Wolfgang Grandegger <wg@grandegger.com>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Subhasish Ghosh <subhasish@mistralsolutions.com>,
-	linux-arm-kernel@lists.infradead.org,
-	Marc Kleine-Budde <mkl@pengutronix.de>, sachi@mistralsolutions.com,
-	davinci-linux-open-source@linux.davincidsp.com,
-	Netdev@vger.kernel.org, nsekhar@ti.com,
-	open list <linux-kernel@vger.kernel.org>,
-	CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-	m-watkins@ti.com
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>
- <201104271525.28512.arnd@arndb.de>
- <15AD189F851849F69A011B6F4D1DDB6C@subhasishg>
- <201105041511.54095.arnd@arndb.de>
- <4DC163D7.9010309@grandegger.com>
+	Wed, 4 May 2011 11:59:08 -0400
+Date: Wed, 4 May 2011 09:59:05 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michal Simek <monstr@monstr.eu>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 2/6] powerpc: make irq_{alloc, free}_virt private and
+ remove count argument
+Message-ID: <20110504155905.GB3317@ponder.secretlab.ca>
+References: <20110428192227.8979.49181.stgit@ponder>
+ <20110428200153.8979.23873.stgit@ponder>
+ <1304387267.2513.298.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DC163D7.9010309@grandegger.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1304387267.2513.298.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 03, 2011 at 11:47:47AM +1000, Benjamin Herrenschmidt wrote:
+> On Thu, 2011-04-28 at 14:01 -0600, Grant Likely wrote:
+> > irq_alloc_virt() and irq_free_virt() aren't called anywhere but from
+> > arch/powerpc/kernel/irq.c, and they are only ever called with count=1.
+> > This patch removes the prototypes from the header file, removes the
+> > count arguments, and cuts out the dead code.
+> > 
+> > Also removes obsolete references to irq_early_init()
 > 
-> > How hard would it be to implement that feature in Socket CAN?
+> Nack.
 > 
-> CAN controllers usually provide some kind of hardware CAN id filtering,
-> but in a very hardware dependent way. A generic interface may be able to
-> handle the PRUSS restrictions as well. CAN devices are usually
-> configured through the netlink interface. e.g.
+> The count was intended to be able to allocate blocks of interrupts. This
+> was not used so far because we didn't support MSI blocks (for non-X
+> MSIs) but that is coming, and unfortunately, the API that was designed
+> for that is crap and requires contiguous IRQ numbers on the linux side
+> as well as on the device side (well device side is a HW requirement but
+> we could have been smarter on the Linux side).
 > 
->   $ ip link set can0 up type can bitrate 125000
-> 
-> and such a common interface would be netlink based as well.
-ack.
-> 
-> > Is that something that Subhasish or someone else could to as a prerequisite
-> > to merging the driver?
-> 
-> Any ideas on how to handle hardware filtering in a generic way are
-> welcome. I will try to come up with a proposal sooner than later.
+> So the ability to allocate blocks will be needed. In fact it's not clear
+> yet whether we'll also need them to be naturally aligned powers of two
+> or not at this stage. It depends how the bloody API is going to be used
+> by drivers.
 
-When doing so, I'd vote for an unlimited(by software) list of hardware filters (id/mask).
-The hardware must abort when no more filters are available.
-I think that when using hardware filters, knowing the actual device
-with it's amount of hardware filters is the least of your problems.
-Userspace applications that suddenly stop working properly due to
-hw filters (i.e. some traffic not coming in anymore) will be a major
-source of bugreports.
+Heh, I wondered about that, but there hasn't been any users for at
+least 5 years (as evidenced by commit e12514650b, "Fix loop logic in
+irq_alloc_virt()") so it was looking pretty dead, and it made the
+patch to switch to using irq_alloc_desc*() quite a bit simpler if it
+was removed.  :-)
 
-Kurt
+I'm not particularly attached to this patch, so I can drop it from the
+series.
+
+g.
+
