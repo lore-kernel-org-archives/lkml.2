@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab1EDSR3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:17:29 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:52808 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab1EDSR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:17:28 -0400
-Date: Wed, 4 May 2011 20:17:21 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: [PATCH 4/8] arch/x86/xen/setup: Cleanup code/data sections definitions
-Message-ID: <20110504181721.GE29218@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	id S1755313Ab1EDSRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:17:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57445 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754929Ab1EDSRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 14:17:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,315,1301900400"; 
+   d="scan'208";a="688192807"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@in.ibm.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH] Allocate memory cgroup structures in local nodes
+Date: Wed,  4 May 2011 11:17:38 -0700
+Message-Id: <1304533058-18228-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup code/data sections definitions
-accordingly to include/linux/init.h.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+[Andrew: since this is a regression and a very simple fix
+could you still consider it for .39? Thanks]
+
+dde79e005a769 added a regression that the memory cgroup data structures
+all end up in node 0 because the first attempt at allocating them
+would not pass in a node hint. Since the initialization runs on CPU #0
+it would all end up node 0. This is a problem on large memory systems,
+where node 0 would lose a lot of memory.
+
+Change the alloc_pages_exact to alloc_pages_exact_node. This will
+still fall back to other nodes if not enough memory is available.
+
+[RED-PEN: right now it would fall back first before trying
+vmalloc_node. Probably not the best strategy ... But I left it like
+that for now.]
+
+Reported-by: Doug Nelson
+CC: Michal Hocko <mhocko@suse.cz>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Balbir Singh <balbir@in.ibm.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/xen/setup.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ mm/page_cgroup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 90bac0a..d3663df 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -50,7 +50,7 @@ phys_addr_t xen_extra_mem_start, xen_extra_mem_size;
-  */
- #define EXTRA_MEM_RATIO		(10)
- 
--static __init void xen_add_extra_mem(unsigned long pages)
-+static void __init xen_add_extra_mem(unsigned long pages)
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 9905501..1f4e20f 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -134,7 +134,7 @@ static void *__init_refok alloc_page_cgroup(size_t size, int nid)
  {
- 	unsigned long pfn;
+ 	void *addr = NULL;
  
-@@ -336,7 +336,7 @@ static void __init fiddle_vdso(void)
- #endif
- }
+-	addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
++	addr = alloc_pages_exact_node(nid, size, GFP_KERNEL | __GFP_NOWARN);
+ 	if (addr)
+ 		return addr;
  
--static __cpuinit int register_callback(unsigned type, const void *func)
-+static int __cpuinit register_callback(unsigned type, const void *func)
- {
- 	struct callback_register callback = {
- 		.type = type,
 -- 
-1.5.6.5
+1.7.4.4
+
