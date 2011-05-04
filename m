@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1EDQge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:36:34 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42803 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794Ab1EDQgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:36:33 -0400
-Date: Tue, 3 May 2011 23:05:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the rcu tree with the net tree
-Message-ID: <20110504060533.GD2294@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110503142419.2b7d5e23.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110503142419.2b7d5e23.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752701Ab1EDGNd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 02:13:33 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40416
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752356Ab1EDGN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 02:13:28 -0400
+Date: Tue, 03 May 2011 23:12:55 -0700 (PDT)
+Message-Id: <20110503.231255.115931602.davem@davemloft.net>
+To: sven@narfation.org
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, cmetcalf@tilera.com,
+        x86@kernel.org, linux-alpha@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-cris-kernel@axis.com,
+        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] atomic: add *_dec_not_zero
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1304458235-28473-1-git-send-email-sven@narfation.org>
+References: <1304458235-28473-1-git-send-email-sven@narfation.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 02:24:19PM +1000, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the rcu tree got a conflict in
-> net/core/filter.c between commit 0a14842f5a3c ("net: filter: Just In Time
-> compiler for x86-64") from the net tree and commit 10cde158c259
-> ("net,rcu: convert call_rcu(sk_filter_release_rcu) to kfree_rcu") from
-> the rcu tree.
-> 
-> The former adds another operation into sk_filter_release_rcu(), so I have
-> effectively reverted the rcu tree change for now (by applying the patch
-> below as a merge fixup).
+From: Sven Eckelmann <sven@narfation.org>
+Date: Tue,  3 May 2011 23:30:35 +0200
 
-Thank you, Stephen!
+> Introduce an *_dec_not_zero operation.  Make this a special case of
+> *_add_unless because batman-adv uses atomic_dec_not_zero in different
+> places like re-broadcast queue or aggregation queue management. There
+> are other non-final patches which may also want to use this macro.
+> 
+> Reported-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Sven Eckelmann <sven@narfation.org>
 
-Looks like I need to get my changes forward-ported to the latest -rc...
-
-						Thanx, Paul
-
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 3 May 2011 14:06:50 +1000
-> Subject: [PATCH] Revert "net,rcu: convert call_rcu(sk_filter_release_rcu) to
->  kfree_rcu"
-> 
-> This reverts commit 10cde158c2591422a2b32a2f560f406b8e69bee6.
-> ---
->  include/net/sock.h |    4 +++-
->  net/core/filter.c  |   13 +++++++++++++
->  2 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/net/sock.h b/include/net/sock.h
-> index 1a2f255..f2046e4 100644
-> --- a/include/net/sock.h
-> +++ b/include/net/sock.h
-> @@ -1180,6 +1180,8 @@ extern void sk_common_release(struct sock *sk);
->  /* Initialise core socket variables */
->  extern void sock_init_data(struct socket *sock, struct sock *sk);
-> 
-> +extern void sk_filter_release_rcu(struct rcu_head *rcu);
-> +
->  /**
->   *	sk_filter_release - release a socket filter
->   *	@fp: filter to remove
-> @@ -1190,7 +1192,7 @@ extern void sock_init_data(struct socket *sock, struct sock *sk);
->  static inline void sk_filter_release(struct sk_filter *fp)
->  {
->  	if (atomic_dec_and_test(&fp->refcnt))
-> -		kfree_rcu(fp, rcu);
-> +		call_rcu(&fp->rcu, sk_filter_release_rcu);
->  }
-> 
->  static inline void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
-> diff --git a/net/core/filter.c b/net/core/filter.c
-> index 66d403d..0eb8c44 100644
-> --- a/net/core/filter.c
-> +++ b/net/core/filter.c
-> @@ -572,6 +572,19 @@ int sk_chk_filter(struct sock_filter *filter, int flen)
->  EXPORT_SYMBOL(sk_chk_filter);
-> 
->  /**
-> + * 	sk_filter_release_rcu - Release a socket filter by rcu_head
-> + *	@rcu: rcu_head that contains the sk_filter to free
-> + */
-> +void sk_filter_release_rcu(struct rcu_head *rcu)
-> +{
-> +	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
-> +
-> +	bpf_jit_free(fp);
-> +	kfree(fp);
-> +}
-> +EXPORT_SYMBOL(sk_filter_release_rcu);
-> +
-> +/**
->   *	sk_attach_filter - attach a socket filter
->   *	@fprog: the filter program
->   *	@sk: the socket to use
-> -- 
-> 1.7.4.4
-> 
+Acked-by: David S. Miller <davem@davemloft.net>
