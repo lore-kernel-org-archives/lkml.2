@@ -1,238 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1EDIvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 04:51:24 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60369 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752460Ab1EDIvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 04:51:22 -0400
-X-Sasl-enc: ScVTBHiRwpGX6TGFhWyjs+IRqiogLlukybNe6+001Yv5 1304499081
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-To: John Johansen <john.johansen@canonical.com>
-Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
-Date: Wed, 4 May 2011 10:47:56 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.2; x86_64; ; )
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
-        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        viro@zeniv.linux.org.uk, apparmor@lists.ubuntu.com
-References: <201104291139.37489.roberto.sassu@polito.it> <4DC088A8.4000300@schaufler-ca.com> <4DC09688.7090509@canonical.com>
-In-Reply-To: <4DC09688.7090509@canonical.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105041047.57161.roberto.sassu@polito.it>
+	id S1752513Ab1EDItF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 04:49:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34671 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab1EDItC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 04:49:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,313,1301900400"; 
+   d="scan'208";a="430199594"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH -v5 0/4] ACPI, APEI, GHES, printk support for recoverable error via NMI
+Date: Wed,  4 May 2011 16:48:48 +0800
+Message-Id: <1304498932-30127-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 04, 2011 01:58:00 AM John Johansen wrote:
-> On 05/03/2011 03:58 PM, Casey Schaufler wrote:
-> > On 5/2/2011 1:53 AM, Roberto Sassu wrote:
-> >> On Friday, April 29, 2011 05:46:20 PM Casey Schaufler wrote:
-> >>> On 4/29/2011 2:39 AM, Roberto Sassu wrote:
-> >>>> Sorry for resending, it was rejected by the mailing lists due to
-> >>>> the html formatting.
-> >>>>
-> >>>>
-> >>>> On Thursday, April 28, 2011 07:37:29 PM Casey Schaufler wrote:
-> >>>>> On 4/28/2011 5:35 AM, Roberto Sassu wrote:
-> >>>>>> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
-> >>>>>>> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> >>>>>>>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
-> >>>>>>>>> File descriptor labeling issue
-> >>>>>>>>>
-> >>>>>>>>> Actually SELinux and SMACK assign to file descriptors the same label of the
-> >>>>>>>>> opening process and use it in LSM hooks security_file_permission(),
-> >>>>>>>>> security_file_fcntl() and others to verify if the 'current' process has the
-> >>>>>>>>> rights to perform the requested operation.
-> >>>>>>>>>
-> >>>>>>>>> Using the credentials of the 'current' process may be not appropriate in
-> >>>>>>>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
-> >>>>>>>>> and made shared among user processes. For instance, in a system with
-> >>>>>>>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
-> >>>>>>>>> obtains a file descriptor to access the correspondent inode in the lower
-> >>>>>>>>> filesystem, labeled with the A's label.
-> >>>>>>>>>
-> >>>>>>>>> If the process B accesses the same encrypted file, it needs the 'use'
-> >>>>>>>>> permission on the A's label other than permissions for the lower inode.
-> >>>>>>>>> However, if B is the first accessing process, A needs the 'use' permission
-> >>>>>>>>> on the B's label.
-> >>>>>>>> I am having trouble understanding the argument. I will pose my
-> >>>>>>>> question in Smack terms, as I can speak most definitively in them.
-> >>>>>>>>
-> >>>>>>>> A process running with a Smack label "A" creates a file, and that
-> >>>>>>>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
-> >>>>>>>> this ought not change. If eCryptfs in encrypting the label it needs
-> >>>>>>>> to do so in such a way as to be able to decrypt it prior to
-> >>>>>>>> presentation to the vfs layer, where it will be used in an access
-> >>>>>>>> check. When the process running with a Smack label "B" comes along
-> >>>>>>>> the vfs code will check the fetched and possibly decrypted "A"
-> >>>>>>>> against "B" and, unless there is an explicit Smack rule in place
-> >>>>>>>> granting "B" access to "A", fail.
-> >>>>>>>>
-> >>>>>>>> What is the problem? What is eCryptfs doing that prevents this
-> >>>>>>>> from working?
-> >>>>>>> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
-> >>>>>>> only one lower file per eCryptfs inode. Imagine that there are 5
-> >>>>>>> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
-> >>>>>>> to be open in the lower filesystem and all eCryptfs file operations will
-> >>>>>>> be multiplexed through it.
-> >>>>>>>
-> >>>>>>> To make things more complicated, if the eCryptfs file is opened for
-> >>>>>>> writing, the lower file must be opened for reading and writing. This is
-> >>>>>>> because a write operation requires eCryptfs to vfs_read() from the lower
-> >>>>>>> filesystem, decrypt that data and then vfs_write() the new data.
-> >>>>>>>
-> >>>>>>> If the lower file can't be opened O_RDWR by the calling process, the
-> >>>>>>> request is handed off to a kernel thread to open the lower file on
-> >>>>>>> behalf of the calling process. It is definitely ugly.
-> >>>>>>>
-> >>>>>>> Roberto, I hope I correctly described the situation that you're trying
-> >>>>>>> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
-> >>>>>>> files to lower files?
-> >>>>>>>
-> >>>>>>> Instead of having just one lower file attached to the eCryptfs inode, we
-> >>>>>>> could have a list of opened files. There would be one for each eCryptfs
-> >>>>>>> file that was opened. ecryptfs_writepage() would have to pick, in a
-> >>>>>>> somewhat random fashion, one of the lower files to use. Of course, we
-> >>>>>>> would still need to solve the problem of opening the lower file O_RDWR
-> >>>>>>> when the calling process is only allowed write access (I may have just
-> >>>>>>> answered my own question of why the 1:1 mapping technique won't solve
-> >>>>>>> this problem).
-> >>>>>>>
-> >>>>>> Hi Tyler
-> >>>>>>
-> >>>>>> i think the 1:1 mapping isn't necessary at least from the security perspective.
-> >>>>>> Since eCryptfs is a stacked filesystem access control is performed on
-> >>>>>> both the upper and the lower layer.
-> >>>>>> ECryptfs relies on the lower filesystem for the management of extended
-> >>>>>> attributes, so this means that the security label of both the upper and
-> >>>>>> the lower inodes is the same (however this is not the current behavior
-> >>>>>> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
-> >>>>> Where does this assignment occur?
-> >>>>>
-> >>>> Hi Casey
-> >>>>
-> >>>> The assignment happens at the inode's initialization time and depends on
-> >>>> the behavior configured for a specific filesystem.
-> >>>> The SELinux reference policy actually configures static labeling for inodes
-> >>>> in the eCryptfs filesystem while for example allows ext4 inodes to be
-> >>>> initialized using extended attributes.
-> >>> So how about changing eCryptfs (Goodness, but I hate camelCase) to
-> >>> properly support extended attributes? That would seem a better
-> >>> approach than mucking up the entire LSM. You still have to deal
-> >>> with the SELinux policy, but I don't see you getting away without
-> >>> doing something with that in any case.
-> >>>
-> >> Hi Casey
-> >>
-> >> i think having separate extended attributes in eCryptfs does not
-> >> address the issue i reported in the cover letter.
-> >> The reason is, in my opinion, the incorrect labeling of file descriptors
-> >> which causes in SELinux more permissions than those really needed
-> >> must be added in the policy. This does not depends on the inode's
-> >> security context but on the credentials provided to dentry_open().
-> > 
-> > The problem is that you seem to think that eCryptfs needs
-> > access to the file. If eCryptfs is kernel code being invoked
-> > through the VFS you should be providing the user's credentials.
-> > 
-> I have to agree with Casey, Generally looping back through the vfs should
-> be using the user's credentials.  This doesn't even stop you opening the
-> lower file with a different set of permissions (eg.  rw while the upper
-> is opened with r).
-> 
+v5:
 
-Hi Casey and John
+- Change gen_pool_for_each_chunk interface
+- Remove unlock in loop in gen_pool_alloc
 
-my patch set does not modify this behavior:  VFS calls on upper inodes
-made by user processes and VFS calls (read/write) made by eCryptfs
-on lower inodes still use the user's credentials.
+v4:
 
-In addition, SELinux provide a model for file descriptors. They may be
-opened by another subject (which provided its own credentials) and
-other processes need the 'use' permission for those file descriptors
-other than permissions for related inodes.
+- Add rcu_read_lock/unlock in lockless gen_pool implementation, at least we
+ need that for future pool shrinking support.
 
-This means that, even if eCryptfs opens lower inodes with its own
-credentials, user processes still need permissions to read/write both
-upper and lower inodes.
+v3:
 
-One benefit of allowing eCryptfs to provide its own credentials is that
-user processes must have granted only strictly required permissions.
+- Some changes to lock-less list based on Mathieu's comments
 
-Roberto Sassu
+v2:
+
+- Update some comments of llist per Mathieu's comments
 
 
-> >>
-> >>>>>> In my view, for this reason the access control checks can be performed
-> >>>>>> only at the upper layer, letting eCryptfs full privileges to access inodes
-> >>>>>> in the lower filesystem.
-> >>>>> On this point I most strongly disagree.
-> >>>>>
-> >>>>> The behavior of a filesystem and the data that it uses to determine
-> >>>>> that behavior is wrought with complex interactions which may include
-> >>>>> but are not limited to caching, read-aheads, garbage collection,
-> >>>>> and various side effects of access control. If eCryptfs needs to go
-> >>>>> mucking about with the data used by the underlying filesystem it is
-> >>>>> not stacking properly. A stacked filesystem has no business whatever
-> >>>>> changing the data of the underlying filesystem.
-> >>>>>
-> >>>> Ok, probably i have to go more in deep to explain how access control is
-> >>>> performed on eCryptfs. I'm talking for the SELinux's case, so SELinux experts
-> >>>> can correct me if i'm wrong.
-> >>>>
-> >>>> First, i want to use extended attributes to initialize an eCryptfs inode, so
-> >>>> both the upper and the lower inodes have the same security context
-> >>>> because eCryptfs calls the *xattr() methods of the underlying filesystem.
-> >>> OK, you could create your own xattr functions that do whatever credential
-> >>> mucking they need to and then call the underlying file system's version.
-> >>> It is possible that the work the NFS people have been doing for xattr
-> >>> support (I haven't seen much on this lately, is it still active? Anyone?)
-> >>> would prove instructive.
-> >>>
-> >>>> Then, the process A accesses the eCryptfs inode 'I'. On the upper layer access
-> >>>> control is performed using the credentials of the 'current' process and the
-> >>>> security context of I.
-> >>>>
-> >>>> If the process is allowed to access the upper inode, eCryptfs opens the lower
-> >>>> inode, presenting its own credentials with the type 'kernel_t'.
-> >>> So eCryptfs provides its own process context. When you say "open" do you
-> >>> mean open(2) or something else? A little precision goes a long way in these
-> >>> discussions.
-> >>>
-> >> ECryptfs provides its own credentials when calling the function dentry_open()
-> >> to obtain a file descriptor to be shared among user processes.
-> > 
-> > This is your problem. The problem is that you are not
-> > using the credential of the user process to access the
-> > file, you are using your own. Sharing a "file descriptor"
-> > may seem like an optimization, but as you see it has
-> > does not work.
-> > 
-> and I would add may behave differently dependent on the LSM
-> 
-> >>>> Then, SELinux
-> >>>> checks if 'kernel_t' can access the inode with the security context of 'I'.
-> >>> Why doesn't eCryptfs provide the credentials of 'I'? In the kernel you
-> >>> can do what you will.
-> >> No, eCryptfs provides (in the following patch) the 'initial' credentials which
-> >> are obtained through the function prepare_kernel_cred() which give root
-> >> privileges. These credentials are used in the hook security_dentry_open()
-> >> to verify if eCryptfs is allowed to access the inode 'I' in the underlying
-> >> filesystem.
-> > 
-> > But you shouldn't care if eCryptfs can access the file. You should
-> > only care if the user process can access the file. You're kernel code,
-> > you can do what you will.
-> > 
-> Agreed, the decision should be based off whether the user can access the file.
-> 
+[PATCH -v5 1/4] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+[PATCH -v5 2/4] lib, Add lock-less NULL terminated single list
+[PATCH -v5 3/4] lib, Make gen_pool memory allocator lockless
+[PATCH -v5 4/4] ACPI, APEI, GHES, printk support for recoverable error via NMI
