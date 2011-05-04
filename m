@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1EDOm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:42:59 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25214 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754362Ab1EDOm5 (ORCPT
+	id S1754387Ab1EDOnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:43:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49020 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab1EDOnq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:42:57 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: TBwwBIYVM1kNwgPsfHlzQ3hLXgc_kM5J973JHM9bWNXgHaO
- Mict2stBPICafowYAC8Ga0XhKTnvT.yUwT7yVOPhZscSIQ0TC9Y9zLCs9cuA
- PNT7tzGOLrUMsGbK0HP2rnc1CujoWYNPQt4oQsot5_zz4i.kge4dcvdpIWOu
- S7KHkXOpoFq8qhbsXgcxRysGIJybBRFOy9kUtiDaMlXjJrjNw.F5nulNHnN5
- deg8ha7oTZ42YT7jNgwy6Vvwxk4Mu2e4z833ID.CMzQ432h78XbgtanVoC4b
- GX7P43.wDrvQ9CaA7hUutTDlz.zbKB3ZC5ZAenDh4LbCI3V69Xqx7GNyhtzC
- g25nRibJzgPFceli3LrGjQg--
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 4 May 2011 09:42:53 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ingo Molnar <mingo@elte.hu>
-cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] slub: Fix the lockless code on 32-bit platforms with no
- 64-bit cmpxchg
-In-Reply-To: <20110504143616.GA19986@elte.hu>
-Message-ID: <alpine.DEB.2.00.1105040942190.5495@router.home>
-References: <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504141413.GA14127@elte.hu> <20110504143616.GA19986@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 4 May 2011 10:43:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110504143757.GB15967@pulham.picochip.com>
+References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
+ <20110503210950.GA2866@ponder.secretlab.ca> <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
+ <20110503215211.GA8491@oksana.dev.rtsoft.ru> <20110503220408.GA6978@pulham.picochip.com>
+ <20110503223415.GA14024@oksana.dev.rtsoft.ru> <20110504110939.GB13514@pulham.picochip.com>
+ <20110504113131.GA639@oksana.dev.rtsoft.ru> <20110504143757.GB15967@pulham.picochip.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 4 May 2011 08:43:26 -0600
+X-Google-Sender-Auth: tF2fz3AGY_vo-0Kw_nwKRuQNjGM
+Message-ID: <BANLkTik8fOmeFCrKLnXsxQ9rAfjGedM9JQ@mail.gmail.com>
+Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different controllers
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, tglx@linutronix.de, arnd@arndb.de,
+        nico@fluxnic.net, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Ingo Molnar wrote:
+Can you repost as a proper series please?  Don't force me to muck
+about with attachments.
 
-> Ok, the patch below is looking really good - the test would have crashed on the
-> bad kernel. I think we can consider the regression fixed:
+g.
+
+On Wed, May 4, 2011 at 8:37 AM, Jamie Iles <jamie@jamieiles.com> wrote:
+> On Wed, May 04, 2011 at 03:31:31PM +0400, Anton Vorontsov wrote:
+>> On Wed, May 04, 2011 at 12:09:39PM +0100, Jamie Iles wrote:
+>> > On Wed, May 04, 2011 at 02:34:15AM +0400, Anton Vorontsov wrote:
+>> > > On Tue, May 03, 2011 at 11:04:08PM +0100, Jamie Iles wrote:
+>> > > [...]
+>> > > > The advantage that Grant's proposal has though is that the user can
+>> > > > override the gpio_chip callbacks.  When I tried porting over some
+>> > > > existing ARM platforms, one of the blocking issues was that lots of
+>> > > > platforms had some annoying small detail that was slightly different
+>> > > > (such as doing muxing in the _get() callback or needing a to_irq
+>> > > > callback).
+>> > > >
+>> > > > If we make bgpio_chip public and return that from bgpio_probe
+>> > > > unregistered then the calling code can override some of the methods then
+>> > > > register the gpio_chip.
+>> > >
+>> > > Oh, that makes sense, right.
+>> >
+>> > I've just given this a try and it largely works, but it's probably
+>> > better if we allow bgpio_chip to be embedded in other structures.  For
+>> > example, the langwell driver has a gpio_to_irq callback that we would
+>> > need to get the IRQ base for the bank.  We could add a void *priv member
+>> > to bgpio_chip but that doesn't feel quite right.
+>> >
+>> > So,
+>> >     int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
+>> >                    unsigned long sz, void __iomem *dat, ...)
+>> >
+>> > rather than a probe() that returns the bgpio_chip?
+>>
+>> Sounds good to me.
 >
->   Acked-and-tested-by: Ingo Molnar <mingo@elte.hu>
+> OK, so here's what I've got so far (patches attached).  I've updated the
+> basic_mmio_gpio library with your initial lkml patch and updated it to
+> allow bgpio_chip to be embedded in another structure.  I've also
+> attempted to convert over the bt8xx and langwell drivers but they're a
+> little rough around the edges in places (and untested as I don't have
+> the hardware).
 >
-> I'll keep it running some more to make really sure it's fixed, plus it would be
-> nice if Walter tested your fix as well.
+> Jamie
+>
 
-Looks good and is exactly what I have here.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
