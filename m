@@ -1,58 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab1EDTPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:15:07 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:41594 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1EDTPF (ORCPT
+	id S1755019Ab1EDTQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:16:16 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55014 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab1EDTQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:15:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OOJKw5EuTPcz9ihM9l9mnuyg8WxtAW8RBnRx9tds4ATu70lkopP6qFFA/0mrR/pSjL
-         tmv5g6QyfZJmJ0m/6ZB1fg+TD0j56aL3WXAxHjKuyaYNe+Jo2mBdkmVMFQ0jNazBsFd3
-         MHG28w+pHYKpOHmGJCN82nK1vuETiGht+ROYg=
-Message-ID: <4DC1A5B5.4050605@lwfinger.net>
-Date: Wed, 04 May 2011 14:15:01 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Wed, 4 May 2011 15:16:15 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: <linux-kernel@vger.kernel.org>, Vladimir Davydov <vdavydov@parallels.com>
+Subject: [PATCH] sched: fix erroneous sysct_sched_nr_migrate logic
+Date: Wed, 4 May 2011 23:15:48 +0400
+Message-ID: <1304536548-3052-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: John W Linville <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, chaoming_li@realsil.com.cn,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-References: <4dc01587.AfSJXmRO80K/pl3f%Larry.Finger@lwfinger.net> <20110503150105.GC18648@gere.osrc.amd.com> <4DC05F9C.2070802@lwfinger.net> <20110504170131.GA12126@gere.osrc.amd.com> <4DC18AE5.4010708@lwfinger.net> <20110504180605.GB12126@gere.osrc.amd.com>
-In-Reply-To: <20110504180605.GB12126@gere.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2011 01:06 PM, Borislav Petkov wrote:
-> On Wed, May 04, 2011 at 12:20:37PM -0500, Larry Finger wrote:
->> You are very welcome. I'm glad to hear that it works for you. That
->> driver missed the 2.6.39 merge window due to an ASPM problem that
->> crashed my computer without any possibility of seeing what caused
->> the blowup. I was somewhat afraid that others would get similar
->> results even though Realsil did not see the problem.
->
-> Right, so I saw the oops below while playing with the driver earlier
-> but I attribute it to the fact that radio was switched off in the BIOS
-> (rfkill show said "Hard blocked: yes" for the wireless device). After
-> changing that I'm running smoothly so far. I'll keep you posted if I see
-> anything while using it in the next weeks.
->
-> Thanks.
+During load balance, the scheduler must not iterate more than
+sysctl_sched_nr_migrate (32 by default) tasks, but at present this limit is held
+only for tasks in a task group. That means if there is the only task group in
+the system, the scheduler never iterates more than 32 tasks in a single balance
+run, but if there are N task groups, it can iterate up to N * 32 tasks. This
+patch makes the limit system-wide as it should be.
+---
+ kernel/sched_fair.c |   35 +++++++++++++++++------------------
+ 1 files changed, 17 insertions(+), 18 deletions(-)
 
-Thanks for the dump. I don't think the oops was due to the wireless being 
-switched off. It looks as if you do not have the CRDA package installed, thus 
-the regulatory domain was not setup correctly. That is a condition I realize 
-that I have not tested. As soon as I have a fix, I'll let you know. BTW, if my 
-analysis is correct, this bug has been around since 2.6.37 when rtl8192ce was 
-merged.
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 37f2262..a8fe580 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2142,9 +2142,9 @@ static unsigned long
+ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 	      unsigned long max_load_move, struct sched_domain *sd,
+ 	      enum cpu_idle_type idle, int *all_pinned,
+-	      struct cfs_rq *busiest_cfs_rq)
++	      unsigned int *loops_left, struct cfs_rq *busiest_cfs_rq)
+ {
+-	int loops = 0, pulled = 0;
++	int pulled = 0;
+ 	long rem_load_move = max_load_move;
+ 	struct task_struct *p, *n;
+ 
+@@ -2152,8 +2152,9 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		goto out;
+ 
+ 	list_for_each_entry_safe(p, n, &busiest_cfs_rq->tasks, se.group_node) {
+-		if (loops++ > sysctl_sched_nr_migrate)
++		if (!*loops_left)
+ 			break;
++		--*loops_left;
+ 
+ 		if ((p->se.load.weight >> 1) > rem_load_move ||
+ 		    !can_migrate_task(p, busiest, this_cpu, sd, idle,
+@@ -2170,8 +2171,10 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		 * kernels will stop after the first task is pulled to minimize
+ 		 * the critical section.
+ 		 */
+-		if (idle == CPU_NEWLY_IDLE)
++		if (idle == CPU_NEWLY_IDLE) {
++			*loops_left = 0;
+ 			break;
++		}
+ #endif
+ 
+ 		/*
+@@ -2239,7 +2242,7 @@ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+ 		  struct sched_domain *sd, enum cpu_idle_type idle,
+-		  int *all_pinned)
++		  int *all_pinned, unsigned int *loops_left)
+ {
+ 	long rem_load_move = max_load_move;
+ 	int busiest_cpu = cpu_of(busiest);
+@@ -2264,9 +2267,12 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		rem_load = div_u64(rem_load, busiest_h_load + 1);
+ 
+ 		moved_load = balance_tasks(this_rq, this_cpu, busiest,
+-				rem_load, sd, idle, all_pinned,
++				rem_load, sd, idle, all_pinned, loops_left,
+ 				busiest_cfs_rq);
+ 
++		if (!*loops_left)
++			break;
++
+ 		if (!moved_load)
+ 			continue;
+ 
+@@ -2290,11 +2296,11 @@ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+ 		  struct sched_domain *sd, enum cpu_idle_type idle,
+-		  int *all_pinned)
++		  int *all_pinned, unsigned int *loops_left)
+ {
+ 	return balance_tasks(this_rq, this_cpu, busiest,
+ 			max_load_move, sd, idle, all_pinned,
+-			&busiest->cfs);
++			loops_left, &busiest->cfs);
+ }
+ #endif
+ 
+@@ -2311,28 +2317,21 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		      int *all_pinned)
+ {
+ 	unsigned long total_load_moved = 0, load_moved;
++	unsigned int loops_left = sysctl_sched_nr_migrate;
+ 
+ 	do {
+ 		load_moved = load_balance_fair(this_rq, this_cpu, busiest,
+ 				max_load_move - total_load_moved,
+-				sd, idle, all_pinned);
++				sd, idle, all_pinned, &loops_left);
+ 
+ 		total_load_moved += load_moved;
+ 
+ #ifdef CONFIG_PREEMPT
+-		/*
+-		 * NEWIDLE balancing is a source of latency, so preemptible
+-		 * kernels will stop after the first task is pulled to minimize
+-		 * the critical section.
+-		 */
+-		if (idle == CPU_NEWLY_IDLE && this_rq->nr_running)
+-			break;
+-
+ 		if (raw_spin_is_contended(&this_rq->lock) ||
+ 				raw_spin_is_contended(&busiest->lock))
+ 			break;
+ #endif
+-	} while (load_moved && max_load_move > total_load_moved);
++	} while (load_moved && max_load_move > total_load_moved && loops_left);
+ 
+ 	return total_load_moved > 0;
+ }
+-- 
+1.7.0.4
 
-Larry
