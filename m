@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1EDMJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 08:09:23 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:62371 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab1EDMJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 08:09:22 -0400
-Message-ID: <4DC141EC.5050406@tilera.com>
-Date: Wed, 4 May 2011 08:09:16 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1754024Ab1EDMoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 08:44:16 -0400
+Received: from sputnik.urmx.de ([88.198.51.18]:55900 "EHLO sputnik.urmx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753214Ab1EDMoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 08:44:15 -0400
+X-Greylist: delayed 1952 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 May 2011 08:44:15 EDT
+X-Spam-Processed: srv201.gdsys.de, Wed, 04 May 2011 14:11:38 +0200
+	(not processed: message from trusted or authenticated source)
+X-Return-Path: Eibach@gdsys.de
+X-Envelope-From: Eibach@gdsys.de
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Sven Eckelmann <sven@narfation.org>
-CC: <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
-        <x86@kernel.org>, <linux-alpha@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-cris-kernel@axis.com>, <linux-ia64@vger.kernel.org>,
-        <linux-m32r@ml.linux-m32r.org>, <linux-m68k@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linux-am33-list@redhat.com>,
-        <linux-parisc@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        <sparclinux@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] atomic: add *_dec_not_zero
-References: <1304458235-28473-1-git-send-email-sven@narfation.org>
-In-Reply-To: <1304458235-28473-1-git-send-email-sven@narfation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
+Date: Wed, 4 May 2011 14:11:34 +0200
+Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BE9D@SRV101.gdsys.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-index: AcwKVGja0CMEr430SpuA2D/zu4XQtQ==
+From: "Eibach, Dirk" <Eibach@gdsys.de>
+To: <linux-kernel@vger.kernel.org>
+X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110504121141Z
+Subject: msleep() an load average
+Thread-Topic: msleep() an load average
+Content-Class: urn:content-classes:message
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.226; VDF: 7.11.7.146; host: mailrelay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/3/2011 5:30 PM, Sven Eckelmann wrote:
-> Introduce an *_dec_not_zero operation.  Make this a special case of
-> *_add_unless because batman-adv uses atomic_dec_not_zero in different
-> places like re-broadcast queue or aggregation queue management. There
-> are other non-final patches which may also want to use this macro.
->
-> Reported-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Sven Eckelmann <sven@narfation.org>
-> [...]
->  arch/tile/include/asm/atomic.h     |    9 +++++++++
->  arch/tile/include/asm/atomic_32.h  |    1 +
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+LDD Chapter 7 says "In general, if you can tolerate longer delays than
+requested, you should use schedule_timeout, msleep or ssleep.".
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Following this rule, my kernel thread does:
+while(1) msleep(1000);
+
+Seconds later userspace guys start whining: "Your driver is evil,
+loadavg is 1 and we did not even start our fancy application".
+
+I say: "No, my code is perfectly fine, I followed LDD to the letter."
+
+So the userspace guys head back to their cave, only to return after 5
+hours of googling: "Hey, we know what you are doing. Your kernel thread
+does uninterruptible sleeps. Wikipedia says, this means you are probably
+waiting for disk activity."
+
+Since I don't like having those whining userspace guys around I change
+my code, reluctantly:
+while(1) msleep_interruptible(1000);
+
+Seconds later they say: "All hail great kernel hacker! You fixed it in
+no time."
+
+I appreciate their admiration, but still there are doubts in my mind: Is
+this code really any better? Is the loadavg metric broken beyond repair?
+Should I really avoid msleep, just to stop those userspace guys from
+whining?
+The truth must be out there ...
+
+Cheers
+Dirk
 
 
