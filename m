@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab1EDV4R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:56:17 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57542 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755634Ab1EDV4P (ORCPT
+	id S1755956Ab1EDV6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:58:09 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:25950 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab1EDV6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:56:15 -0400
-From: Tom Lendacky <tahm@linux.vnet.ibm.com>
-Organization: IBM Linux Performance
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 05/18] virtio: used event index interface
-Date: Wed, 4 May 2011 16:56:09 -0500
-User-Agent: KMail/1.13.6 (Linux/2.6.35.12-90.fc14.i686.PAE; KDE/4.6.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-References: <cover.1304541918.git.mst@redhat.com>  <aacced20b8109a615ee24c1bde6d9f5702850111.1304541919.git.mst@redhat.com>
-In-Reply-To: <aacced20b8109a615ee24c1bde6d9f5702850111.1304541919.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105041656.11009.tahm@linux.vnet.ibm.com>
+	Wed, 4 May 2011 17:58:07 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Colin Cross <ccross@android.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: omap4: Enable keypad controller hwmod
+Date: Wed,  4 May 2011 14:57:44 -0700
+Message-Id: <1304546264-28922-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.4.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 04, 2011 03:51:09 PM Michael S. Tsirkin wrote:
-> Define a new feature bit for the guest to utilize a used_event index
-> (like Xen) instead if a flag bit to enable/disable interrupts.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_ring.h |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> index e4d144b..f5c1b75 100644
-> --- a/include/linux/virtio_ring.h
-> +++ b/include/linux/virtio_ring.h
-> @@ -29,6 +29,10 @@
->  /* We support indirect buffer descriptors */
->  #define VIRTIO_RING_F_INDIRECT_DESC	28
-> 
-> +/* The Guest publishes the used index for which it expects an interrupt
-> + * at the end of the avail ring. Host should ignore the avail->flags
-> field. */ +#define VIRTIO_RING_F_USED_EVENT_IDX	29
-> +
->  /* Virtio ring descriptors: 16 bytes.  These can chain together via
-> "next". */ struct vring_desc {
->  	/* Address (guest-physical). */
-> @@ -83,6 +87,7 @@ struct vring {
->   *	__u16 avail_flags;
->   *	__u16 avail_idx;
->   *	__u16 available[num];
-> + *	__u16 used_event_idx;
->   *
->   *	// Padding to the next align boundary.
->   *	char pad[];
-> @@ -93,6 +98,10 @@ struct vring {
->   *	struct vring_used_elem used[num];
->   * };
->   */
-> +/* We publish the used event index at the end of the available ring.
-> + * It is at the end for backwards compatibility. */
-> +#define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
-> +
->  static inline void vring_init(struct vring *vr, unsigned int num, void *p,
->  			      unsigned long align)
->  {
+The keypad controller hwmod was left commented out, but the
+omap4-keypad driver requires it to function.
 
-You should update the vring_size procedure to account for the extra field at 
-the end of the available ring by change the "(2 + num)" to "(3 + num)":
-    return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Tom
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index abc548a..e1c69ff 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -5109,7 +5109,7 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	&omap44xx_iva_seq1_hwmod,
+ 
+ 	/* kbd class */
+-/*	&omap44xx_kbd_hwmod, */
++	&omap44xx_kbd_hwmod,
+ 
+ 	/* mailbox class */
+ 	&omap44xx_mailbox_hwmod,
+-- 
+1.7.4.1
+
