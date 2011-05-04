@@ -1,284 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab1EDTjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:39:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226Ab1EDTjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:39:05 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [TEST] simple test to make sure seek_hole/seek_data is working right
-Date: Wed,  4 May 2011 15:27:57 -0400
-Message-Id: <1304537277-14918-1-git-send-email-josef@redhat.com>
+	id S1755230Ab1EDTab (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:30:31 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:24950 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753973Ab1EDTaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 15:30:30 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: mlPxpz0VM1k2pLz0ZJST277Haz8CycH1mHKKNeYt8wNh1TI
+ uwJ9wtWpwwL_7cBtEYaWkmohxKriqP24VKmWhuusKvU563rr1uDabZ7mylBu
+ ysXe0lOcpZO0jL0z_P.TN9nfF19SNS9Rb2Vmllp4_98pq_xqRNXALsO9Y8Px
+ jfFv05eEnnB287Qr32jOrt12woDRXNB7OOfSUeeH0q3MovhypxA0mn_mXrum
+ n22aS.i937C8V0kVvvcf5F1t7Is9_yheL3p.eqCaUE8WMDkARlf0gTZaCSs9
+ Ev9sD1KhNyyoepKHjda5pGH5iQQKxJ9Grqrf13WwEGaGQS24FjcYFZmHBGj4
+ q9R9B5WRCfmJ8goIV2Yg8u.QB
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 4 May 2011 14:30:26 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+In-Reply-To: <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1105041421280.5495@router.home>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org> <alpine.LFD.2.02.1105041640020.3005@ionos>
+ <alpine.DEB.2.00.1105040958570.5495@router.home> <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home> <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
+ <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home> <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my very rough tester for testing seek_hole/seek_data.  Please look over
-it and make sure we all agree that the semantics are correct.  My btrfs patch
-passes with this and ext3 passes as well.  I still have to added fallocate() to
-it, but for now this seems to cover most of the corner cases.  Thanks,
+On Wed, 4 May 2011, Linus Torvalds wrote:
 
-Josef
+> On Wed, May 4, 2011 at 11:49 AM, Christoph Lameter <cl@linux.com> wrote:
+> >
+> > The unprotected version is the __this_cpu_cmpxchg_double? That currently
+> > has no user and could be removed. But all other functions also have __
+> > variants so it was put there for symmetries sake.
+>
+> No, I'm talking about the regular "this_cpu_cmpxchg_double" with no underscores.
+>
+> Why the f*!@ does that exist?
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
+Because it is useful if the per cpu serialization only requires
+safety from preemption during the cmpxchg.
 
-#define SEEK_HOLE	3
-#define SEEK_DATA	4
+> Why the f*%^ do you have to write "irqsafe", when the whole concept
+> DOES NOT MAKE SENSE without the "irqsafe"?
 
-#define ERROR(str)	\
-	fprintf(stderr, "%s: pos=%lu, errno=%d\n", str, pos, errno)
+Because that is how the other irq safe this_cpu_xxx functions are named
+and I tried to keep it consistent.
 
-static int reset_file(int fd)
-{
-	int ret;
+> I think we should remove every single version of
+> "this_cpu_cmpxchg_double" except for two: the per-cpu one and the
+> SMP-safe one.
 
-	ret = ftruncate(fd, 0);
-	if (ret < 0) {
-		fprintf(stderr, "Truncate failed: %d\n", errno);
-		return 1;
-	}
+The smp safe one would be cmpxchg_double() then. This is part of a future
+patchset and would be named like other fully atomic ops. Would not be part
+of include/linux/percpu.h because it is not a per cpu related function.
 
-	return 0;
-}
+> And the per-cpu one doesn't mention "irqsafe" or "preempt" or anything
+> like that, because the whole function makes no sense except when it is
+> irq-safe and preempt-safe.
 
-int main(int argc, char **argv)
-{
-	char buf[4096 * 4];
-	ssize_t bytes;
-	off_t pos;
-	int prealloc_is_hole = 0;
-	int whole_file_is_data = 0;
-	int ret;
-	int i;
-	int fd;
+It does make sense because arches that do not have the hardware
+capabilities must use fallback implementations that can be faster if f.e.
+irqs must not be disabled. And this_cpu_xxx ops are usually used in
+performance critical paths.
 
-	fd = open("testfile", O_RDWR|O_CREAT|O_TRUNC, 0644);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open testfile: %d\n", errno);
-		return 1;
-	}
+> So I think the fact that we need to say "irqsafe" is a bug. Plain and simple.
+>
+> The whole (and ONLY) point of "cmpxchg" is atomicity.
+>
+> This is not like "add one to something". That's an operation that
+> makes sense outside of atomicity issues. But "cmpxchg" is all about
+> being atomic.
 
-	/* Empty file */
-	printf("Testing an empty file\n");
-	pos = lseek(fd, 0, SEEK_DATA);
-	if (pos != -1) {
-		if (errno == EINVAL) {
-			fprintf(stderr, "Kernel does not support seek "
-				"hole/data\n");
-			close(fd);
-			return 1;
-		}
-		if (errno != ENXIO)
-			ERROR("Seek data did not return a proper error");
-		close(fd);
-		return 1;
-	}
+The naming convention came about from the existing this_cpu_xxx
+operations (and yes those starting with the problem of the increment). To
+do it differently now just for this function would make it more difficult
+to comprehend for someone already familiar with  this_cpu
+operations on per cpu data.
 
-	pos = lseek(fd, 0, SEEK_HOLE);
-	if (pos != -1 && errno != ENXIO) {
-		ERROR("Seek hole did not return a proper error");
-		close(fd);
-		return 1;
-	}
-
-	memset(&buf, 'a', 4096 * 4);
-	/*
-	 * All data file
-	 */
-	printf("Testing a normal data filled file\n");
-	for (i = 0; i < 4; i++) {
-		bytes = write(fd, &buf, 4096);
-		if (bytes < 4096) {
-			fprintf(stderr, "Failed to write to testfile: %d\n",
-				errno);
-			close(fd);
-			return 1;
-		}
-	}
-
-	pos = lseek(fd, 0, SEEK_HOLE);
-	if (pos != (4096 * 4) || pos == -1) {
-		ERROR("Seek hole failed to dump us out at the end of the file");
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, 0, SEEK_DATA);
-	if (pos != 0) {
-		ERROR("Seek data failed to dump us out at the beginning of the"
-		      " file");
-		close(fd);
-		return 1;
-	}
-
-	/*
-	 * File with a hole at the front and data at the end
-	 */
-	printf("Testing file with hole at the start and data in the rest\n");
-	if (reset_file(fd)) {
-		close(fd);
-		return 1;
-	}
-
-	bytes = pwrite(fd, &buf, 4096 * 3, 4096);
-	if (bytes < (4096 * 3)) {
-		fprintf(stderr, "Failed to write to testfile: %d\n");
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, 0, SEEK_HOLE);
-	if (pos != 0 && pos != (4096 * 4)) {
-		ERROR("Seek hole failed to return 0");
-		close(fd);
-		return 1;
-	} else if (pos == (4096 * 4)) {
-		whole_file_is_data = 1;
-		printf("Current file system views treats the entire file as "
-		       "data\n");
-	}
-
-	pos = lseek(fd, 0, SEEK_DATA);
-	if (pos != 4096 || (pos != 0 && whole_file_is_data)) {
-		if (whole_file_is_data)
-			ERROR("Seek data failed to return 0");
-		else
-			ERROR("Seek data failed to return 4096");
-		close(fd);
-		return 1;
-	}
-
-	if (whole_file_is_data) {
-		pos = lseek(fd, 1, SEEK_DATA);
-		if (pos != -1 && errno != ENXIO) {
-			ERROR("Seek data failed to retun an error");
-			close(fd);
-			return 1;
-		}
-	}
-	/*
-	 * File with a hole at the end and data at the beginning
-	 */
-	printf("Testing file with hole at the end and data at the beginning\n");
-	if (reset_file(fd)) {
-		close(fd);
-		return 1;
-	}
-
-	ret = ftruncate(fd, 4096 * 4);
-	if (ret < 0) {
-		fprintf(stderr, "Truncate failed: %d\n", errno);
-		close(fd);
-		return 1;
-	}
-
-	pwrite(fd, &buf, 4096 * 3, 0);
-	if (bytes < (4096 * 3)) {
-		fprintf(stderr, "Failed to write to testfile: %d\n", errno);
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, 0, SEEK_HOLE);
-	if (pos != (4096 * 3) || (pos != (4096 * 4) && whole_file_is_data)) {
-		ERROR("Seeking hole didn't work right");
-		close(fd);
-		return 1;
-	}
-
-	if (whole_file_is_data) {
-		pos = lseek(fd, 4096, SEEK_DATA);
-		if (pos != 4096) {
-			ERROR("Seeking data didn't return the same offset");
-			close(fd);
-			return 1;
-		}
-		printf("No more tests to run since we treat the whole file as "
-		       "data\n");
-		goto out;
-	}
-
-	pos = lseek(fd, pos, SEEK_HOLE);
-	if (pos != (4096 * 3)) {
-		ERROR("Seek hole didn't return same position");
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, pos+1, SEEK_HOLE);
-	if (pos != (4096 * 4)) {
-		ERROR("Seek hole didn't return the end of the file");
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, pos, SEEK_DATA);
-	if (pos != -1 && errno != ENXIO) {
-		ERROR("Seek data didn't return ENXIO");
-		close(fd);
-		return 1;
-	}
-
-	/*
-	 * Hole - Data - Hole - Data file
-	 */
-	printf("Testing file [Hole][Data][Hole][Data]\n");
-	if (reset_file(fd)) {
-		close(fd);
-		return 1;
-	}
-
-	ret = ftruncate(fd, 4096 * 4);
-	if (ret < 0) {
-		fprintf(stderr, "ftruncate failed: %d\n", errno);
-		close(fd);
-		return 1;
-	}
-
-	bytes = pwrite(fd, &buf, 4096, 4096);
-	if (bytes < 4096) {
-		fprintf(stderr, "Failed to write: %d\n", errno);
-		close(fd);
-		return 1;
-	}
-
-	bytes = pwrite(fd, &buf, 4096, 4096 * 3);
-	if (bytes < 4096) {
-		fprintf(stderr, "Failed to write: %d\n", errno);
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, 0, SEEK_DATA);
-	if (pos != 4096) {
-		ERROR("Seek data did not return 4096");
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, pos, SEEK_HOLE);
-	if (pos != (4096 * 2)) {
-		ERROR("Seek hole did not return 4096*2");
-		close(fd);
-		return 1;
-	}
-
-	pos = lseek(fd, pos, SEEK_DATA);
-	if (pos != (4096 * 3)) {
-		ERROR("Seek data did not return 4096*3");
-		close(fd);
-		return 1;
-	}
-out:
-	close(fd);
-	return 0;
-}
