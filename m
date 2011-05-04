@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1EDSRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:17:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57445 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab1EDSRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:17:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,315,1301900400"; 
-   d="scan'208";a="688192807"
-From: Andi Kleen <andi@firstfloor.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Balbir Singh <balbir@in.ibm.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH] Allocate memory cgroup structures in local nodes
-Date: Wed,  4 May 2011 11:17:38 -0700
-Message-Id: <1304533058-18228-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
+	id S1755384Ab1EDSSO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:18:14 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:52818 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835Ab1EDSSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 14:18:12 -0400
+Date: Wed, 4 May 2011 20:18:05 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: [PATCH 5/8] arch/x86/xen/smp: Cleanup code/data sections definitions
+Message-ID: <20110504181805.GF29218@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Cleanup code/data sections definitions
+accordingly to include/linux/init.h.
 
-[Andrew: since this is a regression and a very simple fix
-could you still consider it for .39? Thanks]
-
-dde79e005a769 added a regression that the memory cgroup data structures
-all end up in node 0 because the first attempt at allocating them
-would not pass in a node hint. Since the initialization runs on CPU #0
-it would all end up node 0. This is a problem on large memory systems,
-where node 0 would lose a lot of memory.
-
-Change the alloc_pages_exact to alloc_pages_exact_node. This will
-still fall back to other nodes if not enough memory is available.
-
-[RED-PEN: right now it would fall back first before trying
-vmalloc_node. Probably not the best strategy ... But I left it like
-that for now.]
-
-Reported-by: Doug Nelson
-CC: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Balbir Singh <balbir@in.ibm.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
 ---
- mm/page_cgroup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/xen/smp.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 9905501..1f4e20f 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -134,7 +134,7 @@ static void *__init_refok alloc_page_cgroup(size_t size, int nid)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 3061244..194a3ed 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -57,7 +57,7 @@ static irqreturn_t xen_reschedule_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static __cpuinit void cpu_bringup(void)
++static void __cpuinit cpu_bringup(void)
  {
- 	void *addr = NULL;
+ 	int cpu = smp_processor_id();
  
--	addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
-+	addr = alloc_pages_exact_node(nid, size, GFP_KERNEL | __GFP_NOWARN);
- 	if (addr)
- 		return addr;
+@@ -85,7 +85,7 @@ static __cpuinit void cpu_bringup(void)
+ 	wmb();			/* make sure everything is out */
+ }
  
+-static __cpuinit void cpu_bringup_and_idle(void)
++static void __cpuinit cpu_bringup_and_idle(void)
+ {
+ 	cpu_bringup();
+ 	cpu_idle();
+@@ -242,7 +242,7 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ }
+ 
+-static __cpuinit int
++static int __cpuinit
+ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+ {
+ 	struct vcpu_guest_context *ctxt;
+@@ -486,7 +486,7 @@ static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static const struct smp_ops xen_smp_ops __initdata = {
++static const struct smp_ops xen_smp_ops __initconst = {
+ 	.smp_prepare_boot_cpu = xen_smp_prepare_boot_cpu,
+ 	.smp_prepare_cpus = xen_smp_prepare_cpus,
+ 	.smp_cpus_done = xen_smp_cpus_done,
 -- 
-1.7.4.4
-
+1.5.6.5
