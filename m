@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1EDUxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 16:53:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64586 "EHLO mx1.redhat.com"
+	id S1755909Ab1EDUww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:52:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52751 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172Ab1EDUw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 16:52:58 -0400
-Date: Wed, 4 May 2011 23:52:14 +0300
+	id S1755760Ab1EDUwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 16:52:50 -0400
+Date: Wed, 4 May 2011 23:52:22 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
@@ -20,8 +20,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
         Krishna Kumar <krkumar2@in.ibm.com>,
         Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
         habanero@linux.vnet.ibm.com
-Subject: [PATCH 12/18] virtio_test: support used_event index
-Message-ID: <3f1f65fa3724ae084109fd77aa1d92d7ef1c328a.1304541919.git.mst@redhat.com>
+Subject: [PATCH 13/18] virtio_test: avail_event index support
+Message-ID: <bd3d5246228411adcf5ae3c7da0463a82cddde6e.1304541919.git.mst@redhat.com>
 References: <cover.1304541918.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,60 +33,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ability to test the new used_event feature,
+Add ability to test the new avail_event feature,
 enable by default.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- tools/virtio/virtio_test.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+ tools/virtio/virtio_test.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/tools/virtio/virtio_test.c b/tools/virtio/virtio_test.c
-index 9e65e6d..157ec68 100644
+index 157ec68..8adf55d 100644
 --- a/tools/virtio/virtio_test.c
 +++ b/tools/virtio/virtio_test.c
-@@ -210,18 +210,29 @@ const struct option longopts[] = {
- 		.val = 'i',
+@@ -202,6 +202,14 @@ const struct option longopts[] = {
+ 		.val = 'h',
  	},
  	{
-+		.name = "used-event-idx",
-+		.val = 'U',
++		.name = "avail-event-idx",
++		.val = 'A',
 +	},
 +	{
-+		.name = "no-used-event-idx",
-+		.val = 'u',
++		.name = "no-avail-event-idx",
++		.val = 'a',
 +	},
 +	{
- 	}
- };
- 
+ 		.name = "indirect",
+ 		.val = 'I',
+ 	},
+@@ -224,7 +232,8 @@ const struct option longopts[] = {
  static void help()
  {
--	fprintf(stderr, "Usage: virtio_test [--help] [--no-indirect]\n");
-+	fprintf(stderr, "Usage: virtio_test [--help]"
-+		" [--no-indirect] "
-+		" [--no-used-event-idx]\n");
+ 	fprintf(stderr, "Usage: virtio_test [--help]"
+-		" [--no-indirect] "
++		" [--no-indirect]"
++		" [--no-avail-event-idx]"
+ 		" [--no-used-event-idx]\n");
  }
  
- int main(int argc, char **argv)
+@@ -232,7 +241,8 @@ int main(int argc, char **argv)
  {
  	struct vdev_info dev;
--	unsigned long long features = 1ULL << VIRTIO_RING_F_INDIRECT_DESC;
-+	unsigned long long features = (1ULL << VIRTIO_RING_F_INDIRECT_DESC) |
-+		(1ULL << VIRTIO_RING_F_USED_EVENT_IDX);
+ 	unsigned long long features = (1ULL << VIRTIO_RING_F_INDIRECT_DESC) |
+-		(1ULL << VIRTIO_RING_F_USED_EVENT_IDX);
++		(1ULL << VIRTIO_RING_F_USED_EVENT_IDX) |
++		(1ULL << VIRTIO_RING_F_AVAIL_EVENT_IDX);
  	int o;
  
  	for (;;) {
-@@ -238,6 +249,9 @@ int main(int argc, char **argv)
- 		case 'i':
- 			features &= ~(1ULL << VIRTIO_RING_F_INDIRECT_DESC);
- 			break;
-+		case 'u':
-+			features &= ~(1ULL << VIRTIO_RING_F_USED_EVENT_IDX);
+@@ -243,6 +253,9 @@ int main(int argc, char **argv)
+ 		case '?':
+ 			help();
+ 			exit(2);
++		case 'a':
++			features &= ~(1ULL << VIRTIO_RING_F_AVAIL_EVENT_IDX);
 +			break;
- 		default:
- 			assert(0);
- 			break;
+ 		case 'h':
+ 			help();
+ 			goto done;
 -- 
 1.7.5.53.gc233e
 
