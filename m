@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab1EDDHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 23:07:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2301 "EHLO mga03.intel.com"
+	id S1755095Ab1EDDGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 23:06:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13263 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab1EDDGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 23:06:48 -0400
+	id S1752819Ab1EDDGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 23:06:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,312,1301900400"; 
-   d="scan'208";a="430025897"
+   d="scan'208";a="637536891"
 From: Chen Gong <gong.chen@linux.intel.com>
 To: tony.luck@intel.com, ying.huang@intel.com
 Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         Chen Gong <gong.chen@linux.intel.com>
-Subject: [PATCH 1/3] fix one type of return value in pstore
-Date: Wed,  4 May 2011 11:06:50 +0800
-Message-Id: <1304478412-11843-2-git-send-email-gong.chen@linux.intel.com>
+Subject: [PATCH 2/3] fix pstore filesystem mount/remount issue
+Date: Wed,  4 May 2011 11:06:51 +0800
+Message-Id: <1304478412-11843-3-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 1.7.5.185.g0b9dee
 In-Reply-To: <1304478412-11843-1-git-send-email-gong.chen@linux.intel.com>
 References: <1304478412-11843-1-git-send-email-gong.chen@linux.intel.com>
@@ -23,76 +23,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the return type of function _read_ in pstore is size_t,
-but in the callback function of _read_, the logic doesn't
-consider it too much, which means if negative value (assuming
-error here) is returned, it will be converted to positive because
-of type casting. ssize_t is enough for this function.
+Currently after mount/remount operation on pstore filesystem,
+the content on pstore will be lost. It is because current ERST
+implementation doesn't support multi-user usage, which moves
+internal pointer to the end after accessing it. Adding
+multi-user support for pstore usage.
 
 Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
 ---
- drivers/acpi/apei/erst.c |    4 ++--
- fs/pstore/platform.c     |    4 ++--
- include/linux/pstore.h   |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/acpi/apei/erst.c |   48 +++++++++++++++++++++++++++++++++------------
+ fs/pstore/platform.c     |    8 ++++++-
+ include/linux/pstore.h   |    2 +
+ 3 files changed, 44 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index d6cb0ff..d5a89d0 100644
+index d5a89d0..ddb68c4 100644
 --- a/drivers/acpi/apei/erst.c
 +++ b/drivers/acpi/apei/erst.c
-@@ -929,7 +929,7 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+@@ -929,6 +929,8 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
  	return 0;
  }
  
--static size_t erst_reader(u64 *id, enum pstore_type_id *type,
-+static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
++static int erst_open_pstore(struct pstore_info *psi);
++static int erst_close_pstore(struct pstore_info *psi);
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
  		       struct timespec *time);
  static u64 erst_writer(enum pstore_type_id type, size_t size);
- 
-@@ -957,7 +957,7 @@ struct cper_pstore_record {
+@@ -936,6 +938,8 @@ static u64 erst_writer(enum pstore_type_id type, size_t size);
+ static struct pstore_info erst_info = {
+ 	.owner		= THIS_MODULE,
+ 	.name		= "erst",
++	.open		= erst_open_pstore,
++	.close		= erst_close_pstore,
+ 	.read		= erst_reader,
+ 	.write		= erst_writer,
+ 	.erase		= erst_clear
+@@ -957,12 +961,32 @@ struct cper_pstore_record {
  	char data[];
  } __packed;
  
--static size_t erst_reader(u64 *id, enum pstore_type_id *type,
-+static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
++static int reader_pos;
++
++static int erst_open_pstore(struct pstore_info *psi)
++{
++	int rc;
++
++	if (erst_disable)
++		return -ENODEV;
++
++	rc = erst_get_record_id_begin(&reader_pos);
++
++	return rc;
++}
++
++static int erst_close_pstore(struct pstore_info *psi)
++{
++	erst_get_record_id_end();
++
++	return 0;
++}
++
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
  		       struct timespec *time)
  {
  	int rc;
+-	ssize_t len;
+-	unsigned long flags;
++	ssize_t len = 0;
+ 	u64 record_id;
+ 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+ 					(erst_info.buf - sizeof(*rcd));
+@@ -970,24 +994,21 @@ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+ 	if (erst_disable)
+ 		return -ENODEV;
+ 
+-	raw_spin_lock_irqsave(&erst_lock, flags);
+ skip:
+-	rc = __erst_get_next_record_id(&record_id);
+-	if (rc) {
+-		raw_spin_unlock_irqrestore(&erst_lock, flags);
+-		return rc;
+-	}
++	rc = erst_get_record_id_next(&reader_pos, &record_id);
++	if (rc)
++		goto out;
++
+ 	/* no more record */
+ 	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
+-		raw_spin_unlock_irqrestore(&erst_lock, flags);
+-		return 0;
++		rc = -1;
++		goto out;
+ 	}
+ 
+-	len = __erst_read(record_id, &rcd->hdr, sizeof(*rcd) +
++	len = erst_read(record_id, &rcd->hdr, sizeof(*rcd) +
+ 			  erst_erange.size);
+ 	if (uuid_le_cmp(rcd->hdr.creator_id, CPER_CREATOR_PSTORE) != 0)
+ 		goto skip;
+-	raw_spin_unlock_irqrestore(&erst_lock, flags);
+ 
+ 	*id = record_id;
+ 	if (uuid_le_cmp(rcd->sec_hdr.section_type,
+@@ -1005,7 +1026,8 @@ skip:
+ 		time->tv_sec = 0;
+ 	time->tv_nsec = 0;
+ 
+-	return len - sizeof(*rcd);
++out:
++	return (rc < 0) ? rc : (len - sizeof(*rcd));
+ }
+ 
+ static u64 erst_writer(enum pstore_type_id type, size_t size)
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index f835a25..912403c 100644
+index 912403c..f2c3ff2 100644
 --- a/fs/pstore/platform.c
 +++ b/fs/pstore/platform.c
-@@ -152,7 +152,7 @@ EXPORT_SYMBOL_GPL(pstore_register);
- void pstore_get_records(void)
- {
- 	struct pstore_info *psi = psinfo;
--	size_t			size;
-+	ssize_t			size;
+@@ -156,17 +156,23 @@ void pstore_get_records(void)
  	u64			id;
  	enum pstore_type_id	type;
  	struct timespec		time;
-@@ -163,7 +163,7 @@ void pstore_get_records(void)
+-	int			failed = 0;
++	int			failed = 0, rc;
+ 
+ 	if (!psi)
+ 		return;
  
  	mutex_lock(&psinfo->buf_mutex);
++	rc = psi->open(psi);
++	if (rc)
++		goto out;
++
  	while ((size = psi->read(&id, &type, &time)) > 0) {
--		if (pstore_mkfile(type, psi->name, id, psi->buf, size,
-+		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
+ 		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
  				  time, psi->erase))
  			failed++;
  	}
++	psi->close(psi);
++out:
+ 	mutex_unlock(&psinfo->buf_mutex);
+ 
+ 	if (failed)
 diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 4197773..14ce2f5 100644
+index 14ce2f5..2455ef2 100644
 --- a/include/linux/pstore.h
 +++ b/include/linux/pstore.h
-@@ -35,7 +35,7 @@ struct pstore_info {
+@@ -35,6 +35,8 @@ struct pstore_info {
  	struct mutex	buf_mutex;	/* serialize access to 'buf' */
  	char		*buf;
  	size_t		bufsize;
--	size_t		(*read)(u64 *id, enum pstore_type_id *type,
-+	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
++	int		(*open)(struct pstore_info *psi);
++	int		(*close)(struct pstore_info *psi);
+ 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
  			struct timespec *time);
  	u64		(*write)(enum pstore_type_id type, size_t size);
- 	int		(*erase)(u64 id);
 -- 
 1.7.5.185.g0b9dee
 
