@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1EDOZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:25:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41789 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab1EDOZh (ORCPT
+	id S1754145Ab1EDO1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:27:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61627 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab1EDO1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:25:37 -0400
+	Wed, 4 May 2011 10:27:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WF7zyYc4YQqYZ/bnjqdXn5Zu0kAk3M9t1HWRAX1rmgxRtB71PvdR5BEhUdTWo2ATo8
-         HnD9aTAPyMqWMEUKozdKXpKkmvA6ytXGouiXd8gX5rwpI8pl8mAGHgRZYoeBcWRWBeBb
-         aE7sjRiaptNt+VORi13MnXpq4wcAXqAc+We3Q=
-Date: Wed, 4 May 2011 16:25:32 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110504142532.GC17294@htj.dyndns.org>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <20110504083559.GB25724@elte.hu>
- <alpine.LFD.2.02.1105041124080.3005@ionos>
- <20110504101932.GA3392@elte.hu>
- <alpine.LFD.2.02.1105041233280.3005@ionos>
- <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
- <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos>
- <20110504132022.GA17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041539050.3005@ionos>
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=rH8IT/FDiSEMD1Wf97rc1xaMwfwo2JZtYl90LAGTLI1nXILaP4gUvwu4oGo4tjLsR4
+         6oYaRukOTCbMxuTTwHRptIrvaaQ5Qvd0FapJX5IUHNn6SHUBwb5hfHq3bQZBDTRHXT7w
+         j8pMdwmC71jHDEOjBdoLaCVtmpdLlyAlk4jSc=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Maxin John" <maxin.john@gmail.com>
+Cc: gregkh@suse.de, stern@rowland.harvard.edu, m-sonasath@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        roger.quadros@nokia.com
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which
+ is always true
+References: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
+Date: Wed, 04 May 2011 16:27:39 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105041539050.3005@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vuynsdh13l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 04 May 2011 16:16:05 +0200, Maxin John <maxin.john@gmail.com>  
+wrote:
+> Since comparing an unsigned int (common->lun)  greater than or equal
+> to zero is always true, I think it is safe to remove this check.
+> Please let me know your comments.
+>
+> Thanks to Coverity for pointing this out.
+>
+> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
 
-On Wed, May 04, 2011 at 04:10:29PM +0200, Thomas Gleixner wrote:
-> > cases where the generic implementation is used.  Has anyone measured
-> > the difference against before the whole this_cpu conversion?
-> 
-> Yes, that really wants to be done. The whole CMPXCHG_LOCAL ifdeffery
-> should have been avoided in the first place. this_cpu_cmpxchg can
-> really be implemented with preempt_enable/disable and the irqsafe
-> variant in any case.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-Yeah, slub code looks pretty scary with the #ifdefs.  IIUC, the
-problem was that cmpxchg_double is an optimization for fast path which
-was already very light weight and an extra locked op or irq on/off
-would have made considerable difference.
+file_storage.c has the same check, could you remove it as well.
 
-The cmpxchg_double optimization made the fast path go quite faster
-when CPU supports it but it may as well slow things down considerably
-if CPU doesn't, due to extra irq on/off's.  Anyways, here's hoping
-that the slow down is acceptable compared to the base code without
-cmpxchg_double and the ugliness can be removed.
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -1910,7 +1910,7 @@ static int check_command(struct fsg_common
+> *common, int cmnd_size,
+>                     common->lun, lun);
+>
+>         /* Check the LUN */
+> -       if (common->lun >= 0 && common->lun < common->nluns) {
+> +       if (common->lun < common->nluns) {
+>                 curlun = &common->luns[common->lun];
+>                 common->curlun = curlun;
+>                 if (common->cmnd[0] != REQUEST_SENSE) {
 
-Thanks.
 
 -- 
-tejun
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
