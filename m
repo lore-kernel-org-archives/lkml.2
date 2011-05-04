@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1EDNzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 09:55:08 -0400
-Received: from sputnik.urmx.de ([88.198.51.18]:52526 "EHLO sputnik.urmx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752556Ab1EDNzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 09:55:07 -0400
-X-Spam-Processed: srv201.gdsys.de, Wed, 04 May 2011 15:55:02 +0200
-	(not processed: message from trusted or authenticated source)
-X-Return-Path: Eibach@gdsys.de
-X-Envelope-From: Eibach@gdsys.de
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+	id S1753531Ab1EDN7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 09:59:33 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:43772 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752556Ab1EDN7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 09:59:32 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: jO0HCdwVM1l3R161nDXbwCeN85x68dcGSCiiiHwEWSLwCi_
+ 0WZC0BszbtdRZSA1w_T298BfpwVNLjFaLBug74z27fM7nNDxmAjeDx8bNZFe
+ ab1OZcxedkf4CS7adDUkVWIRMWVtU45ihND5jy4HhXQbX1DJ0SKvslMnSkPS
+ 0LCCvbh_6dbWd0B7b_A6bSrCCMlLDGgSSbImIKlP4HMTTHAjKcq3qr_vRKlq
+ uh7_bLrgKIT6Q2tGfJ6MZ7hhGLRBZ5aVPaKEo3ArHURQnC_k.1iGOdxDW4GH
+ hu8gXOkdDgdTatJxFmOvZJ79XlLwD9ycvW6M690LTXLp3U8LHSmyPDUCKkEQ
+ kT_RJzmToxQHr7yFnH4UM4A61
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 4 May 2011 08:59:28 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] m68k SLUB fix for 2.6.39
+In-Reply-To: <alpine.DEB.2.00.1105031538470.27795@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1105040851090.5495@router.home>
+References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site> <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
+ <BANLkTimT4899xDF99Fj37u_CgnkeBzoFzQ@mail.gmail.com> <alpine.DEB.2.00.1105031538470.27795@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
-Date: Wed, 4 May 2011 15:54:58 +0200
-Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BE9E@SRV101.gdsys.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-index: AcwKYGwju+YTVoW+R+OEaw7J6HYJUwAAbbrg
-References: <48D3D52125C49B43AE880038E2E5314BB5BE9D@SRV101.gdsys.de> <4DC1568B.2080004@gmail.com>
-From: "Eibach, Dirk" <Eibach@gdsys.de>
-To: "Jiri Slaby" <jirislaby@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>
-X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110504135505Z
-Subject: RE: msleep() an load average
-Thread-Topic: RE: msleep() an load average
-Content-Class: urn:content-classes:message
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.226; VDF: 7.11.7.147; host: mailrelay)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 3 May 2011, David Rientjes wrote:
 
-> > while(1) msleep_interruptible(1000);
-> > 
-> > I appreciate their admiration, but still there are doubts 
-> in my mind: 
-> > Is this code really any better?
-> 
-> Try to send it a signal, it will eat 100% of CPU without sleeping.
+> So we're in the unfortunate position where slub works fine for some
+> architectures with DISCONTIGMEM and not with others.  It seems like the
+> problems originating on James' hppa aren't related to slab allocation at
+> all, though, so I'm wondering if we should rethink disallowing SLUB as it
+> sits in Linus' tree right now for everything that uses DISCONTINGMEM
+> without NUMA and not force them to enable CONFIG_BROKEN?
+>
+> Perhaps change the kconfig entry to only block slub for parisc instead?
 
-As I am a great kernel hacker, all signals are blocked ;)
+As i have explained multiple times before: This is a generic issue with a
+kernel configuration that has DISCONTIGMEM on and NUMA configured off.
+Core code in various subsystems makes various assumptions in the !NUMA
+case. F.e. page_to_nid(page) == 0. Slub is one of them.
 
-> > Is the loadavg metric broken beyond repair?
-> 
-> No, this is expected behaviour. Uninterruptible sleeps count 
-> as I/O load.
+DISCONTIGMEM works fine on !NUMA if it just has a single node which is 0.
+But in James' hppa we have multiple nodes and thus a fundamental problem
+with node 1 existing in a non NUMA environment. We then have a strange
+mixture of NUMA nodes existing in DISCONTIGMEM code and the core code
+assuming there are none. This can lead to numerous weird problems.
 
-Ah, now we come to the point. Is there any practical reason behind this
-or was it just an igenious invention to annoy those smug userspace
-developers? I don't see any real world I/O load here.
-
-> regards,
-> --
-> js
-
-Cheers
-Dirk
-
+IMHO A config broken for DISCONTIG and !NUMA for arches that can actually
+use multiple DISCONTIG nodes would be the proper thing.
 
