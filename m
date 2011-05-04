@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab1EDQGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:06:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:49202 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab1EDQGO (ORCPT
+	id S1754079Ab1EDQIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:08:40 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:46822 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751610Ab1EDQIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:06:14 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=Not3D1qn5yUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Jm7J0sRII75vpojbQ-YA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is
- and how it works.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Will Drewry <wad@chromium.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1304524465.10692.21.camel@localhost.localdomain>
-References: <1303960136-14298-1-git-send-email-wad@chromium.org>
-	 <1303960136-14298-4-git-send-email-wad@chromium.org>
-	 <20110428070636.GC952@elte.hu>
-	 <1304002571.2101.38.camel@localhost.localdomain>
-	 <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
-	 <20110429131845.GA1768@nowhere>
-	 <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
-	 <20110503012857.GA8399@nowhere>
-	 <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
-	 <1304511396.25414.2422.camel@gandalf.stny.rr.com>
-	 <1304524465.10692.21.camel@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 04 May 2011 12:06:09 -0400
-Message-ID: <1304525169.25414.2427.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 May 2011 12:08:39 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: kzEudxgVM1kPuac1mDoZyb_pWfcNiO55FPaW9dT4AUJE1zZ
+ .tfldAMHSgc2uZ1fZPkJ5L9EvSuSGvs3.snYWdE5uH3Epvc7rUVbMMUvgpRZ
+ X4Q817GmvlzEXIzEjastniygsXJh69tlzHobhpiFlsqzqU8Aqw3ZT0JRCfHE
+ Re2kTfZD.kUTOrVe0.PzmH3VZzECpODffASFrDSlvuLqbFIpwEYqnMrCRd82
+ 4KrvlgI7sOR6jKJ0X7czzU.eqrAtd_2vpP6HIo5zhNszPIqXiUNarXLozvGF
+ i0xoiDY6PQan7tB8U5xejC8zDb0hMYtS.__rU7Q0NqIF90Avn
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 4 May 2011 11:08:35 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+In-Reply-To: <BANLkTi=XDYVyveGR6fh73kiOp=A2eH8b7A@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1105041052390.5495@router.home>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org> <alpine.LFD.2.02.1105041640020.3005@ionos>
+ <alpine.DEB.2.00.1105040958570.5495@router.home> <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home> <BANLkTi=XDYVyveGR6fh73kiOp=A2eH8b7A@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-04 at 11:54 -0400, Eric Paris wrote:
+On Wed, 4 May 2011, Linus Torvalds wrote:
 
-> As this is a deny by default interface which only allows you to further
-> restrict you couldn't add more than 1 syscall if you didn't have an
-> explict 'apply' action.
-> 
-> SECCOMP_FILTER_SET, __NR_fo, "a=0"
-> SECCOMP_FILTER_SET, __NR_read, "1" == EPERM
-> 
-> Maybe apply on set is fine after the first apply, but we definitely need
-> some way to do more than 1 set before the rules are applied....
+> On Wed, May 4, 2011 at 8:28 AM, Christoph Lameter <cl@linux.com> wrote:
+> >
+> > There are no memory barriers used. The barrier() here is a compiler hint
+> > to not keep data across it.
+>
+> Go back and read my email, please.
+>
+> The lack of memory barriers is exactly what I worry about.
+>
+> Look at the initialization path. The "tid" thing is _not_ purely cpu-local.
 
-So we could have SET be 'or' and APPLY be 'and'.
+kmem_cache_create() only hands the pointer to the slab cache back
+after the percpu values have been initialized. In order to do an allocation one
+needs to have the pointer to the slab cache.
 
-SECCOMP_FILTER_SET, __NR_foo, "a=0"
-SECCOMP_FILTER_SET, __NR_read, "1" == EPERM
-SECCOPM_FILTER_APPLY
+You think that accesses to struct kmem_cache_cpu by other cpus could
+require memory barriers? But this is what both SLAB and SLUB already do
+today even before these modification. Nor do we have memory barriers for
+the same situation in the page allocator.
 
-SECCOMP_FILTER_SET, __NR_foo, "b=0"
-SECCOPM_FILTER_APPLY
 
-Will end up being:
-
-(foo: a == 0 || read: "1" == EPERM) && (foo: b == 0)
-
-The second set/apply now removes the read option, and foo only works if
-a is 0 and b is 0.
-
-This would also work for children, as they can only restrict (with
-'and') and can not add more control.
-
--- Steve
 
 
