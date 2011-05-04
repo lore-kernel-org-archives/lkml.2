@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1EDQPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:15:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab1EDQO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:14:59 -0400
-Date: Wed, 4 May 2011 19:14:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 5/8]macvtap: macvtap TX zero-copy support
-Message-ID: <20110504161440.GD15648@redhat.com>
-References: <1304496893.20660.88.camel@localhost.localdomain>
- <20110504145819.GA15648@redhat.com>
- <1304523449.7076.30.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304523449.7076.30.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754320Ab1EDQPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:15:50 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50816 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab1EDQPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 12:15:49 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH] irq: export handle_simple_irq, irq_modify_status, irq_to_desc, irq_alloc_descs and irq_free_descs
+Date: Wed,  4 May 2011 17:18:10 +0100
+Message-Id: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 08:37:29AM -0700, Shirley Ma wrote:
-> On Wed, 2011-05-04 at 17:58 +0300, Michael S. Tsirkin wrote:
-> > On Wed, May 04, 2011 at 01:14:53AM -0700, Shirley Ma wrote:
-> > > Only when buffer size is greater than GOODCOPY_LEN (256), macvtap
-> > > enables zero-copy.
-> > > 
-> > > Signed-off-by: Shirley Ma <xma@us.ibm.com>
-> > 
-> > 
-> > Looks good. Some thoughts below.
-> > 
-> > > ---
-> > > 
-> > >  drivers/net/macvtap.c |  126
-> > ++++++++++++++++++++++++++++++++++++++++++++----
-> > >  1 files changed, 115 insertions(+), 11 deletions(-)
-> > > 
-> > > diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> > > index 6696e56..e8bc5ff 100644
-> > > --- a/drivers/net/macvtap.c
-> > > +++ b/drivers/net/macvtap.c
-> > > @@ -60,6 +60,7 @@ static struct proto macvtap_proto = {
-> > >   */
-> > >  static dev_t macvtap_major;
-> > >  #define MACVTAP_NUM_DEVS 65536
-> > > +#define GOODCOPY_LEN 256
-> > 
-> > Scope with MACVTAP_ please.
-> Ok.
-> 
-> > For small packets, is it better to copy in vhost
-> > and skip all the back and forth with callbacks? If yes, does
-> > it make sense to put the constant above in some header
-> > shared with vhost-net?
-> 
-> skb is created in macvtap, the small packet copy is in skb, so I don't
-> think we can do it in vhost here.
+V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
 
-BTW this is not very important, it might or might not
-result in some speedup. Let's focus on getting it working
-right.
+This is to allow their use in IIO. We have complete control of
+both the irq_chip creation and requesting of irqs so would like
+to be able to build as a module. That requires these exports.
 
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ kernel/irq/chip.c    |    2 ++
+ kernel/irq/irqdesc.c |    3 +++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 4af1e2b..ad409d3 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
+ out_unlock:
+ 	raw_spin_unlock(&desc->lock);
+ }
++EXPORT_SYMBOL_GPL(handle_simple_irq);
+ 
+ /**
+  *	handle_level_irq - Level type irq handler
+@@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+ 
+ 	irq_put_desc_unlock(desc, flags);
+ }
++EXPORT_SYMBOL_GPL(irq_modify_status);
+ 
+ /**
+  *	irq_cpu_online - Invoke all irq_cpu_online functions.
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 2c039c9..5ac14e2 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -110,6 +110,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
+ {
+ 	return radix_tree_lookup(&irq_desc_tree, irq);
+ }
++EXPORT_SYMBOL_GPL(irq_to_desc);
+ 
+ static void delete_irq_desc(unsigned int irq)
+ {
+@@ -311,6 +312,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+ 	bitmap_clear(allocated_irqs, from, cnt);
+ 	mutex_unlock(&sparse_irq_lock);
+ }
++EXPORT_SYMBOL_GPL(irq_free_descs);
+ 
+ /**
+  * irq_alloc_descs - allocate and initialize a range of irq descriptors
+@@ -351,6 +353,7 @@ err:
+ 	mutex_unlock(&sparse_irq_lock);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(irq_alloc_descs);
+ 
+ /**
+  * irq_reserve_irqs - mark irqs allocated
 -- 
-MST
+1.7.3.4
+
