@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1EDWb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 18:31:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62953 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab1EDWbz (ORCPT
+	id S1756166Ab1EDWek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 18:34:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46637 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab1EDWej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 18:31:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=VRXmD3Jbnw57sVqTUW40vG+IbzJ7jAt44W1pHOj1AaDrOp6u6K+/GdYcKttdG7QVp3
-         YT2zqWJmHbcvzGGeNE6XR4T9IYcRgPED5hyPWGRQy78iT60a4WeEPyKZb2ThYRHoZiNY
-         xgijmXSOqggS5rDWzxUPh0OAzxL55M4r9yxeM=
+	Wed, 4 May 2011 18:34:39 -0400
+Date: Thu, 5 May 2011 00:34:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Dave Kleikamp <dkleikamp@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, paulmck@us.ibm.com
+Subject: Re: idle issues running sembench on 128 cpus
+In-Reply-To: <m2pqnyyva8.fsf@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1105050023070.3005@ionos>
+References: <4DC1C95B.4040706@gmail.com> <m2pqnyyva8.fsf@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-From: Mansour Moufid <mansourmoufid@gmail.com>
-Date: Wed, 4 May 2011 18:31:34 -0400
-Message-ID: <BANLkTikp9ZV4w1E8NNsGBkftGh=jRDx5fw@mail.gmail.com>
-Subject: [PATCH] netfilter: nf_conntrack_ftp: prevent integer overflows in get_port()
-To: kaber@trash.net
-Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mansour Moufid <mansourmoufid@gmail.com>
+On Wed, 4 May 2011, Andi Kleen wrote:
+> Dave Kleikamp <dkleikamp@gmail.com> writes:
+> > I also don't know if it makes sense to be able to tune the cpuidle
+> > governors to add more resistance to enter the C3 state, or even being
+> > able to switch to a performance governor at runtime, similar to
+> > cpufreq.
+> >
+> > I'd like to hear your thoughts before I dive any deeper into this.
+> 
+> It's fixed on Westmere. There the APIC timer will always tick
+> and all that logic is not needed anymore and disabled.
+> 
+> That is mostly fixed. One problem right now is that the
+> CLOCK_EVT_FEAT_C3STOP test is inside the lock. But we
+> can easily move it out, assuming the clock_event_device
+> gets RCU freed or has a reference count.
 
-This patch prevents potential integer overflows from occurring in the
-port number parsing function `get_port', in the file
-net/netfilter/nf_conntrack_ftp.c; related constants are defined in
-include/linux/kernel.h. This applies to stable version 2.6.38.5.
+No, it does not even need refcounting. We can access it outside of the
+lock as this is atomic context called on the cpu which is about to go
+idle and therefor the device cannot go away. Easy and straightforward
+fix.
+ 
+> But yes it would be still good to fix Nehalem too.
+> 
+> One fix would be to make all the masks hierarchical,
+> similar to what RCU does. Perhaps even some code 
+> could be shared with RCU on that because it's a very
+> similar problem.
 
-The concern is a firewall could be made to open an otherwise closed
-port. For example, get_port("65558?", 0, 6, '?', foo) currently
-returns 22 in *foo.
+In theory. It's not about the mask. The mask is uninteresting. It's
+about the expiry time, which we have to protect. There is nothing
+hierarchical about that. It all boils down on _ONE_ single functional
+device and you don't want to miss out your deadline just because you
+decided to be extra clever. RCU does not care much whether you run the
+callbacks a tick later on not. Time and timekeeping does.
 
-Signed-off-by: Mansour Moufid <mansourmoufid@gmail.com>
----
-diff -uprN -X linux-2.6.38.5-vanilla/Documentation/dontdiff
-linux-2.6.38.5-vanilla/include/linux/kernel.h
-linux-2.6.38.5/include/linux/kernel.h
---- linux-2.6.38.5-vanilla/include/linux/kernel.h	2011-05-04
-17:48:40.619103335 -0400
-+++ linux-2.6.38.5/include/linux/kernel.h	2011-05-04 18:09:12.183411601 -0400
-@@ -34,6 +34,8 @@
- #define LLONG_MAX	((long long)(~0ULL>>1))
- #define LLONG_MIN	(-LLONG_MAX - 1)
- #define ULLONG_MAX	(~0ULL)
-+#define SIZE_MAX	(~((size_t)0))
-+#define UINT16_MAX	(~((u_int16_t)0))
+Thanks,
 
- #define STACK_MAGIC	0xdeadbeef
-
-diff -uprN -X linux-2.6.38.5-vanilla/Documentation/dontdiff
-linux-2.6.38.5-vanilla/net/netfilter/nf_conntrack_ftp.c
-linux-2.6.38.5/net/netfilter/nf_conntrack_ftp.c
---- linux-2.6.38.5-vanilla/net/netfilter/nf_conntrack_ftp.c	2011-05-04
-17:14:11.533008253 -0400
-+++ linux-2.6.38.5/net/netfilter/nf_conntrack_ftp.c	2011-05-04
-18:09:38.863070568 -0400
-@@ -9,6 +9,7 @@
-  * published by the Free Software Foundation.
-  */
-
-+#include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/netfilter.h>
-@@ -162,11 +163,16 @@ static int try_rfc959(const char *data,
- }
-
- /* Grab port: number up to delimiter */
--static int get_port(const char *data, int start, size_t dlen, char delim,
-+static int get_port(const char *data, size_t start, size_t dlen, char delim,
- 		    __be16 *port)
- {
- 	u_int16_t tmp_port = 0;
--	int i;
-+	size_t i;
-+
-+	if (start > SIZE_MAX - dlen) {
-+		pr_debug("get_port: invalid parameters\n");
-+		return 0;
-+	}
-
- 	for (i = start; i < dlen; i++) {
- 		/* Finished? */
-@@ -176,14 +182,18 @@ static int get_port(const char *data, in
- 			*port = htons(tmp_port);
- 			pr_debug("get_port: return %d\n", tmp_port);
- 			return i + 1;
--		}
--		else if (data[i] >= '0' && data[i] <= '9')
--			tmp_port = tmp_port*10 + data[i] - '0';
--		else { /* Some other crap */
-+		} else if (data[i] >= '0' && data[i] <= '9') {
-+			if (tmp_port > (UINT16_MAX - (data[i] - '0')) / 10) {
-+				pr_debug("get_port: integer overflow\n");
-+				break;
-+			}
-+			tmp_port = tmp_port * 10 + data[i] - '0';
-+		} else { /* Some other crap */
- 			pr_debug("get_port: invalid char.\n");
- 			break;
- 		}
- 	}
-+
- 	return 0;
- }
+	tglx
