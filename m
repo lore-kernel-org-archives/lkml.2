@@ -1,262 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab1EDO6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:58:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab1EDO6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:58:40 -0400
-Date: Wed, 4 May 2011 17:58:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 5/8]macvtap: macvtap TX zero-copy support
-Message-ID: <20110504145819.GA15648@redhat.com>
-References: <1304496893.20660.88.camel@localhost.localdomain>
+	id S1754582Ab1EDPAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 11:00:06 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:53417 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab1EDPAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 11:00:04 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68k/atari: Do not use "/" in interrupt names
+References: <alpine.DEB.2.00.1105041629390.2629@ayla.of.borg>
+X-Yow: I've got to get these SNACK CAKES to NEWARK by DAWN!!
+Date: Wed, 04 May 2011 17:00:00 +0200
+In-Reply-To: <alpine.DEB.2.00.1105041629390.2629@ayla.of.borg> (Geert
+	Uytterhoeven's message of "Wed, 4 May 2011 16:30:03 +0200 (CEST)")
+Message-ID: <m3d3jybjf3.fsf@linux-m68k.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304496893.20660.88.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 01:14:53AM -0700, Shirley Ma wrote:
-> Only when buffer size is greater than GOODCOPY_LEN (256), macvtap
-> enables zero-copy.
-> 
-> Signed-off-by: Shirley Ma <xma@us.ibm.com>
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-
-Looks good. Some thoughts below.
-
-> ---
-> 
->  drivers/net/macvtap.c |  126 ++++++++++++++++++++++++++++++++++++++++++++----
->  1 files changed, 115 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 6696e56..e8bc5ff 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -60,6 +60,7 @@ static struct proto macvtap_proto = {
->   */
->  static dev_t macvtap_major;
->  #define MACVTAP_NUM_DEVS 65536
-> +#define GOODCOPY_LEN 256
-
-Scope with MACVTAP_ please.
-
-For small packets, is it better to copy in vhost
-and skip all the back and forth with callbacks? If yes, does
-it make sense to put the constant above in some header
-shared with vhost-net?
-
->  static struct class *macvtap_class;
->  static struct cdev macvtap_cdev;
+> diff --git a/arch/m68k/atari/atakeyb.c b/arch/m68k/atari/atakeyb.c
+> index e1ada31..779efdc 100644
+> --- a/arch/m68k/atari/atakeyb.c
+> +++ b/arch/m68k/atari/atakeyb.c
+> @@ -572,7 +572,7 @@ int atari_keyb_init(void)
+>  	kb_state.len = 0;
 >  
-> @@ -340,6 +341,7 @@ static int macvtap_open(struct inode *inode, struct file *file)
+>  	error = request_irq(IRQ_MFP_ACIA, atari_keyboard_interrupt,
+> -			    IRQ_TYPE_SLOW, "keyboard/mouse/MIDI",
+> +			    IRQ_TYPE_SLOW, "keyboard:mouse:MIDI",
+
+The name is not a path, but an enumeration, so the slash should probably
+be changed to a comma instead.
+
+> diff --git a/arch/m68k/atari/stdma.c b/arch/m68k/atari/stdma.c
+> index 604329f..ad68fe9 100644
+> --- a/arch/m68k/atari/stdma.c
+> +++ b/arch/m68k/atari/stdma.c
+> @@ -180,7 +180,7 @@ void __init stdma_init(void)
 >  {
->  	struct net *net = current->nsproxy->net_ns;
->  	struct net_device *dev = dev_get_by_index(net, iminor(inode));
-> +	struct macvlan_dev *vlan = netdev_priv(dev);
->  	struct macvtap_queue *q;
->  	int err;
->  
-> @@ -369,6 +371,16 @@ static int macvtap_open(struct inode *inode, struct file *file)
->  	q->flags = IFF_VNET_HDR | IFF_NO_PI | IFF_TAP;
->  	q->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
->  
-> +	/*
-> +	 * so far only VM uses macvtap, enable zero copy between guest
-> +	 * kernel and host kernel when lower device supports high memory
-> +	 * DMA
-> +	 */
-> +	if (vlan) {
-> +		if (vlan->lowerdev->features & NETIF_F_ZEROCOPY)
-> +			sock_set_flag(&q->sk, SOCK_ZEROCOPY);
-> +	}
-> +
->  	err = macvtap_set_queue(dev, file, q);
->  	if (err)
->  		sock_put(&q->sk);
-> @@ -433,6 +445,80 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
->  	return skb;
->  }
->  
-> +/* set skb frags from iovec, this can move to core network code for reuse */
-> +static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
-> +				  int offset, size_t count)
-> +{
-> +	int len = iov_length(from, count) - offset;
-> +	int copy = skb_headlen(skb);
-> +	int size, offset1 = 0;
-> +	int i = 0;
-> +	skb_frag_t *f;
-> +
-> +	/* Skip over from offset */
-> +	while (offset >= from->iov_len) {
-> +		offset -= from->iov_len;
-> +		++from;
-> +		--count;
-> +	}
-> +
-> +	/* copy up to skb headlen */
-> +	while (copy > 0) {
-> +		size = min_t(unsigned int, copy, from->iov_len - offset);
-> +		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
-> +				   size))
-> +			return -EFAULT;
-> +		if (copy > size) {
-> +			++from;
-> +			--count;
-> +		}
-> +		copy -= size;
-> +		offset1 += size;
-> +		offset = 0;
-> +	}
-> +
-> +	if (len == offset1)
-> +		return 0;
-> +
-> +	while (count--) {
-> +		struct page *page[MAX_SKB_FRAGS];
-> +		int num_pages;
-> +		unsigned long base;
-> +
-> +		len = from->iov_len - offset1;
-> +		if (!len) {
-> +			offset1 = 0;
-> +			++from;
-> +			continue;
-> +		}
-> +		base = (unsigned long)from->iov_base + offset1;
-> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-> +		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
-> +		if ((num_pages != size) ||
-> +		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
-> +			/* put_page is in skb free */
-> +			return -EFAULT;
-> +		skb->data_len += len;
-> +		skb->len += len;
-> +		skb->truesize += len;
-> +		while (len) {
-> +			f = &skb_shinfo(skb)->frags[i];
-> +			f->page = page[i];
-> +			f->page_offset = base & ~PAGE_MASK;
-> +			f->size = min_t(int, len, PAGE_SIZE - f->page_offset);
-> +			skb_shinfo(skb)->nr_frags++;
-> +			/* increase sk_wmem_alloc */
-> +			atomic_add(f->size, &skb->sk->sk_wmem_alloc);
+>  	stdma_isr = NULL;
+>  	if (request_irq(IRQ_MFP_FDC, stdma_int, IRQ_TYPE_SLOW | IRQF_SHARED,
+> -			"ST-DMA: floppy/ACSI/IDE/Falcon-SCSI", stdma_int))
+> +			"ST-DMA floppy:ACSI:IDE:Falcon-SCSI", stdma_int))
 
-One thing that gave me pause that we only accound for part of the page
-here. I think we should count the whole page, no?
+Likewise.
 
-> +			base += f->size;
-> +			len -= f->size;
-> +			i++;
-> +		}
-> +		offset1 = 0;
-> +		++from;
-> +	}
-> +	return 0;
-> +}
-> +
->  /*
->   * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
->   * be shared with the tun/tap driver.
-> @@ -515,17 +601,19 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
->  
->  
->  /* Get packet from user space buffer */
-> -static ssize_t macvtap_get_user(struct macvtap_queue *q,
-> -				const struct iovec *iv, size_t count,
-> -				int noblock)
-> +static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-> +				const struct iovec *iv, unsigned long total_len,
-> +				size_t count, int noblock)
->  {
->  	struct sk_buff *skb;
->  	struct macvlan_dev *vlan;
-> -	size_t len = count;
-> +	unsigned long len = total_len;
->  	int err;
->  	struct virtio_net_hdr vnet_hdr = { 0 };
->  	int vnet_hdr_len = 0;
-> +	int copylen, zerocopy;
->  
-> +	zerocopy = sock_flag(&q->sk, SOCK_ZEROCOPY) && (len > GOODCOPY_LEN);
->  	if (q->flags & IFF_VNET_HDR) {
->  		vnet_hdr_len = q->vnet_hdr_sz;
->  
-> @@ -552,12 +640,28 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
->  	if (unlikely(len < ETH_HLEN))
->  		goto err;
->  
-> -	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, len, vnet_hdr.hdr_len,
-> -				noblock, &err);
-> +	if (zerocopy)
-> +		/* There are 256 bytes to be copied in skb, so there is enough
-> +		 * room for skb expand head in case it is used.
-> +		 * The rest buffer is mapped from userspace.
-> +		 */
-> +		copylen = GOODCOPY_LEN;
+> diff --git a/drivers/net/atarilance.c b/drivers/net/atarilance.c
+> index ce0091e..1833b12 100644
+> --- a/drivers/net/atarilance.c
+> +++ b/drivers/net/atarilance.c
+> @@ -554,7 +554,7 @@ static unsigned long __init lance_probe1( struct net_device *dev,
+>  		memaddr == (unsigned short *)0xffe00000) {
+>  		/* PAMs card and Riebl on ST use level 5 autovector */
+>  		if (request_irq(IRQ_AUTO_5, lance_interrupt, IRQ_TYPE_PRIO,
+> -		            "PAM/Riebl-ST Ethernet", dev)) {
+> +		            "PAM:Riebl-ST Ethernet", dev)) {
 
-Just curious: where does the number 256 come from?
-Also, as long as we are copying, should we care about
-alignment?
+Likewise.
 
-> +	else
-> +		copylen = len;
-> +
-> +	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
-> +				vnet_hdr.hdr_len, noblock, &err);
->  	if (!skb)
->  		goto err;
->  
-> -	err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len, len);
-> +	if (zerocopy)
-> +		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
-> +	else
-> +		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
-> +						   len);
-> +	if (sock_flag(&q->sk, SOCK_ZEROCOPY))
-> +		memcpy(&skb_shinfo(skb)->ubuf, m->msg_control,
-> +			sizeof(struct skb_ubuf_info));
->  	if (err)
->  		goto err_kfree;
->  
-> @@ -579,7 +683,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
->  		kfree_skb(skb);
->  	rcu_read_unlock_bh();
->  
-> -	return count;
-> +	return total_len;
->  
->  err_kfree:
->  	kfree_skb(skb);
-> @@ -601,8 +705,8 @@ static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
->  	ssize_t result = -ENOLINK;
->  	struct macvtap_queue *q = file->private_data;
->  
-> -	result = macvtap_get_user(q, iv, iov_length(iv, count),
-> -			      file->f_flags & O_NONBLOCK);
-> +	result = macvtap_get_user(q, NULL, iv, iov_length(iv, count), count,
-> +				  file->f_flags & O_NONBLOCK);
->  	return result;
->  }
->  
-> @@ -815,7 +919,7 @@ static int macvtap_sendmsg(struct kiocb *iocb, struct socket *sock,
->  			   struct msghdr *m, size_t total_len)
->  {
->  	struct macvtap_queue *q = container_of(sock, struct macvtap_queue, sock);
-> -	return macvtap_get_user(q, m->msg_iov, total_len,
-> +	return macvtap_get_user(q, m, m->msg_iov, total_len, m->msg_iovlen,
->  			    m->msg_flags & MSG_DONTWAIT);
->  }
->  
-> 
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
