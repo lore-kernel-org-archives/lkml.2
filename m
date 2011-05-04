@@ -1,238 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab1EDX4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 19:56:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43252 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab1EDX4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 19:56:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZFRj3pL/+3/crVFeyxwBe5KEB3jtfxOIEZxP8GHT8T5EuktdTnCIzxex4SbuOIf4Os
-         RboxBCKBtpB0yP/AgGXOhdIOdJlc3VOJN4ixM3kw7nS4O94qku41vcwLfCLTpp/f5xNL
-         1N5J4koTBVRrNULmLpockeFfbAMoz5M6Adk7Q=
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: gregkh@suse.de, rdunlap@xenotime.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH-v6 2/2] Documentation:remove the driver-model structures from the docs
-Date: Thu,  5 May 2011 07:55:37 +0800
-Message-Id: <1304553337-2485-3-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1304553337-2485-1-git-send-email-wanlong.gao@gmail.com>
-References: <1304553337-2485-1-git-send-email-wanlong.gao@gmail.com>
+	id S1756262Ab1EDX5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 19:57:13 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:57888 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756152Ab1EDX5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 19:57:11 -0400
+Date: Wed, 4 May 2011 16:57:06 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jeff Layton <jlayton@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v3 0/3] data integrity: Stabilize pages during
+	writeback for ext4
+Message-ID: <20110504235706.GJ20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com> <20110504173704.GE20579@tux1.beaverton.ibm.com> <20110504184644.GA23246@infradead.org> <1304536162-sup-3721@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304536162-sup-3721@think>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <wanlong.gao@gmail.com>
+On Wed, May 04, 2011 at 03:21:55PM -0400, Chris Mason wrote:
+> Excerpts from Christoph Hellwig's message of 2011-05-04 14:46:44 -0400:
+> > This seems to miss out on a lot of the generic functionality like
+> > write_cache_pages and block_page_mkwrite and just patch it into
+> > the ext4 copy & paste variants.  Please make sure your patches also
+> > work for filesystem that use more of the generic functionality like
+> > xfs or ext2 (the latter one might be fun for the mmap case).
+> 
+> Probably after the block_commit_write in block_page_mkwrite()
+> Another question is, do we want to introduce a wait_on_stable_page_writeback()?
 
+Something like this here?  It fixes block_page_mkwrite users and sticks in a
+simple page_mkwrite for fses that don't provide one at all.  From a quick wac
+run it seems to make xfs work.  ext2 seems to have some issues with modifying a
+buffer_head's bh_data without locking the bh during the update, so I guess it
+needs some review.
 
-Remove the struct bus_type, class, device, device_driver from the
-driver-model docs. With another patch add them to device.h, since
-they are out of date. That will keep things up to date and provide
-a better way to document this stuff.
+--D
 
+--
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+fs: Modify/provide generic writepage/page_mkwrite functions to wait for writeback
+
+Modify the generic writepage function, and add an empty page_mkwrite function,
+to wait for page writeback to finish before allowing writes.  This is so that
+simple filesystems have stable pages during write operations.
+
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- Documentation/driver-model/bus.txt    |   19 +-------
- Documentation/driver-model/class.txt  |   17 +------
- Documentation/driver-model/device.txt |   91 +--------------------------------
- Documentation/driver-model/driver.txt |   18 +------
- 4 files changed, 4 insertions(+), 141 deletions(-)
 
-diff --git a/Documentation/driver-model/bus.txt b/Documentation/driver-model/bus.txt
-index 5001b75..6754b2d 100644
---- a/Documentation/driver-model/bus.txt
-+++ b/Documentation/driver-model/bus.txt
-@@ -3,24 +3,7 @@ Bus Types
- 
- Definition
- ~~~~~~~~~~
--
--struct bus_type {
--	char			* name;
--
--	struct subsystem	subsys;
--	struct kset		drivers;
--	struct kset		devices;
--
--	struct bus_attribute	* bus_attrs;
--	struct device_attribute	* dev_attrs;
--	struct driver_attribute	* drv_attrs;
--
--	int		(*match)(struct device * dev, struct device_driver * drv);
--	int		(*hotplug) (struct device *dev, char **envp, 
--				    int num_envp, char *buffer, int buffer_size);
--	int		(*suspend)(struct device * dev, pm_message_t state);
--	int		(*resume)(struct device * dev);
--};
-+See the kerneldoc for the struct bus_type.
- 
- int bus_register(struct bus_type * bus);
- 
-diff --git a/Documentation/driver-model/class.txt b/Documentation/driver-model/class.txt
-index 548505f..1fefc48 100644
---- a/Documentation/driver-model/class.txt
-+++ b/Documentation/driver-model/class.txt
-@@ -27,22 +27,7 @@ The device class structure looks like:
- typedef int (*devclass_add)(struct device *);
- typedef void (*devclass_remove)(struct device *);
- 
--struct device_class {
--	char			* name;
--	rwlock_t		lock;
--	u32			devnum;
--	struct list_head	node;
--
--	struct list_head	drivers;
--	struct list_head	intf_list;
--
--	struct driver_dir_entry	dir;
--	struct driver_dir_entry	device_dir;
--	struct driver_dir_entry	driver_dir;
--
--	devclass_add		add_device;
--	devclass_remove		remove_device;
--};
-+See the kerneldoc for the struct class.
- 
- A typical device class definition would look like: 
- 
-diff --git a/Documentation/driver-model/device.txt b/Documentation/driver-model/device.txt
-index a124f31..b2ff426 100644
---- a/Documentation/driver-model/device.txt
-+++ b/Documentation/driver-model/device.txt
-@@ -2,96 +2,7 @@
- The Basic Device Structure
- ~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
--struct device {
--        struct list_head g_list;
--        struct list_head node;
--        struct list_head bus_list;
--        struct list_head driver_list;
--        struct list_head intf_list;
--        struct list_head children;
--        struct device   * parent;
--
--        char    name[DEVICE_NAME_SIZE];
--        char    bus_id[BUS_ID_SIZE];
--
--        spinlock_t      lock;
--        atomic_t        refcount;
--
--        struct bus_type * bus;
--        struct driver_dir_entry dir;
--
--	u32		class_num;
--
--        struct device_driver *driver;
--        void            *driver_data;
--        void            *platform_data;
--
--        u32             current_state;
--        unsigned char *saved_state;
--
--        void    (*release)(struct device * dev);
--};
--
--Fields 
--~~~~~~
--g_list:	Node in the global device list.
--
--node:	Node in device's parent's children list.
--
--bus_list: Node in device's bus's devices list.
--
--driver_list:   Node in device's driver's devices list.
--
--intf_list:     List of intf_data. There is one structure allocated for
--	       each interface that the device supports.
--
--children:      List of child devices.
--
--parent:        *** FIXME ***
--
--name:	       ASCII description of device. 
--	       Example: " 3Com Corporation 3c905 100BaseTX [Boomerang]"
--
--bus_id:	       ASCII representation of device's bus position. This 
--	       field should be a name unique across all devices on the
--	       bus type the device belongs to. 
--
--	       Example: PCI bus_ids are in the form of
--	       <bus number>:<slot number>.<function number> 
--	       This name is unique across all PCI devices in the system.
--
--lock:	       Spinlock for the device. 
--
--refcount:      Reference count on the device.
--
--bus:	       Pointer to struct bus_type that device belongs to.
--
--dir:	       Device's sysfs directory.
--
--class_num:     Class-enumerated value of the device.
--
--driver:	       Pointer to struct device_driver that controls the device.
--
--driver_data:   Driver-specific data.
--
--platform_data: Platform data specific to the device.
--
--	       Example:  for devices on custom boards, as typical of embedded
--	       and SOC based hardware, Linux often uses platform_data to point
--	       to board-specific structures describing devices and how they
--	       are wired.  That can include what ports are available, chip
--	       variants, which GPIO pins act in what additional roles, and so
--	       on.  This shrinks the "Board Support Packages" (BSPs) and
--	       minimizes board-specific #ifdefs in drivers.
--
--current_state: Current power state of the device.
--
--saved_state:   Pointer to saved state of the device. This is usable by
--	       the device driver controlling the device.
--
--release:       Callback to free the device after all references have 
--	       gone away. This should be set by the allocator of the 
--	       device (i.e. the bus driver that discovered the device).
-+See the kerneldoc for the struct device.
- 
- 
- Programming Interface
-diff --git a/Documentation/driver-model/driver.txt b/Documentation/driver-model/driver.txt
-index d2cd6fb..4421135 100644
---- a/Documentation/driver-model/driver.txt
-+++ b/Documentation/driver-model/driver.txt
-@@ -1,23 +1,7 @@
- 
- Device Drivers
- 
--struct device_driver {
--        char                    * name;
--        struct bus_type         * bus;
--
--        struct completion	unloaded;
--        struct kobject		kobj;
--        list_t                  devices;
--
--        struct module		*owner;
--
--        int     (*probe)        (struct device * dev);
--        int     (*remove)       (struct device * dev);
--
--        int     (*suspend)      (struct device * dev, pm_message_t state);
--        int     (*resume)       (struct device * dev);
--};
--
-+See the kerneldoc for the struct device_driver.
- 
- 
- Allocation
--- 
-1.7.4.1
+ fs/buffer.c  |    1 +
+ mm/filemap.c |   10 ++++++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
+diff --git a/fs/buffer.c b/fs/buffer.c
+index a08bb8e..cf9a795 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2361,6 +2361,7 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	if (!ret)
+ 		ret = block_commit_write(page, 0, end);
+ 
++	wait_on_page_writeback(page);
+ 	if (unlikely(ret)) {
+ 		unlock_page(page);
+ 		if (ret == -ENOMEM)
+diff --git a/mm/filemap.c b/mm/filemap.c
+index c22675f..9cb4e51 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1713,8 +1713,18 @@ page_not_uptodate:
+ }
+ EXPORT_SYMBOL(filemap_fault);
+ 
++static int empty_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct page *page = vmf->page;
++
++	lock_page(page);
++	wait_on_page_writeback(page);
++	return VM_FAULT_LOCKED;
++}
++
+ const struct vm_operations_struct generic_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.page_mkwrite	= empty_page_mkwrite,
+ };
+ 
+ /* This is used for a general mmap of a disk file */
+--
+
+Here's the beginning of a patch against ext2 also.  It fixes most of the
+checksum errors when metadata writes are in progress, though I suspect there
+are more spots that I haven't caught yet.
+
+--
+
+ext2: Lock buffer_heads during metadata update
+
+ext2 does not protect buffer head that represent metadata against modifications
+during write operations.  This is a problem if the memory buffer needs to be
+stable during writes; I think there are a few more spots in ext2 that need this
+treatment. :)
+
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
+
+ fs/ext2/inode.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 788e09a..5314b0b 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -1426,6 +1426,7 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
+ 	if (IS_ERR(raw_inode))
+  		return -EIO;
+ 
++	lock_buffer(bh);
+ 	/* For fields not not tracking in the in-memory inode,
+ 	 * initialise them to zero for new inodes. */
+ 	if (ei->i_state & EXT2_STATE_NEW)
+@@ -1502,6 +1503,8 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
+ 		}
+ 	} else for (n = 0; n < EXT2_N_BLOCKS; n++)
+ 		raw_inode->i_block[n] = ei->i_data[n];
++	unlock_buffer(bh);
++
+ 	mark_buffer_dirty(bh);
+ 	if (do_sync) {
+ 		sync_dirty_buffer(bh);
