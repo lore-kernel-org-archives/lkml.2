@@ -1,121 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1EDAGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 20:06:20 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:35327 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab1EDAGT (ORCPT
+	id S1754888Ab1EDANe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 20:13:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55348 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab1EDANc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 20:06:19 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=PlpN7Q/yuq79ajdsD8p3OHbG6dBM1cGY6c7NHCTSHwLlcJv/7QaSlYO296Ib/cS10
-	NpSsx+r2tVo/jZxYZl8lQ==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Check for waiting readers before calling wakeup()
-Date: Tue,  3 May 2011 17:05:20 -0700
-Message-Id: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Tue, 3 May 2011 20:13:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nJYEXyiUQWtOhiECWy+Vsgjce5klWtGtABNBhi2MZgFHgHwgeB9FjG8XuPwBjTs5rD
+         m4+355mHnnefM58MMfHgMTZ5hRkRxyLHybuDtKljeauPJBNuDJ9/37x+G8CgjI/MKmY+
+         Da7gTe3jekyxN+bGXPvNrn2afRGdv4yqBoSRQ=
+Date: Wed, 4 May 2011 02:13:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
+Message-ID: <20110504001327.GJ2678@nowhere>
+References: <1303923602-2923-4-git-send-email-fweisbec@gmail.com>
+ <4DB854AA.6070101@zytor.com>
+ <20110427182633.GB1753@nowhere>
+ <008d59a3-bd23-4cb3-8a73-1640137e3ac4@email.android.com>
+ <20110427195004.GA3654@nowhere>
+ <4DC020D9.3050000@zytor.com>
+ <20110503231241.GG2678@nowhere>
+ <4DC0925E.20507@zytor.com>
+ <20110503235434.GI2678@nowhere>
+ <4DC09613.7030201@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DC09613.7030201@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In using syscall tracing by concurrent processes, the wakeup() that is
-called in the event commit function causes contention on the spin lock
-of the waitqueue. I enabled sys_enter_getuid and sys_exit_getuid
-tracepoints, and by running getuid_microbench from autotest in parallel
-I found that the contention causes exponential latency increase in the
-tracing path.
+On Tue, May 03, 2011 at 04:56:03PM -0700, H. Peter Anvin wrote:
+> On 05/03/2011 04:54 PM, Frederic Weisbecker wrote:
+> > On Tue, May 03, 2011 at 04:40:14PM -0700, H. Peter Anvin wrote:
+> >> On 05/03/2011 04:12 PM, Frederic Weisbecker wrote:
+> >>>>
+> >>>> It really is very bad... without breakpoints, you lose almost all
+> >>>> debugging support.
+> >>>
+> >>> Right, so it should be fine for embedded environment to disable breakpoints.
+> >>> It depends on CONFIG_EXPERT now.
+> >>
+> >> Uh... even embedded environments need to be able to debug.
+> > 
+> > For development yeah, but is it needed for production evironments?
+> > 
+> 
+> Most of the time people don't want to debug something other than they're
+> going to ship.
 
-The autotest binary getuid_microbench calls getuid() in a tight loop for
-the given number of iterations and measures the average time required to
-complete a single invocation of syscall.
 
-The patch checks if there are any readers waiting in the waitqueue
-before the queue is locked. This reduces any contention and the
-latencies associated with it when there are no readers in the queue.
+Well, it's like systems that don't care about having BUG(), sysctl, futexes, etc...
+support in the kernel, or whatever standard feature that makes sense most of the time
+but sometimes you simply don't need it.
 
-In the following example, the script enables the sys_enter_getuid and
-sys_exit_getuid tracepoints and runs the getuid_microbench in parallel
-with the given number of processes. The output clearly shows the latency
-increase caused by contentions.
-
-$ ~/getuid.sh 1
-1000000 calls in 0.720974253 s (720.974253 ns/call)
-
-$ ~/getuid.sh 2
-1000000 calls in 1.166457554 s (1166.457554 ns/call)
-1000000 calls in 1.168933765 s (1168.933765 ns/call)
-
-$ ~/getuid.sh 3
-1000000 calls in 1.783827516 s (1783.827516 ns/call)
-1000000 calls in 1.795553270 s (1795.553270 ns/call)
-1000000 calls in 1.796493376 s (1796.493376 ns/call)
-
-$ ~/getuid.sh 4
-1000000 calls in 4.483041796 s (4483.041796 ns/call)
-1000000 calls in 4.484165388 s (4484.165388 ns/call)
-1000000 calls in 4.484850762 s (4484.850762 ns/call)
-1000000 calls in 4.485643576 s (4485.643576 ns/call)
-
-$ ~/getuid.sh 5
-1000000 calls in 6.497521653 s (6497.521653 ns/call)
-1000000 calls in 6.502000236 s (6502.000236 ns/call)
-1000000 calls in 6.501709115 s (6501.709115 ns/call)
-1000000 calls in 6.502124100 s (6502.124100 ns/call)
-1000000 calls in 6.502936358 s (6502.936358 ns/call)
-
-After the patch, the latencies scale well and are exactly as expected.
-$ ~/getuid.sh 1
-1000000 calls in 0.626811320 s (626.811320 ns/call)
-
-$ ~/getuid.sh 2
-1000000 calls in 0.616566144 s (616.566144 ns/call)
-1000000 calls in 0.622712754 s (622.712754 ns/call)
-
-$ ~/getuid.sh 3
-1000000 calls in 0.602886676 s (602.886676 ns/call)
-1000000 calls in 0.612168691 s (612.168691 ns/call)
-1000000 calls in 0.623516009 s (623.516009 ns/call)
-
-$ ~/getuid.sh 4
-1000000 calls in 0.614037455 s (614.037455 ns/call)
-1000000 calls in 0.615070842 s (615.070842 ns/call)
-1000000 calls in 0.615051941 s (615.051941 ns/call)
-1000000 calls in 0.621556902 s (621.556902 ns/call)
-
-$ ~/getuid.sh 5
-1000000 calls in 0.605297117 s (605.297117 ns/call)
-1000000 calls in 0.609545095 s (609.545095 ns/call)
-1000000 calls in 0.610305369 s (610.305369 ns/call)
-1000000 calls in 0.614056014 s (614.056014 ns/call)
-1000000 calls in 0.622048279 s (622.048279 ns/call)
-
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/trace/trace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 06f4458..e03ee24 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -353,7 +353,7 @@ void trace_wake_up(void)
- {
- 	int cpu;
- 
--	if (trace_flags & TRACE_ITER_BLOCK)
-+	if (trace_flags & TRACE_ITER_BLOCK || !waitqueue_active(&trace_wait))
- 		return;
- 	/*
- 	 * The runqueue_is_locked() can fail, but this is the best we
--- 
-1.7.3.1
-
+Also consider that as a first step to be able to build a !CONFIG_PERF_EVENTS
+kernel. If people show strong interest in beeing able to build a kernel
+with breakpoints but without perf events, then I'll invest more efforts in
+breaking the dependency.
