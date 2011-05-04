@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab1EDWGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 18:06:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44198 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752791Ab1EDWGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 18:06:11 -0400
-Date: Wed, 4 May 2011 15:05:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@google.com>
-Subject: Re: [PATCH] hung_task_timeout: configurable default
-Message-Id: <20110504150557.a7f4bf73.akpm@linux-foundation.org>
-In-Reply-To: <4DB8600C.8080000@suse.com>
-References: <4DB8600C.8080000@suse.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755922Ab1EDWH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 18:07:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38816 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753818Ab1EDWHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 18:07:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,316,1301900400"; 
+   d="scan'208";a="638069858"
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Kleikamp <dkleikamp@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, paulmck@us.ibm.com
+Subject: Re: idle issues running sembench on 128 cpus
+References: <4DC1C95B.4040706@gmail.com>
+Date: Wed, 04 May 2011 15:07:27 -0700
+In-Reply-To: <4DC1C95B.4040706@gmail.com> (Dave Kleikamp's message of "Wed, 04
+	May 2011 16:47:07 -0500")
+Message-ID: <m2pqnyyva8.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 14:27:24 -0400
-Jeff Mahoney <jeffm@suse.com> wrote:
+Dave Kleikamp <dkleikamp@gmail.com> writes:
+>
+> I am able to avoid this problem with either kernel parameter,
+> "idle=mwait" or "processor.max_cstate=1". Similarly, defining
+> CONFIG_INTEL_IDLE=y and using the kernel parameter
+> intel_idle.max_cstate=1 exposes a different spinlock, pm_qos_lock, but
+> I found this patch which fixes that contention:
+> https://lists.linux-foundation.org/pipermail/linux-pm/2011-February/030266.html
+> https://patchwork.kernel.org/patch/550721/
 
->  This patch allows the default value for sysctl_hung_task_timeout_secs
->  to be set at build time. The feature carries virtually no overhead,
->  so it makes sense to keep it enabled. On heavily loaded systems, though,
->  it can end up triggering stack traces when there is no bug other than
->  the system being underprovisioned. We use this patch to keep the hung task
->  facility available but disabled at boot-time.
-> 
->  The default of 120 seconds is preserved. As a note, commit e162b39a may
->  have accidentally reverted commit fb822db4, which raised the default from
->  120 seconds to 480 seconds.
+The pm_qos patch really needs to be merged ASAP. Len?
 
-The changelog forgot to tell us why the patch's author considers the
-patch to be needed.  This happens quite a lot.
+> Of course, we'd like to find a way to reduce the spinlock contention
+> and not resort to prohibiting the cpus from entering C3 state at
+> all. I don't see a simple fix, and want to know if you've seen
+> anything like this before and given it any thought.
+>
+> I also don't know if it makes sense to be able to tune the cpuidle
+> governors to add more resistance to enter the C3 state, or even being
+> able to switch to a performance governor at runtime, similar to
+> cpufreq.
+>
+> I'd like to hear your thoughts before I dive any deeper into this.
 
-> @@ -33,7 +33,8 @@ unsigned long __read_mostly sysctl_hung_
->  /*
->   * Zero means infinite timeout - no checking done:
->   */
-> -unsigned long __read_mostly sysctl_hung_task_timeout_secs = 120;
-> +unsigned long __read_mostly sysctl_hung_task_timeout_secs =
-> +					CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
->  
+It's fixed on Westmere. There the APIC timer will always tick
+and all that logic is not needed anymore and disabled.
 
-For the life of me I can't understand why you distro guys need to keep
-patching the kernel when you could just add a line to your initscripts.
+That is mostly fixed. One problem right now is that the
+CLOCK_EVT_FEAT_C3STOP test is inside the lock. But we
+can easily move it out, assuming the clock_event_device
+gets RCU freed or has a reference count.
 
-I'm suspecting that lameness is involved.
+But yes it would be still good to fix Nehalem too.
+
+One fix would be to make all the masks hierarchical,
+similar to what RCU does. Perhaps even some code 
+could be shared with RCU on that because it's a very
+similar problem.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
