@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1EDMoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 08:44:16 -0400
-Received: from sputnik.urmx.de ([88.198.51.18]:55900 "EHLO sputnik.urmx.de"
+	id S1754609Ab1EDMLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 08:11:45 -0400
+Received: from mail.perches.com ([173.55.12.10]:1235 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753214Ab1EDMoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 08:44:15 -0400
-X-Greylist: delayed 1952 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 May 2011 08:44:15 EDT
-X-Spam-Processed: srv201.gdsys.de, Wed, 04 May 2011 14:11:38 +0200
-	(not processed: message from trusted or authenticated source)
-X-Return-Path: Eibach@gdsys.de
-X-Envelope-From: Eibach@gdsys.de
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
-Date: Wed, 4 May 2011 14:11:34 +0200
-Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BE9D@SRV101.gdsys.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-index: AcwKVGja0CMEr430SpuA2D/zu4XQtQ==
-From: "Eibach, Dirk" <Eibach@gdsys.de>
-To: <linux-kernel@vger.kernel.org>
-X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110504121141Z
-Subject: msleep() an load average
-Thread-Topic: msleep() an load average
-Content-Class: urn:content-classes:message
-Content-Type: text/plain;
-	charset="US-ASCII"
+	id S1754529Ab1EDMLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 08:11:44 -0400
+Subject: Re: [PATCH 2/2] usbnet: Convert dbg to dev_dbg and neatening
+From: Joe Perches <joe@perches.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Oliver Neukum <oneukum@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4DC13A1B.8020004@ru.mvista.com>
+References: <cover.1304445019.git.joe@perches.com>
+	 <f86364fbdc335fadad003081d010843579e95765.1304445019.git.joe@perches.com>
+	 <4DC13A1B.8020004@ru.mvista.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 05:11:42 -0700
+Message-ID: <1304511102.1788.91.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.226; VDF: 7.11.7.146; host: mailrelay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-05-04 at 15:35 +0400, Sergei Shtylyov wrote:
+> Hello.
 
-LDD Chapter 7 says "In general, if you can tolerate longer delays than
-requested, you should use schedule_timeout, msleep or ssleep.".
+And hello to you Sergei.
 
-Following this rule, my kernel thread does:
-while(1) msleep(1000);
+On 03-05-2011 22:17, Joe Perches wrote:
+> > Use the more standard logging form.
+> > Add a bit more tidying style.
+>     Style changes look rather doubtful to me...
+> >   drivers/net/usb/usbnet.c |   23 +++++++++++------------
+> > diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+[]
+> > @@ -192,8 +192,8 @@ static int init_status(struct usbnet *dev, struct usb_interface *intf)
+> >   		return 0;
+> >
+> >   	pipe = usb_rcvintpipe(dev->udev,
+> > -			      dev->status->desc.bEndpointAddress
+> > -			& USB_ENDPOINT_NUMBER_MASK);
+> > +			      (dev->status->desc.bEndpointAddress
+> > +			& USB_ENDPOINT_NUMBER_MASK));
+> 
+>     Why add parens?
 
-Seconds later userspace guys start whining: "Your driver is evil,
-loadavg is 1 and we did not even start our fancy application".
+Leading & uses are almost always addressof.
+This makes it easier for me to see that it's not an addressof use.
 
-I say: "No, my code is perfectly fine, I followed LDD to the letter."
+> > @@ -1345,8 +1346,9 @@ usbnet_probe(struct usb_interface *udev, const struct usb_device_id *prod)
+> >   	dev->intf = udev;
+> >   	dev->driver_info = info;
+> >   	dev->driver_name = name;
+> > -	dev->msg_enable = netif_msg_init(msg_level, NETIF_MSG_DRV
+> > -					 | NETIF_MSG_PROBE | NETIF_MSG_LINK);
+> > +	dev->msg_enable = netif_msg_init(msg_level, (NETIF_MSG_DRV |
+> > +						     NETIF_MSG_PROBE |
+> > +						     NETIF_MSG_LINK));
+> 
+>     Why add parens?
 
-So the userspace guys head back to their cave, only to return after 5
-hours of googling: "Hey, we know what you are doing. Your kernel thread
-does uninterruptible sleeps. Wikipedia says, this means you are probably
-waiting for disk activity."
+I think it's neater.
+Or's are almost always placed at EOL.
+It also makes alignment easier in emacs.
+It could otherwise be a #define on a single line
+like several other uses of netif_msg_init.
 
-Since I don't like having those whining userspace guys around I change
-my code, reluctantly:
-while(1) msleep_interruptible(1000);
+> > @@ -1485,16 +1486,14 @@ int usbnet_suspend(struct usb_interface *intf, pm_message_t message)
+> >   			set_bit(EVENT_DEV_ASLEEP,&dev->flags);
+> >   			spin_unlock_irq(&dev->txq.lock);
+> >   		}
+> > -		/*
+> > -		 * accelerate emptying of the rx and queues, to avoid
+> > +		/* accelerate emptying of the rx and queues, to avoid
+> 
+>     Why?
 
-Seconds later they say: "All hail great kernel hacker! You fixed it in
-no time."
+It's the style David Miller prefers for drivers/net/...
+I don't care either way.
 
-I appreciate their admiration, but still there are doubts in my mind: Is
-this code really any better? Is the loadavg metric broken beyond repair?
-Should I really avoid msleep, just to stop those userspace guys from
-whining?
-The truth must be out there ...
+http://www.spinics.net/lists/netdev/msg139647.html
 
-Cheers
-Dirk
-
+cheers, Joe
 
