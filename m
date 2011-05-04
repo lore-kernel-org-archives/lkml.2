@@ -1,61 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1EDGAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 02:00:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49283 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab1EDGAK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 02:00:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=lqYmZzAF1LY0BkOK+pEF5HG4VL/7voHgTUw7LLUvCxKmdM8rkN6Ws2El3YCd3TXado
-         C1mEOYLqJSeJo5YYcPgu/J5W46j6JU5LSMa08LJhN1hx9nuvujU+XvfYI9ovq5NW1Vpn
-         JwADda2DbM/XLQYuKQBBdC+1UyT2xnOLnCMz4=
-From: Nuno Subtil <subtil@gmail.com>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nuno Subtil <subtil@gmail.com>
-Subject: [PATCH 1/1] deb-pkg: fix cross-compile build
-Date: Tue,  3 May 2011 22:59:10 -0700
-Message-Id: <1304488750-13606-1-git-send-email-subtil@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1754683Ab1EDQge (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:36:34 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42803 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794Ab1EDQgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 12:36:33 -0400
+Date: Tue, 3 May 2011 23:05:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the rcu tree with the net tree
+Message-ID: <20110504060533.GD2294@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110503142419.2b7d5e23.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503142419.2b7d5e23.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When generating the header package, scripts/package/builddeb was inferring the
-target architecture by looking at the output of dpkg --print-architecture. This
-allows KBUILD_DEBARCH to override that.
+On Tue, May 03, 2011 at 02:24:19PM +1000, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> Today's linux-next merge of the rcu tree got a conflict in
+> net/core/filter.c between commit 0a14842f5a3c ("net: filter: Just In Time
+> compiler for x86-64") from the net tree and commit 10cde158c259
+> ("net,rcu: convert call_rcu(sk_filter_release_rcu) to kfree_rcu") from
+> the rcu tree.
+> 
+> The former adds another operation into sk_filter_release_rcu(), so I have
+> effectively reverted the rcu tree change for now (by applying the patch
+> below as a merge fixup).
 
-Signed-off-by: Nuno Subtil <subtil@gmail.com>
----
- scripts/package/builddeb |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Thank you, Stephen!
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index f6cbc3d..9372145 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -246,7 +246,12 @@ mkdir -p "$destdir"
- (cd $srctree; tar -c -f - -T /tmp/files$$) | (cd $destdir; tar -xf -)
- (cd $objtree; tar -c -f - -T /tmp/objfiles$$) | (cd $destdir; tar -xf -)
- rm -f /tmp/files$$ /tmp/objfiles$$
--arch=$(dpkg --print-architecture)
-+
-+if [ -n "$KBUILD_DEBARCH" ] ; then
-+	arch="$KBUILD_DEBARCH"
-+else
-+	arch=$(dpkg --print-architecture)
-+fi
- 
- cat <<EOF >> debian/control
- 
--- 
-1.7.4.4
+Looks like I need to get my changes forward-ported to the latest -rc...
 
-Please Cc me on any replies related to this patch.
+						Thanx, Paul
 
-Thanks,
-Nuno
-
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 3 May 2011 14:06:50 +1000
+> Subject: [PATCH] Revert "net,rcu: convert call_rcu(sk_filter_release_rcu) to
+>  kfree_rcu"
+> 
+> This reverts commit 10cde158c2591422a2b32a2f560f406b8e69bee6.
+> ---
+>  include/net/sock.h |    4 +++-
+>  net/core/filter.c  |   13 +++++++++++++
+>  2 files changed, 16 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/net/sock.h b/include/net/sock.h
+> index 1a2f255..f2046e4 100644
+> --- a/include/net/sock.h
+> +++ b/include/net/sock.h
+> @@ -1180,6 +1180,8 @@ extern void sk_common_release(struct sock *sk);
+>  /* Initialise core socket variables */
+>  extern void sock_init_data(struct socket *sock, struct sock *sk);
+> 
+> +extern void sk_filter_release_rcu(struct rcu_head *rcu);
+> +
+>  /**
+>   *	sk_filter_release - release a socket filter
+>   *	@fp: filter to remove
+> @@ -1190,7 +1192,7 @@ extern void sock_init_data(struct socket *sock, struct sock *sk);
+>  static inline void sk_filter_release(struct sk_filter *fp)
+>  {
+>  	if (atomic_dec_and_test(&fp->refcnt))
+> -		kfree_rcu(fp, rcu);
+> +		call_rcu(&fp->rcu, sk_filter_release_rcu);
+>  }
+> 
+>  static inline void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
+> diff --git a/net/core/filter.c b/net/core/filter.c
+> index 66d403d..0eb8c44 100644
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -572,6 +572,19 @@ int sk_chk_filter(struct sock_filter *filter, int flen)
+>  EXPORT_SYMBOL(sk_chk_filter);
+> 
+>  /**
+> + * 	sk_filter_release_rcu - Release a socket filter by rcu_head
+> + *	@rcu: rcu_head that contains the sk_filter to free
+> + */
+> +void sk_filter_release_rcu(struct rcu_head *rcu)
+> +{
+> +	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
+> +
+> +	bpf_jit_free(fp);
+> +	kfree(fp);
+> +}
+> +EXPORT_SYMBOL(sk_filter_release_rcu);
+> +
+> +/**
+>   *	sk_attach_filter - attach a socket filter
+>   *	@fprog: the filter program
+>   *	@sk: the socket to use
+> -- 
+> 1.7.4.4
+> 
