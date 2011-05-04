@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab1EDWXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 18:23:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54227 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab1EDWXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 18:23:36 -0400
-Date: Thu, 5 May 2011 00:23:33 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 6/6] writeback: convert to relative older_than_this in
- trace events
-Message-ID: <20110504222333.GL6968@quack.suse.cz>
-References: <20110504091707.910929441@intel.com>
- <20110504091909.904141006@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504091909.904141006@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756148Ab1EDWbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 18:31:07 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35210 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab1EDWbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 18:31:05 -0400
+Subject: Re: [PATCH 0/3] repair RTC subsys (for i.MX)
+From: john stultz <johnstul@us.ibm.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1304523088-17039-1-git-send-email-w.sang@pengutronix.de>
+References: <1304523088-17039-1-git-send-email-w.sang@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 15:30:59 -0700
+Message-ID: <1304548259.2943.5.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-05-11 17:17:13, Wu Fengguang wrote:
-> This is a format change that could break established scripts.
+On Wed, 2011-05-04 at 17:31 +0200, Wolfram Sang wrote:
+> The recent updates to the RTC subsystem (removing UIE interrupts and use
+> alarms instead) introduced two problems for i.MX (and the subsys in
+> general, I'd think):
 > 
-> But hopefully it's more human friendly to show the relative values like
-> "30000" (30s old) or "0" (all fresh ones) than long absolute jiffy
-> numbers.
-  It's possibly more human friendly but probably also harder to handle in
-scripts. I especially don't like the fact that the number will be changing
-at different tracepoints - you'll then have to do some comparisons to find
-out whether just the timestamp has been changed or whether just the time
-passes by. It's not that hard to write a script doing absolute->relative
-conversion (since you have time stamps in the traces) for those cases where
-relative time is really what interests you. So do you have any particular
-usecase in mind for the relative value?
+> a) because registering the rtc now calls get_alarm(), the requirement
+> has been added for a lot of drivers that drvdata is properly set up
+> _before_ registering. rtc-mxc did not do that (probably bad; but as said
+> like a lot of other rtc-drivers currently) and oopsed.
+> 
+> b) the callbacks to the rtc-core for update_irqs have been removed, but
+> irq-handlers are still there, now being unused cruft. In case of
+> rtc-mxc, this is only one if-block, but for rtc-mc13xxx.c this is a
+> seperate handler.
+> 
+> From a glimpse, most platform drivers seem to have at least one of these
+> problems now :( John, am I correct or am I missing something?
 
-								Honza
-> 
-> Note that the initial 30000 or 0 may increase over time as they are now
-> relative numbers.
-> 
-> CC: Jan Kara <jack@suse.cz>
-> CC: Dave Chinner <david@fromorbit.com> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/trace/events/writeback.h |   11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
-> --- linux-next.orig/include/trace/events/writeback.h	2011-05-04 16:09:59.000000000 +0800
-> +++ linux-next/include/trace/events/writeback.h	2011-05-04 16:10:57.000000000 +0800
-> @@ -115,7 +115,7 @@ DECLARE_EVENT_CLASS(wbc_class,
->  		__field(int, for_reclaim)
->  		__field(int, range_cyclic)
->  		__field(int, more_io)
-> -		__field(unsigned long, older_than_this)
-> +		__field(int, older)
->  		__field(long, range_start)
->  		__field(long, range_end)
->  	),
-> @@ -130,14 +130,15 @@ DECLARE_EVENT_CLASS(wbc_class,
->  		__entry->for_reclaim	= wbc->for_reclaim;
->  		__entry->range_cyclic	= wbc->range_cyclic;
->  		__entry->more_io	= wbc->more_io;
-> -		__entry->older_than_this = wbc->older_than_this ?
-> -						*wbc->older_than_this : 0;
-> +		__entry->older		= wbc->older_than_this ?
-> +				(jiffies - *wbc->older_than_this) * 1000 / HZ
-> +				: -1;
->  		__entry->range_start	= (long)wbc->range_start;
->  		__entry->range_end	= (long)wbc->range_end;
->  	),
->  
->  	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
-> -		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
-> +		"bgrd=%d reclm=%d cyclic=%d more=%d older=%d "
->  		"start=0x%lx end=0x%lx",
->  		__entry->name,
->  		__entry->nr_to_write,
-> @@ -148,7 +149,7 @@ DECLARE_EVENT_CLASS(wbc_class,
->  		__entry->for_reclaim,
->  		__entry->range_cyclic,
->  		__entry->more_io,
-> -		__entry->older_than_this,
-> +		__entry->older,
->  		__entry->range_start,
->  		__entry->range_end)
->  )
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I've tried to go through and clean up most of the b) issues, although
+some have apparently slipped by. Please let me know of any others you
+ran across.
+
+And indeed we've hit a few of issue a) already, so I should probably run
+through and do a full audit.
+
+Your patches look fine to me. Do you intend to push them or should I
+queue them up?
+
+thanks
+-john
+
