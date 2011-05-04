@@ -1,223 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1EDA5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 20:57:06 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10137 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab1EDA5F (ORCPT
+	id S1755141Ab1EDBEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 21:04:20 -0400
+Received: from audible.transient.net ([216.254.12.79]:53004 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753976Ab1EDBES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 20:57:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=mdajnv+7YMzu2+mhMfXVyrzak1AV+9O3bD3hFErf9Iz2S/mrKNJ80H84ss6Dwm/W5
-	PXJ4E5ji9NcraCb5kfG5w==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH] trace: Use NUMA allocation for per-cpu ring buffer pages
-Date: Tue,  3 May 2011 17:56:42 -0700
-Message-Id: <1304470602-20366-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Tue, 3 May 2011 21:04:18 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 21:04:18 EDT
+Date: Wed, 4 May 2011 00:57:36 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Chinner <david@fromorbit.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
+Message-ID: <20110504005736.GA2958@cucamonga.audible.transient.net>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Dave Chinner <david@fromorbit.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+	xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+	Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+	Dave Chinner <dchinner@redhat.com>
+References: <20110423224403.5fd1136a@neptune.home>
+ <20110427050850.GG12436@dastard>
+ <20110427182622.05a068a2@neptune.home>
+ <20110428194528.GA1627@x4.trippels.de>
+ <20110429011929.GA13542@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110429011929.GA13542@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracing ring buffer is a group of per-cpu ring buffers where
-allocation and logging is done on a per-cpu basis. The events that are
-generated on a particular CPU are logged in the corresponding buffer.
-This is to provide wait-free writes between CPUs and good NUMA node
-locality while accessing the ring buffer.
+Dave Chinner wrote:
+> OK, so the common elements here appears to be root filesystems
+> with small log sizes, which means they are tail pushing all the
+> time metadata operations are in progress. Definitely seems like a
+> race in the AIL workqueue trigger mechanism. I'll see if I can
+> reproduce this and cook up a patch to fix it.
 
-However, the allocation routines consider NUMA locality only for buffer
-page metadata and not for the actual buffer page. This causes the pages
-to be allocated on the NUMA node local to the CPU where the allocation
-routine is running at the time.
+Is there value in continuing to post sysrq-w, sysrq-l, xfs_info, and
+other assorted feedback wrt this issue?  I've had it happen twice now
+myself in the past week or so, though I have no reliable reproduction
+technique.  Just wondering if more data points will help isolate the
+cause, and if so, how to be prepared to get them.
 
-This patch fixes the problem by using a NUMA node specific allocation
-routine so that the pages are allocated from a NUMA node local to the
-logging CPU.
+For whatever its worth, my last lockup was while running
+2.6.39-rc5-00127-g1be6a1f with a preempt config without cgroups.
 
-I tested with the getuid_microbench from autotest. It is a simple binary
-that calls getuid() in a loop and measures the average time for the
-syscall to complete. The following command was used to test:
-$ getuid_microbench 1000000
+root@cucamonga:~# grep xfs /proc/mounts 
+/dev/mapper/S-root / xfs rw,relatime,attr2,delaylog,noquota 0 0
+/dev/mapper/S-var /var xfs rw,noatime,attr2,delaylog,inode64,noquota 0 0
+root@cucamonga:~# xfs_info /var
+meta-data=/dev/mapper/S-var      isize=256    agcount=4, agsize=6553600 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=26214400, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal               bsize=4096   blocks=12800, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+root@cucamonga:~# xfs_info /
+meta-data=/dev/mapper/S-root     isize=256    agcount=4, agsize=524288 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=2097152, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
 
-Compared the numbers found on kernel with and without this patch and
-found that logging latency decreases by 30-50 ns/call.
-tracing with non-NUMA allocation - 569 ns/call
-tracing with NUMA allocation     - 512 ns/call
+those are lvm volumes on top of a md raid1 partition, though from the
+looks of everybody else's reports, that's not likely relevant.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- include/linux/ring_buffer.h          |    2 +-
- kernel/trace/ring_buffer.c           |   36 +++++++++++++++++----------------
- kernel/trace/ring_buffer_benchmark.c |    2 +-
- kernel/trace/trace.c                 |    6 +++-
- 4 files changed, 25 insertions(+), 21 deletions(-)
+sysctl-w and l follow:
 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index ab38ac8..b891de9 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -169,7 +169,7 @@ void ring_buffer_set_clock(struct ring_buffer *buffer,
- size_t ring_buffer_page_len(void *page);
- 
- 
--void *ring_buffer_alloc_read_page(struct ring_buffer *buffer);
-+void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu);
- void ring_buffer_free_read_page(struct ring_buffer *buffer, void *data);
- int ring_buffer_read_page(struct ring_buffer *buffer, void **data_page,
- 			  size_t len, int cpu, int full);
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 0ef7b4b..02b7896 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -997,13 +997,13 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 			     unsigned nr_pages)
- {
- 	struct buffer_page *bpage, *tmp;
--	unsigned long addr;
- 	LIST_HEAD(pages);
- 	unsigned i;
- 
- 	WARN_ON(!nr_pages);
- 
- 	for (i = 0; i < nr_pages; i++) {
-+		struct page *page;
- 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
- 				    GFP_KERNEL, cpu_to_node(cpu_buffer->cpu));
- 		if (!bpage)
-@@ -1013,10 +1013,11 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 
- 		list_add(&bpage->list, &pages);
- 
--		addr = __get_free_page(GFP_KERNEL);
--		if (!addr)
-+		page = alloc_pages_node(cpu_to_node(cpu_buffer->cpu),
-+					GFP_KERNEL, 0);
-+		if (!page)
- 			goto free_pages;
--		bpage->page = (void *)addr;
-+		bpage->page = page_address(page);
- 		rb_init_page(bpage->page);
- 	}
- 
-@@ -1045,7 +1046,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
- {
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct buffer_page *bpage;
--	unsigned long addr;
-+	struct page *page;
- 	int ret;
- 
- 	cpu_buffer = kzalloc_node(ALIGN(sizeof(*cpu_buffer), cache_line_size()),
-@@ -1067,10 +1068,10 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
- 	rb_check_bpage(cpu_buffer, bpage);
- 
- 	cpu_buffer->reader_page = bpage;
--	addr = __get_free_page(GFP_KERNEL);
--	if (!addr)
-+	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
-+	if (!page)
- 		goto fail_free_reader;
--	bpage->page = (void *)addr;
-+	bpage->page = page_address(page);
- 	rb_init_page(bpage->page);
- 
- 	INIT_LIST_HEAD(&cpu_buffer->reader_page->list);
-@@ -1314,7 +1315,6 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
- 	unsigned nr_pages, rm_pages, new_pages;
- 	struct buffer_page *bpage, *tmp;
- 	unsigned long buffer_size;
--	unsigned long addr;
- 	LIST_HEAD(pages);
- 	int i, cpu;
- 
-@@ -1375,16 +1375,18 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
- 
- 	for_each_buffer_cpu(buffer, cpu) {
- 		for (i = 0; i < new_pages; i++) {
-+			struct page *page;
- 			bpage = kzalloc_node(ALIGN(sizeof(*bpage),
- 						  cache_line_size()),
- 					    GFP_KERNEL, cpu_to_node(cpu));
- 			if (!bpage)
- 				goto free_pages;
- 			list_add(&bpage->list, &pages);
--			addr = __get_free_page(GFP_KERNEL);
--			if (!addr)
-+			page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL,
-+						0);
-+			if (!page)
- 				goto free_pages;
--			bpage->page = (void *)addr;
-+			bpage->page = page_address(page);
- 			rb_init_page(bpage->page);
- 		}
- 	}
-@@ -3730,16 +3732,16 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
-  * Returns:
-  *  The page allocated, or NULL on error.
-  */
--void *ring_buffer_alloc_read_page(struct ring_buffer *buffer)
-+void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
- {
- 	struct buffer_data_page *bpage;
--	unsigned long addr;
-+	struct page *page;
- 
--	addr = __get_free_page(GFP_KERNEL);
--	if (!addr)
-+	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
-+	if (!page)
- 		return NULL;
- 
--	bpage = (void *)addr;
-+	bpage = page_address(page);
- 
- 	rb_init_page(bpage);
- 
-diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
-index 302f8a6..a5457d5 100644
---- a/kernel/trace/ring_buffer_benchmark.c
-+++ b/kernel/trace/ring_buffer_benchmark.c
-@@ -106,7 +106,7 @@ static enum event_status read_page(int cpu)
- 	int inc;
- 	int i;
- 
--	bpage = ring_buffer_alloc_read_page(buffer);
-+	bpage = ring_buffer_alloc_read_page(buffer, cpu);
- 	if (!bpage)
- 		return EVENT_DROPPED;
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e03ee24..a7a9cb7 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3755,7 +3755,8 @@ tracing_buffers_read(struct file *filp, char __user *ubuf,
- 		return 0;
- 
- 	if (!info->spare)
--		info->spare = ring_buffer_alloc_read_page(info->tr->buffer);
-+		info->spare = ring_buffer_alloc_read_page(info->tr->buffer,
-+								info->cpu);
- 	if (!info->spare)
- 		return -ENOMEM;
- 
-@@ -3912,7 +3913,8 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
- 
- 		ref->ref = 1;
- 		ref->buffer = info->tr->buffer;
--		ref->page = ring_buffer_alloc_read_page(ref->buffer);
-+		ref->page = ring_buffer_alloc_read_page(ref->buffer,
-+							info->cpu);
- 		if (!ref->page) {
- 			kfree(ref);
- 			break;
+May  3 07:12:28 cucamonga kernel: SysRq : Show Blocked State
+May  3 07:12:28 cucamonga kernel:   task                        PC stack   pid father
+May  3 07:12:28 cucamonga kernel: mutt            D ffff88007bf89f40     0  2938   2921 0x00000000
+May  3 07:12:28 cucamonga kernel:  ffff88007ac0fb28 0000000000000046 ffff88007ac0fae8 ffffffff81095066
+May  3 07:12:28 cucamonga kernel:  ffff88007a8c4570 ffff88007ac0ffd8 00000000000112c0 ffff88007ac0ffd8
+May  3 07:12:28 cucamonga kernel:  ffff88007f0dcbc0 ffff88007a8c4570 ffff88007ac0fbb8 ffffffff81098363
+May  3 07:12:28 cucamonga kernel: Call Trace:
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81095066>] ? __pagevec_free+0x70/0x82
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81098363>] ? release_pages+0x181/0x193
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa007ef3c>] xlog_wait+0x5b/0x72 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8102e454>] ? try_to_wake_up+0x1bd/0x1bd
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa007ff60>] xlog_grant_log_space+0x129/0x3d6 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008cc74>] ? xfs_ail_push+0x3c/0x6b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa0081e2c>] xfs_log_reserve+0xe5/0xee [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008b8ab>] xfs_trans_reserve+0xcf/0x19b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008f7c4>] xfs_inactive+0x16a/0x39a [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa009ab94>] xfs_fs_evict_inode+0xc7/0xcf [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810de311>] evict+0x81/0x125
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810de53a>] iput+0x14b/0x153
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810db5b5>] dentry_kill+0x127/0x149
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810dbb1b>] dput+0xde/0xee
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810cc0e1>] fput+0x192/0x1aa
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810acb4b>] remove_vma+0x3c/0x64
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810adfa2>] exit_mmap+0xbe/0xd9
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8102fcfd>] mmput+0x5b/0x104
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81033976>] exit_mm+0x125/0x132
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810635a3>] ? acct_collect+0x176/0x182
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81034ebd>] do_exit+0x21d/0x70a
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810ca4b2>] ? fsnotify_modify+0x5f/0x67
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa03e7257>] ? kvm_on_user_return+0x4d/0x4f [kvm]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8108e03f>] ? fire_user_return_notifiers+0x3c/0x65
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8103564d>] do_group_exit+0x76/0x9e
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8103568c>] sys_exit_group+0x17/0x17
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81334deb>] system_call_fastpath+0x16/0x1b
+May  3 07:12:28 cucamonga kernel: kworker/1:0     D ffffffff81341180     0 24351      2 0x00000000
+May  3 07:12:28 cucamonga kernel:  ffff8800046c1ca0 0000000000000046 ffff880000000000 0000000100000000
+May  3 07:12:28 cucamonga kernel:  ffff88007c230ca0 ffff8800046c1fd8 00000000000112c0 ffff8800046c1fd8
+May  3 07:12:28 cucamonga kernel:  ffff88007f0a3f20 ffff88007c230ca0 0000000000000000 0000000100000000
+May  3 07:12:28 cucamonga kernel: Call Trace:
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa007ef3c>] xlog_wait+0x5b/0x72 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8102e454>] ? try_to_wake_up+0x1bd/0x1bd
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa007ff60>] xlog_grant_log_space+0x129/0x3d6 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008cc74>] ? xfs_ail_push+0x3c/0x6b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa0081e2c>] xfs_log_reserve+0xe5/0xee [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008b8ab>] xfs_trans_reserve+0xcf/0x19b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa009c6aa>] ? xfs_reclaim_inode+0x23b/0x23b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa009c6aa>] ? xfs_reclaim_inode+0x23b/0x23b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa0075123>] xfs_fs_log_dummy+0x43/0x7f [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa009c6ed>] xfs_sync_worker+0x43/0x69 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81047035>] process_one_work+0x179/0x295
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81048456>] worker_thread+0xd4/0x158
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81048382>] ? manage_workers.isra.23+0x170/0x170
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81048382>] ? manage_workers.isra.23+0x170/0x170
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8104b60c>] kthread+0x84/0x8c
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81335a54>] kernel_thread_helper+0x4/0x10
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8104b588>] ? kthread_worker_fn+0x116/0x116
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81335a50>] ? gs_change+0xb/0xb
+May  3 07:12:28 cucamonga kernel: dpkg            D ffffffff81341180     0 28235  24677 0x00000000
+May  3 07:12:28 cucamonga kernel:  ffff88001b70dc98 0000000000000082 0000000000000001 ffff880000000000
+May  3 07:12:28 cucamonga kernel:  ffff88007f0a5eb0 ffff88001b70dfd8 00000000000112c0 ffff88001b70dfd8
+May  3 07:12:28 cucamonga kernel:  ffffffff81499020 ffff88007f0a5eb0 ffff88001b70dc88 000000011b70dcc8
+May  3 07:12:28 cucamonga kernel: Call Trace:
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa007ef3c>] xlog_wait+0x5b/0x72 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff8102e454>] ? try_to_wake_up+0x1bd/0x1bd
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008007e>] xlog_grant_log_space+0x247/0x3d6 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008cc74>] ? xfs_ail_push+0x3c/0x6b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa0081e2c>] xfs_log_reserve+0xe5/0xee [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008b8ab>] xfs_trans_reserve+0xcf/0x19b [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008e390>] xfs_free_eofblocks+0x153/0x1e2 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa008f622>] xfs_release+0x178/0x1b0 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffffa00969e1>] xfs_file_release+0x15/0x19 [xfs]
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810cc04c>] fput+0xfd/0x1aa
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810c9120>] filp_close+0x6e/0x7a
+May  3 07:12:28 cucamonga kernel:  [<ffffffff810c91d9>] sys_close+0xad/0xef
+May  3 07:12:28 cucamonga kernel:  [<ffffffff81334deb>] system_call_fastpath+0x16/0x1b
+
+
+May  3 07:22:26 cucamonga kernel: SysRq : Show backtrace of all active CPUs
+May  3 07:22:26 cucamonga kernel: CPU1:
+May  3 07:22:26 cucamonga kernel: CPU 1 
+May  3 07:22:26 cucamonga kernel: Modules linked in: pci_slot fan cpufreq_stats cpufreq_powersave cpufreq_ondemand autofs4 cpufreq_conservative k
+May  3 07:22:26 cucamonga kernel: 
+May  3 07:22:26 cucamonga kernel: Pid: 0, comm: kworker/0:0 Not tainted 2.6.39-rc5-00127-g1be6a1f #1 Dell Inc. Precision WorkStation T3400  /0TP4
+May  3 07:22:26 cucamonga kernel: RIP: 0010:[<ffffffff810081b2>]  [<ffffffff810081b2>] mwait_idle+0x7c/0x94
+May  3 07:22:26 cucamonga kernel: RSP: 0018:ffff88007f0d1ee8  EFLAGS: 00000246
+May  3 07:22:26 cucamonga kernel: RAX: 0000000000000000 RBX: ffffffff81592100 RCX: 0000000000000000
+May  3 07:22:26 cucamonga kernel: RDX: 0000000000000000 RSI: 0000000000000003 RDI: ffff88007f0d0000
+May  3 07:22:26 cucamonga kernel: RBP: ffff88007f0d1ee8 R08: 0000000000000000 R09: 0000000000000000
+May  3 07:22:26 cucamonga kernel: R10: 0000000000000000 R11: ffff88007fb0dc50 R12: ffffffff8133468e
+May  3 07:22:26 cucamonga kernel: R13: ffff88007f0d1e78 R14: 0000000000000086 R15: ffff88007fb11c00
+May  3 07:22:26 cucamonga kernel: FS:  0000000000000000(0000) GS:ffff88007fb00000(0000) knlGS:0000000000000000
+May  3 07:22:26 cucamonga kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+May  3 07:22:26 cucamonga kernel: CR2: 00007ffec6e368f0 CR3: 0000000004820000 CR4: 00000000000406f0
+May  3 07:22:26 cucamonga kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+May  3 07:22:26 cucamonga kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+May  3 07:22:26 cucamonga kernel: Process kworker/0:0 (pid: 0, threadinfo ffff88007f0d0000, task ffff88007f0a3f20)
+May  3 07:22:26 cucamonga kernel: Stack:
+May  3 07:22:26 cucamonga kernel:  ffff88007f0d1f18 ffffffff810008ad ffff88007f0d1f08 57bb49c37cf88ea3
+May  3 07:22:26 cucamonga kernel:  0000000000000001 0000000000000000 ffff88007f0d1f48 ffffffff81539e79
+May  3 07:22:26 cucamonga kernel:  0000000000000000 3128fe8622c57963 0000000000000000 0000000000000000
+May  3 07:22:26 cucamonga kernel: Call Trace:
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810008ad>] cpu_idle+0xa3/0xe9
+May  3 07:22:26 cucamonga kernel:  [<ffffffff81539e79>] start_secondary+0x1bd/0x1c4
+May  3 07:22:26 cucamonga kernel: Code: d2 65 48 8b 04 25 c8 b5 00 00 48 89 d1 48 2d c8 1f 00 00 0f 01 c8 0f ae f0 e8 52 fe ff ff 85 c0 75 0b 31 
+May  3 07:22:26 cucamonga kernel: Call Trace:
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810008ad>] cpu_idle+0xa3/0xe9
+May  3 07:22:26 cucamonga kernel:  [<ffffffff81539e79>] start_secondary+0x1bd/0x1c4
+May  3 07:22:26 cucamonga kernel: CPU0:
+May  3 07:22:26 cucamonga kernel:  ffff88007fa03ef0 ffff88007fa03f48 0000000000000046 ffff88007fa03f68
+May  3 07:22:26 cucamonga kernel:  0000000000000001 ffff88007aabdc48 0000000000000001 ffff88007fa03f38
+May  3 07:22:26 cucamonga kernel:  ffffffff810049a6 ffff88007fa03f58 ffffffff811acfb3 dead000000200200
+May  3 07:22:26 cucamonga kernel: Call Trace:
+May  3 07:22:26 cucamonga kernel:  <IRQ>  [<ffffffff810049a6>] ? show_stack+0x1c/0x1e
+May  3 07:22:26 cucamonga kernel:  [<ffffffff811acfb3>] ? showacpu+0x4a/0x5d
+May  3 07:22:26 cucamonga kernel:  [<ffffffff8105cb50>] ? generic_smp_call_function_single_interrupt+0xd3/0xf6
+May  3 07:22:26 cucamonga kernel:  [<ffffffff81017a31>] ? smp_call_function_single_interrupt+0x18/0x27
+May  3 07:22:26 cucamonga kernel:  [<ffffffff813357b3>] ? call_function_single_interrupt+0x13/0x20
+May  3 07:22:26 cucamonga kernel:  <EOI>  [<ffffffff8133428c>] ? _raw_spin_unlock_irqrestore+0xd/0x30
+May  3 07:22:26 cucamonga kernel:  [<ffffffff8104bc8c>] ? remove_wait_queue+0x51/0x56
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810d8c7d>] ? poll_freewait+0x3e/0xaa
+May  3 07:22:26 cucamonga kernel:  [<ffffffff813338bd>] ? schedule_hrtimeout_range+0x13/0x15
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810d9457>] ? do_select+0x4df/0x4f4
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810d8ce9>] ? poll_freewait+0xaa/0xaa
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810d8db5>] ? __pollwait+0xcc/0xcc
+May  3 07:22:26 cucamonga last message repeated 7 times
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810d95e3>] ? core_sys_select+0x177/0x216
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810c1f3c>] ? kmem_cache_free+0x79/0xbc
+May  3 07:22:26 cucamonga kernel:  [<ffffffff812be2f9>] ? sock_destroy_inode+0x32/0x36
+May  3 07:22:26 cucamonga kernel:  [<ffffffff81334274>] ? _raw_spin_unlock+0x23/0x2e
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810dbb0c>] ? dput+0xcf/0xee
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810d9713>] ? sys_select+0x91/0xb9
+May  3 07:22:26 cucamonga kernel:  [<ffffffff810cada7>] ? sys_read+0x61/0x6e
+May  3 07:22:26 cucamonga kernel:  [<ffffffff81334deb>] ? system_call_fastpath+0x16/0x1b
+
+
+I have captures of my process list and slabinfo at the time of the lockup
+too should they be useful.
+
 -- 
-1.7.3.1
-
+Jamie Heilman                     http://audible.transient.net/~jamie/
+"Most people wouldn't know music if it came up and bit them on the ass."
+                                                        -Frank Zappa
