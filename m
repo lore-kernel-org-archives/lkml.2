@@ -1,37 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1EDVzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:55:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39535 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab1EDVza (ORCPT
+	id S1755979Ab1EDV4R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:56:17 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57542 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755634Ab1EDV4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:55:30 -0400
-Message-ID: <4DC1CB46.3070805@oracle.com>
-Date: Wed, 04 May 2011 16:55:18 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110429 Lightning/1.0b2 OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/UAFCAFCATUAFLAF_1301673577011-962016341 Thunderbird/3.1.10
+	Wed, 4 May 2011 17:56:15 -0400
+From: Tom Lendacky <tahm@linux.vnet.ibm.com>
+Organization: IBM Linux Performance
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 05/18] virtio: used event index interface
+Date: Wed, 4 May 2011 16:56:09 -0500
+User-Agent: KMail/1.13.6 (Linux/2.6.35.12-90.fc14.i686.PAE; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+References: <cover.1304541918.git.mst@redhat.com>  <aacced20b8109a615ee24c1bde6d9f5702850111.1304541919.git.mst@redhat.com>
+In-Reply-To: <aacced20b8109a615ee24c1bde6d9f5702850111.1304541919.git.mst@redhat.com>
 MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>
-CC: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1304531920-2890-1-git-send-email-josef@redhat.com> <15392.1304535887@localhost> <4DC1A49C.4010101@redhat.com> <4DC1CB06.9060101@oracle.com>
-In-Reply-To: <4DC1CB06.9060101@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DC1CB51.0063:SCFMA922111,ss=1,fgs=0
+Message-Id: <201105041656.11009.tahm@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2011 04:54 PM, Dave Kleikamp wrote:
+On Wednesday, May 04, 2011 03:51:09 PM Michael S. Tsirkin wrote:
+> Define a new feature bit for the guest to utilize a used_event index
+> (like Xen) instead if a flag bit to enable/disable interrupts.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  include/linux/virtio_ring.h |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> index e4d144b..f5c1b75 100644
+> --- a/include/linux/virtio_ring.h
+> +++ b/include/linux/virtio_ring.h
+> @@ -29,6 +29,10 @@
+>  /* We support indirect buffer descriptors */
+>  #define VIRTIO_RING_F_INDIRECT_DESC	28
+> 
+> +/* The Guest publishes the used index for which it expects an interrupt
+> + * at the end of the avail ring. Host should ignore the avail->flags
+> field. */ +#define VIRTIO_RING_F_USED_EVENT_IDX	29
+> +
+>  /* Virtio ring descriptors: 16 bytes.  These can chain together via
+> "next". */ struct vring_desc {
+>  	/* Address (guest-physical). */
+> @@ -83,6 +87,7 @@ struct vring {
+>   *	__u16 avail_flags;
+>   *	__u16 avail_idx;
+>   *	__u16 available[num];
+> + *	__u16 used_event_idx;
+>   *
+>   *	// Padding to the next align boundary.
+>   *	char pad[];
+> @@ -93,6 +98,10 @@ struct vring {
+>   *	struct vring_used_elem used[num];
+>   * };
+>   */
+> +/* We publish the used event index at the end of the available ring.
+> + * It is at the end for backwards compatibility. */
+> +#define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
+> +
+>  static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+>  			      unsigned long align)
+>  {
 
-> The comments in fs.h say "closest". You may want to change them to
-> "next" as well.
+You should update the vring_size procedure to account for the extra field at 
+the end of the available ring by change the "(2 + num)" to "(3 + num)":
+    return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
 
-Sorry.  Missed some of the replies before I responded.  Already addressed.
-
-Shaggy
+Tom
