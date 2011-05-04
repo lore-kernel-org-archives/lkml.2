@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab1EDAUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 20:20:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50323 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683Ab1EDAUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 20:20:24 -0400
-Message-ID: <4DC09BBA.6040906@zytor.com>
-Date: Tue, 03 May 2011 17:20:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v3] x86: allow ZONE_DMA to be configurable
-References: <alpine.DEB.2.00.1104141134260.386@chino.kir.corp.google.com> <4DA82F33.7080403@ladisch.de> <4DA8A5CE.2010004@zytor.com> <alpine.DEB.2.00.1104201929170.15661@chino.kir.corp.google.com> <4DAFAD9F.4020809@zytor.com> <alpine.DEB.2.00.1104271637310.25369@chino.kir.corp.google.com> <alpine.DEB.2.00.1105031700380.26030@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1105031700380.26030@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755067Ab1EDA23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 20:28:29 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:34673 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754766Ab1EDA21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 20:28:27 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 May 2011 20:28:27 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=TiQeiJWTvKvpaNBFKmtwsF+lddCnib8Pvq6IvHwu25Hi7z4pwCXoYzixxn5VQh0EqjGKEdicQhoh+TRcfD1LyEzBKRR288+3jwwllHQUGH8BZRFXTm8GZzPqcVgWOq4R;
+Date: Tue, 3 May 2011 17:21:41 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Dave Airlie <airlied@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: [RFC patch 25/32] trace event video gpu remove semicolons
+Message-ID: <20110503172141.7d06fd7d@jbarnes-desktop>
+In-Reply-To: <20110503231428.245701713@efficios.com>
+References: <20110503231023.968960757@efficios.com>
+	<20110503231428.245701713@efficios.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 05:00 PM, David Rientjes wrote:
-> On Wed, 27 Apr 2011, David Rientjes wrote:
+On Tue, 03 May 2011 19:10:48 -0400
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+
+> Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
+> of events, thus saving space for trace event probes.
 > 
->> ZONE_DMA is unnecessary for a large number of machines that do not
->> require addressing in the lower 16MB of memory because they do not use
->> devices with 16-bit address registers (plus one page byte register).
->>
->> This patch allows users to disable ZONE_DMA for x86 if they know they
->> will not be using such devices with their kernel.
->>
->> This prevents the VM from unnecessarily reserving a ratio of memory
->> (defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
->> for such allocations when it will never be used.
->>
->> Signed-off-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> CC: Dave Airlie <airlied@redhat.com>
+> CC: Chris Wilson <chris@chris-wilson.co.uk>
+> CC: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  drivers/gpu/drm/drm_trace.h       |    6 ++--
+>  drivers/gpu/drm/i915/i915_trace.h |   52 +++++++++++++++++++-------------------
+>  2 files changed, 29 insertions(+), 29 deletions(-)
 > 
-> Peter, is this ready for merge?
 
+Yeah, looks fine to me Mathieu, thanks.  I guess it should go in along
+with the rest of your tracing fixes so the dependencies don't get
+spread out across a bunch of different trees.
 
-+ DMA memory allocation support allows devices with 16-bit address
-+ registers to allocate memory within the first 16MB of address space.
-+ Disable if no such devices will be used.
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-This is still not correct... this is for devices with less than a 32-bit
-mask, not just for things that have 24-bit (not 16-bit!) DMA address
-restrictions.
-
-Please get this right.
-
-Other than that, I don't have any technical objections.
-
-	-hpa
+-- 
+Jesse Barnes, Intel Open Source Technology Center
