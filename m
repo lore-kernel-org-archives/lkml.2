@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1EDSP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:15:26 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:52779 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab1EDSPZ (ORCPT
+	id S1755303Ab1EDSP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:15:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41350 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab1EDSP5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:15:25 -0400
-Date: Wed, 4 May 2011 20:15:18 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: [PATCH 1/8] arch/x86/xen/enlighten: Cleanup code/data sections definitions
-Message-ID: <20110504181518.GB29218@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	Wed, 4 May 2011 14:15:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=wCZsnhesO3LyFlM5nli0RWlz2lEulB7tfs0bRi8leQc66FFKXbuaz2MdZOp+/o0AYH
+         KEhqxIHWGhYXcao/UxGrEFzuDWUFnf+8Wl22XmIDBaEDN+/yWxHjE71W4nj6/lc2ojs1
+         uZKWGpc9qXV/SvfiwCdOHk/a+LkEZ04OBLtrY=
+MIME-Version: 1.0
+In-Reply-To: <1304087822-22853-1-git-send-email-mmarek@suse.cz>
+References: <1304087822-22853-1-git-send-email-mmarek@suse.cz>
+Date: Wed, 4 May 2011 20:15:55 +0200
+X-Google-Sender-Auth: NPCol0_DQ5Av2IDPFLN4vHbpWUQ
+Message-ID: <BANLkTimP=DQu4_fwxux=5d0w7YanuURw4Q@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Update KCONFIG entry
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup code/data sections definitions
-accordingly to include/linux/init.h.
+On Fri, Apr 29, 2011 at 16:37, Michal Marek <mmarek@suse.cz> wrote:
+> Roman Zippel hasn't been active for several years. Add myself as kconfig
+> maintainer, but change the mode to "Odd Fixes" to not set expectations
+> too high. Also, remove the patchwork link, since it is not used for
+> kbuild/kconfig.
+>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
----
- arch/x86/xen/enlighten.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+Thanks for adding him to CREDITS!
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index e3c6a06..dd7b88f 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -235,7 +235,7 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 	*dx &= maskedx;
- }
- 
--static __init void xen_init_cpuid_mask(void)
-+static void __init xen_init_cpuid_mask(void)
- {
- 	unsigned int ax, bx, cx, dx;
- 	unsigned int xsave_mask;
-@@ -400,7 +400,7 @@ static void xen_load_gdt(const struct desc_ptr *dtr)
- /*
-  * load_gdt for early boot, when the gdt is only mapped once
-  */
--static __init void xen_load_gdt_boot(const struct desc_ptr *dtr)
-+static void __init xen_load_gdt_boot(const struct desc_ptr *dtr)
- {
- 	unsigned long va = dtr->address;
- 	unsigned int size = dtr->size + 1;
-@@ -662,7 +662,7 @@ static void xen_write_gdt_entry(struct desc_struct *dt, int entry,
-  * Version of write_gdt_entry for use at early boot-time needed to
-  * update an entry as simply as possible.
-  */
--static __init void xen_write_gdt_entry_boot(struct desc_struct *dt, int entry,
-+static void __init xen_write_gdt_entry_boot(struct desc_struct *dt, int entry,
- 					    const void *desc, int type)
- {
- 	switch (type) {
-@@ -933,18 +933,18 @@ static unsigned xen_patch(u8 type, u16 clobbers, void *insnbuf,
- 	return ret;
- }
- 
--static const struct pv_info xen_info __initdata = {
-+static const struct pv_info xen_info __initconst = {
- 	.paravirt_enabled = 1,
- 	.shared_kernel_pmd = 0,
- 
- 	.name = "Xen",
- };
- 
--static const struct pv_init_ops xen_init_ops __initdata = {
-+static const struct pv_init_ops xen_init_ops __initconst = {
- 	.patch = xen_patch,
- };
- 
--static const struct pv_cpu_ops xen_cpu_ops __initdata = {
-+static const struct pv_cpu_ops xen_cpu_ops __initconst = {
- 	.cpuid = xen_cpuid,
- 
- 	.set_debugreg = xen_set_debugreg,
-@@ -1004,7 +1004,7 @@ static const struct pv_cpu_ops xen_cpu_ops __initdata = {
- 	.end_context_switch = xen_end_context_switch,
- };
- 
--static const struct pv_apic_ops xen_apic_ops __initdata = {
-+static const struct pv_apic_ops xen_apic_ops __initconst = {
- #ifdef CONFIG_X86_LOCAL_APIC
- 	.startup_ipi_hook = paravirt_nop,
- #endif
-@@ -1055,7 +1055,7 @@ int xen_panic_handler_init(void)
- 	return 0;
- }
- 
--static const struct machine_ops __initdata xen_machine_ops = {
-+static const struct machine_ops xen_machine_ops __initconst = {
- 	.restart = xen_restart,
- 	.halt = xen_machine_halt,
- 	.power_off = xen_machine_halt,
-@@ -1332,7 +1332,7 @@ static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
- 	return NOTIFY_OK;
- }
- 
--static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
-+static struct notifier_block xen_hvm_cpu_notifier __cpuinitdata = {
- 	.notifier_call	= xen_hvm_cpu_notify,
- };
- 
-@@ -1381,7 +1381,7 @@ bool xen_hvm_need_lapic(void)
- }
- EXPORT_SYMBOL_GPL(xen_hvm_need_lapic);
- 
--const __refconst struct hypervisor_x86 x86_hyper_xen_hvm = {
-+const struct hypervisor_x86 x86_hyper_xen_hvm __refconst = {
- 	.name			= "Xen HVM",
- 	.detect			= xen_hvm_platform,
- 	.init_platform		= xen_hvm_guest_init,
--- 
-1.5.6.5
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+> ---
+>  CREDITS     |    4 ++++
+>  MAINTAINERS |    5 ++---
+>  2 files changed, 6 insertions(+), 3 deletions(-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
