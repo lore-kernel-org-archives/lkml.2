@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab1EDNBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 09:01:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47056 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1EDNBF (ORCPT
+	id S1753031Ab1EDNBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 09:01:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56459 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab1EDNBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 09:01:05 -0400
-Date: Wed, 4 May 2011 15:00:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: <20110504112746.GE8007@htj.dyndns.org>
-Message-ID: <alpine.LFD.2.02.1105041417330.3005@ionos>
-References: <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com> <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu>
- <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 4 May 2011 09:01:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Subject: Re: [PATCH v4 0/6] staging tidspbridge: iommu migration
+Date: Wed, 4 May 2011 15:01:16 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>, devel <devel@driverdev.osuosl.org>
+References: <1304004712-8487-1-git-send-email-omar.ramirez@ti.com> <201105032218.29592.arnd@arndb.de> <BANLkTin7vsfjF+86UrGb7ph0B8TpiXiF0A@mail.gmail.com>
+In-Reply-To: <BANLkTin7vsfjF+86UrGb7ph0B8TpiXiF0A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105041501.16200.arnd@arndb.de>
+X-Provags-ID: V02:K0:i2miBqOpu0rR6PvA79FM2ggAm9jBeb87kj7ktfkFQcq
+ G8Ve4ThEKHDrD2l2qLKRSFdedIBu6BDOh36IlpNAkvcyrl1lb7
+ vpZLQrI0cpXWQxg8/4wloaG6ZoiCuuinGARvJBJwe46iH27phF
+ Qp2Rh3/8WBTVxe+kHkonBy+bDdtv9q1i5yr3fthnRQjxwLVrCY
+ 6GWM0RMzZxcIUCBrD/aXg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Tejun Heo wrote:
-> > > And that code runs with preemption enabled. So when the task gets
-> > > preempted _BEFORE_ it has actuallty written back the data, then the
-> > > race window is wide open.
+On Tuesday 03 May 2011, Ramirez Luna, Omar wrote:
+> >
+> > The code removal in this series looks good, but the move from
+> > one proprietary iommu API to another proprietary iommu API
+> > seems pointless.
+> >
+> > It would be much more helpful if you could convert the tidspbridge
+> > code to the dma-mapping API, or to the generic iommu API
+> > and provide these interfaces from the omap code.
 > 
-> Hmmm... if it's a race caused by preemtion enabled where it shouldn't
-> be, it's most likely the wrong type of this_cpu_cmpxchg_double() being
-> used in SLUB?  ie. __this_cpu_cmpxchg_double() where it should have
-> been this_cpu_cmpxchg_double()?  Christoph?
+> Yes, I thought removing a bunch of lines from staging might be good.
+> I'll check what can be done to use generic iommu or dma-mapping.
 
-No, the problem is that ELAN prevents the cmpxchg8b, but keeps
-CONFIG_CMPXCHG_LOCAL=y which then results in the unprotected code for
-the following reason:
+Ok, excellent. Have you seen the recent discussions on the
+linaro-mm-sig@lists.linaro.org mailing lists? We've been
+thinking about how it should be done there, and will continue
+the discussions in the upcoming Linaro@UDS meeting in Budapest
+next week.
 
-this_cpu_cmpxchg_double() 
-
--> __pcpu_double_call_return_bool 
-
--> this_cpu_cmpxchg_double_4
-
-Which on x86 expands to 
-
--> percpu_cmpxchg8b_double() when CONFIG_X86_CMPXCHG64=y
-
-With CONFIG_X86_CMPXCHG64=n it expands to the default:
-
-_this_cpu_generic_cmpxchg_double() in linux/percpu.h
-
-#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)        \
-({                                                                      \
-        int ret__;                                                      \
-        preempt_disable();                                              \
-        ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,           \
-                        oval1, oval2, nval1, nval2);                    \
-        preempt_enable();                                               \
-        ret__;                                                          \
-})
-
-And:
-
-#define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)       \
-({                                                                      \
-        int __ret = 0;                                                  \
-        if (__this_cpu_read(pcp1) == (oval1) &&                         \
-                         __this_cpu_read(pcp2)  == (oval2)) {           \
-                __this_cpu_write(pcp1, (nval1));                        \
-                __this_cpu_write(pcp2, (nval2));                        \
-                __ret = 1;                                              \
-        }                                                               \
-        (__ret);                                                        \
-})
-
-So now that failing config has CONFIG_PREEMPT=n which makes
-preempt_disable / enable a nop. 
-
-So preemption is not the problem, but what about interrupts and
-softirqs ?
-
-So the question is whether CMPXCHG_LOCAL for x86 wants to depend on
-X86_CMPXCHG64.
-
-The other solution is to use irqsafe_cpu_cmpxchg_double() instead of
-this_cpu_cmpxchg_double() in slub.c. 
-
-This will not hurt the X86_CMPXCHG64=y case, but keep the expansion to
-the above __this_cpu_generic_cmpxchg_double working. 
-
-Which makes me even wonder some more whether we need that whole
-CMPXCHG_LOCAL #ifdeffery in slub.c at all.
-
-Thanks,
-
-	tglx
+	Arnd
