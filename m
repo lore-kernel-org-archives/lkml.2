@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1EDR3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 13:29:35 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:32943 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab1EDR3e (ORCPT
+	id S1754784Ab1EDR2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 13:28:39 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:23290 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab1EDR2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 13:29:34 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: scameron@beardog.cce.hp.com
-Cc: Tomas Henzl <thenzl@redhat.com>, james.bottomley@hansenpartnership.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        smcameron@yahoo.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com
-Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path to ensure commands don't get lost.
-In-Reply-To: Your message of "Wed, 04 May 2011 07:52:12 CDT."
-             <20110504125212.GC5997@beardog.cce.hp.com>
-From: Valdis.Kletnieks@vt.edu
-References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com> <20110503195849.5478.13229.stgit@beardog.cce.hp.com> <4DC13566.5070203@redhat.com>
-            <20110504125212.GC5997@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304530101_7352P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 04 May 2011 13:28:21 -0400
-Message-ID: <10639.1304530101@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4DC18CB8.015F,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 4 May 2011 13:28:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=ddo6JquNa06TGkvKEDWwzMogfPPZFQiJ5Q2wjg2hQ7i7EX4sB3Jb29LkOdv6wiVFos
+         bgurmG0DeWL9yeJKvfvg==
+Date: Wed, 4 May 2011 10:28:36 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend] mm: get rid of CONFIG_STACK_GROWSUP ||
+ CONFIG_IA64
+In-Reply-To: <20110504083005.GA1375@tiehlicka.suse.cz>
+Message-ID: <alpine.LSU.2.00.1105041016110.23159@sister.anvils>
+References: <20110503141044.GA25351@tiehlicka.suse.cz> <alpine.LSU.2.00.1105031142260.7349@sister.anvils> <20110504083005.GA1375@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304530101_7352P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 4 May 2011, Michal Hocko wrote:
+> 
+> This case is obscure enough already because we are using VM_GROWSUP to
+> declare expand_stack_upwards in include/linux/mm.h
 
-On Wed, 04 May 2011 07:52:12 CDT, scameron@beardog.cce.hp.com said:
-> On Wed, May 04, 2011 at 01:15:50PM +0200, Tomas Henzl wrote:
-> > On 05/03/2011 09:58 PM, Stephen M. Cameron wrote:
-> > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Ah yes, I didn't notice that it was already done that way there
+(closer to the definitions of VM_GROWSUP so not as bad).
 
-> > >  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
-> > >  		c->Header.Tag.lower);
-> > >  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> > > +	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
+> while definition is guarded by CONFIG_STACK_GROWSUP||CONFIG_IA64. 
+> What the patch does is just "make it consistent" thing. I think we
+> should at least use CONFIG_STACK_GROWSUP||CONFIG_IA64 at both places if
+> you do not like VM_GROWSUP misuse.
 
-> I just put it there to make it clear that it ignoring the return of readl is 
-> done intentionally, not accidentally.  If this goes against some coding convention,
-> whatever, I'm not super attached to the (void), but I did put it there on purpose,
-> and would have done it in cciss as well, had I thought of it at the time.
+If it's worth changing anything, yes, that would be better.
 
-This probably needs a comment like
-	/* don't care - dummy read just to force write posting to chipset */
-or similar.  I'm assuming it's just functioning as a barrier-type flush of some sort?
+> 
+> > Not a nack: others may well disagree with me.
+> > 
+> > And, though I didn't find time to comment on your later "symmetrical"
+> > patch before it went into mmotm, I didn't see how renaming expand_downwards
+> > and expand_upwards to expand_stack_downwards and expand_stack_upwards was
+> > helpful either - needless change, and you end up using expand_stack_upwards
+> > on something which is not (what we usually call) the stack.
+> 
+> OK, I see your point. expand_stack_upwards in ia64_do_page_fault can be
+> confusing as well. Maybe if we stick with the original expand_upwards
+> and just make expand_downwards symmetrical without renameing to
+> "_stack_" like the patch does? I can rework that patch if there is an
+> interest. I would like to have it symmetrical, though, because the
+> original code was rather confusing.
 
+Yes, what I suggested before was an expand_upwards, an expand_downwards
+and an expand_stack (with mod to fs/exec.c to replace its call to
+expand_stack_downwards by direct call to expand_downwards).
 
+But it's always going to be somewhat confusing and asymmetrical
+because of the ia64 register backing store case.
 
-
---==_Exmh_1304530101_7352P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNwYy1cC3lWbTT17ARAtBTAJ99nLBal+gVKChT+db9zUyukiTruQCePk/d
-zfMU7pRV2aHY12MlQIiuoL8=
-=qqQi
------END PGP SIGNATURE-----
-
---==_Exmh_1304530101_7352P--
-
+Hugh
