@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab1EDR4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 13:56:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5282 "EHLO mx1.redhat.com"
+	id S1755192Ab1EDSJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:09:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26127 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647Ab1EDRz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 13:55:59 -0400
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
- how it works.
-From: Eric Paris <eparis@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Will Drewry <wad@chromium.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 04 May 2011 13:55:33 -0400
-In-Reply-To: <20110504170353.GA1804@nowhere>
-References: <1304002571.2101.38.camel@localhost.localdomain>
-	 <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
-	 <20110429131845.GA1768@nowhere>
-	 <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
-	 <20110503012857.GA8399@nowhere>
-	 <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
-	 <1304511396.25414.2422.camel@gandalf.stny.rr.com>
-	 <1304524465.10692.21.camel@localhost.localdomain>
-	 <1304525169.25414.2427.camel@gandalf.stny.rr.com>
-	 <1304526163.10692.33.camel@localhost.localdomain>
-	 <20110504170353.GA1804@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1304531735.10692.58.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1754647Ab1EDSJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 14:09:49 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
+Date: Wed,  4 May 2011 13:58:39 -0400
+Message-Id: <1304531920-2890-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-04 at 19:03 +0200, Frederic Weisbecker wrote:
-> On Wed, May 04, 2011 at 12:22:40PM -0400, Eric Paris wrote:
-> So the following set of operations:
-> > 
-> > SECCOMP_FILTER_SET, __NR_foo, "a=0"
-> > SECCOMP_FILTER_SET, __NR_read, "1"
-> > SECCOPM_FILTER_APPLY
-> >  
-> > SECCOMP_FILTER_SET, __NR_foo, "b=0"
-> > SECCOMP_FILTER_APPLY
-> > 
-> > SECCOMP_FILTER_SET, __NR_write, "1"
-> > SECCOMP_FILTER_APPLY
-> > 
-> > Would return EPERM for the __NR_write entry since it was a new syscall
-> > after a set.  I think we agree on all this.
-> 
-> No, why?
-> 
-> The default filter for a syscall, if none have been given for it, is "0".
-> 
-> Thus, if you write "1" later, the entire filter is going to be:
-> 
-> 	"0 && 1"
-> 
-> Which is fine, we are not overriding already applied permissions there.
-> 
-> So where is the need to return -EPERM in such a specific case? Is it
-> worth the corner case to check in the kernel, and to handle in userspace?
-> And for what reason?
+This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
+using fiemap in things like cp cause more problems than it solves, so lets try
+and give userspace an interface that doesn't suck.  So we have
 
-I assumed without looking at the code (always a bad idea) that he wasn't
-going to explicitly create a rule with "0" and was going to implicitly
-deny anything without a rule.  If there is an explicit "0" rule then you
-are right, i don't see a need to deny the set operation in the kernel.
-But if it is implicit in the non-existence of a filter then it should be
-easy to tell userspace it isn't allowed any more.
+-SEEK_HOLE: this moves the file pos to the nearest hole in the file from the
+given position.  If the given position is a hole then pos won't move.  A "hole"
+is defined by whatever the fs feels like defining it to be.  In simple things
+like ext2/3 it will simplly mean an unallocated space in the file.  For more
+complex things where you have preallocated space then that is left up to the
+filesystem.  Since preallocated space is supposed to return all 0's it is
+perfectly legitimate to have SEEK_HOLE dump you out at the start of a
+preallocated extent, but then again if this is not something you can do and be
+sure the extent isn't in the middle of being converted to a real extent then it
+is also perfectly legitimate to skip preallocated extents and only park f_pos at
+a truly unallocated section.
 
--Eric
+-SEEK_DATA: this is obviously a little more self-explanatory.  Again the only
+ambiguity comes in with preallocated extents.  If you have an fs that can't
+reliably tell that the preallocated extent is in the process of turning into a
+real extent, it is correct for SEEK_DATA to park you at a preallocated extent.
 
--Eric
+In the generic case we will just assume the entire file is data and there is a
+virtual hole at i_size, so SEEK_DATA will return -ENXIO unless you provide an
+offset of 0 and the file size is larger than 0, and SEEK_HOLE will put you at
+i_size unless pos is i_size or larger, and i_size is larger than 0.
 
+Thanks,
+
+Signed-off-by: Josef Bacik <josef@redhat.com>
+---
+v1->v2: Make the generic case assume that the entire file is data and there is a
+virtual hole at the end of the file.
+ fs/read_write.c    |   22 ++++++++++++++++++++++
+ include/linux/fs.h |    4 +++-
+ 2 files changed, 25 insertions(+), 1 deletions(-)
+
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 5520f8a..6ee63a4 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -64,6 +64,28 @@ generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
+ 			return file->f_pos;
+ 		offset += file->f_pos;
+ 		break;
++	case SEEK_DATA:
++		/*
++		 * In the generic case the entire file is data, so data only
++		 * starts at position 0 provided the file has an i_size,
++		 * otherwise it's an empty file and will always be ENXIO.
++		 */
++		if (offset != 0 || i_size_read(inode)) {
++			mutex_unlock(&inode->i_mutex);
++			return -ENXIO;
++		}
++		break;
++	case SEEK_HOLE:
++		/*
++		 * There is a virtual hole at the end of the file, so as long as
++		 * offset isn't i_size or larger, return i_size.
++		 */
++		if (offset >= i_size_read(inode)) {
++			mutex_unlock(&inode->i_mutex);
++			return -ENXIO;
++		}
++		offset = i_size_read(inode);
++		break;
+ 	}
+ 
+ 	if (offset < 0 && !unsigned_offsets(file))
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index dbd860a..1b72e0c 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -31,7 +31,9 @@
+ #define SEEK_SET	0	/* seek relative to beginning of file */
+ #define SEEK_CUR	1	/* seek relative to current file position */
+ #define SEEK_END	2	/* seek relative to end of file */
+-#define SEEK_MAX	SEEK_END
++#define SEEK_HOLE	3	/* seek to the closest hole */
++#define SEEK_DATA	4	/* seek to the closest data */
++#define SEEK_MAX	SEEK_DATA
+ 
+ struct fstrim_range {
+ 	__u64 start;
+-- 
+1.7.2.3
 
