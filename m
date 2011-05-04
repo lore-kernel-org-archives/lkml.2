@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab1EDRBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 13:01:38 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40126 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab1EDRBh (ORCPT
+	id S1754566Ab1EDRB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 13:01:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46338 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753580Ab1EDRB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 13:01:37 -0400
-Date: Wed, 4 May 2011 19:01:31 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Borislav Petkov <bp@amd64.org>, John W Linville <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        chaoming_li@realsil.com.cn,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 00/12] rtlwifi: rtl8192se: Merge new driver
-Message-ID: <20110504170131.GA12126@gere.osrc.amd.com>
-References: <4dc01587.AfSJXmRO80K/pl3f%Larry.Finger@lwfinger.net>
- <20110503150105.GC18648@gere.osrc.amd.com>
- <4DC05F9C.2070802@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC05F9C.2070802@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 May 2011 13:01:56 -0400
+Subject: Re: [PATCHv2 4/4] ARM: tegra: irq: Add tegra_eoi
+From: Will Deacon <will.deacon@arm.com>
+To: Colin Cross <ccross@android.com>
+Cc: lakml <linux-arm-kernel@lists.infradead.org>,
+        linux-tegra <linux-tegra@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTi=a26_A7yAAfkQd5NSxbR+reQCZ1g@mail.gmail.com>
+References: <1304284213-11950-5-git-send-email-ccross@android.com>
+	 <1304288854-11011-1-git-send-email-ccross@android.com>
+	 <1304414973.27863.2.camel@e102144-lin.cambridge.arm.com>
+	 <BANLkTi=a26_A7yAAfkQd5NSxbR+reQCZ1g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 18:01:42 +0100
+Message-ID: <1304528502.1935.2.camel@craptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 03:03:40PM -0500, Larry Finger wrote:
-> On 05/03/2011 10:01 AM, Borislav Petkov wrote:
-> >I think I have such a device in my Thinkpad:
-> >
-> >03:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller [10ec:8172] (rev 10)
-> >
-> >I could give them a run soon. Do you have them in a tree somewhere I
-> >could pull?
-> 
-> Your device is claimed by the new driver.
-> 
-> You can get the code from
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/lwfinger/rtl8192se.git
-> 
-> This tree is based on Linville's wireless-testing tree with these 12
-> patches applied.
+On Tue, 2011-05-03 at 19:41 +0100, Colin Cross wrote:
+> What is your plan for merging the fasteoi patches?  If you are
+> planning to put them in 2.6.40, can you pull these patches into your
+> tree?  I don't have any other Tegra changes planned for 2.6.40, so
+> they shouldn't cause conflicts later.
 
-Ok, pulled, merged with mainline, built and currently using it to read
-mail over imap! I wish everything else in Linux worked that way :).
+Ok, since Santosh would like me to take his relaxed I/O stuff for the
+GIC too then I guess I can put all of this into an irq branch along with
+the fasteoi changes.
 
-Good job, thanks!
+Russell - would you be happy pulling this from me if I put it together?
 
--- 
-Regards/Gruss,
-Boris.
+Cheers,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Will
+
