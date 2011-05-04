@@ -1,315 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab1EDJ53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 05:57:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab1EDJ51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 05:57:27 -0400
-Date: Wed, 4 May 2011 12:56:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 4/8]vhost: vhost TX zero-copy support
-Message-ID: <20110504095650.GA11592@redhat.com>
-References: <1304496684.20660.84.camel@localhost.localdomain>
+	id S1753094Ab1EDKGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 06:06:17 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:38907 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751922Ab1EDKGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 06:06:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAHMjwU15LBza/2dsb2JhbACmFnjEIQ6FeQSeAQ
+Date: Wed, 4 May 2011 20:06:09 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] writeback fixes and trace events
+Message-ID: <20110504100609.GE9114@dastard>
+References: <20110504091707.910929441@intel.com>
+ <20110504094654.GA31151@infradead.org>
+ <20110504095637.GA2101@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304496684.20660.84.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110504095637.GA2101@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 01:11:24AM -0700, Shirley Ma wrote:
-> This patch maintains the outstanding userspace buffers in the 
-> sequence it is delivered to vhost. The outstanding userspace buffers 
-> will be marked as done once the lower device buffers DMA has finished. 
-> This is monitored through last reference of kfree_skb callback. Two
-> buffer index are used for this purpose.
+On Wed, May 04, 2011 at 05:56:37PM +0800, Wu Fengguang wrote:
+> On Wed, May 04, 2011 at 05:46:54PM +0800, Christoph Hellwig wrote:
+> > On Wed, May 04, 2011 at 05:17:07PM +0800, Wu Fengguang wrote:
+> > > Andrew,
+> > > 
+> > > Here are one more collection of simple writeback patches.
+> > 
+> > How does this relate to the other floating writeback patches?  We
+> > really need a proper writeback tree to make any sense of the patch
+> > queues..
 > 
-> The vhost passes the userspace buffers info to lower device skb 
-> through message control. Since there will be some done DMAs when
-> entering vhost handle_tx. The worse case is all buffers in the vq are
-> in pending/done status, so we need to notify guest to release DMA done 
-> buffers first before get any new buffers from the vq.
-> 
-> Signed-off-by: Shirley <xma@us.ibm.com>
+> These patches are based on the writeback patches already in -mm.
+> Sorry I should have mentioned it.
 
-Looks good overall. Some nits to iron out below.
+Does anyone actaully testing filesystems use the -mm tree? I'm
+pretty sure that no-one in the XFS world does, and I don't think
+that any ext4 or btrfs folk do, either....
 
-> ---
-> 
->  drivers/vhost/net.c   |   30 +++++++++++++++++++++++++++-
->  drivers/vhost/vhost.c |   50
-> ++++++++++++++++++++++++++++++++++++++++++++++++-
->  drivers/vhost/vhost.h |   10 +++++++++
->  3 files changed, 87 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 2f7c76a..c403afb 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -32,6 +32,8 @@
->   * Using this limit prevents one virtqueue from starving others. */
->  #define VHOST_NET_WEIGHT 0x80000
->  
-> +#define MAX_ZEROCOPY_PEND 64
-> +
+Cheers,
 
-Pls document what the above is. Also scope with VHOST_
-
->  enum {
->  	VHOST_NET_VQ_RX = 0,
->  	VHOST_NET_VQ_TX = 1,
-> @@ -129,6 +131,7 @@ static void handle_tx(struct vhost_net *net)
->  	int err, wmem;
->  	size_t hdr_size;
->  	struct socket *sock;
-> +	struct skb_ubuf_info pend;
->  
->  	/* TODO: check that we are running from vhost_worker? */
->  	sock = rcu_dereference_check(vq->private_data, 1);
-> @@ -151,6 +154,10 @@ static void handle_tx(struct vhost_net *net)
->  	hdr_size = vq->vhost_hlen;
->  
->  	for (;;) {
-> +		/* Release DMAs done buffers first */
-> +		if (sock_flag(sock->sk, SOCK_ZEROCOPY))
-> +			vhost_zerocopy_signal_used(vq);
-> +
->  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
->  					 ARRAY_SIZE(vq->iov),
->  					 &out, &in,
-> @@ -166,6 +173,12 @@ static void handle_tx(struct vhost_net *net)
->  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->  				break;
->  			}
-> +			/* If more outstanding DMAs, queue the work */
-> +			if (sock_flag(sock->sk, SOCK_ZEROCOPY) &&
-> +			    (atomic_read(&vq->refcnt) > MAX_ZEROCOPY_PEND)) {
-> +				vhost_poll_queue(&vq->poll);
-
-Well, this just keeps polling, doesn't it?
-If you want to wait until # of DMAs is below MAX_ZEROCOPY_PEND,
-you'll need to do the queueing from some callback.
-
-Something like this: when refcnt is above 2 * MAX_ZEROCOPY_PEND,
-stop submitting and wait until some are freed.
-
-BTW, can the socket poll wakeup do the job?
-
-> +				break;
-> +			}
->  			if (unlikely(vhost_enable_notify(vq))) {
->  				vhost_disable_notify(vq);
->  				continue;
-> @@ -188,17 +201,30 @@ static void handle_tx(struct vhost_net *net)
->  			       iov_length(vq->hdr, s), hdr_size);
->  			break;
->  		}
-> +		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-> +		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
-> +			pend.callback = vhost_zerocopy_callback;
-> +			pend.arg = vq;
-> +			pend.desc = vq->upend_idx;
-> +			msg.msg_control = &pend;
-> +			msg.msg_controllen = sizeof(pend);
-> +			vq->heads[vq->upend_idx].id = head;
-> +			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
-> +			atomic_inc(&vq->refcnt);
-> +		}
->  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
->  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
->  		if (unlikely(err < 0)) {
-> -			vhost_discard_vq_desc(vq, 1);
-> +			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-> +				vhost_discard_vq_desc(vq, 1);
->  			tx_poll_start(net, sock);
->  			break;
->  		}
->  		if (err != len)
->  			pr_debug("Truncated TX packet: "
->  				 " len %d != %zd\n", err, len);
-> -		vhost_add_used_and_signal(&net->dev, vq, head, 0);
-> +		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-> +			vhost_add_used_and_signal(&net->dev, vq, head, 0);
->  		total_len += len;
->  		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
->  			vhost_poll_queue(&vq->poll);
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index 2ab2912..3048953 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
->  	vq->call_ctx = NULL;
->  	vq->call = NULL;
->  	vq->log_ctx = NULL;
-> +	vq->upend_idx = 0;
-> +	vq->done_idx = 0;
-> +	atomic_set(&vq->refcnt, 0);
->  }
->  
->  static int vhost_worker(void *data)
-> @@ -230,7 +233,7 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev
-> *dev)
->  					       UIO_MAXIOV, GFP_KERNEL);
->  		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
->  					  GFP_KERNEL);
-> -		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
-> +		dev->vqs[i].heads = kzalloc(sizeof *dev->vqs[i].heads *
->  					    UIO_MAXIOV, GFP_KERNEL);
-
-Do we really need to zero it all out? We generally tried to only
-init what is necessary ...
-
->  		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
-> @@ -385,10 +388,41 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
->  	return 0;
->  }
->  
-
-Pls document what the below does.
-
-> +void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
-> +{
-> +	int i, j = 0;
-> +
-> +	i = vq->done_idx;
-> +	while (i != vq->upend_idx) {
-> +		/* len = 1 means DMA done */
-
-Hmm. Guests aren't likely to use len 1 in practice,
-but I think it's better to support this.
-
-I'd suggest sticking extra stuff in id, IIRC only values
-< vq size are legal there, anything else we can use.
-Also, pls add some defines for special values, better than
-a comment:
-	if (len == VHOST_DMA_DONE_LEN)
-
-> +		if (vq->heads[i].len == 1) {
-> +			/* reset len = 0 */
-> +			vq->heads[i].len = 0;
-> +			i = (i + 1) % UIO_MAXIOV;
-> +			++j;
-> +		} else
-> +			break;
-> +	}
-> +	if (j) {
-
-Pls add some comments to explain the logic here.
-
-> +		if (i > vq->done_idx)
-> +			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
-> +		else {
-> +			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
-> +					 UIO_MAXIOV - vq->done_idx);
-> +			vhost_add_used_n(vq, vq->heads, i);
-> +		}
-> +		vq->done_idx = i;
-> +		vhost_signal(vq->dev, vq);
-> +		atomic_sub(j, &vq->refcnt);
-> +	}
-> +}
-> +
->  /* Caller should have device mutex */
->  void vhost_dev_cleanup(struct vhost_dev *dev)
->  {
->  	int i;
-> +	unsigned long begin = jiffies;
-> +
->  
->  	for (i = 0; i < dev->nvqs; ++i) {
->  		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
-> @@ -405,6 +439,11 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
->  			eventfd_ctx_put(dev->vqs[i].call_ctx);
->  		if (dev->vqs[i].call)
->  			fput(dev->vqs[i].call);
-> +		/* wait for all lower device DMAs done, then notify guest */
-> +		while (atomic_read(&dev->vqs[i].refcnt)) {
-> +			if (time_after(jiffies, begin + 5 * HZ))
-
-Hmm, does this actually busy-wait?  Let's at least sleep here.
-Or maybe some wakeup scheme can be cooked up.
-For example, have a kref with release function that signals some
-completion.
-
-> +				vhost_zerocopy_signal_used(&dev->vqs[i]);
-> +		}
->  		vhost_vq_reset(dev, dev->vqs + i);
->  	}
->  	vhost_dev_free_iovecs(dev);
-> @@ -1416,3 +1455,12 @@ void vhost_disable_notify(struct vhost_virtqueue
-> *vq)
->  		vq_err(vq, "Failed to enable notification at %p: %d\n",
->  		       &vq->used->flags, r);
->  }
-> +
-> +void vhost_zerocopy_callback(struct sk_buff *skb)
-> +{
-> +	int idx = skb_shinfo(skb)->ubuf.desc;
-> +	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
-> +
-> +	/* set len = 1 to mark this desc buffers done DMA */
-> +	vq->heads[idx].len = 1;
-> +}
-
-So any kind of callback like that, that goes into the skb,
-will be racy wrt module unloading because module can go away
-after you mark dma done and before this function returns.
-Solution is to have a core function that does the
-final signalling (e.g. sock_wfree is in core).
-Would be nice to fix, even though this race is
-completely theoretical, I don't believe it will
-trigger in practice.
-
-
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index b3363ae..ec032a0 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -108,6 +108,14 @@ struct vhost_virtqueue {
->  	/* Log write descriptors */
->  	void __user *log_base;
->  	struct vhost_log *log;
-> +	/* vhost zerocopy support */
-> +	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
-> +	/* index of zerocopy pending DMA buffers */
-> +	int upend_idx;
-> +	/* index of zerocopy done DMA buffers, but not notify guest yet */
-> +	int done_idx;
-
-Pls try to find more descriptive names for the above,
-and clarify the comments: I could not tell what do the
-comments mean.
-
-upend_idx seems to be a copy of avail idx?
-done_idx is ... ?
-
-> +	/* notify vhost zerocopy DMA buffers has done in lower device */
-
-Do you mean 'notify vhost that zerocopy DMA is complete'?
-
-> +	void (*callback)(struct sk_buff *);
-
-Is this actually used?
-If yes rename it zerocopy_dma_done or something like this?
-
->  };
->  
->  struct vhost_dev {
-> @@ -154,6 +162,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
->  
->  int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
->  		    unsigned int log_num, u64 len);
-> +void vhost_zerocopy_callback(struct sk_buff *skb);
-> +void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
->  
->  #define vq_err(vq, fmt, ...) do {                                  \
->  		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
-> 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
