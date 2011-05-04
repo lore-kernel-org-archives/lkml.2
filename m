@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1EDVlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:41:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46135 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab1EDVlC (ORCPT
+	id S1754353Ab1EDVkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:40:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56302 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab1EDVkk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:41:02 -0400
-Date: Wed, 4 May 2011 23:40:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: <BANLkTimvxOMuPJ0W0npo5i3gwFqdRw74Pw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1105042325500.3005@ionos>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org> <alpine.LFD.2.02.1105041640020.3005@ionos>
- <alpine.DEB.2.00.1105040958570.5495@router.home> <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home> <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
- <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home> <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com> <alpine.DEB.2.00.1105041421280.5495@router.home> <BANLkTi=efcVkGb+DReZ+i1p5j4QXJYjKjQ@mail.gmail.com>
- <alpine.DEB.2.00.1105041454190.5495@router.home> <BANLkTik7AHGr7+BG8nE16j-ayctD0LOH=w@mail.gmail.com> <BANLkTimvxOMuPJ0W0npo5i3gwFqdRw74Pw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 4 May 2011 17:40:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,316,1301900400"; 
+   d="scan'208";a="638047630"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Date: Wed, 4 May 2011 14:40:37 -0700
+Subject: RE: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
+ for now
+Thread-Topic: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
+ for now
+Thread-Index: AcwKKL8lLumO+P+7QCCi8YuZpZWUAgAedDxA
+Message-ID: <987664A83D2D224EAE907B061CE93D5301C53C9B31@orsmsx505.amr.corp.intel.com>
+References: <1304357691-14354-1-git-send-email-bp@amd64.org>
+ <1304357691-14354-5-git-send-email-bp@amd64.org>
+ <20110503064505.GF7751@elte.hu> <20110503072302.GC18979@aftab>
+ <987664A83D2D224EAE907B061CE93D5301C53670E0@orsmsx505.amr.corp.intel.com>
+ <20110504065843.GC20828@elte.hu>
+In-Reply-To: <20110504065843.GC20828@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Linus Torvalds wrote:
+> Yes, i definitely think a gateway to printk would be useful, so that the system 
+> can log MCE events the syslog way as well. This probably makes sense for 
+> persistent events in general, not just MCE events.
 
-> On Wed, May 4, 2011 at 2:06 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > The problem is that cmpxchg *IS*NOT*AN*CMPXCHG*AT*ALL*. Not even on UP.
-> 
-> Btw, the really sad thing is that as far as I can tell, the
-> cmpxchg64_local() function that we define actually gets this *right*,
-> with a helper function that actually works (and disables interrupts)
-> and all the alternative_io() stuff to then use the right instruction
-> automatically if the CPU supports it, rather than making it a
-> hardcoded decision.
-> 
-> But we don't use it, because the "percpu_cmpxchg8b_double()" code
-> rolls its own inferior version, and has slightly different semantics
-> (ie the whole "return value success" thing).
+s/as well/instead/ ??? If the persistent event mechanism is correctly feeding
+data to a mart daemon, I don't think we need any printk() chatter. It is only
+if this is not working that we'd want to see some console logging.
 
-Yeah, I tripped over that as well. And the new shiny extra
-CONFIG_CMPXCHG_DOUBLE misfeature Christoph nailed together is just
-ignoring it as well. It's just more useless #ifdef and CONFIG bloat.
+I agree that this isn't just a property of the MCE persistent event - other
+persistent events would very likely want a way to shout for help if the events
+are piling up with no listener.
 
-That whole this_cpu_* stuff seems to be designed by committee. A quick
-grep shows that max. 10% of the implemented macro hell is actually
-used. Can we get rid of all unused ones and bring them back when they
-are actually required?
+> printk itself could become a persistent event. (Transparently and without 
+> breaking compatible syslogd/klogd functionality.)
 
-Thanks,
+Someone from Google was very skeptical of printk() remaining stable from
+release to release ... a big issue when you have some heavy duty infrastructure
+trying to parse and consume these messages.  We should really consider such
+stuff a user visible ABI, and thus not subject to random breakage - which
+is a radical departure from our current attitude to printk().
 
-	tglx
+-Tony
