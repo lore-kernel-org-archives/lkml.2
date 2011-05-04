@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab1EDVFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:05:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31621 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab1EDVFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:05:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,316,1301900400"; 
-   d="scan'208";a="742459720"
-From: Andi Kleen <andi@firstfloor.org>
-To: Max Asbock <masbock@linux.vnet.ibm.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] time: Add locking to xtime access in get_seconds()
-References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org>
-	<1304527860.21305.5.camel@w-amax.beaverton.ibm.com>
-Date: Wed, 04 May 2011 14:05:35 -0700
-In-Reply-To: <1304527860.21305.5.camel@w-amax.beaverton.ibm.com> (Max Asbock's
-	message of "Wed, 04 May 2011 09:51:00 -0700")
-Message-ID: <m2mxj2yy5c.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755936Ab1EDVHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:07:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50091 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753169Ab1EDVHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 17:07:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <alpine.DEB.2.00.1105041454190.5495@router.home>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
+ <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home>
+ <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home>
+ <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
+ <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home>
+ <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com> <alpine.DEB.2.00.1105041421280.5495@router.home>
+ <BANLkTi=efcVkGb+DReZ+i1p5j4QXJYjKjQ@mail.gmail.com> <alpine.DEB.2.00.1105041454190.5495@router.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 4 May 2011 14:06:21 -0700
+Message-ID: <BANLkTik7AHGr7+BG8nE16j-ayctD0LOH=w@mail.gmail.com>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Max Asbock <masbock@linux.vnet.ibm.com> writes:
-
-> On Tue, 2011-05-03 at 20:11 -0700, John Stultz wrote:
->> From: John Stultz <johnstul@us.ibm.com>
->> 
->> So get_seconds() has always been lock free, with the assumption
->> that accessing a long will be atomic.
->> 
+On Wed, May 4, 2011 at 1:04 PM, Christoph Lameter <cl@linux.com> wrote:
 >
-> get_seconds() is used in the x86 machine check handler and there is a
-> comment saying:
-> /* We hope get_seconds stays lockless */
->
-> This needs to be carefully looked at if locking is introduced to
-> get_seconds().
+> Maybe I should have pushed the cmpxchg_double() before the
+> this_cpu_cmpxchg to avoid these misunderstandings
 
-Yes the seqlock being interrupted by an MCE would deadlock.
+Christoph, the only mis-understanding is yours.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+I understand perfectly that the percpu cmpxchg isn't SMP-atomic. We
+all know that.
+
+The problem is that cmpxchg *IS*NOT*AN*CMPXCHG*AT*ALL*. Not even on UP.
+
+It's something totally different.
+
+                   Linus
