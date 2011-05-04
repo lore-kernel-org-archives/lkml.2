@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab1EDWek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 18:34:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46637 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab1EDWej (ORCPT
+	id S1756156Ab1EDWii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 18:38:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54488 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753011Ab1EDWih convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 18:34:39 -0400
-Date: Thu, 5 May 2011 00:34:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Dave Kleikamp <dkleikamp@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, paulmck@us.ibm.com
-Subject: Re: idle issues running sembench on 128 cpus
-In-Reply-To: <m2pqnyyva8.fsf@firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1105050023070.3005@ionos>
-References: <4DC1C95B.4040706@gmail.com> <m2pqnyyva8.fsf@firstfloor.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 4 May 2011 18:38:37 -0400
+References: <4DB8600C.8080000@suse.com> <20110504150557.a7f4bf73.akpm@linux-foundation.org>
+In-Reply-To: <20110504150557.a7f4bf73.akpm@linux-foundation.org>
+Mime-Version: 1.0 (iPhone Mail 8H7)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <34AB62EA-4A0B-4DD5-8731-AD9B0DB69F14@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@google.com>
+X-Mailer: iPhone Mail (8H7)
+From: Jeff Mahoney <jeffm@suse.com>
+Subject: Re: [PATCH] hung_task_timeout: configurable default
+Date: Wed, 4 May 2011 18:38:21 -0400
+To: Andrew Morton <akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Andi Kleen wrote:
-> Dave Kleikamp <dkleikamp@gmail.com> writes:
-> > I also don't know if it makes sense to be able to tune the cpuidle
-> > governors to add more resistance to enter the C3 state, or even being
-> > able to switch to a performance governor at runtime, similar to
-> > cpufreq.
-> >
-> > I'd like to hear your thoughts before I dive any deeper into this.
+
+
+On May 4, 2011, at 6:05 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Wed, 27 Apr 2011 14:27:24 -0400
+> Jeff Mahoney <jeffm@suse.com> wrote:
 > 
-> It's fixed on Westmere. There the APIC timer will always tick
-> and all that logic is not needed anymore and disabled.
+>> This patch allows the default value for sysctl_hung_task_timeout_secs
+>> to be set at build time. The feature carries virtually no overhead,
+>> so it makes sense to keep it enabled. On heavily loaded systems, though,
+>> it can end up triggering stack traces when there is no bug other than
+>> the system being underprovisioned. We use this patch to keep the hung task
+>> facility available but disabled at boot-time.
+>> 
+>> The default of 120 seconds is preserved. As a note, commit e162b39a may
+>> have accidentally reverted commit fb822db4, which raised the default from
+>> 120 seconds to 480 seconds.
 > 
-> That is mostly fixed. One problem right now is that the
-> CLOCK_EVT_FEAT_C3STOP test is inside the lock. But we
-> can easily move it out, assuming the clock_event_device
-> gets RCU freed or has a reference count.
-
-No, it does not even need refcounting. We can access it outside of the
-lock as this is atomic context called on the cpu which is about to go
-idle and therefor the device cannot go away. Easy and straightforward
-fix.
- 
-> But yes it would be still good to fix Nehalem too.
+> The changelog forgot to tell us why the patch's author considers the
+> patch to be needed.  This happens quite a lot.
 > 
-> One fix would be to make all the masks hierarchical,
-> similar to what RCU does. Perhaps even some code 
-> could be shared with RCU on that because it's a very
-> similar problem.
+>> @@ -33,7 +33,8 @@ unsigned long __read_mostly sysctl_hung_
+>> /*
+>>  * Zero means infinite timeout - no checking done:
+>>  */
+>> -unsigned long __read_mostly sysctl_hung_task_timeout_secs = 120;
+>> +unsigned long __read_mostly sysctl_hung_task_timeout_secs =
+>> +                    CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
+>> 
+> 
+> For the life of me I can't understand why you distro guys need to keep
+> patching the kernel when you could just add a line to your initscripts.
+> 
+> I'm suspecting that lameness is involved.
 
-In theory. It's not about the mask. The mask is uninteresting. It's
-about the expiry time, which we have to protect. There is nothing
-hierarchical about that. It all boils down on _ONE_ single functional
-device and you don't want to miss out your deadline just because you
-decided to be extra clever. RCU does not care much whether you run the
-callbacks a tick later on not. Time and timekeeping does.
+Good point, and one we actually made ourselves internally after starting to submit these in the last round when we were tweaking more sensitive knobs.
 
-Thanks,
+Skip this one and I'll submit a patch fixing the 480s -> 120s regression.
 
-	tglx
+-Jeff
+
+--
+Jeff Mahoney
+(mobile)
