@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab1EDLNQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 07:13:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32196 "EHLO mga02.intel.com"
+	id S1753355Ab1EDLOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 07:14:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45666 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752818Ab1EDLNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 07:13:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,313,1301900400"; 
-   d="scan'208";a="637750757"
-Date: Wed, 4 May 2011 19:13:10 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Chinner <david@fromorbit.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] writeback: pass writeback_control down to
- move_expired_inodes()
-Message-ID: <20110504111310.GB5191@localhost>
-References: <20110420080336.441157866@intel.com>
- <20110420080917.759855316@intel.com>
- <20110504110430.GA4646@infradead.org>
+	id S1752818Ab1EDLOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 07:14:04 -0400
+Date: Wed, 4 May 2011 13:13:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>
+Subject: Re: [PATCH v1 00/19] Increase resolution of load weights
+Message-ID: <20110504111355.GC5914@elte.hu>
+References: <1304299157-25769-1-git-send-email-ncrao@google.com>
+ <20110502061411.GA16682@elte.hu>
+ <BANLkTiktch2mHDLXZCdCED3XoqmkVRfghA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110504110430.GA4646@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTiktch2mHDLXZCdCED3XoqmkVRfghA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 07:04:32PM +0800, Christoph Hellwig wrote:
-> On Wed, Apr 20, 2011 at 04:03:37PM +0800, Wu Fengguang wrote:
-> > No behavior change. This will add debug visibility to the code, for
-> > example, to dump the wbc contents when kprobing queue_io().
-> 
-> I don't think it's a good idea.  The writeback_control should move
-> back to just controlling per-inode writeback and not be passed to
-> more routines dealing with high-level writeback.
 
-Good point. I can do without this patch.
+* Nikhil Rao <ncrao@google.com> wrote:
+
+> Also, out of curiosity, what's an acceptable tolerance level for a 
+> performance hit on 32-bit?
+
+It's a cost/benefit analysis and for 32-bit systems the benefits seem to be 
+rather small, right?
+
+Can we make the increase in resolution dependent on max CPU count or such and 
+use cheaper divides on 32-bit in that case, while still keeping the code clean? 
+
+We'd expect only relatively large and new (and 64-bit) systems to run into 
+resolution problems, right?
 
 Thanks,
-Fengguang
+
+	Ingo
