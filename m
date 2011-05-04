@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1EDSdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:33:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21367 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab1EDSdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:33:05 -0400
-Message-ID: <4DC19BD9.7090101@oracle.com>
-Date: Wed, 04 May 2011 11:32:57 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Subject: Re: [RFC]Documentation/email-clients.txt
-References: <20110504053005.GA5140@gmail.com>
-In-Reply-To: <20110504053005.GA5140@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753883Ab1EDSdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:33:55 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:46994 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab1EDSdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 14:33:54 -0400
+Date: Wed, 4 May 2011 11:33:51 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: TB <lkml@techboom.com>, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Divide error in bictcp_cong_avoid ?
+Message-ID: <20110504113351.4643a0c9@nehalam>
+In-Reply-To: <20110504104940.cd0d9e9a.rdunlap@xenotime.net>
+References: <4DC178D3.6030308@techboom.com>
+	<20110504104940.cd0d9e9a.rdunlap@xenotime.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4DC19BDF.00FA:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/11 22:30, Harry Wei wrote:
-> Hi Randy,
-> 	When i read the Documentation/email-clients.txt, i have got some questions.
-> I list them in the following.
+On Wed, 4 May 2011 10:49:40 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> [add cc to netdev]
 > 
-> 1, The 155 line writes "(a)ttach works fine without "set paste"". I wonder 
-> what the '(a)ttach' means? How should we understand '(a)ttach'? Maybe it is
-> the word 'attach', but i am not sure.
+> 
+> On Wed, 04 May 2011 12:03:31 -0400 TB wrote:
+> 
+> > We're having this issue sporadically on a few servers and this is the 
+> > backtrace we get from netconsole.
+> > 
+> > 
+> > [28522.642419] divide error: 0000 [#1] SMP
+> > [28522.642457] last sysfs file: 
+> > /sys/devices/pci0000:00/0000:00:1f.2/host2/target2:0:0/2:0:0:0/vendor
+> > [28522.642504] CPU 0
+> > [28522.642511] Modules linked in:
+> >   i2c_i801
+> >   i2c_core
+> >   evdev
+> >   button
+> > [28522.642570]
+> > [28522.642590] Pid: 0, comm: swapper Not tainted 2.6.38.5 #6
+> > 
+> >   Supermicro X8DTH-i/6/iF/6F
+> > /
+> >   X8DTH
+> > 
 
-I believe that "(a)ttach" means that the 'a' key is used for the Attach command,
-but I didn't write this section of text for Mutt.
-
-
-> 2, You have written "###" in the last line, but i don't know how to understand
-> it.
-
-It's just a marker for the end of the file.  You can ignore it.
-
+What kernel version? I suspect they are running something really old
+kernel like RHEL 5 since BIC has not been the default congestion control for
+several years.
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
