@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1EDQ3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:29:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50953 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab1EDQ3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:29:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Subject: Re: [RFC 2/5] gpio: add support for Technologic Systems TS-5500 GPIOs
-Date: Wed, 4 May 2011 18:29:12 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        platform-driver-x86@vger.kernel.org, linux-serial@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1304115712-5299-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-In-Reply-To: <1304115712-5299-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+	id S1754310Ab1EDQbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:31:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50651 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112Ab1EDQbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 12:31:06 -0400
+Date: Wed, 4 May 2011 18:30:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] slub: Fix the lockless code on 32-bit platforms with no
+ 64-bit cmpxchg
+Message-ID: <20110504163046.GA31689@elte.hu>
+References: <alpine.LFD.2.02.1105041124080.3005@ionos>
+ <20110504101932.GA3392@elte.hu>
+ <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos>
+ <20110504132022.GA17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041539050.3005@ionos>
+ <20110504141413.GA14127@elte.hu>
+ <20110504143616.GA19986@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105041829.12801.arnd@arndb.de>
-X-Provags-ID: V02:K0:YEcZgQQq1cTYPIecCBse2q8XBZwDTv0px48jTX0mPEj
- BQwrscAo8uNtDqba5JDjXRom8glXENxGywt/9fclsT/qbkyghi
- Gb6ECq5VGyUWUBY1cEQAm/y/DRS8obauQK3QGzOe/NGAR3OYs2
- QN+BjjZFPGOKGNIzRd0hTlYpqwK7izT7KhmQa7QY8KEmMdOPju
- sC6cohuSTuFXCuY3ZkzGw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504143616.GA19986@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 30 April 2011, Vivien Didelot wrote:
-> +       ts5xxx_sbcinfo_set(&sbcinfo);
-> +       if (5500 != sbcinfo.board_id) {
-> +               printk(MODULE_NAME ": Incompatible TS Board.\n");
-> +               return -ENODEV;
-> +       }
 
-The above should not be necessary:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> +static int __init ts5500_gpio_init(void)
-> +{
-> +       int ret;
-> +
-> +       ret = platform_driver_register(&ts5500_gpio_driver);
-> +       if (ret)
-> +               return ret;
-> +
-> +       ret = platform_device_register(&gpio_device);
-> +       if (ret) {
-> +               printk(MODULE_NAME ": Failed to register platform device\n");
-> +               platform_driver_unregister(&ts5500_gpio_driver);
-> +               return ret;
-> +       }
-> +
-> +       printk(MODULE_NAME ": GPIO/DIO driver loaded.\n");
-> +       return 0;
-> +}
-> +module_init(ts5500_gpio_init);
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > 
+> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > > Patch below. Ingo, can you test that please ?
+> > 
+> > Sure - test underway.
+> 
+> Ok, the patch below is looking really good - the test would have crashed on the 
+> bad kernel. I think we can consider the regression fixed:
+> 
+>   Acked-and-tested-by: Ingo Molnar <mingo@elte.hu>
+> 
+> I'll keep it running some more to make really sure it's fixed, plus it would 
+> be nice if Walter tested your fix as well.
 
-Doing it this way requires you know that you have to load the driver,
-which is not good if you want to have the same kernel running on 
-different machines.
+Stopped the test after 2 hours uptime - i think we can consider the crash 
+fixed.
 
-Better move the device registration into your platform code, in the
-place where you know what device you have. The add a MODULE_DEVICE_TABLE()
-entry to the module so the driver gets automatically loaded (if it's
-a module), and match the platform device to the driver you register
-from the module_init function.
+Thanks,
 
-Same for the other devices where you follow the same pattern.
-
-Another way to do the same in a more modern fashion would be
-to provide a flattened device tree that describes all your devices
-and pass that into the kernel. Take a look at the CE4100 and OLPC
-platforms to see how that is done.
-
-	Arnd
+	Ingo
