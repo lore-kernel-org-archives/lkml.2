@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab1EDWZU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 18:25:20 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:33178 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab1EDWZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 18:25:18 -0400
-Message-ID: <4DC1D1A5.7050408@candelatech.com>
-Date: Wed, 04 May 2011 15:22:29 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1756131Ab1EDWXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 18:23:37 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54227 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753818Ab1EDWXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 18:23:36 -0400
+Date: Thu, 5 May 2011 00:23:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 6/6] writeback: convert to relative older_than_this in
+ trace events
+Message-ID: <20110504222333.GL6968@quack.suse.cz>
+References: <20110504091707.910929441@intel.com>
+ <20110504091909.904141006@intel.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] slub: Fix the lockless code on 32-bit platforms with
- no 64-bit cmpxchg
-References: <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504141413.GA14127@elte.hu> <20110504143616.GA19986@elte.hu> <4DC1CAB8.5080305@candelatech.com> <BANLkTim1L9Gz2kk_SjTe2g_SmKJV=FfuRQ@mail.gmail.com>
-In-Reply-To: <BANLkTim1L9Gz2kk_SjTe2g_SmKJV=FfuRQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504091909.904141006@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2011 03:00 PM, Linus Torvalds wrote:
-> On Wed, May 4, 2011 at 2:52 PM, Ben Greear<greearb@candelatech.com>  wrote:
->>
->> This patch appears to fix the crashes I was seeing on my 32-bit
->> Atom system.
->>
->> It would crash within 30 seconds of booting every time before this patch...
->
-> Oh, well - I already committed it and pushed out, otherwise I'd have
-> added that piece of information to the commit log.
+On Wed 04-05-11 17:17:13, Wu Fengguang wrote:
+> This is a format change that could break established scripts.
+> 
+> But hopefully it's more human friendly to show the relative values like
+> "30000" (30s old) or "0" (all fresh ones) than long absolute jiffy
+> numbers.
+  It's possibly more human friendly but probably also harder to handle in
+scripts. I especially don't like the fact that the number will be changing
+at different tracepoints - you'll then have to do some comparisons to find
+out whether just the timestamp has been changed or whether just the time
+passes by. It's not that hard to write a script doing absolute->relative
+conversion (since you have time stamps in the traces) for those cases where
+relative time is really what interests you. So do you have any particular
+usecase in mind for the relative value?
 
-No worries...I'm just happy to finally be able to boot .39 :)
-
-> But it's good to know that others had seen this too, just never
-> realized what was going on.
->
-> Btw, that does seem to imply that your kernel config is somewhat odd.
-> We _should_ be using cmpxchg8b natively if you compile for anything
-> newer than PPro, and that includes atom.
->
-> Did you perhaps say "compile for Pentium" (which is pretty close to
-> Atom in some respects - but we don't trust that all Pentium-class
-> CPU's have cmpxchg8b, even if the Intel ones all should).
-
-Well, yes.  I'm compiling for 'M586' it seems, plus SMP, pre-empt, etc.
-
-Maybe it's time to move to a newer processor family!
-
-Thanks,
-Ben
-
+								Honza
+> 
+> Note that the initial 30000 or 0 may increase over time as they are now
+> relative numbers.
+> 
+> CC: Jan Kara <jack@suse.cz>
+> CC: Dave Chinner <david@fromorbit.com> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  include/trace/events/writeback.h |   11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+> 
+> --- linux-next.orig/include/trace/events/writeback.h	2011-05-04 16:09:59.000000000 +0800
+> +++ linux-next/include/trace/events/writeback.h	2011-05-04 16:10:57.000000000 +0800
+> @@ -115,7 +115,7 @@ DECLARE_EVENT_CLASS(wbc_class,
+>  		__field(int, for_reclaim)
+>  		__field(int, range_cyclic)
+>  		__field(int, more_io)
+> -		__field(unsigned long, older_than_this)
+> +		__field(int, older)
+>  		__field(long, range_start)
+>  		__field(long, range_end)
+>  	),
+> @@ -130,14 +130,15 @@ DECLARE_EVENT_CLASS(wbc_class,
+>  		__entry->for_reclaim	= wbc->for_reclaim;
+>  		__entry->range_cyclic	= wbc->range_cyclic;
+>  		__entry->more_io	= wbc->more_io;
+> -		__entry->older_than_this = wbc->older_than_this ?
+> -						*wbc->older_than_this : 0;
+> +		__entry->older		= wbc->older_than_this ?
+> +				(jiffies - *wbc->older_than_this) * 1000 / HZ
+> +				: -1;
+>  		__entry->range_start	= (long)wbc->range_start;
+>  		__entry->range_end	= (long)wbc->range_end;
+>  	),
+>  
+>  	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
+> -		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
+> +		"bgrd=%d reclm=%d cyclic=%d more=%d older=%d "
+>  		"start=0x%lx end=0x%lx",
+>  		__entry->name,
+>  		__entry->nr_to_write,
+> @@ -148,7 +149,7 @@ DECLARE_EVENT_CLASS(wbc_class,
+>  		__entry->for_reclaim,
+>  		__entry->range_cyclic,
+>  		__entry->more_io,
+> -		__entry->older_than_this,
+> +		__entry->older,
+>  		__entry->range_start,
+>  		__entry->range_end)
+>  )
+> 
+> 
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
