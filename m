@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab1EDANe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 20:13:34 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55348 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1EDANc (ORCPT
+	id S1754937Ab1EDAPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 20:15:18 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43710 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab1EDAPQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 20:13:32 -0400
+	Tue, 3 May 2011 20:15:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nJYEXyiUQWtOhiECWy+Vsgjce5klWtGtABNBhi2MZgFHgHwgeB9FjG8XuPwBjTs5rD
-         m4+355mHnnefM58MMfHgMTZ5hRkRxyLHybuDtKljeauPJBNuDJ9/37x+G8CgjI/MKmY+
-         Da7gTe3jekyxN+bGXPvNrn2afRGdv4yqBoSRQ=
-Date: Wed, 4 May 2011 02:13:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
-Message-ID: <20110504001327.GJ2678@nowhere>
-References: <1303923602-2923-4-git-send-email-fweisbec@gmail.com>
- <4DB854AA.6070101@zytor.com>
- <20110427182633.GB1753@nowhere>
- <008d59a3-bd23-4cb3-8a73-1640137e3ac4@email.android.com>
- <20110427195004.GA3654@nowhere>
- <4DC020D9.3050000@zytor.com>
- <20110503231241.GG2678@nowhere>
- <4DC0925E.20507@zytor.com>
- <20110503235434.GI2678@nowhere>
- <4DC09613.7030201@zytor.com>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=MLQCkxAWkzgcXUIKdZ26qhLKyJuPL7ApLhbFyf3ChR1zIrya6fZI2Z4V9/n5InxIsZ
+         SVJ+ag6xKOs2hKKaLa/A==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC09613.7030201@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110503233503.GH2678@nowhere>
+References: <1304456616-30281-1-git-send-email-vnagarnaik@google.com>
+ <20110503214142.GC2678@nowhere> <BANLkTinA8M8Ok2jghtCoeBiTfw6n3NSziA@mail.gmail.com>
+ <20110503220948.GE2678@nowhere> <1304462852.25414.2417.camel@gandalf.stny.rr.com>
+ <20110503230812.GF2678@nowhere> <BANLkTikRxY_NiNG+z+t_BDwDAom_rpNmdg@mail.gmail.com>
+ <20110503233503.GH2678@nowhere>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Tue, 3 May 2011 17:14:43 -0700
+Message-ID: <BANLkTi=NMp-bPGLgTP9OJnROasx3Q9Rqgw@mail.gmail.com>
+Subject: Re: [RFC PATCH] tracing: Don't call wakeup() when committing the event
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 04:56:03PM -0700, H. Peter Anvin wrote:
-> On 05/03/2011 04:54 PM, Frederic Weisbecker wrote:
-> > On Tue, May 03, 2011 at 04:40:14PM -0700, H. Peter Anvin wrote:
-> >> On 05/03/2011 04:12 PM, Frederic Weisbecker wrote:
-> >>>>
-> >>>> It really is very bad... without breakpoints, you lose almost all
-> >>>> debugging support.
-> >>>
-> >>> Right, so it should be fine for embedded environment to disable breakpoints.
-> >>> It depends on CONFIG_EXPERT now.
-> >>
-> >> Uh... even embedded environments need to be able to debug.
-> > 
-> > For development yeah, but is it needed for production evironments?
-> > 
-> 
-> Most of the time people don't want to debug something other than they're
-> going to ship.
+On Tue, May 3, 2011 at 4:35 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Tue, May 03, 2011 at 04:27:22PM -0700, Vaibhav Nagarnaik wrote:
+>> How about this? Check if the waitqueue is active and if true, operate on the
+>> trace_wait queue.
+>>
+>> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+>> index 06f4458..e03ee24 100644
+>> --- a/kernel/trace/trace.c
+>> +++ b/kernel/trace/trace.c
+>> @@ -353,7 +353,7 @@ void trace_wake_up(void)
+>>  {
+>>       int cpu;
+>>
+>> -     if (trace_flags & TRACE_ITER_BLOCK)
+>> +     if (trace_flags & TRACE_ITER_BLOCK || !waitqueue_active(&trace_wait))
+>>               return;
+>>       /*
+>>        * The runqueue_is_locked() can fail, but this is the best we
+>>
+>
+> Hehe, seems it should work :)
+>
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+>
+Thanks for reviewing the change. I have sent an updated patch with a better
+commit message and your Ack.
 
-
-Well, it's like systems that don't care about having BUG(), sysctl, futexes, etc...
-support in the kernel, or whatever standard feature that makes sense most of the time
-but sometimes you simply don't need it.
-
-Also consider that as a first step to be able to build a !CONFIG_PERF_EVENTS
-kernel. If people show strong interest in beeing able to build a kernel
-with breakpoints but without perf events, then I'll invest more efforts in
-breaking the dependency.
+Vaibhav Nagarnaik
