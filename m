@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab1EDQCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:02:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51072 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750993Ab1EDQCE (ORCPT
+	id S1754098Ab1EDQDQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:03:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53464 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1EDQDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:02:04 -0400
-Date: Wed, 4 May 2011 12:02:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Maxin John <maxin.john@gmail.com>
-cc: Michal Nazarewicz <mina86@mina86.com>, <gregkh@suse.de>,
-        <m-sonasath@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <roger.quadros@nokia.com>
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which
- is always true
-In-Reply-To: <BANLkTinxvtMUcFz9T7L1iq9pFUx8ocQnRQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1105041201120.2039-100000@iolanthe.rowland.org>
+	Wed, 4 May 2011 12:03:14 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LFD.2.00.1105041117170.24613@xanadu.home>
+References: <1304453087-7365-1-git-send-email-per.forlin@linaro.org>
+	<alpine.LFD.2.00.1105032339370.24613@xanadu.home>
+	<BANLkTim_x28NyWzo-Ug3+ZprgeT=VFwEfQ@mail.gmail.com>
+	<alpine.LFD.2.00.1105041117170.24613@xanadu.home>
+Date: Wed, 4 May 2011 18:03:13 +0200
+Message-ID: <BANLkTinUnDN_ZE5hQuQvDUTFUJV+ZpTTag@mail.gmail.com>
+Subject: Re: [PATCH] sdio: optimized SDIO IRQ handling for single function
+From: Per Forlin <per.forlin@linaro.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>, linaro-dev@lists.linaro.org,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
+        Ulf HANSSON <ulf.hansson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Maxin John wrote:
+On 4 May 2011 17:20, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Wed, 4 May 2011, Per Forlin wrote:
+>
+>> On 4 May 2011 05:40, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>> > On Tue, 3 May 2011, Per Forlin wrote:
+>> >
+>> >> From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+>> >>
+>> >> If there is only 1 function registered, and IRQ:s are supported and
+>> >> currently enabled, call the callback handler directly
+>> >> without checking the CCCR registers.
+>> >>
+>> >> Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+>> >> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> >
+>> > Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+>> >
+>> I am working o a patch version 2 after offline discussion with Ulf Hansson.
+>> Instead of adding this code here.
+>> Add sdio_single_func member in mmc_card. Set and reset this function
+>> in sdio_claim_irq and sdio_release_irq.
+>> process_sdio_pending_irqs would only check if sdio_single_func is !=
+>> null and call it.
+>
+> Yes, that's what I was about to propose after thinking about it some
+> more.
+>
+>> This will result in a bigger patch overall but the new code in
+>> process_sdio_pending_irqs will be minimal.
+>
+> Something like this (untested) ?
+>
+What I had in mind is similar. Please let me know what you think. I am
+about to post "patch v2"
 
-> Hi Michal,
-> 
-> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> 
-> Thank you very much for reviewing the patch.
-> 
-> > file_storage.c has the same check, could you remove it as well.
-> 
-> Please find the patch for "file_storage.c" below. Should I merge these
-> two patches and re-submit as a single one?
-> 
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-> ---
-> diff --git a/drivers/usb/gadget/file_storage.c
-> b/drivers/usb/gadget/file_storage.c
-> index a6eacb5..a9c5177 100644
-> --- a/drivers/usb/gadget/file_storage.c
-> +++ b/drivers/usb/gadget/file_storage.c
-> @@ -2314,7 +2314,7 @@ static int check_command(struct fsg_dev *fsg,
-> int cmnd_size,
->                 fsg->lun = lun;         // Use LUN from the command
-> 
->         /* Check the LUN */
-> -       if (fsg->lun >= 0 && fsg->lun < fsg->nluns) {
-> +       if (fsg->lun < fsg->nluns) {
->                 fsg->curlun = curlun = &fsg->luns[fsg->lun];
->                 if (fsg->cmnd[0] != REQUEST_SENSE) {
->                         curlun->sense_data = SS_NO_SENSE;
-
+Regards,
+Per
