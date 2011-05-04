@@ -1,271 +1,765 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab1EDJXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 05:23:19 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50033 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750888Ab1EDJXR (ORCPT
+	id S1752842Ab1EDJWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 05:22:44 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:43837
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752798Ab1EDJWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 05:23:17 -0400
-X-Sasl-enc: drtW7AZYrLKdS+zYWdPBLCvDVn4fM9MLxTPnKKPEW7Z+ 1304500997
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-To: Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
-Date: Wed, 4 May 2011 11:19:57 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.2; x86_64; ; )
-Cc: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
-        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        viro@zeniv.linux.org.uk, john.johansen@canonical.com,
-        apparmor@lists.ubuntu.com, bfields@fieldses.org, neilb@suse.de,
-        linux-nfs@vger.kernel.org
-References: <201104291139.37489.roberto.sassu@polito.it> <201105021053.54031.roberto.sassu@polito.it> <4DC088A8.4000300@schaufler-ca.com>
-In-Reply-To: <4DC088A8.4000300@schaufler-ca.com>
+	Wed, 4 May 2011 05:22:42 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zz936eKc8kzz1202hzz84d07h8275bhz32i2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, "dtor@mail.ru" <dtor@mail.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 4 May 2011 14:51:32 +0530
+Subject: [PATCHv1 -next] Touch: Touch screen module of DA9052 PMIC driver
+Thread-Topic: [PATCHv1 -next] Touch: Touch screen module of DA9052 PMIC
+ driver
+Thread-Index: AcwKPKhB+q7uoAn2SE+piewtekT4XQ==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5B8C9@KCINPUNHJCMS01.kpit.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105041119.57493.roberto.sassu@polito.it>
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p449MuCv030928
 
-On Wednesday, May 04, 2011 12:58:48 AM Casey Schaufler wrote:
-> On 5/2/2011 1:53 AM, Roberto Sassu wrote:
-> > On Friday, April 29, 2011 05:46:20 PM Casey Schaufler wrote:
-> >> On 4/29/2011 2:39 AM, Roberto Sassu wrote:
-> >>> Sorry for resending, it was rejected by the mailing lists due to
-> >>> the html formatting.
-> >>>
-> >>>
-> >>> On Thursday, April 28, 2011 07:37:29 PM Casey Schaufler wrote:
-> >>>> On 4/28/2011 5:35 AM, Roberto Sassu wrote:
-> >>>>> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
-> >>>>>> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> >>>>>>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
-> >>>>>>>> File descriptor labeling issue
-> >>>>>>>>
-> >>>>>>>> Actually SELinux and SMACK assign to file descriptors the same label of the
-> >>>>>>>> opening process and use it in LSM hooks security_file_permission(),
-> >>>>>>>> security_file_fcntl() and others to verify if the 'current' process has the
-> >>>>>>>> rights to perform the requested operation.
-> >>>>>>>>
-> >>>>>>>> Using the credentials of the 'current' process may be not appropriate in
-> >>>>>>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
-> >>>>>>>> and made shared among user processes. For instance, in a system with
-> >>>>>>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
-> >>>>>>>> obtains a file descriptor to access the correspondent inode in the lower
-> >>>>>>>> filesystem, labeled with the A's label.
-> >>>>>>>>
-> >>>>>>>> If the process B accesses the same encrypted file, it needs the 'use'
-> >>>>>>>> permission on the A's label other than permissions for the lower inode.
-> >>>>>>>> However, if B is the first accessing process, A needs the 'use' permission
-> >>>>>>>> on the B's label.
-> >>>>>>> I am having trouble understanding the argument. I will pose my
-> >>>>>>> question in Smack terms, as I can speak most definitively in them.
-> >>>>>>>
-> >>>>>>> A process running with a Smack label "A" creates a file, and that
-> >>>>>>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
-> >>>>>>> this ought not change. If eCryptfs in encrypting the label it needs
-> >>>>>>> to do so in such a way as to be able to decrypt it prior to
-> >>>>>>> presentation to the vfs layer, where it will be used in an access
-> >>>>>>> check. When the process running with a Smack label "B" comes along
-> >>>>>>> the vfs code will check the fetched and possibly decrypted "A"
-> >>>>>>> against "B" and, unless there is an explicit Smack rule in place
-> >>>>>>> granting "B" access to "A", fail.
-> >>>>>>>
-> >>>>>>> What is the problem? What is eCryptfs doing that prevents this
-> >>>>>>> from working?
-> >>>>>> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
-> >>>>>> only one lower file per eCryptfs inode. Imagine that there are 5
-> >>>>>> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
-> >>>>>> to be open in the lower filesystem and all eCryptfs file operations will
-> >>>>>> be multiplexed through it.
-> >>>>>>
-> >>>>>> To make things more complicated, if the eCryptfs file is opened for
-> >>>>>> writing, the lower file must be opened for reading and writing. This is
-> >>>>>> because a write operation requires eCryptfs to vfs_read() from the lower
-> >>>>>> filesystem, decrypt that data and then vfs_write() the new data.
-> >>>>>>
-> >>>>>> If the lower file can't be opened O_RDWR by the calling process, the
-> >>>>>> request is handed off to a kernel thread to open the lower file on
-> >>>>>> behalf of the calling process. It is definitely ugly.
-> >>>>>>
-> >>>>>> Roberto, I hope I correctly described the situation that you're trying
-> >>>>>> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
-> >>>>>> files to lower files?
-> >>>>>>
-> >>>>>> Instead of having just one lower file attached to the eCryptfs inode, we
-> >>>>>> could have a list of opened files. There would be one for each eCryptfs
-> >>>>>> file that was opened. ecryptfs_writepage() would have to pick, in a
-> >>>>>> somewhat random fashion, one of the lower files to use. Of course, we
-> >>>>>> would still need to solve the problem of opening the lower file O_RDWR
-> >>>>>> when the calling process is only allowed write access (I may have just
-> >>>>>> answered my own question of why the 1:1 mapping technique won't solve
-> >>>>>> this problem).
-> >>>>>>
-> >>>>> Hi Tyler
-> >>>>>
-> >>>>> i think the 1:1 mapping isn't necessary at least from the security perspective.
-> >>>>> Since eCryptfs is a stacked filesystem access control is performed on
-> >>>>> both the upper and the lower layer.
-> >>>>> ECryptfs relies on the lower filesystem for the management of extended
-> >>>>> attributes, so this means that the security label of both the upper and
-> >>>>> the lower inodes is the same (however this is not the current behavior
-> >>>>> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
-> >>>> Where does this assignment occur?
-> >>>>
-> >>> Hi Casey
-> >>>
-> >>> The assignment happens at the inode's initialization time and depends on
-> >>> the behavior configured for a specific filesystem.
-> >>> The SELinux reference policy actually configures static labeling for inodes
-> >>> in the eCryptfs filesystem while for example allows ext4 inodes to be
-> >>> initialized using extended attributes.
-> >> So how about changing eCryptfs (Goodness, but I hate camelCase) to
-> >> properly support extended attributes? That would seem a better
-> >> approach than mucking up the entire LSM. You still have to deal
-> >> with the SELinux policy, but I don't see you getting away without
-> >> doing something with that in any case.
-> >>
-> > Hi Casey
-> >
-> > i think having separate extended attributes in eCryptfs does not
-> > address the issue i reported in the cover letter.
-> > The reason is, in my opinion, the incorrect labeling of file descriptors
-> > which causes in SELinux more permissions than those really needed
-> > must be added in the policy. This does not depends on the inode's
-> > security context but on the credentials provided to dentry_open().
-> 
-> The problem is that you seem to think that eCryptfs needs
-> access to the file. If eCryptfs is kernel code being invoked
-> through the VFS you should be providing the user's credentials.
-> 
-> >
-> >>>>> In my view, for this reason the access control checks can be performed
-> >>>>> only at the upper layer, letting eCryptfs full privileges to access inodes
-> >>>>> in the lower filesystem.
-> >>>> On this point I most strongly disagree.
-> >>>>
-> >>>> The behavior of a filesystem and the data that it uses to determine
-> >>>> that behavior is wrought with complex interactions which may include
-> >>>> but are not limited to caching, read-aheads, garbage collection,
-> >>>> and various side effects of access control. If eCryptfs needs to go
-> >>>> mucking about with the data used by the underlying filesystem it is
-> >>>> not stacking properly. A stacked filesystem has no business whatever
-> >>>> changing the data of the underlying filesystem.
-> >>>>
-> >>> Ok, probably i have to go more in deep to explain how access control is
-> >>> performed on eCryptfs. I'm talking for the SELinux's case, so SELinux experts
-> >>> can correct me if i'm wrong.
-> >>>
-> >>> First, i want to use extended attributes to initialize an eCryptfs inode, so
-> >>> both the upper and the lower inodes have the same security context
-> >>> because eCryptfs calls the *xattr() methods of the underlying filesystem.
-> >> OK, you could create your own xattr functions that do whatever credential
-> >> mucking they need to and then call the underlying file system's version.
-> >> It is possible that the work the NFS people have been doing for xattr
-> >> support (I haven't seen much on this lately, is it still active? Anyone?)
-> >> would prove instructive.
-> >>
-> >>> Then, the process A accesses the eCryptfs inode 'I'. On the upper layer access
-> >>> control is performed using the credentials of the 'current' process and the
-> >>> security context of I.
-> >>>
-> >>> If the process is allowed to access the upper inode, eCryptfs opens the lower
-> >>> inode, presenting its own credentials with the type 'kernel_t'.
-> >> So eCryptfs provides its own process context. When you say "open" do you
-> >> mean open(2) or something else? A little precision goes a long way in these
-> >> discussions.
-> >>
-> > ECryptfs provides its own credentials when calling the function dentry_open()
-> > to obtain a file descriptor to be shared among user processes.
-> 
-> This is your problem. The problem is that you are not
-> using the credential of the user process to access the
-> file, you are using your own. Sharing a "file descriptor"
-> may seem like an optimization, but as you see it has
-> does not work.
-> 
-> >>> Then, SELinux
-> >>> checks if 'kernel_t' can access the inode with the security context of 'I'.
-> >> Why doesn't eCryptfs provide the credentials of 'I'? In the kernel you
-> >> can do what you will.
-> > No, eCryptfs provides (in the following patch) the 'initial' credentials which
-> > are obtained through the function prepare_kernel_cred() which give root
-> > privileges. These credentials are used in the hook security_dentry_open()
-> > to verify if eCryptfs is allowed to access the inode 'I' in the underlying
-> > filesystem.
-> 
-> But you shouldn't care if eCryptfs can access the file. You should
-> only care if the user process can access the file. You're kernel code,
-> you can do what you will.
-> 
-> >>> If so,
-> >>> eCryptfs obtains a file descriptor which, in this patch set, is labeled using the
-> >>> same credentials it provided at open time and binds it to the upper inode.
-> >>>
-> >>> Suppose for a moment that A is working on the eCryptfs inode 'I' and the process
-> >>> B requests the same inode. ECryptfs uses the already opened file descriptor and
-> >>> B will be granted to open the requested inode if:
-> >>>
-> >>> - B has the 'open' permission on the upper inode 'I';
-> >>>
-> >>>
-> >>> and can perform read/write operations if:
-> >>>
-> >>> - B has the 'read' and 'write' permissions on the upper inode 'I';
-> >>> - B is allowed to use the file descriptor opened by eCryptfs ('kernel_t').
-> >>> - B has the 'read' and 'write' permissions on the lower inode I;
-> >>>
-> >>>
-> >>> What i miss to say in my previous email is that even if eCryptfs is granted
-> >>> to access inodes in the lower filesystem with full privileges, user processes
-> >>> still need the permission to deal with the lower inode, but the check on the
-> >>> upper inode is sufficient because the security context is the same.
-> >> Right, but what I don't understand is why you can't use existing
-> >> mechanisms to achieve this? NFS manages (mostly).
-> >>
-> > Please, can you explain better this thought?
-> 
-> NFS provides a network "view" of an ext4 (or any type for that matter)
-> filesystem. NFS does not support extended attributes, but there has been
-> ongoing work on that. It seems that if NFS does not require the kind
-> of changes you are requesting you shouldn't either.
-> 
+Hi Randy,
 
-I'm not familiar with NFS, so i cannot answer about this scenario.
-I'm adding in CC also the NFS mantainers and the mailing list so
-that they can express their point of view. The whole thread is
-available at:
+Touch Screen Driver for Dialog Semiconductor DA9052 PMICs.
 
-https://lkml.org/lkml/2011/4/27/201
+Changes made since last submission:
+. read and write operation move to MFD.
 
-Roberto Sassu
+Signed-off-by: Dajun Chen <dchen@diasemi.com>
+---
+
+diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi.c linux-next-20110421/drivers/input/touchscreen/da9052_tsi.c
+--- linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi.c     1970-01-01 05:00:00.000000000 +0500
++++ linux-next-20110421/drivers/input/touchscreen/da9052_tsi.c  2011-04-26 10:51:28.000000000 +0500
+@@ -0,0 +1,474 @@
++/*
++ * TSI driver for Dialog DA9052
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++ *
++ * Author: Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++#include <linux/module.h>
++#include <linux/input.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/freezer.h>
++#include <linux/kthread.h>
++
++#include <linux/mfd/da9052/reg.h>
++#include <linux/mfd/da9052/tsi.h>
++#include <linux/mfd/da9052/gpio.h>
++#include <linux/mfd/da9052/pdata.h>
++
++ssize_t tsi_process_thread(void *ptr);
++
++int da9052_fifo_lengthToEnd(struct da9052_tsi_fifo *fifo, long op)
++{
++       if (op == idRead)
++               return TSI_FIFO_SIZE - fifo->m_read;
++       else
++               return TSI_FIFO_SIZE - fifo->m_write;
++}
++
++inline void da9052_fifo_incpos(struct da9052_tsi_fifo *fifo, int inc, int op)
++{
++       int *pos;
++
++       if (inc < 0 || inc > TSI_FIFO_SIZE)
++               return;
++
++       pos = &fifo->m_write;
++       if (op == idRead)
++               pos = &fifo->m_read;
++
++       if (*pos < TSI_FIFO_SIZE - 1)
++               *pos += inc;
++       else
++               *pos = 0;
++
++       if (fifo->m_read == fifo->m_write) {
++               fifo->m_wrapType = idWriteWrap;
++               if (op == idRead)
++                       fifo->m_wrapType = idReadWrap;
++       } else
++               fifo->m_wrapType = idNoWrap;
++
++       return;
++}
++
++void da9052_fifo_getcount(int *count, long op,
++                       struct da9052_tsi_fifo *fifo)
++{
++       int write = fifo->m_write;
++       int read  = fifo->m_read;
++
++       *count = 0;
++       if (write == read)
++               *count = 0;
++       else if (write > read)
++               *count = (TSI_FIFO_SIZE - write) + read;
++       else
++               *count = read - write;
++
++       if (op == idRead && fifo->m_wrapType != idReadWrap)
++               *count = TSI_FIFO_SIZE - *count;
++
++       return;
++}
++
++inline void da9052_fifo_put(struct da9052_tsi_fifo *fifo,
++                       struct da9052_tsi_reg temp)
++{
++       memcpy(&fifo->fifo[fifo->m_write], &temp,
++                       sizeof(struct da9052_tsi_reg));
++       da9052_fifo_incpos(fifo, 1, idWrite);
++}
++
++struct da9052_tsi_reg da9052_fifo_get(struct da9052_tsi_fifo *fifo)
++{
++       struct da9052_tsi_reg temp;
++       long lenToEnd = da9052_fifo_lengthToEnd(fifo, idRead);
++
++       if (lenToEnd > 0)
++               memcpy(&temp, &fifo->fifo[fifo->m_read],
++                       sizeof(struct da9052_tsi_reg));
++       else
++               memcpy(&temp, &fifo->fifo[0],
++                       sizeof(struct da9052_tsi_reg));
++
++       da9052_fifo_incpos(fifo, 1, idRead);
++
++       return temp;
++}
++
++static inline int start_tsi(struct da9052_tsi *tsi)
++{
++       return da9052_reg_update(tsi->da9052, DA9052_TSICONT_A_REG,
++                               1 << 0, 1 << 0);
++}
++
++static inline int stop_tsi(struct da9052_tsi *tsi)
++{
++       return da9052_clear_bits(tsi->da9052, DA9052_TSICONT_A_REG, 1 << 0);
++}
++
++static irqreturn_t da9052_tsi_pendwn(int irq, void *data)
++{
++       struct da9052_tsi *tsi = (struct da9052_tsi *)data;
++       int ret = 0;
++
++       ret = da9052_mask_events(tsi->da9052, DA9052_E_PEN_DOWN);
++       if (ret < 0) {
++               dev_err(tsi->da9052->dev, "Failed to mask pen down event, %d\n", ret);
++               return IRQ_NONE;
++       }
++
++       ret = da9052_unmask_events(tsi->da9052, DA9052_E_TSI_READY);
++       if (ret < 0) {
++               dev_err(tsi->da9052->dev, "Failed to mask tsi ready event, %d\n", ret);
++               return IRQ_NONE;
++       }
++
++       start_tsi(tsi);
++
++       tsi->pen_state = DA9052_PEN_DOWN;
++
++       return IRQ_HANDLED;
++}
++
++static int read_tsi(struct da9052_tsi *tsi)
++{
++       struct da9052_tsi_reg co_ord = {0, 0};
++       int ret;
++       uint8_t _x, _y, _v;
++
++       ret = da9052_reg_read(tsi->da9052, DA9052_TSIXMSB_REG);
++       if (ret < 0)
++               return ret;
++       _x = (uint8_t) ret;
++
++       ret = da9052_reg_read(tsi->da9052, DA9052_TSIYMSB_REG);
++       if (ret < 0)
++               return ret;
++
++       _y = (uint8_t) ret;
++
++       ret = da9052_reg_read(tsi->da9052, DA9052_TSILSB_REG);
++       if (ret < 0)
++               return ret;
++
++       _v = (uint8_t) ret;
++
++       co_ord.x = ((_x << 2) & 0x3fc) | (_v & 0x3);
++       co_ord.y = ((_y << 2) & 0x3fc) | ((_v & 0xc) >> 2);
++
++       da9052_fifo_put(&tsi->tsi_fifo, co_ord);
++
++       tsi->adc_cnt++;
++
++       return 0;
++}
++
++
++static irqreturn_t da9052_tsi_datardy(int irq, void *data)
++{
++       struct da9052_tsi *tsi = (struct da9052_tsi *)data;
++       int ret = 0;
++
++       ret = read_tsi(tsi);
++       if (ret) {
++                       dev_err(tsi->da9052->dev,
++                               "Failed to read TSI co-ordinate, %d\n", ret);
++                       return IRQ_NONE;
++       }
++
++       return IRQ_HANDLED;
++}
++
++void da9052_tsi_process_reg_data(struct da9052_tsi *tsi)
++{
++       struct da9052_tsi_reg tmp_raw_data;
++       u32 reg_data_cnt;
++
++       da9052_fifo_getcount(&reg_data_cnt, idRead, &tsi->tsi_fifo);
++
++       while (reg_data_cnt-- > 0) {
++               tmp_raw_data =  da9052_fifo_get(&tsi->tsi_fifo);
++               da9052_fifo_put(&tsi->tsi_fifo_buf, tmp_raw_data);
++       }
++       return;
++}
++
++static void da9052_report_penup(struct da9052_tsi *tsi)
++{
++
++       struct input_dev *ip_dev = tsi->dev;
++       ssize_t ret = 0;
++
++       ret = stop_tsi(tsi);
++       if (ret < 0)
++               return;
++
++       ret = da9052_mask_events(tsi->da9052, DA9052_E_TSI_READY);
++       if (ret < 0)
++               return;
++
++       ret = da9052_unmask_events(tsi->da9052, DA9052_E_PEN_DOWN);
++       if (ret < 0)
++               return;
++
++       input_report_abs(ip_dev, BTN_TOUCH, 0);
++       input_sync(ip_dev);
++
++       tsi->zero_data_cnt = 0;
++       tsi->adc_cnt = 0;
++       tsi->filter_cnt = 0;
++
++}
++
++static ssize_t monitor_pen_state(void *data)
++{
++       struct da9052_tsi *tsi = (struct da9052_tsi *) data;
++       u32 data_cnt;
++
++       set_freezable();
++
++       while (tsi->tsi_pen_state_thread.state == DA9052_ACTIVE) {
++               try_to_freeze();
++
++               set_current_state(TASK_INTERRUPTIBLE);
++               schedule_timeout(msecs_to_jiffies(10));
++
++               if (tsi->pen_state != DA9052_PEN_DOWN)
++                       continue;
++
++               da9052_fifo_getcount(&data_cnt, idRead, &tsi->tsi_fifo);
++               da9052_tsi_process_reg_data(tsi);
++
++               if (data_cnt)
++                       tsi->zero_data_cnt = 0;
++               else {
++                       if ((++(tsi->zero_data_cnt)) >
++                                                    tsi->valid_penup_count) {
++                               tsi->pen_state = DA9052_PEN_UP;
++                               da9052_report_penup(tsi);
++                       }
++               }
++       }
++
++       complete_and_exit(&tsi->tsi_pen_state_thread.notifier, 0);
++       return 0;
++}
++
++static ssize_t da9052_configure_gpio(struct da9052 *da9052)
++{
++       ssize_t ret = 0;
++
++       ret = da9052_clear_bits(da9052, DA9052_GPIO_2_3_REG, 0x30);
++       if (ret < 0)
++               return -EIO;
++
++       return ret;
++}
++
++
++static ssize_t __init da9052_tsi_enable_device(struct da9052_tsi *tsi)
++{
++
++       ssize_t ret = 0;
++
++       ret = da9052_configure_gpio(tsi->da9052);
++       if (ret < 0)
++               return ret;
++
++       ret = da9052_reg_update(tsi->da9052, DA9052_TSICONT_A_REG, 0xFC, 0xC0);
++       if (ret < 0)
++               return ret;
++
++       tsi->valid_penup_count = 5;
++
++       init_completion(&tsi->tsi_pen_state_thread.notifier);
++       tsi->tsi_pen_state_thread.state = DA9052_ACTIVE;
++       tsi->tsi_pen_state_thread.pid =
++                               kernel_thread(monitor_pen_state,
++                                       tsi, CLONE_KERNEL | SIGCHLD);
++
++       init_completion(&tsi->tsi_filter_thread.notifier);
++       tsi->tsi_filter_thread.state = DA9052_ACTIVE;
++       tsi->tsi_filter_thread.pid =
++                               kernel_thread(tsi_process_thread,
++                                       tsi, CLONE_KERNEL | SIGCHLD);
++
++       tsi->zero_data_cnt = 0;
++       tsi->adc_cnt = 0;
++       tsi->filter_cnt = 0;
++
++       ret = da9052_reg_update(tsi->da9052, DA9052_ADC_CONT_REG,
++                               1 << 6, 1 << 6);
++       if (ret < 0)
++               return ret;
++
++       ret = da9052_reg_update(tsi->da9052, DA9052_TSICONT_A_REG,
++                               1 << 1, 1 << 1);
++       if (ret < 0)
++               return ret;
++
++       ret = da9052_mask_events(tsi->da9052, DA9052_E_TSI_READY);
++       if (ret < 0)
++                       return ret;
++
++       ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x59);
++
++       return ret;
++}
++
++static s32 __devinit da9052_tsi_probe(struct platform_device *pdev)
++{
++
++       struct da9052_tsi *tsi;
++       struct input_dev *input_dev;
++       struct da9052_pdata  *pdata;
++       struct da9052 *da9052;
++       struct da9052_tsi_platform_data *ptsi;
++       int ret;
++
++       da9052 = dev_get_drvdata(pdev->dev.parent);
++       pdata = da9052->dev->platform_data;
++       ptsi = pdata->ptsi;
++
++       tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
++       if (!tsi)
++               return -ENOMEM;
++
++       input_dev = input_allocate_device();
++       if (!input_dev) {
++               dev_err(tsi->da9052->dev,
++                               "failed to allocate input device\n");
++               ret = -ENOMEM;
++               goto err_mem;
++       }
++
++       tsi->da9052 = dev_get_drvdata(pdev->dev.parent);
++       tsi->pen_up_detect_interval = ptsi->pen_up_detect_interval;
++       platform_set_drvdata(pdev, tsi);
++
++       input_dev->id.version = 0x0101;
++       input_dev->id.vendor = 0x15B6;
++       input_dev->id.product = 0x9052;
++       input_dev->id.bustype = BUS_RS232;
++       input_dev->name = "Dialog DA9052 TouchScreen Driver";
++       input_dev->dev.parent   = &pdev->dev;
++       __set_bit(EV_ABS, input_dev->evbit);
++       __set_bit(EV_KEY, input_dev->evbit);
++       __set_bit(BTN_TOUCH, input_dev->keybit);
++       __set_bit(ABS_X, input_dev->absbit);
++       __set_bit(ABS_Y, input_dev->absbit);
++
++       input_set_abs_params(input_dev, ABS_X, 0, 1023, 0, 0);
++       input_set_abs_params(input_dev, ABS_Y, 0, 1023, 0, 0);
++       input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1023, 0, 0);
++
++       tsi->dev = input_dev;
++       input_set_drvdata(input_dev, tsi);
++       ret = input_register_device(tsi->dev);
++       if (ret)
++               goto err_mem;
++
++       tsi->irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
++       ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_pendwn,
++                               NULL, da9052_tsi_pendwn,
++                               IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++                               "PENDWN", tsi);
++       if (ret < 0) {
++               dev_err(tsi->da9052->dev, "Failed to register %s IRQ %d, error = %d \n", "PENDWN",
++                       tsi->da9052->irq_base + tsi->irq_pendwn, ret);
++               goto err_mem;
++       }
++
++       tsi->irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
++       ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_datardy,
++                               NULL, da9052_tsi_datardy,
++                               IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++                               "TSIRDY", tsi);
++       if (ret < 0) {
++               dev_err(tsi->da9052->dev, "Failed to register %s IRQ %d, error = %d \n", "TSIRDY",
++                       tsi->da9052->irq_base + tsi->irq_datardy,
++                       ret);
++               goto err_mem;
++       }
++
++       ret = da9052_tsi_enable_device(tsi);
++       if (ret < 0)
++               goto err_input;
++
++       tsi->adc_cnt = 0;
++       tsi->filter_cnt = 0;
++
++       return 0;
++
++err_input:
++       input_free_device(input_dev);
++err_mem:
++       kfree(tsi);
++       return ret;
++}
++
++static int __devexit da9052_tsi_remove(struct platform_device *pdev)
++{
++       struct da9052_tsi *tsi = platform_get_drvdata(pdev);
++       s32 ret = 0;
++
++       ret = da9052_clear_bits(tsi->da9052, DA9052_TSICONT_A_REG, 1 << 0);
++       if (ret < 0)
++               return ret;
++
++       ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
++       if (ret < 0)
++               return ret;
++
++       free_irq(tsi->da9052->irq_base + tsi->irq_pendwn, NULL);
++       free_irq(tsi->da9052->irq_base + tsi->irq_datardy, NULL);
++
++       tsi->tsi_pen_state_thread.state = DA9052_INACTIVE;
++       wait_for_completion(&tsi->tsi_pen_state_thread.notifier);
++
++       tsi->tsi_filter_thread.state = DA9052_INACTIVE;
++       wait_for_completion(&tsi->tsi_filter_thread.notifier);
++
++       input_unregister_device(tsi->dev);
++
++       platform_set_drvdata(pdev, NULL);
++
++       kfree(tsi);
++
++       return 0;
++}
++
++static struct platform_driver da9052_tsi_driver = {
++       .driver.name    = "da9052-tsi",
++       .driver.owner   = THIS_MODULE,
++       .probe                  = da9052_tsi_probe,
++       .remove                 = __devexit_p(da9052_tsi_remove),
++
++};
++
++static int __init da9052_tsi_init(void)
++{
++       return platform_driver_register(&da9052_tsi_driver);
++}
++module_init(da9052_tsi_init);
++
++static void __exit da9052_tsi_exit(void)
++{
++       platform_driver_unregister(&da9052_tsi_driver);
++
++}
++module_exit(da9052_tsi_exit);
++
++MODULE_DESCRIPTION("Touchscreen driver for Dialog Semiconductor DA9052");
++MODULE_AUTHOR("Dajun Chen <dchen@diasemi.com>");
++MODULE_LICENSE("GPL v2");
++
+diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi_filter.c linux-next-20110421/drivers/input/touchscreen/da9052_tsi_filter.c
+--- linux-next-20110421.orig/drivers/input/touchscreen/da9052_tsi_filter.c      1970-01-01 05:00:00.000000000 +0500
++++ linux-next-20110421/drivers/input/touchscreen/da9052_tsi_filter.c   2011-04-26 10:51:28.000000000 +0500
+@@ -0,0 +1,87 @@
++/*
++ * TSI filter driver for Dialog DA9052
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++ *
++ * Author: Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/input.h>
++#include <linux/freezer.h>
++#include <linux/mfd/da9052/tsi.h>
++
++#define DEFAULT_AVERAGE_FILTER_SIZE            3
++
++#if ENABLE_AVERAGE_FILTER
++static void da9052_tsi_avrg_filter(struct da9052_tsi *tsi,
++                                       struct da9052_tsi_reg *tsi_avg_data)
++{
++       u8 cnt;
++       struct da9052_tsi_reg temp;
++
++       *tsi_avg_data = da9052_fifo_get(&tsi->tsi_fifo_buf);
++
++       for (cnt = 2; cnt <= TSI_AVERAGE_FILTER_SIZE; cnt++) {
++
++               temp = da9052_fifo_get(&tsi->tsi_fifo_buf);
++               tsi_avg_data->x += temp.x;
++               tsi_avg_data->y += temp.y;
++
++       }
++
++
++       tsi_avg_data->x /= TSI_AVERAGE_FILTER_SIZE;
++       tsi_avg_data->y /= TSI_AVERAGE_FILTER_SIZE;
++
++       tsi->filter_cnt++;
++
++       return;
++}
++#endif
++
++ssize_t tsi_process_thread(void *ptr)
++{
++       struct da9052_tsi_reg coord;
++       int cnt = 0;
++       struct da9052_tsi *tsi = (struct da9052_tsi *)ptr;
++
++       set_freezable();
++
++       while (tsi->tsi_filter_thread.state == DA9052_ACTIVE) {
++
++               try_to_freeze();
++
++               set_current_state(TASK_INTERRUPTIBLE);
++               schedule_timeout(msecs_to_jiffies(10));
++               da9052_fifo_getcount(&cnt, idRead, &tsi->tsi_fifo_buf);
++
++               if (cnt == 0)
++                       continue;
++
++#if ENABLE_AVERAGE_FILTER
++               if (cnt < TSI_AVERAGE_FILTER_SIZE)
++                       continue;
++               da9052_tsi_avrg_filter(tsi, &coord);
++#else
++               coord =  da9052_fifo_get(&tsi->tsi_fifo_buf);
++#endif
++               input_report_abs(tsi->dev, BTN_TOUCH, 1);
++               input_report_abs(tsi->dev, ABS_X, coord.x);
++               input_report_abs(tsi->dev, ABS_Y, coord.y);
++               input_sync(tsi->dev);
++
++       }
++
++       tsi->tsi_filter_thread.thread_task = NULL;
++       complete_and_exit(&tsi->tsi_filter_thread.notifier, 0);
++
++       return 0;
++
++}
++
+diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/Kconfig linux-next-20110421/drivers/input/touchscreen/Kconfig
+--- linux-next-20110421.orig/drivers/input/touchscreen/Kconfig  2011-04-26 09:32:55.000000000 +0500
++++ linux-next-20110421/drivers/input/touchscreen/Kconfig       2011-04-26 10:59:02.000000000 +0500
+@@ -144,6 +144,13 @@
+          Say Y here to enable the support for the touchscreen found
+          on Dialog Semiconductor DA9034 PMIC.
+
++config TOUCHSCREEN_DA9052
++       tristate "Dialog DA9052 TSI"
++       depends on PMIC_DA9052
++       help
++         Say y here to support the touchscreen found on
++         Dialog Semiconductor DA9052 PMIC
++
+ config TOUCHSCREEN_DYNAPRO
+        tristate "Dynapro serial touchscreen"
+        select SERIO
+diff -Naur linux-next-20110421.orig/drivers/input/touchscreen/Makefile linux-next-20110421/drivers/input/touchscreen/Makefile
+--- linux-next-20110421.orig/drivers/input/touchscreen/Makefile 2011-04-26 09:32:55.000000000 +0500
++++ linux-next-20110421/drivers/input/touchscreen/Makefile      2011-04-26 10:56:56.000000000 +0500
+@@ -4,6 +4,7 @@
+
+ # Each configuration option enables a list of files.
+
++da9052-tsi-objs        := da9052_tsi.o da9052_tsi_filter.o
+ wm97xx-ts-y := wm97xx-core.o
+
+ obj-$(CONFIG_TOUCHSCREEN_88PM860X)             += 88pm860x-ts.o
+@@ -18,6 +19,7 @@
+ obj-$(CONFIG_TOUCHSCREEN_BU21013)              += bu21013_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)   += cy8ctmg110_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_DA9034)               += da9034-ts.o
++obj-$(CONFIG_TOUCHSCREEN_DA9052)               += da9052-tsi.o
+ obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)              += dynapro.o
+ obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)    += hampshire.o
+ obj-$(CONFIG_TOUCHSCREEN_GUNZE)                += gunze.o
+diff -Naur linux-next-20110421.orig/include/linux/mfd/da9052/tsi.h linux-next-20110421/include/linux/mfd/da9052/tsi.h
+--- linux-next-20110421.orig/include/linux/mfd/da9052/tsi.h     1970-01-01 05:00:00.000000000 +0500
++++ linux-next-20110421/include/linux/mfd/da9052/tsi.h  2011-04-26 10:53:05.000000000 +0500
+@@ -0,0 +1,102 @@
++/*
++ * da9052 TSI module declarations.
++  *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __LINUX_MFD_DA9052_TSI_H
++#define __LINUX_MFD_DA9052_TSI_H
++
++#include <linux/mfd/da9052/da9052.h>
++
++#define TSI_FIFO_SIZE                  16
++#define ENABLE_AVERAGE_FILTER  1
++
++#define TSI_AVERAGE_FILTER_SIZE        3
++#define DA9052_ACTIVE                  1
++#define DA9052_INACTIVE                0
++
++enum {
++       DA9052_PEN_IDLE,
++       DA9052_PEN_DOWN,
++       DA9052_PEN_UP
++};
++
++
++
++enum {
++       idRead,
++       idWrite
++};
++
++enum {
++       idNoWrap,
++       idReadWrap,
++       idWriteWrap
++};
++
++struct da9052_tsi_reg {
++       u16     x;
++       u16     y;
++};
++
++struct da9052_tsi_fifo {
++       int m_write;
++       int m_read;
++       int m_wrapType;
++       struct da9052_tsi_reg fifo[TSI_FIFO_SIZE];
++
++};
++
++struct da9052_tsi_platform_data {
++       u8 pen_up_detect_interval;
++};
++
++struct tsi_thread_type {
++       u8              pid;
++       u8              state;
++       struct completion       notifier;
++       struct task_struct      *thread_task;
++} ;
++
++
++struct da9052_tsi {
++       struct da9052   *da9052;
++       struct input_dev *dev;
++       struct tsi_thread_type  tsi_pen_state_thread;
++       struct tsi_thread_type  tsi_filter_thread;
++       struct da9052_tsi_fifo tsi_fifo;
++       struct da9052_tsi_fifo tsi_fifo_buf;
++       struct da9052_tsi_reg read_buf[TSI_AVERAGE_FILTER_SIZE];
++       u32 pen_up_detect_interval;
++       u32 zero_data_cnt;
++       u32 valid_penup_count;
++       u8 pen_state;
++       int adc_cnt;
++       int filter_cnt;
++       int irq_pendwn;
++       int irq_datardy;
++};
++
++struct da9052_tsi_reg da9052_fifo_get(struct da9052_tsi_fifo *fifo);
++void da9052_fifo_put(struct da9052_tsi_fifo *fifo, struct da9052_tsi_reg temp);
++void da9052_fifo_getcount(int *count, long op, struct da9052_tsi_fifo *fifo);
++void da9052_fifo_incpos(struct da9052_tsi_fifo *fifo, int inc, int op);
++int da9052_fifo_lengthToEnd(struct da9052_tsi_fifo *fifo, long op);
++
++#endif /* __LINUX_MFD_DA9052_TSI_H */
 
 
-> >>>> Excuse my ignorance for a moment. Is eCryptfs a user mode filesystem,
-> >>>> or in the kernel properly? The behavior makes it sound like the former
-> >>>> while the interfaces you're requesting make it seem like the latter.
-> >> I'll repeat the question because it matters.
-> > As already reported by Guido Trentalancia, eCryptfs is a kernel mode
-> > filesystem, which accepts data from the VFS layer, encrypts or decrypts
-> > them and store the result in the underlying filesystem, always passing from
-> > the VFS interface.
-> >
-> > Roberto Sassu
-> >
-> >
-> >>
-> > --
-> > This message was distributed to subscribers of the selinux mailing list.
-> > If you no longer wish to subscribe, send mail to majordomo@tycho.nsa.gov with
-> > the words "unsubscribe selinux" without quotes as the message.
-> >
-> >
-> 
-> 
+Regards,
+Ashish
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
