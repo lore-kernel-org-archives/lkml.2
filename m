@@ -1,129 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1EDNIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 09:08:16 -0400
-Received: from gold.linx.net ([195.66.232.40]:51755 "EHLO gold.linx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab1EDNIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 09:08:14 -0400
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 May 2011 09:08:14 EDT
-Message-ID: <4DC14DD9.9060407@linx.net>
-Date: Wed, 04 May 2011 14:00:09 +0100
-From: Tony Vroon <tony@linx.net>
-Organization: London Internet Exchange (LINX; AS5459)
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110503 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1752805Ab1EDNBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 09:01:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47056 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab1EDNBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 09:01:05 -0400
+Date: Wed, 4 May 2011 15:00:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tejun Heo <tj@kernel.org>
+cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+In-Reply-To: <20110504112746.GE8007@htj.dyndns.org>
+Message-ID: <alpine.LFD.2.02.1105041417330.3005@ionos>
+References: <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com> <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu>
+ <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: linux-usb@vger.kernel.org
-CC: usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
-Subject: ums-realtek: Unneeded SubClass & Protocol entries (Fujitsu S760 laptop)
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Wed, 4 May 2011, Tejun Heo wrote:
+> > > And that code runs with preemption enabled. So when the task gets
+> > > preempted _BEFORE_ it has actuallty written back the data, then the
+> > > race window is wide open.
+> 
+> Hmmm... if it's a race caused by preemtion enabled where it shouldn't
+> be, it's most likely the wrong type of this_cpu_cmpxchg_double() being
+> used in SLUB?  ie. __this_cpu_cmpxchg_double() where it should have
+> been this_cpu_cmpxchg_double()?  Christoph?
 
-Good afternoon,
+No, the problem is that ELAN prevents the cmpxchg8b, but keeps
+CONFIG_CMPXCHG_LOCAL=y which then results in the unprotected code for
+the following reason:
 
-The following message was emitted by my kernel:
-usb 1-1.6: new high speed USB device number 5 using ehci_hcd
-ums-realtek 1-1.6:1.0: This device (0bda,0138,3882 S 06 P 50) has
-unneeded SubClass and Protocol entries in unusual_devs.h (kernel
-2.6.39-rc5-00274-g609cfda)
-   Please send a copy of this message to <linux-usb@vger.kernel.org> and
-<usb-storage@lists.one-eyed-alien.net>
-scsi6 : usb-storage 1-1.6:1.0
+this_cpu_cmpxchg_double() 
 
-This is the built-in card reader on a Fujitsu S760 laptop. Full lsusb
-for the device in question:
-Bus 001 Device 005: ID 0bda:0138 Realtek Semiconductor Corp.
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               2.00
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  idVendor           0x0bda Realtek Semiconductor Corp.
-  idProduct          0x0138
-  bcdDevice           38.82
-  iManufacturer           1 Generic
-  iProduct                2 USB2.0-CRW
-  iSerial                 3 20090516388200000
-  bNumConfigurations      1
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength           32
-    bNumInterfaces          1
-    bConfigurationValue     1
-    iConfiguration          4 CARD READER
-    bmAttributes         0xa0
-      (Bus Powered)
-      Remote Wakeup
-    MaxPower              500mA
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      bNumEndpoints           2
-      bInterfaceClass         8 Mass Storage
-      bInterfaceSubClass      6 SCSI
-      bInterfaceProtocol     80 Bulk (Zip)
-      iInterface              5 Bulk-In, Bulk-Out, Interface
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x01  EP 1 OUT
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0200  1x 512 bytes
-        bInterval               0
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x82  EP 2 IN
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0200  1x 512 bytes
-        bInterval               0
-Device Qualifier (for other device speed):
-  bLength                10
-  bDescriptorType         6
-  bcdUSB               2.00
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  bNumConfigurations      1
-Device Status:     0x0000
-  (Bus Powered)
+-> __pcpu_double_call_return_bool 
 
-Could you CC me on any postings as I am not subscribed to the USB lists.
-If there is further information you require, I am happy to provide it.
+-> this_cpu_cmpxchg_double_4
 
-Regards,
-- -- 
-Tony Vroon
-UNIX systems administrator
-London Internet Exchange Ltd, Trinity Court, Trinity Street,
-Peterborough, PE1 1DA
-Registered in England number 3137929
-E-Mail: tony@linx.net
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Which on x86 expands to 
 
-iEYEARECAAYFAk3BTdkACgkQp5vW4rUFj5rGPACgkOfjbenHWGPLpgOAPrzbHqjH
-vJEAoKjva6ZsDs/rcdgh6TngHm63/beO
-=qwHu
------END PGP SIGNATURE-----
+-> percpu_cmpxchg8b_double() when CONFIG_X86_CMPXCHG64=y
+
+With CONFIG_X86_CMPXCHG64=n it expands to the default:
+
+_this_cpu_generic_cmpxchg_double() in linux/percpu.h
+
+#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)        \
+({                                                                      \
+        int ret__;                                                      \
+        preempt_disable();                                              \
+        ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,           \
+                        oval1, oval2, nval1, nval2);                    \
+        preempt_enable();                                               \
+        ret__;                                                          \
+})
+
+And:
+
+#define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)       \
+({                                                                      \
+        int __ret = 0;                                                  \
+        if (__this_cpu_read(pcp1) == (oval1) &&                         \
+                         __this_cpu_read(pcp2)  == (oval2)) {           \
+                __this_cpu_write(pcp1, (nval1));                        \
+                __this_cpu_write(pcp2, (nval2));                        \
+                __ret = 1;                                              \
+        }                                                               \
+        (__ret);                                                        \
+})
+
+So now that failing config has CONFIG_PREEMPT=n which makes
+preempt_disable / enable a nop. 
+
+So preemption is not the problem, but what about interrupts and
+softirqs ?
+
+So the question is whether CMPXCHG_LOCAL for x86 wants to depend on
+X86_CMPXCHG64.
+
+The other solution is to use irqsafe_cpu_cmpxchg_double() instead of
+this_cpu_cmpxchg_double() in slub.c. 
+
+This will not hurt the X86_CMPXCHG64=y case, but keep the expansion to
+the above __this_cpu_generic_cmpxchg_double working. 
+
+Which makes me even wonder some more whether we need that whole
+CMPXCHG_LOCAL #ifdeffery in slub.c at all.
+
+Thanks,
+
+	tglx
