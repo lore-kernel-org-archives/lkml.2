@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab1EDOff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:35:35 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:32195 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753167Ab1EDOfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:35:34 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: lsihS18VM1lg90w49LpXQaPaeUSuNMb3vRl_d1eiCGA8vFg
- rDq2AL5aK4IfyHu6PukP_nJ.8WybqLk2P8rZe4AKnGCRVxh.kg5fe3R1.Vde
- D6_Z0YspDxJsbOKvsJ3lpPqI1WLWUEnjxJV8SUxMKR_TRaeOslx8Fz94Midm
- o_wy3CMu7MbMNBPwxW91EOEgBK3z7pAM5eyTP._xj4pbAPFNBW01Qs5yAK4T
- mqg8mVzp7LKHnJhShM3Z4MFy0leW06cTIFrpQoVBHeQSGKa0Yxs.Ww60RLgb
- I0KfSroC5dakRgszHgz38W6txjCFgFGS9qaUCJL4zaRkD97Ab
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 4 May 2011 09:35:30 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
+	id S1754279Ab1EDOgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:36:35 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44637 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753669Ab1EDOge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 10:36:34 -0400
+Date: Wed, 4 May 2011 16:36:16 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jens Axboe <axboe@kernel.dk>,
         Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: <20110504142532.GC17294@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1105040934570.5495@router.home>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
- <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: [PATCH] slub: Fix the lockless code on 32-bit platforms with no
+ 64-bit cmpxchg
+Message-ID: <20110504143616.GA19986@elte.hu>
+References: <20110504083559.GB25724@elte.hu>
+ <alpine.LFD.2.02.1105041124080.3005@ionos>
+ <20110504101932.GA3392@elte.hu>
+ <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos>
+ <20110504132022.GA17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041539050.3005@ionos>
+ <20110504141413.GA14127@elte.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504141413.GA14127@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Tejun Heo wrote:
 
-> The cmpxchg_double optimization made the fast path go quite faster
-> when CPU supports it but it may as well slow things down considerably
-> if CPU doesn't, due to extra irq on/off's.  Anyways, here's hoping
-> that the slow down is acceptable compared to the base code without
-> cmpxchg_double and the ugliness can be removed.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-I think we are all in agreement. First path to fix the percpu macros:
+> 
+> * Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > Patch below. Ingo, can you test that please ?
+> 
+> Sure - test underway.
 
+Ok, the patch below is looking really good - the test would have crashed on the 
+bad kernel. I think we can consider the regression fixed:
 
-Subject: percpu: Fix irqsafe_cpu_cmpxchg_double
+  Acked-and-tested-by: Ingo Molnar <mingo@elte.hu>
 
-The function in the macro was not updated when the function was given a bool return value.
+I'll keep it running some more to make really sure it's fixed, plus it would be 
+nice if Walter tested your fix as well.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Thanks,
 
+	Ingo
+
+----------------->
+>From c22bd309573330e33a77c329405d9473fc14f1cb Mon Sep 17 00:00:00 2001
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 4 May 2011 15:38:19 +0200
+Subject: [PATCH] slub: Fix the lockless code on 32-bit platforms with no 64-bit cmpxchg
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: werner <w.landgraf@ru.ru>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1105041539050.3005@ionos
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
  include/linux/percpu.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/slub.c              |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/include/linux/percpu.h
-===================================================================
---- linux-2.6.orig/include/linux/percpu.h	2011-05-04 09:33:08.000000000 -0500
-+++ linux-2.6/include/linux/percpu.h	2011-05-04 09:33:39.000000000 -0500
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 3a5c444..8b97308 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
 @@ -948,7 +948,7 @@ do {									\
  	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
  # endif
@@ -70,5 +98,27 @@ Index: linux-2.6/include/linux/percpu.h
 -	__pcpu_double_call_return_int(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
 +	__pcpu_double_call_return_bool(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
  #endif
-
+ 
  #endif /* __LINUX_PERCPU_H */
+diff --git a/mm/slub.c b/mm/slub.c
+index 94d2a33..9d2e5e4 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1940,7 +1940,7 @@ redo:
+ 		 * Since this is without lock semantics the protection is only against
+ 		 * code executing on this cpu *not* from access by other cpus.
+ 		 */
+-		if (unlikely(!this_cpu_cmpxchg_double(
++		if (unlikely(!irqsafe_cpu_cmpxchg_double(
+ 				s->cpu_slab->freelist, s->cpu_slab->tid,
+ 				object, tid,
+ 				get_freepointer(s, object), next_tid(tid)))) {
+@@ -2145,7 +2145,7 @@ redo:
+ 		set_freepointer(s, object, c->freelist);
+ 
+ #ifdef CONFIG_CMPXCHG_LOCAL
+-		if (unlikely(!this_cpu_cmpxchg_double(
++		if (unlikely(!irqsafe_cpu_cmpxchg_double(
+ 				s->cpu_slab->freelist, s->cpu_slab->tid,
+ 				c->freelist, tid,
+ 				object, next_tid(tid)))) {
