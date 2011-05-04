@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1EDTKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:10:09 -0400
-Received: from trent.utfs.org ([194.246.123.103]:45188 "EHLO trent.utfs.org"
+	id S1755342Ab1EDTKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:10:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753941Ab1EDTKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:10:07 -0400
-Date: Wed, 4 May 2011 12:10:04 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        minchan.kim@gmail.com
-Subject: Re: 2.6.39-rc4+: oom-killer busy killing tasks
-In-Reply-To: <20110504111211.GF9114@dastard>
-Message-ID: <alpine.DEB.2.01.1105041205340.18728@trent.utfs.org>
-References: <20110429201701.GA13166@x4.trippels.de> <alpine.DEB.2.01.1104291710340.18728@trent.utfs.org> <20110501080149.GD13542@dastard> <alpine.DEB.2.01.1105012135260.18728@trent.utfs.org> <20110502121958.GA2978@dastard> <alpine.DEB.2.01.1105021247410.18728@trent.utfs.org>
- <20110503005114.GE2978@dastard> <alpine.DEB.2.01.1105031345090.18728@trent.utfs.org> <alpine.DEB.2.01.1105031740460.18728@trent.utfs.org> <20110504073615.GD9114@dastard> <20110504111211.GF9114@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1755253Ab1EDTKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 15:10:22 -0400
+Message-ID: <4DC1A49C.4010101@redhat.com>
+Date: Wed, 04 May 2011 15:10:20 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Valdis.Kletnieks@vt.edu
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1304531920-2890-1-git-send-email-josef@redhat.com> <15392.1304535887@localhost>
+In-Reply-To: <15392.1304535887@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011 at 21:12, Dave Chinner wrote:
->> Ok, that will be helpful. Also helpful is that I've (FINALLY!)
->> reproduced this myself, and i think i can now reproduce it at will
->> on a highmem i686 machine. I'll look into it more later tonight....
+On 05/04/2011 03:04 PM, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 04 May 2011 13:58:39 EDT, Josef Bacik said:
+>
+>> -SEEK_HOLE: this moves the file pos to the nearest hole in the file from the
+>> given position.
+>
+> Nearest, or next? Solaris defines it as "next", for a good reason - otherwise
+> you can get stuck in a case where the "nearest" hole is back towards the
+> start of the file - and "seek data" will bounce back to the next byte at
+> the other end of the hole.
+>
 
-I've tried to reproduce it on an SMP i686 with 1024MB RAM, but there was 
-no OOM there.
+Yeah sorry the log says "nearest" but the code says "next", if you look 
+at it thats how it works.  Thanks,
 
-> And here's a patch for you to try. It fixes the problem on my test
-> machine.....
-
-Excellent! After one run with that patch, the machine does not go OOM any 
-more when running du(1) over this XFS filesystem.
-
-I've run du(1) login with my oom-debug script to gather sysrq-w and 
-slabinfo, see https://trent.utfs.org/p/bits/2.6.39-rc4/oom/trace/16-* for 
-the details.
-
-I'll poke it a bit more over the day, but your patch (one line only! Wow!) 
-seems to help.
-
-Thanks so much,
-Christian.
--- 
-BOFH excuse #160:
-
-non-redundant fan failure
+Josef
