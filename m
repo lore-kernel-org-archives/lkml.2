@@ -1,60 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab1EDIHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 04:07:48 -0400
-Received: from mail-px0-f170.google.com ([209.85.212.170]:49538 "EHLO
-	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1EDIHn (ORCPT
+	id S1751955Ab1EDILo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 04:11:44 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37886 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab1EDILl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 04:07:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=x4tPMR3zxTrDaJEShv5SDAwD0lMGDKMQiVP27vi+W8aStCRnCEALAyUk+DfSwtnfB1
-         SPRfp5goxmkX6eqADVI9hCCgNFgrqpwNBQfWuYLZu4RZvx2T7DUt/jh9f52MT8BxkfLU
-         igvkLin+7o7NPgnQKAZ7drwvHIycuwDOAnOD0=
-Message-ID: <4DC1094A.7060903@gmail.com>
-Date: Wed, 04 May 2011 16:07:38 +0800
-From: microcai <microcaicai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Belisko Marek <marek.belisko@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-sound@vger.kernel.org
-Subject: Re: [bug] ASoC uda134x not working for me, and udev crashed at startup
-References: <4DBE5B8E.7010109@gmail.com>	<BANLkTinK7bDbwTvsWfxE8w6sPLC--1TUsQ@mail.gmail.com>	<BANLkTi=yeYsHN5pzW7WV5eskVqaC1m1FWw@mail.gmail.com>	<4DBFEB27.3030709@gmail.com> <BANLkTinCNaqTvgqFCpARrcfXE94-iy8gvg@mail.gmail.com>
-In-Reply-To: <BANLkTinCNaqTvgqFCpARrcfXE94-iy8gvg@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 4 May 2011 04:11:41 -0400
+Subject: [PATCH V4 4/8]vhost: vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 01:11:24 -0700
+Message-ID: <1304496684.20660.84.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年05月04日 04:18, Belisko Marek 写道:
-> On Tue, May 3, 2011 at 1:46 PM, microcai <microcaicai@gmail.com> wrote:
->>  2011-05-03 17:09, Belisko Marek Wrote:
->>> On Mon, May 2, 2011 at 9:56 AM, Belisko Marek <marek.belisko@gmail.com> wrote:
->>>> CC also linux-sound mailing list.
->>>>
->>>> On Mon, May 2, 2011 at 9:21 AM, microcai <microcaicai@gmail.com> wrote:
->>>>> Heya,
->>>>>
->>>>> The commit a110f4ef810ee29d810876df725f41d66629733e is not working for
->>>>> me. I'm using an TQ2440 platform, very similar to mini2440. Only the LCD
->>>>> and LED is the difference. Basically just copy & past from the
->>>>> mach-mini2440.c to mach-tq2440.c. ;)
->>>>>
->>>>> I installed Gentoo on the system, when startup, I got
->>>>>
->>>>> [    1.645000] ALSA device list:
->>>>> [    1.645000]   No soundcards found.
->>>> With this patch you shouldn't see this in boot log. At least it work for me ;)
->>> Did you enable Audio in menuconfig? For mini2440_defconfig audio is not selected
->>> by default. SoC I2S Audio support UDA134X wired to a S3C24XX must be enabled.
->>> Please let us know if it helps.
-> Sorry confusing. Which kernel you're using? I use mainline kernel not some
-> custom tree. Please use mainline.
+This patch maintains the outstanding userspace buffers in the 
+sequence it is delivered to vhost. The outstanding userspace buffers 
+will be marked as done once the lower device buffers DMA has finished. 
+This is monitored through last reference of kfree_skb callback. Two
+buffer index are used for this purpose.
 
-It is mainline kernel. With a little path by myself. But it not sound stuff.
+The vhost passes the userspace buffers info to lower device skb 
+through message control. Since there will be some done DMAs when
+entering vhost handle_tx. The worse case is all buffers in the vq are
+in pending/done status, so we need to notify guest to release DMA done 
+buffers first before get any new buffers from the vq.
+
+Signed-off-by: Shirley <xma@us.ibm.com>
+---
+
+ drivers/vhost/net.c   |   30 +++++++++++++++++++++++++++-
+ drivers/vhost/vhost.c |   50
+++++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/vhost/vhost.h |   10 +++++++++
+ 3 files changed, 87 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 2f7c76a..c403afb 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -32,6 +32,8 @@
+  * Using this limit prevents one virtqueue from starving others. */
+ #define VHOST_NET_WEIGHT 0x80000
+ 
++#define MAX_ZEROCOPY_PEND 64
++
+ enum {
+ 	VHOST_NET_VQ_RX = 0,
+ 	VHOST_NET_VQ_TX = 1,
+@@ -129,6 +131,7 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	struct skb_ubuf_info pend;
+ 
+ 	/* TODO: check that we are running from vhost_worker? */
+ 	sock = rcu_dereference_check(vq->private_data, 1);
+@@ -151,6 +154,10 @@ static void handle_tx(struct vhost_net *net)
+ 	hdr_size = vq->vhost_hlen;
+ 
+ 	for (;;) {
++		/* Release DMAs done buffers first */
++		if (sock_flag(sock->sk, SOCK_ZEROCOPY))
++			vhost_zerocopy_signal_used(vq);
++
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+@@ -166,6 +173,12 @@ static void handle_tx(struct vhost_net *net)
+ 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+ 				break;
+ 			}
++			/* If more outstanding DMAs, queue the work */
++			if (sock_flag(sock->sk, SOCK_ZEROCOPY) &&
++			    (atomic_read(&vq->refcnt) > MAX_ZEROCOPY_PEND)) {
++				vhost_poll_queue(&vq->poll);
++				break;
++			}
+ 			if (unlikely(vhost_enable_notify(vq))) {
+ 				vhost_disable_notify(vq);
+ 				continue;
+@@ -188,17 +201,30 @@ static void handle_tx(struct vhost_net *net)
+ 			       iov_length(vq->hdr, s), hdr_size);
+ 			break;
+ 		}
++		/* use msg_control to pass vhost zerocopy ubuf info to skb */
++		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
++			pend.callback = vhost_zerocopy_callback;
++			pend.arg = vq;
++			pend.desc = vq->upend_idx;
++			msg.msg_control = &pend;
++			msg.msg_controllen = sizeof(pend);
++			vq->heads[vq->upend_idx].id = head;
++			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
++			atomic_inc(&vq->refcnt);
++		}
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+ 		if (unlikely(err < 0)) {
+-			vhost_discard_vq_desc(vq, 1);
++			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++				vhost_discard_vq_desc(vq, 1);
+ 			tx_poll_start(net, sock);
+ 			break;
+ 		}
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 2ab2912..3048953 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	vq->upend_idx = 0;
++	vq->done_idx = 0;
++	atomic_set(&vq->refcnt, 0);
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -230,7 +233,7 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev
+*dev)
+ 					       UIO_MAXIOV, GFP_KERNEL);
+ 		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
+ 					  GFP_KERNEL);
+-		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
++		dev->vqs[i].heads = kzalloc(sizeof *dev->vqs[i].heads *
+ 					    UIO_MAXIOV, GFP_KERNEL);
+ 
+ 		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
+@@ -385,10 +388,41 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	return 0;
+ }
+ 
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
++{
++	int i, j = 0;
++
++	i = vq->done_idx;
++	while (i != vq->upend_idx) {
++		/* len = 1 means DMA done */
++		if (vq->heads[i].len == 1) {
++			/* reset len = 0 */
++			vq->heads[i].len = 0;
++			i = (i + 1) % UIO_MAXIOV;
++			++j;
++		} else
++			break;
++	}
++	if (j) {
++		if (i > vq->done_idx)
++			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
++		else {
++			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
++					 UIO_MAXIOV - vq->done_idx);
++			vhost_add_used_n(vq, vq->heads, i);
++		}
++		vq->done_idx = i;
++		vhost_signal(vq->dev, vq);
++		atomic_sub(j, &vq->refcnt);
++	}
++}
++
+ /* Caller should have device mutex */
+ void vhost_dev_cleanup(struct vhost_dev *dev)
+ {
+ 	int i;
++	unsigned long begin = jiffies;
++
+ 
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
+@@ -405,6 +439,11 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 			eventfd_ctx_put(dev->vqs[i].call_ctx);
+ 		if (dev->vqs[i].call)
+ 			fput(dev->vqs[i].call);
++		/* wait for all lower device DMAs done, then notify guest */
++		while (atomic_read(&dev->vqs[i].refcnt)) {
++			if (time_after(jiffies, begin + 5 * HZ))
++				vhost_zerocopy_signal_used(&dev->vqs[i]);
++		}
+ 		vhost_vq_reset(dev, dev->vqs + i);
+ 	}
+ 	vhost_dev_free_iovecs(dev);
+@@ -1416,3 +1455,12 @@ void vhost_disable_notify(struct vhost_virtqueue
+*vq)
+ 		vq_err(vq, "Failed to enable notification at %p: %d\n",
+ 		       &vq->used->flags, r);
+ }
++
++void vhost_zerocopy_callback(struct sk_buff *skb)
++{
++	int idx = skb_shinfo(skb)->ubuf.desc;
++	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
++
++	/* set len = 1 to mark this desc buffers done DMA */
++	vq->heads[idx].len = 1;
++}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b3363ae..ec032a0 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -108,6 +108,14 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* vhost zerocopy support */
++	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
++	/* index of zerocopy pending DMA buffers */
++	int upend_idx;
++	/* index of zerocopy done DMA buffers, but not notify guest yet */
++	int done_idx;
++	/* notify vhost zerocopy DMA buffers has done in lower device */
++	void (*callback)(struct sk_buff *);
+ };
+ 
+ struct vhost_dev {
+@@ -154,6 +162,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+ 
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
++void vhost_zerocopy_callback(struct sk_buff *skb);
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
+ 
+ #define vq_err(vq, fmt, ...) do {                                  \
+ 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+
+
