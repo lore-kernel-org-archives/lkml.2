@@ -1,191 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab1EDSKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:10:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817Ab1EDSJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:09:49 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: [PATCH 2/2 v2] Btrfs: implement our own ->llseek
-Date: Wed,  4 May 2011 13:58:40 -0400
-Message-Id: <1304531920-2890-2-git-send-email-josef@redhat.com>
-In-Reply-To: <1304531920-2890-1-git-send-email-josef@redhat.com>
-References: <1304531920-2890-1-git-send-email-josef@redhat.com>
+	id S1755188Ab1EDSBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:01:40 -0400
+Received: from perninha.conectiva.com.br ([187.115.55.249]:58096 "EHLO
+	perninha.conectiva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab1EDSBj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 14:01:39 -0400
+Subject: DRIVERS MMC card freezes at Jmicron controllers.
+From: Alexandre Felipe Muller de Souza <alexandrefm@mandriva.com.br>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Conectiva
+Date: Wed, 04 May 2011 14:59:04 -0300
+Message-ID: <1304531944.6868.17.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3-1.1mdv2010.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to handle SEEK_HOLE/SEEK_DATA we need to implement our own llseek.
-Basically for the normal SEEK_*'s we will just defer to the generic helper, and
-for SEEK_HOLE/SEEK_DATA we will use our fiemap helper to figure out the nearest
-hole or data.  Currently this helper doesn't check for delalloc bytes for
-prealloc space, so for now treat prealloc as data until that is fixed.  Thanks,
+Hi, all.
+I wrote an email minutes ago and I think it could be delivered missing
+half of the content for mistake using email editor. Sorry for that
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
----
-v1->v2: fixed some weirdness with finding the next hole when we had delalloc
-ranges.
- fs/btrfs/ctree.h |    3 +
- fs/btrfs/file.c  |  128 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 130 insertions(+), 1 deletions(-)
+We have users, reporting problems with MMC cards and JMicron controller
+devices. We have here to test more than one Pc (with Jmicron) with the
+same problem. It freezes completely after the insert of stick. Using
+2.6.33 to 2.6.39 RC6 the error is the same. I tried many alternatives,
+but with no success. If there is a idea that could make a fix on it
+please copy me on thread.
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index d5f043e..d2991c8 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -2474,6 +2474,9 @@ int btrfs_csum_truncate(struct btrfs_trans_handle *trans,
- int btrfs_lookup_csums_range(struct btrfs_root *root, u64 start,
- 			     u64 end, struct list_head *list);
- /* inode.c */
-+struct extent_map *btrfs_get_extent_fiemap(struct inode *inode, struct page *page,
-+					   size_t pg_offset, u64 start, u64 len,
-+					   int create);
- 
- /* RHEL and EL kernels have a patch that renames PG_checked to FsMisc */
- #if defined(ClearPageFsMisc) && !defined(ClearPageChecked)
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index cd5e82e..ad5c3c8 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1406,8 +1406,134 @@ out:
- 	return ret;
- }
- 
-+static int find_desired_extent(struct inode *inode, loff_t *offset, int origin)
-+{
-+	struct btrfs_root *root = BTRFS_I(inode)->root;
-+	struct extent_map *em;
-+	struct extent_state *cached_state = NULL;
-+	u64 lockstart = *offset;
-+	u64 lockend = i_size_read(inode);
-+	u64 start = *offset;
-+	u64 len = i_size_read(inode);
-+	u64 last_end = 0;
-+	int ret = 0;
-+
-+	lockend = max_t(u64, BTRFS_I(inode)->root->sectorsize, lockend);
-+	len = lockend;
-+
-+	lock_extent_bits(&BTRFS_I(inode)->io_tree, lockstart, lockend, 0,
-+			 &cached_state, GFP_NOFS);
-+
-+	/*
-+	 * Delalloc is such a pain.  If we have a hole and we have pending
-+	 * delalloc for a portion of the hole we will get back a hole that
-+	 * exists for the entire range since it hasn't been actually written
-+	 * yet.  So to take care of this case we need to look for an extent just
-+	 * before the position we want in case there is outstanding delalloc
-+	 * going on here.
-+	 */
-+	if (origin == SEEK_HOLE && start != 0) {
-+		if (start < root->sectorsize)
-+			em = btrfs_get_extent_fiemap(inode, NULL, 0, 0,
-+						     start, 0);
-+		else
-+			em = btrfs_get_extent_fiemap(inode, NULL, 0,
-+						     start - root->sectorsize,
-+						     root->sectorsize, 0);
-+		if (IS_ERR(em)) {
-+			ret = -ENXIO;
-+			goto out;
-+		}
-+		last_end = em->start + em->len;
-+		free_extent_map(em);
-+	}
-+
-+	while (1) {
-+		em = btrfs_get_extent_fiemap(inode, NULL, 0, start, len, 0);
-+		if (IS_ERR(em)) {
-+			ret = -ENXIO;
-+			break;
-+		}
-+
-+		if (em->block_start == EXTENT_MAP_HOLE) {
-+			if (origin == SEEK_HOLE) {
-+				u64 new_offset = max(em->start, start);
-+				/*
-+				 * If we are in the middle of a hole then move
-+				 * to the next one, unless the previous range we
-+				 * found ended here, which means we have a
-+				 * delalloc range that is going to convert part
-+				 * of this hole into data.
-+				 */
-+				if (new_offset == em->start ||
-+				    (new_offset > em->start &&
-+				     new_offset == last_end)) {
-+					*offset = new_offset;
-+					free_extent_map(em);
-+					break;
-+				}
-+			}
-+		} else {
-+			if (origin == SEEK_DATA) {
-+				if (em->start == start) {
-+					*offset = em->start;
-+					free_extent_map(em);
-+					break;
-+				}
-+			}
-+		}
-+		start = em->start + em->len;
-+		last_end = em->start + em->len;
-+		if (test_bit(EXTENT_FLAG_VACANCY, &em->flags)) {
-+			free_extent_map(em);
-+			ret = -ENXIO;
-+			break;
-+		}
-+		free_extent_map(em);
-+	}
-+out:
-+	unlock_extent_cached(&BTRFS_I(inode)->io_tree, lockstart, lockend,
-+			     &cached_state, GFP_NOFS);
-+	return ret;
-+}
-+
-+static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct inode *inode = file->f_mapping->host;
-+	int ret;
-+
-+	mutex_lock(&inode->i_mutex);
-+	switch (origin) {
-+	case SEEK_END:
-+	case SEEK_CUR:
-+		offset = generic_file_llseek_unlocked(file, offset, origin);
-+		goto out;
-+	case SEEK_DATA:
-+	case SEEK_HOLE:
-+		ret = find_desired_extent(inode, &offset, origin);
-+		if (ret) {
-+			mutex_unlock(&inode->i_mutex);
-+			return ret;
-+		}
-+	}
-+
-+	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET))
-+		return -EINVAL;
-+	if (offset > inode->i_sb->s_maxbytes)
-+		return -EINVAL;
-+
-+	/* Special lock needed here? */
-+	if (offset != file->f_pos) {
-+		file->f_pos = offset;
-+		file->f_version = 0;
-+	}
-+out:
-+	mutex_unlock(&inode->i_mutex);
-+	return offset;
-+}
-+
- const struct file_operations btrfs_file_operations = {
--	.llseek		= generic_file_llseek,
-+	.llseek		= btrfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
- 	.aio_read       = generic_file_aio_read,
--- 
-1.7.2.3
+lspci:
+02:00.2 SD Host controller: JMicron Technologies, Inc. Standard SD Host
+Controller (rev 80) (prog-if 01)
+        Subsystem: Holco Enterprise Co, Ltd/Shuttle Computer Device
+2000                                
+        Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx- 
+        Interrupt: pin B routed to IRQ
+18                                                                    
+        Region 0: Memory at febff800 (32-bit, non-prefetchable)
+[size=256]                                   
+        Capabilities: [a4] Power Management version
+3                                                        
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)                   
+                Status: D0 PME-Enable- DSel=0 DScale=0
+PME-                                                  
+        Capabilities: [80] Express (v1) Endpoint, MSI
+00                                                     
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us                        
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+
+FLReset-                                      
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-                           
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr-
+NoSnoop-                                         
+                        MaxPayload 128 bytes, MaxReadReq 128
+bytes                                           
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr-
+TransPend-                          
+                LnkCap: Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 unlimited, L1 unlimited    
+                        ClockPM- Surprise- LLActRep-
+BwNot-                                                  
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
+CommClk+                              
+                        ExtSynch- ClockPM- AutWidDis- BWInt-
+AutBWInt-                                       
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+
+DLActive- BWMgmt- ABWMgmt-           
+        Capabilities: [94] MSI: Mask- 64bit- Count=1/1
+Enable-                                               
+                Address: fffffffc  Data:
+0000                                                                
+        Kernel modules: sdhci-pci
+
+Before death it outputs on log
+mmc0:new MMC card at...
+mmcblk0:mmc0 ...
+ldm_validade_partition_table() Disk read failed
+mmcblk0: retrying using single block read
+error -110 transfering data, sector 0, card status nr8, 0xb00
+
+I'll still trying something, but if anybody knows about it warn me.
+Thanks
+Alexandre
 
