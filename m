@@ -1,114 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab1EDQUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:20:16 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:42617 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab1EDQUP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:20:15 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: various vmbus review comments
-Thread-Topic: various vmbus review comments
-Thread-Index: AQHMCdM/6BBvI53KVEebJyh4jiWUR5R8ywQg
-Date: Wed, 4 May 2011 16:20:11 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481DFCFA@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <20110503204641.GA11132@kroah.com>
-In-Reply-To: <20110503204641.GA11132@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.33]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752561Ab1EDQXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:23:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750802Ab1EDQXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 12:23:14 -0400
+Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
+ how it works.
+From: Eric Paris <eparis@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Will Drewry <wad@chromium.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 04 May 2011 12:22:40 -0400
+In-Reply-To: <1304525169.25414.2427.camel@gandalf.stny.rr.com>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	 <1303960136-14298-4-git-send-email-wad@chromium.org>
+	 <20110428070636.GC952@elte.hu>
+	 <1304002571.2101.38.camel@localhost.localdomain>
+	 <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
+	 <20110429131845.GA1768@nowhere>
+	 <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
+	 <20110503012857.GA8399@nowhere>
+	 <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
+	 <1304511396.25414.2422.camel@gandalf.stny.rr.com>
+	 <1304524465.10692.21.camel@localhost.localdomain>
+	 <1304525169.25414.2427.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1304526163.10692.33.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, May 03, 2011 4:47 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: various vmbus review comments
+On Wed, 2011-05-04 at 12:06 -0400, Steven Rostedt wrote:
+> On Wed, 2011-05-04 at 11:54 -0400, Eric Paris wrote:
 > 
-> I just took a quick look at the vmbus code, and have the following
-> comments:
-> 	- why is count_hv_channel() even a function?
+> > As this is a deny by default interface which only allows you to further
+> > restrict you couldn't add more than 1 syscall if you didn't have an
+> > explict 'apply' action.
+> > 
+> > SECCOMP_FILTER_SET, __NR_fo, "a=0"
+> > SECCOMP_FILTER_SET, __NR_read, "1" == EPERM
+> > 
+> > Maybe apply on set is fine after the first apply, but we definitely need
+> > some way to do more than 1 set before the rules are applied....
+> 
+> So we could have SET be 'or' and APPLY be 'and'.
+> 
+> SECCOMP_FILTER_SET, __NR_foo, "a=0"
+> SECCOMP_FILTER_SET, __NR_read, "1" == EPERM
 
-I will fix this.
+When I said "== EPERM" I meant that the given prctl call would return
+EPERM.  I'm going to pretend that you didn't type it.
 
-> 	- your .h files need to be consolidated and renamed.  You will
-> 	  need a single hyperv.h file for include/linux/ that will
-> 	  contain some of what the vmbus*.h files have in it, but not
-> 	  all.  Please merge things together to have:
-> 	  	- include/linux/hyperv.h
-> 		   What is needed to build the drivers that attach to
-> 		   the bus
-> 		- drivers/staging/hv/hyperv.h
-> 		   The local .h file will have the vmbus*.h remaining
-> 		   stuff that is only needed by the hv_vmbus.ko module
-> 		   to be build.
+> SECCOPM_FILTER_APPLY
+> 
+> SECCOMP_FILTER_SET, __NR_foo, "b=0"
+> SECCOPM_FILTER_APPLY
+> 
+> Will end up being:
+> 
+> (foo: a == 0 || read: "1") && (foo: b == 0)
+> 
+> The second set/apply now removes the read option, and foo only works if
+> a is 0 and b is 0.
+> 
+> This would also work for children, as they can only restrict (with
+> 'and') and can not add more control.
 
-I have currently consolidated all the header files as follows:
+I think we pretty much agree although I'm pretty that we will have 1
+filter per syscall.  So the rules would really be (in your syntax)
 
-1) hyperv.h - this will have all the vmbus related definitions
-needed to build drivers that attach to the bus (as you have suggested).
+Rule1: (foo: a == 0 && b == 0)
+OR
+Rule2: (read: "1")
 
-2) hyperv_storage.h - this has all the definitions needed to build storage
-drivers for Hyper-V. Storage drivers will include hyperv.h and 
-hyperv_storage.h.
+Although logically the same, it's not just one huge rule.  I don't see
+any need for any operation other than an &&.  Before the first "set" you
+can add new syscalls.  After the first set you can only && onto existing
+syscalls.  So the following set of operations:
 
-3) hyperv_net.h - this has all the definitions needed to build the network
-driver for Hyper-V. The netvsc driver will include hyperv.h and hyperv_net.h.
+SECCOMP_FILTER_SET, __NR_foo, "a=0"
+SECCOMP_FILTER_SET, __NR_read, "1"
+SECCOPM_FILTER_APPLY
+ 
+SECCOMP_FILTER_SET, __NR_foo, "b=0"
+SECCOMP_FILTER_APPLY
 
-4) hyperv_utils.h - this has all the definitions needed to build the util driver.
-The util driver would include hyperv.h and hyperv_utils.h.
+SECCOMP_FILTER_SET, __NR_write, "1"
+SECCOMP_FILTER_APPLY
 
-All these four header files could potentially be under include/linux.
-I have also created a private header file that has the definitions to 
-build the vmbus driver - hyperv_vmbus.h.
+Would return EPERM for the __NR_write entry since it was a new syscall
+after a set.  I think we agree on all this.
 
-Let me know if this is what you had in mind.
+I do have a question on some syntax proposed a while back.  Given:
+SECCOMP_FILTER_SET, __NR_foo, "a=0"
+SECCOMP_FILTER_SET, __NR_foo, "b=0"
+SECCOMP_FILTER_APPLY
 
+I would think to keep the interface consistent that should result in
+foo: (a=0) && (b=0)
 
-> 	- the instances of hv_driver structures need to be static and
-> 	  not programatically defined, like all other USB and PCI
-> 	  drivers are handled.
-> 	- module reference counting.  Are you sure you got it all right
-> 	  for the individual modules that attach to the bus?  I don't
-> 	  see any reference counting happening, is that correct?
+But I think the proposal was that we should instead have just
+foo: (b=0)
 
-For this round, I want to concentrate on just the vmbus driver. So,
-module reference counting is I don't think an issue for the vmbus driver
-given that the driver is not unlodable. Once I am done with the vmbus driver
-I will address the module reference counting issues for other drivers. 
-I will also address your comment on static initialization hv_driver instances
-as part of other driver cleanup.
+What's the logic behind having a second call overwrite uncommitted
+changes?  I sorta feel like if I put it in there, I must have wanted it
+in there   :)
 
-> 	- fix the sparse warnings.
+-Eric
 
-Will do. Just out of curiosity I ran sparse and was relieved to see only a handful
-warnings!
-
-> 	- fix the use of volatile in the ring buffer code.  It should
-> 	  not be needed and if you are relying on it, then the code is
-> 	  wrong.
-> 	- fix the namespace on the ringbuffer code to show that it
-> 	  really is only for the hyperv bus code internally.
-
-I will fix these.
-
-Regards,
-
-K. Y
