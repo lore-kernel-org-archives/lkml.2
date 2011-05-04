@@ -1,246 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab1EDILo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 04:11:44 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37886 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab1EDILl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 04:11:41 -0400
-Subject: [PATCH V4 4/8]vhost: vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 May 2011 01:11:24 -0700
-Message-ID: <1304496684.20660.84.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752111Ab1EDIOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 04:14:34 -0400
+Received: from mx5.orcon.net.nz ([219.88.242.55]:38155 "EHLO mx5.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788Ab1EDIOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 04:14:32 -0400
+From: Michael Cree <mcree@orcon.net.nz>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Cree <mcree@orcon.net.nz>, linux-alpha@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Subject: [PATCH] alpha: Add DMA_ERROR_CODE defn to avert compiler error in drm
+Date: Wed,  4 May 2011 20:13:37 +1200
+Message-Id: <1304496817-7646-1-git-send-email-mcree@orcon.net.nz>
+X-Mailer: git-send-email 1.7.4.3
+X-DSPAM-Check: by mx5.orcon.net.nz on Wed, 04 May 2011 20:14:31 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Wed May  4 20:14:31 2011
+X-DSPAM-Confidence: 0.7624
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch maintains the outstanding userspace buffers in the 
-sequence it is delivered to vhost. The outstanding userspace buffers 
-will be marked as done once the lower device buffers DMA has finished. 
-This is monitored through last reference of kfree_skb callback. Two
-buffer index are used for this purpose.
+The radeon drm code now relies on DMA_ERROR_CODE.  This defines
+it in alpha dma-mapping header to at least enable me to compile
+radeon drm/kms into kernel.
 
-The vhost passes the userspace buffers info to lower device skb 
-through message control. Since there will be some done DMAs when
-entering vhost handle_tx. The worse case is all buffers in the vq are
-in pending/done status, so we need to notify guest to release DMA done 
-buffers first before get any new buffers from the vq.
-
-Signed-off-by: Shirley <xma@us.ibm.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
 ---
+ arch/alpha/include/asm/dma-mapping.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
- drivers/vhost/net.c   |   30 +++++++++++++++++++++++++++-
- drivers/vhost/vhost.c |   50
-++++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/vhost/vhost.h |   10 +++++++++
- 3 files changed, 87 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 2f7c76a..c403afb 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -32,6 +32,8 @@
-  * Using this limit prevents one virtqueue from starving others. */
- #define VHOST_NET_WEIGHT 0x80000
+diff --git a/arch/alpha/include/asm/dma-mapping.h b/arch/alpha/include/asm/dma-mapping.h
+index 4567aca..644d9c3 100644
+--- a/arch/alpha/include/asm/dma-mapping.h
++++ b/arch/alpha/include/asm/dma-mapping.h
+@@ -3,6 +3,8 @@
  
-+#define MAX_ZEROCOPY_PEND 64
+ #include <linux/dma-attrs.h>
+ 
++#define DMA_ERROR_CODE 0
 +
- enum {
- 	VHOST_NET_VQ_RX = 0,
- 	VHOST_NET_VQ_TX = 1,
-@@ -129,6 +131,7 @@ static void handle_tx(struct vhost_net *net)
- 	int err, wmem;
- 	size_t hdr_size;
- 	struct socket *sock;
-+	struct skb_ubuf_info pend;
+ extern struct dma_map_ops *dma_ops;
  
- 	/* TODO: check that we are running from vhost_worker? */
- 	sock = rcu_dereference_check(vq->private_data, 1);
-@@ -151,6 +154,10 @@ static void handle_tx(struct vhost_net *net)
- 	hdr_size = vq->vhost_hlen;
- 
- 	for (;;) {
-+		/* Release DMAs done buffers first */
-+		if (sock_flag(sock->sk, SOCK_ZEROCOPY))
-+			vhost_zerocopy_signal_used(vq);
-+
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
-@@ -166,6 +173,12 @@ static void handle_tx(struct vhost_net *net)
- 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
- 				break;
- 			}
-+			/* If more outstanding DMAs, queue the work */
-+			if (sock_flag(sock->sk, SOCK_ZEROCOPY) &&
-+			    (atomic_read(&vq->refcnt) > MAX_ZEROCOPY_PEND)) {
-+				vhost_poll_queue(&vq->poll);
-+				break;
-+			}
- 			if (unlikely(vhost_enable_notify(vq))) {
- 				vhost_disable_notify(vq);
- 				continue;
-@@ -188,17 +201,30 @@ static void handle_tx(struct vhost_net *net)
- 			       iov_length(vq->hdr, s), hdr_size);
- 			break;
- 		}
-+		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-+		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
-+			pend.callback = vhost_zerocopy_callback;
-+			pend.arg = vq;
-+			pend.desc = vq->upend_idx;
-+			msg.msg_control = &pend;
-+			msg.msg_controllen = sizeof(pend);
-+			vq->heads[vq->upend_idx].id = head;
-+			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
-+			atomic_inc(&vq->refcnt);
-+		}
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
--			vhost_discard_vq_desc(vq, 1);
-+			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+				vhost_discard_vq_desc(vq, 1);
- 			tx_poll_start(net, sock);
- 			break;
- 		}
- 		if (err != len)
- 			pr_debug("Truncated TX packet: "
- 				 " len %d != %zd\n", err, len);
--		vhost_add_used_and_signal(&net->dev, vq, head, 0);
-+		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+			vhost_add_used_and_signal(&net->dev, vq, head, 0);
- 		total_len += len;
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 2ab2912..3048953 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
- 	vq->call_ctx = NULL;
- 	vq->call = NULL;
- 	vq->log_ctx = NULL;
-+	vq->upend_idx = 0;
-+	vq->done_idx = 0;
-+	atomic_set(&vq->refcnt, 0);
- }
- 
- static int vhost_worker(void *data)
-@@ -230,7 +233,7 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev
-*dev)
- 					       UIO_MAXIOV, GFP_KERNEL);
- 		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
- 					  GFP_KERNEL);
--		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
-+		dev->vqs[i].heads = kzalloc(sizeof *dev->vqs[i].heads *
- 					    UIO_MAXIOV, GFP_KERNEL);
- 
- 		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
-@@ -385,10 +388,41 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
- 	return 0;
- }
- 
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
-+{
-+	int i, j = 0;
-+
-+	i = vq->done_idx;
-+	while (i != vq->upend_idx) {
-+		/* len = 1 means DMA done */
-+		if (vq->heads[i].len == 1) {
-+			/* reset len = 0 */
-+			vq->heads[i].len = 0;
-+			i = (i + 1) % UIO_MAXIOV;
-+			++j;
-+		} else
-+			break;
-+	}
-+	if (j) {
-+		if (i > vq->done_idx)
-+			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
-+		else {
-+			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
-+					 UIO_MAXIOV - vq->done_idx);
-+			vhost_add_used_n(vq, vq->heads, i);
-+		}
-+		vq->done_idx = i;
-+		vhost_signal(vq->dev, vq);
-+		atomic_sub(j, &vq->refcnt);
-+	}
-+}
-+
- /* Caller should have device mutex */
- void vhost_dev_cleanup(struct vhost_dev *dev)
- {
- 	int i;
-+	unsigned long begin = jiffies;
-+
- 
- 	for (i = 0; i < dev->nvqs; ++i) {
- 		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
-@@ -405,6 +439,11 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 			eventfd_ctx_put(dev->vqs[i].call_ctx);
- 		if (dev->vqs[i].call)
- 			fput(dev->vqs[i].call);
-+		/* wait for all lower device DMAs done, then notify guest */
-+		while (atomic_read(&dev->vqs[i].refcnt)) {
-+			if (time_after(jiffies, begin + 5 * HZ))
-+				vhost_zerocopy_signal_used(&dev->vqs[i]);
-+		}
- 		vhost_vq_reset(dev, dev->vqs + i);
- 	}
- 	vhost_dev_free_iovecs(dev);
-@@ -1416,3 +1455,12 @@ void vhost_disable_notify(struct vhost_virtqueue
-*vq)
- 		vq_err(vq, "Failed to enable notification at %p: %d\n",
- 		       &vq->used->flags, r);
- }
-+
-+void vhost_zerocopy_callback(struct sk_buff *skb)
-+{
-+	int idx = skb_shinfo(skb)->ubuf.desc;
-+	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
-+
-+	/* set len = 1 to mark this desc buffers done DMA */
-+	vq->heads[idx].len = 1;
-+}
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index b3363ae..ec032a0 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -108,6 +108,14 @@ struct vhost_virtqueue {
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-+	/* vhost zerocopy support */
-+	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
-+	/* index of zerocopy pending DMA buffers */
-+	int upend_idx;
-+	/* index of zerocopy done DMA buffers, but not notify guest yet */
-+	int done_idx;
-+	/* notify vhost zerocopy DMA buffers has done in lower device */
-+	void (*callback)(struct sk_buff *);
- };
- 
- struct vhost_dev {
-@@ -154,6 +162,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
- 
- int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 		    unsigned int log_num, u64 len);
-+void vhost_zerocopy_callback(struct sk_buff *skb);
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
- 
- #define vq_err(vq, fmt, ...) do {                                  \
- 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
-
+ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+-- 
+1.7.4.3
 
