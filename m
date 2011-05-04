@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab1EDSUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:20:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56870 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753835Ab1EDSUt (ORCPT
+	id S1755416Ab1EDSWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:22:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36849 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab1EDSWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:20:49 -0400
+	Wed, 4 May 2011 14:22:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RfrPnwhr6V7Ljc6PmD5utXDzLMjlilR7sDE9SH0xU0EhauJ8arN0vPL2xXzLB/a9u6
+         Vvuft3Q2tIOjZM7ZjecV5KSfSCu22fPW+Pb5j4Vo/QJ4CJP+e748+8EWuxSocKd2L7yo
+         +tW8ZtM1Prlla0+2ScI2zijPhL0iXoNyYSHdI=
+Date: Wed, 4 May 2011 20:22:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, "v2.6.33.." <stable@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/5] ptrace: Prepare to fix racy accesses on task
+ breakpoints
+Message-ID: <20110504182158.GC1804@nowhere>
+References: <1304429124-2376-1-git-send-email-fweisbec@gmail.com>
+ <1304429124-2376-2-git-send-email-fweisbec@gmail.com>
+ <20110504063106.GA20140@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos>
- <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos>
- <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home>
- <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home>
- <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 May 2011 11:20:22 -0700
-Message-ID: <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504063106.GA20140@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 8:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I'll take it. I'm just hoping to also get Werner's tested-by for it.
->
-> I'm pretty confident this is it, though, so if I don't get it by the
-> end of the day I'll just apply it regardless with just a reported-by
-> from him.
+On Wed, May 04, 2011 at 08:31:06AM +0200, Ingo Molnar wrote:
+> 
+> (Linus and Andrew Cc:-ed as well)
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > When a task is traced and is in a stopped state, the tracer
+> > may execute a ptrace request to examine the tracee state and
+> > get its task struct. Right after, the tracee can be killed
+> > and thus its breakpoints released.
+> > This can happen concurrently when the tracer is in the middle
+> > of reading or modifying these breakpoints, leading to dereferencing
+> > a freed pointer.
+> > 
+> > Hence, to prepare the fix, create a generic breakpoint reference
+> > holding API. When a reference on the breakpoints of a task is
+> > held, the breakpoints won't be released until the last reference
+> > is dropped. After that, no more ptrace request on the task's
+> > breakpoints can be serviced for the tracer.
+> > 
+> > Reported-by: Oleg Nesterov <oleg@redhat.com>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> Ok, this series looks a bit scary - and this ptrace.h change does not have 
+> Oleg's Acked-by. (the arch bits all have maintaner Acked-by's)
+> 
+> The changes look a bit ugly as well: beyond the ugly ifdeffery, we have 
+> ptrace.h::ptrace_init_task(), which is only used in 
+> tracehook.h::tracehook_finish_clone() which is only used in 
+> kernel/fork.c::copy_process().
+> 
+> That's two levels of obfuscation to do something rather simple - i think we 
+> should get rid of the tracehook.h redirections, it did not work out in the end 
+> as a method of capturing events - ftrace TRACE_EVENT() seems better structured 
+> and more maintainable.
+> 
+> But i guess we could live with this fix for v2.6.39, if neither Oleg nor Linus 
+> and Andrew are hating this further complication of the ptrace mess enough to 
+> NAK it. Thoughts?
+> 
+> Plus, i'd really love it if you did some stress-testing of this change of a 
+> mixed ptrace breakpoints and perf breakpoints workload, on some sufficiently 
+> SMP box. gdb's hbreak is a very low freq way of testing thus such regressions 
+> take ages to be reported.
 
-So I'm still waiting for the tested-by, but in the meantime I wrote a
-changelog. And part of that changelog reads:
+But the perf breakpoints (those created using perf syscall) are not touched
+at all by this patch. Only the ptrace ones.
 
-[ Btw, that whole "generic code defaults to no protection" design just
-  sounds stupid - if the code needs no protection, there is no reason to
-  use "cmpxchg_double" to begin with.  So we should probably just remove
-  the unprotected version entirely as pointless.   - Linus ]
-
-which really sums up the whole thing.
-
-The current "this_cpu_cmpxchg_double()" implementation is just
-incredibly idiotic. There is absolutely _no_ point to having that
-function at all. Why does it exist?
-
-I can kind of see the point of the "preempt" version, although I'm not
-entirely convinced of that either. But the notion of having a
-"cmpxchg" function that isn't atomic even on a single CPU just makes
-me go "f*ck that, whoever wrote that is just a moron".
-
-If the function doesn't need atomicity, you're really better off just
-writing it out.  It's going to be faster on pretty much all
-architectures using just regular load/store instructions.
-
-                   Linus
+What I can stress test is trying some ptrace breakpoint request and at the
+same time SIGKILL the child, which is the only way to reproduce the bug
+supposed to be fixed. And run that in a loop for one night. I'll try that.
