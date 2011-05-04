@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab1EDPLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:11:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50025 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab1EDPLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:11:44 -0400
-Date: Wed, 4 May 2011 17:11:40 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: oskar.andero@sonyericsson.com
-Cc: nicolas.pitre@linaro.org,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Boivie, Victor" <Victor.Boivie@sonyericsson.com>
-Subject: Re: [PATCH] ARM: Allow for kernel command line concatenation
-Message-ID: <20110504151140.GJ11574@pengutronix.de>
-References: <1302255383-12375-1-git-send-email-oskar.andero@sonyericsson.com>
- <20110504150352.GA19335@caracas.corpusers.net>
+	id S1752563Ab1EDQMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:12:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55867 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab1EDQMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 12:12:14 -0400
+Date: Wed, 4 May 2011 08:11:49 -0700
+From: Greg KH <gregkh@suse.de>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5]KernelDoc:Add the device driver-model structures to
+ kerneldoc
+Message-ID: <20110504151149.GB13302@suse.de>
+References: <1304507741-3075-1-git-send-email-wanlong.gao@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110504150352.GA19335@caracas.corpusers.net>
+In-Reply-To: <1304507741-3075-1-git-send-email-wanlong.gao@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oskar,
-
-On Wed, May 04, 2011 at 05:03:52PM +0200, oskar.andero@sonyericsson.com wrote:
-> Ping.
+On Wed, May 04, 2011 at 07:15:41PM +0800, Wanlong Gao wrote:
 > 
-> On 11:36 Fri 08 Apr, oskar.andero@sonyericsson.com wrote:
-> > From: Victor Boivie <victor.boivie@sonyericsson.com>
-> > 
-> > This patch allows the provided CONFIG_CMDLINE to be concatenated
-> > with the one provided by the boot loader. This is useful to
-> > merge the static values defined in CONFIG_CMDLINE with the
-> > boot loader's (possibly) more dynamic values, such as startup
-> > reasons and more.
-> > 
-> > Signed-off-by: Victor Boivie <victor.boivie@sonyericsson.com>
-> > Reviewed-by: Bjorn Andersson <bjorn.andersson@sonyericsson.com>
-> > Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
-> > Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Acked-by: Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>
-> > ---
-It can probably go to Russell's patch system[1].
+> Hi Greg:
+> 
+> Sorry for adding your signed-off. But because that I thought I had got some thing
+> from your articles and book in this patch.
 
-Best regards
-Uwe
+That's fine, and you should say that in the patch description.  Please
+re-read Documentation/SubmittingPatches for exactly what
+"Signed-off-by:" means and you will see that you can not add other names
+to a patch without their permission.
 
-[1] http://www.arm.linux.org.uk/developer/patches/
+> 
+> Hi Randy:
+> Thanks very much for your careful checking this patch, and sorry for the errors,
+> I'll be more carefully next time.
+> And don't forget the other patch which removed these structures from the
+> Documentation/driver-model/ .
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Can you resend that, along with this one (with better description based
+on above) again so that I can apply both of them at the same time?
+
+thanks,
+
+greg k-h
