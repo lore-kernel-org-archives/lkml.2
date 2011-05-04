@@ -1,71 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab1EDO5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:57:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45574 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab1EDO53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:57:29 -0400
-Date: Wed, 4 May 2011 15:57:25 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jamie Iles <jamie@jamieiles.com>, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, arnd@arndb.de,
-        nico@fluxnic.net
-Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different
- controllers
-Message-ID: <20110504145725.GD15967@pulham.picochip.com>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <20110503210950.GA2866@ponder.secretlab.ca>
- <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
- <20110503215211.GA8491@oksana.dev.rtsoft.ru>
- <20110503220408.GA6978@pulham.picochip.com>
- <20110503223415.GA14024@oksana.dev.rtsoft.ru>
- <20110504110939.GB13514@pulham.picochip.com>
- <20110504113131.GA639@oksana.dev.rtsoft.ru>
- <20110504143757.GB15967@pulham.picochip.com>
- <20110504154440.1674adb9@lxorguk.ukuu.org.uk>
+	id S1754496Ab1EDO6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:58:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754257Ab1EDO6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 10:58:40 -0400
+Date: Wed, 4 May 2011 17:58:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 5/8]macvtap: macvtap TX zero-copy support
+Message-ID: <20110504145819.GA15648@redhat.com>
+References: <1304496893.20660.88.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110504154440.1674adb9@lxorguk.ukuu.org.uk>
+In-Reply-To: <1304496893.20660.88.camel@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-On Wed, May 04, 2011 at 03:44:40PM +0100, Alan Cox wrote:
-> > OK, so here's what I've got so far (patches attached).  I've updated the 
-> > basic_mmio_gpio library with your initial lkml patch and updated it to 
-> > allow bgpio_chip to be embedded in another structure.  I've also 
-> > attempted to convert over the bt8xx and langwell drivers but they're a 
-> > little rough around the edges in places (and untested as I don't have 
-> > the hardware).
+On Wed, May 04, 2011 at 01:14:53AM -0700, Shirley Ma wrote:
+> Only when buffer size is greater than GOODCOPY_LEN (256), macvtap
+> enables zero-copy.
 > 
-> Looking at the Langwell driver you replace 130 lines of code that do the
-> job, with 126 lines of code that do setup for a whole extra module which
-> makes it bigger and slower as well as much harder to maintain.
+> Signed-off-by: Shirley Ma <xma@us.ibm.com>
+
+
+Looks good. Some thoughts below.
+
+> ---
 > 
-> That sounds to me like for Langwell at least it is not worth doing
-> because all you've done is added complexity, indirection and overhead. So
-> NAK the Langwell one.
+>  drivers/net/macvtap.c |  126 ++++++++++++++++++++++++++++++++++++++++++++----
+>  1 files changed, 115 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index 6696e56..e8bc5ff 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -60,6 +60,7 @@ static struct proto macvtap_proto = {
+>   */
+>  static dev_t macvtap_major;
+>  #define MACVTAP_NUM_DEVS 65536
+> +#define GOODCOPY_LEN 256
 
-I picked that one because I thought it might convert nicely, but it 
-didn't!  I posted it anyway in case I'm missing a better way to do it 
-and to give a fair representation.
+Scope with MACVTAP_ please.
 
-With regards to the ARM drivers, lots of these aren't currently devices 
-(in the driver model) so converting many of these would be net code 
-increase but I suspect that it's probably worth it in these cases 
-(providing that's the only complexity).
+For small packets, is it better to copy in vhost
+and skip all the back and forth with callbacks? If yes, does
+it make sense to put the constant above in some header
+shared with vhost-net?
 
-> The bt8xx looks a nice example of one of the cases where it will help
-> however.
+>  static struct class *macvtap_class;
+>  static struct cdev macvtap_cdev;
+>  
+> @@ -340,6 +341,7 @@ static int macvtap_open(struct inode *inode, struct file *file)
+>  {
+>  	struct net *net = current->nsproxy->net_ns;
+>  	struct net_device *dev = dev_get_by_index(net, iminor(inode));
+> +	struct macvlan_dev *vlan = netdev_priv(dev);
+>  	struct macvtap_queue *q;
+>  	int err;
+>  
+> @@ -369,6 +371,16 @@ static int macvtap_open(struct inode *inode, struct file *file)
+>  	q->flags = IFF_VNET_HDR | IFF_NO_PI | IFF_TAP;
+>  	q->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+>  
+> +	/*
+> +	 * so far only VM uses macvtap, enable zero copy between guest
+> +	 * kernel and host kernel when lower device supports high memory
+> +	 * DMA
+> +	 */
+> +	if (vlan) {
+> +		if (vlan->lowerdev->features & NETIF_F_ZEROCOPY)
+> +			sock_set_flag(&q->sk, SOCK_ZEROCOPY);
+> +	}
+> +
+>  	err = macvtap_set_queue(dev, file, q);
+>  	if (err)
+>  		sock_put(&q->sk);
+> @@ -433,6 +445,80 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
+>  	return skb;
+>  }
+>  
+> +/* set skb frags from iovec, this can move to core network code for reuse */
+> +static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+> +				  int offset, size_t count)
+> +{
+> +	int len = iov_length(from, count) - offset;
+> +	int copy = skb_headlen(skb);
+> +	int size, offset1 = 0;
+> +	int i = 0;
+> +	skb_frag_t *f;
+> +
+> +	/* Skip over from offset */
+> +	while (offset >= from->iov_len) {
+> +		offset -= from->iov_len;
+> +		++from;
+> +		--count;
+> +	}
+> +
+> +	/* copy up to skb headlen */
+> +	while (copy > 0) {
+> +		size = min_t(unsigned int, copy, from->iov_len - offset);
+> +		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
+> +				   size))
+> +			return -EFAULT;
+> +		if (copy > size) {
+> +			++from;
+> +			--count;
+> +		}
+> +		copy -= size;
+> +		offset1 += size;
+> +		offset = 0;
+> +	}
+> +
+> +	if (len == offset1)
+> +		return 0;
+> +
+> +	while (count--) {
+> +		struct page *page[MAX_SKB_FRAGS];
+> +		int num_pages;
+> +		unsigned long base;
+> +
+> +		len = from->iov_len - offset1;
+> +		if (!len) {
+> +			offset1 = 0;
+> +			++from;
+> +			continue;
+> +		}
+> +		base = (unsigned long)from->iov_base + offset1;
+> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+> +		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+> +		if ((num_pages != size) ||
+> +		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
+> +			/* put_page is in skb free */
+> +			return -EFAULT;
+> +		skb->data_len += len;
+> +		skb->len += len;
+> +		skb->truesize += len;
+> +		while (len) {
+> +			f = &skb_shinfo(skb)->frags[i];
+> +			f->page = page[i];
+> +			f->page_offset = base & ~PAGE_MASK;
+> +			f->size = min_t(int, len, PAGE_SIZE - f->page_offset);
+> +			skb_shinfo(skb)->nr_frags++;
+> +			/* increase sk_wmem_alloc */
+> +			atomic_add(f->size, &skb->sk->sk_wmem_alloc);
 
-Yes, and I suspect there are a few others too.
+One thing that gave me pause that we only accound for part of the page
+here. I think we should count the whole page, no?
 
-Jamie
+> +			base += f->size;
+> +			len -= f->size;
+> +			i++;
+> +		}
+> +		offset1 = 0;
+> +		++from;
+> +	}
+> +	return 0;
+> +}
+> +
+>  /*
+>   * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
+>   * be shared with the tun/tap driver.
+> @@ -515,17 +601,19 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+>  
+>  
+>  /* Get packet from user space buffer */
+> -static ssize_t macvtap_get_user(struct macvtap_queue *q,
+> -				const struct iovec *iv, size_t count,
+> -				int noblock)
+> +static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+> +				const struct iovec *iv, unsigned long total_len,
+> +				size_t count, int noblock)
+>  {
+>  	struct sk_buff *skb;
+>  	struct macvlan_dev *vlan;
+> -	size_t len = count;
+> +	unsigned long len = total_len;
+>  	int err;
+>  	struct virtio_net_hdr vnet_hdr = { 0 };
+>  	int vnet_hdr_len = 0;
+> +	int copylen, zerocopy;
+>  
+> +	zerocopy = sock_flag(&q->sk, SOCK_ZEROCOPY) && (len > GOODCOPY_LEN);
+>  	if (q->flags & IFF_VNET_HDR) {
+>  		vnet_hdr_len = q->vnet_hdr_sz;
+>  
+> @@ -552,12 +640,28 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+>  	if (unlikely(len < ETH_HLEN))
+>  		goto err;
+>  
+> -	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, len, vnet_hdr.hdr_len,
+> -				noblock, &err);
+> +	if (zerocopy)
+> +		/* There are 256 bytes to be copied in skb, so there is enough
+> +		 * room for skb expand head in case it is used.
+> +		 * The rest buffer is mapped from userspace.
+> +		 */
+> +		copylen = GOODCOPY_LEN;
+
+Just curious: where does the number 256 come from?
+Also, as long as we are copying, should we care about
+alignment?
+
+> +	else
+> +		copylen = len;
+> +
+> +	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
+> +				vnet_hdr.hdr_len, noblock, &err);
+>  	if (!skb)
+>  		goto err;
+>  
+> -	err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len, len);
+> +	if (zerocopy)
+> +		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
+> +	else
+> +		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
+> +						   len);
+> +	if (sock_flag(&q->sk, SOCK_ZEROCOPY))
+> +		memcpy(&skb_shinfo(skb)->ubuf, m->msg_control,
+> +			sizeof(struct skb_ubuf_info));
+>  	if (err)
+>  		goto err_kfree;
+>  
+> @@ -579,7 +683,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+>  		kfree_skb(skb);
+>  	rcu_read_unlock_bh();
+>  
+> -	return count;
+> +	return total_len;
+>  
+>  err_kfree:
+>  	kfree_skb(skb);
+> @@ -601,8 +705,8 @@ static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
+>  	ssize_t result = -ENOLINK;
+>  	struct macvtap_queue *q = file->private_data;
+>  
+> -	result = macvtap_get_user(q, iv, iov_length(iv, count),
+> -			      file->f_flags & O_NONBLOCK);
+> +	result = macvtap_get_user(q, NULL, iv, iov_length(iv, count), count,
+> +				  file->f_flags & O_NONBLOCK);
+>  	return result;
+>  }
+>  
+> @@ -815,7 +919,7 @@ static int macvtap_sendmsg(struct kiocb *iocb, struct socket *sock,
+>  			   struct msghdr *m, size_t total_len)
+>  {
+>  	struct macvtap_queue *q = container_of(sock, struct macvtap_queue, sock);
+> -	return macvtap_get_user(q, m->msg_iov, total_len,
+> +	return macvtap_get_user(q, m, m->msg_iov, total_len, m->msg_iovlen,
+>  			    m->msg_flags & MSG_DONTWAIT);
+>  }
+>  
+> 
