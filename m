@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1EDEpM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 00:45:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38802 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab1EDEpI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 00:45:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=P3q/LtiLXRDW5M9apfXqtpa0o1NGigAbH1bVHFdu+pPiKJ2tRE+akDw5nhKqNVQehj
-         zft90B72mafT9ujrLEIfKmtWkWc6dWOiPnf3AFNPO1vEq5mJfSeBAWo76EfKYtror2gd
-         mx3OZe9TRn8uRvt37KE3JCv8K0um3Iwr6Ghg0=
-MIME-Version: 1.0
-In-Reply-To: <1304458235-28473-1-git-send-email-sven@narfation.org>
-References: <1304458235-28473-1-git-send-email-sven@narfation.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 4 May 2011 00:44:46 -0400
-Message-ID: <BANLkTiminpyJ_opxhqG0E0gBOrF490b+tQ@mail.gmail.com>
-Subject: Re: [PATCH] atomic: add *_dec_not_zero
-To: Sven Eckelmann <sven@narfation.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        linux-alpha@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-cris-kernel@axis.com,
-        linux-ia64@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-am33-list@redhat.com, linux-parisc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752950Ab1EDErE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 00:47:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14387 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752050Ab1EDErD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 00:47:03 -0400
+Subject: Re: [PATCH 2/2] drm/nouveau: Check that the device is enabled
+ before processing interrupt
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+In-Reply-To: <1304482950.3676.24.camel@clockmaker-el6>
+References: <20110502004806.2307.34136.stgit@ul30vt.home>
+	 <20110502004940.2307.71738.stgit@ul30vt.home>
+	 <BANLkTi==E4wgRDY3DCDejAZtVvOGjOtbgA@mail.gmail.com>
+	 <1304482712.3255.135.camel@x201>  <1304482950.3676.24.camel@clockmaker-el6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 May 2011 22:47:01 -0600
+Message-ID: <1304484421.3255.150.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 17:30, Sven Eckelmann wrote:
-> Introduce an *_dec_not_zero operation.  Make this a special case of
-> *_add_unless because batman-adv uses atomic_dec_not_zero in different
-> places like re-broadcast queue or aggregation queue management. There
-> are other non-final patches which may also want to use this macro.
->
-> Cc: uclinux-dist-devel@blackfin.uclinux.org
->
-> --- a/arch/blackfin/include/asm/atomic.h
-> +++ b/arch/blackfin/include/asm/atomic.h
-> @@ -103,6 +103,7 @@ static inline int atomic_test_mask(int mask, atomic_t *v)
->        c != (u);                                               \
->  })
->  #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
-> +#define atomic_dec_not_zero(v) atomic_add_unless((v), -1, 0)
->
->  /*
->  * atomic_inc_and_test - increment and test
+On Wed, 2011-05-04 at 14:22 +1000, Dave Airlie wrote:
+> On Tue, 2011-05-03 at 22:18 -0600, Alex Williamson wrote:
+> > On Wed, 2011-05-04 at 13:50 +1000, Dave Airlie wrote:
+> > > On Mon, May 2, 2011 at 10:49 AM, Alex Williamson
+> > > <alex.williamson@redhat.com> wrote:
+> > > > We're likely to be sharing an interrupt line with other devices,
+> > > > which means our handler might get called after we've turned off
+> > > > the device via vga switcheroo.  This can lead to all sorts of
+> > > > badness, like nv04_fifo_isr() spewing "PFIFO still angry after
+> > > > 100 spins, halt" to the console before the system enters a hard
+> > > > hang.
+> > > >
+> > > > We can avoid this by simply checking if the device is still
+> > > > enabled before processing an interrupt.  To avoid races, flush
+> > > > any inflight interrupts using synchronize_irq().  Note that
+> > > > since pci_intx() is called after pci_save_state(),
+> > > > pci_restore_state() will automatically re-enable INTx.
+> > > 
+> > > I still think we should just need the synchronize_irq followed by a
+> > > check in the irq handler for all fs,
+> > > 
+> > > or is there a race there I'm missing?
+> > 
+> > The synchronize_irq by itself doesn't guarantee anything.  The irq
+> > handler could be immediately started on another CPU once that returns
+> > and be well past the first device read before we make it far enough
+> > through pci_set_power_state that the device becomes unresponsive.  Can
+> > we guarantee that first device read in the interrupt handler will always
+> > be 0 or -1 in the suspend path?  Even as the last milliamperes of charge
+> > drain out of the device?
+> 
+> It should always be a valid irq or 0xffffffff. It got nothing to do with
+> milliamperes of charge, and all to do with the PCI BAR decodes being
+> turned off.
 
-no opinion on the actual idea, but for the Blackfin pieces:
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Unfortunately this depends on the platform behavior for a master abort.
+But maybe this bring up another issue; we really want to make sure we're
+turning off decode after we've flushed any inflight interrupts.  We
+can't guarantee that w/o some kind of synchronization and the device
+being enabled is probably too late... are you sure you don't want to
+uninstall the interrupt handler? ;)
+
+> > By adding the device enabled check in the interrupt handler, disabling
+> > the device, then calling synchronize_irq, we guarantee that the entire
+> > interrupt handler path is not being executed and won't be executed again
+> > until we re-enable the device.  It does seem a bit odd, but how many
+> > other devices in the system are entirely powered off, with a driver
+> > attached and interrupt handler registered while the system is still
+> > humming along?  Thanks,
+> 
+> The theory is lots. OLPC does this sort of things for its breakfast I'd
+> have thought.
+> 
+> which is why I still think we are missing something, when we D3 the
+> device it should be the same as suspend/resume cycle pretty much,
+
+Except the whole system goes down for a suspend/resume and we don't
+typically have to worry about stray interrupt during the down time.  If
+our vga switcheroo handler is doing the right thing, we're not only
+going to D3, we're entirely removing power from the device.  Some
+platforms (probably not ones we care about for switcheroo, but
+nonetheless) won't put up with a master abort on the bus that would be
+caused by reading from an effectively non-existent device.  Thanks,
+
+Alex
+
