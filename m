@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab1EDUYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 16:24:34 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41196 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab1EDUYd (ORCPT
+	id S1755649Ab1EDUW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:22:56 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58590 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1EDUWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 16:24:33 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: Your message of "Wed, 04 May 2011 15:04:39 CDT."
-             <alpine.DEB.2.00.1105041454190.5495@router.home>
-From: Valdis.Kletnieks@vt.edu
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org> <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home> <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home> <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com> <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home> <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com> <alpine.DEB.2.00.1105041421280.5495@router.home> <BANLkTi=efcVkGb+DReZ+i1p5j4QXJYjKjQ@mail.gmail.com>
-            <alpine.DEB.2.00.1105041454190.5495@router.home>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304540499_7352P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 04 May 2011 16:21:39 -0400
-Message-ID: <19422.1304540499@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=35/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=suspect(0),
-	refid=str=0001.0A020205.4DC1B555.00BB,ss=2,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 4 May 2011 16:22:55 -0400
+Date: Wed, 4 May 2011 16:22:53 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Per Forlin <per.forlin@linaro.org>
+cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>, linaro-dev@lists.linaro.org,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+Subject: Re: [PATCH v2] sdio: optimized SDIO IRQ handling for single irq
+In-Reply-To: <BANLkTik+LWiYYPTqR5pNKsZfSMGGE3xCZg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1105041618400.24613@xanadu.home>
+References: <1304525161-14448-1-git-send-email-per.forlin@linaro.org> <1304525161-14448-2-git-send-email-per.forlin@linaro.org> <alpine.LFD.2.00.1105041217380.24613@xanadu.home> <BANLkTik+LWiYYPTqR5pNKsZfSMGGE3xCZg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1710998774-1304540573=:24613"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304540499_7352P
-Content-Type: text/plain; charset=us-ascii
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Wed, 04 May 2011 15:04:39 CDT, Christoph Lameter said:
-> On Wed, 4 May 2011, Linus Torvalds wrote:
+--8323328-1710998774-1304540573=:24613
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> > But cmpxchg DOES NOT MAKE SENSE without atomicity guarantees.
-> 
-> This is not a real cmpxchg after all. Its not atomic in the sense of
-> other functions. Its only "percpu atomic" if you want it that way. This is
-> *not* a full cmpxchg_double().
+On Wed, 4 May 2011, Per Forlin wrote:
 
-Calling it a cmpxchg when it doesn't have the primary distinguishing property
-of a hardware cmpxchg is just loading a bullet in the chamber and inviting
-kernel hackers to point it at their feet...
+> On 4 May 2011 19:34, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > On Wed, 4 May 2011, Per Forlin wrote:
+> >
+> >> From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+> >>
+> >> If there is only 1 function registered it is possible to
+> >> improve performance by directly calling the irq handler
+> >> and avoiding the overhead of reading the CCCR registers.
+> >>
+> >> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> >> Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
+> >> ---
+> >>  drivers/mmc/core/sdio_irq.c |   30 ++++++++++++++++++++++++++++++
+> >>  include/linux/mmc/card.h    |    1 +
+> >>  2 files changed, 31 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+> >> index b300161..64c4409 100644
+> >> --- a/drivers/mmc/core/sdio_irq.c
+> >> +++ b/drivers/mmc/core/sdio_irq.c
+> >> @@ -32,6 +32,16 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
+> >>       int i, ret, count;
+> >>       unsigned char pending;
+> >>
+> >> +     /*
+> >> +      * Optimization, if there is only 1 function registered
+> >> +      * call irq handler directly
+> >> +      */
+> >> +     if (card->sdio_single_irq && card->sdio_single_irq->irq_handler) {
+> >> +             struct sdio_func *func = card->sdio_single_irq;
+> >> +             func->irq_handler(func);
+> >
+> > I think there is little point using a func variable here, especially
+> > since you already reference the handler pointer in the if() statement.
+> > Hence:
+> >
+> >        if (card->sdio_single_irq && card->sdio_single_irq->irq_handler) {
+> >                card->sdio_single_irq->irq_handler();
+> >                return 1;
+> >        }
+> >
+> What do you think about:
+> +       struct sdio_func *func = card->sdio_single_irq;
+> +
+> +       /*
+> +        * Optimization, if there is only 1 function interrupt registered
+> +        * call irq handler directly
+> +        */
+> +       if (func) {
+> +               func->irq_handler(func);
+> +               return 1;
+> +       }
+
+Sure, but I'd move the assignment right before the if() in that case for 
+clarity:
+
+       struct sdio_func *func;
+
+       /*
+        * Optimization, if there is only 1 function interrupt registered
+        * call irq handler directly
+        */
+       func = card->sdio_single_irq;
+       if (func) {
+               func->irq_handler(func);
+               return 1;
+       }
+       [...]
 
 
---==_Exmh_1304540499_7352P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNwbVTcC3lWbTT17ARApiAAJ40IG5yrhZyPQ9C81jXlg4XY+d66ACeNtSU
-s/Z1D+Pl/+k+sgXrrcWDKSs=
-=G38D
------END PGP SIGNATURE-----
-
---==_Exmh_1304540499_7352P--
-
+Nicolas
+--8323328-1710998774-1304540573=:24613--
