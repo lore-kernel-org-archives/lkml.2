@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1EDQPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:15:50 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50816 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab1EDQPt (ORCPT
+	id S1753148Ab1EDQS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:18:26 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53050 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab1EDQSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:15:49 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH] irq: export handle_simple_irq, irq_modify_status, irq_to_desc, irq_alloc_descs and irq_free_descs
-Date: Wed,  4 May 2011 17:18:10 +0100
-Message-Id: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.3.4
+	Wed, 4 May 2011 12:18:25 -0400
+Date: Wed, 4 May 2011 12:18:16 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] writeback: make nr_to_write a per-file limit
+Message-ID: <20110504161816.GA8147@infradead.org>
+References: <20110504091707.910929441@intel.com>
+ <20110504091909.520602641@intel.com>
+ <20110504094221.GA20958@infradead.org>
+ <20110504115251.GC5853@localhost>
+ <20110504155100.GA29029@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504155100.GA29029@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
+> - move MAX_WRITEBACK_PAGES and wb_writeback_work definitions to writeback.h
 
-This is to allow their use in IIO. We have complete control of
-both the irq_chip creation and requesting of irqs so would like
-to be able to build as a module. That requires these exports.
+I think it would be a good idea to keep this in fs/fs-writeback.c, which
+means we'd need a small writeback_inodes_wb wrapper for
+balance_dirty_pages and bdi_flush_io.  But IIRC your tree already has
+__writeback_inodes_wb for use in wb_writeback, so writeback_inodes_wb
+could be that wrapper.
 
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
----
- kernel/irq/chip.c    |    2 ++
- kernel/irq/irqdesc.c |    3 +++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+> +	long write_chunk = MAX_WRITEBACK_PAGES;
+> +	long wrote = 0;
+> +	bool inode_cleaned = false;
+> +
+> +	/*
+> +	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
+> +	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
+> +	 * here avoids calling into writeback_inodes_wb() more than once.
+> +	 *
+> +	 * The intended call sequence for WB_SYNC_ALL writeback is:
+> +	 *
+> +	 *      wb_writeback()
+> +	 *          writeback_sb_inodes()       <== called only once
+> +	 *              write_cache_pages()     <== called once for each inode
+> +	 *                   (quickly) tag currently dirty pages
+> +	 *                   (maybe slowly) sync all tagged pages
+> +	 */
+> +	if (work->sync_mode == WB_SYNC_ALL || work->tagged_sync)
+> +		write_chunk = LONG_MAX;
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 4af1e2b..ad409d3 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
- out_unlock:
- 	raw_spin_unlock(&desc->lock);
- }
-+EXPORT_SYMBOL_GPL(handle_simple_irq);
- 
- /**
-  *	handle_level_irq - Level type irq handler
-@@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
- 
- 	irq_put_desc_unlock(desc, flags);
- }
-+EXPORT_SYMBOL_GPL(irq_modify_status);
- 
- /**
-  *	irq_cpu_online - Invoke all irq_cpu_online functions.
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 2c039c9..5ac14e2 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -110,6 +110,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return radix_tree_lookup(&irq_desc_tree, irq);
- }
-+EXPORT_SYMBOL_GPL(irq_to_desc);
- 
- static void delete_irq_desc(unsigned int irq)
- {
-@@ -311,6 +312,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
- 	bitmap_clear(allocated_irqs, from, cnt);
- 	mutex_unlock(&sparse_irq_lock);
- }
-+EXPORT_SYMBOL_GPL(irq_free_descs);
- 
- /**
-  * irq_alloc_descs - allocate and initialize a range of irq descriptors
-@@ -351,6 +353,7 @@ err:
- 	mutex_unlock(&sparse_irq_lock);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(irq_alloc_descs);
- 
- /**
-  * irq_reserve_irqs - mark irqs allocated
--- 
-1.7.3.4
+I think this would be easier to read if kept as and if / else clause
+with the MAX_WRITEBACK_PAGES usage.
 
+> +		write_chunk = min(write_chunk, work->nr_pages);
+
+Or in fact done here - for the WB_SYNC_ALL case LONG_MAX should
+always be larger than work->nr_pages, so the whole thing could be
+simplified to:
+
+		if (work->sync_mode == WB_SYNC_ALL || work->tagged_sync)
+			write_chunk = LONG_MAX;
+		else
+			write_chunk = min(MAX_WRITEBACK_PAGES, work->nr_pages);
+
+
+Other notes:
+
+ - older_than_this in writeback_control shouldn't be needed anymore
+ - is the early return for the mis-matching sb in writeback_sb_inodes
+   handled correctly?  Before it had the special 0 return value, and
+   I'm not quite sure how that fits into your new enum scheme.
