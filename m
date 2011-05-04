@@ -1,93 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1EDErE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 00:47:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14387 "EHLO mx1.redhat.com"
+	id S1753705Ab1EDEsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 00:48:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54370 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752050Ab1EDErD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 00:47:03 -0400
-Subject: Re: [PATCH 2/2] drm/nouveau: Check that the device is enabled
- before processing interrupt
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-In-Reply-To: <1304482950.3676.24.camel@clockmaker-el6>
-References: <20110502004806.2307.34136.stgit@ul30vt.home>
-	 <20110502004940.2307.71738.stgit@ul30vt.home>
-	 <BANLkTi==E4wgRDY3DCDejAZtVvOGjOtbgA@mail.gmail.com>
-	 <1304482712.3255.135.camel@x201>  <1304482950.3676.24.camel@clockmaker-el6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 May 2011 22:47:01 -0600
-Message-ID: <1304484421.3255.150.camel@x201>
+	id S1751122Ab1EDEsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 00:48:19 -0400
+Date: Wed, 4 May 2011 14:47:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 4
+Message-Id: <20110504144759.802483cc.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__4_May_2011_14_47_59_+1000_jdgFzvR9jF3I3d/G"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-04 at 14:22 +1000, Dave Airlie wrote:
-> On Tue, 2011-05-03 at 22:18 -0600, Alex Williamson wrote:
-> > On Wed, 2011-05-04 at 13:50 +1000, Dave Airlie wrote:
-> > > On Mon, May 2, 2011 at 10:49 AM, Alex Williamson
-> > > <alex.williamson@redhat.com> wrote:
-> > > > We're likely to be sharing an interrupt line with other devices,
-> > > > which means our handler might get called after we've turned off
-> > > > the device via vga switcheroo.  This can lead to all sorts of
-> > > > badness, like nv04_fifo_isr() spewing "PFIFO still angry after
-> > > > 100 spins, halt" to the console before the system enters a hard
-> > > > hang.
-> > > >
-> > > > We can avoid this by simply checking if the device is still
-> > > > enabled before processing an interrupt.  To avoid races, flush
-> > > > any inflight interrupts using synchronize_irq().  Note that
-> > > > since pci_intx() is called after pci_save_state(),
-> > > > pci_restore_state() will automatically re-enable INTx.
-> > > 
-> > > I still think we should just need the synchronize_irq followed by a
-> > > check in the irq handler for all fs,
-> > > 
-> > > or is there a race there I'm missing?
-> > 
-> > The synchronize_irq by itself doesn't guarantee anything.  The irq
-> > handler could be immediately started on another CPU once that returns
-> > and be well past the first device read before we make it far enough
-> > through pci_set_power_state that the device becomes unresponsive.  Can
-> > we guarantee that first device read in the interrupt handler will always
-> > be 0 or -1 in the suspend path?  Even as the last milliamperes of charge
-> > drain out of the device?
-> 
-> It should always be a valid irq or 0xffffffff. It got nothing to do with
-> milliamperes of charge, and all to do with the PCI BAR decodes being
-> turned off.
+--Signature=_Wed__4_May_2011_14_47_59_+1000_jdgFzvR9jF3I3d/G
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Unfortunately this depends on the platform behavior for a master abort.
-But maybe this bring up another issue; we really want to make sure we're
-turning off decode after we've flushed any inflight interrupts.  We
-can't guarantee that w/o some kind of synchronization and the device
-being enabled is probably too late... are you sure you don't want to
-uninstall the interrupt handler? ;)
+Hi all,
 
-> > By adding the device enabled check in the interrupt handler, disabling
-> > the device, then calling synchronize_irq, we guarantee that the entire
-> > interrupt handler path is not being executed and won't be executed again
-> > until we re-enable the device.  It does seem a bit odd, but how many
-> > other devices in the system are entirely powered off, with a driver
-> > attached and interrupt handler registered while the system is still
-> > humming along?  Thanks,
-> 
-> The theory is lots. OLPC does this sort of things for its breakfast I'd
-> have thought.
-> 
-> which is why I still think we are missing something, when we D3 the
-> device it should be the same as suspend/resume cycle pretty much,
+Changes since 20110503:
 
-Except the whole system goes down for a suspend/resume and we don't
-typically have to worry about stray interrupt during the down time.  If
-our vga switcheroo handler is doing the right thing, we're not only
-going to D3, we're entirely removing power from the device.  Some
-platforms (probably not ones we care about for switcheroo, but
-nonetheless) won't put up with a master abort on the bus that would be
-caused by reading from an effectively non-existent device.  Thanks,
+Dropped tree: xen
 
-Alex
+The 52xx-and-virtex tree lost its conflict.
 
+The i2c tree lost its conflicts.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 188 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
+e.c
+CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
+ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
+i2c-intel-mid.c left in tree.
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
+$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
+Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
+Applying: i2c: designware-pcidrv depends on PCI
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/media/video/omap3isp/isp.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/tg3.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/if_cs.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
+CONFLICT (content): Merge conflict in net/bluetooth/l2cap_sock.c
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+CONFLICT (content): Merge conflict in drivers/cpufreq/cpufreq_stats.c
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+CONFLICT (content): Merge conflict in security/selinux/avc.c
+CONFLICT (content): Merge conflict in security/selinux/hooks.c
+CONFLICT (content): Merge conflict in security/smack/smack_lsm.c
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (delete/modify): arch/arm/mach-u300/gpio.c deleted in HEAD and mod=
+ified in trivial/for-next. Version trivial/for-next of arch/arm/mach-u300/g=
+pio.c left in tree.
+$ git rm -f arch/arm/mach-u300/gpio.c
+Merging audit/for-next
+Merging suspend/linux-next
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+CONFLICT (content): Merge conflict in net/core/filter.c
+$ git am -3 ../patches/0001-Revert-net-rcu-convert-call_rcu-sk_filter_relea=
+se_rc.patch
+Applying: Revert "net,rcu: convert call_rcu(sk_filter_release_rcu) to kfree=
+_rcu"
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/percpu.h
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/platform/x86/intel_pmic_gpio.c
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/bluetooth/hci_ldisc.c
+CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
+CONFLICT (content): Merge conflict in drivers/usb/host/isp1760-hcd.c
+Merging staging/staging-next
+CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_pci.c dele=
+ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
+taging/rt2860/common/cmm_data_pci.c left in tree.
+CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_usb.c dele=
+ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
+taging/rt2860/common/cmm_data_usb.c left in tree.
+$ git rm -f drivers/staging/rt2860/common/cmm_data_pci.c drivers/staging/rt=
+2860/common/cmm_data_usb.c
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Wed__4_May_2011_14_47_59_+1000_jdgFzvR9jF3I3d/G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNwNp/AAoJEDMEi1NhKgbsEZ4H/A6uk4Uvz9RcwwaqmC3PE45Z
+YH4afWob+LWq8KV2L1+pN18CSXY1ACY5L6HukGPkUiogTcvxlDPV3+PKuPTO2wkm
+Gax/5HusekcQCbBcb/uV9X83konbNTtCAMe+LtFCfrGrcOZkzuirsgywiYfPZiFk
+piscwf+e9BMWsVG3Q7pVHfAeENLcyS5gKQeKoRGEFOcf+7W6PhNImQ1OF55Pn0Ag
+N8Wp/zb72i1KbzZ4XuoC2IPzlLvJb+7PsF9fJFAilMA0OgPnP0sPt+Q4g/CWbHmc
+ZPbVx9Kw+XilUFw4DV35PHGzuiGsAX1e9H0UkX2DNdoLsYl9UJYlszKuSrStVjI=
+=Ybij
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_May_2011_14_47_59_+1000_jdgFzvR9jF3I3d/G--
