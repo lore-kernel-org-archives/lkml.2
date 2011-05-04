@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab1EDLbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 07:31:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46196 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab1EDLbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 07:31:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pIdnuDMMnMdoYGxs527jOWILCiAHsizLvWvdoaXjAMIwDCIa3OolrfyfY1MAh91FOr
-         5gPwf0tjZjGq8HGs+EG71dPp3XS8UjwYvjwIw4LMqSHe4OgGBagGH3hYE9xm5M3BVGnD
-         4n6zl34rTkkOoyOo9nQ0FFYTOyGfzmEJDk6LM=
-Date: Wed, 4 May 2011 15:31:31 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, arnd@arndb.de,
-        nico@fluxnic.net, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different
- controllers
-Message-ID: <20110504113131.GA639@oksana.dev.rtsoft.ru>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <20110503210950.GA2866@ponder.secretlab.ca>
- <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
- <20110503215211.GA8491@oksana.dev.rtsoft.ru>
- <20110503220408.GA6978@pulham.picochip.com>
- <20110503223415.GA14024@oksana.dev.rtsoft.ru>
- <20110504110939.GB13514@pulham.picochip.com>
+	id S1753790Ab1EDLcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 07:32:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2356 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753246Ab1EDLcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 07:32:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,313,1301900400"; 
+   d="scan'208";a="637756463"
+Date: Wed, 4 May 2011 19:32:11 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Chinner <david@fromorbit.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] writeback: introduce
+ writeback_control.inodes_cleaned
+Message-ID: <20110504113211.GA5853@localhost>
+References: <20110420080336.441157866@intel.com>
+ <20110420080917.890756812@intel.com>
+ <20110504110500.GB4646@infradead.org>
+ <20110504111130.GA5191@localhost>
+ <20110504111647.GA19261@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110504110939.GB13514@pulham.picochip.com>
+In-Reply-To: <20110504111647.GA19261@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 12:09:39PM +0100, Jamie Iles wrote:
-> On Wed, May 04, 2011 at 02:34:15AM +0400, Anton Vorontsov wrote:
-> > On Tue, May 03, 2011 at 11:04:08PM +0100, Jamie Iles wrote:
-> > [...]
-> > > The advantage that Grant's proposal has though is that the user can 
-> > > override the gpio_chip callbacks.  When I tried porting over some 
-> > > existing ARM platforms, one of the blocking issues was that lots of 
-> > > platforms had some annoying small detail that was slightly different 
-> > > (such as doing muxing in the _get() callback or needing a to_irq 
-> > > callback).
-> > > 
-> > > If we make bgpio_chip public and return that from bgpio_probe 
-> > > unregistered then the calling code can override some of the methods then 
-> > > register the gpio_chip.
+On Wed, May 04, 2011 at 07:16:47PM +0800, Christoph Hellwig wrote:
+> On Wed, May 04, 2011 at 07:11:30PM +0800, Wu Fengguang wrote:
+> > On Wed, May 04, 2011 at 07:05:00PM +0800, Christoph Hellwig wrote:
+> > > Same here - this has nothing to do with actual page writeback and really
+> > > should stay internal to fs/fs-writeback.c
 > > 
-> > Oh, that makes sense, right.
+> > OK, I'll check how to constrain writeback_control to the minimal scope.
 > 
-> I've just given this a try and it largely works, but it's probably 
-> better if we allow bgpio_chip to be embedded in other structures.  For 
-> example, the langwell driver has a gpio_to_irq callback that we would 
-> need to get the IRQ base for the bank.  We could add a void *priv member 
-> to bgpio_chip but that doesn't feel quite right.
-> 
-> So,
-> 	int bgpio_init(struct bgpio_chip *bgc, struct device *dev, 
-> 		       unsigned long sz, void __iomem *dat, ...)
-> 
-> rather than a probe() that returns the bgpio_chip?
+> The basic idea would be to pass the struct wb_writeback_work all the
+> way down to writeback_sb_inodes, and initialize the struct writeback_control
+> there.
 
-Sounds good to me.
+OK.
+
+> This requires adding a few more fields like more_io and
+
+We can in fact just kill more_io and test list_empty(b_more_io)
+instead.
+
+> older_than_this to struct wb_writeback_work, and redoing a lot of the
+> tracing,
+
+Yeah, older_than_this must still be set in wb_writeback().
+The two trace points could be removed for now.
+
+> but it immediately clean things up, e.g. suddently
+> wbc.nr_to_write vs work->nr_pages starts to make sense, and instead
+> of saving and restoring pages_skipped in writeback_sb_inodes it can
+> always start with a clean zero value.
+
+That's right.
 
 Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Fengguang
