@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1EDNDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 09:03:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47070 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1EDNDC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 09:03:02 -0400
-Date: Wed, 4 May 2011 15:02:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Pekka Enberg <penberg@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: <20110504125713.GA9978@elte.hu>
-Message-ID: <alpine.LFD.2.02.1105041501300.3005@ionos>
-References: <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu>
- <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org> <BANLkTikKZhqkcrG8aqUD0tJxZE5zVu0pMg@mail.gmail.com> <20110504125713.GA9978@elte.hu>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752876Ab1EDNLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 09:11:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30503 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab1EDNK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 09:10:59 -0400
+Date: Wed, 4 May 2011 16:10:46 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] rcu: export rcu_note_context_switch() function
+Message-ID: <20110504131041.GY2265@redhat.com>
+References: <1303984323-3203-1-git-send-email-gleb@redhat.com>
+ <1303984323-3203-2-git-send-email-gleb@redhat.com>
+ <20110429083618.GL2191@linux.vnet.ibm.com>
+ <20110429083904.GA12987@linux.vnet.ibm.com>
+ <20110429180239.GA32566@redhat.com>
+ <20110430125928.GJ2297@linux.vnet.ibm.com>
+ <20110502105612.GJ18376@redhat.com>
+ <20110502133608.GA4197@linux.vnet.ibm.com>
+ <20110502141002.GK18376@redhat.com>
+ <20110503062528.GV2294@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-875984856-1304514158=:3005"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110503062528.GV2294@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, May 02, 2011 at 11:25:28PM -0700, Paul E. McKenney wrote:
+> > > > How significantly? As I wrote in other mail I compiled two TINY_RCU
+> > > > kernel with and without the patch and I didn't see memory footprint
+> > > > increase at all. May be I measure it incorrectly, but what I see is that
+> > > > with out of line function + export text section becomes 64 byte bigger, but
+> > > > data section becomes 64 byte smaller:
+> > > > 
+> > > >    text    data     bss     dec     hex filename
+> > > > 4544134  590596 2023424 7158154  6d398a vmlinux     inline
+> > > > 4544198  590532 2023424 7158154  6d398a vmlinux.ol  out of line
+> > > 
+> > > Did you add the exports that would be needed to allow KVM to call
+> > > the functions in the inline case?
+> > > 
+> > Yes, this is with and without patch applied. When patch is applied the
+> > function is out of line and exported.
+> 
+> OK, here is what I am suggesting -- create a separate API for virtualization,
+> make it be an empty static inline function for TINY, and make it a wrapper
+> for TREE.  This gets rid of the export in the TINY case, and takes advantage
+> of the single-CPU constraint in the TINY case.  So this gains the benefit
+> of uninlining rcu_note_context_switch(), but avoids paying the cost of the
+> EXPORT_SYMBOL_GPL().
+> 
+> Then you call rcu_virt_note_context_switch() in place of
+> rcu_note_context_switch() from KVM.
+> 
+> Does this make sense?
+> 
+If TINY RCU has such strict code size requirement then yes. I will make
+another patch based on this and resend.
 
---8323328-875984856-1304514158=:3005
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 4 May 2011, Ingo Molnar wrote:
-> * Pekka Enberg <penberg@kernel.org> wrote:
-> 
-> > Hi Tejun,
-> > 
-> > On Wed, May 4, 2011 at 2:27 PM, Tejun Heo <tj@kernel.org> wrote:
-> > > Hmmm... if it's a race caused by preemtion enabled where it shouldn't
-> > > be, it's most likely the wrong type of this_cpu_cmpxchg_double() being
-> > > used in SLUB?  ie. __this_cpu_cmpxchg_double() where it should have
-> > > been this_cpu_cmpxchg_double()?  Christoph?
-> > 
-> > There's no __this_cpu_cmpxchg_double() usage in mm/slub.c so I don't
-> > think it's that simple.
-> 
-> Well, AFAICS the problem is:
-> 
-> earth4:~/tip> grep cmpxchg mm/slub.c 
-> 
-> 		if (unlikely(!this_cpu_cmpxchg_double(
-> 		if (unlikely(!this_cpu_cmpxchg_double(
-> 
-> Where this macro resolves to:
-> 
-> #  define this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)     \
->         _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-> 
-> where:
-> 
-> #define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)        \
-> ({                                                                      \
->         int ret__;                                                      \
->         preempt_disable();                                              \
->         ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,           \
->                         oval1, oval2, nval1, nval2);                    \
->         preempt_enable();                                              
-> where:
-> 
-> #define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)       \
-> ({                                                                      \
->         int __ret = 0;                                                  \
->         if (__this_cpu_read(pcp1) == (oval1) &&                         \
->                          __this_cpu_read(pcp2)  == (oval2)) {           \
->                 __this_cpu_write(pcp1, (nval1));                        \
->                 __this_cpu_write(pcp2, (nval2));                        \
->                 __ret = 1;                                              \
->         }                                                               \
->         (__ret);                                                        \
-> })
-> 
-> With is both IRQ and SMP unsafe.
-
-SMP is not an issue because that's cpu local access, but it's
-irq/softirq unsafe. See my other mail.
-
-Thanks,
-
-	tglx
-
-
---8323328-875984856-1304514158=:3005--
+--
+			Gleb.
