@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1EDOVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:21:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51955 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab1EDOVf (ORCPT
+	id S1754158Ab1EDOV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:21:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47089 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab1EDOV0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:21:35 -0400
-Date: Wed, 4 May 2011 16:21:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: <alpine.DEB.2.00.1105040902210.5495@router.home>
-Message-ID: <alpine.LFD.2.02.1105041610590.3005@ionos>
-References: <web-516671337@zbackend1.aha.ru> <BANLkTikFqF1vzMq3L9zDB=MDnCOFYp+XEQ@mail.gmail.com> <web-516990066@zbackend1.aha.ru> <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com> <20110503190822.GA20520@elte.hu> <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <alpine.DEB.2.00.1105040902210.5495@router.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 4 May 2011 10:21:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=F3pZabLR1/Zjhheo/3BuGpmQ6MzVYaHbgvw41/ANYnXFvWNWbM88JAkirEjRAlg2f0
+         v85juncf+3N3L/4YNNeA9pbohz55jq1/AWyaiATQvDjbAOfmJOngmOvK16pPGjuwoYsy
+         VVnYozfYjvHQSqUW4jEJIMT93cTFx3i9GY33w=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <BANLkTik17MGwWwFb=CzBduFy9Mn-Ze+ptA@mail.gmail.com>
+References: <BANLkTimLd-qY-OeKqnf2EoTfvAHWQZVchw@mail.gmail.com>
+	<BANLkTi=xz4w3p4bc5T4-YvkC3tYdwKhWGA@mail.gmail.com>
+	<BANLkTik17MGwWwFb=CzBduFy9Mn-Ze+ptA@mail.gmail.com>
+Date: Wed, 4 May 2011 15:21:26 +0100
+X-Google-Sender-Auth: yKW1mfZOybe_Gf1IRP6KiqoVQJs
+Message-ID: <BANLkTi=WYk3_wQ8R1x9JD3-A+asO3cyo4Q@mail.gmail.com>
+Subject: Re: [ARM]crash on 2.6.35.11
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Christoph Lameter wrote:
+(fixing up the linux-arm-kernel list address)
+
+On 4 May 2011 14:18, naveen yadav <yad.naveen@gmail.com> wrote:
+> On Wed, May 4, 2011 at 3:55 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> On 4 May 2011 11:09, naveen yadav <yad.naveen@gmail.com> wrote:
+>>> We are running linux kernel 2.6.35.11 on Cortex a-8. when I run a
+>>> simple program expect to give oom.
+>>>  But it crash with following crash log
+>>
+>> Could you post the full kernel boot log and .config file?
 >
-> The above should not happen. If a kernel config indicates that there is no
-> cmpxchg16b/cmpxchg8b available then we need to not compile the path that
-> uses cmpxchg8b/cmpxchg16b. Guess we need CMPXCHG_DOUBLE_LOCAL or so.
+> Pls find attached log
 
-Oh no, you have perfectly fine replacements for that in percpu.h with
-irqsafe and preempt safe versions. So why adding another CONFIG from
-hell which creates even more ifdef mess ?
+It looks like a problem with the memory configuration on your board.
+You have sparsemem sections which are not fully populated. The
+mainline kernel still has problems in this area.
 
-The whole CONFIG_CMPXCHG_LOCAL ifdeffery in slub.c is horrible and I
-think it's not necessary at all for two reasons:
+You can try this patch (not sure it applies cleanly on 2.6.35 but it's
+not difficult to fix):
 
-1) irqsafe_cpu_cmpxchg() can be emulated cheap and we still have the
-   advantatage of shorter irq disabled sections. And the difference
-   between the current CONFIG_CMPXCHG_LOCAL=n and using the emulation
-   macros with the short irqsave/restore around the access is probably
-   not measurable at all.
+http://article.gmane.org/gmane.linux.ports.arm.kernel/112994
 
-2) that would actually test the code under all possible combinations
-   and not splitting the tester base into x86 and !x86. So that bug
-   would have been avoided in the first place.
-
-Thanks,
-
-	tglx
+-- 
+Catalin
