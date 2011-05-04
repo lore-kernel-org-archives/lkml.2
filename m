@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab1EDLQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 07:16:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab1EDLQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 07:16:04 -0400
-Message-ID: <4DC13566.5070203@redhat.com>
-Date: Wed, 04 May 2011 13:15:50 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753585Ab1EDLQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 07:16:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49383 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab1EDLQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 07:16:57 -0400
+Date: Wed, 4 May 2011 07:16:47 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Chinner <david@fromorbit.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] writeback: introduce writeback_control.inodes_cleaned
+Message-ID: <20110504111647.GA19261@infradead.org>
+References: <20110420080336.441157866@intel.com>
+ <20110420080917.890756812@intel.com>
+ <20110504110500.GB4646@infradead.org>
+ <20110504111130.GA5191@localhost>
 MIME-Version: 1.0
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-CC: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path to
- ensure	commands don't get lost.
-References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com> <20110503195849.5478.13229.stgit@beardog.cce.hp.com>
-In-Reply-To: <20110503195849.5478.13229.stgit@beardog.cce.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504111130.GA5191@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2011 09:58 PM, Stephen M. Cameron wrote:
-> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
->
-> Apparently we've been doin it rong for a decade, but only lately do we
-> run into problems.
->
-> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> ---
->  drivers/scsi/hpsa.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-> index 621a153..98c97ca 100644
-> --- a/drivers/scsi/hpsa.h
-> +++ b/drivers/scsi/hpsa.h
-> @@ -212,6 +212,7 @@ static void SA5_submit_command(struct ctlr_info *h,
->  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
->  		c->Header.Tag.lower);
->  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> +	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
->   
-Hi,
-a small nit -
-the (void) ^ is I think not needed for gcc and isn't present in the cciss.h patch
+On Wed, May 04, 2011 at 07:11:30PM +0800, Wu Fengguang wrote:
+> On Wed, May 04, 2011 at 07:05:00PM +0800, Christoph Hellwig wrote:
+> > Same here - this has nothing to do with actual page writeback and really
+> > should stay internal to fs/fs-writeback.c
+> 
+> OK, I'll check how to constrain writeback_control to the minimal scope.
 
-Tomas
-
->  	h->commands_outstanding++;
->  	if (h->commands_outstanding > h->max_outstanding)
->  		h->max_outstanding = h->commands_outstanding;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
+The basic idea would be to pass the struct wb_writeback_work all the
+way down to writeback_sb_inodes, and initialize the struct writeback_control
+there.  This requires adding a few more fields like more_io and
+older_than_this to struct wb_writeback_work, and redoing a lot of the
+tracing, but it immediately clean things up, e.g. suddently
+wbc.nr_to_write vs work->nr_pages starts to make sense, and instead
+of saving and restoring pages_skipped in writeback_sb_inodes it can
+always start with a clean zero value.
 
