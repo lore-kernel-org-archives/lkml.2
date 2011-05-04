@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab1EDMwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 08:52:18 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:23028 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab1EDMwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 08:52:17 -0400
-Date: Wed, 4 May 2011 07:52:12 -0500
-From: scameron@beardog.cce.hp.com
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path to ensure	commands don't get lost.
-Message-ID: <20110504125212.GC5997@beardog.cce.hp.com>
-References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com> <20110503195849.5478.13229.stgit@beardog.cce.hp.com> <4DC13566.5070203@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754142Ab1EDM52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 08:57:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51915 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753578Ab1EDM51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 08:57:27 -0400
+Date: Wed, 4 May 2011 14:57:13 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+Message-ID: <20110504125713.GA9978@elte.hu>
+References: <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
+ <20110503190822.GA20520@elte.hu>
+ <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
+ <20110504083559.GB25724@elte.hu>
+ <alpine.LFD.2.02.1105041124080.3005@ionos>
+ <20110504101932.GA3392@elte.hu>
+ <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org>
+ <BANLkTikKZhqkcrG8aqUD0tJxZE5zVu0pMg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4DC13566.5070203@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikKZhqkcrG8aqUD0tJxZE5zVu0pMg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 01:15:50PM +0200, Tomas Henzl wrote:
-> On 05/03/2011 09:58 PM, Stephen M. Cameron wrote:
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> >
-> > Apparently we've been doin it rong for a decade, but only lately do we
-> > run into problems.
-> >
-> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > ---
-> >  drivers/scsi/hpsa.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-> > index 621a153..98c97ca 100644
-> > --- a/drivers/scsi/hpsa.h
-> > +++ b/drivers/scsi/hpsa.h
-> > @@ -212,6 +212,7 @@ static void SA5_submit_command(struct ctlr_info *h,
-> >  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
-> >  		c->Header.Tag.lower);
-> >  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> > +	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> >   
-> Hi,
-> a small nit -
-> the (void) ^ is I think not needed for gcc and isn't present in the cciss.h patch
 
-I just put it there to make it clear that it ignoring the return of readl is 
-done intentionally, not accidentally.  If this goes against some coding convention,
-whatever, I'm not super attached to the (void), but I did put it there on purpose,
-and would have done it in cciss as well, had I thought of it at the time.
+* Pekka Enberg <penberg@kernel.org> wrote:
 
--- steve
-
+> Hi Tejun,
 > 
-> Tomas
+> On Wed, May 4, 2011 at 2:27 PM, Tejun Heo <tj@kernel.org> wrote:
+> > Hmmm... if it's a race caused by preemtion enabled where it shouldn't
+> > be, it's most likely the wrong type of this_cpu_cmpxchg_double() being
+> > used in SLUB?  ie. __this_cpu_cmpxchg_double() where it should have
+> > been this_cpu_cmpxchg_double()?  Christoph?
 > 
-> >  	h->commands_outstanding++;
-> >  	if (h->commands_outstanding > h->max_outstanding)
-> >  		h->max_outstanding = h->commands_outstanding;
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >   
+> There's no __this_cpu_cmpxchg_double() usage in mm/slub.c so I don't
+> think it's that simple.
+
+Well, AFAICS the problem is:
+
+earth4:~/tip> grep cmpxchg mm/slub.c 
+
+		if (unlikely(!this_cpu_cmpxchg_double(
+		if (unlikely(!this_cpu_cmpxchg_double(
+
+Where this macro resolves to:
+
+#  define this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)     \
+        _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
+
+where:
+
+#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)        \
+({                                                                      \
+        int ret__;                                                      \
+        preempt_disable();                                              \
+        ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,           \
+                        oval1, oval2, nval1, nval2);                    \
+        preempt_enable();                                              
+where:
+
+#define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)       \
+({                                                                      \
+        int __ret = 0;                                                  \
+        if (__this_cpu_read(pcp1) == (oval1) &&                         \
+                         __this_cpu_read(pcp2)  == (oval2)) {           \
+                __this_cpu_write(pcp1, (nval1));                        \
+                __this_cpu_write(pcp2, (nval2));                        \
+                __ret = 1;                                              \
+        }                                                               \
+        (__ret);                                                        \
+})
+
+With is both IRQ and SMP unsafe.
+
+Thanks,
+
+	Ingo
