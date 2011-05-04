@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab1EDTIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:08:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39177 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754387Ab1EDTIe (ORCPT
+	id S1755215Ab1EDTID (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:08:03 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4715 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754387Ab1EDTIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:08:34 -0400
+	Wed, 4 May 2011 15:08:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=XczKobbgGT4zQl6BsqbkTlbAzy90pOYCEHUiaSWIJEBB4pPQG1ivc/azU3zOhfTqsw
+         Y+IiZZ1/wdeXoOVNTWxQ==
+Date: Wed, 4 May 2011 12:07:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] m68k SLUB fix for 2.6.39
+In-Reply-To: <1304521355.2810.21.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.00.1105041203250.22426@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site> <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
+ <1304521355.2810.21.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105041341550.5495@router.home>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos>
- <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos>
- <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home>
- <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home>
- <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
- <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 May 2011 12:07:42 -0700
-Message-ID: <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 11:49 AM, Christoph Lameter <cl@linux.com> wrote:
->
-> The unprotected version is the __this_cpu_cmpxchg_double? That currently
-> has no user and could be removed. But all other functions also have __
-> variants so it was put there for symmetries sake.
+On Wed, 4 May 2011, James Bottomley wrote:
 
-No, I'm talking about the regular "this_cpu_cmpxchg_double" with no underscores.
+> Yes, but I also encountered it after I applied you patch, which is why I
+> still pushed the Kconfig patch.  It's possible, since there were a huge
+> number of patches flying around that the kernel base was contaminated,
+> so I'll strip down to just linus HEAD + parisc coherence patches,
+> reverting the Kconfig one and try again.
+> 
 
-Why the f*!@ does that exist?
+Great, and if that works out successfully this time around I think we'll 
+either need to fix each individual arch Kconfig that we know doesn't work 
+well (at least parisc because of the scheduling issue) so that it at least 
+enables CONFIG_NUMA implicitly for discontigmem unless CONFIG_BROKEN is 
+set.
 
-Why the f*%^ do you have to write "irqsafe", when the whole concept
-DOES NOT MAKE SENSE without the "irqsafe"?
-
-Why did we have this bug in the first place, in other words? The whole
-interface was mis-designed, and pretty much designed to cause bugs.
-
-I think we should remove every single version of
-"this_cpu_cmpxchg_double" except for two: the per-cpu one and the
-SMP-safe one.
-
-And the per-cpu one doesn't mention "irqsafe" or "preempt" or anything
-like that, because the whole function makes no sense except when it is
-irq-safe and preempt-safe.
-
-So I think the fact that we need to say "irqsafe" is a bug. Plain and simple.
-
-The whole (and ONLY) point of "cmpxchg" is atomicity.
-
-This is not like "add one to something". That's an operation that
-makes sense outside of atomicity issues. But "cmpxchg" is all about
-being atomic.
-
-                                       Linus
+The ideal solution is probably to rely on CONFIG_NEED_MULTIPLE_NODES 
+rather than CONFIG_NUMA, which is why it was introduced in the first place 
+since it was duplicating data structures for both NUMA and discontigmem.  
+That's apparently broken somewhere in the kernel that turned your SMP box 
+into an UP.
