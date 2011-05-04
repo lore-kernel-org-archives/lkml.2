@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab1EDXKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 19:10:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53424 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932067Ab1EDXKb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 19:10:31 -0400
-Date: Wed, 4 May 2011 16:10:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH 0/8] avoid allocation in show_numa_map()
-Message-Id: <20110504161020.e2d0a7f2.akpm@linux-foundation.org>
-In-Reply-To: <1303947349-3620-1-git-send-email-wilsons@start.ca>
-References: <1303947349-3620-1-git-send-email-wilsons@start.ca>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932113Ab1EDXSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 19:18:49 -0400
+Received: from kroah.org ([198.145.64.141]:33234 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932091Ab1EDXSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 19:18:48 -0400
+Date: Wed, 4 May 2011 16:11:46 -0700
+From: Greg KH <greg@kroah.com>
+To: Lasse Collin <lasse.collin@tukaani.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [stable] [PATCH] XZ decompressor: Fix decoding of empty LZMA2
+ streams
+Message-ID: <20110504231146.GF26011@kroah.com>
+References: <201105011938.42851.lasse.collin@tukaani.org>
+ <20110503143620.c6b4d272.akpm@linux-foundation.org>
+ <201105040122.36545.lasse.collin@tukaani.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105040122.36545.lasse.collin@tukaani.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Apr 2011 19:35:41 -0400
-Stephen Wilson <wilsons@start.ca> wrote:
+On Wed, May 04, 2011 at 01:22:36AM +0300, Lasse Collin wrote:
+> On 2011-05-04 Andrew Morton wrote:
+> > Lasse Collin <lasse.collin@tukaani.org> wrote:
+> > > From: Lasse Collin <lasse.collin@tukaani.org>
+> > > 
+> > > The old code considered valid empty LZMA2 streams to be corrupt.
+> > > Note that a typical empty .xz file has no LZMA2 data at all,
+> > > and thus most .xz files having no uncompressed data are handled
+> > > correctly even without this fix.
+> > > 
+> > > Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
+> > 
+> > The patch didn't have the cc:stable tag, but appears to be needed in
+> > 2.6.38.x and perhaps earlier, yes?
+> > 
+> > It's commit 646032e3b05b32d3f20cb108a030593d9d792eb5 in mainline.
+> 
+> Thanks. It's good for 2.6.38.x. Older ones don't have XZ support.
 
-> Recently a concern was raised[1] that performing an allocation while holding a
-> reference on a tasks mm could lead to a stalemate in the oom killer.  The
-> concern was specific to the goings-on in /proc.  Hugh Dickins stated the issue
-> thusly:
-> 
->     ...imagine what happens if the system is out of memory, and the mm
->     we're looking at is selected for killing by the OOM killer: while we
->     wait in __get_free_page for more memory, no memory is freed from the
->     selected mm because it cannot reach exit_mmap while we hold that
->     reference.
-> 
-> The primary goal of this series is to eliminate repeated allocation/free cycles
-> currently happening in show_numa_maps() while we hold a reference to an mm.
-> 
-> The strategy is to perform the allocation once when /proc/pid/numa_maps is
-> opened, before a reference on the target tasks mm is taken.
-> 
-> Unfortunately, show_numa_maps() is implemented in mm/mempolicy.c while the
-> primary procfs implementation  lives in fs/proc/task_mmu.c.  This makes
-> clean cooperation between show_numa_maps() and the other seq_file operations
-> (start(), stop(), etc) difficult.
-> 
-> 
-> Patches 1-5 convert show_numa_maps() to use the generic walk_page_range()
-> functionality instead of the mempolicy.c specific page table walking logic.
-> Also, get_vma_policy() is exported.  This makes the show_numa_maps()
-> implementation independent of mempolicy.c. 
-> 
-> Patch 6 moves show_numa_maps() and supporting routines over to
-> fs/proc/task_mmu.c.
-> 
-> Finally, patches 7 and 8 provide minor cleanup and eliminates the troublesome
-> allocation.
-> 
->  
-> Please note that moving show_numa_maps() into fs/proc/task_mmu.c essentially
-> reverts 1a75a6c825 and 48fce3429d.  Also, please see the discussion at [2].  My
-> main justifications for moving the code back into task_mmu.c is:
-> 
->   - Having the show() operation "miles away" from the corresponding
->     seq_file iteration operations is a maintenance burden. 
->     
->   - The need to export ad hoc info like struct proc_maps_private is
->     eliminated.
-> 
-> 
-> These patches are based on v2.6.39-rc5.
+Now queued up, thanks.
 
-The patches look reasonable.  It would be nice to get some more review
-happening (poke).
-
-> 
-> Please note that this series is VERY LIGHTLY TESTED.  I have been using
-> CONFIG_NUMA_EMU=y thus far as I will not have access to a real NUMA system for
-> another week or two.
-
-"lightly tested" evokes fear, but the patches don't look too scary to
-me.
-
-Did you look at using apply_to_page_range()?
-
-I'm trying to remember why we're carrying both walk_page_range() and
-apply_to_page_range() but can't immediately think of a reason.
-
-There's also an apply_to_page_range_batch() in -mm but that code is
-broken on PPC and not much is happening with it, so it will probably go
-away again.
-
-
+greg k-h
