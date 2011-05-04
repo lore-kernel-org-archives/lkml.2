@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab1EDP75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:59:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39037 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751285Ab1EDP74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:59:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com>
-References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
- <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos>
- <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos>
- <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home>
- <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home>
- <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 May 2011 08:53:44 -0700
-Message-ID: <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755043Ab1EDPzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 11:55:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705Ab1EDPzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 11:55:42 -0400
+Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
+ how it works.
+From: Eric Paris <eparis@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Will Drewry <wad@chromium.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 04 May 2011 11:54:22 -0400
+In-Reply-To: <1304511396.25414.2422.camel@gandalf.stny.rr.com>
+References: <1303960136-14298-1-git-send-email-wad@chromium.org>
+	 <1303960136-14298-4-git-send-email-wad@chromium.org>
+	 <20110428070636.GC952@elte.hu>
+	 <1304002571.2101.38.camel@localhost.localdomain>
+	 <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
+	 <20110429131845.GA1768@nowhere>
+	 <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
+	 <20110503012857.GA8399@nowhere>
+	 <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
+	 <1304511396.25414.2422.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1304524465.10692.21.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 8:37 AM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> Sure. Who's taking care of the minimal fix for .39?
+On Wed, 2011-05-04 at 08:16 -0400, Steven Rostedt wrote:
+> On Tue, 2011-05-03 at 03:47 +0200, Frederic Weisbecker wrote:
+> > 2011/5/3 Frederic Weisbecker <fweisbec@gmail.com>:
+> 
+> > Even better: applying a filter would always automatically be an
+> > intersection of the previous one.
+> > 
+> > If you do:
+> > 
+> > SECCOMP_FILTER_SET, __NR_foo, "a == 1 || a == 2"
+> > SECCOMP_FILTER_APPLY
+> > SECCOMP_FILTER_SET, __NR_foo, "b == 2"
+> > SECCOMP_FILTER_APPLY
+> > SECCOMP_FILTER_SET, __NR_foo, "c == 3"
+> > SECCOMP_FILTER_APPLY
+> > 
+> > The end result is:
+> > 
+> > "(a == 1 || a == 2) && b == 2  && c == 3"
+> > 
+> 
+> I'm a little confused. Why do we have both a FILTER_SET and a
+> FILTER_APPLY? Maybe this was discussed earlier in the thread and I
+> missed it or simply forgot.
+> 
+> Why not just apply on the set call?
 
-I'll take it. I'm just hoping to also get Werner's tested-by for it.
+As this is a deny by default interface which only allows you to further
+restrict you couldn't add more than 1 syscall if you didn't have an
+explict 'apply' action.
 
-I'm pretty confident this is it, though, so if I don't get it by the
-end of the day I'll just apply it regardless with just a reported-by
-from him.
+SECCOMP_FILTER_SET, __NR_fo, "a=0"
+SECCOMP_FILTER_SET, __NR_read, "1" == EPERM
 
-                       Linus
+Maybe apply on set is fine after the first apply, but we definitely need
+some way to do more than 1 set before the rules are applied....
+
+-Eric
+
