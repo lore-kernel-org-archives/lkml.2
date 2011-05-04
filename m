@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1EDNWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 09:22:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39730 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab1EDNWd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 09:22:33 -0400
-Message-ID: <4DC152F3.2050500@monstr.eu>
-Date: Wed, 04 May 2011 15:21:55 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1753362Ab1EDNXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 09:23:06 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52501 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752683Ab1EDNXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 09:23:03 -0400
+Date: Wed, 4 May 2011 15:22:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+Message-ID: <20110504132249.GB9978@elte.hu>
+References: <BANLkTinCKC23WfG7jnd-ihW9kXz-6SEgFQ@mail.gmail.com>
+ <20110503190822.GA20520@elte.hu>
+ <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
+ <20110504083559.GB25724@elte.hu>
+ <alpine.LFD.2.02.1105041124080.3005@ionos>
+ <20110504101932.GA3392@elte.hu>
+ <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos>
 MIME-Version: 1.0
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-CC: Wolfram Sang <w.sang@pengutronix.de>, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
-References: <1304319115-32745-1-git-send-email-monstr@monstr.eu> <20110503203412.GA2119@pengutronix.de> <20110503221440.GB2737@local>
-In-Reply-To: <20110503221440.GB2737@local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1105041417330.3005@ionos>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans J. Koch wrote:
-> On Tue, May 03, 2011 at 10:34:12PM +0200, Wolfram Sang wrote:
->> On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
->>> Adding OF binding to genirq.
->>> Version string is setup to the "devicetree".
->>>
->>> Compatible string is not setup for now but you can add your
->>> custom compatible string to uio_of_genirq_match structure.
->>>
->>> For example with "vendor,device" compatible string:
->>> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
->>> 	{ .compatible = "vendor,device", },
->>> 	{ /* empty for now */ },
->>> };
->>>
->>> Signed-off-by: Michal Simek <monstr@monstr.eu>
->> [...]
->>
->>> +		/* alloc uioinfo for one device */
->>> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
->> kfree in remove?
-> 
-> Oh yes. Missed that one. It should probably look like the "bad0" case in probe().
 
-Yes, freeing uioinfo in uio_pdrv_genirq_remove make sense for CONFIG_OF.
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Please correct me if I am wrong dev.of_node is not NULL for OF. I think yes 
-that's why I would prefer to use this construct instead of #ifdef CONFIG_OF.
+> Which makes me even wonder some more whether we need that whole
+> CMPXCHG_LOCAL #ifdeffery in slub.c at all.
 
-	if (pdev->dev.of_node)
-		kfree(pdev->dev.platform_data);
+I always found that #ifdeffery rather repulsive.
 
-What do you think?
+Thanks,
 
-Michal
-
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+	Ingo
