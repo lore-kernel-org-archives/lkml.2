@@ -1,182 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab1EDC54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 22:57:56 -0400
-Received: from tundra.namei.org ([65.99.196.166]:58497 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab1EDC5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 22:57:55 -0400
-Date: Wed, 4 May 2011 12:57:47 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>
-Subject: [GIT] SELinux / flex_array bugfixes
-Message-ID: <alpine.LRH.2.00.1105041252210.29669@tundra.namei.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755056Ab1EDDDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 23:03:48 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9463 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab1EDDDp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 23:03:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 03 May 2011 20:03:45 -0700
+From: Wei Ni <wni@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Olof Johansson (olof@lixom.net)" <olof@lixom.net>
+Date: Wed, 4 May 2011 11:03:41 +0800
+Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+Thread-Topic: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
+Thread-Index: Acv/U9peluMUOVgAQtuc8GIYvXxc8QFcZJpQAAyVSsAATfGVkAAUIY8QAOHp64A=
+Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4E6@HKMAIL01.nvidia.com>
+References: <1303301312-15302-1-git-send-email-wni@nvidia.com>
+ <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4DB@HKMAIL01.nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF0497F1AAC4@HQMAIL01.nvidia.com>
+ <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4E2@HKMAIL01.nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF0497F1AEEF@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF0497F1AEEF@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull these fixes for SELinux, and for flex_array (which fixes a 
-regression in SELinux).
+Hi, Stephen
+I think if doesn't need to apply the slave address codes, we can use your patch.
 
+Thanks
+Wei.
 
-The following changes since commit 609cfda586c7fe3e5d1a02c51edb587506294167:
-  Linus Torvalds (1):
-        Merge branch 'stable/bug-fixes-for-rc5' of git://git.kernel.org/.../konrad/xen
+-----Original Message-----
+From: Stephen Warren 
+Sent: Friday, April 29, 2011 11:20 PM
+To: Wei Ni
+Cc: khali@linux-fr.org; ben-linux@fluff.org; lucas.demarchi@profusion.mobi; ccross@android.com; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; Olof Johansson (olof@lixom.net)
+Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
 
-are available in the git repository at:
+Wei Ni wrote at Friday, April 29, 2011 12:08 AM:
+> Stephen Warren wrote at Thursday, April 28, 2011 12:29 AM:
+> > 
+> > Wei Ni wrote at Wednesday, April 27, 2011 4:26 AM:
+> > > Hi, all
+> > > Could anyone review these changes?
+> > 
+> > Wei,
+> > 
+> > It looks like some of the patches I recently posted address the same
+> > issues as the patches you had already posted. Sorry for the potential
+> > conflicts.
+>
+> Hi, Stephen
+> I think your patches address the different issues with my patches.
+> My patches are used for retry transfer and new slave controller.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 for-linus
+Wei, aren't the following two patches basically the same thing,
+except that yours also sets the slave address register, and is a bit
+more wordy:
 
-Eric Paris (3):
-      SELinux: pass last path component in may_create
-      flex_array: flex_array_prealloc takes a number of elements, not an end
-      flex_arrays: allow zero length flex arrays
+http://www.spinics.net/lists/linux-i2c/msg05464.html
+http://www.spinics.net/lists/linux-i2c/msg05437.html
 
-James Morris (1):
-      Merge branch 'for-linus' of git://git.infradead.org/users/eparis/selinux into for-linus
+Upon further inspection, I don't think any of the other patches I
+posted conflict with the other patch you posted.
 
+> > Can you please take a look at the patches I posted and comment on which
+> > of those are still relevant given your patches. Even for the cases where
+> > we both posted patches to address the same issue (e.g. use new slave
+> > mode), there are differences in the patches. I simply took the changes
+> > from the chromeos-2.6.37 kernel and cherry-picked them into the mainline
+> > kernel. Are the changes you posted re-written to address issues that
+> > weren't solved in the ChromeOS kernel?
+> > 
+> > Thanks for any feedback on this.
 
- Documentation/flexible-arrays.txt |    4 ++--
- include/linux/flex_array.h        |    2 +-
- lib/flex_array.c                  |   24 ++++++++++++++++++------
- security/selinux/hooks.c          |    3 ++-
- security/selinux/ss/policydb.c    |    6 +++---
- 5 files changed, 26 insertions(+), 13 deletions(-)
+Wei Ni wrote at Wednesday, April 20, 2011 8:09 PM:
+> From: Wei Ni <wni@nvidia.com>
+>
+> *** BLURB HERE ***
+>
+> Wei Ni (2):
+>   i2c: tegra: Retry transfer when unexpected/no_ack status is detected
+>   i2c: tegra: use new i2c slave controller
+>
+>  drivers/i2c/busses/i2c-tegra.c |   57 +++++++++++++++++++++++++++++++++++++--
+>  include/linux/i2c-tegra.h      |    3 ++
+>  2 files changed, 57 insertions(+), 3 deletions(-)
 
----
+-- 
+nvpublic
 
-diff --git a/Documentation/flexible-arrays.txt b/Documentation/flexible-arrays.txt
-index cb8a3a0..df904ae 100644
---- a/Documentation/flexible-arrays.txt
-+++ b/Documentation/flexible-arrays.txt
-@@ -66,10 +66,10 @@ trick is to ensure that any needed memory allocations are done before
- entering atomic context, using:
- 
-     int flex_array_prealloc(struct flex_array *array, unsigned int start,
--			    unsigned int end, gfp_t flags);
-+			    unsigned int nr_elements, gfp_t flags);
- 
- This function will ensure that memory for the elements indexed in the range
--defined by start and end has been allocated.  Thereafter, a
-+defined by start and nr_elements has been allocated.  Thereafter, a
- flex_array_put() call on an element in that range is guaranteed not to
- block.
- 
-diff --git a/include/linux/flex_array.h b/include/linux/flex_array.h
-index 70e4efa..ebeb2f3 100644
---- a/include/linux/flex_array.h
-+++ b/include/linux/flex_array.h
-@@ -61,7 +61,7 @@ struct flex_array {
- struct flex_array *flex_array_alloc(int element_size, unsigned int total,
- 		gfp_t flags);
- int flex_array_prealloc(struct flex_array *fa, unsigned int start,
--		unsigned int end, gfp_t flags);
-+		unsigned int nr_elements, gfp_t flags);
- void flex_array_free(struct flex_array *fa);
- void flex_array_free_parts(struct flex_array *fa);
- int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
-diff --git a/lib/flex_array.c b/lib/flex_array.c
-index c0ea40b..854b57b 100644
---- a/lib/flex_array.c
-+++ b/lib/flex_array.c
-@@ -232,10 +232,10 @@ EXPORT_SYMBOL(flex_array_clear);
- 
- /**
-  * flex_array_prealloc - guarantee that array space exists
-- * @fa:		the flex array for which to preallocate parts
-- * @start:	index of first array element for which space is allocated
-- * @end:	index of last (inclusive) element for which space is allocated
-- * @flags:	page allocation flags
-+ * @fa:			the flex array for which to preallocate parts
-+ * @start:		index of first array element for which space is allocated
-+ * @nr_elements:	number of elements for which space is allocated
-+ * @flags:		page allocation flags
-  *
-  * This will guarantee that no future calls to flex_array_put()
-  * will allocate memory.  It can be used if you are expecting to
-@@ -245,14 +245,24 @@ EXPORT_SYMBOL(flex_array_clear);
-  * Locking must be provided by the caller.
-  */
- int flex_array_prealloc(struct flex_array *fa, unsigned int start,
--			unsigned int end, gfp_t flags)
-+			unsigned int nr_elements, gfp_t flags)
- {
- 	int start_part;
- 	int end_part;
- 	int part_nr;
-+	unsigned int end;
- 	struct flex_array_part *part;
- 
--	if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
-+	if (!start && !nr_elements)
-+		return 0;
-+	if (start >= fa->total_nr_elements)
-+		return -ENOSPC;
-+	if (!nr_elements)
-+		return 0;
-+
-+	end = start + nr_elements - 1;
-+
-+	if (end >= fa->total_nr_elements)
- 		return -ENOSPC;
- 	if (elements_fit_in_base(fa))
- 		return 0;
-@@ -343,6 +353,8 @@ int flex_array_shrink(struct flex_array *fa)
- 	int part_nr;
- 	int ret = 0;
- 
-+	if (!fa->total_nr_elements)
-+		return 0;
- 	if (elements_fit_in_base(fa))
- 		return ret;
- 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++) {
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index f7cf0ea..8fb2488 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -1578,7 +1578,8 @@ static int may_create(struct inode *dir,
- 		return rc;
- 
- 	if (!newsid || !(sbsec->flags & SE_SBLABELSUPP)) {
--		rc = security_transition_sid(sid, dsec->sid, tclass, NULL, &newsid);
-+		rc = security_transition_sid(sid, dsec->sid, tclass,
-+					     &dentry->d_name, &newsid);
- 		if (rc)
- 			return rc;
- 	}
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index e7b850a..e6e7ce0 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -502,7 +502,7 @@ static int policydb_index(struct policydb *p)
- 		goto out;
- 
- 	rc = flex_array_prealloc(p->type_val_to_struct_array, 0,
--				 p->p_types.nprim - 1, GFP_KERNEL | __GFP_ZERO);
-+				 p->p_types.nprim, GFP_KERNEL | __GFP_ZERO);
- 	if (rc)
- 		goto out;
- 
-@@ -519,7 +519,7 @@ static int policydb_index(struct policydb *p)
- 			goto out;
- 
- 		rc = flex_array_prealloc(p->sym_val_to_name[i],
--					 0, p->symtab[i].nprim - 1,
-+					 0, p->symtab[i].nprim,
- 					 GFP_KERNEL | __GFP_ZERO);
- 		if (rc)
- 			goto out;
-@@ -2375,7 +2375,7 @@ int policydb_read(struct policydb *p, void *fp)
- 		goto bad;
- 
- 	/* preallocate so we don't have to worry about the put ever failing */
--	rc = flex_array_prealloc(p->type_attr_map_array, 0, p->p_types.nprim - 1,
-+	rc = flex_array_prealloc(p->type_attr_map_array, 0, p->p_types.nprim,
- 				 GFP_KERNEL | __GFP_ZERO);
- 	if (rc)
- 		goto bad;
