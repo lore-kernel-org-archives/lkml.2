@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1EDVnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 17:43:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:48709 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab1EDVm7 (ORCPT
+	id S1755756Ab1EDVpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 17:45:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49819 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753818Ab1EDVpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 17:42:59 -0400
-Date: Wed, 4 May 2011 23:42:56 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, rientjes@google.com,
-        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Balbir Singh <balbir@in.ibm.com>
-Subject: Re: [PATCH] Allocate memory cgroup structures in local nodes v2
-Message-ID: <20110504214256.GA2925@one.firstfloor.org>
-References: <1304540783-8247-1-git-send-email-andi@firstfloor.org> <20110504213850.GA16685@cmpxchg.org>
+	Wed, 4 May 2011 17:45:03 -0400
+Date: Wed, 4 May 2011 14:44:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Dave Chinner <david@fromorbit.com>, Mike Frysinger <vapier@gentoo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] fadvise: introduce POSIX_FADV_DONTNEED_FS
+Message-Id: <20110504144411.7f32c00c.akpm@linux-foundation.org>
+In-Reply-To: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+References: <1303928027-5100-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504213850.GA16685@cmpxchg.org>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't think any of those mistakes even triggers a compiler warning.
-> Wow.  This API is so thoroughly fscked beyond belief that I think the
-> only way to top this is to have one of the functions invert the bits
-> of its return value depending on the parity of the uptime counter.
+On Wed, 27 Apr 2011 20:13:47 +0200
+Andrea Righi <andrea@betterlinux.com> wrote:
 
-Yes I must agree. Oops. Ok I'm retracting the patch for now
-and do more testing (i think it just hit the fallback)
+> Introduce a new fadvise flag to drop page cache pages of a single
+> filesystem.
 
--Andi
+I'm going to object to this on general principle.  We shouldn't toss
+new features into the kernel API just because we can.  Each feature
+needs a really good argument to justify its inclusion, and I don't
+believe that the case has been made for this feature.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+IOW, who's going to die if we don't merge it?
