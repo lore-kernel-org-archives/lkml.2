@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab1EDHMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 03:12:44 -0400
-Received: from christianhoffmann.info ([88.175.101.52]:48675 "EHLO
-	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab1EDHMm (ORCPT
+	id S1753332Ab1EDHNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 03:13:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42836 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab1EDHNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 03:12:42 -0400
-Message-ID: <4DC0FC60.2080701@christianhoffmann.info>
-Date: Wed, 04 May 2011 09:12:32 +0200
-From: Christian Hoffmann <email@christianhoffmann.info>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+	Wed, 4 May 2011 03:13:13 -0400
+Message-ID: <15AD189F851849F69A011B6F4D1DDB6C@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>, <sachi@mistralsolutions.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <Netdev@vger.kernel.org>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        <m-watkins@ti.com>
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <4DB5D452.9050500@grandegger.com> <46D523E49EFF489F9B088AE7B9CD7286@subhasishg> <201104271525.28512.arnd@arndb.de>
+In-Reply-To: <201104271525.28512.arnd@arndb.de>
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+Date: Wed, 4 May 2011 12:43:08 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Long timeout when booting >= 2.6.38
-References: <4DBEFCBA.3070501@christianhoffmann.info>	 <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>	 <1304372955.3226.15.camel@work-vm>	 <4DBF2FB4.8000304@christianhoffmann.info>	 <1304382664.3226.24.camel@work-vm>	 <4DC04E15.2030308@christianhoffmann.info> <1304473134.3037.14.camel@work-vm>
-In-Reply-To: <1304473134.3037.14.camel@work-vm>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Wednesday 27 April 2011, Subhasish Ghosh wrote:
+>> >
+>> > - Use just one value per sysfs file
+>> 
+>> SG - I felt adding entry for each mbx_id will clutter the sysfs.
+>>         Is it ok to do that.
+> 
+> That is probably not much better either.
+> 
+> Note also that every sysfs file needs to come with associated
+> documentation in Documentation/ABI/*/ to make sure that users
+> will know exactly how the file is meant to work. 
+> 
+> Why do you need to export these values in the first place? Is
+> it just for debugging or do you expect all CAN user space
+> to look at this?
+> 
+> If it's for debugging, please don't export the files through sysfs.
+> Depending on how useful the data is to regular users, you can
+> still export it through a debugfs file in that case, which has
+> much less strict rules.
+> 
+> If the file is instead meant as part of the regular operation of
+> the device, it should not be in debugfs but probably be integrated
+> into the CAN socket interface, so that users don't need to work
+> with two different ways of getting to the device (socket and sysfs).
+> 
 
-> Can you send dmesg on a broken kernel with the following patch added?
->
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 5129ed6..6718e7f 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2791,6 +2791,7 @@ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
->   		if ((f->vendor == dev->vendor || f->vendor == (u16) PCI_ANY_ID)&&
->   		(f->device == dev->device || f->device == (u16) PCI_ANY_ID)) {
->   			dev_dbg(&dev->dev, "calling %pF\n", f->hook);
-> +			printk("Calling fixup hook: %pF\n", f->hook);
->   			f->hook(dev);
->   		}
->   		f++;
+CAN requires mail box IDs to be programmed in. But, the socket
+CAN subsystem supports only software filtering of the mail box IDs.
 
-Hi,
+So, the mail box IDs programmed into socket CAN during initialization
+does not propagate into the hardware. This is planned to be a future
+implementation in Socket CAN.
 
-dmesg output with patch applied can be found here:
+In our case, we support hardware filtering, to work around with this,
+Wolfgang (Socket CAN owner) suggested that we implement
+this using sysfs.
 
-http://pastebin.com/raw.php?i=y6gC848k
-
-Rgds,
-Chris
+These setting are not for debugging, but to program the mail box IDs
+into the hardware. 
