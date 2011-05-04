@@ -1,80 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab1EDU1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 16:27:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40863 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab1EDU1Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 16:27:16 -0400
+	id S1755730Ab1EDU3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:29:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59465 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752327Ab1EDU3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 16:29:15 -0400
+Date: Wed, 4 May 2011 20:28:27 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Message-ID: <tip-bf26c018490c2fce7fe9b629083b96ce0e6ad019@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        will.deacon@arm.com, a.p.zijlstra@chello.nl, lethal@linux-sh.org,
+        fweisbec@gmail.com, stable@kernel.org, tglx@linutronix.de,
+        oleg@redhat.com, prasad@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, will.deacon@arm.com, lethal@linux-sh.org,
+        fweisbec@gmail.com, stable@kernel.org, oleg@redhat.com,
+        tglx@linutronix.de, mingo@elte.hu, prasad@linux.vnet.ibm.com
+In-Reply-To: <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
+References: <1302284067-7860-2-git-send-email-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] ptrace: Prepare to fix racy accesses on task breakpoints
+Git-Commit-ID: bf26c018490c2fce7fe9b629083b96ce0e6ad019
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110504201839.7701.18840.stgit@ponder>
-References: <20110504201839.7701.18840.stgit@ponder>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 4 May 2011 14:26:56 -0600
-X-Google-Sender-Auth: Xl-InehutlNIcyZ6D31SOPyHg7I
-Message-ID: <BANLkTimwiNzDoR1DqVcTmsZPWt3G+ZkZmg@mail.gmail.com>
-Subject: Re: [PATCH] irq: add irq_alloc_desc_between() helper
-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, miltonm@bga.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 04 May 2011 20:28:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 2:19 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Written in response to conversation on IRC about needing to specify an upper
-> limit on the virq value returned for some MSI interrupt controllers.  Compiled
-> only; untested
->
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  include/linux/irq.h  |    9 ++++++++-
->  kernel/irq/irqdesc.c |    5 ++++-
->  2 files changed, 12 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/irq.h b/include/linux/irq.h
-> index 09a3080..bcb712b 100644
-> --- a/include/linux/irq.h
-> +++ b/include/linux/irq.h
-> @@ -544,10 +544,17 @@ static inline struct msi_desc *irq_data_get_msi(struct irq_data *d)
->        return d->msi_desc;
->  }
->
-> -int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node);
-> +int irq_alloc_descs_between(int irq, unsigned int from, unsigned int cnt,
-> +                           unsigned int max, int node);
->  void irq_free_descs(unsigned int irq, unsigned int cnt);
->  int irq_reserve_irqs(unsigned int from, unsigned int cnt);
->
-> +static inline int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt,
-> +                                 int node)
-> +{
-> +       return irq_alloc_descs_between(irq, from, cnt, 0, node);
-> +}
-> +
->  static inline int irq_alloc_desc(int node)
->  {
->        return irq_alloc_descs(-1, 0, 1, node);
-> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-> index 2c039c9..c1ddabd 100644
-> --- a/kernel/irq/irqdesc.c
-> +++ b/kernel/irq/irqdesc.c
-> @@ -322,7 +322,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
->  * Returns the first irq number or error code
->  */
->  int __ref
-> -irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
-> +irq_alloc_descs_between(int irq, unsigned int from, unsigned int cnt, unsigned int max, int node)
->  {
->        int start, ret;
->
-> @@ -337,6 +337,9 @@ irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
->        if (irq >=0 && start != irq)
->                goto err;
->
-> +       if (max && start + cnt >= max)
+Commit-ID:  bf26c018490c2fce7fe9b629083b96ce0e6ad019
+Gitweb:     http://git.kernel.org/tip/bf26c018490c2fce7fe9b629083b96ce0e6ad019
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Thu, 7 Apr 2011 16:53:20 +0200
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Mon, 25 Apr 2011 17:28:24 +0200
 
-Actually, this should be 'if (max && start + cnt > max)'
+ptrace: Prepare to fix racy accesses on task breakpoints
 
-g.
+When a task is traced and is in a stopped state, the tracer
+may execute a ptrace request to examine the tracee state and
+get its task struct. Right after, the tracee can be killed
+and thus its breakpoints released.
+This can happen concurrently when the tracer is in the middle
+of reading or modifying these breakpoints, leading to dereferencing
+a freed pointer.
+
+Hence, to prepare the fix, create a generic breakpoint reference
+holding API. When a reference on the breakpoints of a task is
+held, the breakpoints won't be released until the last reference
+is dropped. After that, no more ptrace request on the task's
+breakpoints can be serviced for the tracer.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: v2.6.33.. <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1302284067-7860-2-git-send-email-fweisbec@gmail.com
+---
+ include/linux/ptrace.h |   13 ++++++++++++-
+ include/linux/sched.h  |    3 +++
+ kernel/exit.c          |    2 +-
+ kernel/ptrace.c        |   17 +++++++++++++++++
+ 4 files changed, 33 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index a1147e5..9178d5c 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -189,6 +189,10 @@ static inline void ptrace_init_task(struct task_struct *child, bool ptrace)
+ 		child->ptrace = current->ptrace;
+ 		__ptrace_link(child, current->parent);
+ 	}
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	atomic_set(&child->ptrace_bp_refcnt, 1);
++#endif
+ }
+ 
+ /**
+@@ -350,6 +354,13 @@ extern int task_current_syscall(struct task_struct *target, long *callno,
+ 				unsigned long args[6], unsigned int maxargs,
+ 				unsigned long *sp, unsigned long *pc);
+ 
+-#endif
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++extern int ptrace_get_breakpoints(struct task_struct *tsk);
++extern void ptrace_put_breakpoints(struct task_struct *tsk);
++#else
++static inline void ptrace_put_breakpoints(struct task_struct *tsk) { }
++#endif /* CONFIG_HAVE_HW_BREAKPOINT */
++
++#endif /* __KERNEL */
+ 
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 18d63ce..781abd1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1537,6 +1537,9 @@ struct task_struct {
+ 		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	atomic_t ptrace_bp_refcnt;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/exit.c b/kernel/exit.c
+index f5d2f63..8dd8741 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1016,7 +1016,7 @@ NORET_TYPE void do_exit(long code)
+ 	/*
+ 	 * FIXME: do that only when needed, using sched_exit tracepoint
+ 	 */
+-	flush_ptrace_hw_breakpoint(tsk);
++	ptrace_put_breakpoints(tsk);
+ 
+ 	exit_notify(tsk, group_dead);
+ #ifdef CONFIG_NUMA
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 0fc1eed..dc7ab65 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -22,6 +22,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/uaccess.h>
+ #include <linux/regset.h>
++#include <linux/hw_breakpoint.h>
+ 
+ 
+ /*
+@@ -879,3 +880,19 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 	return ret;
+ }
+ #endif	/* CONFIG_COMPAT */
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++int ptrace_get_breakpoints(struct task_struct *tsk)
++{
++	if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
++		return 0;
++
++	return -1;
++}
++
++void ptrace_put_breakpoints(struct task_struct *tsk)
++{
++	if (atomic_dec_and_test(&tsk->ptrace_bp_refcnt))
++		flush_ptrace_hw_breakpoint(tsk);
++}
++#endif /* CONFIG_HAVE_HW_BREAKPOINT */
