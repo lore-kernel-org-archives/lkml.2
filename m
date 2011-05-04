@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab1EDXtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 19:49:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47060 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab1EDXty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 19:49:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,317,1301900400"; 
-   d="scan'208";a="688333859"
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Kleikamp <dkleikamp@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+	id S1756159Ab1EDXv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 19:51:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:32836 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab1EDXv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 19:51:56 -0400
+Date: Thu, 5 May 2011 01:51:48 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Dave Kleikamp <dkleikamp@gmail.com>, Chris Mason <chris.mason@oracle.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
         lenb@kernel.org, paulmck@us.ibm.com
 Subject: Re: idle issues running sembench on 128 cpus
-References: <4DC1C95B.4040706@gmail.com> <m2pqnyyva8.fsf@firstfloor.org>
-	<alpine.LFD.2.02.1105050023070.3005@ionos>
-	<20110504230349.GC2925@one.firstfloor.org>
-	<alpine.LFD.2.02.1105050110440.3005@ionos>
-	<20110504234241.GD2925@one.firstfloor.org>
-	<alpine.LFD.2.02.1105050144030.3005@ionos>
-Date: Wed, 04 May 2011 16:49:42 -0700
-In-Reply-To: <alpine.LFD.2.02.1105050144030.3005@ionos> (Thomas Gleixner's
-	message of "Thu, 5 May 2011 01:47:44 +0200 (CEST)")
-Message-ID: <m2liymyqjt.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+In-Reply-To: <m2liymyqjt.fsf@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1105050150360.3005@ionos>
+References: <4DC1C95B.4040706@gmail.com> <m2pqnyyva8.fsf@firstfloor.org> <alpine.LFD.2.02.1105050023070.3005@ionos> <20110504230349.GC2925@one.firstfloor.org> <alpine.LFD.2.02.1105050110440.3005@ionos> <20110504234241.GD2925@one.firstfloor.org>
+ <alpine.LFD.2.02.1105050144030.3005@ionos> <m2liymyqjt.fsf@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> writes:
+On Wed, 4 May 2011, Andi Kleen wrote:
 
-> On Thu, 5 May 2011, Andi Kleen wrote:
->> On Thu, May 05, 2011 at 01:29:49AM +0200, Thomas Gleixner wrote:
->> > That makes sense, but merging the timeouts race free will be a real
->> > PITA.
->> 
->> For this case one could actually use a spinlock between the siblings.
->> That shouldn't be a problem as long as it's not a global spinlock.
->
-> Care to give it a try ?
+> Thomas Gleixner <tglx@linutronix.de> writes:
+> 
+> > On Thu, 5 May 2011, Andi Kleen wrote:
+> >> On Thu, May 05, 2011 at 01:29:49AM +0200, Thomas Gleixner wrote:
+> >> > That makes sense, but merging the timeouts race free will be a real
+> >> > PITA.
+> >> 
+> >> For this case one could actually use a spinlock between the siblings.
+> >> That shouldn't be a problem as long as it's not a global spinlock.
+> >
+> > Care to give it a try ?
+> 
+> Ok, will try tomorrow.
+> 
+> >> Here's a new patch without the raw. Boots on my Westmere.
+> >
+> >> +	cpu = raw_smp_processor_id();
+> >
+> > Hmm. quilt refresh perhaps ? I know that feeling :)
+> 
+> The scp to copy the patch was too slow. Noticed it later and sent a new
+> one.
 
-Ok, will try tomorrow.
+NP. Happens to hit everybody from time to time :)
 
->> Here's a new patch without the raw. Boots on my Westmere.
->
->> +	cpu = raw_smp_processor_id();
->
-> Hmm. quilt refresh perhaps ? I know that feeling :)
+Thanks,
 
-The scp to copy the patch was too slow. Noticed it later and sent a new
-one.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+	tglx
