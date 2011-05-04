@@ -1,149 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1EDJTw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 05:19:52 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19472 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab1EDJTr convert rfc822-to-8bit (ORCPT
+	id S1752798Ab1EDJXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 05:23:19 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50033 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750888Ab1EDJXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 05:19:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 04 May 2011 02:19:46 -0700
-From: Wei Ni <wni@nvidia.com>
-To: "'Marc Dietrich'" <Marc.Dietrich@ap.physik.uni-giessen.de>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "ccross@android.com" <ccross@android.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Olof Johansson (olof@lixom.net)" <olof@lixom.net>
-Date: Wed, 4 May 2011 17:19:41 +0800
-Subject: RE: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
-Thread-Topic: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
-Thread-Index: AcwKNUVPWXpLMa10TYOOe9YoUKftOAABrw5A
-Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4EA@HKMAIL01.nvidia.com>
-References: <1303301312-15302-1-git-send-email-wni@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF0497F1AEEF@HQMAIL01.nvidia.com>
- <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4E6@HKMAIL01.nvidia.com>
- <201105041028.09316.marc.dietrich@ap.physik.uni-giessen.de>
-In-Reply-To: <201105041028.09316.marc.dietrich@ap.physik.uni-giessen.de>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 4 May 2011 05:23:17 -0400
+X-Sasl-enc: drtW7AZYrLKdS+zYWdPBLCvDVn4fM9MLxTPnKKPEW7Z+ 1304500997
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+To: Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC][PATCH 0/7] File descriptor labeling
+Date: Wed, 4 May 2011 11:19:57 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.2; x86_64; ; )
+Cc: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com,
+        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        eparis@redhat.com, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        viro@zeniv.linux.org.uk, john.johansen@canonical.com,
+        apparmor@lists.ubuntu.com, bfields@fieldses.org, neilb@suse.de,
+        linux-nfs@vger.kernel.org
+References: <201104291139.37489.roberto.sassu@polito.it> <201105021053.54031.roberto.sassu@polito.it> <4DC088A8.4000300@schaufler-ca.com>
+In-Reply-To: <4DC088A8.4000300@schaufler-ca.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105041119.57493.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Marc
-I think no other implementation.
-
-Thanks
-Wei.
-
------Original Message-----
-From: Marc Dietrich [mailto:Marc.Dietrich@ap.physik.uni-giessen.de] 
-Sent: Wednesday, May 04, 2011 4:28 PM
-To: Wei Ni
-Cc: Stephen Warren; khali@linux-fr.org; ben-linux@fluff.org; lucas.demarchi@profusion.mobi; ccross@android.com; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; Olof Johansson (olof@lixom.net)
-Subject: Re: [PATCH 0/2] i2c: tegra: add some new features for tegra i2c
-
-
-Wei, Stephen,
-
-> Hi, Stephen
-> I think if doesn't need to apply the slave address codes, we can use your
-> patch.
-
-we use the slave address as part of our nvec mfd driver in the ac100 project, so 
-it would be nice to have this merged. Is there any other implemenation for a 
-driver which actually use "is_slave"? (beside the one from the older android 
-kernels)?
-
-Regards,
-
-Marc
-
-
-> Thanks
-> Wei.
+On Wednesday, May 04, 2011 12:58:48 AM Casey Schaufler wrote:
+> On 5/2/2011 1:53 AM, Roberto Sassu wrote:
+> > On Friday, April 29, 2011 05:46:20 PM Casey Schaufler wrote:
+> >> On 4/29/2011 2:39 AM, Roberto Sassu wrote:
+> >>> Sorry for resending, it was rejected by the mailing lists due to
+> >>> the html formatting.
+> >>>
+> >>>
+> >>> On Thursday, April 28, 2011 07:37:29 PM Casey Schaufler wrote:
+> >>>> On 4/28/2011 5:35 AM, Roberto Sassu wrote:
+> >>>>> On Thursday, April 28, 2011 01:27:19 AM Tyler Hicks wrote:
+> >>>>>> On Wed Apr 27, 2011 at 01:19:55PM -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> >>>>>>> On 4/27/2011 5:34 AM, Roberto Sassu wrote:
+> >>>>>>>> File descriptor labeling issue
+> >>>>>>>>
+> >>>>>>>> Actually SELinux and SMACK assign to file descriptors the same label of the
+> >>>>>>>> opening process and use it in LSM hooks security_file_permission(),
+> >>>>>>>> security_file_fcntl() and others to verify if the 'current' process has the
+> >>>>>>>> rights to perform the requested operation.
+> >>>>>>>>
+> >>>>>>>> Using the credentials of the 'current' process may be not appropriate in
+> >>>>>>>> case a file descriptor is opened by a kernel service (i.e. a filesystem)
+> >>>>>>>> and made shared among user processes. For instance, in a system with
+> >>>>>>>> SELinux and eCryptfs, if the process A opens an encrypted file, eCryptfs
+> >>>>>>>> obtains a file descriptor to access the correspondent inode in the lower
+> >>>>>>>> filesystem, labeled with the A's label.
+> >>>>>>>>
+> >>>>>>>> If the process B accesses the same encrypted file, it needs the 'use'
+> >>>>>>>> permission on the A's label other than permissions for the lower inode.
+> >>>>>>>> However, if B is the first accessing process, A needs the 'use' permission
+> >>>>>>>> on the B's label.
+> >>>>>>> I am having trouble understanding the argument. I will pose my
+> >>>>>>> question in Smack terms, as I can speak most definitively in them.
+> >>>>>>>
+> >>>>>>> A process running with a Smack label "A" creates a file, and that
+> >>>>>>> file gets labeled "A", as it ought. If eCryptfs is behaving correctly
+> >>>>>>> this ought not change. If eCryptfs in encrypting the label it needs
+> >>>>>>> to do so in such a way as to be able to decrypt it prior to
+> >>>>>>> presentation to the vfs layer, where it will be used in an access
+> >>>>>>> check. When the process running with a Smack label "B" comes along
+> >>>>>>> the vfs code will check the fetched and possibly decrypted "A"
+> >>>>>>> against "B" and, unless there is an explicit Smack rule in place
+> >>>>>>> granting "B" access to "A", fail.
+> >>>>>>>
+> >>>>>>> What is the problem? What is eCryptfs doing that prevents this
+> >>>>>>> from working?
+> >>>>>> Hi Casey - I think what Roberto is getting at is the way eCryptfs uses
+> >>>>>> only one lower file per eCryptfs inode. Imagine that there are 5
+> >>>>>> files open for ~/secret/foo at the eCryptfs layer, only 1 file is going
+> >>>>>> to be open in the lower filesystem and all eCryptfs file operations will
+> >>>>>> be multiplexed through it.
+> >>>>>>
+> >>>>>> To make things more complicated, if the eCryptfs file is opened for
+> >>>>>> writing, the lower file must be opened for reading and writing. This is
+> >>>>>> because a write operation requires eCryptfs to vfs_read() from the lower
+> >>>>>> filesystem, decrypt that data and then vfs_write() the new data.
+> >>>>>>
+> >>>>>> If the lower file can't be opened O_RDWR by the calling process, the
+> >>>>>> request is handed off to a kernel thread to open the lower file on
+> >>>>>> behalf of the calling process. It is definitely ugly.
+> >>>>>>
+> >>>>>> Roberto, I hope I correctly described the situation that you're trying
+> >>>>>> to address. Can you tell me why we can't have a 1:1 mapping of eCryptfs
+> >>>>>> files to lower files?
+> >>>>>>
+> >>>>>> Instead of having just one lower file attached to the eCryptfs inode, we
+> >>>>>> could have a list of opened files. There would be one for each eCryptfs
+> >>>>>> file that was opened. ecryptfs_writepage() would have to pick, in a
+> >>>>>> somewhat random fashion, one of the lower files to use. Of course, we
+> >>>>>> would still need to solve the problem of opening the lower file O_RDWR
+> >>>>>> when the calling process is only allowed write access (I may have just
+> >>>>>> answered my own question of why the 1:1 mapping technique won't solve
+> >>>>>> this problem).
+> >>>>>>
+> >>>>> Hi Tyler
+> >>>>>
+> >>>>> i think the 1:1 mapping isn't necessary at least from the security perspective.
+> >>>>> Since eCryptfs is a stacked filesystem access control is performed on
+> >>>>> both the upper and the lower layer.
+> >>>>> ECryptfs relies on the lower filesystem for the management of extended
+> >>>>> attributes, so this means that the security label of both the upper and
+> >>>>> the lower inodes is the same (however this is not the current behavior
+> >>>>> in SELinux, which assigns the label 'ecryptfs_t' to the upper inode).
+> >>>> Where does this assignment occur?
+> >>>>
+> >>> Hi Casey
+> >>>
+> >>> The assignment happens at the inode's initialization time and depends on
+> >>> the behavior configured for a specific filesystem.
+> >>> The SELinux reference policy actually configures static labeling for inodes
+> >>> in the eCryptfs filesystem while for example allows ext4 inodes to be
+> >>> initialized using extended attributes.
+> >> So how about changing eCryptfs (Goodness, but I hate camelCase) to
+> >> properly support extended attributes? That would seem a better
+> >> approach than mucking up the entire LSM. You still have to deal
+> >> with the SELinux policy, but I don't see you getting away without
+> >> doing something with that in any case.
+> >>
+> > Hi Casey
+> >
+> > i think having separate extended attributes in eCryptfs does not
+> > address the issue i reported in the cover letter.
+> > The reason is, in my opinion, the incorrect labeling of file descriptors
+> > which causes in SELinux more permissions than those really needed
+> > must be added in the policy. This does not depends on the inode's
+> > security context but on the credentials provided to dentry_open().
 > 
-> -----Original Message-----
-> From: Stephen Warren
-> Sent: Friday, April 29, 2011 11:20 PM
-> To: Wei Ni
-> Cc: khali@linux-fr.org; ben-linux@fluff.org; lucas.demarchi@profusion.mobi;
-> ccross@android.com; linux-i2c@vger.kernel.org;
-> linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; Olof Johansson
-> (olof@lixom.net) Subject: RE: [PATCH 0/2] i2c: tegra: add some new
-> features for tegra i2c
+> The problem is that you seem to think that eCryptfs needs
+> access to the file. If eCryptfs is kernel code being invoked
+> through the VFS you should be providing the user's credentials.
 > 
-> Wei Ni wrote at Friday, April 29, 2011 12:08 AM:
-> > Stephen Warren wrote at Thursday, April 28, 2011 12:29 AM:
-> > > Wei Ni wrote at Wednesday, April 27, 2011 4:26 AM:
-> > > > Hi, all
-> > > > Could anyone review these changes?
-> > > 
-> > > Wei,
-> > > 
-> > > It looks like some of the patches I recently posted address the same
-> > > issues as the patches you had already posted. Sorry for the potential
-> > > conflicts.
-> > 
-> > Hi, Stephen
-> > I think your patches address the different issues with my patches.
-> > My patches are used for retry transfer and new slave controller.
+> >
+> >>>>> In my view, for this reason the access control checks can be performed
+> >>>>> only at the upper layer, letting eCryptfs full privileges to access inodes
+> >>>>> in the lower filesystem.
+> >>>> On this point I most strongly disagree.
+> >>>>
+> >>>> The behavior of a filesystem and the data that it uses to determine
+> >>>> that behavior is wrought with complex interactions which may include
+> >>>> but are not limited to caching, read-aheads, garbage collection,
+> >>>> and various side effects of access control. If eCryptfs needs to go
+> >>>> mucking about with the data used by the underlying filesystem it is
+> >>>> not stacking properly. A stacked filesystem has no business whatever
+> >>>> changing the data of the underlying filesystem.
+> >>>>
+> >>> Ok, probably i have to go more in deep to explain how access control is
+> >>> performed on eCryptfs. I'm talking for the SELinux's case, so SELinux experts
+> >>> can correct me if i'm wrong.
+> >>>
+> >>> First, i want to use extended attributes to initialize an eCryptfs inode, so
+> >>> both the upper and the lower inodes have the same security context
+> >>> because eCryptfs calls the *xattr() methods of the underlying filesystem.
+> >> OK, you could create your own xattr functions that do whatever credential
+> >> mucking they need to and then call the underlying file system's version.
+> >> It is possible that the work the NFS people have been doing for xattr
+> >> support (I haven't seen much on this lately, is it still active? Anyone?)
+> >> would prove instructive.
+> >>
+> >>> Then, the process A accesses the eCryptfs inode 'I'. On the upper layer access
+> >>> control is performed using the credentials of the 'current' process and the
+> >>> security context of I.
+> >>>
+> >>> If the process is allowed to access the upper inode, eCryptfs opens the lower
+> >>> inode, presenting its own credentials with the type 'kernel_t'.
+> >> So eCryptfs provides its own process context. When you say "open" do you
+> >> mean open(2) or something else? A little precision goes a long way in these
+> >> discussions.
+> >>
+> > ECryptfs provides its own credentials when calling the function dentry_open()
+> > to obtain a file descriptor to be shared among user processes.
 > 
-> Wei, aren't the following two patches basically the same thing,
-> except that yours also sets the slave address register, and is a bit
-> more wordy:
+> This is your problem. The problem is that you are not
+> using the credential of the user process to access the
+> file, you are using your own. Sharing a "file descriptor"
+> may seem like an optimization, but as you see it has
+> does not work.
 > 
-> http://www.spinics.net/lists/linux-i2c/msg05464.html
-> http://www.spinics.net/lists/linux-i2c/msg05437.html
+> >>> Then, SELinux
+> >>> checks if 'kernel_t' can access the inode with the security context of 'I'.
+> >> Why doesn't eCryptfs provide the credentials of 'I'? In the kernel you
+> >> can do what you will.
+> > No, eCryptfs provides (in the following patch) the 'initial' credentials which
+> > are obtained through the function prepare_kernel_cred() which give root
+> > privileges. These credentials are used in the hook security_dentry_open()
+> > to verify if eCryptfs is allowed to access the inode 'I' in the underlying
+> > filesystem.
 > 
-> Upon further inspection, I don't think any of the other patches I
-> posted conflict with the other patch you posted.
+> But you shouldn't care if eCryptfs can access the file. You should
+> only care if the user process can access the file. You're kernel code,
+> you can do what you will.
 > 
-> > > Can you please take a look at the patches I posted and comment on which
-> > > of those are still relevant given your patches. Even for the cases
-> > > where we both posted patches to address the same issue (e.g. use new
-> > > slave mode), there are differences in the patches. I simply took the
-> > > changes from the chromeos-2.6.37 kernel and cherry-picked them into
-> > > the mainline kernel. Are the changes you posted re-written to address
-> > > issues that weren't solved in the ChromeOS kernel?
-> > > 
-> > > Thanks for any feedback on this.
+> >>> If so,
+> >>> eCryptfs obtains a file descriptor which, in this patch set, is labeled using the
+> >>> same credentials it provided at open time and binds it to the upper inode.
+> >>>
+> >>> Suppose for a moment that A is working on the eCryptfs inode 'I' and the process
+> >>> B requests the same inode. ECryptfs uses the already opened file descriptor and
+> >>> B will be granted to open the requested inode if:
+> >>>
+> >>> - B has the 'open' permission on the upper inode 'I';
+> >>>
+> >>>
+> >>> and can perform read/write operations if:
+> >>>
+> >>> - B has the 'read' and 'write' permissions on the upper inode 'I';
+> >>> - B is allowed to use the file descriptor opened by eCryptfs ('kernel_t').
+> >>> - B has the 'read' and 'write' permissions on the lower inode I;
+> >>>
+> >>>
+> >>> What i miss to say in my previous email is that even if eCryptfs is granted
+> >>> to access inodes in the lower filesystem with full privileges, user processes
+> >>> still need the permission to deal with the lower inode, but the check on the
+> >>> upper inode is sufficient because the security context is the same.
+> >> Right, but what I don't understand is why you can't use existing
+> >> mechanisms to achieve this? NFS manages (mostly).
+> >>
+> > Please, can you explain better this thought?
 > 
-> Wei Ni wrote at Wednesday, April 20, 2011 8:09 PM:
-> > From: Wei Ni <wni@nvidia.com>
-> > 
-> > *** BLURB HERE ***
-> > 
-> > Wei Ni (2):
-> >   i2c: tegra: Retry transfer when unexpected/no_ack status is detected
-> >   i2c: tegra: use new i2c slave controller
-> >  
-> >  drivers/i2c/busses/i2c-tegra.c |   57
-> >  +++++++++++++++++++++++++++++++++++++-- include/linux/i2c-tegra.h     
-> >  |    3 ++
-> >  2 files changed, 57 insertions(+), 3 deletions(-)
--- 
-Dipl. Phys. Marc Dietrich
-Institut für Angewandte Physik
-- AG Kleinkühler -
-Justus-Liebig-Universität Gießen
-Heinrich-Buff-Ring 16
-D-35392 Gießen
-Germany
+> NFS provides a network "view" of an ext4 (or any type for that matter)
+> filesystem. NFS does not support extended attributes, but there has been
+> ongoing work on that. It seems that if NFS does not require the kind
+> of changes you are requesting you shouldn't either.
+> 
 
-Tel. +49 641 99 33462
-Fax. +49 641 99 33409
-email: marc.dietrich@ap.physik.uni-giessen.de
-www: http://www.uni-giessen.de/cms/iap/
+I'm not familiar with NFS, so i cannot answer about this scenario.
+I'm adding in CC also the NFS mantainers and the mailing list so
+that they can express their point of view. The whole thread is
+available at:
+
+https://lkml.org/lkml/2011/4/27/201
+
+Roberto Sassu
+
+
+> >>>> Excuse my ignorance for a moment. Is eCryptfs a user mode filesystem,
+> >>>> or in the kernel properly? The behavior makes it sound like the former
+> >>>> while the interfaces you're requesting make it seem like the latter.
+> >> I'll repeat the question because it matters.
+> > As already reported by Guido Trentalancia, eCryptfs is a kernel mode
+> > filesystem, which accepts data from the VFS layer, encrypts or decrypts
+> > them and store the result in the underlying filesystem, always passing from
+> > the VFS interface.
+> >
+> > Roberto Sassu
+> >
+> >
+> >>
+> > --
+> > This message was distributed to subscribers of the selinux mailing list.
+> > If you no longer wish to subscribe, send mail to majordomo@tycho.nsa.gov with
+> > the words "unsubscribe selinux" without quotes as the message.
+> >
+> >
+> 
+> 
