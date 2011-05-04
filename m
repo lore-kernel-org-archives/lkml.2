@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab1EDTrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:47:39 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:39844 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754476Ab1EDTri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:47:38 -0400
-Date: Wed, 4 May 2011 21:47:30 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
-Message-ID: <20110504194730.GA2820@local>
-References: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
- <20110503203412.GA2119@pengutronix.de>
- <20110503221440.GB2737@local>
- <4DC152F3.2050500@monstr.eu>
+	id S1755425Ab1EDTsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:48:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55705 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab1EDTsN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 15:48:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC152F3.2050500@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1105041217380.24613@xanadu.home>
+References: <1304525161-14448-1-git-send-email-per.forlin@linaro.org>
+	<1304525161-14448-2-git-send-email-per.forlin@linaro.org>
+	<alpine.LFD.2.00.1105041217380.24613@xanadu.home>
+Date: Wed, 4 May 2011 21:48:12 +0200
+Message-ID: <BANLkTik+LWiYYPTqR5pNKsZfSMGGE3xCZg@mail.gmail.com>
+Subject: Re: [PATCH v2] sdio: optimized SDIO IRQ handling for single irq
+From: Per Forlin <per.forlin@linaro.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 03:21:55PM +0200, Michal Simek wrote:
-> Hans J. Koch wrote:
-> >On Tue, May 03, 2011 at 10:34:12PM +0200, Wolfram Sang wrote:
-> >>On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
-> >>>Adding OF binding to genirq.
-> >>>Version string is setup to the "devicetree".
-> >>>
-> >>>Compatible string is not setup for now but you can add your
-> >>>custom compatible string to uio_of_genirq_match structure.
-> >>>
-> >>>For example with "vendor,device" compatible string:
-> >>>static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
-> >>>	{ .compatible = "vendor,device", },
-> >>>	{ /* empty for now */ },
-> >>>};
-> >>>
-> >>>Signed-off-by: Michal Simek <monstr@monstr.eu>
-> >>[...]
-> >>
-> >>>+		/* alloc uioinfo for one device */
-> >>>+		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
-> >>kfree in remove?
-> >
-> >Oh yes. Missed that one. It should probably look like the "bad0" case in probe().
-> 
-> Yes, freeing uioinfo in uio_pdrv_genirq_remove make sense for CONFIG_OF.
-> 
-> Please correct me if I am wrong dev.of_node is not NULL for OF. I
-> think yes that's why I would prefer to use this construct instead of
-> #ifdef CONFIG_OF.
-> 
-> 	if (pdev->dev.of_node)
-> 		kfree(pdev->dev.platform_data);
+On 4 May 2011 19:34, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Wed, 4 May 2011, Per Forlin wrote:
+>
+>> From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+>>
+>> If there is only 1 function registered it is possible to
+>> improve performance by directly calling the irq handler
+>> and avoiding the overhead of reading the CCCR registers.
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
+>> ---
+>>  drivers/mmc/core/sdio_irq.c |   30 ++++++++++++++++++++++++++++++
+>>  include/linux/mmc/card.h    |    1 +
+>>  2 files changed, 31 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+>> index b300161..64c4409 100644
+>> --- a/drivers/mmc/core/sdio_irq.c
+>> +++ b/drivers/mmc/core/sdio_irq.c
+>> @@ -32,6 +32,16 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
+>>       int i, ret, count;
+>>       unsigned char pending;
+>>
+>> +     /*
+>> +      * Optimization, if there is only 1 function registered
+>> +      * call irq handler directly
+>> +      */
+>> +     if (card->sdio_single_irq && card->sdio_single_irq->irq_handler) {
+>> +             struct sdio_func *func = card->sdio_single_irq;
+>> +             func->irq_handler(func);
+>
+> I think there is little point using a func variable here, especially
+> since you already reference the handler pointer in the if() statement.
+> Hence:
+>
+>        if (card->sdio_single_irq && card->sdio_single_irq->irq_handler) {
+>                card->sdio_single_irq->irq_handler();
+>                return 1;
+>        }
+>
+What do you think about:
++       struct sdio_func *func = card->sdio_single_irq;
++
++       /*
++        * Optimization, if there is only 1 function interrupt registered
++        * call irq handler directly
++        */
++       if (func) {
++               func->irq_handler(func);
++               return 1;
++       }
 
-Huh? You didn't allocate platform_data, so you shouldn't free it.
-It's uioinfo you allocated.
+-                       struct sdio_func *func = card->sdio_func[i - 1];
++                       func = card->sdio_func[i - 1];
 
-Thanks,
-Hans
+>> @@ -186,6 +196,24 @@ static int sdio_card_irq_put(struct mmc_card *card)
+>>       return 0;
+>>  }
+>>
+>> +/* If there is only 1 function registered set sdio_single_irq */
+>> +static void sdio_single_irq_set(struct mmc_card *card)
+>> +{
+>
+> The comment is slightly wrong.  This should say "only 1 function
+> interrupt registered..."  Nothing prevents this from working with
+> multiple functions if only one of them has claimed an interrupt.
+>
+> Other than that:
+>
+> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+>
+>
+> Nicolas
+>
