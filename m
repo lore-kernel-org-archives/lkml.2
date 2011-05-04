@@ -1,68 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab1EDT05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:26:57 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:44511 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab1EDT0z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:26:55 -0400
-Date: Wed, 4 May 2011 14:26:39 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ath5k regression associating with APs in 2.6.38
-Message-ID: <20110504192639.GB4551@thinkpad-t410>
-Mail-Followup-To: "John W. Linville" <linville@tuxdriver.com>,
-	Jiri Slaby <jirislaby@gmail.com>,
-	Nick Kossifidis <mickflemm@gmail.com>,
-	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
-	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110504153819.GA4551@thinkpad-t410>
- <20110504172716.GC18541@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504172716.GC18541@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755545Ab1EDTjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:39:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752226Ab1EDTjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 15:39:05 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [TEST] simple test to make sure seek_hole/seek_data is working right
+Date: Wed,  4 May 2011 15:27:57 -0400
+Message-Id: <1304537277-14918-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 01:27:17PM -0400, John W. Linville wrote:
-> On Wed, May 04, 2011 at 10:38:19AM -0500, Seth Forshee wrote:
-> > I've been investigating some reports of a regression in associating with
-> > APs with AR2413 in 2.6.38. Association repeatedly fails with some
-> > "direct probe to x timed out" messages (see syslog excerpt below),
-> > although it will generally associate eventually, after many tries.
-> > 
-> > Bisection identifies 8aec7af (ath5k: Support synth-only channel change
-> > for AR2413/AR5413) as offending commit. Prior to this commit there are
-> > no direct probe messages at all in the logs. I've also found that
-> > forcing fast to false at the top of ath5k_hw_reset() fixes the issue.
-> > I'm not sure what the connection is between this commit and the
-> > timeouts. Any suggestions?
-> 
-> Have you tried reverting that commit on top of 2.6.38?  Can you
-> recreate the issue with 2.6.39-rc6 (or later)?
+This is my very rough tester for testing seek_hole/seek_data.  Please look over
+it and make sure we all agree that the semantics are correct.  My btrfs patch
+passes with this and ext3 passes as well.  I still have to added fallocate() to
+it, but for now this seems to cover most of the corner cases.  Thanks,
 
-I started to revert that commit, but it wasn't straight-forward due to
-later changes. Forcing fast to false in ath5k_hw_reset() acts as a
-functional revert of sorts since that should force it back to a full
-reset for all channel changes, and it's much simpler than working out
-the right way to revert the commit. I think the results suggest strongly
-that a revert is likely to fix the problem. I can finish the work to
-revert if you'd still like to see the results.
+Josef
 
-Testing a previous .39-rc kernel still exhibited the failure. I don't
-recall which one it was and apparently forgot to make note of it. I'll
-request testing against rc6.
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-Thanks,
-Seth
+#define SEEK_HOLE	3
+#define SEEK_DATA	4
+
+#define ERROR(str)	\
+	fprintf(stderr, "%s: pos=%lu, errno=%d\n", str, pos, errno)
+
+static int reset_file(int fd)
+{
+	int ret;
+
+	ret = ftruncate(fd, 0);
+	if (ret < 0) {
+		fprintf(stderr, "Truncate failed: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	char buf[4096 * 4];
+	ssize_t bytes;
+	off_t pos;
+	int prealloc_is_hole = 0;
+	int whole_file_is_data = 0;
+	int ret;
+	int i;
+	int fd;
+
+	fd = open("testfile", O_RDWR|O_CREAT|O_TRUNC, 0644);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open testfile: %d\n", errno);
+		return 1;
+	}
+
+	/* Empty file */
+	printf("Testing an empty file\n");
+	pos = lseek(fd, 0, SEEK_DATA);
+	if (pos != -1) {
+		if (errno == EINVAL) {
+			fprintf(stderr, "Kernel does not support seek "
+				"hole/data\n");
+			close(fd);
+			return 1;
+		}
+		if (errno != ENXIO)
+			ERROR("Seek data did not return a proper error");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, 0, SEEK_HOLE);
+	if (pos != -1 && errno != ENXIO) {
+		ERROR("Seek hole did not return a proper error");
+		close(fd);
+		return 1;
+	}
+
+	memset(&buf, 'a', 4096 * 4);
+	/*
+	 * All data file
+	 */
+	printf("Testing a normal data filled file\n");
+	for (i = 0; i < 4; i++) {
+		bytes = write(fd, &buf, 4096);
+		if (bytes < 4096) {
+			fprintf(stderr, "Failed to write to testfile: %d\n",
+				errno);
+			close(fd);
+			return 1;
+		}
+	}
+
+	pos = lseek(fd, 0, SEEK_HOLE);
+	if (pos != (4096 * 4) || pos == -1) {
+		ERROR("Seek hole failed to dump us out at the end of the file");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, 0, SEEK_DATA);
+	if (pos != 0) {
+		ERROR("Seek data failed to dump us out at the beginning of the"
+		      " file");
+		close(fd);
+		return 1;
+	}
+
+	/*
+	 * File with a hole at the front and data at the end
+	 */
+	printf("Testing file with hole at the start and data in the rest\n");
+	if (reset_file(fd)) {
+		close(fd);
+		return 1;
+	}
+
+	bytes = pwrite(fd, &buf, 4096 * 3, 4096);
+	if (bytes < (4096 * 3)) {
+		fprintf(stderr, "Failed to write to testfile: %d\n");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, 0, SEEK_HOLE);
+	if (pos != 0 && pos != (4096 * 4)) {
+		ERROR("Seek hole failed to return 0");
+		close(fd);
+		return 1;
+	} else if (pos == (4096 * 4)) {
+		whole_file_is_data = 1;
+		printf("Current file system views treats the entire file as "
+		       "data\n");
+	}
+
+	pos = lseek(fd, 0, SEEK_DATA);
+	if (pos != 4096 || (pos != 0 && whole_file_is_data)) {
+		if (whole_file_is_data)
+			ERROR("Seek data failed to return 0");
+		else
+			ERROR("Seek data failed to return 4096");
+		close(fd);
+		return 1;
+	}
+
+	if (whole_file_is_data) {
+		pos = lseek(fd, 1, SEEK_DATA);
+		if (pos != -1 && errno != ENXIO) {
+			ERROR("Seek data failed to retun an error");
+			close(fd);
+			return 1;
+		}
+	}
+	/*
+	 * File with a hole at the end and data at the beginning
+	 */
+	printf("Testing file with hole at the end and data at the beginning\n");
+	if (reset_file(fd)) {
+		close(fd);
+		return 1;
+	}
+
+	ret = ftruncate(fd, 4096 * 4);
+	if (ret < 0) {
+		fprintf(stderr, "Truncate failed: %d\n", errno);
+		close(fd);
+		return 1;
+	}
+
+	pwrite(fd, &buf, 4096 * 3, 0);
+	if (bytes < (4096 * 3)) {
+		fprintf(stderr, "Failed to write to testfile: %d\n", errno);
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, 0, SEEK_HOLE);
+	if (pos != (4096 * 3) || (pos != (4096 * 4) && whole_file_is_data)) {
+		ERROR("Seeking hole didn't work right");
+		close(fd);
+		return 1;
+	}
+
+	if (whole_file_is_data) {
+		pos = lseek(fd, 4096, SEEK_DATA);
+		if (pos != 4096) {
+			ERROR("Seeking data didn't return the same offset");
+			close(fd);
+			return 1;
+		}
+		printf("No more tests to run since we treat the whole file as "
+		       "data\n");
+		goto out;
+	}
+
+	pos = lseek(fd, pos, SEEK_HOLE);
+	if (pos != (4096 * 3)) {
+		ERROR("Seek hole didn't return same position");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, pos+1, SEEK_HOLE);
+	if (pos != (4096 * 4)) {
+		ERROR("Seek hole didn't return the end of the file");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, pos, SEEK_DATA);
+	if (pos != -1 && errno != ENXIO) {
+		ERROR("Seek data didn't return ENXIO");
+		close(fd);
+		return 1;
+	}
+
+	/*
+	 * Hole - Data - Hole - Data file
+	 */
+	printf("Testing file [Hole][Data][Hole][Data]\n");
+	if (reset_file(fd)) {
+		close(fd);
+		return 1;
+	}
+
+	ret = ftruncate(fd, 4096 * 4);
+	if (ret < 0) {
+		fprintf(stderr, "ftruncate failed: %d\n", errno);
+		close(fd);
+		return 1;
+	}
+
+	bytes = pwrite(fd, &buf, 4096, 4096);
+	if (bytes < 4096) {
+		fprintf(stderr, "Failed to write: %d\n", errno);
+		close(fd);
+		return 1;
+	}
+
+	bytes = pwrite(fd, &buf, 4096, 4096 * 3);
+	if (bytes < 4096) {
+		fprintf(stderr, "Failed to write: %d\n", errno);
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, 0, SEEK_DATA);
+	if (pos != 4096) {
+		ERROR("Seek data did not return 4096");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, pos, SEEK_HOLE);
+	if (pos != (4096 * 2)) {
+		ERROR("Seek hole did not return 4096*2");
+		close(fd);
+		return 1;
+	}
+
+	pos = lseek(fd, pos, SEEK_DATA);
+	if (pos != (4096 * 3)) {
+		ERROR("Seek data did not return 4096*3");
+		close(fd);
+		return 1;
+	}
+out:
+	close(fd);
+	return 0;
+}
