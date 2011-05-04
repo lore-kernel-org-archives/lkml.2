@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab1EDPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:21:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51791 "EHLO mx3.mail.elte.hu"
+	id S1755380Ab1EDSRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:17:17 -0400
+Received: from barcelona.uem.br ([200.201.11.21]:38974 "EHLO Barcelona.uem.br"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab1EDPVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:21:15 -0400
-Date: Wed, 4 May 2011 17:20:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110504152054.GA23210@elte.hu>
-References: <alpine.LFD.2.02.1105041124080.3005@ionos>
- <20110504101932.GA3392@elte.hu>
- <alpine.LFD.2.02.1105041233280.3005@ionos>
- <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
- <20110504112746.GE8007@htj.dyndns.org>
- <alpine.LFD.2.02.1105041417330.3005@ionos>
- <20110504132022.GA17294@htj.dyndns.org>
- <alpine.LFD.2.02.1105041539050.3005@ionos>
- <20110504142532.GC17294@htj.dyndns.org>
- <alpine.DEB.2.00.1105040934570.5495@router.home>
+	id S1755212Ab1EDSRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 14:17:15 -0400
+X-Greylist: delayed 3954 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 May 2011 14:17:15 EDT
+Message-ID: <61583.178.229.211.150.1304522706.squirrel@www.dfi.uem.br>
+Date: Wed, 4 May 2011 12:25:06 -0300 (BRT)
+Subject: FIRMA PARTHAVER SKULLE BRUGE
+From: "L. CHINH" <chi.cong@yahoo.com.vn>
+Reply-To: chcongle83@yahoo.com.vn
+User-Agent: SquirrelMail/1.4.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105040934570.5495@router.home>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-UEM-MailScanner-Information: Please contact the ISP for more information
+X-UEM-MailScanner-ID: 0F1DA13C43.A580F
+X-UEM-MailScanner: Found to be clean
+X-UEM-MailScanner-SpamScore: 4
+X-UEM-MailScanner-From: chi.cong@yahoo.com.vn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Christoph Lameter <cl@linux.com> wrote:
 
-> On Wed, 4 May 2011, Tejun Heo wrote:
-> 
-> > The cmpxchg_double optimization made the fast path go quite faster
-> > when CPU supports it but it may as well slow things down considerably
-> > if CPU doesn't, due to extra irq on/off's.  Anyways, here's hoping
-> > that the slow down is acceptable compared to the base code without
-> > cmpxchg_double and the ugliness can be removed.
-> 
-> I think we are all in agreement. First path to fix the percpu macros:
-> 
-> 
-> Subject: percpu: Fix irqsafe_cpu_cmpxchg_double
-> 
-> The function in the macro was not updated when the function was given a bool return value.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Note, the final commit needs to have a proper Reported-by and explanation about 
-how this was triggered, to fairly credit all the hard work done by Werner ...
+FIRMA PARTHAVER SKULLE BRUGE
 
-Thanks,
+Allerkærest firma parthaver,
 
-	Ingo
+Behage benåde mig stavemåde , dansk er ikke mig først sprog
+
+Jeg er Mr. Chinh, ex-arbejder henne ved SACOMBANK (VIETNAM), en firma
+parthaver og selv nyde en vældig pengebeløb anvendelig nemlig investering
+formål og jeres erfaring og firma venskab er krævede hen til skabe sig en
+lykke.
+
+Den er nok så betydelig nemlig jer hen til henvende sig til mig igennem
+Email : chcongle83@yahoo.com.vn
+
+Jeres fuld Benævne :
+Telephone/Fax:
+Firma erfaring ( livsstilling ):
+Alder:
+E-mail address:
+
+Hermed information JEG kunne levere jer hos flere detaljer og akter med
+henblik på selv , indeværende handel og hvor vi vil foretage den
+fremgangsmåde straks. Undersøge i jeres landskab hos jer repræsenterer os
+vil være værdsat selv om jeres firma ideer er artig , anfør venligst jeres
+firma ideer i jeres replik , selv om jer lad være nyde hvilken som helst ,
+jer vil lade sig råde oven på hvor hen til gå i stykker omkring sig under
+den fremgangsmåde. Den er betydelig at jer opbevare den indhold i den
+indlevere hen til dig selv skyldig den vældig beløb involveret og den den
+omstændighed, at indeværende handel gør ikke savn unødvendig opmærksomhed.
+
+Mange tak.
+Regards,
+Mr. Chinh
+
+-- 
+Esta mensagem foi verificada pelo sistema de antivirus e
+ acredita-se estar livre de perigo.
+
