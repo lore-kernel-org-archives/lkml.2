@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab1EDJBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 05:01:07 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:56195 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab1EDJBF (ORCPT
+	id S1752756Ab1EDJFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 05:05:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37567 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab1EDJFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 05:01:05 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DC1165C.4000103@cam.ac.uk>
-Date: Wed, 04 May 2011 10:03:24 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Wed, 4 May 2011 05:05:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=o/JDGNT52TsIOmTqPi8p5n4LDMIBTbfwShDJsbtPGgSzfsPnkuW8/qGpsjPwGKe76u
+         gIyeFyGGHASTKcHgxDkDcbOH6RzgDeGadjLTNYQawAz2DjcaEYJr4aZgCNkqpSlMZf9M
+         wlpgPh051K/JXPw/2Ot5r+C5a5vSdipMKRjBw=
+Date: Wed, 4 May 2011 11:05:09 +0200
+From: Tejun Heo <htejun@gmail.com>
+To: shaohua.li@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        jaxboe@fusionio.com, jgarzik@pobox.com, hch@infradead.org,
+        djwong@us.ibm.com
+Subject: Re: [patch v2 1/3] block: add a non-queueable flush flag
+Message-ID: <20110504090509.GC8007@htj.dyndns.org>
+References: <20110504081725.946950281@sli10-conroe.sh.intel.com>
+ <20110504082115.093981766@sli10-conroe.sh.intel.com>
 MIME-Version: 1.0
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: Guenter Roeck <guenter.roeck@ericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-iio <linux-iio@vger.kernel.org>
-Subject: Re: [lm-sensors] [RFC 5/5] hwmon: add support for Technologic Systems
- TS-5500 A-D converter
-References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1304115712-5299-6-git-send-email-vivien.didelot@savoirfairelinux.com> <20110430033938.GA14397@ericsson.com> <1304434162-sup-3877@sfl>
-In-Reply-To: <1304434162-sup-3877@sfl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504082115.093981766@sli10-conroe.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/11 16:55, Vivien Didelot wrote:
-> Hi Guenter,
-> 
-> Excerpts from Guenter Roeck's message of 2011-04-29 23:39:38 -0400:
->> Hi Vivien,
->>
->> The headline and file name are a bit misleading, since the driver is really
->> for MAX197 on a TS-5500 board.
->>
->> You should split the driver into two parts, a generic driver
->> for the MAX197 and a platform driver (residing somewhere in arch/
->> or possibly drivers/platform/) to instantiate it.
->>
->> There should be a platform data include file, probably in
->> include/linux/platform_data/.
->>
->> .ioaddr in platform data should not be necessary. The driver's probe
->> function should get the values using platform_get_resource().
->>
->> Having said that, from reading the code it looks like the chip is not really
->> used for hardware monitoring, but for generic ADC functionality. A quick look
->> into the TS-5500 user manual confirms this. So this should not be a hwmon
->> driver in the first place, but a generic ADC driver. Given the ADC conversion rate
->> of the MAX197, the hwmon ABI is not optimal anyway. You should move this driver
->> into the iio subsystem, probably to drivers/staging/iio/adc. Copying the iio
->> mailing list for input.
->>
->> Thanks,
->> Guenter
-> 
-> I've took a closer look to the manual and that's right, in fact the
-> driver doesn't talk to the MAX197 directly. The board uses a CPLD to
-> abstract the interface to the MAX197. So all the MAX197 logic is hidden
-> by the CPLD.  Therefore, the driver files should probably not have
-> function and structure names with a "max197_" prefix. I'll make the code
-> a bit clearer. What do you think?
-> 
-> Ok for iio subsystem, several ADC drivers are in drivers/hwmon/ but
-> drivers/staging/iio/adc seems to be the good place now.
-Just as a heads up, beware there are a few abi changes (and a lot of core
-ones) working their way through review /already in staging-next.
-I only mention it because merges against that tree will go through staging-next
-and as it's name suggests is sometimes a fast moving target!
+Hello,
 
-Jonathan
-> Regards,
-> Vivien.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-serial" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Wed, May 04, 2011 at 04:17:26PM +0800, shaohua.li@intel.com wrote:
+> flush request isn't queueable in some drives. Add a flag to let driver
+> notify block layer about this. We can optimize flush performance with the
+> knowledge.
 > 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> ---
+>  include/linux/blkdev.h |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> Index: linux/include/linux/blkdev.h
+> ===================================================================
+> --- linux.orig/include/linux/blkdev.h	2011-05-04 14:23:42.000000000 +0800
+> +++ linux/include/linux/blkdev.h	2011-05-04 14:24:40.000000000 +0800
+> @@ -364,6 +364,7 @@ struct request_queue
+>  	 * for flush operations
+>  	 */
+>  	unsigned int		flush_flags;
+> +	unsigned int		flush_not_queueable:1;
+>  	unsigned int		flush_pending_idx:1;
+>  	unsigned int		flush_running_idx:1;
+>  	unsigned long		flush_pending_since;
+> @@ -549,6 +550,16 @@ static inline void blk_clear_queue_full(
+>  		queue_flag_clear(QUEUE_FLAG_ASYNCFULL, q);
+>  }
+>  
+> +static inline void blk_set_queue_flush_queueable(struct request_queue *q,
+> +		bool queueable)
+> +{
+> +	q->flush_not_queueable = !queueable;
+> +}
+> +
+> +static inline bool blk_queue_flush_queueable(struct request_queue *q)
+> +{
+> +	return !q->flush_not_queueable;
+> +}
 
+In the block layer, these setters live in block/blk-settings.c and
+usually don't have _set in their names.
+
+Also, negation in the interface is slightly bothering but I can't
+think of better name meaning !queueable either, so unless someone can
+come up with better name, it should do, I think.
+
+Thank you.
+
+-- 
+tejun
