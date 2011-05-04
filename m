@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab1EDPmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:42:09 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65437 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab1EDPmF (ORCPT
+	id S1755033Ab1EDPl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 11:41:58 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:50624 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab1EDPl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:42:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:content-type:to:cc:subject:references:date:mime-version
-         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
-        b=IYbWL6duAinaIN3M7yyCIb9cLTldLbuJ7i2M3LlBBNNlxGwfz+ihaCMcQQ1mXAlgUn
-         p8VUeIyjvw7e8tAPgRQhuF4buqzP2898LiWSb2shhbG/SKhRTQ9ysAJajKBrVvSLREXF
-         mfzJCB/WAzvmiz9zmM7gvzR+Qza2GTeyR4SXk=
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Maxin John" <maxin.john@gmail.com>
-Cc: gregkh@suse.de, stern@rowland.harvard.edu, m-sonasath@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        roger.quadros@nokia.com
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which
- is always true
-References: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
- <op.vuynsdh13l0zgt@mnazarewicz-glaptop>
- <BANLkTinxvtMUcFz9T7L1iq9pFUx8ocQnRQ@mail.gmail.com>
-Date: Wed, 04 May 2011 17:41:49 +0200
+	Wed, 4 May 2011 11:41:57 -0400
+Date: Wed, 4 May 2011 18:41:50 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tiger
+To: Christoph Lameter <cl@linux.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+In-Reply-To: <alpine.DEB.2.00.1105040958570.5495@router.home>
+Message-ID: <alpine.DEB.2.00.1105041840410.4479@tiger>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org> <alpine.LFD.2.02.1105041640020.3005@ionos>
+ <alpine.DEB.2.00.1105040958570.5495@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vuyq7zet3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <BANLkTinxvtMUcFz9T7L1iq9pFUx8ocQnRQ@mail.gmail.com>
-User-Agent: Opera Mail/11.10 (Linux)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 May 2011 17:04:03 +0200, Maxin John <maxin.john@gmail.com>  
-wrote:
-
-> Hi Michal,
+On Wed, 4 May 2011, Christoph Lameter wrote:
+> Subject: slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery
 >
->> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> Remove the #ifdefs. This means that the irqsafe_cpu_cmpxchg_double() is used
+> everywhere.
 >
-> Thank you very much for reviewing the patch.
+> There may be performance implications since:
 >
->> file_storage.c has the same check, could you remove it as well.
+> A. We now have to manage a transaction ID for all arches
 >
-> Please find the patch for "file_storage.c" below. Should I merge these
-> two patches and re-submit as a single one?
-
-I would merge them together.
-
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-> ---
-> diff --git a/drivers/usb/gadget/file_storage.c
-> b/drivers/usb/gadget/file_storage.c
-> index a6eacb5..a9c5177 100644
-> --- a/drivers/usb/gadget/file_storage.c
-> +++ b/drivers/usb/gadget/file_storage.c
-> @@ -2314,7 +2314,7 @@ static int check_command(struct fsg_dev *fsg,
-> int cmnd_size,
->                 fsg->lun = lun;         // Use LUN from the command
+> B. The interrupt holdoff for arches not supporting CONFIG_CMPXCHG_LOCAL is reduced
+> to a very short irqoff section.
 >
->         /* Check the LUN */
-> -       if (fsg->lun >= 0 && fsg->lun < fsg->nluns) {
-> +       if (fsg->lun < fsg->nluns) {
->                 fsg->curlun = curlun = &fsg->luns[fsg->lun];
->                 if (fsg->cmnd[0] != REQUEST_SENSE) {
->                         curlun->sense_data = SS_NO_SENSE;
+> There are no multiple irqoff/irqon sequences as a result of this change. Even in the fallback
+> case we only have to do one disable and enable like before.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
+This doesn't apply cleanly on top of slab/next which has some of your 
+cleanup patches applied. There's some CONFIG_PREEMPT conflicts so I'd 
+rather you rediffed it yourself.
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+ 			Pekka
