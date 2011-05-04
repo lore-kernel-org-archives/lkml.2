@@ -1,310 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab1EDPho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 11:37:44 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48828 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab1EDPhn (ORCPT
+	id S1755023Ab1EDPi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 11:38:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54255 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754986Ab1EDPi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 11:37:43 -0400
-Subject: Re: [PATCH V4 5/8]macvtap: macvtap TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110504145819.GA15648@redhat.com>
-References: <1304496893.20660.88.camel@localhost.localdomain>
-	 <20110504145819.GA15648@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 May 2011 08:37:29 -0700
-Message-ID: <1304523449.7076.30.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 May 2011 11:38:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1105041023070.5495@router.home>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
+ <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos>
+ <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home>
+ <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 4 May 2011 08:37:33 -0700
+Message-ID: <BANLkTi=XDYVyveGR6fh73kiOp=A2eH8b7A@mail.gmail.com>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-04 at 17:58 +0300, Michael S. Tsirkin wrote:
-> On Wed, May 04, 2011 at 01:14:53AM -0700, Shirley Ma wrote:
-> > Only when buffer size is greater than GOODCOPY_LEN (256), macvtap
-> > enables zero-copy.
-> > 
-> > Signed-off-by: Shirley Ma <xma@us.ibm.com>
-> 
-> 
-> Looks good. Some thoughts below.
-> 
-> > ---
-> > 
-> >  drivers/net/macvtap.c |  126
-> ++++++++++++++++++++++++++++++++++++++++++++----
-> >  1 files changed, 115 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> > index 6696e56..e8bc5ff 100644
-> > --- a/drivers/net/macvtap.c
-> > +++ b/drivers/net/macvtap.c
-> > @@ -60,6 +60,7 @@ static struct proto macvtap_proto = {
-> >   */
-> >  static dev_t macvtap_major;
-> >  #define MACVTAP_NUM_DEVS 65536
-> > +#define GOODCOPY_LEN 256
-> 
-> Scope with MACVTAP_ please.
-Ok.
+On Wed, May 4, 2011 at 8:28 AM, Christoph Lameter <cl@linux.com> wrote:
+>
+> There are no memory barriers used. The barrier() here is a compiler hint
+> to not keep data across it.
 
-> For small packets, is it better to copy in vhost
-> and skip all the back and forth with callbacks? If yes, does
-> it make sense to put the constant above in some header
-> shared with vhost-net?
+Go back and read my email, please.
 
-skb is created in macvtap, the small packet copy is in skb, so I don't
-think we can do it in vhost here.
+The lack of memory barriers is exactly what I worry about.
 
-> >  static struct class *macvtap_class;
-> >  static struct cdev macvtap_cdev;
-> >  
-> > @@ -340,6 +341,7 @@ static int macvtap_open(struct inode *inode,
-> struct file *file)
-> >  {
-> >       struct net *net = current->nsproxy->net_ns;
-> >       struct net_device *dev = dev_get_by_index(net, iminor(inode));
-> > +     struct macvlan_dev *vlan = netdev_priv(dev);
-> >       struct macvtap_queue *q;
-> >       int err;
-> >  
-> > @@ -369,6 +371,16 @@ static int macvtap_open(struct inode *inode,
-> struct file *file)
-> >       q->flags = IFF_VNET_HDR | IFF_NO_PI | IFF_TAP;
-> >       q->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
-> >  
-> > +     /*
-> > +      * so far only VM uses macvtap, enable zero copy between guest
-> > +      * kernel and host kernel when lower device supports high
-> memory
-> > +      * DMA
-> > +      */
-> > +     if (vlan) {
-> > +             if (vlan->lowerdev->features & NETIF_F_ZEROCOPY)
-> > +                     sock_set_flag(&q->sk, SOCK_ZEROCOPY);
-> > +     }
-> > +
-> >       err = macvtap_set_queue(dev, file, q);
-> >       if (err)
-> >               sock_put(&q->sk);
-> > @@ -433,6 +445,80 @@ static inline struct sk_buff
-> *macvtap_alloc_skb(struct sock *sk, size_t prepad,
-> >       return skb;
-> >  }
-> >  
-> > +/* set skb frags from iovec, this can move to core network code for
-> reuse */
-> > +static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct
-> iovec *from,
-> > +                               int offset, size_t count)
-> > +{
-> > +     int len = iov_length(from, count) - offset;
-> > +     int copy = skb_headlen(skb);
-> > +     int size, offset1 = 0;
-> > +     int i = 0;
-> > +     skb_frag_t *f;
-> > +
-> > +     /* Skip over from offset */
-> > +     while (offset >= from->iov_len) {
-> > +             offset -= from->iov_len;
-> > +             ++from;
-> > +             --count;
-> > +     }
-> > +
-> > +     /* copy up to skb headlen */
-> > +     while (copy > 0) {
-> > +             size = min_t(unsigned int, copy, from->iov_len -
-> offset);
-> > +             if (copy_from_user(skb->data + offset1, from->iov_base
-> + offset,
-> > +                                size))
-> > +                     return -EFAULT;
-> > +             if (copy > size) {
-> > +                     ++from;
-> > +                     --count;
-> > +             }
-> > +             copy -= size;
-> > +             offset1 += size;
-> > +             offset = 0;
-> > +     }
-> > +
-> > +     if (len == offset1)
-> > +             return 0;
-> > +
-> > +     while (count--) {
-> > +             struct page *page[MAX_SKB_FRAGS];
-> > +             int num_pages;
-> > +             unsigned long base;
-> > +
-> > +             len = from->iov_len - offset1;
-> > +             if (!len) {
-> > +                     offset1 = 0;
-> > +                     ++from;
-> > +                     continue;
-> > +             }
-> > +             base = (unsigned long)from->iov_base + offset1;
-> > +             size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >>
-> PAGE_SHIFT;
-> > +             num_pages = get_user_pages_fast(base, size, 0,
-> &page[i]);
-> > +             if ((num_pages != size) ||
-> > +                 (num_pages > MAX_SKB_FRAGS -
-> skb_shinfo(skb)->nr_frags))
-> > +                     /* put_page is in skb free */
-> > +                     return -EFAULT;
-> > +             skb->data_len += len;
-> > +             skb->len += len;
-> > +             skb->truesize += len;
-> > +             while (len) {
-> > +                     f = &skb_shinfo(skb)->frags[i];
-> > +                     f->page = page[i];
-> > +                     f->page_offset = base & ~PAGE_MASK;
-> > +                     f->size = min_t(int, len, PAGE_SIZE -
-> f->page_offset);
-> > +                     skb_shinfo(skb)->nr_frags++;
-> > +                     /* increase sk_wmem_alloc */
-> > +                     atomic_add(f->size, &skb->sk->sk_wmem_alloc);
-> 
-> One thing that gave me pause that we only accound for part of the page
-> here. I think we should count the whole page, no?
+Look at the initialization path. The "tid" thing is _not_ purely cpu-local.
 
-The whole page is pinned, but it might not be for this sock only. 
-
-I think I should change to atomic_add to outside the loop to save cost.
-
-> > +                     base += f->size;
-> > +                     len -= f->size;
-> > +                     i++;
-> > +             }
-> > +             offset1 = 0;
-> > +             ++from;
-> > +     }
-> > +     return 0;
-> > +}
-> > +
-> >  /*
-> >   * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
-> >   * be shared with the tun/tap driver.
-> > @@ -515,17 +601,19 @@ static int macvtap_skb_to_vnet_hdr(const
-> struct sk_buff *skb,
-> >  
-> >  
-> >  /* Get packet from user space buffer */
-> > -static ssize_t macvtap_get_user(struct macvtap_queue *q,
-> > -                             const struct iovec *iv, size_t count,
-> > -                             int noblock)
-> > +static ssize_t macvtap_get_user(struct macvtap_queue *q, struct
-> msghdr *m,
-> > +                             const struct iovec *iv, unsigned long
-> total_len,
-> > +                             size_t count, int noblock)
-> >  {
-> >       struct sk_buff *skb;
-> >       struct macvlan_dev *vlan;
-> > -     size_t len = count;
-> > +     unsigned long len = total_len;
-> >       int err;
-> >       struct virtio_net_hdr vnet_hdr = { 0 };
-> >       int vnet_hdr_len = 0;
-> > +     int copylen, zerocopy;
-> >  
-> > +     zerocopy = sock_flag(&q->sk, SOCK_ZEROCOPY) && (len >
-> GOODCOPY_LEN);
-> >       if (q->flags & IFF_VNET_HDR) {
-> >               vnet_hdr_len = q->vnet_hdr_sz;
-> >  
-> > @@ -552,12 +640,28 @@ static ssize_t macvtap_get_user(struct
-> macvtap_queue *q,
-> >       if (unlikely(len < ETH_HLEN))
-> >               goto err;
-> >  
-> > -     skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, len,
-> vnet_hdr.hdr_len,
-> > -                             noblock, &err);
-> > +     if (zerocopy)
-> > +             /* There are 256 bytes to be copied in skb, so there
-> is enough
-> > +              * room for skb expand head in case it is used.
-> > +              * The rest buffer is mapped from userspace.
-> > +              */
-> > +             copylen = GOODCOPY_LEN;
-> 
-> Just curious: where does the number 256 come from?
-> Also, as long as we are copying, should we care about
-> alignment?
-
-256 makes the size big enough for any skb head expanding.
-
-That's my concern before. But guest should alignment the buffer already,
-after moving the pointer 256 bytes. It should still alignment, right?
-
-> > +     else
-> > +             copylen = len;
-> > +
-> > +     skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
-> > +                             vnet_hdr.hdr_len, noblock, &err);
-> >       if (!skb)
-> >               goto err;
-> >  
-> > -     err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
-> len);
-> > +     if (zerocopy)
-> > +             err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len,
-> count);
-> > +     else
-> > +             err = skb_copy_datagram_from_iovec(skb, 0, iv,
-> vnet_hdr_len,
-> > +                                                len);
-> > +     if (sock_flag(&q->sk, SOCK_ZEROCOPY))
-> > +             memcpy(&skb_shinfo(skb)->ubuf, m->msg_control,
-> > +                     sizeof(struct skb_ubuf_info));
-> >       if (err)
-> >               goto err_kfree;
-> >  
-> > @@ -579,7 +683,7 @@ static ssize_t macvtap_get_user(struct
-> macvtap_queue *q,
-> >               kfree_skb(skb);
-> >       rcu_read_unlock_bh();
-> >  
-> > -     return count;
-> > +     return total_len;
-> >  
-> >  err_kfree:
-> >       kfree_skb(skb);
-> > @@ -601,8 +705,8 @@ static ssize_t macvtap_aio_write(struct kiocb
-> *iocb, const struct iovec *iv,
-> >       ssize_t result = -ENOLINK;
-> >       struct macvtap_queue *q = file->private_data;
-> >  
-> > -     result = macvtap_get_user(q, iv, iov_length(iv, count),
-> > -                           file->f_flags & O_NONBLOCK);
-> > +     result = macvtap_get_user(q, NULL, iv, iov_length(iv, count),
-> count,
-> > +                               file->f_flags & O_NONBLOCK);
-> >       return result;
-> >  }
-> >  
-> > @@ -815,7 +919,7 @@ static int macvtap_sendmsg(struct kiocb *iocb,
-> struct socket *sock,
-> >                          struct msghdr *m, size_t total_len)
-> >  {
-> >       struct macvtap_queue *q = container_of(sock, struct
-> macvtap_queue, sock);
-> > -     return macvtap_get_user(q, m->msg_iov, total_len,
-> > +     return macvtap_get_user(q, m, m->msg_iov, total_len,
-> m->msg_iovlen,
-> >                           m->msg_flags & MSG_DONTWAIT);
-> >  }
-> >  
-> > 
-> 
-> 
-
+                      Linus
