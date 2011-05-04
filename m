@@ -1,133 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1EDSq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:46:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54367 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab1EDSq1 (ORCPT
+	id S1754754Ab1EDSrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:47:04 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37913 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1EDSrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:46:27 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=Not3D1qn5yUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=6UWUY8tF8GMePTEpHHMA:9 a=z6tEBe75lkVbQhc-WvsA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is
- and how it works.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Will Drewry <wad@chromium.org>, Eric Paris <eparis@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110504183052.GD1804@nowhere>
-References: <20110428070636.GC952@elte.hu>
-	 <1304002571.2101.38.camel@localhost.localdomain>
-	 <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
-	 <20110429131845.GA1768@nowhere>
-	 <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
-	 <20110503012857.GA8399@nowhere>
-	 <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
-	 <BANLkTimPFHwJfqXHShnOt7mBp84NQQNWDw@mail.gmail.com>
-	 <20110504175229.GB1804@nowhere>
-	 <1304533382.25414.2447.camel@gandalf.stny.rr.com>
-	 <20110504183052.GD1804@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 04 May 2011 14:46:25 -0400
-Message-ID: <1304534785.25414.2452.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 May 2011 14:47:03 -0400
+Date: Wed, 4 May 2011 14:46:44 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>, Jeff Layton <jlayton@redhat.com>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v3 0/3] data integrity: Stabilize pages during writeback
+ for ext4
+Message-ID: <20110504184644.GA23246@infradead.org>
+References: <20110406232938.GF1110@tux1.beaverton.ibm.com>
+ <20110407165700.GB7363@quack.suse.cz>
+ <20110408203135.GH1110@tux1.beaverton.ibm.com>
+ <20110411124229.47bc28f6@corrin.poochiereds.net>
+ <1302543595-sup-4352@think>
+ <1302569212.2580.13.camel@mingming-laptop>
+ <20110412005719.GA23077@infradead.org>
+ <1302742128.2586.274.camel@mingming-laptop>
+ <20110422000226.GA22189@tux1.beaverton.ibm.com>
+ <20110504173704.GE20579@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504173704.GE20579@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-04 at 20:30 +0200, Frederic Weisbecker wrote:
-> On Wed, May 04, 2011 at 02:23:02PM -0400, Steven Rostedt wrote:
-> > On Wed, 2011-05-04 at 19:52 +0200, Frederic Weisbecker wrote:
-> > 
-> > > >  It's certainly doable, but it will
-> > > > mean that we may be logically storing something like:
-> > > > 
-> > > > __NR_foo: (a == 1 || a == 2), applied
-> > > > __NR_foo: b == 2, not applied
-> > > > __NR_foo: c == 3, not applied
-> > > > 
-> > > > after
-> > > > 
-> > > > SECCOMP_FILTER_SET, __NR_foo, "a == 1 || a == 2"
-> > > > SECCOMP_FILTER_APPLY
-> > > > SECCOMP_FILTER_SET, __NR_foo, "b == 2"
-> > > > SECCOMP_FILTER_SET, __NR_foo, "c == 3"
-> > > 
-> > > No, the c == 3 would override b == 2.
-> > 
-> > I honestly hate the "override" mode. I like that SETs are or'd among
-> > each other and an APPLY is a "commit"; meaning that you can only limit
-> > it further, but can not extend it (an explicit &&)
-> 
-> I'm confused with what you just said...
-> 
-> Somehow I could understand it that way:
-> 
-> SECCOMP_FILTER_SET, __NR_foo, "a == 1"
-> SECCOMP_FILTER_SET, __NR_foo, "a == 2"
-> SECCOMP_FILTER_APPLY
-> SECCOMP_FILTER_SET, __NR_foo, "b == 1"
-> 
-> Would produce:
-> 
-> "(a == 1 || a == 2) && b == 1"
+This seems to miss out on a lot of the generic functionality like
+write_cache_pages and block_page_mkwrite and just patch it into
+the ext4 copy & paste variants.  Please make sure your patches also
+work for filesystem that use more of the generic functionality like
+xfs or ext2 (the latter one might be fun for the mmap case).
 
-No, it would produce:
-
- (a == 1 || a == 2)
-
-The b == 1 will not be added until the next apply.
-
-> 
-> That makes a pretty confusing behaviour for users I think.
-
-
-Not really, if it is documented well. Or we can call it:
-
-SECCOMP_FILTER_SET_OR and SECCOMP_FILTER_APPLY_AND
-
-to remove the ambiguity. The reason is actually quite simple. Before you
-do an apply, you can modify it to whatever you want. But once you do an
-apply, you just limited yourself. An apply can not be reversed.
-
-> 
-> > 
-> > > 
-> > > > In that case, would a call to sys_foo even be tested against the
-> > > > non-applied constraints of b==2 or c==3?
-> > > 
-> > > No, not as long as it's not applied.
-> > > 
-> > > > Or would the call to set "c
-> > > > == 3" replace the "b == 2" entry.  I'm not sure I see that the benefit
-> > > > exceeds the ambiguity that might introduce.
-> > > 
-> > > The rationale behind it is that as long as you haven't applied your filter,
-> > > you should be able to override it.
-> > 
-> > We need a "UNSET" (I like that better than DROP).
-> 
-> What about a complete erase (RESET) of the temporary filter? Like I explained below
-> from my previous mail.
-
-What is a temporary filter? And a RESET could be there too to just
-remove all sets that are pending.
-
-I was thinking that we add "SETS" which the kernel can verify are
-correct and let the user know at the time of the command if it is valid.
-But these sets are not actually implemented until an APPLY is hit.
-
--- Steve
-
-
+Also what's the status of btrfs?  I remembered there was one or two
+bits missing despite doing the right thing in most areas.
