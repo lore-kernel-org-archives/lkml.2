@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab1EDAPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 May 2011 20:15:18 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43710 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1EDAPQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 May 2011 20:15:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=MLQCkxAWkzgcXUIKdZ26qhLKyJuPL7ApLhbFyf3ChR1zIrya6fZI2Z4V9/n5InxIsZ
-         SVJ+ag6xKOs2hKKaLa/A==
+	id S1754926Ab1EDAUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 May 2011 20:20:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50323 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754683Ab1EDAUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 May 2011 20:20:24 -0400
+Message-ID: <4DC09BBA.6040906@zytor.com>
+Date: Tue, 03 May 2011 17:20:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110503233503.GH2678@nowhere>
-References: <1304456616-30281-1-git-send-email-vnagarnaik@google.com>
- <20110503214142.GC2678@nowhere> <BANLkTinA8M8Ok2jghtCoeBiTfw6n3NSziA@mail.gmail.com>
- <20110503220948.GE2678@nowhere> <1304462852.25414.2417.camel@gandalf.stny.rr.com>
- <20110503230812.GF2678@nowhere> <BANLkTikRxY_NiNG+z+t_BDwDAom_rpNmdg@mail.gmail.com>
- <20110503233503.GH2678@nowhere>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 3 May 2011 17:14:43 -0700
-Message-ID: <BANLkTi=NMp-bPGLgTP9OJnROasx3Q9Rqgw@mail.gmail.com>
-Subject: Re: [RFC PATCH] tracing: Don't call wakeup() when committing the event
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
+To: David Rientjes <rientjes@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v3] x86: allow ZONE_DMA to be configurable
+References: <alpine.DEB.2.00.1104141134260.386@chino.kir.corp.google.com> <4DA82F33.7080403@ladisch.de> <4DA8A5CE.2010004@zytor.com> <alpine.DEB.2.00.1104201929170.15661@chino.kir.corp.google.com> <4DAFAD9F.4020809@zytor.com> <alpine.DEB.2.00.1104271637310.25369@chino.kir.corp.google.com> <alpine.DEB.2.00.1105031700380.26030@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1105031700380.26030@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 3, 2011 at 4:35 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, May 03, 2011 at 04:27:22PM -0700, Vaibhav Nagarnaik wrote:
->> How about this? Check if the waitqueue is active and if true, operate on the
->> trace_wait queue.
+On 05/03/2011 05:00 PM, David Rientjes wrote:
+> On Wed, 27 Apr 2011, David Rientjes wrote:
+> 
+>> ZONE_DMA is unnecessary for a large number of machines that do not
+>> require addressing in the lower 16MB of memory because they do not use
+>> devices with 16-bit address registers (plus one page byte register).
 >>
->> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->> index 06f4458..e03ee24 100644
->> --- a/kernel/trace/trace.c
->> +++ b/kernel/trace/trace.c
->> @@ -353,7 +353,7 @@ void trace_wake_up(void)
->>  {
->>       int cpu;
+>> This patch allows users to disable ZONE_DMA for x86 if they know they
+>> will not be using such devices with their kernel.
 >>
->> -     if (trace_flags & TRACE_ITER_BLOCK)
->> +     if (trace_flags & TRACE_ITER_BLOCK || !waitqueue_active(&trace_wait))
->>               return;
->>       /*
->>        * The runqueue_is_locked() can fail, but this is the best we
+>> This prevents the VM from unnecessarily reserving a ratio of memory
+>> (defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
+>> for such allocations when it will never be used.
 >>
->
-> Hehe, seems it should work :)
->
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
->
-Thanks for reviewing the change. I have sent an updated patch with a better
-commit message and your Ack.
+>> Signed-off-by: David Rientjes <rientjes@google.com>
+> 
+> Peter, is this ready for merge?
 
-Vaibhav Nagarnaik
+
++ DMA memory allocation support allows devices with 16-bit address
++ registers to allocate memory within the first 16MB of address space.
++ Disable if no such devices will be used.
+
+This is still not correct... this is for devices with less than a 32-bit
+mask, not just for things that have 24-bit (not 16-bit!) DMA address
+restrictions.
+
+Please get this right.
+
+Other than that, I don't have any technical objections.
+
+	-hpa
