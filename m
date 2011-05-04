@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab1EDU5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 16:57:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4689 "EHLO mx1.redhat.com"
+	id S1755843Ab1EDUwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:52:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55281 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab1EDUvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 16:51:51 -0400
-Date: Wed, 4 May 2011 23:51:19 +0300
+	id S1754440Ab1EDUwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 16:52:13 -0400
+Date: Wed, 4 May 2011 23:51:29 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
@@ -20,8 +20,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
         Krishna Kumar <krkumar2@in.ibm.com>,
         Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
         habanero@linux.vnet.ibm.com
-Subject: [PATCH 06/18] virtio_ring: avail event index interface
-Message-ID: <b00ef5d572ec9bc3b884c496025512abc1f14349.1304541919.git.mst@redhat.com>
+Subject: [PATCH 07/18] virtio ring: inline function to check for events
+Message-ID: <cc4596a5ecdbf8dd37b5567a36667e3841f18ca3.1304541919.git.mst@redhat.com>
 References: <cover.1304541918.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,55 +33,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a new feature bit for the host to
-declare that it uses an avail_event index
-(like Xen) instead of a feature bit
-to enable/disable interrupts.
+With the new used_event and avail_event and features, both
+host and guest need similar logic to check whether events are
+enabled, so it helps to put the common code in the header.
+
+Note that Xen has similar logic for notification hold-off
+in include/xen/interface/io/ring.h with req_event and req_prod
+corresponding to event_idx + 1 and new_idx respectively.
++1 comes from the fact that req_event and req_prod in Xen start at 1,
+while event index in virtio starts at 0.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio_ring.h |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ include/linux/virtio_ring.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-index f5c1b75..f791772 100644
+index f791772..2a3b0ea 100644
 --- a/include/linux/virtio_ring.h
 +++ b/include/linux/virtio_ring.h
-@@ -32,6 +32,9 @@
- /* The Guest publishes the used index for which it expects an interrupt
-  * at the end of the avail ring. Host should ignore the avail->flags field. */
- #define VIRTIO_RING_F_USED_EVENT_IDX	29
-+/* The Host publishes the avail index for which it expects a kick
-+ * at the end of the used ring. Guest should ignore the used->flags field. */
-+#define VIRTIO_RING_F_AVAIL_EVENT_IDX	32
- 
- /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
- struct vring_desc {
-@@ -96,11 +99,13 @@ struct vring {
-  *	__u16 used_flags;
-  *	__u16 used_idx;
-  *	struct vring_used_elem used[num];
-+ *	__u16 avail_event_idx;
-  * };
-  */
--/* We publish the used event index at the end of the available ring.
-- * It is at the end for backwards compatibility. */
-+/* We publish the used event index at the end of the available ring, and vice
-+ * versa. They are at the end for backwards compatibility. */
- #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
-+#define vring_avail_event(vr) (*(__u16 *)&(vr)->used->ring[(vr)->num])
- 
- static inline void vring_init(struct vring *vr, unsigned int num, void *p,
- 			      unsigned long align)
-@@ -116,7 +121,7 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
- {
- 	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
- 		 + align - 1) & ~(align - 1))
--		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
-+		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+@@ -124,6 +124,20 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
+ 		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
  }
  
++/* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
++/* Assuming a given event_idx value from the other size, if
++ * we have just incremented index from old to new_idx,
++ * should we trigger an event? */
++static inline int vring_need_event(__u16 event_idx, __u16 new_idx, __u16 old)
++{
++	/* Note: Xen has similar logic for notification hold-off
++	 * in include/xen/interface/io/ring.h with req_event and req_prod
++	 * corresponding to event_idx + 1 and new_idx respectively.
++	 * Note also that req_event and req_prod in Xen start at 1,
++	 * event indexes in virtio start at 0. */
++	return (__u16)(new_idx - event_idx - 1) < (__u16)(new_idx - old);
++}
++
  #ifdef __KERNEL__
+ #include <linux/irqreturn.h>
+ struct virtio_device;
 -- 
 1.7.5.53.gc233e
 
