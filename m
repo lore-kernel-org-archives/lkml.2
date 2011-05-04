@@ -1,198 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab1EDSbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:31:00 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:56943 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab1EDSa7 (ORCPT
+	id S1753353Ab1EDSdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 14:33:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21367 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab1EDSdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:30:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cB8pLgCXPMZ8MsW7H/wkqb+b/1OrJWII+x7Nr+CI3XTYEv75/lJ3YrW2LDWajiECJO
-         tSKDq/Pnqzfr1UXDxal3ZzjgN7Jqt5SOse+oRkEEmoY6uYmTcsT67r6zG4qokD8tSkvG
-         Z7bYpc7zFft/isxzm/4D8YFz5SNExFQ7hCda4=
-Date: Wed, 4 May 2011 20:30:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Will Drewry <wad@chromium.org>, Eric Paris <eparis@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is
- and how it works.
-Message-ID: <20110504183052.GD1804@nowhere>
-References: <20110428070636.GC952@elte.hu>
- <1304002571.2101.38.camel@localhost.localdomain>
- <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
- <20110429131845.GA1768@nowhere>
- <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
- <20110503012857.GA8399@nowhere>
- <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
- <BANLkTimPFHwJfqXHShnOt7mBp84NQQNWDw@mail.gmail.com>
- <20110504175229.GB1804@nowhere>
- <1304533382.25414.2447.camel@gandalf.stny.rr.com>
+	Wed, 4 May 2011 14:33:05 -0400
+Message-ID: <4DC19BD9.7090101@oracle.com>
+Date: Wed, 04 May 2011 11:32:57 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304533382.25414.2447.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+CC: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Subject: Re: [RFC]Documentation/email-clients.txt
+References: <20110504053005.GA5140@gmail.com>
+In-Reply-To: <20110504053005.GA5140@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DC19BDF.00FA:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 02:23:02PM -0400, Steven Rostedt wrote:
-> On Wed, 2011-05-04 at 19:52 +0200, Frederic Weisbecker wrote:
+On 05/03/11 22:30, Harry Wei wrote:
+> Hi Randy,
+> 	When i read the Documentation/email-clients.txt, i have got some questions.
+> I list them in the following.
 > 
-> > >  It's certainly doable, but it will
-> > > mean that we may be logically storing something like:
-> > > 
-> > > __NR_foo: (a == 1 || a == 2), applied
-> > > __NR_foo: b == 2, not applied
-> > > __NR_foo: c == 3, not applied
-> > > 
-> > > after
-> > > 
-> > > SECCOMP_FILTER_SET, __NR_foo, "a == 1 || a == 2"
-> > > SECCOMP_FILTER_APPLY
-> > > SECCOMP_FILTER_SET, __NR_foo, "b == 2"
-> > > SECCOMP_FILTER_SET, __NR_foo, "c == 3"
-> > 
-> > No, the c == 3 would override b == 2.
-> 
-> I honestly hate the "override" mode. I like that SETs are or'd among
-> each other and an APPLY is a "commit"; meaning that you can only limit
-> it further, but can not extend it (an explicit &&)
+> 1, The 155 line writes "(a)ttach works fine without "set paste"". I wonder 
+> what the '(a)ttach' means? How should we understand '(a)ttach'? Maybe it is
+> the word 'attach', but i am not sure.
 
-I'm confused with what you just said...
+I believe that "(a)ttach" means that the 'a' key is used for the Attach command,
+but I didn't write this section of text for Mutt.
 
-Somehow I could understand it that way:
 
-SECCOMP_FILTER_SET, __NR_foo, "a == 1"
-SECCOMP_FILTER_SET, __NR_foo, "a == 2"
-SECCOMP_FILTER_APPLY
-SECCOMP_FILTER_SET, __NR_foo, "b == 1"
+> 2, You have written "###" in the last line, but i don't know how to understand
+> it.
 
-Would produce:
+It's just a marker for the end of the file.  You can ignore it.
 
-"(a == 1 || a == 2) && b == 1"
 
-That makes a pretty confusing behaviour for users I think.
-
-> 
-> > 
-> > > In that case, would a call to sys_foo even be tested against the
-> > > non-applied constraints of b==2 or c==3?
-> > 
-> > No, not as long as it's not applied.
-> > 
-> > > Or would the call to set "c
-> > > == 3" replace the "b == 2" entry.  I'm not sure I see that the benefit
-> > > exceeds the ambiguity that might introduce.
-> > 
-> > The rationale behind it is that as long as you haven't applied your filter,
-> > you should be able to override it.
-> 
-> We need a "UNSET" (I like that better than DROP).
-
-What about a complete erase (RESET) of the temporary filter? Like I explained below
-from my previous mail.
-
-> 
-> > 
-> > And the simplest way to override it is to do it completely. Remove what
-> > was there before (that wasn't applied).
-> > 
-> > You could opt for a FILTER_DROP.
-> > Let's take that example:
-> > 
-> > SECCOMP_FILTER_SET, __NR_foo, "b == 2"
-> > SECCOMP_FILTER_SET, __NR_foo, "c == 3"
-> > 
-> > Following your logic, we should have "b == 2 && c == 3" after that.
-> > How are you going to remove only the c == 3 sequence?
-> > 
-> > You would need SECCOMP_FILTER_DROP, __NR_foo, "c == 3"
-> > 
-> > That said, using a string with a filter expression as an id looks a
-> > bit odd to me. That doesn't work anymore with "((c == 3))", or "c== 3",
-> > unless you compare against the resulting tree but that's complicated.
-> 
-> Nah, it should be easy. Actually, in "set" mode (before the apply) we
-> should keep a link list of "trees" of sets. Then we just find the "tree"
-> that matches the UNSET and remove it.
-> 
-> > 
-> > I mean, that works, most of the time you keep your expression
-> > and pass it as is. But the expression should be identified by its
-> > meaning, not by some random language layout.
-> > 
-> > That also forces you to scatter your filter representation:
-> > 
-> > 	SECCOMP_FILTER_SET, __NR_foo, "b == 2"
-> > 	SECCOMP_FILTER_SET, __NR_foo, "c == 3"
-> > 
-> > For me this shouldn't be different than
-> > 
-> > 	SECCOMP_FILTER_SET, __NR_foo, "b == 2 && c == 3"
-> > 
-> > Still nobody will be able to remove a part of the above expression.
-> 
-> Correct, as the sets will be just link lists of sets. Once we apply it,
-> it goes into the main tree.
-> 
-> Thus, to find the UNSET set, we would evaluate the tree of that unset,
-> and search for it. If it is found, remove it, otherwise return EINVAL or
-> something.
-> 
-> > 
-> > So, I'm more for having something that removes everything not applied
-> > than just a part of the non-applied filter.
-> > 
-> > Two possibilities I see:
-> > 
-> > 	SECCOMP_FILTER_SET, __NR_foo, "b == 2"
-> > 	SECCOMP_FILTER_SET, __NR_foo, "c == 3"
-> > 
-> > 	// And result is "c == 3"
-> > 
-> > Or:
-> > 
-> > 	SECCOMP_FILTER_SET, __NR_foo, "b == 2"
-> > 	SECCOMP_FILTER_SET, __NR_foo, "c == 3"
-> > 
-> > 	// And result is "b == 2 && c == 3"
-> > 
-> > 	SECCOMP_FILTER_RESET, __NR_foo //rewind to filter "0"
-> > 
-> > 	SECCOMP_FILTER_SET, __NR_foo, "c == 4"
-> > 
-> > 	// And result is "c == 4"
-> > 
-> > How does that look?
-> 
-> The thing is, I don't understand where we would use (or want) an
-> override. I could understand a UNSET, which I described in another
-> reply. Also, I like the fact that sets can be self contained because
-> then the user can add wrapper functions for them.
-> 
-> add_filter("foo: c == 4");
-> add_filter("bar: b < 3");
-> apply_filter();
-> 
-> That wont work with an override, unless we did the work in userspace to
-> keep string, and then we need to worry about "string matches" as you
-> stated if we want to implement a remove_filter("foo: c==4"). (see it
-> would fail, because this version is missing spaces)
-> 
-> -- Steve
-> 
-> 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
