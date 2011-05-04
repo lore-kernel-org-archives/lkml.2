@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab1EDTEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:04:55 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38295 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1EDTEx (ORCPT
+	id S1755241Ab1EDTIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:08:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39177 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754387Ab1EDTIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:04:53 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
-In-Reply-To: Your message of "Wed, 04 May 2011 13:58:39 EDT."
-             <1304531920-2890-1-git-send-email-josef@redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1304531920-2890-1-git-send-email-josef@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304535887_7352P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 04 May 2011 15:04:47 -0400
-Message-ID: <15392.1304535887@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4DC1A350.0142,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 4 May 2011 15:08:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1105041341550.5495@router.home>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com>
+ <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos>
+ <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com> <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041640020.3005@ionos> <alpine.DEB.2.00.1105040958570.5495@router.home>
+ <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com> <alpine.DEB.2.00.1105041023070.5495@router.home>
+ <BANLkTik52Fi=vHY-TiK6SAYrWjaSN=PB+g@mail.gmail.com> <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
+ <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 4 May 2011 12:07:42 -0700
+Message-ID: <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304535887_7352P
-Content-Type: text/plain; charset=us-ascii
+On Wed, May 4, 2011 at 11:49 AM, Christoph Lameter <cl@linux.com> wrote:
+>
+> The unprotected version is the __this_cpu_cmpxchg_double? That currently
+> has no user and could be removed. But all other functions also have __
+> variants so it was put there for symmetries sake.
 
-On Wed, 04 May 2011 13:58:39 EDT, Josef Bacik said:
+No, I'm talking about the regular "this_cpu_cmpxchg_double" with no underscores.
 
-> -SEEK_HOLE: this moves the file pos to the nearest hole in the file from the
-> given position. 
+Why the f*!@ does that exist?
 
-Nearest, or next? Solaris defines it as "next", for a good reason - otherwise
-you can get stuck in a case where the "nearest" hole is back towards the
-start of the file - and "seek data" will bounce back to the next byte at
-the other end of the hole.
+Why the f*%^ do you have to write "irqsafe", when the whole concept
+DOES NOT MAKE SENSE without the "irqsafe"?
 
-Consider a file with this layout:
+Why did we have this bug in the first place, in other words? The whole
+interface was mis-designed, and pretty much designed to cause bugs.
 
-< 40K of data>  A  < 32K hole> B < 32K data> C < 8K hole> D <32K data> E ....
+I think we should remove every single version of
+"this_cpu_cmpxchg_double" except for two: the per-cpu one and the
+SMP-safe one.
 
-If you're in the range between "8K-1 before C" and "8K-1 after D", there's no
-application of seeks to "nearest" data/hole that doesn't leave you oscillating
-between C and D, and unable to reach B or E.  If youre at C, "nearest hole" is
-where you are, and "nearest data" is at D, not B. Similarly for D - nearest
-data is C, not E.
+And the per-cpu one doesn't mention "irqsafe" or "preempt" or anything
+like that, because the whole function makes no sense except when it is
+irq-safe and preempt-safe.
 
-However, this is easily dealt with if you define it as "next", as then it is
-simple to discover exactly where A/B/C/D/E are.
+So I think the fact that we need to say "irqsafe" is a bug. Plain and simple.
 
+The whole (and ONLY) point of "cmpxchg" is atomicity.
 
---==_Exmh_1304535887_7352P
-Content-Type: application/pgp-signature
+This is not like "add one to something". That's an operation that
+makes sense outside of atomicity issues. But "cmpxchg" is all about
+being atomic.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNwaNPcC3lWbTT17ARAtbUAJ48TCUrI6d//FZI1ZEMR3BF9u21bACgmGZf
-+qmyLCOG90edbKXJLEX/r2w=
-=FvOo
------END PGP SIGNATURE-----
-
---==_Exmh_1304535887_7352P--
-
+                                       Linus
