@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1EDGtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 02:49:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6248 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab1EDGtY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 02:49:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 03 May 2011 23:49:23 -0700
-From: Wei Ni <wni@nvidia.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ccross@android.com" <ccross@android.com>,
-        Varun Wadekar <vwadekar@nvidia.com>
-Date: Wed, 4 May 2011 14:49:19 +0800
-Subject: RE: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
-Thread-Topic: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
-Thread-Index: AcwIyyeEyMZLLvX9Sl6gNP+PD4wgyQBWxSVg
-Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4E8@HKMAIL01.nvidia.com>
-References: <1301379390-28063-1-git-send-email-wni@nvidia.com>
- <6B4D417B830BC44B8026029FD256F7F1C2CB3DD499@HKMAIL01.nvidia.com>
- <6B4D417B830BC44B8026029FD256F7F1C2CB3DD4C0@HKMAIL01.nvidia.com>
- <20110502131624.GB740@sortiz-mobl>
-In-Reply-To: <20110502131624.GB740@sortiz-mobl>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1752928Ab1EDG7D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 02:59:03 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46255 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686Ab1EDG7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 02:59:01 -0400
+Date: Wed, 4 May 2011 08:58:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
+ for now
+Message-ID: <20110504065843.GC20828@elte.hu>
+References: <1304357691-14354-1-git-send-email-bp@amd64.org>
+ <1304357691-14354-5-git-send-email-bp@amd64.org>
+ <20110503064505.GF7751@elte.hu>
+ <20110503072302.GC18979@aftab>
+ <987664A83D2D224EAE907B061CE93D5301C53670E0@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301C53670E0@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Samuel
-I tried your codes, it looks ok, the error messages disappeared.
-Could you submit your patch?
 
-BTW, what kernel version do you use?
-In my 2.6.39, the SIMPLE_DEV_PM_OPS only have 3 arguments,
-and it should be" .pm     = &tps6586x_pm_ops,"
+* Luck, Tony <tony.luck@intel.com> wrote:
 
-Thanks
-Wei.
+> > Ok, the problem I see with it is that people without a RAS daemon
+> > running will have the mechanism collecting MCEs in the background, using
+> > up resources (4 pages per CPU is the buffer) and not doing anything (in
+> > the best case that is, when we're not broken otherwise).
+> 
+> Can the kernel detect whether anyone is listening to the
+> persistent MCE event?  If so, then the kernel could printk()
+> something to let the user with no RAS daemon (or a dead
+> daemon) that stuff is happening that they might like to
+> know about.
+> 
+> Probably make some sense to delay such a message (so that in
+> the boot case we give the daemon a chance to get started before
+> complaining that it hasn't shown up for work).
 
------Original Message-----
-From: Samuel Ortiz [mailto:sameo@linux.intel.com] 
-Sent: Monday, May 02, 2011 9:16 PM
-To: Wei Ni
-Cc: linux-kernel@vger.kernel.org; ccross@android.com; Varun Wadekar; Emily Jiang
-Subject: Re: [PATCH] mfd: call disable_irq()/enable_irq() in suspend/resume
+Yes, i definitely think a gateway to printk would be useful, so that the system 
+can log MCE events the syslog way as well. This probably makes sense for 
+persistent events in general, not just MCE events.
 
-Hi Wei,
+Btw., as a sidenote, the much more interesting direction is the reverse 
+direction: we want a gateway of printk into the RAS daemon as well - in form of 
+a special 'printk events' that contain:
 
-> When use rtc tps6586x wakealarm to suspend/resume system,
-> it will show a lot error messages:
-> "tps6586x 4-0034: failed to read interrupt status
-> tps6586x 4-0034: failed reading from 0xb5"
-> After resume, the system will call the mfd tps6586x driver's interrupt handle
-> tps6586x_irq(). This handle will read tps6586x interrupt status (0xb5), but at
-> that time the i2c driver didn't resume yet, so the reading will be failed.
-> I call the disble_irq in the suspend, and enable_irq in the resume, which will
-> delay the delivery of the irq until the i2c driver has been resumed.
-I think something like this would make more sense:
+ - the log level of the kernel when the message was generated
+ - the log level of the message
+ - the printk timestamp
+ - plus the printk message itself, as a free-form string
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index bba26d9..a5feeb5 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -569,10 +569,36 @@ static const struct i2c_device_id tps6586x_id_table[] = {
- };
- MODULE_DEVICE_TABLE(i2c, tps6586x_id_table);
- 
-+#ifdef CONFIG_PM
-+static int tps6586x_suspend(struct device *dev)
-+{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+
-+	if (device_may_wakeup(&i2c->dev) && i2c->irq)
-+		enable_irq_wake(i2c->irq);
-+
-+	return 0;
-+}
-+
-+static int tps6586x_resume(struct device *dev)
-+{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+
-+	if (device_may_wakeup(&i2c->dev) && i2c->irq)
-+		disable_irq_wake(i2c->irq);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(tps6586x_pm_ops, tps6586x_suspend, tps6586x_resume,
-+			    NULL);
-+
- static struct i2c_driver tps6586x_driver = {
- 	.driver	= {
- 		.name	= "tps6586x",
- 		.owner	= THIS_MODULE,
-+		.pm     = tps6586x_pm_ops,
- 	},
- 	.probe		= tps6586x_i2c_probe,
- 	.remove		= __devexit_p(tps6586x_i2c_remove),
+This would allow RAS functionality to dispatch off printk events immediately 
+and transparently, without having to separately worry about how to talk to 
+syslogd/klogd how to get its logs ...
 
-Could you please try ?
+printk itself could become a persistent event. (Transparently and without 
+breaking compatible syslogd/klogd functionality.)
 
-Cheers,
-Samuel.
+This would also allow the RAS daemon to log printk messages around suspicious 
+MCE events, in a time-serialized way via a single event channel - so post 
+mortem can be done using a single facility.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+There's ongoing work to timestamp perf events with GTOD timestamps - that way 
+global log analysis becomes possible as well.
+
+Thanks,
+
+	Ingo
