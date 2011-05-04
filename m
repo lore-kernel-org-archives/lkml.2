@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab1EDQtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:49:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49865 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1EDQtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:49:24 -0400
-Date: Wed, 4 May 2011 09:49:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>, gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: linux-next: Tree for May 4 (hyperv / vmbus)
-Message-Id: <20110504094908.b8295d22.randy.dunlap@oracle.com>
-In-Reply-To: <20110504144759.802483cc.sfr@canb.auug.org.au>
-References: <20110504144759.802483cc.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DC1838B.0140:SCFMA4539811,ss=1,fgs=0
+	id S1753691Ab1EDQuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:50:40 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52071 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751608Ab1EDQuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 12:50:39 -0400
+Date: Wed, 4 May 2011 18:50:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+Message-ID: <20110504165021.GA1404@elte.hu>
+References: <alpine.LFD.2.02.1105041233280.3005@ionos>
+ <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041417330.3005@ionos>
+ <20110504132022.GA17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041539050.3005@ionos>
+ <20110504142532.GC17294@htj.dyndns.org>
+ <alpine.LFD.2.02.1105041640020.3005@ionos>
+ <alpine.DEB.2.00.1105040958570.5495@router.home>
+ <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikiAqcJVoJRJ6oy+LwPJPz+mHNj_w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011 14:47:59 +1000 Stephen Rothwell wrote:
 
-> Hi all,
-> 
-> Changes since 20110503:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
+> My gut reaction would be: let's do the minimal patch that just fixes things 
+> to do irqsafe_cpu_cmpxchg_double() for 2.6.39, and then let's remove the 
+> #ifdef'fery in -rc1. [...]
 
-when CONFIG_ACPI is not enabled:
+Looks like the sanest option IMHO, -rc7 is pretty late for anything than a 
+few-liner patch.
 
+> [...] Or make _really_ sure that things are ok for platforms that never even 
+> triggered the CMPXCHG_LOCAL case before.
 
-drivers/staging/hv/vmbus_drv.c:736: warning: 'struct acpi_device' declared inside parameter list
-drivers/staging/hv/vmbus_drv.c:736: warning: its scope is only this definition or declaration, which is probably not what you want
-drivers/staging/hv/vmbus_drv.c: In function 'vmbus_acpi_add':
-drivers/staging/hv/vmbus_drv.c:741: error: dereferencing pointer to incomplete type
-drivers/staging/hv/vmbus_drv.c: At top level:
-drivers/staging/hv/vmbus_drv.c:758: error: variable 'vmbus_acpi_driver' has initializer but incomplete type
-drivers/staging/hv/vmbus_drv.c:759: error: unknown field 'name' specified in initializer
-drivers/staging/hv/vmbus_drv.c:759: warning: excess elements in struct initializer
-drivers/staging/hv/vmbus_drv.c:759: warning: (near initialization for 'vmbus_acpi_driver')
-drivers/staging/hv/vmbus_drv.c:760: error: unknown field 'ids' specified in initializer
-drivers/staging/hv/vmbus_drv.c:760: warning: excess elements in struct initializer
-drivers/staging/hv/vmbus_drv.c:760: warning: (near initialization for 'vmbus_acpi_driver')
-drivers/staging/hv/vmbus_drv.c:761: error: unknown field 'ops' specified in initializer
-drivers/staging/hv/vmbus_drv.c:761: error: extra brace group at end of initializer
-drivers/staging/hv/vmbus_drv.c:761: error: (near initialization for 'vmbus_acpi_driver')
-drivers/staging/hv/vmbus_drv.c:763: warning: excess elements in struct initializer
-drivers/staging/hv/vmbus_drv.c:763: warning: (near initialization for 'vmbus_acpi_driver')
-drivers/staging/hv/vmbus_drv.c: In function 'vmbus_acpi_init':
-drivers/staging/hv/vmbus_drv.c:771: error: implicit declaration of function 'acpi_bus_register_driver'
-drivers/staging/hv/vmbus_drv.c: In function 'vmbus_acpi_exit':
-drivers/staging/hv/vmbus_drv.c:780: error: implicit declaration of function 'acpi_bus_unregister_driver'
-make[4]: *** [drivers/staging/hv/vmbus_drv.o] Error 1
-make[3]: *** [drivers/staging/hv] Error 2
+Considering that the status quo was !CMPXCHG_LOCAL in v2.6.38 and that lockless 
+SLUB is an x86-only affair right now:
 
+ $ git grep CMPXCHG_LOCAL arch/
+ arch/um/Kconfig.x86:config CMPXCHG_LOCAL
+ arch/x86/Kconfig.cpu:config CMPXCHG_LOCAL
 
+There should be no problem with other architectures, right?
 
+Thanks,
 
-
-vmbus_drv.c sure looks like it requires (depends on) both ACPI and PCI.
-That should be expressed somewhere in its Kconfig file.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Ingo
