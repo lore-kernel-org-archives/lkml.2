@@ -1,839 +1,11588 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab1EDSiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 14:38:00 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:36415 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab1EDSh4 (ORCPT
+	id S932086Ab1EDUFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 16:05:08 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:14691 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab1EDUE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 14:37:56 -0400
-Date: Wed, 4 May 2011 20:37:54 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux/m68k <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
-cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        uClinux list <uclinux-dev@uclinux.org>
-Subject: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
-Message-ID: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 4 May 2011 16:04:56 -0400
+Message-Id: <201105042004.p44K4rPS011723@farm-0032.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 4 May 2011 14:38:26 -0400
+Subject: [PATCH] arch/tile: finish enabling support for TILE-Gx 64-bit chip
+To: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+X-OriginalArrivalTime: 04 May 2011 20:04:53.0777 (UTC) FILETIME=[8876F010:01CC0A96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Impact for nommu:
-  - Store table in .rodata instead of .text,
-  - Let kernel/sys_ni.c handle the stubbing of MMU-only syscalls,
-  - Implement sys_mremap and sys_nfsservct,
-  - Remove unused padding at the end of the table.
+This support was partially present in the existing code (look for
+"__tilegx__" ifdefs) but with this change you can build a working
+kernel using the TILE-Gx toolchain and ARCH=tilegx.
 
-Impact for mmu:
-  - Store table in .rodata instead of .data.
+Most of these files are new, generally adding a foo_64.c file
+where previously there was just a foo_32.c file.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+The ARCH=tilegx directive redirects to arch/tile, not arch/tilegx,
+using the existing SRCARCH mechanism in the top-level Makefile.
+
+Changes to existing files:
+
+- <asm/bitops.h> and <asm/bitops_32.h> changed to factor the
+  include of <asm-generic/bitops/non-atomic.h> in the common header.
+
+- <asm/compat.h> and arch/tile/kernel/compat.c changed to remove
+  the "const" markers I had put on compat_sys_execve() when trying
+  to match some recent similar changes to the non-compat execve.
+  It turns out the compat version wasn't "upgraded" to use const.
+
+- <asm/opcode-tile_64.h> and <asm/opcode_constants_64.h> were
+  previously included accidentally, with the 32-bit contents.  Now
+  they have the proper 64-bit contents.
+
+Finally, I had to hack the existing hacky drivers/input/input-compat.h
+to add yet another "#ifdef" for INPUT_COMPAT_TEST (same as x86_64).
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
-v2: Store table in .rodata instead of .data.
-v3: Let kernel/sys_ni.c handle the stubbing of MMU-only syscalls,
-    Implement sys_mremap and sys_nfsservct.
+ Makefile                                    |    5 +
+ arch/tile/configs/tilegx_defconfig          | 1776 +++++++++++++++++++++
+ arch/tile/include/arch/chip_tilegx.h        |  258 ++++
+ arch/tile/include/arch/interrupts_64.h      |  276 ++++
+ arch/tile/include/arch/spr_def_64.h         |  173 +++
+ arch/tile/include/asm/atomic_64.h           |  169 ++
+ arch/tile/include/asm/bitops.h              |    1 +
+ arch/tile/include/asm/bitops_32.h           |    1 -
+ arch/tile/include/asm/bitops_64.h           |  105 ++
+ arch/tile/include/asm/compat.h              |    4 +-
+ arch/tile/include/asm/opcode-tile_64.h      | 1507 ++++++++-----------
+ arch/tile/include/asm/opcode_constants_64.h | 1043 +++++++------
+ arch/tile/include/asm/pgtable_64.h          |  175 +++
+ arch/tile/include/asm/spinlock_64.h         |  161 ++
+ arch/tile/kernel/futex_64.S                 |   55 +
+ arch/tile/kernel/head_64.S                  |  269 ++++
+ arch/tile/kernel/intvec_64.S                | 1231 +++++++++++++++
+ arch/tile/kernel/process.c                  |    4 +-
+ arch/tile/kernel/regs_64.S                  |  145 ++
+ arch/tile/kernel/tile-desc_64.c             | 2200 +++++++++++++++++++++++++++
+ arch/tile/lib/memchr_64.c                   |   71 +
+ arch/tile/lib/memcpy_64.c                   |  220 +++
+ arch/tile/lib/memcpy_user_64.c              |   86 ++
+ arch/tile/lib/memset_64.c                   |  145 ++
+ arch/tile/lib/spinlock_64.c                 |  104 ++
+ arch/tile/lib/strchr_64.c                   |   67 +
+ arch/tile/lib/strlen_64.c                   |   38 +
+ arch/tile/lib/usercopy_64.S                 |  196 +++
+ arch/tile/mm/migrate_64.S                   |  187 +++
+ drivers/input/input-compat.h                |    2 +-
+ 30 files changed, 9325 insertions(+), 1349 deletions(-)
+ create mode 100644 arch/tile/configs/tilegx_defconfig
+ create mode 100644 arch/tile/include/arch/chip_tilegx.h
+ create mode 100644 arch/tile/include/arch/interrupts_64.h
+ create mode 100644 arch/tile/include/arch/spr_def_64.h
+ create mode 100644 arch/tile/include/asm/atomic_64.h
+ create mode 100644 arch/tile/include/asm/bitops_64.h
+ create mode 100644 arch/tile/include/asm/pgtable_64.h
+ create mode 100644 arch/tile/include/asm/spinlock_64.h
+ create mode 100644 arch/tile/kernel/futex_64.S
+ create mode 100644 arch/tile/kernel/head_64.S
+ create mode 100644 arch/tile/kernel/intvec_64.S
+ create mode 100644 arch/tile/kernel/regs_64.S
+ create mode 100644 arch/tile/kernel/tile-desc_64.c
+ create mode 100644 arch/tile/lib/memchr_64.c
+ create mode 100644 arch/tile/lib/memcpy_64.c
+ create mode 100644 arch/tile/lib/memcpy_user_64.c
+ create mode 100644 arch/tile/lib/memset_64.c
+ create mode 100644 arch/tile/lib/spinlock_64.c
+ create mode 100644 arch/tile/lib/strchr_64.c
+ create mode 100644 arch/tile/lib/strlen_64.c
+ create mode 100644 arch/tile/lib/usercopy_64.S
+ create mode 100644 arch/tile/mm/migrate_64.S
 
-Greg, if it's OK for you, I'll add this to my for-2.6.40 branch.
-
- arch/m68k/kernel/Makefile_mm    |    2 +-
- arch/m68k/kernel/entry_mm.S     |  348 ---------------------------------------
- arch/m68k/kernel/syscalltable.S |  191 +++++++++++-----------
- 3 files changed, 96 insertions(+), 445 deletions(-)
-
-diff --git a/arch/m68k/kernel/Makefile_mm b/arch/m68k/kernel/Makefile_mm
-index 55d5d6b..aced678 100644
---- a/arch/m68k/kernel/Makefile_mm
-+++ b/arch/m68k/kernel/Makefile_mm
-@@ -10,7 +10,7 @@ endif
- extra-y	+= vmlinux.lds
+diff --git a/Makefile b/Makefile
+index 5a7a2e4..3dcca28 100644
+--- a/Makefile
++++ b/Makefile
+@@ -220,6 +220,11 @@ ifeq ($(ARCH),sh64)
+        SRCARCH := sh
+ endif
  
- obj-y	:= entry.o process.o traps.o ints.o signal.o ptrace.o module.o \
--	   sys_m68k.o time.o setup.o m68k_ksyms.o devres.o
-+	   sys_m68k.o time.o setup.o m68k_ksyms.o devres.o syscalltable.o
++# Additional ARCH settings for tile
++ifeq ($(ARCH),tilegx)
++       SRCARCH := tile
++endif
++
+ # Where to locate arch specific headers
+ hdr-arch  := $(SRCARCH)
  
- devres-y = ../../../kernel/irq/devres.o
- 
-diff --git a/arch/m68k/kernel/entry_mm.S b/arch/m68k/kernel/entry_mm.S
-index 1359ee6..bd0ec05 100644
---- a/arch/m68k/kernel/entry_mm.S
-+++ b/arch/m68k/kernel/entry_mm.S
-@@ -407,351 +407,3 @@ resume:
- 
- 	rts
- 
--.data
--ALIGN
--sys_call_table:
--	.long sys_restart_syscall	/* 0 - old "setup()" system call, used for restarting */
--	.long sys_exit
--	.long sys_fork
--	.long sys_read
--	.long sys_write
--	.long sys_open		/* 5 */
--	.long sys_close
--	.long sys_waitpid
--	.long sys_creat
--	.long sys_link
--	.long sys_unlink	/* 10 */
--	.long sys_execve
--	.long sys_chdir
--	.long sys_time
--	.long sys_mknod
--	.long sys_chmod		/* 15 */
--	.long sys_chown16
--	.long sys_ni_syscall				/* old break syscall holder */
--	.long sys_stat
--	.long sys_lseek
--	.long sys_getpid	/* 20 */
--	.long sys_mount
--	.long sys_oldumount
--	.long sys_setuid16
--	.long sys_getuid16
--	.long sys_stime		/* 25 */
--	.long sys_ptrace
--	.long sys_alarm
--	.long sys_fstat
--	.long sys_pause
--	.long sys_utime		/* 30 */
--	.long sys_ni_syscall				/* old stty syscall holder */
--	.long sys_ni_syscall				/* old gtty syscall holder */
--	.long sys_access
--	.long sys_nice
--	.long sys_ni_syscall	/* 35 */	/* old ftime syscall holder */
--	.long sys_sync
--	.long sys_kill
--	.long sys_rename
--	.long sys_mkdir
--	.long sys_rmdir		/* 40 */
--	.long sys_dup
--	.long sys_pipe
--	.long sys_times
--	.long sys_ni_syscall				/* old prof syscall holder */
--	.long sys_brk		/* 45 */
--	.long sys_setgid16
--	.long sys_getgid16
--	.long sys_signal
--	.long sys_geteuid16
--	.long sys_getegid16	/* 50 */
--	.long sys_acct
--	.long sys_umount				/* recycled never used phys() */
--	.long sys_ni_syscall				/* old lock syscall holder */
--	.long sys_ioctl
--	.long sys_fcntl		/* 55 */
--	.long sys_ni_syscall				/* old mpx syscall holder */
--	.long sys_setpgid
--	.long sys_ni_syscall				/* old ulimit syscall holder */
--	.long sys_ni_syscall
--	.long sys_umask		/* 60 */
--	.long sys_chroot
--	.long sys_ustat
--	.long sys_dup2
--	.long sys_getppid
--	.long sys_getpgrp	/* 65 */
--	.long sys_setsid
--	.long sys_sigaction
--	.long sys_sgetmask
--	.long sys_ssetmask
--	.long sys_setreuid16	/* 70 */
--	.long sys_setregid16
--	.long sys_sigsuspend
--	.long sys_sigpending
--	.long sys_sethostname
--	.long sys_setrlimit	/* 75 */
--	.long sys_old_getrlimit
--	.long sys_getrusage
--	.long sys_gettimeofday
--	.long sys_settimeofday
--	.long sys_getgroups16	/* 80 */
--	.long sys_setgroups16
--	.long sys_old_select
--	.long sys_symlink
--	.long sys_lstat
--	.long sys_readlink	/* 85 */
--	.long sys_uselib
--	.long sys_swapon
--	.long sys_reboot
--	.long sys_old_readdir
--	.long sys_old_mmap	/* 90 */
--	.long sys_munmap
--	.long sys_truncate
--	.long sys_ftruncate
--	.long sys_fchmod
--	.long sys_fchown16	/* 95 */
--	.long sys_getpriority
--	.long sys_setpriority
--	.long sys_ni_syscall				/* old profil syscall holder */
--	.long sys_statfs
--	.long sys_fstatfs	/* 100 */
--	.long sys_ni_syscall				/* ioperm for i386 */
--	.long sys_socketcall
--	.long sys_syslog
--	.long sys_setitimer
--	.long sys_getitimer	/* 105 */
--	.long sys_newstat
--	.long sys_newlstat
--	.long sys_newfstat
--	.long sys_ni_syscall
--	.long sys_ni_syscall	/* 110 */	/* iopl for i386 */
--	.long sys_vhangup
--	.long sys_ni_syscall				/* obsolete idle() syscall */
--	.long sys_ni_syscall				/* vm86old for i386 */
--	.long sys_wait4
--	.long sys_swapoff	/* 115 */
--	.long sys_sysinfo
--	.long sys_ipc
--	.long sys_fsync
--	.long sys_sigreturn
--	.long sys_clone		/* 120 */
--	.long sys_setdomainname
--	.long sys_newuname
--	.long sys_cacheflush				/* modify_ldt for i386 */
--	.long sys_adjtimex
--	.long sys_mprotect	/* 125 */
--	.long sys_sigprocmask
--	.long sys_ni_syscall		/* old "create_module" */
--	.long sys_init_module
--	.long sys_delete_module
--	.long sys_ni_syscall	/* 130 - old "get_kernel_syms" */
--	.long sys_quotactl
--	.long sys_getpgid
--	.long sys_fchdir
--	.long sys_bdflush
--	.long sys_sysfs		/* 135 */
--	.long sys_personality
--	.long sys_ni_syscall				/* for afs_syscall */
--	.long sys_setfsuid16
--	.long sys_setfsgid16
--	.long sys_llseek	/* 140 */
--	.long sys_getdents
--	.long sys_select
--	.long sys_flock
--	.long sys_msync
--	.long sys_readv		/* 145 */
--	.long sys_writev
--	.long sys_getsid
--	.long sys_fdatasync
--	.long sys_sysctl
--	.long sys_mlock		/* 150 */
--	.long sys_munlock
--	.long sys_mlockall
--	.long sys_munlockall
--	.long sys_sched_setparam
--	.long sys_sched_getparam	/* 155 */
--	.long sys_sched_setscheduler
--	.long sys_sched_getscheduler
--	.long sys_sched_yield
--	.long sys_sched_get_priority_max
--	.long sys_sched_get_priority_min  /* 160 */
--	.long sys_sched_rr_get_interval
--	.long sys_nanosleep
--	.long sys_mremap
--	.long sys_setresuid16
--	.long sys_getresuid16	/* 165 */
--	.long sys_getpagesize
--	.long sys_ni_syscall		/* old sys_query_module */
--	.long sys_poll
--	.long sys_nfsservctl
--	.long sys_setresgid16	/* 170 */
--	.long sys_getresgid16
--	.long sys_prctl
--	.long sys_rt_sigreturn
--	.long sys_rt_sigaction
--	.long sys_rt_sigprocmask	/* 175 */
--	.long sys_rt_sigpending
--	.long sys_rt_sigtimedwait
--	.long sys_rt_sigqueueinfo
--	.long sys_rt_sigsuspend
--	.long sys_pread64	/* 180 */
--	.long sys_pwrite64
--	.long sys_lchown16;
--	.long sys_getcwd
--	.long sys_capget
--	.long sys_capset	/* 185 */
--	.long sys_sigaltstack
--	.long sys_sendfile
--	.long sys_ni_syscall				/* streams1 */
--	.long sys_ni_syscall				/* streams2 */
--	.long sys_vfork		/* 190 */
--	.long sys_getrlimit
--	.long sys_mmap2
--	.long sys_truncate64
--	.long sys_ftruncate64
--	.long sys_stat64	/* 195 */
--	.long sys_lstat64
--	.long sys_fstat64
--	.long sys_chown
--	.long sys_getuid
--	.long sys_getgid	/* 200 */
--	.long sys_geteuid
--	.long sys_getegid
--	.long sys_setreuid
--	.long sys_setregid
--	.long sys_getgroups	/* 205 */
--	.long sys_setgroups
--	.long sys_fchown
--	.long sys_setresuid
--	.long sys_getresuid
--	.long sys_setresgid	/* 210 */
--	.long sys_getresgid
--	.long sys_lchown
--	.long sys_setuid
--	.long sys_setgid
--	.long sys_setfsuid	/* 215 */
--	.long sys_setfsgid
--	.long sys_pivot_root
--	.long sys_ni_syscall
--	.long sys_ni_syscall
--	.long sys_getdents64	/* 220 */
--	.long sys_gettid
--	.long sys_tkill
--	.long sys_setxattr
--	.long sys_lsetxattr
--	.long sys_fsetxattr	/* 225 */
--	.long sys_getxattr
--	.long sys_lgetxattr
--	.long sys_fgetxattr
--	.long sys_listxattr
--	.long sys_llistxattr	/* 230 */
--	.long sys_flistxattr
--	.long sys_removexattr
--	.long sys_lremovexattr
--	.long sys_fremovexattr
--	.long sys_futex		/* 235 */
--	.long sys_sendfile64
--	.long sys_mincore
--	.long sys_madvise
--	.long sys_fcntl64
--	.long sys_readahead	/* 240 */
--	.long sys_io_setup
--	.long sys_io_destroy
--	.long sys_io_getevents
--	.long sys_io_submit
--	.long sys_io_cancel	/* 245 */
--	.long sys_fadvise64
--	.long sys_exit_group
--	.long sys_lookup_dcookie
--	.long sys_epoll_create
--	.long sys_epoll_ctl	/* 250 */
--	.long sys_epoll_wait
--	.long sys_remap_file_pages
--	.long sys_set_tid_address
--	.long sys_timer_create
--	.long sys_timer_settime	/* 255 */
--	.long sys_timer_gettime
--	.long sys_timer_getoverrun
--	.long sys_timer_delete
--	.long sys_clock_settime
--	.long sys_clock_gettime	/* 260 */
--	.long sys_clock_getres
--	.long sys_clock_nanosleep
--	.long sys_statfs64
--	.long sys_fstatfs64
--	.long sys_tgkill	/* 265 */
--	.long sys_utimes
--	.long sys_fadvise64_64
--	.long sys_mbind
--	.long sys_get_mempolicy
--	.long sys_set_mempolicy	/* 270 */
--	.long sys_mq_open
--	.long sys_mq_unlink
--	.long sys_mq_timedsend
--	.long sys_mq_timedreceive
--	.long sys_mq_notify	/* 275 */
--	.long sys_mq_getsetattr
--	.long sys_waitid
--	.long sys_ni_syscall	/* for sys_vserver */
--	.long sys_add_key
--	.long sys_request_key	/* 280 */
--	.long sys_keyctl
--	.long sys_ioprio_set
--	.long sys_ioprio_get
--	.long sys_inotify_init
--	.long sys_inotify_add_watch	/* 285 */
--	.long sys_inotify_rm_watch
--	.long sys_migrate_pages
--	.long sys_openat
--	.long sys_mkdirat
--	.long sys_mknodat		/* 290 */
--	.long sys_fchownat
--	.long sys_futimesat
--	.long sys_fstatat64
--	.long sys_unlinkat
--	.long sys_renameat		/* 295 */
--	.long sys_linkat
--	.long sys_symlinkat
--	.long sys_readlinkat
--	.long sys_fchmodat
--	.long sys_faccessat		/* 300 */
--	.long sys_ni_syscall		/* Reserved for pselect6 */
--	.long sys_ni_syscall		/* Reserved for ppoll */
--	.long sys_unshare
--	.long sys_set_robust_list
--	.long sys_get_robust_list	/* 305 */
--	.long sys_splice
--	.long sys_sync_file_range
--	.long sys_tee
--	.long sys_vmsplice
--	.long sys_move_pages		/* 310 */
--	.long sys_sched_setaffinity
--	.long sys_sched_getaffinity
--	.long sys_kexec_load
--	.long sys_getcpu
--	.long sys_epoll_pwait		/* 315 */
--	.long sys_utimensat
--	.long sys_signalfd
--	.long sys_timerfd_create
--	.long sys_eventfd
--	.long sys_fallocate		/* 320 */
--	.long sys_timerfd_settime
--	.long sys_timerfd_gettime
--	.long sys_signalfd4
--	.long sys_eventfd2
--	.long sys_epoll_create1		/* 325 */
--	.long sys_dup3
--	.long sys_pipe2
--	.long sys_inotify_init1
--	.long sys_preadv
--	.long sys_pwritev		/* 330 */
--	.long sys_rt_tgsigqueueinfo
--	.long sys_perf_event_open
--	.long sys_get_thread_area
--	.long sys_set_thread_area
--	.long sys_atomic_cmpxchg_32	/* 335 */
--	.long sys_atomic_barrier
--	.long sys_fanotify_init
--	.long sys_fanotify_mark
--	.long sys_prlimit64
--	.long sys_name_to_handle_at	/* 340 */
--	.long sys_open_by_handle_at
--	.long sys_clock_adjtime
--	.long sys_syncfs
--
-diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
-index 9b8393d..0284192 100644
---- a/arch/m68k/kernel/syscalltable.S
-+++ b/arch/m68k/kernel/syscalltable.S
-@@ -1,6 +1,4 @@
- /*
-- *  linux/arch/m68knommu/kernel/syscalltable.S
-- *
-  *  Copyright (C) 2002, Greg Ungerer (gerg@snapgear.com)
-  *
-  *  Based on older entry.S files, the following copyrights apply:
-@@ -9,171 +7,176 @@
-  *                      Kenneth Albanowski <kjahds@kjahds.com>,
-  *  Copyright (C) 2000  Lineo Inc. (www.lineo.com) 
-  *  Copyright (C) 1991, 1992  Linus Torvalds
+diff --git a/arch/tile/configs/tilegx_defconfig b/arch/tile/configs/tilegx_defconfig
+new file mode 100644
+index 0000000..776ec0c
+--- /dev/null
++++ b/arch/tile/configs/tilegx_defconfig
+@@ -0,0 +1,1776 @@
++#
++# Automatically generated make config: don't edit
++# Linux/tilegx 2.6.39-rc5 Kernel Configuration
++# Wed May  4 11:08:04 2011
++#
++CONFIG_TILE=y
++CONFIG_MMU=y
++CONFIG_GENERIC_CSUM=y
++CONFIG_SEMAPHORE_SLEEPERS=y
++CONFIG_HAVE_ARCH_ALLOC_REMAP=y
++CONFIG_HAVE_SETUP_PER_CPU_AREA=y
++CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
++CONFIG_SYS_SUPPORTS_HUGETLBFS=y
++CONFIG_GENERIC_TIME=y
++CONFIG_GENERIC_CLOCKEVENTS=y
++CONFIG_RWSEM_GENERIC_SPINLOCK=y
++CONFIG_DEFAULT_MIGRATION_COST=10000000
++CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
++CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
++CONFIG_ARCH_DMA_ADDR_T_64BIT=y
++CONFIG_LOCKDEP_SUPPORT=y
++CONFIG_STACKTRACE_SUPPORT=y
++CONFIG_ARCH_DISCONTIGMEM_ENABLE=y
++CONFIG_ARCH_DISCONTIGMEM_DEFAULT=y
++CONFIG_TRACE_IRQFLAGS_SUPPORT=y
++CONFIG_STRICT_DEVMEM=y
++CONFIG_SMP=y
++# CONFIG_DEBUG_COPY_FROM_USER is not set
++CONFIG_HVC_TILE=y
++CONFIG_TILEGX=y
++CONFIG_64BIT=y
++CONFIG_ARCH_DEFCONFIG="arch/tile/configs/tilegx_defconfig"
++CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
++CONFIG_CONSTRUCTORS=y
++
++#
++# General setup
++#
++CONFIG_EXPERIMENTAL=y
++CONFIG_INIT_ENV_ARG_LIMIT=32
++CONFIG_CROSS_COMPILE=""
++CONFIG_LOCALVERSION=""
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SWAP=y
++CONFIG_SYSVIPC=y
++CONFIG_SYSVIPC_SYSCTL=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_POSIX_MQUEUE_SYSCTL=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++# CONFIG_FHANDLE is not set
++CONFIG_TASKSTATS=y
++CONFIG_TASK_DELAY_ACCT=y
++CONFIG_TASK_XACCT=y
++CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_AUDIT=y
++CONFIG_HAVE_GENERIC_HARDIRQS=y
++
++#
++# IRQ subsystem
++#
++CONFIG_GENERIC_HARDIRQS=y
++CONFIG_GENERIC_IRQ_PROBE=y
++CONFIG_GENERIC_IRQ_SHOW=y
++CONFIG_GENERIC_PENDING_IRQ=y
++
++#
++# RCU Subsystem
++#
++CONFIG_TREE_RCU=y
++# CONFIG_PREEMPT_RCU is not set
++# CONFIG_RCU_TRACE is not set
++CONFIG_RCU_FANOUT=64
++# CONFIG_RCU_FANOUT_EXACT is not set
++# CONFIG_RCU_FAST_NO_HZ is not set
++# CONFIG_TREE_RCU_TRACE is not set
++# CONFIG_IKCONFIG is not set
++CONFIG_LOG_BUF_SHIFT=19
++CONFIG_CGROUPS=y
++CONFIG_CGROUP_DEBUG=y
++CONFIG_CGROUP_NS=y
++# CONFIG_CGROUP_FREEZER is not set
++CONFIG_CGROUP_DEVICE=y
++CONFIG_CPUSETS=y
++CONFIG_PROC_PID_CPUSET=y
++CONFIG_CGROUP_CPUACCT=y
++CONFIG_RESOURCE_COUNTERS=y
++CONFIG_CGROUP_MEM_RES_CTLR=y
++CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
++CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=y
++CONFIG_CGROUP_SCHED=y
++CONFIG_FAIR_GROUP_SCHED=y
++CONFIG_RT_GROUP_SCHED=y
++CONFIG_BLK_CGROUP=y
++# CONFIG_DEBUG_BLK_CGROUP is not set
++CONFIG_NAMESPACES=y
++CONFIG_UTS_NS=y
++CONFIG_IPC_NS=y
++CONFIG_USER_NS=y
++CONFIG_PID_NS=y
++CONFIG_NET_NS=y
++# CONFIG_SCHED_AUTOGROUP is not set
++CONFIG_MM_OWNER=y
++# CONFIG_SYSFS_DEPRECATED is not set
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_INITRAMFS_SOURCE="usr/contents.txt"
++CONFIG_INITRAMFS_ROOT_UID=0
++CONFIG_INITRAMFS_ROOT_GID=0
++CONFIG_RD_GZIP=y
++# CONFIG_RD_BZIP2 is not set
++# CONFIG_RD_LZMA is not set
++# CONFIG_RD_XZ is not set
++# CONFIG_RD_LZO is not set
++CONFIG_INITRAMFS_COMPRESSION_NONE=y
++# CONFIG_INITRAMFS_COMPRESSION_GZIP is not set
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
++CONFIG_SYSCTL=y
++CONFIG_ANON_INODES=y
++CONFIG_EXPERT=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_KALLSYMS=y
++# CONFIG_KALLSYMS_ALL is not set
++# CONFIG_KALLSYMS_EXTRA_PASS is not set
++CONFIG_HOTPLUG=y
++CONFIG_PRINTK=y
++CONFIG_BUG=y
++CONFIG_ELF_CORE=y
++CONFIG_BASE_FULL=y
++CONFIG_FUTEX=y
++CONFIG_EPOLL=y
++CONFIG_SIGNALFD=y
++CONFIG_TIMERFD=y
++CONFIG_EVENTFD=y
++CONFIG_SHMEM=y
++CONFIG_AIO=y
++CONFIG_EMBEDDED=y
++
++#
++# Kernel Performance Events And Counters
++#
++CONFIG_VM_EVENT_COUNTERS=y
++CONFIG_PCI_QUIRKS=y
++CONFIG_SLUB_DEBUG=y
++# CONFIG_COMPAT_BRK is not set
++# CONFIG_SLAB is not set
++CONFIG_SLUB=y
++# CONFIG_SLOB is not set
++CONFIG_PROFILING=y
++CONFIG_USE_GENERIC_SMP_HELPERS=y
++
++#
++# GCOV-based kernel profiling
++#
++# CONFIG_GCOV_KERNEL is not set
++# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
++CONFIG_SLABINFO=y
++CONFIG_RT_MUTEXES=y
++CONFIG_BASE_SMALL=0
++CONFIG_MODULES=y
++CONFIG_MODULE_FORCE_LOAD=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_MODULE_FORCE_UNLOAD is not set
++# CONFIG_MODVERSIONS is not set
++# CONFIG_MODULE_SRCVERSION_ALL is not set
++CONFIG_STOP_MACHINE=y
++CONFIG_BLOCK=y
++CONFIG_BLK_DEV_BSG=y
++CONFIG_BLK_DEV_INTEGRITY=y
++# CONFIG_BLK_DEV_THROTTLING is not set
++CONFIG_BLOCK_COMPAT=y
++
++#
++# IO Schedulers
++#
++CONFIG_IOSCHED_NOOP=y
++CONFIG_IOSCHED_DEADLINE=y
++CONFIG_IOSCHED_CFQ=y
++CONFIG_CFQ_GROUP_IOSCHED=y
++# CONFIG_DEFAULT_DEADLINE is not set
++CONFIG_DEFAULT_CFQ=y
++# CONFIG_DEFAULT_NOOP is not set
++CONFIG_DEFAULT_IOSCHED="cfq"
++CONFIG_PADATA=y
++# CONFIG_INLINE_SPIN_TRYLOCK is not set
++# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
++# CONFIG_INLINE_SPIN_LOCK is not set
++# CONFIG_INLINE_SPIN_LOCK_BH is not set
++# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
++# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
++CONFIG_INLINE_SPIN_UNLOCK=y
++# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
++CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
++# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
++# CONFIG_INLINE_READ_TRYLOCK is not set
++# CONFIG_INLINE_READ_LOCK is not set
++# CONFIG_INLINE_READ_LOCK_BH is not set
++# CONFIG_INLINE_READ_LOCK_IRQ is not set
++# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
++CONFIG_INLINE_READ_UNLOCK=y
++# CONFIG_INLINE_READ_UNLOCK_BH is not set
++CONFIG_INLINE_READ_UNLOCK_IRQ=y
++# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
++# CONFIG_INLINE_WRITE_TRYLOCK is not set
++# CONFIG_INLINE_WRITE_LOCK is not set
++# CONFIG_INLINE_WRITE_LOCK_BH is not set
++# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
++# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
++CONFIG_INLINE_WRITE_UNLOCK=y
++# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
++CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
++# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
++CONFIG_MUTEX_SPIN_ON_OWNER=y
++
++#
++# Tilera-specific configuration
++#
++CONFIG_NR_CPUS=100
++CONFIG_TICK_ONESHOT=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
++CONFIG_HZ_100=y
++# CONFIG_HZ_250 is not set
++# CONFIG_HZ_300 is not set
++# CONFIG_HZ_1000 is not set
++CONFIG_HZ=100
++CONFIG_SCHED_HRTICK=y
++# CONFIG_KEXEC is not set
++CONFIG_COMPAT=y
++CONFIG_SYSVIPC_COMPAT=y
++# CONFIG_HIGHMEM is not set
++CONFIG_NUMA=y
++CONFIG_NODES_SHIFT=2
++CONFIG_PAGE_OFFSET=0xC0000000
++CONFIG_SELECT_MEMORY_MODEL=y
++CONFIG_DISCONTIGMEM_MANUAL=y
++CONFIG_DISCONTIGMEM=y
++CONFIG_FLAT_NODE_MEM_MAP=y
++CONFIG_NEED_MULTIPLE_NODES=y
++CONFIG_PAGEFLAGS_EXTENDED=y
++CONFIG_SPLIT_PTLOCK_CPUS=4
++# CONFIG_COMPACTION is not set
++CONFIG_MIGRATION=y
++CONFIG_PHYS_ADDR_T_64BIT=y
++CONFIG_ZONE_DMA_FLAG=0
++CONFIG_VIRT_TO_BUS=y
++# CONFIG_KSM is not set
++CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
++# CONFIG_CMDLINE_BOOL is not set
++CONFIG_VMALLOC_RESERVE=0x1000000
++CONFIG_HARDWALL=y
++CONFIG_KERNEL_PL=1
++
++#
++# Bus options
++#
++CONFIG_PCI=y
++CONFIG_PCI_DOMAINS=y
++# CONFIG_NO_IOMEM is not set
++# CONFIG_NO_IOPORT is not set
++# CONFIG_ARCH_SUPPORTS_MSI is not set
++CONFIG_PCI_DEBUG=y
++# CONFIG_PCI_STUB is not set
++# CONFIG_PCI_IOV is not set
++# CONFIG_HOTPLUG_PCI is not set
++
++#
++# Executable file formats
++#
++CONFIG_KCORE_ELF=y
++CONFIG_BINFMT_ELF=y
++CONFIG_COMPAT_BINFMT_ELF=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++# CONFIG_HAVE_AOUT is not set
++CONFIG_BINFMT_MISC=y
++CONFIG_NET=y
++
++#
++# Networking options
++#
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_XFRM=y
++CONFIG_XFRM_USER=y
++CONFIG_XFRM_SUB_POLICY=y
++CONFIG_XFRM_MIGRATE=y
++CONFIG_XFRM_STATISTICS=y
++CONFIG_XFRM_IPCOMP=m
++CONFIG_NET_KEY=m
++CONFIG_NET_KEY_MIGRATE=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_ADVANCED_ROUTER=y
++# CONFIG_IP_FIB_TRIE_STATS is not set
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_MULTIPATH=y
++CONFIG_IP_ROUTE_VERBOSE=y
++CONFIG_IP_ROUTE_CLASSID=y
++# CONFIG_IP_PNP is not set
++CONFIG_NET_IPIP=m
++# CONFIG_NET_IPGRE_DEMUX is not set
++CONFIG_IP_MROUTE=y
++# CONFIG_IP_MROUTE_MULTIPLE_TABLES is not set
++CONFIG_IP_PIMSM_V1=y
++CONFIG_IP_PIMSM_V2=y
++# CONFIG_ARPD is not set
++CONFIG_SYN_COOKIES=y
++CONFIG_INET_AH=m
++CONFIG_INET_ESP=m
++CONFIG_INET_IPCOMP=m
++CONFIG_INET_XFRM_TUNNEL=m
++CONFIG_INET_TUNNEL=m
++CONFIG_INET_XFRM_MODE_TRANSPORT=m
++CONFIG_INET_XFRM_MODE_TUNNEL=m
++CONFIG_INET_XFRM_MODE_BEET=m
++CONFIG_INET_LRO=y
++CONFIG_INET_DIAG=m
++CONFIG_INET_TCP_DIAG=m
++CONFIG_TCP_CONG_ADVANCED=y
++CONFIG_TCP_CONG_BIC=m
++CONFIG_TCP_CONG_CUBIC=y
++CONFIG_TCP_CONG_WESTWOOD=m
++CONFIG_TCP_CONG_HTCP=m
++CONFIG_TCP_CONG_HSTCP=m
++CONFIG_TCP_CONG_HYBLA=m
++CONFIG_TCP_CONG_VEGAS=m
++CONFIG_TCP_CONG_SCALABLE=m
++CONFIG_TCP_CONG_LP=m
++CONFIG_TCP_CONG_VENO=m
++CONFIG_TCP_CONG_YEAH=m
++CONFIG_TCP_CONG_ILLINOIS=m
++CONFIG_DEFAULT_CUBIC=y
++# CONFIG_DEFAULT_RENO is not set
++CONFIG_DEFAULT_TCP_CONG="cubic"
++CONFIG_TCP_MD5SIG=y
++CONFIG_IPV6=y
++CONFIG_IPV6_PRIVACY=y
++CONFIG_IPV6_ROUTER_PREF=y
++CONFIG_IPV6_ROUTE_INFO=y
++CONFIG_IPV6_OPTIMISTIC_DAD=y
++CONFIG_INET6_AH=m
++CONFIG_INET6_ESP=m
++CONFIG_INET6_IPCOMP=m
++CONFIG_IPV6_MIP6=m
++CONFIG_INET6_XFRM_TUNNEL=m
++CONFIG_INET6_TUNNEL=m
++CONFIG_INET6_XFRM_MODE_TRANSPORT=m
++CONFIG_INET6_XFRM_MODE_TUNNEL=m
++CONFIG_INET6_XFRM_MODE_BEET=m
++CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION=m
++CONFIG_IPV6_SIT=m
++# CONFIG_IPV6_SIT_6RD is not set
++CONFIG_IPV6_NDISC_NODETYPE=y
++CONFIG_IPV6_TUNNEL=m
++CONFIG_IPV6_MULTIPLE_TABLES=y
++# CONFIG_IPV6_SUBTREES is not set
++CONFIG_IPV6_MROUTE=y
++# CONFIG_IPV6_MROUTE_MULTIPLE_TABLES is not set
++CONFIG_IPV6_PIMSM_V2=y
++CONFIG_NETLABEL=y
++CONFIG_NETWORK_SECMARK=y
++# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
++CONFIG_NETFILTER=y
++# CONFIG_NETFILTER_DEBUG is not set
++CONFIG_NETFILTER_ADVANCED=y
++CONFIG_BRIDGE_NETFILTER=y
++
++#
++# Core Netfilter Configuration
++#
++CONFIG_NETFILTER_NETLINK=m
++CONFIG_NETFILTER_NETLINK_QUEUE=m
++CONFIG_NETFILTER_NETLINK_LOG=m
++CONFIG_NF_CONNTRACK=y
++CONFIG_NF_CONNTRACK_MARK=y
++CONFIG_NF_CONNTRACK_SECMARK=y
++CONFIG_NF_CONNTRACK_ZONES=y
++CONFIG_NF_CONNTRACK_EVENTS=y
++# CONFIG_NF_CONNTRACK_TIMESTAMP is not set
++CONFIG_NF_CT_PROTO_DCCP=m
++CONFIG_NF_CT_PROTO_GRE=m
++CONFIG_NF_CT_PROTO_SCTP=m
++CONFIG_NF_CT_PROTO_UDPLITE=m
++CONFIG_NF_CONNTRACK_AMANDA=m
++CONFIG_NF_CONNTRACK_FTP=m
++CONFIG_NF_CONNTRACK_H323=m
++CONFIG_NF_CONNTRACK_IRC=m
++CONFIG_NF_CONNTRACK_BROADCAST=m
++CONFIG_NF_CONNTRACK_NETBIOS_NS=m
++# CONFIG_NF_CONNTRACK_SNMP is not set
++CONFIG_NF_CONNTRACK_PPTP=m
++CONFIG_NF_CONNTRACK_SANE=m
++CONFIG_NF_CONNTRACK_SIP=m
++CONFIG_NF_CONNTRACK_TFTP=m
++# CONFIG_NF_CT_NETLINK is not set
++CONFIG_NETFILTER_TPROXY=m
++CONFIG_NETFILTER_XTABLES=y
++
++#
++# Xtables combined modules
++#
++CONFIG_NETFILTER_XT_MARK=m
++CONFIG_NETFILTER_XT_CONNMARK=m
++
++#
++# Xtables targets
++#
++# CONFIG_NETFILTER_XT_TARGET_AUDIT is not set
++# CONFIG_NETFILTER_XT_TARGET_CHECKSUM is not set
++CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
++CONFIG_NETFILTER_XT_TARGET_CONNMARK=m
++CONFIG_NETFILTER_XT_TARGET_CONNSECMARK=m
++CONFIG_NETFILTER_XT_TARGET_CT=m
++CONFIG_NETFILTER_XT_TARGET_DSCP=m
++CONFIG_NETFILTER_XT_TARGET_HL=m
++CONFIG_NETFILTER_XT_TARGET_IDLETIMER=m
++CONFIG_NETFILTER_XT_TARGET_MARK=m
++CONFIG_NETFILTER_XT_TARGET_NFLOG=m
++CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
++CONFIG_NETFILTER_XT_TARGET_NOTRACK=m
++CONFIG_NETFILTER_XT_TARGET_RATEEST=m
++CONFIG_NETFILTER_XT_TARGET_TEE=m
++CONFIG_NETFILTER_XT_TARGET_TPROXY=m
++CONFIG_NETFILTER_XT_TARGET_TRACE=m
++CONFIG_NETFILTER_XT_TARGET_SECMARK=m
++CONFIG_NETFILTER_XT_TARGET_TCPMSS=m
++CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=m
++
++#
++# Xtables matches
++#
++# CONFIG_NETFILTER_XT_MATCH_ADDRTYPE is not set
++CONFIG_NETFILTER_XT_MATCH_CLUSTER=m
++CONFIG_NETFILTER_XT_MATCH_COMMENT=m
++CONFIG_NETFILTER_XT_MATCH_CONNBYTES=m
++CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=m
++CONFIG_NETFILTER_XT_MATCH_CONNMARK=m
++CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y
++# CONFIG_NETFILTER_XT_MATCH_CPU is not set
++CONFIG_NETFILTER_XT_MATCH_DCCP=m
++# CONFIG_NETFILTER_XT_MATCH_DEVGROUP is not set
++CONFIG_NETFILTER_XT_MATCH_DSCP=m
++CONFIG_NETFILTER_XT_MATCH_ESP=m
++CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=m
++CONFIG_NETFILTER_XT_MATCH_HELPER=m
++CONFIG_NETFILTER_XT_MATCH_HL=m
++CONFIG_NETFILTER_XT_MATCH_IPRANGE=m
++CONFIG_NETFILTER_XT_MATCH_IPVS=m
++CONFIG_NETFILTER_XT_MATCH_LENGTH=m
++CONFIG_NETFILTER_XT_MATCH_LIMIT=m
++CONFIG_NETFILTER_XT_MATCH_MAC=m
++CONFIG_NETFILTER_XT_MATCH_MARK=m
++CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
++CONFIG_NETFILTER_XT_MATCH_OSF=m
++CONFIG_NETFILTER_XT_MATCH_OWNER=m
++CONFIG_NETFILTER_XT_MATCH_POLICY=m
++CONFIG_NETFILTER_XT_MATCH_PHYSDEV=m
++CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
++CONFIG_NETFILTER_XT_MATCH_QUOTA=m
++CONFIG_NETFILTER_XT_MATCH_RATEEST=m
++CONFIG_NETFILTER_XT_MATCH_REALM=m
++CONFIG_NETFILTER_XT_MATCH_RECENT=m
++CONFIG_NETFILTER_XT_MATCH_SCTP=m
++CONFIG_NETFILTER_XT_MATCH_SOCKET=m
++CONFIG_NETFILTER_XT_MATCH_STATE=y
++CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
++CONFIG_NETFILTER_XT_MATCH_STRING=m
++CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
++CONFIG_NETFILTER_XT_MATCH_TIME=m
++CONFIG_NETFILTER_XT_MATCH_U32=m
++# CONFIG_IP_SET is not set
++CONFIG_IP_VS=m
++CONFIG_IP_VS_IPV6=y
++# CONFIG_IP_VS_DEBUG is not set
++CONFIG_IP_VS_TAB_BITS=12
++
++#
++# IPVS transport protocol load balancing support
++#
++CONFIG_IP_VS_PROTO_TCP=y
++CONFIG_IP_VS_PROTO_UDP=y
++CONFIG_IP_VS_PROTO_AH_ESP=y
++CONFIG_IP_VS_PROTO_ESP=y
++CONFIG_IP_VS_PROTO_AH=y
++CONFIG_IP_VS_PROTO_SCTP=y
++
++#
++# IPVS scheduler
++#
++CONFIG_IP_VS_RR=m
++CONFIG_IP_VS_WRR=m
++CONFIG_IP_VS_LC=m
++CONFIG_IP_VS_WLC=m
++CONFIG_IP_VS_LBLC=m
++CONFIG_IP_VS_LBLCR=m
++# CONFIG_IP_VS_DH is not set
++# CONFIG_IP_VS_SH is not set
++CONFIG_IP_VS_SED=m
++CONFIG_IP_VS_NQ=m
++
++#
++# IPVS application helper
++#
++# CONFIG_IP_VS_NFCT is not set
++# CONFIG_IP_VS_PE_SIP is not set
++
++#
++# IP: Netfilter Configuration
++#
++CONFIG_NF_DEFRAG_IPV4=y
++CONFIG_NF_CONNTRACK_IPV4=y
++# CONFIG_NF_CONNTRACK_PROC_COMPAT is not set
++CONFIG_IP_NF_QUEUE=m
++CONFIG_IP_NF_IPTABLES=y
++CONFIG_IP_NF_MATCH_AH=m
++CONFIG_IP_NF_MATCH_ECN=m
++CONFIG_IP_NF_MATCH_TTL=m
++CONFIG_IP_NF_FILTER=y
++CONFIG_IP_NF_TARGET_REJECT=y
++CONFIG_IP_NF_TARGET_LOG=m
++CONFIG_IP_NF_TARGET_ULOG=m
++# CONFIG_NF_NAT is not set
++CONFIG_IP_NF_MANGLE=m
++# CONFIG_IP_NF_TARGET_CLUSTERIP is not set
++CONFIG_IP_NF_TARGET_ECN=m
++CONFIG_IP_NF_TARGET_TTL=m
++CONFIG_IP_NF_RAW=m
++CONFIG_IP_NF_SECURITY=m
++CONFIG_IP_NF_ARPTABLES=m
++CONFIG_IP_NF_ARPFILTER=m
++CONFIG_IP_NF_ARP_MANGLE=m
++
++#
++# IPv6: Netfilter Configuration
++#
++CONFIG_NF_DEFRAG_IPV6=m
++CONFIG_NF_CONNTRACK_IPV6=m
++CONFIG_IP6_NF_QUEUE=m
++CONFIG_IP6_NF_IPTABLES=m
++CONFIG_IP6_NF_MATCH_AH=m
++CONFIG_IP6_NF_MATCH_EUI64=m
++CONFIG_IP6_NF_MATCH_FRAG=m
++CONFIG_IP6_NF_MATCH_OPTS=m
++CONFIG_IP6_NF_MATCH_HL=m
++CONFIG_IP6_NF_MATCH_IPV6HEADER=m
++CONFIG_IP6_NF_MATCH_MH=m
++CONFIG_IP6_NF_MATCH_RT=m
++CONFIG_IP6_NF_TARGET_HL=m
++CONFIG_IP6_NF_TARGET_LOG=m
++CONFIG_IP6_NF_FILTER=m
++CONFIG_IP6_NF_TARGET_REJECT=m
++CONFIG_IP6_NF_MANGLE=m
++CONFIG_IP6_NF_RAW=m
++CONFIG_IP6_NF_SECURITY=m
++CONFIG_BRIDGE_NF_EBTABLES=m
++CONFIG_BRIDGE_EBT_BROUTE=m
++CONFIG_BRIDGE_EBT_T_FILTER=m
++CONFIG_BRIDGE_EBT_T_NAT=m
++CONFIG_BRIDGE_EBT_802_3=m
++CONFIG_BRIDGE_EBT_AMONG=m
++CONFIG_BRIDGE_EBT_ARP=m
++CONFIG_BRIDGE_EBT_IP=m
++CONFIG_BRIDGE_EBT_IP6=m
++CONFIG_BRIDGE_EBT_LIMIT=m
++CONFIG_BRIDGE_EBT_MARK=m
++CONFIG_BRIDGE_EBT_PKTTYPE=m
++CONFIG_BRIDGE_EBT_STP=m
++CONFIG_BRIDGE_EBT_VLAN=m
++CONFIG_BRIDGE_EBT_ARPREPLY=m
++CONFIG_BRIDGE_EBT_DNAT=m
++CONFIG_BRIDGE_EBT_MARK_T=m
++CONFIG_BRIDGE_EBT_REDIRECT=m
++CONFIG_BRIDGE_EBT_SNAT=m
++CONFIG_BRIDGE_EBT_LOG=m
++CONFIG_BRIDGE_EBT_ULOG=m
++CONFIG_BRIDGE_EBT_NFLOG=m
++# CONFIG_IP_DCCP is not set
++CONFIG_IP_SCTP=m
++# CONFIG_SCTP_DBG_MSG is not set
++# CONFIG_SCTP_DBG_OBJCNT is not set
++# CONFIG_SCTP_HMAC_NONE is not set
++# CONFIG_SCTP_HMAC_SHA1 is not set
++CONFIG_SCTP_HMAC_MD5=y
++CONFIG_RDS=m
++CONFIG_RDS_TCP=m
++# CONFIG_RDS_DEBUG is not set
++# CONFIG_TIPC is not set
++# CONFIG_ATM is not set
++# CONFIG_L2TP is not set
++CONFIG_STP=m
++CONFIG_GARP=m
++CONFIG_BRIDGE=m
++CONFIG_BRIDGE_IGMP_SNOOPING=y
++CONFIG_NET_DSA=y
++CONFIG_NET_DSA_TAG_DSA=y
++CONFIG_NET_DSA_TAG_EDSA=y
++CONFIG_NET_DSA_TAG_TRAILER=y
++CONFIG_NET_DSA_MV88E6XXX=y
++CONFIG_NET_DSA_MV88E6060=y
++CONFIG_NET_DSA_MV88E6XXX_NEED_PPU=y
++CONFIG_NET_DSA_MV88E6131=y
++CONFIG_NET_DSA_MV88E6123_61_65=y
++CONFIG_VLAN_8021Q=m
++CONFIG_VLAN_8021Q_GVRP=y
++# CONFIG_DECNET is not set
++CONFIG_LLC=m
++# CONFIG_LLC2 is not set
++# CONFIG_IPX is not set
++# CONFIG_ATALK is not set
++# CONFIG_X25 is not set
++# CONFIG_LAPB is not set
++# CONFIG_ECONET is not set
++# CONFIG_WAN_ROUTER is not set
++CONFIG_PHONET=m
++# CONFIG_IEEE802154 is not set
++CONFIG_NET_SCHED=y
++
++#
++# Queueing/Scheduling
++#
++CONFIG_NET_SCH_CBQ=m
++CONFIG_NET_SCH_HTB=m
++CONFIG_NET_SCH_HFSC=m
++CONFIG_NET_SCH_PRIO=m
++CONFIG_NET_SCH_MULTIQ=m
++CONFIG_NET_SCH_RED=m
++# CONFIG_NET_SCH_SFB is not set
++CONFIG_NET_SCH_SFQ=m
++CONFIG_NET_SCH_TEQL=m
++CONFIG_NET_SCH_TBF=m
++CONFIG_NET_SCH_GRED=m
++CONFIG_NET_SCH_DSMARK=m
++CONFIG_NET_SCH_NETEM=m
++CONFIG_NET_SCH_DRR=m
++# CONFIG_NET_SCH_MQPRIO is not set
++# CONFIG_NET_SCH_CHOKE is not set
++CONFIG_NET_SCH_INGRESS=m
++
++#
++# Classification
++#
++CONFIG_NET_CLS=y
++CONFIG_NET_CLS_BASIC=m
++CONFIG_NET_CLS_TCINDEX=m
++CONFIG_NET_CLS_ROUTE4=m
++CONFIG_NET_CLS_FW=m
++CONFIG_NET_CLS_U32=m
++CONFIG_CLS_U32_PERF=y
++CONFIG_CLS_U32_MARK=y
++CONFIG_NET_CLS_RSVP=m
++CONFIG_NET_CLS_RSVP6=m
++CONFIG_NET_CLS_FLOW=m
++CONFIG_NET_CLS_CGROUP=y
++CONFIG_NET_EMATCH=y
++CONFIG_NET_EMATCH_STACK=32
++CONFIG_NET_EMATCH_CMP=m
++CONFIG_NET_EMATCH_NBYTE=m
++CONFIG_NET_EMATCH_U32=m
++CONFIG_NET_EMATCH_META=m
++CONFIG_NET_EMATCH_TEXT=m
++CONFIG_NET_CLS_ACT=y
++CONFIG_NET_ACT_POLICE=m
++CONFIG_NET_ACT_GACT=m
++CONFIG_GACT_PROB=y
++CONFIG_NET_ACT_MIRRED=m
++CONFIG_NET_ACT_IPT=m
++CONFIG_NET_ACT_NAT=m
++CONFIG_NET_ACT_PEDIT=m
++CONFIG_NET_ACT_SIMP=m
++CONFIG_NET_ACT_SKBEDIT=m
++# CONFIG_NET_ACT_CSUM is not set
++CONFIG_NET_CLS_IND=y
++CONFIG_NET_SCH_FIFO=y
++CONFIG_DCB=y
++CONFIG_DNS_RESOLVER=y
++# CONFIG_BATMAN_ADV is not set
++CONFIG_RPS=y
++CONFIG_RFS_ACCEL=y
++CONFIG_XPS=y
++
++#
++# Network testing
++#
++# CONFIG_NET_PKTGEN is not set
++# CONFIG_HAMRADIO is not set
++# CONFIG_CAN is not set
++# CONFIG_IRDA is not set
++# CONFIG_BT is not set
++# CONFIG_AF_RXRPC is not set
++CONFIG_FIB_RULES=y
++# CONFIG_WIRELESS is not set
++# CONFIG_WIMAX is not set
++# CONFIG_RFKILL is not set
++# CONFIG_NET_9P is not set
++# CONFIG_CAIF is not set
++# CONFIG_CEPH_LIB is not set
++
++#
++# Device Drivers
++#
++
++#
++# Generic Driver Options
++#
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_STANDALONE=y
++CONFIG_PREVENT_FIRMWARE_BUILD=y
++CONFIG_FW_LOADER=y
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_EXTRA_FIRMWARE=""
++# CONFIG_DEBUG_DRIVER is not set
++# CONFIG_DEBUG_DEVRES is not set
++# CONFIG_SYS_HYPERVISOR is not set
++CONFIG_CONNECTOR=y
++CONFIG_PROC_EVENTS=y
++# CONFIG_MTD is not set
++# CONFIG_PARPORT is not set
++CONFIG_BLK_DEV=y
++# CONFIG_BLK_CPQ_DA is not set
++# CONFIG_BLK_CPQ_CISS_DA is not set
++# CONFIG_BLK_DEV_DAC960 is not set
++# CONFIG_BLK_DEV_UMEM is not set
++# CONFIG_BLK_DEV_COW_COMMON is not set
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_CRYPTOLOOP=m
++# CONFIG_BLK_DEV_DRBD is not set
++# CONFIG_BLK_DEV_NBD is not set
++CONFIG_BLK_DEV_SX8=m
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_COUNT=16
++CONFIG_BLK_DEV_RAM_SIZE=16384
++# CONFIG_BLK_DEV_XIP is not set
++# CONFIG_CDROM_PKTCDVD is not set
++CONFIG_ATA_OVER_ETH=y
++# CONFIG_BLK_DEV_RBD is not set
++# CONFIG_SENSORS_LIS3LV02D is not set
++CONFIG_MISC_DEVICES=y
++# CONFIG_AD525X_DPOT is not set
++# CONFIG_PHANTOM is not set
++# CONFIG_SGI_IOC4 is not set
++# CONFIG_TIFM_CORE is not set
++# CONFIG_ICS932S401 is not set
++# CONFIG_ENCLOSURE_SERVICES is not set
++# CONFIG_HP_ILO is not set
++# CONFIG_APDS9802ALS is not set
++# CONFIG_ISL29003 is not set
++# CONFIG_ISL29020 is not set
++# CONFIG_SENSORS_TSL2550 is not set
++# CONFIG_SENSORS_BH1780 is not set
++# CONFIG_SENSORS_BH1770 is not set
++# CONFIG_SENSORS_APDS990X is not set
++# CONFIG_HMC6352 is not set
++# CONFIG_DS1682 is not set
++# CONFIG_BMP085 is not set
++# CONFIG_PCH_PHUB is not set
++# CONFIG_C2PORT is not set
++
++#
++# EEPROM support
++#
++# CONFIG_EEPROM_AT24 is not set
++# CONFIG_EEPROM_LEGACY is not set
++# CONFIG_EEPROM_MAX6875 is not set
++# CONFIG_EEPROM_93CX6 is not set
++# CONFIG_CB710_CORE is not set
++
++#
++# Texas Instruments shared transport line discipline
++#
++# CONFIG_SENSORS_LIS3_I2C is not set
++
++#
++# SCSI device support
++#
++CONFIG_SCSI_MOD=m
++CONFIG_RAID_ATTRS=m
++CONFIG_SCSI=m
++CONFIG_SCSI_DMA=y
++CONFIG_SCSI_TGT=m
++# CONFIG_SCSI_NETLINK is not set
++CONFIG_SCSI_PROC_FS=y
++
++#
++# SCSI support type (disk, tape, CD-ROM)
++#
++CONFIG_BLK_DEV_SD=m
++# CONFIG_CHR_DEV_ST is not set
++# CONFIG_CHR_DEV_OSST is not set
++# CONFIG_BLK_DEV_SR is not set
++# CONFIG_CHR_DEV_SG is not set
++# CONFIG_CHR_DEV_SCH is not set
++# CONFIG_SCSI_MULTI_LUN is not set
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++# CONFIG_SCSI_SCAN_ASYNC is not set
++CONFIG_SCSI_WAIT_SCAN=m
++
++#
++# SCSI Transports
++#
++# CONFIG_SCSI_SPI_ATTRS is not set
++# CONFIG_SCSI_FC_ATTRS is not set
++# CONFIG_SCSI_ISCSI_ATTRS is not set
++CONFIG_SCSI_SAS_ATTRS=m
++# CONFIG_SCSI_SAS_LIBSAS is not set
++# CONFIG_SCSI_SRP_ATTRS is not set
++CONFIG_SCSI_LOWLEVEL=y
++# CONFIG_ISCSI_TCP is not set
++# CONFIG_ISCSI_BOOT_SYSFS is not set
++# CONFIG_SCSI_CXGB3_ISCSI is not set
++# CONFIG_SCSI_CXGB4_ISCSI is not set
++# CONFIG_SCSI_BNX2_ISCSI is not set
++# CONFIG_SCSI_BNX2X_FCOE is not set
++# CONFIG_BE2ISCSI is not set
++# CONFIG_BLK_DEV_3W_XXXX_RAID is not set
++# CONFIG_SCSI_HPSA is not set
++# CONFIG_SCSI_3W_9XXX is not set
++# CONFIG_SCSI_3W_SAS is not set
++# CONFIG_SCSI_ACARD is not set
++# CONFIG_SCSI_AACRAID is not set
++# CONFIG_SCSI_AIC7XXX is not set
++# CONFIG_SCSI_AIC7XXX_OLD is not set
++# CONFIG_SCSI_AIC79XX is not set
++# CONFIG_SCSI_AIC94XX is not set
++# CONFIG_SCSI_MVSAS is not set
++# CONFIG_SCSI_DPT_I2O is not set
++# CONFIG_SCSI_ADVANSYS is not set
++# CONFIG_SCSI_ARCMSR is not set
++# CONFIG_MEGARAID_NEWGEN is not set
++# CONFIG_MEGARAID_LEGACY is not set
++# CONFIG_MEGARAID_SAS is not set
++# CONFIG_SCSI_MPT2SAS is not set
++# CONFIG_SCSI_HPTIOP is not set
++# CONFIG_LIBFC is not set
++# CONFIG_LIBFCOE is not set
++# CONFIG_FCOE is not set
++# CONFIG_SCSI_DMX3191D is not set
++# CONFIG_SCSI_FUTURE_DOMAIN is not set
++# CONFIG_SCSI_IPS is not set
++# CONFIG_SCSI_INITIO is not set
++# CONFIG_SCSI_INIA100 is not set
++# CONFIG_SCSI_STEX is not set
++# CONFIG_SCSI_SYM53C8XX_2 is not set
++# CONFIG_SCSI_IPR is not set
++# CONFIG_SCSI_QLOGIC_1280 is not set
++# CONFIG_SCSI_QLA_FC is not set
++# CONFIG_SCSI_QLA_ISCSI is not set
++# CONFIG_SCSI_LPFC is not set
++# CONFIG_SCSI_DC395x is not set
++# CONFIG_SCSI_DC390T is not set
++# CONFIG_SCSI_DEBUG is not set
++# CONFIG_SCSI_PMCRAID is not set
++# CONFIG_SCSI_PM8001 is not set
++# CONFIG_SCSI_SRP is not set
++# CONFIG_SCSI_BFA_FC is not set
++# CONFIG_SCSI_LOWLEVEL_PCMCIA is not set
++# CONFIG_SCSI_DH is not set
++# CONFIG_SCSI_OSD_INITIATOR is not set
++CONFIG_ATA=m
++# CONFIG_ATA_NONSTANDARD is not set
++CONFIG_ATA_VERBOSE_ERROR=y
++CONFIG_SATA_PMP=y
++
++#
++# Controllers with non-SFF native interface
++#
++# CONFIG_SATA_AHCI is not set
++# CONFIG_SATA_AHCI_PLATFORM is not set
++# CONFIG_SATA_INIC162X is not set
++# CONFIG_SATA_ACARD_AHCI is not set
++CONFIG_SATA_SIL24=m
++CONFIG_ATA_SFF=y
++
++#
++# SFF controllers with custom DMA interface
++#
++# CONFIG_PDC_ADMA is not set
++# CONFIG_SATA_QSTOR is not set
++# CONFIG_SATA_SX4 is not set
++CONFIG_ATA_BMDMA=y
++
++#
++# SATA SFF controllers with BMDMA
++#
++# CONFIG_ATA_PIIX is not set
++# CONFIG_SATA_MV is not set
++# CONFIG_SATA_NV is not set
++# CONFIG_SATA_PROMISE is not set
++# CONFIG_SATA_SIL is not set
++# CONFIG_SATA_SIS is not set
++# CONFIG_SATA_SVW is not set
++# CONFIG_SATA_ULI is not set
++# CONFIG_SATA_VIA is not set
++# CONFIG_SATA_VITESSE is not set
++
++#
++# PATA SFF controllers with BMDMA
++#
++# CONFIG_PATA_ALI is not set
++# CONFIG_PATA_AMD is not set
++# CONFIG_PATA_ARASAN_CF is not set
++# CONFIG_PATA_ARTOP is not set
++# CONFIG_PATA_ATIIXP is not set
++# CONFIG_PATA_ATP867X is not set
++# CONFIG_PATA_CMD64X is not set
++# CONFIG_PATA_CS5520 is not set
++# CONFIG_PATA_CS5530 is not set
++# CONFIG_PATA_CS5536 is not set
++# CONFIG_PATA_CYPRESS is not set
++# CONFIG_PATA_EFAR is not set
++# CONFIG_PATA_HPT366 is not set
++# CONFIG_PATA_HPT37X is not set
++# CONFIG_PATA_HPT3X2N is not set
++# CONFIG_PATA_HPT3X3 is not set
++# CONFIG_PATA_IT8213 is not set
++# CONFIG_PATA_IT821X is not set
++# CONFIG_PATA_JMICRON is not set
++# CONFIG_PATA_MARVELL is not set
++# CONFIG_PATA_NETCELL is not set
++# CONFIG_PATA_NINJA32 is not set
++# CONFIG_PATA_NS87415 is not set
++# CONFIG_PATA_OLDPIIX is not set
++# CONFIG_PATA_OPTIDMA is not set
++# CONFIG_PATA_PDC2027X is not set
++# CONFIG_PATA_PDC_OLD is not set
++# CONFIG_PATA_RADISYS is not set
++# CONFIG_PATA_RDC is not set
++# CONFIG_PATA_SC1200 is not set
++# CONFIG_PATA_SCH is not set
++# CONFIG_PATA_SERVERWORKS is not set
++# CONFIG_PATA_SIL680 is not set
++# CONFIG_PATA_SIS is not set
++# CONFIG_PATA_TOSHIBA is not set
++# CONFIG_PATA_TRIFLEX is not set
++# CONFIG_PATA_VIA is not set
++# CONFIG_PATA_WINBOND is not set
++
++#
++# PIO-only SFF controllers
++#
++# CONFIG_PATA_CMD640_PCI is not set
++# CONFIG_PATA_MPIIX is not set
++# CONFIG_PATA_NS87410 is not set
++# CONFIG_PATA_OPTI is not set
++# CONFIG_PATA_PLATFORM is not set
++# CONFIG_PATA_RZ1000 is not set
++
++#
++# Generic fallback / legacy drivers
++#
++# CONFIG_ATA_GENERIC is not set
++# CONFIG_PATA_LEGACY is not set
++CONFIG_MD=y
++CONFIG_BLK_DEV_MD=y
++CONFIG_MD_AUTODETECT=y
++CONFIG_MD_LINEAR=m
++CONFIG_MD_RAID0=m
++CONFIG_MD_RAID1=m
++CONFIG_MD_RAID10=m
++CONFIG_MD_RAID456=m
++CONFIG_MULTICORE_RAID456=y
++# CONFIG_MD_MULTIPATH is not set
++CONFIG_MD_FAULTY=m
++CONFIG_BLK_DEV_DM=m
++CONFIG_DM_DEBUG=y
++CONFIG_DM_CRYPT=m
++CONFIG_DM_SNAPSHOT=m
++CONFIG_DM_MIRROR=m
++# CONFIG_DM_RAID is not set
++CONFIG_DM_LOG_USERSPACE=m
++CONFIG_DM_ZERO=m
++CONFIG_DM_MULTIPATH=m
++CONFIG_DM_MULTIPATH_QL=m
++CONFIG_DM_MULTIPATH_ST=m
++CONFIG_DM_DELAY=m
++CONFIG_DM_UEVENT=y
++# CONFIG_DM_FLAKEY is not set
++# CONFIG_TARGET_CORE is not set
++# CONFIG_FUSION is not set
++
++#
++# IEEE 1394 (FireWire) support
++#
++# CONFIG_FIREWIRE is not set
++# CONFIG_FIREWIRE_NOSY is not set
++# CONFIG_I2O is not set
++CONFIG_NETDEVICES=y
++CONFIG_IFB=m
++CONFIG_DUMMY=m
++CONFIG_BONDING=m
++CONFIG_MACVLAN=m
++CONFIG_MACVTAP=m
++# CONFIG_EQUALIZER is not set
++CONFIG_TUN=y
++CONFIG_VETH=m
++# CONFIG_ARCNET is not set
++# CONFIG_MII is not set
++CONFIG_PHYLIB=y
++
++#
++# MII PHY device drivers
++#
++# CONFIG_MARVELL_PHY is not set
++# CONFIG_DAVICOM_PHY is not set
++# CONFIG_QSEMI_PHY is not set
++# CONFIG_LXT_PHY is not set
++# CONFIG_CICADA_PHY is not set
++# CONFIG_VITESSE_PHY is not set
++# CONFIG_SMSC_PHY is not set
++# CONFIG_BROADCOM_PHY is not set
++# CONFIG_BCM63XX_PHY is not set
++# CONFIG_ICPLUS_PHY is not set
++# CONFIG_REALTEK_PHY is not set
++# CONFIG_NATIONAL_PHY is not set
++# CONFIG_STE10XP is not set
++# CONFIG_LSI_ET1011C_PHY is not set
++# CONFIG_MICREL_PHY is not set
++# CONFIG_FIXED_PHY is not set
++# CONFIG_MDIO_BITBANG is not set
++# CONFIG_NET_ETHERNET is not set
++CONFIG_NETDEV_1000=y
++# CONFIG_ACENIC is not set
++# CONFIG_DL2K is not set
++# CONFIG_E1000 is not set
++CONFIG_E1000E=m
++# CONFIG_IP1000 is not set
++# CONFIG_IGB is not set
++# CONFIG_IGBVF is not set
++# CONFIG_NS83820 is not set
++# CONFIG_HAMACHI is not set
++# CONFIG_YELLOWFIN is not set
++# CONFIG_R8169 is not set
++# CONFIG_SIS190 is not set
++# CONFIG_SKGE is not set
++# CONFIG_SKY2 is not set
++# CONFIG_VIA_VELOCITY is not set
++# CONFIG_TIGON3 is not set
++# CONFIG_BNX2 is not set
++# CONFIG_CNIC is not set
++# CONFIG_QLA3XXX is not set
++# CONFIG_ATL1 is not set
++# CONFIG_ATL1E is not set
++# CONFIG_ATL1C is not set
++# CONFIG_JME is not set
++# CONFIG_STMMAC_ETH is not set
++# CONFIG_PCH_GBE is not set
++# CONFIG_NETDEV_10000 is not set
++# CONFIG_TR is not set
++# CONFIG_WLAN is not set
++
++#
++# Enable WiMAX (Networking options) to see the WiMAX drivers
++#
++# CONFIG_WAN is not set
++
++#
++# CAIF transport drivers
++#
++# CONFIG_TILE_NET is not set
++# CONFIG_FDDI is not set
++# CONFIG_HIPPI is not set
++# CONFIG_PPP is not set
++# CONFIG_SLIP is not set
++# CONFIG_NET_FC is not set
++# CONFIG_NETCONSOLE is not set
++# CONFIG_NETPOLL is not set
++# CONFIG_NET_POLL_CONTROLLER is not set
++# CONFIG_VMXNET3 is not set
++# CONFIG_ISDN is not set
++# CONFIG_PHONE is not set
++
++#
++# Input device support
++#
++CONFIG_INPUT=y
++# CONFIG_INPUT_FF_MEMLESS is not set
++# CONFIG_INPUT_POLLDEV is not set
++# CONFIG_INPUT_SPARSEKMAP is not set
++
++#
++# Userland interfaces
++#
++# CONFIG_INPUT_MOUSEDEV is not set
++# CONFIG_INPUT_JOYDEV is not set
++# CONFIG_INPUT_EVDEV is not set
++# CONFIG_INPUT_EVBUG is not set
++
++#
++# Input Device Drivers
++#
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_INPUT_JOYSTICK is not set
++# CONFIG_INPUT_TABLET is not set
++# CONFIG_INPUT_TOUCHSCREEN is not set
++# CONFIG_INPUT_MISC is not set
++
++#
++# Hardware I/O ports
++#
++# CONFIG_SERIO is not set
++# CONFIG_GAMEPORT is not set
++
++#
++# Character devices
++#
++# CONFIG_VT is not set
++CONFIG_UNIX98_PTYS=y
++# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_SERIAL_NONSTANDARD is not set
++# CONFIG_NOZOMI is not set
++# CONFIG_N_GSM is not set
++CONFIG_DEVKMEM=y
++
++#
++# Serial drivers
++#
++# CONFIG_SERIAL_8250 is not set
++
++#
++# Non-8250 serial port support
++#
++# CONFIG_SERIAL_MFD_HSU is not set
++# CONFIG_SERIAL_JSM is not set
++# CONFIG_SERIAL_TIMBERDALE is not set
++# CONFIG_SERIAL_ALTERA_JTAGUART is not set
++# CONFIG_SERIAL_ALTERA_UART is not set
++# CONFIG_SERIAL_PCH_UART is not set
++# CONFIG_TTY_PRINTK is not set
++CONFIG_HVC_DRIVER=y
++# CONFIG_IPMI_HANDLER is not set
++CONFIG_HW_RANDOM=y
++CONFIG_HW_RANDOM_TIMERIOMEM=m
++# CONFIG_RTC is not set
++# CONFIG_GEN_RTC is not set
++# CONFIG_R3964 is not set
++# CONFIG_APPLICOM is not set
++
++#
++# PCMCIA character devices
++#
++# CONFIG_RAW_DRIVER is not set
++# CONFIG_TCG_TPM is not set
++CONFIG_DEVPORT=y
++# CONFIG_RAMOOPS is not set
++CONFIG_I2C=y
++CONFIG_I2C_BOARDINFO=y
++CONFIG_I2C_COMPAT=y
++CONFIG_I2C_CHARDEV=y
++# CONFIG_I2C_MUX is not set
++CONFIG_I2C_HELPER_AUTO=y
++
++#
++# I2C Hardware Bus support
++#
++
++#
++# PC SMBus host controller drivers
++#
++# CONFIG_I2C_ALI1535 is not set
++# CONFIG_I2C_ALI1563 is not set
++# CONFIG_I2C_ALI15X3 is not set
++# CONFIG_I2C_AMD756 is not set
++# CONFIG_I2C_AMD8111 is not set
++# CONFIG_I2C_I801 is not set
++# CONFIG_I2C_ISCH is not set
++# CONFIG_I2C_PIIX4 is not set
++# CONFIG_I2C_NFORCE2 is not set
++# CONFIG_I2C_SIS5595 is not set
++# CONFIG_I2C_SIS630 is not set
++# CONFIG_I2C_SIS96X is not set
++# CONFIG_I2C_VIA is not set
++# CONFIG_I2C_VIAPRO is not set
++
++#
++# I2C system bus drivers (mostly embedded / system-on-chip)
++#
++# CONFIG_I2C_INTEL_MID is not set
++# CONFIG_I2C_OCORES is not set
++# CONFIG_I2C_PCA_PLATFORM is not set
++# CONFIG_I2C_PXA_PCI is not set
++# CONFIG_I2C_SIMTEC is not set
++# CONFIG_I2C_XILINX is not set
++# CONFIG_I2C_EG20T is not set
++
++#
++# External I2C/SMBus adapter drivers
++#
++# CONFIG_I2C_PARPORT_LIGHT is not set
++# CONFIG_I2C_TAOS_EVM is not set
++
++#
++# Other I2C/SMBus bus drivers
++#
++# CONFIG_I2C_STUB is not set
++# CONFIG_I2C_DEBUG_CORE is not set
++# CONFIG_I2C_DEBUG_ALGO is not set
++# CONFIG_I2C_DEBUG_BUS is not set
++# CONFIG_SPI is not set
++
++#
++# PPS support
++#
++# CONFIG_PPS is not set
++
++#
++# PPS generators support
++#
++# CONFIG_W1 is not set
++# CONFIG_POWER_SUPPLY is not set
++# CONFIG_HWMON is not set
++# CONFIG_THERMAL is not set
++# CONFIG_WATCHDOG is not set
++CONFIG_SSB_POSSIBLE=y
++
++#
++# Sonics Silicon Backplane
++#
++# CONFIG_SSB is not set
++CONFIG_MFD_SUPPORT=y
++# CONFIG_MFD_CORE is not set
++# CONFIG_MFD_88PM860X is not set
++# CONFIG_MFD_SM501 is not set
++# CONFIG_HTC_PASIC3 is not set
++# CONFIG_TPS6105X is not set
++# CONFIG_TPS6507X is not set
++# CONFIG_TWL4030_CORE is not set
++# CONFIG_MFD_STMPE is not set
++# CONFIG_MFD_TC3589X is not set
++# CONFIG_MFD_TMIO is not set
++# CONFIG_PMIC_DA903X is not set
++# CONFIG_PMIC_ADP5520 is not set
++# CONFIG_MFD_MAX8925 is not set
++# CONFIG_MFD_MAX8997 is not set
++# CONFIG_MFD_MAX8998 is not set
++# CONFIG_MFD_WM8400 is not set
++# CONFIG_MFD_WM831X_I2C is not set
++# CONFIG_MFD_WM8350_I2C is not set
++# CONFIG_MFD_WM8994 is not set
++# CONFIG_MFD_PCF50633 is not set
++# CONFIG_ABX500_CORE is not set
++# CONFIG_LPC_SCH is not set
++# CONFIG_MFD_RDC321X is not set
++# CONFIG_MFD_JANZ_CMODIO is not set
++# CONFIG_MFD_VX855 is not set
++# CONFIG_MFD_WL1273_CORE is not set
++# CONFIG_REGULATOR is not set
++# CONFIG_MEDIA_SUPPORT is not set
++
++#
++# Graphics support
++#
++# CONFIG_VGA_ARB is not set
++# CONFIG_DRM is not set
++# CONFIG_STUB_POULSBO is not set
++# CONFIG_VGASTATE is not set
++# CONFIG_VIDEO_OUTPUT_CONTROL is not set
++# CONFIG_FB is not set
++# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
++
++#
++# Display device support
++#
++# CONFIG_DISPLAY_SUPPORT is not set
++# CONFIG_SOUND is not set
++# CONFIG_HID_SUPPORT is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_UWB is not set
++# CONFIG_MMC is not set
++# CONFIG_MEMSTICK is not set
++# CONFIG_NEW_LEDS is not set
++# CONFIG_NFC_DEVICES is not set
++# CONFIG_ACCESSIBILITY is not set
++# CONFIG_INFINIBAND is not set
++# CONFIG_EDAC is not set
++# CONFIG_RTC_CLASS is not set
++# CONFIG_DMADEVICES is not set
++# CONFIG_AUXDISPLAY is not set
++# CONFIG_UIO is not set
++# CONFIG_STAGING is not set
++
++#
++# File systems
++#
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT2_FS_XIP=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_DEFAULTS_TO_ORDERED=y
++CONFIG_EXT3_FS_XATTR=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_FS_XATTR=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_EXT4_FS_SECURITY=y
++# CONFIG_EXT4_DEBUG is not set
++CONFIG_FS_XIP=y
++CONFIG_JBD=y
++# CONFIG_JBD_DEBUG is not set
++CONFIG_JBD2=y
++CONFIG_JBD2_DEBUG=y
++CONFIG_FS_MBCACHE=y
++# CONFIG_REISERFS_FS is not set
++# CONFIG_JFS_FS is not set
++CONFIG_XFS_FS=m
++CONFIG_XFS_QUOTA=y
++CONFIG_XFS_POSIX_ACL=y
++# CONFIG_XFS_RT is not set
++# CONFIG_XFS_DEBUG is not set
++CONFIG_GFS2_FS=m
++CONFIG_GFS2_FS_LOCKING_DLM=y
++# CONFIG_OCFS2_FS is not set
++CONFIG_BTRFS_FS=m
++CONFIG_BTRFS_FS_POSIX_ACL=y
++# CONFIG_NILFS2_FS is not set
++CONFIG_FS_POSIX_ACL=y
++CONFIG_EXPORTFS=y
++CONFIG_FILE_LOCKING=y
++CONFIG_FSNOTIFY=y
++CONFIG_DNOTIFY=y
++CONFIG_INOTIFY_USER=y
++# CONFIG_FANOTIFY is not set
++CONFIG_QUOTA=y
++CONFIG_QUOTA_NETLINK_INTERFACE=y
++# CONFIG_PRINT_QUOTA_WARNING is not set
++# CONFIG_QUOTA_DEBUG is not set
++CONFIG_QUOTA_TREE=y
++# CONFIG_QFMT_V1 is not set
++CONFIG_QFMT_V2=y
++CONFIG_QUOTACTL=y
++# CONFIG_AUTOFS4_FS is not set
++CONFIG_FUSE_FS=y
++CONFIG_CUSE=m
++CONFIG_GENERIC_ACL=y
++
++#
++# Caches
++#
++CONFIG_FSCACHE=m
++CONFIG_FSCACHE_STATS=y
++# CONFIG_FSCACHE_HISTOGRAM is not set
++# CONFIG_FSCACHE_DEBUG is not set
++# CONFIG_FSCACHE_OBJECT_LIST is not set
++CONFIG_CACHEFILES=m
++# CONFIG_CACHEFILES_DEBUG is not set
++# CONFIG_CACHEFILES_HISTOGRAM is not set
++
++#
++# CD-ROM/DVD Filesystems
++#
++CONFIG_ISO9660_FS=m
++CONFIG_JOLIET=y
++CONFIG_ZISOFS=y
++CONFIG_UDF_FS=m
++CONFIG_UDF_NLS=y
++
++#
++# DOS/FAT/NT Filesystems
++#
++CONFIG_FAT_FS=m
++CONFIG_MSDOS_FS=m
++CONFIG_VFAT_FS=m
++CONFIG_FAT_DEFAULT_CODEPAGE=437
++CONFIG_FAT_DEFAULT_IOCHARSET="ascii"
++# CONFIG_NTFS_FS is not set
++
++#
++# Pseudo filesystems
++#
++CONFIG_PROC_FS=y
++CONFIG_PROC_KCORE=y
++CONFIG_PROC_SYSCTL=y
++CONFIG_PROC_PAGE_MONITOR=y
++CONFIG_SYSFS=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_POSIX_ACL=y
++CONFIG_HUGETLBFS=y
++CONFIG_HUGETLB_PAGE=y
++CONFIG_CONFIGFS_FS=m
++CONFIG_MISC_FILESYSTEMS=y
++# CONFIG_ADFS_FS is not set
++# CONFIG_AFFS_FS is not set
++CONFIG_ECRYPT_FS=m
++# CONFIG_HFS_FS is not set
++# CONFIG_HFSPLUS_FS is not set
++# CONFIG_BEFS_FS is not set
++# CONFIG_BFS_FS is not set
++# CONFIG_EFS_FS is not set
++# CONFIG_LOGFS is not set
++CONFIG_CRAMFS=m
++CONFIG_SQUASHFS=m
++# CONFIG_SQUASHFS_XATTR is not set
++# CONFIG_SQUASHFS_LZO is not set
++# CONFIG_SQUASHFS_XZ is not set
++# CONFIG_SQUASHFS_EMBEDDED is not set
++CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE=3
++# CONFIG_VXFS_FS is not set
++# CONFIG_MINIX_FS is not set
++# CONFIG_OMFS_FS is not set
++# CONFIG_HPFS_FS is not set
++# CONFIG_QNX4FS_FS is not set
++# CONFIG_ROMFS_FS is not set
++# CONFIG_PSTORE is not set
++# CONFIG_SYSV_FS is not set
++# CONFIG_UFS_FS is not set
++CONFIG_NETWORK_FILESYSTEMS=y
++CONFIG_NFS_FS=m
++CONFIG_NFS_V3=y
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_NFS_V4_1=y
++CONFIG_PNFS_FILE_LAYOUT=m
++CONFIG_NFS_FSCACHE=y
++# CONFIG_NFS_USE_LEGACY_DNS is not set
++CONFIG_NFS_USE_KERNEL_DNS=y
++# CONFIG_NFS_USE_NEW_IDMAPPER is not set
++CONFIG_NFSD=m
++CONFIG_NFSD_DEPRECATED=y
++CONFIG_NFSD_V2_ACL=y
++CONFIG_NFSD_V3=y
++CONFIG_NFSD_V3_ACL=y
++CONFIG_NFSD_V4=y
++CONFIG_LOCKD=m
++CONFIG_LOCKD_V4=y
++CONFIG_NFS_ACL_SUPPORT=m
++CONFIG_NFS_COMMON=y
++CONFIG_SUNRPC=m
++CONFIG_SUNRPC_GSS=m
++CONFIG_RPCSEC_GSS_KRB5=m
++# CONFIG_CEPH_FS is not set
++CONFIG_CIFS=m
++CONFIG_CIFS_STATS=y
++# CONFIG_CIFS_STATS2 is not set
++CONFIG_CIFS_WEAK_PW_HASH=y
++CONFIG_CIFS_UPCALL=y
++CONFIG_CIFS_XATTR=y
++CONFIG_CIFS_POSIX=y
++# CONFIG_CIFS_DEBUG2 is not set
++CONFIG_CIFS_DFS_UPCALL=y
++CONFIG_CIFS_FSCACHE=y
++# CONFIG_CIFS_ACL is not set
++CONFIG_CIFS_EXPERIMENTAL=y
++# CONFIG_NCP_FS is not set
++# CONFIG_CODA_FS is not set
++# CONFIG_AFS_FS is not set
++
++#
++# Partition Types
++#
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_ACORN_PARTITION is not set
++CONFIG_OSF_PARTITION=y
++CONFIG_AMIGA_PARTITION=y
++# CONFIG_ATARI_PARTITION is not set
++CONFIG_MAC_PARTITION=y
++CONFIG_MSDOS_PARTITION=y
++CONFIG_BSD_DISKLABEL=y
++CONFIG_MINIX_SUBPARTITION=y
++CONFIG_SOLARIS_X86_PARTITION=y
++CONFIG_UNIXWARE_DISKLABEL=y
++# CONFIG_LDM_PARTITION is not set
++CONFIG_SGI_PARTITION=y
++# CONFIG_ULTRIX_PARTITION is not set
++CONFIG_SUN_PARTITION=y
++CONFIG_KARMA_PARTITION=y
++CONFIG_EFI_PARTITION=y
++# CONFIG_SYSV68_PARTITION is not set
++CONFIG_NLS=y
++CONFIG_NLS_DEFAULT="utf8"
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_737=m
++CONFIG_NLS_CODEPAGE_775=m
++CONFIG_NLS_CODEPAGE_850=m
++CONFIG_NLS_CODEPAGE_852=m
++CONFIG_NLS_CODEPAGE_855=m
++CONFIG_NLS_CODEPAGE_857=m
++CONFIG_NLS_CODEPAGE_860=m
++CONFIG_NLS_CODEPAGE_861=m
++CONFIG_NLS_CODEPAGE_862=m
++CONFIG_NLS_CODEPAGE_863=m
++CONFIG_NLS_CODEPAGE_864=m
++CONFIG_NLS_CODEPAGE_865=m
++CONFIG_NLS_CODEPAGE_866=m
++CONFIG_NLS_CODEPAGE_869=m
++CONFIG_NLS_CODEPAGE_936=m
++CONFIG_NLS_CODEPAGE_950=m
++CONFIG_NLS_CODEPAGE_932=m
++CONFIG_NLS_CODEPAGE_949=m
++CONFIG_NLS_CODEPAGE_874=m
++CONFIG_NLS_ISO8859_8=m
++CONFIG_NLS_CODEPAGE_1250=m
++CONFIG_NLS_CODEPAGE_1251=m
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_ISO8859_1=m
++CONFIG_NLS_ISO8859_2=m
++CONFIG_NLS_ISO8859_3=m
++CONFIG_NLS_ISO8859_4=m
++CONFIG_NLS_ISO8859_5=m
++CONFIG_NLS_ISO8859_6=m
++CONFIG_NLS_ISO8859_7=m
++CONFIG_NLS_ISO8859_9=m
++CONFIG_NLS_ISO8859_13=m
++CONFIG_NLS_ISO8859_14=m
++CONFIG_NLS_ISO8859_15=m
++CONFIG_NLS_KOI8_R=m
++CONFIG_NLS_KOI8_U=m
++CONFIG_NLS_UTF8=m
++CONFIG_DLM=m
++CONFIG_DLM_DEBUG=y
++
++#
++# Kernel hacking
++#
++# CONFIG_PRINTK_TIME is not set
++CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
++# CONFIG_ENABLE_WARN_DEPRECATED is not set
++CONFIG_ENABLE_MUST_CHECK=y
++CONFIG_FRAME_WARN=2048
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_STRIP_ASM_SYMS=y
++# CONFIG_UNUSED_SYMBOLS is not set
++CONFIG_DEBUG_FS=y
++CONFIG_HEADERS_CHECK=y
++# CONFIG_DEBUG_SECTION_MISMATCH is not set
++CONFIG_DEBUG_KERNEL=y
++CONFIG_DEBUG_SHIRQ=y
++CONFIG_LOCKUP_DETECTOR=y
++# CONFIG_HARDLOCKUP_DETECTOR is not set
++# CONFIG_BOOTPARAM_HARDLOCKUP_PANIC is not set
++CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=0
++# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
++CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
++CONFIG_DETECT_HUNG_TASK=y
++# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
++CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
++CONFIG_SCHED_DEBUG=y
++CONFIG_SCHEDSTATS=y
++CONFIG_TIMER_STATS=y
++# CONFIG_DEBUG_OBJECTS is not set
++# CONFIG_SLUB_DEBUG_ON is not set
++# CONFIG_SLUB_STATS is not set
++# CONFIG_DEBUG_KMEMLEAK is not set
++# CONFIG_DEBUG_RT_MUTEXES is not set
++# CONFIG_RT_MUTEX_TESTER is not set
++# CONFIG_DEBUG_SPINLOCK is not set
++# CONFIG_DEBUG_MUTEXES is not set
++# CONFIG_DEBUG_LOCK_ALLOC is not set
++# CONFIG_PROVE_LOCKING is not set
++# CONFIG_SPARSE_RCU_POINTER is not set
++# CONFIG_LOCK_STAT is not set
++CONFIG_DEBUG_SPINLOCK_SLEEP=y
++# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
++CONFIG_STACKTRACE=y
++# CONFIG_DEBUG_KOBJECT is not set
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_INFO_REDUCED=y
++CONFIG_DEBUG_VM=y
++# CONFIG_DEBUG_WRITECOUNT is not set
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_DEBUG_LIST=y
++# CONFIG_TEST_LIST_SORT is not set
++# CONFIG_DEBUG_SG is not set
++# CONFIG_DEBUG_NOTIFIERS is not set
++CONFIG_DEBUG_CREDENTIALS=y
++# CONFIG_RCU_TORTURE_TEST is not set
++# CONFIG_RCU_CPU_STALL_DETECTOR is not set
++# CONFIG_BACKTRACE_SELF_TEST is not set
++# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
++CONFIG_DEBUG_FORCE_WEAK_PER_CPU=y
++# CONFIG_LKDTM is not set
++# CONFIG_FAULT_INJECTION is not set
++# CONFIG_SYSCTL_SYSCALL_CHECK is not set
++# CONFIG_DEBUG_PAGEALLOC is not set
++CONFIG_TRACING_SUPPORT=y
++CONFIG_FTRACE=y
++# CONFIG_IRQSOFF_TRACER is not set
++# CONFIG_SCHED_TRACER is not set
++# CONFIG_ENABLE_DEFAULT_TRACERS is not set
++CONFIG_BRANCH_PROFILE_NONE=y
++# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
++# CONFIG_PROFILE_ALL_BRANCHES is not set
++# CONFIG_BLK_DEV_IO_TRACE is not set
++# CONFIG_BUILD_DOCSRC is not set
++CONFIG_DYNAMIC_DEBUG=y
++# CONFIG_ATOMIC64_SELFTEST is not set
++CONFIG_ASYNC_RAID6_TEST=m
++# CONFIG_SAMPLES is not set
++# CONFIG_TEST_KSTRTOX is not set
++CONFIG_EARLY_PRINTK=y
++CONFIG_DEBUG_STACKOVERFLOW=y
++# CONFIG_DEBUG_STACK_USAGE is not set
++CONFIG_DEBUG_EXTRA_FLAGS=""
++
++#
++# Security options
++#
++CONFIG_KEYS=y
++CONFIG_KEYS_DEBUG_PROC_KEYS=y
++# CONFIG_SECURITY_DMESG_RESTRICT is not set
++CONFIG_SECURITY=y
++CONFIG_SECURITYFS=y
++CONFIG_SECURITY_NETWORK=y
++CONFIG_SECURITY_NETWORK_XFRM=y
++# CONFIG_SECURITY_PATH is not set
++CONFIG_LSM_MMAP_MIN_ADDR=65536
++CONFIG_SECURITY_SELINUX=y
++CONFIG_SECURITY_SELINUX_BOOTPARAM=y
++CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
++CONFIG_SECURITY_SELINUX_DISABLE=y
++CONFIG_SECURITY_SELINUX_DEVELOP=y
++CONFIG_SECURITY_SELINUX_AVC_STATS=y
++CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
++# CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
++# CONFIG_SECURITY_SMACK is not set
++# CONFIG_SECURITY_TOMOYO is not set
++# CONFIG_SECURITY_APPARMOR is not set
++# CONFIG_IMA is not set
++CONFIG_DEFAULT_SECURITY_SELINUX=y
++# CONFIG_DEFAULT_SECURITY_DAC is not set
++CONFIG_DEFAULT_SECURITY="selinux"
++CONFIG_XOR_BLOCKS=m
++CONFIG_ASYNC_CORE=m
++CONFIG_ASYNC_MEMCPY=m
++CONFIG_ASYNC_XOR=m
++CONFIG_ASYNC_PQ=m
++CONFIG_ASYNC_RAID6_RECOV=m
++CONFIG_CRYPTO=y
++
++#
++# Crypto core or helper
++#
++CONFIG_CRYPTO_ALGAPI=y
++CONFIG_CRYPTO_ALGAPI2=y
++CONFIG_CRYPTO_AEAD=m
++CONFIG_CRYPTO_AEAD2=y
++CONFIG_CRYPTO_BLKCIPHER=m
++CONFIG_CRYPTO_BLKCIPHER2=y
++CONFIG_CRYPTO_HASH=y
++CONFIG_CRYPTO_HASH2=y
++CONFIG_CRYPTO_RNG=m
++CONFIG_CRYPTO_RNG2=y
++CONFIG_CRYPTO_PCOMP=m
++CONFIG_CRYPTO_PCOMP2=y
++CONFIG_CRYPTO_MANAGER=y
++CONFIG_CRYPTO_MANAGER2=y
++CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
++CONFIG_CRYPTO_GF128MUL=m
++CONFIG_CRYPTO_NULL=m
++CONFIG_CRYPTO_PCRYPT=m
++CONFIG_CRYPTO_WORKQUEUE=y
++CONFIG_CRYPTO_CRYPTD=m
++CONFIG_CRYPTO_AUTHENC=m
++CONFIG_CRYPTO_TEST=m
++
++#
++# Authenticated Encryption with Associated Data
++#
++CONFIG_CRYPTO_CCM=m
++CONFIG_CRYPTO_GCM=m
++CONFIG_CRYPTO_SEQIV=m
++
++#
++# Block modes
++#
++CONFIG_CRYPTO_CBC=m
++CONFIG_CRYPTO_CTR=m
++CONFIG_CRYPTO_CTS=m
++CONFIG_CRYPTO_ECB=m
++CONFIG_CRYPTO_LRW=m
++CONFIG_CRYPTO_PCBC=m
++CONFIG_CRYPTO_XTS=m
++
++#
++# Hash modes
++#
++CONFIG_CRYPTO_HMAC=y
++CONFIG_CRYPTO_XCBC=m
++CONFIG_CRYPTO_VMAC=m
++
++#
++# Digest
++#
++CONFIG_CRYPTO_CRC32C=y
++CONFIG_CRYPTO_GHASH=m
++CONFIG_CRYPTO_MD4=m
++CONFIG_CRYPTO_MD5=y
++CONFIG_CRYPTO_MICHAEL_MIC=m
++CONFIG_CRYPTO_RMD128=m
++CONFIG_CRYPTO_RMD160=m
++CONFIG_CRYPTO_RMD256=m
++CONFIG_CRYPTO_RMD320=m
++CONFIG_CRYPTO_SHA1=y
++CONFIG_CRYPTO_SHA256=m
++CONFIG_CRYPTO_SHA512=m
++CONFIG_CRYPTO_TGR192=m
++CONFIG_CRYPTO_WP512=m
++
++#
++# Ciphers
++#
++CONFIG_CRYPTO_AES=m
++CONFIG_CRYPTO_ANUBIS=m
++CONFIG_CRYPTO_ARC4=m
++CONFIG_CRYPTO_BLOWFISH=m
++CONFIG_CRYPTO_CAMELLIA=m
++CONFIG_CRYPTO_CAST5=m
++CONFIG_CRYPTO_CAST6=m
++CONFIG_CRYPTO_DES=m
++CONFIG_CRYPTO_FCRYPT=m
++CONFIG_CRYPTO_KHAZAD=m
++# CONFIG_CRYPTO_SALSA20 is not set
++CONFIG_CRYPTO_SEED=m
++CONFIG_CRYPTO_SERPENT=m
++CONFIG_CRYPTO_TEA=m
++CONFIG_CRYPTO_TWOFISH=m
++CONFIG_CRYPTO_TWOFISH_COMMON=m
++
++#
++# Compression
++#
++CONFIG_CRYPTO_DEFLATE=m
++CONFIG_CRYPTO_ZLIB=m
++CONFIG_CRYPTO_LZO=m
++
++#
++# Random Number Generation
++#
++CONFIG_CRYPTO_ANSI_CPRNG=m
++# CONFIG_CRYPTO_USER_API_HASH is not set
++# CONFIG_CRYPTO_USER_API_SKCIPHER is not set
++CONFIG_CRYPTO_HW=y
++CONFIG_CRYPTO_DEV_HIFN_795X=m
++CONFIG_CRYPTO_DEV_HIFN_795X_RNG=y
++# CONFIG_BINARY_PRINTF is not set
++
++#
++# Library routines
++#
++CONFIG_RAID6_PQ=m
++CONFIG_BITREVERSE=y
++CONFIG_GENERIC_FIND_FIRST_BIT=y
++CONFIG_GENERIC_FIND_NEXT_BIT=y
++CONFIG_GENERIC_FIND_LAST_BIT=y
++# CONFIG_CRC_CCITT is not set
++CONFIG_CRC16=y
++CONFIG_CRC_T10DIF=y
++CONFIG_CRC_ITU_T=m
++CONFIG_CRC32=y
++# CONFIG_CRC7 is not set
++CONFIG_LIBCRC32C=m
++CONFIG_AUDIT_GENERIC=y
++CONFIG_ZLIB_INFLATE=y
++CONFIG_ZLIB_DEFLATE=m
++CONFIG_LZO_COMPRESS=m
++CONFIG_LZO_DECOMPRESS=m
++# CONFIG_XZ_DEC is not set
++# CONFIG_XZ_DEC_BCJ is not set
++CONFIG_DECOMPRESS_GZIP=y
++CONFIG_TEXTSEARCH=y
++CONFIG_TEXTSEARCH_KMP=m
++CONFIG_TEXTSEARCH_BM=m
++CONFIG_TEXTSEARCH_FSM=m
++CONFIG_HAS_IOMEM=y
++CONFIG_HAS_IOPORT=y
++CONFIG_HAS_DMA=y
++CONFIG_CPU_RMAP=y
++CONFIG_NLATTR=y
++# CONFIG_AVERAGE is not set
++# CONFIG_VIRTUALIZATION is not set
+diff --git a/arch/tile/include/arch/chip_tilegx.h b/arch/tile/include/arch/chip_tilegx.h
+new file mode 100644
+index 0000000..ea8e4f2
+--- /dev/null
++++ b/arch/tile/include/arch/chip_tilegx.h
+@@ -0,0 +1,258 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
 + *
-+ *  Linux/m68k support by Hamish Macdonald
-  */
- 
- #include <linux/sys.h>
- #include <linux/linkage.h>
--#include <asm/unistd.h>
- 
--.text
-+#ifndef CONFIG_MMU
-+#define sys_mmap2		sys_mmap_pgoff
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++/*
++ * @file
++ * Global header file.
++ * This header file specifies defines for TILE-Gx.
++ */
++
++#ifndef __ARCH_CHIP_H__
++#define __ARCH_CHIP_H__
++
++/** Specify chip version.
++ * When possible, prefer the CHIP_xxx symbols below for future-proofing.
++ * This is intended for cross-compiling; native compilation should
++ * use the predefined __tile_chip__ symbol.
++ */
++#define TILE_CHIP 10
++
++/** Specify chip revision.
++ * This provides for the case of a respin of a particular chip type;
++ * the normal value for this symbol is "0".
++ * This is intended for cross-compiling; native compilation should
++ * use the predefined __tile_chip_rev__ symbol.
++ */
++#define TILE_CHIP_REV 0
++
++/** The name of this architecture. */
++#define CHIP_ARCH_NAME "tilegx"
++
++/** The ELF e_machine type for binaries for this chip. */
++#define CHIP_ELF_TYPE() EM_TILEGX
++
++/** The alternate ELF e_machine type for binaries for this chip. */
++#define CHIP_COMPAT_ELF_TYPE() 0x2597
++
++/** What is the native word size of the machine? */
++#define CHIP_WORD_SIZE() 64
++
++/** How many bits of a virtual address are used. Extra bits must be
++ * the sign extension of the low bits.
++ */
++#define CHIP_VA_WIDTH() 42
++
++/** How many bits are in a physical address? */
++#define CHIP_PA_WIDTH() 40
++
++/** Size of the L2 cache, in bytes. */
++#define CHIP_L2_CACHE_SIZE() 262144
++
++/** Log size of an L2 cache line in bytes. */
++#define CHIP_L2_LOG_LINE_SIZE() 6
++
++/** Size of an L2 cache line, in bytes. */
++#define CHIP_L2_LINE_SIZE() (1 << CHIP_L2_LOG_LINE_SIZE())
++
++/** Associativity of the L2 cache. */
++#define CHIP_L2_ASSOC() 8
++
++/** Size of the L1 data cache, in bytes. */
++#define CHIP_L1D_CACHE_SIZE() 32768
++
++/** Log size of an L1 data cache line in bytes. */
++#define CHIP_L1D_LOG_LINE_SIZE() 6
++
++/** Size of an L1 data cache line, in bytes. */
++#define CHIP_L1D_LINE_SIZE() (1 << CHIP_L1D_LOG_LINE_SIZE())
++
++/** Associativity of the L1 data cache. */
++#define CHIP_L1D_ASSOC() 2
++
++/** Size of the L1 instruction cache, in bytes. */
++#define CHIP_L1I_CACHE_SIZE() 32768
++
++/** Log size of an L1 instruction cache line in bytes. */
++#define CHIP_L1I_LOG_LINE_SIZE() 6
++
++/** Size of an L1 instruction cache line, in bytes. */
++#define CHIP_L1I_LINE_SIZE() (1 << CHIP_L1I_LOG_LINE_SIZE())
++
++/** Associativity of the L1 instruction cache. */
++#define CHIP_L1I_ASSOC() 2
++
++/** Stride with which flush instructions must be issued. */
++#define CHIP_FLUSH_STRIDE() CHIP_L2_LINE_SIZE()
++
++/** Stride with which inv instructions must be issued. */
++#define CHIP_INV_STRIDE() CHIP_L2_LINE_SIZE()
++
++/** Stride with which finv instructions must be issued. */
++#define CHIP_FINV_STRIDE() CHIP_L2_LINE_SIZE()
++
++/** Can the local cache coherently cache data that is homed elsewhere? */
++#define CHIP_HAS_COHERENT_LOCAL_CACHE() 1
++
++/** How many simultaneous outstanding victims can the L2 cache have? */
++#define CHIP_MAX_OUTSTANDING_VICTIMS() 128
++
++/** Does the TLB support the NC and NOALLOC bits? */
++#define CHIP_HAS_NC_AND_NOALLOC_BITS() 1
++
++/** Does the chip support hash-for-home caching? */
++#define CHIP_HAS_CBOX_HOME_MAP() 1
++
++/** Number of entries in the chip's home map tables. */
++#define CHIP_CBOX_HOME_MAP_SIZE() 128
++
++/** Do uncacheable requests miss in the cache regardless of whether
++ * there is matching data? */
++#define CHIP_HAS_ENFORCED_UNCACHEABLE_REQUESTS() 1
++
++/** Does the mf instruction wait for victims? */
++#define CHIP_HAS_MF_WAITS_FOR_VICTIMS() 0
++
++/** Does the chip have an "inv" instruction that doesn't also flush? */
++#define CHIP_HAS_INV() 1
++
++/** Does the chip have a "wh64" instruction? */
++#define CHIP_HAS_WH64() 1
++
++/** Does this chip have a 'dword_align' instruction? */
++#define CHIP_HAS_DWORD_ALIGN() 0
++
++/** Number of performance counters. */
++#define CHIP_PERFORMANCE_COUNTERS() 4
++
++/** Does this chip have auxiliary performance counters? */
++#define CHIP_HAS_AUX_PERF_COUNTERS() 1
++
++/** Is the CBOX_MSR1 SPR supported? */
++#define CHIP_HAS_CBOX_MSR1() 0
++
++/** Is the TILE_RTF_HWM SPR supported? */
++#define CHIP_HAS_TILE_RTF_HWM() 1
++
++/** Is the TILE_WRITE_PENDING SPR supported? */
++#define CHIP_HAS_TILE_WRITE_PENDING() 0
++
++/** Is the PROC_STATUS SPR supported? */
++#define CHIP_HAS_PROC_STATUS_SPR() 1
++
++/** Is the DSTREAM_PF SPR supported? */
++#define CHIP_HAS_DSTREAM_PF() 1
++
++/** Log of the number of mshims we have. */
++#define CHIP_LOG_NUM_MSHIMS() 2
++
++/** Are the bases of the interrupt vector areas fixed? */
++#define CHIP_HAS_FIXED_INTVEC_BASE() 0
++
++/** Are the interrupt masks split up into 2 SPRs? */
++#define CHIP_HAS_SPLIT_INTR_MASK() 0
++
++/** Is the cycle count split up into 2 SPRs? */
++#define CHIP_HAS_SPLIT_CYCLE() 0
++
++/** Does the chip have a static network? */
++#define CHIP_HAS_SN() 0
++
++/** Does the chip have a static network processor? */
++#define CHIP_HAS_SN_PROC() 0
++
++/** Size of the L1 static network processor instruction cache, in bytes. */
++/* #define CHIP_L1SNI_CACHE_SIZE() -- does not apply to chip 10 */
++
++/** Does the chip have DMA support in each tile? */
++#define CHIP_HAS_TILE_DMA() 0
++
++/** Does the chip have the second revision of the directly accessible
++ *  dynamic networks?  This encapsulates a number of characteristics,
++ *  including the absence of the catch-all, the absence of inline message
++ *  tags, the absence of support for network context-switching, and so on.
++ */
++#define CHIP_HAS_REV1_XDN() 1
++
++/** Does the chip have cmpexch and similar (fetchadd, exch, etc.)? */
++#define CHIP_HAS_CMPEXCH() 1
++
++/** Does the chip have memory-mapped I/O support? */
++#define CHIP_HAS_MMIO() 1
++
++/** Does the chip have post-completion interrupts? */
++#define CHIP_HAS_POST_COMPLETION_INTERRUPTS() 1
++
++/** Does the chip have native single step support? */
++#define CHIP_HAS_SINGLE_STEP() 1
++
++#ifndef __OPEN_SOURCE__  /* features only relevant to hypervisor-level code */
++
++/** How many entries are present in the instruction TLB? */
++#define CHIP_ITLB_ENTRIES() 16
++
++/** How many entries are present in the data TLB? */
++#define CHIP_DTLB_ENTRIES() 32
++
++/** How many MAF entries does the XAUI shim have? */
++#define CHIP_XAUI_MAF_ENTRIES() 32
++
++/** Does the memory shim have a source-id table? */
++#define CHIP_HAS_MSHIM_SRCID_TABLE() 0
++
++/** Does the L1 instruction cache clear on reset? */
++#define CHIP_HAS_L1I_CLEAR_ON_RESET() 1
++
++/** Does the chip come out of reset with valid coordinates on all tiles?
++ * Note that if defined, this also implies that the upper left is 1,1.
++ */
++#define CHIP_HAS_VALID_TILE_COORD_RESET() 1
++
++/** Does the chip have unified packet formats? */
++#define CHIP_HAS_UNIFIED_PACKET_FORMATS() 1
++
++/** Does the chip support write reordering? */
++#define CHIP_HAS_WRITE_REORDERING() 1
++
++/** Does the chip support Y-X routing as well as X-Y? */
++#define CHIP_HAS_Y_X_ROUTING() 1
++
++/** Is INTCTRL_3 managed with the correct MPL? */
++#define CHIP_HAS_INTCTRL_3_STATUS_FIX() 1
++
++/** Is it possible to configure the chip to be big-endian? */
++#define CHIP_HAS_BIG_ENDIAN_CONFIG() 1
++
++/** Is the CACHE_RED_WAY_OVERRIDDEN SPR supported? */
++#define CHIP_HAS_CACHE_RED_WAY_OVERRIDDEN() 0
++
++/** Is the DIAG_TRACE_WAY SPR supported? */
++#define CHIP_HAS_DIAG_TRACE_WAY() 0
++
++/** Is the MEM_STRIPE_CONFIG SPR supported? */
++#define CHIP_HAS_MEM_STRIPE_CONFIG() 1
++
++/** Are the TLB_PERF SPRs supported? */
++#define CHIP_HAS_TLB_PERF() 1
++
++/** Is the VDN_SNOOP_SHIM_CTL SPR supported? */
++#define CHIP_HAS_VDN_SNOOP_SHIM_CTL() 0
++
++/** Does the chip support rev1 DMA packets? */
++#define CHIP_HAS_REV1_DMA_PACKETS() 1
++
++/** Does the chip have an IPI shim? */
++#define CHIP_HAS_IPI() 1
++
++#endif /* !__OPEN_SOURCE__ */
++#endif /* __ARCH_CHIP_H__ */
+diff --git a/arch/tile/include/arch/interrupts_64.h b/arch/tile/include/arch/interrupts_64.h
+new file mode 100644
+index 0000000..5bb58b2
+--- /dev/null
++++ b/arch/tile/include/arch/interrupts_64.h
+@@ -0,0 +1,276 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#ifndef __ARCH_INTERRUPTS_H__
++#define __ARCH_INTERRUPTS_H__
++
++/** Mask for an interrupt. */
++#ifdef __ASSEMBLER__
++/* Note: must handle breaking interrupts into high and low words manually. */
++#define INT_MASK(intno) (1 << (intno))
++#else
++#define INT_MASK(intno) (1ULL << (intno))
 +#endif
 +
-+.section .rodata
- ALIGN
- ENTRY(sys_call_table)
--	.long sys_restart_syscall	/* 0  -  old "setup()" system call */
-+	.long sys_restart_syscall	/* 0 - old "setup()" system call, used for restarting */
- 	.long sys_exit
- 	.long sys_fork
- 	.long sys_read
- 	.long sys_write
--	.long sys_open		/* 5 */
-+	.long sys_open			/* 5 */
- 	.long sys_close
- 	.long sys_waitpid
- 	.long sys_creat
- 	.long sys_link
--	.long sys_unlink	/* 10 */
-+	.long sys_unlink		/* 10 */
- 	.long sys_execve
- 	.long sys_chdir
- 	.long sys_time
- 	.long sys_mknod
--	.long sys_chmod		/* 15 */
-+	.long sys_chmod			/* 15 */
- 	.long sys_chown16
--	.long sys_ni_syscall	/* old break syscall holder */
-+	.long sys_ni_syscall		/* old break syscall holder */
- 	.long sys_stat
- 	.long sys_lseek
--	.long sys_getpid	/* 20 */
-+	.long sys_getpid		/* 20 */
- 	.long sys_mount
- 	.long sys_oldumount
- 	.long sys_setuid16
- 	.long sys_getuid16
--	.long sys_stime		/* 25 */
-+	.long sys_stime			/* 25 */
- 	.long sys_ptrace
- 	.long sys_alarm
- 	.long sys_fstat
- 	.long sys_pause
--	.long sys_utime		/* 30 */
--	.long sys_ni_syscall	/* old stty syscall holder */
--	.long sys_ni_syscall	/* old gtty syscall holder */
-+	.long sys_utime			/* 30 */
-+	.long sys_ni_syscall		/* old stty syscall holder */
-+	.long sys_ni_syscall		/* old gtty syscall holder */
- 	.long sys_access
- 	.long sys_nice
--	.long sys_ni_syscall	/* 35 */ /* old ftime syscall holder */
-+	.long sys_ni_syscall		/* 35 - old ftime syscall holder */
- 	.long sys_sync
- 	.long sys_kill
- 	.long sys_rename
- 	.long sys_mkdir
--	.long sys_rmdir		/* 40 */
-+	.long sys_rmdir			/* 40 */
- 	.long sys_dup
- 	.long sys_pipe
- 	.long sys_times
--	.long sys_ni_syscall	/* old prof syscall holder */
--	.long sys_brk		/* 45 */
-+	.long sys_ni_syscall		/* old prof syscall holder */
-+	.long sys_brk			/* 45 */
- 	.long sys_setgid16
- 	.long sys_getgid16
- 	.long sys_signal
- 	.long sys_geteuid16
--	.long sys_getegid16	/* 50 */
-+	.long sys_getegid16		/* 50 */
- 	.long sys_acct
--	.long sys_umount	/* recycled never used phys() */
--	.long sys_ni_syscall	/* old lock syscall holder */
-+	.long sys_umount		/* recycled never used phys() */
-+	.long sys_ni_syscall		/* old lock syscall holder */
- 	.long sys_ioctl
--	.long sys_fcntl		/* 55 */
--	.long sys_ni_syscall	/* old mpx syscall holder */
-+	.long sys_fcntl			/* 55 */
-+	.long sys_ni_syscall		/* old mpx syscall holder */
- 	.long sys_setpgid
--	.long sys_ni_syscall	/* old ulimit syscall holder */
-+	.long sys_ni_syscall		/* old ulimit syscall holder */
- 	.long sys_ni_syscall
--	.long sys_umask		/* 60 */
-+	.long sys_umask			/* 60 */
- 	.long sys_chroot
- 	.long sys_ustat
- 	.long sys_dup2
- 	.long sys_getppid
--	.long sys_getpgrp	/* 65 */
-+	.long sys_getpgrp		/* 65 */
- 	.long sys_setsid
- 	.long sys_sigaction
- 	.long sys_sgetmask
- 	.long sys_ssetmask
--	.long sys_setreuid16	/* 70 */
-+	.long sys_setreuid16		/* 70 */
- 	.long sys_setregid16
- 	.long sys_sigsuspend
- 	.long sys_sigpending
- 	.long sys_sethostname
--	.long sys_setrlimit	/* 75 */
-+	.long sys_setrlimit		/* 75 */
- 	.long sys_old_getrlimit
- 	.long sys_getrusage
- 	.long sys_gettimeofday
- 	.long sys_settimeofday
--	.long sys_getgroups16	/* 80 */
-+	.long sys_getgroups16		/* 80 */
- 	.long sys_setgroups16
- 	.long sys_old_select
- 	.long sys_symlink
- 	.long sys_lstat
--	.long sys_readlink	/* 85 */
-+	.long sys_readlink		/* 85 */
- 	.long sys_uselib
--	.long sys_ni_syscall	/* sys_swapon */
-+	.long sys_swapon
- 	.long sys_reboot
- 	.long sys_old_readdir
--	.long sys_old_mmap	/* 90 */
-+	.long sys_old_mmap		/* 90 */
- 	.long sys_munmap
- 	.long sys_truncate
- 	.long sys_ftruncate
- 	.long sys_fchmod
--	.long sys_fchown16	/* 95 */
-+	.long sys_fchown16		/* 95 */
- 	.long sys_getpriority
- 	.long sys_setpriority
--	.long sys_ni_syscall	/* old profil syscall holder */
-+	.long sys_ni_syscall		/* old profil syscall holder */
- 	.long sys_statfs
--	.long sys_fstatfs	/* 100 */
--	.long sys_ni_syscall	/* ioperm for i386 */
-+	.long sys_fstatfs		/* 100 */
-+	.long sys_ni_syscall		/* ioperm for i386 */
- 	.long sys_socketcall
- 	.long sys_syslog
- 	.long sys_setitimer
--	.long sys_getitimer	/* 105 */
-+	.long sys_getitimer		/* 105 */
- 	.long sys_newstat
- 	.long sys_newlstat
- 	.long sys_newfstat
- 	.long sys_ni_syscall
--	.long sys_ni_syscall	/* iopl for i386 */ /* 110 */
-+	.long sys_ni_syscall		/* 110 - iopl for i386 */
- 	.long sys_vhangup
--	.long sys_ni_syscall	/* obsolete idle() syscall */
--	.long sys_ni_syscall	/* vm86old for i386 */
-+	.long sys_ni_syscall		/* obsolete idle() syscall */
-+	.long sys_ni_syscall		/* vm86old for i386 */
- 	.long sys_wait4
--	.long sys_ni_syscall	/* 115 */ /* sys_swapoff */
-+	.long sys_swapoff		/* 115 */
- 	.long sys_sysinfo
- 	.long sys_ipc
- 	.long sys_fsync
- 	.long sys_sigreturn
--	.long sys_clone		/* 120 */
-+	.long sys_clone			/* 120 */
- 	.long sys_setdomainname
- 	.long sys_newuname
--	.long sys_cacheflush	/* modify_ldt for i386 */
-+	.long sys_cacheflush		/* modify_ldt for i386 */
- 	.long sys_adjtimex
--	.long sys_ni_syscall	/* 125 */ /* sys_mprotect */
-+	.long sys_mprotect		/* 125 */
- 	.long sys_sigprocmask
--	.long sys_ni_syscall	/* old "creat_module" */
-+	.long sys_ni_syscall		/* old "create_module" */
- 	.long sys_init_module
- 	.long sys_delete_module
--	.long sys_ni_syscall	/* 130: old "get_kernel_syms" */
-+	.long sys_ni_syscall		/* 130 - old "get_kernel_syms" */
- 	.long sys_quotactl
- 	.long sys_getpgid
- 	.long sys_fchdir
- 	.long sys_bdflush
--	.long sys_sysfs		/* 135 */
-+	.long sys_sysfs			/* 135 */
- 	.long sys_personality
--	.long sys_ni_syscall	/* for afs_syscall */
-+	.long sys_ni_syscall		/* for afs_syscall */
- 	.long sys_setfsuid16
- 	.long sys_setfsgid16
--	.long sys_llseek	/* 140 */
-+	.long sys_llseek		/* 140 */
- 	.long sys_getdents
- 	.long sys_select
- 	.long sys_flock
--	.long sys_ni_syscall	/* sys_msync */
--	.long sys_readv		/* 145 */
-+	.long sys_msync
-+	.long sys_readv			/* 145 */
- 	.long sys_writev
- 	.long sys_getsid
- 	.long sys_fdatasync
- 	.long sys_sysctl
--	.long sys_ni_syscall	/* 150 */ /* sys_mlock */
--	.long sys_ni_syscall	/* sys_munlock */
--	.long sys_ni_syscall	/* sys_mlockall */
--	.long sys_ni_syscall	/* sys_munlockall */
-+	.long sys_mlock			/* 150 */
-+	.long sys_munlock
-+	.long sys_mlockall
-+	.long sys_munlockall
- 	.long sys_sched_setparam
--	.long sys_sched_getparam /* 155 */
-+	.long sys_sched_getparam	/* 155 */
- 	.long sys_sched_setscheduler
- 	.long sys_sched_getscheduler
- 	.long sys_sched_yield
-@@ -181,124 +184,124 @@ ENTRY(sys_call_table)
- 	.long sys_sched_get_priority_min  /* 160 */
- 	.long sys_sched_rr_get_interval
- 	.long sys_nanosleep
--	.long sys_ni_syscall	/* sys_mremap */
-+	.long sys_mremap
- 	.long sys_setresuid16
--	.long sys_getresuid16	/* 165 */
--	.long sys_getpagesize	/* sys_getpagesize */
--	.long sys_ni_syscall	/* old "query_module" */
-+	.long sys_getresuid16		/* 165 */
-+	.long sys_getpagesize
-+	.long sys_ni_syscall		/* old "query_module" */
- 	.long sys_poll
--	.long sys_ni_syscall	/* sys_nfsservctl */
--	.long sys_setresgid16	/* 170 */
-+	.long sys_nfsservctl
-+	.long sys_setresgid16		/* 170 */
- 	.long sys_getresgid16
- 	.long sys_prctl
- 	.long sys_rt_sigreturn
- 	.long sys_rt_sigaction
--	.long sys_rt_sigprocmask /* 175 */
-+	.long sys_rt_sigprocmask	/* 175 */
- 	.long sys_rt_sigpending
- 	.long sys_rt_sigtimedwait
- 	.long sys_rt_sigqueueinfo
- 	.long sys_rt_sigsuspend
--	.long sys_pread64	/* 180 */
-+	.long sys_pread64		/* 180 */
- 	.long sys_pwrite64
- 	.long sys_lchown16
- 	.long sys_getcwd
- 	.long sys_capget
--	.long sys_capset	/* 185 */
-+	.long sys_capset		/* 185 */
- 	.long sys_sigaltstack
- 	.long sys_sendfile
--	.long sys_ni_syscall	/* streams1 */
--	.long sys_ni_syscall	/* streams2 */
--	.long sys_vfork		/* 190 */
-+	.long sys_ni_syscall		/* streams1 */
-+	.long sys_ni_syscall		/* streams2 */
-+	.long sys_vfork			/* 190 */
- 	.long sys_getrlimit
--	.long sys_mmap_pgoff
-+	.long sys_mmap2
- 	.long sys_truncate64
- 	.long sys_ftruncate64
--	.long sys_stat64	/* 195 */
-+	.long sys_stat64		/* 195 */
- 	.long sys_lstat64
- 	.long sys_fstat64
- 	.long sys_chown
- 	.long sys_getuid
--	.long sys_getgid	/* 200 */
-+	.long sys_getgid		/* 200 */
- 	.long sys_geteuid
- 	.long sys_getegid
- 	.long sys_setreuid
- 	.long sys_setregid
--	.long sys_getgroups	/* 205 */
-+	.long sys_getgroups		/* 205 */
- 	.long sys_setgroups
- 	.long sys_fchown
- 	.long sys_setresuid
- 	.long sys_getresuid
--	.long sys_setresgid	/* 210 */
-+	.long sys_setresgid		/* 210 */
- 	.long sys_getresgid
- 	.long sys_lchown
- 	.long sys_setuid
- 	.long sys_setgid
--	.long sys_setfsuid	/* 215 */
-+	.long sys_setfsuid		/* 215 */
- 	.long sys_setfsgid
- 	.long sys_pivot_root
- 	.long sys_ni_syscall
- 	.long sys_ni_syscall
--	.long sys_getdents64	/* 220 */
-+	.long sys_getdents64		/* 220 */
- 	.long sys_gettid
- 	.long sys_tkill
- 	.long sys_setxattr
- 	.long sys_lsetxattr
--	.long sys_fsetxattr	/* 225 */
-+	.long sys_fsetxattr		/* 225 */
- 	.long sys_getxattr
- 	.long sys_lgetxattr
- 	.long sys_fgetxattr
- 	.long sys_listxattr
--	.long sys_llistxattr	/* 230 */
-+	.long sys_llistxattr		/* 230 */
- 	.long sys_flistxattr
- 	.long sys_removexattr
- 	.long sys_lremovexattr
- 	.long sys_fremovexattr
--	.long sys_futex		/* 235 */
-+	.long sys_futex			/* 235 */
- 	.long sys_sendfile64
--	.long sys_ni_syscall	/* sys_mincore */
--	.long sys_ni_syscall	/* sys_madvise */
-+	.long sys_mincore
-+	.long sys_madvise
- 	.long sys_fcntl64
--	.long sys_readahead	/* 240 */
-+	.long sys_readahead		/* 240 */
- 	.long sys_io_setup
- 	.long sys_io_destroy
- 	.long sys_io_getevents
- 	.long sys_io_submit
--	.long sys_io_cancel	/* 245 */
-+	.long sys_io_cancel		/* 245 */
- 	.long sys_fadvise64
- 	.long sys_exit_group
- 	.long sys_lookup_dcookie
- 	.long sys_epoll_create
--	.long sys_epoll_ctl	/* 250 */
-+	.long sys_epoll_ctl		/* 250 */
- 	.long sys_epoll_wait
--	.long sys_ni_syscall	/* sys_remap_file_pages */
-+	.long sys_remap_file_pages
- 	.long sys_set_tid_address
- 	.long sys_timer_create
--	.long sys_timer_settime	/* 255 */
-+	.long sys_timer_settime		/* 255 */
- 	.long sys_timer_gettime
- 	.long sys_timer_getoverrun
- 	.long sys_timer_delete
- 	.long sys_clock_settime
--	.long sys_clock_gettime	/* 260 */
-+	.long sys_clock_gettime		/* 260 */
- 	.long sys_clock_getres
- 	.long sys_clock_nanosleep
- 	.long sys_statfs64
- 	.long sys_fstatfs64
--	.long sys_tgkill	/* 265 */
-+	.long sys_tgkill		/* 265 */
- 	.long sys_utimes
- 	.long sys_fadvise64_64
--	.long sys_mbind	
-+	.long sys_mbind
- 	.long sys_get_mempolicy
--	.long sys_set_mempolicy	/* 270 */
-+	.long sys_set_mempolicy		/* 270 */
- 	.long sys_mq_open
- 	.long sys_mq_unlink
- 	.long sys_mq_timedsend
- 	.long sys_mq_timedreceive
--	.long sys_mq_notify	/* 275 */
-+	.long sys_mq_notify		/* 275 */
- 	.long sys_mq_getsetattr
- 	.long sys_waitid
--	.long sys_ni_syscall	/* for sys_vserver */
-+	.long sys_ni_syscall		/* for sys_vserver */
- 	.long sys_add_key
--	.long sys_request_key	/* 280 */
-+	.long sys_request_key		/* 280 */
- 	.long sys_keyctl
- 	.long sys_ioprio_set
- 	.long sys_ioprio_get
-@@ -363,7 +366,3 @@ ENTRY(sys_call_table)
- 	.long sys_clock_adjtime
- 	.long sys_syncfs
++
++/** Where a given interrupt executes */
++#define INTERRUPT_VECTOR(i, pl) (0xFC000000 + ((pl) << 24) + ((i) << 8))
++
++/** Where to store a vector for a given interrupt. */
++#define USER_INTERRUPT_VECTOR(i) INTERRUPT_VECTOR(i, 0)
++
++/** The base address of user-level interrupts. */
++#define USER_INTERRUPT_VECTOR_BASE INTERRUPT_VECTOR(0, 0)
++
++
++/** Additional synthetic interrupt. */
++#define INT_BREAKPOINT (63)
++
++#define INT_MEM_ERROR    0
++#define INT_SINGLE_STEP_3    1
++#define INT_SINGLE_STEP_2    2
++#define INT_SINGLE_STEP_1    3
++#define INT_SINGLE_STEP_0    4
++#define INT_IDN_COMPLETE    5
++#define INT_UDN_COMPLETE    6
++#define INT_ITLB_MISS    7
++#define INT_ILL    8
++#define INT_GPV    9
++#define INT_IDN_ACCESS   10
++#define INT_UDN_ACCESS   11
++#define INT_SWINT_3   12
++#define INT_SWINT_2   13
++#define INT_SWINT_1   14
++#define INT_SWINT_0   15
++#define INT_ILL_TRANS   16
++#define INT_UNALIGN_DATA   17
++#define INT_DTLB_MISS   18
++#define INT_DTLB_ACCESS   19
++#define INT_IDN_FIREWALL   20
++#define INT_UDN_FIREWALL   21
++#define INT_TILE_TIMER   22
++#define INT_AUX_TILE_TIMER   23
++#define INT_IDN_TIMER   24
++#define INT_UDN_TIMER   25
++#define INT_IDN_AVAIL   26
++#define INT_UDN_AVAIL   27
++#define INT_IPI_3   28
++#define INT_IPI_2   29
++#define INT_IPI_1   30
++#define INT_IPI_0   31
++#define INT_PERF_COUNT   32
++#define INT_AUX_PERF_COUNT   33
++#define INT_INTCTRL_3   34
++#define INT_INTCTRL_2   35
++#define INT_INTCTRL_1   36
++#define INT_INTCTRL_0   37
++#define INT_BOOT_ACCESS   38
++#define INT_WORLD_ACCESS   39
++#define INT_I_ASID   40
++#define INT_D_ASID   41
++#define INT_DOUBLE_FAULT   42
++
++#define NUM_INTERRUPTS 43
++
++#ifndef __ASSEMBLER__
++#define QUEUED_INTERRUPTS ( \
++    INT_MASK(INT_MEM_ERROR) | \
++    INT_MASK(INT_IDN_COMPLETE) | \
++    INT_MASK(INT_UDN_COMPLETE) | \
++    INT_MASK(INT_IDN_FIREWALL) | \
++    INT_MASK(INT_UDN_FIREWALL) | \
++    INT_MASK(INT_TILE_TIMER) | \
++    INT_MASK(INT_AUX_TILE_TIMER) | \
++    INT_MASK(INT_IDN_TIMER) | \
++    INT_MASK(INT_UDN_TIMER) | \
++    INT_MASK(INT_IDN_AVAIL) | \
++    INT_MASK(INT_UDN_AVAIL) | \
++    INT_MASK(INT_IPI_3) | \
++    INT_MASK(INT_IPI_2) | \
++    INT_MASK(INT_IPI_1) | \
++    INT_MASK(INT_IPI_0) | \
++    INT_MASK(INT_PERF_COUNT) | \
++    INT_MASK(INT_AUX_PERF_COUNT) | \
++    INT_MASK(INT_INTCTRL_3) | \
++    INT_MASK(INT_INTCTRL_2) | \
++    INT_MASK(INT_INTCTRL_1) | \
++    INT_MASK(INT_INTCTRL_0) | \
++    INT_MASK(INT_BOOT_ACCESS) | \
++    INT_MASK(INT_WORLD_ACCESS) | \
++    INT_MASK(INT_I_ASID) | \
++    INT_MASK(INT_D_ASID) | \
++    INT_MASK(INT_DOUBLE_FAULT) | \
++    0)
++#define NONQUEUED_INTERRUPTS ( \
++    INT_MASK(INT_SINGLE_STEP_3) | \
++    INT_MASK(INT_SINGLE_STEP_2) | \
++    INT_MASK(INT_SINGLE_STEP_1) | \
++    INT_MASK(INT_SINGLE_STEP_0) | \
++    INT_MASK(INT_ITLB_MISS) | \
++    INT_MASK(INT_ILL) | \
++    INT_MASK(INT_GPV) | \
++    INT_MASK(INT_IDN_ACCESS) | \
++    INT_MASK(INT_UDN_ACCESS) | \
++    INT_MASK(INT_SWINT_3) | \
++    INT_MASK(INT_SWINT_2) | \
++    INT_MASK(INT_SWINT_1) | \
++    INT_MASK(INT_SWINT_0) | \
++    INT_MASK(INT_ILL_TRANS) | \
++    INT_MASK(INT_UNALIGN_DATA) | \
++    INT_MASK(INT_DTLB_MISS) | \
++    INT_MASK(INT_DTLB_ACCESS) | \
++    0)
++#define CRITICAL_MASKED_INTERRUPTS ( \
++    INT_MASK(INT_MEM_ERROR) | \
++    INT_MASK(INT_SINGLE_STEP_3) | \
++    INT_MASK(INT_SINGLE_STEP_2) | \
++    INT_MASK(INT_SINGLE_STEP_1) | \
++    INT_MASK(INT_SINGLE_STEP_0) | \
++    INT_MASK(INT_IDN_COMPLETE) | \
++    INT_MASK(INT_UDN_COMPLETE) | \
++    INT_MASK(INT_IDN_FIREWALL) | \
++    INT_MASK(INT_UDN_FIREWALL) | \
++    INT_MASK(INT_TILE_TIMER) | \
++    INT_MASK(INT_AUX_TILE_TIMER) | \
++    INT_MASK(INT_IDN_TIMER) | \
++    INT_MASK(INT_UDN_TIMER) | \
++    INT_MASK(INT_IDN_AVAIL) | \
++    INT_MASK(INT_UDN_AVAIL) | \
++    INT_MASK(INT_IPI_3) | \
++    INT_MASK(INT_IPI_2) | \
++    INT_MASK(INT_IPI_1) | \
++    INT_MASK(INT_IPI_0) | \
++    INT_MASK(INT_PERF_COUNT) | \
++    INT_MASK(INT_AUX_PERF_COUNT) | \
++    INT_MASK(INT_INTCTRL_3) | \
++    INT_MASK(INT_INTCTRL_2) | \
++    INT_MASK(INT_INTCTRL_1) | \
++    INT_MASK(INT_INTCTRL_0) | \
++    0)
++#define CRITICAL_UNMASKED_INTERRUPTS ( \
++    INT_MASK(INT_ITLB_MISS) | \
++    INT_MASK(INT_ILL) | \
++    INT_MASK(INT_GPV) | \
++    INT_MASK(INT_IDN_ACCESS) | \
++    INT_MASK(INT_UDN_ACCESS) | \
++    INT_MASK(INT_SWINT_3) | \
++    INT_MASK(INT_SWINT_2) | \
++    INT_MASK(INT_SWINT_1) | \
++    INT_MASK(INT_SWINT_0) | \
++    INT_MASK(INT_ILL_TRANS) | \
++    INT_MASK(INT_UNALIGN_DATA) | \
++    INT_MASK(INT_DTLB_MISS) | \
++    INT_MASK(INT_DTLB_ACCESS) | \
++    INT_MASK(INT_BOOT_ACCESS) | \
++    INT_MASK(INT_WORLD_ACCESS) | \
++    INT_MASK(INT_I_ASID) | \
++    INT_MASK(INT_D_ASID) | \
++    INT_MASK(INT_DOUBLE_FAULT) | \
++    0)
++#define MASKABLE_INTERRUPTS ( \
++    INT_MASK(INT_MEM_ERROR) | \
++    INT_MASK(INT_SINGLE_STEP_3) | \
++    INT_MASK(INT_SINGLE_STEP_2) | \
++    INT_MASK(INT_SINGLE_STEP_1) | \
++    INT_MASK(INT_SINGLE_STEP_0) | \
++    INT_MASK(INT_IDN_COMPLETE) | \
++    INT_MASK(INT_UDN_COMPLETE) | \
++    INT_MASK(INT_IDN_FIREWALL) | \
++    INT_MASK(INT_UDN_FIREWALL) | \
++    INT_MASK(INT_TILE_TIMER) | \
++    INT_MASK(INT_AUX_TILE_TIMER) | \
++    INT_MASK(INT_IDN_TIMER) | \
++    INT_MASK(INT_UDN_TIMER) | \
++    INT_MASK(INT_IDN_AVAIL) | \
++    INT_MASK(INT_UDN_AVAIL) | \
++    INT_MASK(INT_IPI_3) | \
++    INT_MASK(INT_IPI_2) | \
++    INT_MASK(INT_IPI_1) | \
++    INT_MASK(INT_IPI_0) | \
++    INT_MASK(INT_PERF_COUNT) | \
++    INT_MASK(INT_AUX_PERF_COUNT) | \
++    INT_MASK(INT_INTCTRL_3) | \
++    INT_MASK(INT_INTCTRL_2) | \
++    INT_MASK(INT_INTCTRL_1) | \
++    INT_MASK(INT_INTCTRL_0) | \
++    0)
++#define UNMASKABLE_INTERRUPTS ( \
++    INT_MASK(INT_ITLB_MISS) | \
++    INT_MASK(INT_ILL) | \
++    INT_MASK(INT_GPV) | \
++    INT_MASK(INT_IDN_ACCESS) | \
++    INT_MASK(INT_UDN_ACCESS) | \
++    INT_MASK(INT_SWINT_3) | \
++    INT_MASK(INT_SWINT_2) | \
++    INT_MASK(INT_SWINT_1) | \
++    INT_MASK(INT_SWINT_0) | \
++    INT_MASK(INT_ILL_TRANS) | \
++    INT_MASK(INT_UNALIGN_DATA) | \
++    INT_MASK(INT_DTLB_MISS) | \
++    INT_MASK(INT_DTLB_ACCESS) | \
++    INT_MASK(INT_BOOT_ACCESS) | \
++    INT_MASK(INT_WORLD_ACCESS) | \
++    INT_MASK(INT_I_ASID) | \
++    INT_MASK(INT_D_ASID) | \
++    INT_MASK(INT_DOUBLE_FAULT) | \
++    0)
++#define SYNC_INTERRUPTS ( \
++    INT_MASK(INT_SINGLE_STEP_3) | \
++    INT_MASK(INT_SINGLE_STEP_2) | \
++    INT_MASK(INT_SINGLE_STEP_1) | \
++    INT_MASK(INT_SINGLE_STEP_0) | \
++    INT_MASK(INT_IDN_COMPLETE) | \
++    INT_MASK(INT_UDN_COMPLETE) | \
++    INT_MASK(INT_ITLB_MISS) | \
++    INT_MASK(INT_ILL) | \
++    INT_MASK(INT_GPV) | \
++    INT_MASK(INT_IDN_ACCESS) | \
++    INT_MASK(INT_UDN_ACCESS) | \
++    INT_MASK(INT_SWINT_3) | \
++    INT_MASK(INT_SWINT_2) | \
++    INT_MASK(INT_SWINT_1) | \
++    INT_MASK(INT_SWINT_0) | \
++    INT_MASK(INT_ILL_TRANS) | \
++    INT_MASK(INT_UNALIGN_DATA) | \
++    INT_MASK(INT_DTLB_MISS) | \
++    INT_MASK(INT_DTLB_ACCESS) | \
++    0)
++#define NON_SYNC_INTERRUPTS ( \
++    INT_MASK(INT_MEM_ERROR) | \
++    INT_MASK(INT_IDN_FIREWALL) | \
++    INT_MASK(INT_UDN_FIREWALL) | \
++    INT_MASK(INT_TILE_TIMER) | \
++    INT_MASK(INT_AUX_TILE_TIMER) | \
++    INT_MASK(INT_IDN_TIMER) | \
++    INT_MASK(INT_UDN_TIMER) | \
++    INT_MASK(INT_IDN_AVAIL) | \
++    INT_MASK(INT_UDN_AVAIL) | \
++    INT_MASK(INT_IPI_3) | \
++    INT_MASK(INT_IPI_2) | \
++    INT_MASK(INT_IPI_1) | \
++    INT_MASK(INT_IPI_0) | \
++    INT_MASK(INT_PERF_COUNT) | \
++    INT_MASK(INT_AUX_PERF_COUNT) | \
++    INT_MASK(INT_INTCTRL_3) | \
++    INT_MASK(INT_INTCTRL_2) | \
++    INT_MASK(INT_INTCTRL_1) | \
++    INT_MASK(INT_INTCTRL_0) | \
++    INT_MASK(INT_BOOT_ACCESS) | \
++    INT_MASK(INT_WORLD_ACCESS) | \
++    INT_MASK(INT_I_ASID) | \
++    INT_MASK(INT_D_ASID) | \
++    INT_MASK(INT_DOUBLE_FAULT) | \
++    0)
++#endif /* !__ASSEMBLER__ */
++#endif /* !__ARCH_INTERRUPTS_H__ */
+diff --git a/arch/tile/include/arch/spr_def_64.h b/arch/tile/include/arch/spr_def_64.h
+new file mode 100644
+index 0000000..cd3e5f9
+--- /dev/null
++++ b/arch/tile/include/arch/spr_def_64.h
+@@ -0,0 +1,173 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#ifndef __DOXYGEN__
++
++#ifndef __ARCH_SPR_DEF_H__
++#define __ARCH_SPR_DEF_H__
++
++#define SPR_AUX_PERF_COUNT_0 0x2105
++#define SPR_AUX_PERF_COUNT_1 0x2106
++#define SPR_AUX_PERF_COUNT_CTL 0x2107
++#define SPR_AUX_PERF_COUNT_STS 0x2108
++#define SPR_CMPEXCH_VALUE 0x2780
++#define SPR_CYCLE 0x2781
++#define SPR_DONE 0x2705
++#define SPR_DSTREAM_PF 0x2706
++#define SPR_EVENT_BEGIN 0x2782
++#define SPR_EVENT_END 0x2783
++#define SPR_EX_CONTEXT_0_0 0x2580
++#define SPR_EX_CONTEXT_0_1 0x2581
++#define SPR_EX_CONTEXT_0_1__PL_SHIFT 0
++#define SPR_EX_CONTEXT_0_1__PL_RMASK 0x3
++#define SPR_EX_CONTEXT_0_1__PL_MASK  0x3
++#define SPR_EX_CONTEXT_0_1__ICS_SHIFT 2
++#define SPR_EX_CONTEXT_0_1__ICS_RMASK 0x1
++#define SPR_EX_CONTEXT_0_1__ICS_MASK  0x4
++#define SPR_EX_CONTEXT_1_0 0x2480
++#define SPR_EX_CONTEXT_1_1 0x2481
++#define SPR_EX_CONTEXT_1_1__PL_SHIFT 0
++#define SPR_EX_CONTEXT_1_1__PL_RMASK 0x3
++#define SPR_EX_CONTEXT_1_1__PL_MASK  0x3
++#define SPR_EX_CONTEXT_1_1__ICS_SHIFT 2
++#define SPR_EX_CONTEXT_1_1__ICS_RMASK 0x1
++#define SPR_EX_CONTEXT_1_1__ICS_MASK  0x4
++#define SPR_EX_CONTEXT_2_0 0x2380
++#define SPR_EX_CONTEXT_2_1 0x2381
++#define SPR_EX_CONTEXT_2_1__PL_SHIFT 0
++#define SPR_EX_CONTEXT_2_1__PL_RMASK 0x3
++#define SPR_EX_CONTEXT_2_1__PL_MASK  0x3
++#define SPR_EX_CONTEXT_2_1__ICS_SHIFT 2
++#define SPR_EX_CONTEXT_2_1__ICS_RMASK 0x1
++#define SPR_EX_CONTEXT_2_1__ICS_MASK  0x4
++#define SPR_FAIL 0x2707
++#define SPR_ILL_TRANS_REASON__I_STREAM_VA_RMASK 0x1
++#define SPR_INTCTRL_0_STATUS 0x2505
++#define SPR_INTCTRL_1_STATUS 0x2405
++#define SPR_INTCTRL_2_STATUS 0x2305
++#define SPR_INTERRUPT_CRITICAL_SECTION 0x2708
++#define SPR_INTERRUPT_MASK_0 0x2506
++#define SPR_INTERRUPT_MASK_1 0x2406
++#define SPR_INTERRUPT_MASK_2 0x2306
++#define SPR_INTERRUPT_MASK_RESET_0 0x2507
++#define SPR_INTERRUPT_MASK_RESET_1 0x2407
++#define SPR_INTERRUPT_MASK_RESET_2 0x2307
++#define SPR_INTERRUPT_MASK_SET_0 0x2508
++#define SPR_INTERRUPT_MASK_SET_1 0x2408
++#define SPR_INTERRUPT_MASK_SET_2 0x2308
++#define SPR_INTERRUPT_VECTOR_BASE_0 0x2509
++#define SPR_INTERRUPT_VECTOR_BASE_1 0x2409
++#define SPR_INTERRUPT_VECTOR_BASE_2 0x2309
++#define SPR_INTERRUPT_VECTOR_BASE_3 0x2209
++#define SPR_IPI_EVENT_0 0x1f05
++#define SPR_IPI_EVENT_1 0x1e05
++#define SPR_IPI_EVENT_2 0x1d05
++#define SPR_IPI_EVENT_RESET_0 0x1f06
++#define SPR_IPI_EVENT_RESET_1 0x1e06
++#define SPR_IPI_EVENT_RESET_2 0x1d06
++#define SPR_IPI_EVENT_SET_0 0x1f07
++#define SPR_IPI_EVENT_SET_1 0x1e07
++#define SPR_IPI_EVENT_SET_2 0x1d07
++#define SPR_IPI_MASK_0 0x1f08
++#define SPR_IPI_MASK_1 0x1e08
++#define SPR_IPI_MASK_2 0x1d08
++#define SPR_IPI_MASK_RESET_0 0x1f09
++#define SPR_IPI_MASK_RESET_1 0x1e09
++#define SPR_IPI_MASK_RESET_2 0x1d09
++#define SPR_IPI_MASK_SET_0 0x1f0a
++#define SPR_IPI_MASK_SET_1 0x1e0a
++#define SPR_IPI_MASK_SET_2 0x1d0a
++#define SPR_MPL_AUX_TILE_TIMER_SET_0 0x1700
++#define SPR_MPL_AUX_TILE_TIMER_SET_1 0x1701
++#define SPR_MPL_AUX_TILE_TIMER_SET_2 0x1702
++#define SPR_MPL_INTCTRL_0_SET_0 0x2500
++#define SPR_MPL_INTCTRL_0_SET_1 0x2501
++#define SPR_MPL_INTCTRL_0_SET_2 0x2502
++#define SPR_MPL_INTCTRL_1_SET_0 0x2400
++#define SPR_MPL_INTCTRL_1_SET_1 0x2401
++#define SPR_MPL_INTCTRL_1_SET_2 0x2402
++#define SPR_MPL_INTCTRL_2_SET_0 0x2300
++#define SPR_MPL_INTCTRL_2_SET_1 0x2301
++#define SPR_MPL_INTCTRL_2_SET_2 0x2302
++#define SPR_MPL_UDN_ACCESS_SET_0 0x0b00
++#define SPR_MPL_UDN_ACCESS_SET_1 0x0b01
++#define SPR_MPL_UDN_ACCESS_SET_2 0x0b02
++#define SPR_MPL_UDN_AVAIL_SET_0 0x1b00
++#define SPR_MPL_UDN_AVAIL_SET_1 0x1b01
++#define SPR_MPL_UDN_AVAIL_SET_2 0x1b02
++#define SPR_MPL_UDN_COMPLETE_SET_0 0x0600
++#define SPR_MPL_UDN_COMPLETE_SET_1 0x0601
++#define SPR_MPL_UDN_COMPLETE_SET_2 0x0602
++#define SPR_MPL_UDN_FIREWALL_SET_0 0x1500
++#define SPR_MPL_UDN_FIREWALL_SET_1 0x1501
++#define SPR_MPL_UDN_FIREWALL_SET_2 0x1502
++#define SPR_MPL_UDN_TIMER_SET_0 0x1900
++#define SPR_MPL_UDN_TIMER_SET_1 0x1901
++#define SPR_MPL_UDN_TIMER_SET_2 0x1902
++#define SPR_MPL_WORLD_ACCESS_SET_0 0x2700
++#define SPR_MPL_WORLD_ACCESS_SET_1 0x2701
++#define SPR_MPL_WORLD_ACCESS_SET_2 0x2702
++#define SPR_PASS 0x2709
++#define SPR_PERF_COUNT_0 0x2005
++#define SPR_PERF_COUNT_1 0x2006
++#define SPR_PERF_COUNT_CTL 0x2007
++#define SPR_PERF_COUNT_DN_CTL 0x2008
++#define SPR_PERF_COUNT_STS 0x2009
++#define SPR_PROC_STATUS 0x2784
++#define SPR_SIM_CONTROL 0x2785
++#define SPR_SINGLE_STEP_CONTROL_0 0x0405
++#define SPR_SINGLE_STEP_CONTROL_0__CANCELED_MASK  0x1
++#define SPR_SINGLE_STEP_CONTROL_0__INHIBIT_MASK  0x2
++#define SPR_SINGLE_STEP_CONTROL_1 0x0305
++#define SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK  0x1
++#define SPR_SINGLE_STEP_CONTROL_1__INHIBIT_MASK  0x2
++#define SPR_SINGLE_STEP_CONTROL_2 0x0205
++#define SPR_SINGLE_STEP_CONTROL_2__CANCELED_MASK  0x1
++#define SPR_SINGLE_STEP_CONTROL_2__INHIBIT_MASK  0x2
++#define SPR_SINGLE_STEP_EN_0_0 0x250a
++#define SPR_SINGLE_STEP_EN_0_1 0x240a
++#define SPR_SINGLE_STEP_EN_0_2 0x230a
++#define SPR_SINGLE_STEP_EN_1_0 0x250b
++#define SPR_SINGLE_STEP_EN_1_1 0x240b
++#define SPR_SINGLE_STEP_EN_1_2 0x230b
++#define SPR_SINGLE_STEP_EN_2_0 0x250c
++#define SPR_SINGLE_STEP_EN_2_1 0x240c
++#define SPR_SINGLE_STEP_EN_2_2 0x230c
++#define SPR_SYSTEM_SAVE_0_0 0x2582
++#define SPR_SYSTEM_SAVE_0_1 0x2583
++#define SPR_SYSTEM_SAVE_0_2 0x2584
++#define SPR_SYSTEM_SAVE_0_3 0x2585
++#define SPR_SYSTEM_SAVE_1_0 0x2482
++#define SPR_SYSTEM_SAVE_1_1 0x2483
++#define SPR_SYSTEM_SAVE_1_2 0x2484
++#define SPR_SYSTEM_SAVE_1_3 0x2485
++#define SPR_SYSTEM_SAVE_2_0 0x2382
++#define SPR_SYSTEM_SAVE_2_1 0x2383
++#define SPR_SYSTEM_SAVE_2_2 0x2384
++#define SPR_SYSTEM_SAVE_2_3 0x2385
++#define SPR_TILE_COORD 0x270b
++#define SPR_TILE_RTF_HWM 0x270c
++#define SPR_TILE_TIMER_CONTROL 0x1605
++#define SPR_UDN_AVAIL_EN 0x1b05
++#define SPR_UDN_DATA_AVAIL 0x0b80
++#define SPR_UDN_DEADLOCK_TIMEOUT 0x1906
++#define SPR_UDN_DEMUX_COUNT_0 0x0b05
++#define SPR_UDN_DEMUX_COUNT_1 0x0b06
++#define SPR_UDN_DEMUX_COUNT_2 0x0b07
++#define SPR_UDN_DEMUX_COUNT_3 0x0b08
++#define SPR_UDN_DIRECTION_PROTECT 0x1505
++
++#endif /* !defined(__ARCH_SPR_DEF_H__) */
++
++#endif /* !defined(__DOXYGEN__) */
+diff --git a/arch/tile/include/asm/atomic_64.h b/arch/tile/include/asm/atomic_64.h
+new file mode 100644
+index 0000000..3217052
+--- /dev/null
++++ b/arch/tile/include/asm/atomic_64.h
+@@ -0,0 +1,169 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Do not include directly; use <asm/atomic.h>.
++ */
++
++#ifndef _ASM_TILE_ATOMIC_64_H
++#define _ASM_TILE_ATOMIC_64_H
++
++#ifndef __ASSEMBLY__
++
++#include <arch/spr_def.h>
++
++/* First, the 32-bit atomic ops that are "real" on our 64-bit platform. */
++
++#define atomic_set(v, i) ((v)->counter = (i))
++
++/*
++ * The smp_mb() operations throughout are to support the fact that
++ * Linux requires memory barriers before and after the operation,
++ * on any routine which updates memory and returns a value.
++ */
++
++static inline int atomic_cmpxchg(atomic_t *v, int o, int n)
++{
++	int val;
++	__insn_mtspr(SPR_CMPEXCH_VALUE, o);
++	smp_mb();  /* barrier for proper semantics */
++	val = __insn_cmpexch4((void *)&v->counter, n);
++	smp_mb();  /* barrier for proper semantics */
++	return val;
++}
++
++static inline int atomic_xchg(atomic_t *v, int n)
++{
++	int val;
++	smp_mb();  /* barrier for proper semantics */
++	val = __insn_exch4((void *)&v->counter, n);
++	smp_mb();  /* barrier for proper semantics */
++	return val;
++}
++
++static inline void atomic_add(int i, atomic_t *v)
++{
++	__insn_fetchadd4((void *)&v->counter, i);
++}
++
++static inline int atomic_add_return(int i, atomic_t *v)
++{
++	int val;
++	smp_mb();  /* barrier for proper semantics */
++	val = __insn_fetchadd4((void *)&v->counter, i) + i;
++	barrier();  /* the "+ i" above will wait on memory */
++	return val;
++}
++
++static inline int atomic_add_unless(atomic_t *v, int a, int u)
++{
++	int guess, oldval = v->counter;
++	do {
++		if (oldval == u)
++			break;
++		guess = oldval;
++		oldval = atomic_cmpxchg(v, guess, guess + a);
++	} while (guess != oldval);
++	return oldval != u;
++}
++
++/* Now the true 64-bit operations. */
++
++#define ATOMIC64_INIT(i)	{ (i) }
++
++#define atomic64_read(v)		((v)->counter)
++#define atomic64_set(v, i) ((v)->counter = (i))
++
++static inline long atomic64_cmpxchg(atomic64_t *v, long o, long n)
++{
++	long val;
++	smp_mb();  /* barrier for proper semantics */
++	__insn_mtspr(SPR_CMPEXCH_VALUE, o);
++	val = __insn_cmpexch((void *)&v->counter, n);
++	smp_mb();  /* barrier for proper semantics */
++	return val;
++}
++
++static inline long atomic64_xchg(atomic64_t *v, long n)
++{
++	long val;
++	smp_mb();  /* barrier for proper semantics */
++	val = __insn_exch((void *)&v->counter, n);
++	smp_mb();  /* barrier for proper semantics */
++	return val;
++}
++
++static inline void atomic64_add(long i, atomic64_t *v)
++{
++	__insn_fetchadd((void *)&v->counter, i);
++}
++
++static inline long atomic64_add_return(long i, atomic64_t *v)
++{
++	int val;
++	smp_mb();  /* barrier for proper semantics */
++	val = __insn_fetchadd((void *)&v->counter, i) + i;
++	barrier();  /* the "+ i" above will wait on memory */
++	return val;
++}
++
++static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
++{
++	long guess, oldval = v->counter;
++	do {
++		if (oldval == u)
++			break;
++		guess = oldval;
++		oldval = atomic64_cmpxchg(v, guess, guess + a);
++	} while (guess != oldval);
++	return oldval != u;
++}
++
++#define atomic64_sub_return(i, v)	atomic64_add_return(-(i), (v))
++#define atomic64_sub(i, v)		atomic64_add(-(i), (v))
++#define atomic64_inc_return(v)		atomic64_add_return(1, (v))
++#define atomic64_dec_return(v)		atomic64_sub_return(1, (v))
++#define atomic64_inc(v)			atomic64_add(1, (v))
++#define atomic64_dec(v)			atomic64_sub(1, (v))
++
++#define atomic64_inc_and_test(v)	(atomic64_inc_return(v) == 0)
++#define atomic64_dec_and_test(v)	(atomic64_dec_return(v) == 0)
++#define atomic64_sub_and_test(i, v)	(atomic64_sub_return((i), (v)) == 0)
++#define atomic64_add_negative(i, v)	(atomic64_add_return((i), (v)) < 0)
++
++#define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1, 0)
++
++/* Atomic dec and inc don't implement barrier, so provide them if needed. */
++#define smp_mb__before_atomic_dec()	smp_mb()
++#define smp_mb__after_atomic_dec()	smp_mb()
++#define smp_mb__before_atomic_inc()	smp_mb()
++#define smp_mb__after_atomic_inc()	smp_mb()
++
++#define xchg(ptr, x)							\
++	((typeof(*(ptr)))						\
++	 ((sizeof(*(ptr)) == sizeof(atomic_t)) ?			\
++	  atomic_xchg((atomic_t *)(ptr), (long)(x)) :			\
++	  (sizeof(*(ptr)) == sizeof(atomic_long_t)) ?			\
++	  atomic_long_xchg((atomic_long_t *)(ptr), (long)(x)) :		\
++	  __xchg_called_with_bad_pointer()))
++
++#define cmpxchg(ptr, o, n)						\
++	((typeof(*(ptr)))						\
++	 ((sizeof(*(ptr)) == sizeof(atomic_t)) ?			\
++	  atomic_cmpxchg((atomic_t *)(ptr), (long)(o), (long)(n)) :	\
++	  (sizeof(*(ptr)) == sizeof(atomic_long_t)) ?			\
++	  atomic_long_cmpxchg((atomic_long_t *)(ptr), (long)(o), (long)(n)) : \
++	  __cmpxchg_called_with_bad_pointer()))
++
++#endif /* !__ASSEMBLY__ */
++
++#endif /* _ASM_TILE_ATOMIC_64_H */
+diff --git a/arch/tile/include/asm/bitops.h b/arch/tile/include/asm/bitops.h
+index 132e6bb..16f1fa5 100644
+--- a/arch/tile/include/asm/bitops.h
++++ b/arch/tile/include/asm/bitops.h
+@@ -122,6 +122,7 @@ static inline unsigned long __arch_hweight64(__u64 w)
+ #include <asm-generic/bitops/lock.h>
+ #include <asm-generic/bitops/find.h>
+ #include <asm-generic/bitops/sched.h>
++#include <asm-generic/bitops/non-atomic.h>
+ #include <asm-generic/bitops/le.h>
  
--	.rept NR_syscalls-(.-sys_call_table)/4
--		.long sys_ni_syscall
--	.endr
+ #endif /* _ASM_TILE_BITOPS_H */
+diff --git a/arch/tile/include/asm/bitops_32.h b/arch/tile/include/asm/bitops_32.h
+index 2638be5..d31ab90 100644
+--- a/arch/tile/include/asm/bitops_32.h
++++ b/arch/tile/include/asm/bitops_32.h
+@@ -126,7 +126,6 @@ static inline int test_and_change_bit(unsigned nr,
+ #define smp_mb__before_clear_bit()	smp_mb()
+ #define smp_mb__after_clear_bit()	do {} while (0)
+ 
+-#include <asm-generic/bitops/non-atomic.h>
+ #include <asm-generic/bitops/ext2-atomic.h>
+ 
+ #endif /* _ASM_TILE_BITOPS_32_H */
+diff --git a/arch/tile/include/asm/bitops_64.h b/arch/tile/include/asm/bitops_64.h
+new file mode 100644
+index 0000000..99615e8
+--- /dev/null
++++ b/arch/tile/include/asm/bitops_64.h
+@@ -0,0 +1,105 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#ifndef _ASM_TILE_BITOPS_64_H
++#define _ASM_TILE_BITOPS_64_H
++
++#include <linux/compiler.h>
++#include <asm/atomic.h>
++#include <asm/system.h>
++
++/* See <asm/bitops.h> for API comments. */
++
++static inline void set_bit(unsigned nr, volatile unsigned long *addr)
++{
++	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
++	__insn_fetchor((void *)(addr + nr / BITS_PER_LONG), mask);
++}
++
++static inline void clear_bit(unsigned nr, volatile unsigned long *addr)
++{
++	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
++	__insn_fetchand((void *)(addr + nr / BITS_PER_LONG), ~mask);
++}
++
++#define smp_mb__before_clear_bit()	smp_mb()
++#define smp_mb__after_clear_bit()	smp_mb()
++
++
++static inline void change_bit(unsigned nr, volatile unsigned long *addr)
++{
++	unsigned long old, mask = (1UL << (nr % BITS_PER_LONG));
++	long guess, oldval;
++	addr += nr / BITS_PER_LONG;
++	old = *addr;
++	do {
++		guess = oldval;
++		oldval = atomic64_cmpxchg((atomic64_t *)addr,
++					  guess, guess ^ mask);
++	} while (guess != oldval);
++}
++
++
++/*
++ * The test_and_xxx_bit() routines require a memory fence before we
++ * start the operation, and after the operation completes.  We use
++ * smp_mb() before, and rely on the "!= 0" comparison, plus a compiler
++ * barrier(), to block until the atomic op is complete.
++ */
++
++static inline int test_and_set_bit(unsigned nr, volatile unsigned long *addr)
++{
++	int val;
++	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
++	smp_mb();  /* barrier for proper semantics */
++	val = (__insn_fetchor((void *)(addr + nr / BITS_PER_LONG), mask)
++	       & mask) != 0;
++	barrier();
++	return val;
++}
++
++
++static inline int test_and_clear_bit(unsigned nr, volatile unsigned long *addr)
++{
++	int val;
++	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
++	smp_mb();  /* barrier for proper semantics */
++	val = (__insn_fetchand((void *)(addr + nr / BITS_PER_LONG), ~mask)
++	       & mask) != 0;
++	barrier();
++	return val;
++}
++
++
++static inline int test_and_change_bit(unsigned nr,
++				      volatile unsigned long *addr)
++{
++	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
++	long guess, oldval = *addr;
++	addr += nr / BITS_PER_LONG;
++	oldval = *addr;
++	do {
++		guess = oldval;
++		oldval = atomic64_cmpxchg((atomic64_t *)addr,
++					  guess, guess ^ mask);
++	} while (guess != oldval);
++	return (oldval & mask) != 0;
++}
++
++#define ext2_set_bit_atomic(lock, nr, addr)			\
++	test_and_set_bit((nr), (unsigned long *)(addr))
++#define ext2_clear_bit_atomic(lock, nr, addr)			\
++	test_and_clear_bit((nr), (unsigned long *)(addr))
++
++#endif /* _ASM_TILE_BITOPS_64_H */
+diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
+index c3ae570..bf95f55 100644
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -215,8 +215,8 @@ struct compat_sigaction;
+ struct compat_siginfo;
+ struct compat_sigaltstack;
+ long compat_sys_execve(const char __user *path,
+-		       const compat_uptr_t __user *argv,
+-		       const compat_uptr_t __user *envp, struct pt_regs *);
++		       compat_uptr_t __user *argv,
++		       compat_uptr_t __user *envp, struct pt_regs *);
+ long compat_sys_rt_sigaction(int sig, struct compat_sigaction __user *act,
+ 			     struct compat_sigaction __user *oact,
+ 			     size_t sigsetsize);
+diff --git a/arch/tile/include/asm/opcode-tile_64.h b/arch/tile/include/asm/opcode-tile_64.h
+index 03df7b1..c063346 100644
+--- a/arch/tile/include/asm/opcode-tile_64.h
++++ b/arch/tile/include/asm/opcode-tile_64.h
+@@ -5,863 +5,711 @@
+ #ifndef opcode_tile_h
+ #define opcode_tile_h
+ 
+-typedef unsigned long long tile_bundle_bits;
++typedef unsigned long long tilegx_bundle_bits;
+ 
+ 
+ enum
+ {
+-  TILE_MAX_OPERANDS = 5 /* mm */
++  TILEGX_MAX_OPERANDS = 4 /* bfexts */
+ };
+ 
+ typedef enum
+ {
+-  TILE_OPC_BPT,
+-  TILE_OPC_INFO,
+-  TILE_OPC_INFOL,
+-  TILE_OPC_J,
+-  TILE_OPC_JAL,
+-  TILE_OPC_MOVE,
+-  TILE_OPC_MOVE_SN,
+-  TILE_OPC_MOVEI,
+-  TILE_OPC_MOVEI_SN,
+-  TILE_OPC_MOVELI,
+-  TILE_OPC_MOVELI_SN,
+-  TILE_OPC_MOVELIS,
+-  TILE_OPC_PREFETCH,
+-  TILE_OPC_RAISE,
+-  TILE_OPC_ADD,
+-  TILE_OPC_ADD_SN,
+-  TILE_OPC_ADDB,
+-  TILE_OPC_ADDB_SN,
+-  TILE_OPC_ADDBS_U,
+-  TILE_OPC_ADDBS_U_SN,
+-  TILE_OPC_ADDH,
+-  TILE_OPC_ADDH_SN,
+-  TILE_OPC_ADDHS,
+-  TILE_OPC_ADDHS_SN,
+-  TILE_OPC_ADDI,
+-  TILE_OPC_ADDI_SN,
+-  TILE_OPC_ADDIB,
+-  TILE_OPC_ADDIB_SN,
+-  TILE_OPC_ADDIH,
+-  TILE_OPC_ADDIH_SN,
+-  TILE_OPC_ADDLI,
+-  TILE_OPC_ADDLI_SN,
+-  TILE_OPC_ADDLIS,
+-  TILE_OPC_ADDS,
+-  TILE_OPC_ADDS_SN,
+-  TILE_OPC_ADIFFB_U,
+-  TILE_OPC_ADIFFB_U_SN,
+-  TILE_OPC_ADIFFH,
+-  TILE_OPC_ADIFFH_SN,
+-  TILE_OPC_AND,
+-  TILE_OPC_AND_SN,
+-  TILE_OPC_ANDI,
+-  TILE_OPC_ANDI_SN,
+-  TILE_OPC_AULI,
+-  TILE_OPC_AVGB_U,
+-  TILE_OPC_AVGB_U_SN,
+-  TILE_OPC_AVGH,
+-  TILE_OPC_AVGH_SN,
+-  TILE_OPC_BBNS,
+-  TILE_OPC_BBNS_SN,
+-  TILE_OPC_BBNST,
+-  TILE_OPC_BBNST_SN,
+-  TILE_OPC_BBS,
+-  TILE_OPC_BBS_SN,
+-  TILE_OPC_BBST,
+-  TILE_OPC_BBST_SN,
+-  TILE_OPC_BGEZ,
+-  TILE_OPC_BGEZ_SN,
+-  TILE_OPC_BGEZT,
+-  TILE_OPC_BGEZT_SN,
+-  TILE_OPC_BGZ,
+-  TILE_OPC_BGZ_SN,
+-  TILE_OPC_BGZT,
+-  TILE_OPC_BGZT_SN,
+-  TILE_OPC_BITX,
+-  TILE_OPC_BITX_SN,
+-  TILE_OPC_BLEZ,
+-  TILE_OPC_BLEZ_SN,
+-  TILE_OPC_BLEZT,
+-  TILE_OPC_BLEZT_SN,
+-  TILE_OPC_BLZ,
+-  TILE_OPC_BLZ_SN,
+-  TILE_OPC_BLZT,
+-  TILE_OPC_BLZT_SN,
+-  TILE_OPC_BNZ,
+-  TILE_OPC_BNZ_SN,
+-  TILE_OPC_BNZT,
+-  TILE_OPC_BNZT_SN,
+-  TILE_OPC_BYTEX,
+-  TILE_OPC_BYTEX_SN,
+-  TILE_OPC_BZ,
+-  TILE_OPC_BZ_SN,
+-  TILE_OPC_BZT,
+-  TILE_OPC_BZT_SN,
+-  TILE_OPC_CLZ,
+-  TILE_OPC_CLZ_SN,
+-  TILE_OPC_CRC32_32,
+-  TILE_OPC_CRC32_32_SN,
+-  TILE_OPC_CRC32_8,
+-  TILE_OPC_CRC32_8_SN,
+-  TILE_OPC_CTZ,
+-  TILE_OPC_CTZ_SN,
+-  TILE_OPC_DRAIN,
+-  TILE_OPC_DTLBPR,
+-  TILE_OPC_DWORD_ALIGN,
+-  TILE_OPC_DWORD_ALIGN_SN,
+-  TILE_OPC_FINV,
+-  TILE_OPC_FLUSH,
+-  TILE_OPC_FNOP,
+-  TILE_OPC_ICOH,
+-  TILE_OPC_ILL,
+-  TILE_OPC_INTHB,
+-  TILE_OPC_INTHB_SN,
+-  TILE_OPC_INTHH,
+-  TILE_OPC_INTHH_SN,
+-  TILE_OPC_INTLB,
+-  TILE_OPC_INTLB_SN,
+-  TILE_OPC_INTLH,
+-  TILE_OPC_INTLH_SN,
+-  TILE_OPC_INV,
+-  TILE_OPC_IRET,
+-  TILE_OPC_JALB,
+-  TILE_OPC_JALF,
+-  TILE_OPC_JALR,
+-  TILE_OPC_JALRP,
+-  TILE_OPC_JB,
+-  TILE_OPC_JF,
+-  TILE_OPC_JR,
+-  TILE_OPC_JRP,
+-  TILE_OPC_LB,
+-  TILE_OPC_LB_SN,
+-  TILE_OPC_LB_U,
+-  TILE_OPC_LB_U_SN,
+-  TILE_OPC_LBADD,
+-  TILE_OPC_LBADD_SN,
+-  TILE_OPC_LBADD_U,
+-  TILE_OPC_LBADD_U_SN,
+-  TILE_OPC_LH,
+-  TILE_OPC_LH_SN,
+-  TILE_OPC_LH_U,
+-  TILE_OPC_LH_U_SN,
+-  TILE_OPC_LHADD,
+-  TILE_OPC_LHADD_SN,
+-  TILE_OPC_LHADD_U,
+-  TILE_OPC_LHADD_U_SN,
+-  TILE_OPC_LNK,
+-  TILE_OPC_LNK_SN,
+-  TILE_OPC_LW,
+-  TILE_OPC_LW_SN,
+-  TILE_OPC_LW_NA,
+-  TILE_OPC_LW_NA_SN,
+-  TILE_OPC_LWADD,
+-  TILE_OPC_LWADD_SN,
+-  TILE_OPC_LWADD_NA,
+-  TILE_OPC_LWADD_NA_SN,
+-  TILE_OPC_MAXB_U,
+-  TILE_OPC_MAXB_U_SN,
+-  TILE_OPC_MAXH,
+-  TILE_OPC_MAXH_SN,
+-  TILE_OPC_MAXIB_U,
+-  TILE_OPC_MAXIB_U_SN,
+-  TILE_OPC_MAXIH,
+-  TILE_OPC_MAXIH_SN,
+-  TILE_OPC_MF,
+-  TILE_OPC_MFSPR,
+-  TILE_OPC_MINB_U,
+-  TILE_OPC_MINB_U_SN,
+-  TILE_OPC_MINH,
+-  TILE_OPC_MINH_SN,
+-  TILE_OPC_MINIB_U,
+-  TILE_OPC_MINIB_U_SN,
+-  TILE_OPC_MINIH,
+-  TILE_OPC_MINIH_SN,
+-  TILE_OPC_MM,
+-  TILE_OPC_MNZ,
+-  TILE_OPC_MNZ_SN,
+-  TILE_OPC_MNZB,
+-  TILE_OPC_MNZB_SN,
+-  TILE_OPC_MNZH,
+-  TILE_OPC_MNZH_SN,
+-  TILE_OPC_MTSPR,
+-  TILE_OPC_MULHH_SS,
+-  TILE_OPC_MULHH_SS_SN,
+-  TILE_OPC_MULHH_SU,
+-  TILE_OPC_MULHH_SU_SN,
+-  TILE_OPC_MULHH_UU,
+-  TILE_OPC_MULHH_UU_SN,
+-  TILE_OPC_MULHHA_SS,
+-  TILE_OPC_MULHHA_SS_SN,
+-  TILE_OPC_MULHHA_SU,
+-  TILE_OPC_MULHHA_SU_SN,
+-  TILE_OPC_MULHHA_UU,
+-  TILE_OPC_MULHHA_UU_SN,
+-  TILE_OPC_MULHHSA_UU,
+-  TILE_OPC_MULHHSA_UU_SN,
+-  TILE_OPC_MULHL_SS,
+-  TILE_OPC_MULHL_SS_SN,
+-  TILE_OPC_MULHL_SU,
+-  TILE_OPC_MULHL_SU_SN,
+-  TILE_OPC_MULHL_US,
+-  TILE_OPC_MULHL_US_SN,
+-  TILE_OPC_MULHL_UU,
+-  TILE_OPC_MULHL_UU_SN,
+-  TILE_OPC_MULHLA_SS,
+-  TILE_OPC_MULHLA_SS_SN,
+-  TILE_OPC_MULHLA_SU,
+-  TILE_OPC_MULHLA_SU_SN,
+-  TILE_OPC_MULHLA_US,
+-  TILE_OPC_MULHLA_US_SN,
+-  TILE_OPC_MULHLA_UU,
+-  TILE_OPC_MULHLA_UU_SN,
+-  TILE_OPC_MULHLSA_UU,
+-  TILE_OPC_MULHLSA_UU_SN,
+-  TILE_OPC_MULLL_SS,
+-  TILE_OPC_MULLL_SS_SN,
+-  TILE_OPC_MULLL_SU,
+-  TILE_OPC_MULLL_SU_SN,
+-  TILE_OPC_MULLL_UU,
+-  TILE_OPC_MULLL_UU_SN,
+-  TILE_OPC_MULLLA_SS,
+-  TILE_OPC_MULLLA_SS_SN,
+-  TILE_OPC_MULLLA_SU,
+-  TILE_OPC_MULLLA_SU_SN,
+-  TILE_OPC_MULLLA_UU,
+-  TILE_OPC_MULLLA_UU_SN,
+-  TILE_OPC_MULLLSA_UU,
+-  TILE_OPC_MULLLSA_UU_SN,
+-  TILE_OPC_MVNZ,
+-  TILE_OPC_MVNZ_SN,
+-  TILE_OPC_MVZ,
+-  TILE_OPC_MVZ_SN,
+-  TILE_OPC_MZ,
+-  TILE_OPC_MZ_SN,
+-  TILE_OPC_MZB,
+-  TILE_OPC_MZB_SN,
+-  TILE_OPC_MZH,
+-  TILE_OPC_MZH_SN,
+-  TILE_OPC_NAP,
+-  TILE_OPC_NOP,
+-  TILE_OPC_NOR,
+-  TILE_OPC_NOR_SN,
+-  TILE_OPC_OR,
+-  TILE_OPC_OR_SN,
+-  TILE_OPC_ORI,
+-  TILE_OPC_ORI_SN,
+-  TILE_OPC_PACKBS_U,
+-  TILE_OPC_PACKBS_U_SN,
+-  TILE_OPC_PACKHB,
+-  TILE_OPC_PACKHB_SN,
+-  TILE_OPC_PACKHS,
+-  TILE_OPC_PACKHS_SN,
+-  TILE_OPC_PACKLB,
+-  TILE_OPC_PACKLB_SN,
+-  TILE_OPC_PCNT,
+-  TILE_OPC_PCNT_SN,
+-  TILE_OPC_RL,
+-  TILE_OPC_RL_SN,
+-  TILE_OPC_RLI,
+-  TILE_OPC_RLI_SN,
+-  TILE_OPC_S1A,
+-  TILE_OPC_S1A_SN,
+-  TILE_OPC_S2A,
+-  TILE_OPC_S2A_SN,
+-  TILE_OPC_S3A,
+-  TILE_OPC_S3A_SN,
+-  TILE_OPC_SADAB_U,
+-  TILE_OPC_SADAB_U_SN,
+-  TILE_OPC_SADAH,
+-  TILE_OPC_SADAH_SN,
+-  TILE_OPC_SADAH_U,
+-  TILE_OPC_SADAH_U_SN,
+-  TILE_OPC_SADB_U,
+-  TILE_OPC_SADB_U_SN,
+-  TILE_OPC_SADH,
+-  TILE_OPC_SADH_SN,
+-  TILE_OPC_SADH_U,
+-  TILE_OPC_SADH_U_SN,
+-  TILE_OPC_SB,
+-  TILE_OPC_SBADD,
+-  TILE_OPC_SEQ,
+-  TILE_OPC_SEQ_SN,
+-  TILE_OPC_SEQB,
+-  TILE_OPC_SEQB_SN,
+-  TILE_OPC_SEQH,
+-  TILE_OPC_SEQH_SN,
+-  TILE_OPC_SEQI,
+-  TILE_OPC_SEQI_SN,
+-  TILE_OPC_SEQIB,
+-  TILE_OPC_SEQIB_SN,
+-  TILE_OPC_SEQIH,
+-  TILE_OPC_SEQIH_SN,
+-  TILE_OPC_SH,
+-  TILE_OPC_SHADD,
+-  TILE_OPC_SHL,
+-  TILE_OPC_SHL_SN,
+-  TILE_OPC_SHLB,
+-  TILE_OPC_SHLB_SN,
+-  TILE_OPC_SHLH,
+-  TILE_OPC_SHLH_SN,
+-  TILE_OPC_SHLI,
+-  TILE_OPC_SHLI_SN,
+-  TILE_OPC_SHLIB,
+-  TILE_OPC_SHLIB_SN,
+-  TILE_OPC_SHLIH,
+-  TILE_OPC_SHLIH_SN,
+-  TILE_OPC_SHR,
+-  TILE_OPC_SHR_SN,
+-  TILE_OPC_SHRB,
+-  TILE_OPC_SHRB_SN,
+-  TILE_OPC_SHRH,
+-  TILE_OPC_SHRH_SN,
+-  TILE_OPC_SHRI,
+-  TILE_OPC_SHRI_SN,
+-  TILE_OPC_SHRIB,
+-  TILE_OPC_SHRIB_SN,
+-  TILE_OPC_SHRIH,
+-  TILE_OPC_SHRIH_SN,
+-  TILE_OPC_SLT,
+-  TILE_OPC_SLT_SN,
+-  TILE_OPC_SLT_U,
+-  TILE_OPC_SLT_U_SN,
+-  TILE_OPC_SLTB,
+-  TILE_OPC_SLTB_SN,
+-  TILE_OPC_SLTB_U,
+-  TILE_OPC_SLTB_U_SN,
+-  TILE_OPC_SLTE,
+-  TILE_OPC_SLTE_SN,
+-  TILE_OPC_SLTE_U,
+-  TILE_OPC_SLTE_U_SN,
+-  TILE_OPC_SLTEB,
+-  TILE_OPC_SLTEB_SN,
+-  TILE_OPC_SLTEB_U,
+-  TILE_OPC_SLTEB_U_SN,
+-  TILE_OPC_SLTEH,
+-  TILE_OPC_SLTEH_SN,
+-  TILE_OPC_SLTEH_U,
+-  TILE_OPC_SLTEH_U_SN,
+-  TILE_OPC_SLTH,
+-  TILE_OPC_SLTH_SN,
+-  TILE_OPC_SLTH_U,
+-  TILE_OPC_SLTH_U_SN,
+-  TILE_OPC_SLTI,
+-  TILE_OPC_SLTI_SN,
+-  TILE_OPC_SLTI_U,
+-  TILE_OPC_SLTI_U_SN,
+-  TILE_OPC_SLTIB,
+-  TILE_OPC_SLTIB_SN,
+-  TILE_OPC_SLTIB_U,
+-  TILE_OPC_SLTIB_U_SN,
+-  TILE_OPC_SLTIH,
+-  TILE_OPC_SLTIH_SN,
+-  TILE_OPC_SLTIH_U,
+-  TILE_OPC_SLTIH_U_SN,
+-  TILE_OPC_SNE,
+-  TILE_OPC_SNE_SN,
+-  TILE_OPC_SNEB,
+-  TILE_OPC_SNEB_SN,
+-  TILE_OPC_SNEH,
+-  TILE_OPC_SNEH_SN,
+-  TILE_OPC_SRA,
+-  TILE_OPC_SRA_SN,
+-  TILE_OPC_SRAB,
+-  TILE_OPC_SRAB_SN,
+-  TILE_OPC_SRAH,
+-  TILE_OPC_SRAH_SN,
+-  TILE_OPC_SRAI,
+-  TILE_OPC_SRAI_SN,
+-  TILE_OPC_SRAIB,
+-  TILE_OPC_SRAIB_SN,
+-  TILE_OPC_SRAIH,
+-  TILE_OPC_SRAIH_SN,
+-  TILE_OPC_SUB,
+-  TILE_OPC_SUB_SN,
+-  TILE_OPC_SUBB,
+-  TILE_OPC_SUBB_SN,
+-  TILE_OPC_SUBBS_U,
+-  TILE_OPC_SUBBS_U_SN,
+-  TILE_OPC_SUBH,
+-  TILE_OPC_SUBH_SN,
+-  TILE_OPC_SUBHS,
+-  TILE_OPC_SUBHS_SN,
+-  TILE_OPC_SUBS,
+-  TILE_OPC_SUBS_SN,
+-  TILE_OPC_SW,
+-  TILE_OPC_SWADD,
+-  TILE_OPC_SWINT0,
+-  TILE_OPC_SWINT1,
+-  TILE_OPC_SWINT2,
+-  TILE_OPC_SWINT3,
+-  TILE_OPC_TBLIDXB0,
+-  TILE_OPC_TBLIDXB0_SN,
+-  TILE_OPC_TBLIDXB1,
+-  TILE_OPC_TBLIDXB1_SN,
+-  TILE_OPC_TBLIDXB2,
+-  TILE_OPC_TBLIDXB2_SN,
+-  TILE_OPC_TBLIDXB3,
+-  TILE_OPC_TBLIDXB3_SN,
+-  TILE_OPC_TNS,
+-  TILE_OPC_TNS_SN,
+-  TILE_OPC_WH64,
+-  TILE_OPC_XOR,
+-  TILE_OPC_XOR_SN,
+-  TILE_OPC_XORI,
+-  TILE_OPC_XORI_SN,
+-  TILE_OPC_NONE
+-} tile_mnemonic;
++  TILEGX_OPC_BPT,
++  TILEGX_OPC_INFO,
++  TILEGX_OPC_INFOL,
++  TILEGX_OPC_MOVE,
++  TILEGX_OPC_MOVEI,
++  TILEGX_OPC_MOVELI,
++  TILEGX_OPC_PREFETCH,
++  TILEGX_OPC_PREFETCH_ADD_L1,
++  TILEGX_OPC_PREFETCH_ADD_L1_FAULT,
++  TILEGX_OPC_PREFETCH_ADD_L2,
++  TILEGX_OPC_PREFETCH_ADD_L2_FAULT,
++  TILEGX_OPC_PREFETCH_ADD_L3,
++  TILEGX_OPC_PREFETCH_ADD_L3_FAULT,
++  TILEGX_OPC_PREFETCH_L1,
++  TILEGX_OPC_PREFETCH_L1_FAULT,
++  TILEGX_OPC_PREFETCH_L2,
++  TILEGX_OPC_PREFETCH_L2_FAULT,
++  TILEGX_OPC_PREFETCH_L3,
++  TILEGX_OPC_PREFETCH_L3_FAULT,
++  TILEGX_OPC_RAISE,
++  TILEGX_OPC_ADD,
++  TILEGX_OPC_ADDI,
++  TILEGX_OPC_ADDLI,
++  TILEGX_OPC_ADDX,
++  TILEGX_OPC_ADDXI,
++  TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXSC,
++  TILEGX_OPC_AND,
++  TILEGX_OPC_ANDI,
++  TILEGX_OPC_BEQZ,
++  TILEGX_OPC_BEQZT,
++  TILEGX_OPC_BFEXTS,
++  TILEGX_OPC_BFEXTU,
++  TILEGX_OPC_BFINS,
++  TILEGX_OPC_BGEZ,
++  TILEGX_OPC_BGEZT,
++  TILEGX_OPC_BGTZ,
++  TILEGX_OPC_BGTZT,
++  TILEGX_OPC_BLBC,
++  TILEGX_OPC_BLBCT,
++  TILEGX_OPC_BLBS,
++  TILEGX_OPC_BLBST,
++  TILEGX_OPC_BLEZ,
++  TILEGX_OPC_BLEZT,
++  TILEGX_OPC_BLTZ,
++  TILEGX_OPC_BLTZT,
++  TILEGX_OPC_BNEZ,
++  TILEGX_OPC_BNEZT,
++  TILEGX_OPC_CLZ,
++  TILEGX_OPC_CMOVEQZ,
++  TILEGX_OPC_CMOVNEZ,
++  TILEGX_OPC_CMPEQ,
++  TILEGX_OPC_CMPEQI,
++  TILEGX_OPC_CMPEXCH,
++  TILEGX_OPC_CMPEXCH4,
++  TILEGX_OPC_CMPLES,
++  TILEGX_OPC_CMPLEU,
++  TILEGX_OPC_CMPLTS,
++  TILEGX_OPC_CMPLTSI,
++  TILEGX_OPC_CMPLTU,
++  TILEGX_OPC_CMPLTUI,
++  TILEGX_OPC_CMPNE,
++  TILEGX_OPC_CMUL,
++  TILEGX_OPC_CMULA,
++  TILEGX_OPC_CMULAF,
++  TILEGX_OPC_CMULF,
++  TILEGX_OPC_CMULFR,
++  TILEGX_OPC_CMULH,
++  TILEGX_OPC_CMULHR,
++  TILEGX_OPC_CRC32_32,
++  TILEGX_OPC_CRC32_8,
++  TILEGX_OPC_CTZ,
++  TILEGX_OPC_DBLALIGN,
++  TILEGX_OPC_DBLALIGN2,
++  TILEGX_OPC_DBLALIGN4,
++  TILEGX_OPC_DBLALIGN6,
++  TILEGX_OPC_DRAIN,
++  TILEGX_OPC_DTLBPR,
++  TILEGX_OPC_EXCH,
++  TILEGX_OPC_EXCH4,
++  TILEGX_OPC_FDOUBLE_ADD_FLAGS,
++  TILEGX_OPC_FDOUBLE_ADDSUB,
++  TILEGX_OPC_FDOUBLE_MUL_FLAGS,
++  TILEGX_OPC_FDOUBLE_PACK1,
++  TILEGX_OPC_FDOUBLE_PACK2,
++  TILEGX_OPC_FDOUBLE_SUB_FLAGS,
++  TILEGX_OPC_FDOUBLE_UNPACK_MAX,
++  TILEGX_OPC_FDOUBLE_UNPACK_MIN,
++  TILEGX_OPC_FETCHADD,
++  TILEGX_OPC_FETCHADD4,
++  TILEGX_OPC_FETCHADDGEZ,
++  TILEGX_OPC_FETCHADDGEZ4,
++  TILEGX_OPC_FETCHAND,
++  TILEGX_OPC_FETCHAND4,
++  TILEGX_OPC_FETCHOR,
++  TILEGX_OPC_FETCHOR4,
++  TILEGX_OPC_FINV,
++  TILEGX_OPC_FLUSH,
++  TILEGX_OPC_FLUSHWB,
++  TILEGX_OPC_FNOP,
++  TILEGX_OPC_FSINGLE_ADD1,
++  TILEGX_OPC_FSINGLE_ADDSUB2,
++  TILEGX_OPC_FSINGLE_MUL1,
++  TILEGX_OPC_FSINGLE_MUL2,
++  TILEGX_OPC_FSINGLE_PACK1,
++  TILEGX_OPC_FSINGLE_PACK2,
++  TILEGX_OPC_FSINGLE_SUB1,
++  TILEGX_OPC_ICOH,
++  TILEGX_OPC_ILL,
++  TILEGX_OPC_INV,
++  TILEGX_OPC_IRET,
++  TILEGX_OPC_J,
++  TILEGX_OPC_JAL,
++  TILEGX_OPC_JALR,
++  TILEGX_OPC_JALRP,
++  TILEGX_OPC_JR,
++  TILEGX_OPC_JRP,
++  TILEGX_OPC_LD,
++  TILEGX_OPC_LD1S,
++  TILEGX_OPC_LD1S_ADD,
++  TILEGX_OPC_LD1U,
++  TILEGX_OPC_LD1U_ADD,
++  TILEGX_OPC_LD2S,
++  TILEGX_OPC_LD2S_ADD,
++  TILEGX_OPC_LD2U,
++  TILEGX_OPC_LD2U_ADD,
++  TILEGX_OPC_LD4S,
++  TILEGX_OPC_LD4S_ADD,
++  TILEGX_OPC_LD4U,
++  TILEGX_OPC_LD4U_ADD,
++  TILEGX_OPC_LD_ADD,
++  TILEGX_OPC_LDNA,
++  TILEGX_OPC_LDNA_ADD,
++  TILEGX_OPC_LDNT,
++  TILEGX_OPC_LDNT1S,
++  TILEGX_OPC_LDNT1S_ADD,
++  TILEGX_OPC_LDNT1U,
++  TILEGX_OPC_LDNT1U_ADD,
++  TILEGX_OPC_LDNT2S,
++  TILEGX_OPC_LDNT2S_ADD,
++  TILEGX_OPC_LDNT2U,
++  TILEGX_OPC_LDNT2U_ADD,
++  TILEGX_OPC_LDNT4S,
++  TILEGX_OPC_LDNT4S_ADD,
++  TILEGX_OPC_LDNT4U,
++  TILEGX_OPC_LDNT4U_ADD,
++  TILEGX_OPC_LDNT_ADD,
++  TILEGX_OPC_LNK,
++  TILEGX_OPC_MF,
++  TILEGX_OPC_MFSPR,
++  TILEGX_OPC_MM,
++  TILEGX_OPC_MNZ,
++  TILEGX_OPC_MTSPR,
++  TILEGX_OPC_MUL_HS_HS,
++  TILEGX_OPC_MUL_HS_HU,
++  TILEGX_OPC_MUL_HS_LS,
++  TILEGX_OPC_MUL_HS_LU,
++  TILEGX_OPC_MUL_HU_HU,
++  TILEGX_OPC_MUL_HU_LS,
++  TILEGX_OPC_MUL_HU_LU,
++  TILEGX_OPC_MUL_LS_LS,
++  TILEGX_OPC_MUL_LS_LU,
++  TILEGX_OPC_MUL_LU_LU,
++  TILEGX_OPC_MULA_HS_HS,
++  TILEGX_OPC_MULA_HS_HU,
++  TILEGX_OPC_MULA_HS_LS,
++  TILEGX_OPC_MULA_HS_LU,
++  TILEGX_OPC_MULA_HU_HU,
++  TILEGX_OPC_MULA_HU_LS,
++  TILEGX_OPC_MULA_HU_LU,
++  TILEGX_OPC_MULA_LS_LS,
++  TILEGX_OPC_MULA_LS_LU,
++  TILEGX_OPC_MULA_LU_LU,
++  TILEGX_OPC_MULAX,
++  TILEGX_OPC_MULX,
++  TILEGX_OPC_MZ,
++  TILEGX_OPC_NAP,
++  TILEGX_OPC_NOP,
++  TILEGX_OPC_NOR,
++  TILEGX_OPC_OR,
++  TILEGX_OPC_ORI,
++  TILEGX_OPC_PCNT,
++  TILEGX_OPC_REVBITS,
++  TILEGX_OPC_REVBYTES,
++  TILEGX_OPC_ROTL,
++  TILEGX_OPC_ROTLI,
++  TILEGX_OPC_SHL,
++  TILEGX_OPC_SHL16INSLI,
++  TILEGX_OPC_SHL1ADD,
++  TILEGX_OPC_SHL1ADDX,
++  TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL2ADDX,
++  TILEGX_OPC_SHL3ADD,
++  TILEGX_OPC_SHL3ADDX,
++  TILEGX_OPC_SHLI,
++  TILEGX_OPC_SHLX,
++  TILEGX_OPC_SHLXI,
++  TILEGX_OPC_SHRS,
++  TILEGX_OPC_SHRSI,
++  TILEGX_OPC_SHRU,
++  TILEGX_OPC_SHRUI,
++  TILEGX_OPC_SHRUX,
++  TILEGX_OPC_SHRUXI,
++  TILEGX_OPC_SHUFFLEBYTES,
++  TILEGX_OPC_ST,
++  TILEGX_OPC_ST1,
++  TILEGX_OPC_ST1_ADD,
++  TILEGX_OPC_ST2,
++  TILEGX_OPC_ST2_ADD,
++  TILEGX_OPC_ST4,
++  TILEGX_OPC_ST4_ADD,
++  TILEGX_OPC_ST_ADD,
++  TILEGX_OPC_STNT,
++  TILEGX_OPC_STNT1,
++  TILEGX_OPC_STNT1_ADD,
++  TILEGX_OPC_STNT2,
++  TILEGX_OPC_STNT2_ADD,
++  TILEGX_OPC_STNT4,
++  TILEGX_OPC_STNT4_ADD,
++  TILEGX_OPC_STNT_ADD,
++  TILEGX_OPC_SUB,
++  TILEGX_OPC_SUBX,
++  TILEGX_OPC_SUBXSC,
++  TILEGX_OPC_SWINT0,
++  TILEGX_OPC_SWINT1,
++  TILEGX_OPC_SWINT2,
++  TILEGX_OPC_SWINT3,
++  TILEGX_OPC_TBLIDXB0,
++  TILEGX_OPC_TBLIDXB1,
++  TILEGX_OPC_TBLIDXB2,
++  TILEGX_OPC_TBLIDXB3,
++  TILEGX_OPC_V1ADD,
++  TILEGX_OPC_V1ADDI,
++  TILEGX_OPC_V1ADDUC,
++  TILEGX_OPC_V1ADIFFU,
++  TILEGX_OPC_V1AVGU,
++  TILEGX_OPC_V1CMPEQ,
++  TILEGX_OPC_V1CMPEQI,
++  TILEGX_OPC_V1CMPLES,
++  TILEGX_OPC_V1CMPLEU,
++  TILEGX_OPC_V1CMPLTS,
++  TILEGX_OPC_V1CMPLTSI,
++  TILEGX_OPC_V1CMPLTU,
++  TILEGX_OPC_V1CMPLTUI,
++  TILEGX_OPC_V1CMPNE,
++  TILEGX_OPC_V1DDOTPU,
++  TILEGX_OPC_V1DDOTPUA,
++  TILEGX_OPC_V1DDOTPUS,
++  TILEGX_OPC_V1DDOTPUSA,
++  TILEGX_OPC_V1DOTP,
++  TILEGX_OPC_V1DOTPA,
++  TILEGX_OPC_V1DOTPU,
++  TILEGX_OPC_V1DOTPUA,
++  TILEGX_OPC_V1DOTPUS,
++  TILEGX_OPC_V1DOTPUSA,
++  TILEGX_OPC_V1INT_H,
++  TILEGX_OPC_V1INT_L,
++  TILEGX_OPC_V1MAXU,
++  TILEGX_OPC_V1MAXUI,
++  TILEGX_OPC_V1MINU,
++  TILEGX_OPC_V1MINUI,
++  TILEGX_OPC_V1MNZ,
++  TILEGX_OPC_V1MULTU,
++  TILEGX_OPC_V1MULU,
++  TILEGX_OPC_V1MULUS,
++  TILEGX_OPC_V1MZ,
++  TILEGX_OPC_V1SADAU,
++  TILEGX_OPC_V1SADU,
++  TILEGX_OPC_V1SHL,
++  TILEGX_OPC_V1SHLI,
++  TILEGX_OPC_V1SHRS,
++  TILEGX_OPC_V1SHRSI,
++  TILEGX_OPC_V1SHRU,
++  TILEGX_OPC_V1SHRUI,
++  TILEGX_OPC_V1SUB,
++  TILEGX_OPC_V1SUBUC,
++  TILEGX_OPC_V2ADD,
++  TILEGX_OPC_V2ADDI,
++  TILEGX_OPC_V2ADDSC,
++  TILEGX_OPC_V2ADIFFS,
++  TILEGX_OPC_V2AVGS,
++  TILEGX_OPC_V2CMPEQ,
++  TILEGX_OPC_V2CMPEQI,
++  TILEGX_OPC_V2CMPLES,
++  TILEGX_OPC_V2CMPLEU,
++  TILEGX_OPC_V2CMPLTS,
++  TILEGX_OPC_V2CMPLTSI,
++  TILEGX_OPC_V2CMPLTU,
++  TILEGX_OPC_V2CMPLTUI,
++  TILEGX_OPC_V2CMPNE,
++  TILEGX_OPC_V2DOTP,
++  TILEGX_OPC_V2DOTPA,
++  TILEGX_OPC_V2INT_H,
++  TILEGX_OPC_V2INT_L,
++  TILEGX_OPC_V2MAXS,
++  TILEGX_OPC_V2MAXSI,
++  TILEGX_OPC_V2MINS,
++  TILEGX_OPC_V2MINSI,
++  TILEGX_OPC_V2MNZ,
++  TILEGX_OPC_V2MULFSC,
++  TILEGX_OPC_V2MULS,
++  TILEGX_OPC_V2MULTS,
++  TILEGX_OPC_V2MZ,
++  TILEGX_OPC_V2PACKH,
++  TILEGX_OPC_V2PACKL,
++  TILEGX_OPC_V2PACKUC,
++  TILEGX_OPC_V2SADAS,
++  TILEGX_OPC_V2SADAU,
++  TILEGX_OPC_V2SADS,
++  TILEGX_OPC_V2SADU,
++  TILEGX_OPC_V2SHL,
++  TILEGX_OPC_V2SHLI,
++  TILEGX_OPC_V2SHLSC,
++  TILEGX_OPC_V2SHRS,
++  TILEGX_OPC_V2SHRSI,
++  TILEGX_OPC_V2SHRU,
++  TILEGX_OPC_V2SHRUI,
++  TILEGX_OPC_V2SUB,
++  TILEGX_OPC_V2SUBSC,
++  TILEGX_OPC_V4ADD,
++  TILEGX_OPC_V4ADDSC,
++  TILEGX_OPC_V4INT_H,
++  TILEGX_OPC_V4INT_L,
++  TILEGX_OPC_V4PACKSC,
++  TILEGX_OPC_V4SHL,
++  TILEGX_OPC_V4SHLSC,
++  TILEGX_OPC_V4SHRS,
++  TILEGX_OPC_V4SHRU,
++  TILEGX_OPC_V4SUB,
++  TILEGX_OPC_V4SUBSC,
++  TILEGX_OPC_WH64,
++  TILEGX_OPC_XOR,
++  TILEGX_OPC_XORI,
++  TILEGX_OPC_NONE
++} tilegx_mnemonic;
+ 
+ /* 64-bit pattern for a { bpt ; nop } bundle. */
+-#define TILE_BPT_BUNDLE 0x400b3cae70166000ULL
++#define TILEGX_BPT_BUNDLE 0x286a44ae51485000ULL
+ 
+ 
+-#define TILE_ELF_MACHINE_CODE EM_TILEPRO
++#define TILE_ELF_MACHINE_CODE EM_TILE64
+ 
+-#define TILE_ELF_NAME "elf32-tilepro"
++#define TILE_ELF_NAME "elf32-tile64"
+ 
+ 
+ static __inline unsigned int
+-get_BrOff_SN(tile_bundle_bits num)
++get_BFEnd_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 0)) & 0x3ff);
++  return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_BrOff_X1(tile_bundle_bits n)
++get_BFOpcodeExtension_X0(tilegx_bundle_bits num)
+ {
+-  return (((unsigned int)(n >> 43)) & 0x00007fff) |
+-         (((unsigned int)(n >> 20)) & 0x00018000);
++  const unsigned int n = (unsigned int)num;
++  return (((n >> 24)) & 0xf);
+ }
+ 
+ static __inline unsigned int
+-get_BrType_X1(tile_bundle_bits n)
++get_BFStart_X0(tilegx_bundle_bits num)
+ {
+-  return (((unsigned int)(n >> 31)) & 0xf);
++  const unsigned int n = (unsigned int)num;
++  return (((n >> 18)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_Dest_Imm8_X1(tile_bundle_bits n)
++get_BrOff_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 31)) & 0x0000003f) |
+-         (((unsigned int)(n >> 43)) & 0x000000c0);
++         (((unsigned int)(n >> 37)) & 0x0001ffc0);
+ }
+ 
+ static __inline unsigned int
+-get_Dest_SN(tile_bundle_bits num)
++get_BrType_X1(tilegx_bundle_bits n)
+ {
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 2)) & 0x3);
++  return (((unsigned int)(n >> 54)) & 0x1f);
+ }
+ 
+ static __inline unsigned int
+-get_Dest_X0(tile_bundle_bits num)
++get_Dest_Imm8_X1(tilegx_bundle_bits n)
++{
++  return (((unsigned int)(n >> 31)) & 0x0000003f) |
++         (((unsigned int)(n >> 43)) & 0x000000c0);
++}
++
++static __inline unsigned int
++get_Dest_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 0)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_Dest_X1(tile_bundle_bits n)
++get_Dest_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 31)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_Dest_Y0(tile_bundle_bits num)
++get_Dest_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 0)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_Dest_Y1(tile_bundle_bits n)
++get_Dest_Y1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 31)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_Imm16_X0(tile_bundle_bits num)
++get_Imm16_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 12)) & 0xffff);
+ }
+ 
+ static __inline unsigned int
+-get_Imm16_X1(tile_bundle_bits n)
++get_Imm16_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 43)) & 0xffff);
+ }
+ 
+ static __inline unsigned int
+-get_Imm8_SN(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 0)) & 0xff);
+-}
 -
+-static __inline unsigned int
+-get_Imm8_X0(tile_bundle_bits num)
++get_Imm8OpcodeExtension_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 12)) & 0xff);
++  return (((n >> 20)) & 0xff);
+ }
+ 
+ static __inline unsigned int
+-get_Imm8_X1(tile_bundle_bits n)
++get_Imm8OpcodeExtension_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 43)) & 0xff);
++  return (((unsigned int)(n >> 51)) & 0xff);
+ }
+ 
+ static __inline unsigned int
+-get_Imm8_Y0(tile_bundle_bits num)
++get_Imm8_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 12)) & 0xff);
+ }
+ 
+ static __inline unsigned int
+-get_Imm8_Y1(tile_bundle_bits n)
++get_Imm8_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 43)) & 0xff);
+ }
+ 
+ static __inline unsigned int
+-get_ImmOpcodeExtension_X0(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 20)) & 0x7f);
+-}
+-
+-static __inline unsigned int
+-get_ImmOpcodeExtension_X1(tile_bundle_bits n)
+-{
+-  return (((unsigned int)(n >> 51)) & 0x7f);
+-}
+-
+-static __inline unsigned int
+-get_ImmRROpcodeExtension_SN(tile_bundle_bits num)
++get_Imm8_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 8)) & 0x3);
+-}
+-
+-static __inline unsigned int
+-get_JOffLong_X1(tile_bundle_bits n)
+-{
+-  return (((unsigned int)(n >> 43)) & 0x00007fff) |
+-         (((unsigned int)(n >> 20)) & 0x00018000) |
+-         (((unsigned int)(n >> 14)) & 0x001e0000) |
+-         (((unsigned int)(n >> 16)) & 0x07e00000) |
+-         (((unsigned int)(n >> 31)) & 0x18000000);
+-}
+-
+-static __inline unsigned int
+-get_JOff_X1(tile_bundle_bits n)
+-{
+-  return (((unsigned int)(n >> 43)) & 0x00007fff) |
+-         (((unsigned int)(n >> 20)) & 0x00018000) |
+-         (((unsigned int)(n >> 14)) & 0x001e0000) |
+-         (((unsigned int)(n >> 16)) & 0x07e00000) |
+-         (((unsigned int)(n >> 31)) & 0x08000000);
+-}
+-
+-static __inline unsigned int
+-get_MF_Imm15_X1(tile_bundle_bits n)
+-{
+-  return (((unsigned int)(n >> 37)) & 0x00003fff) |
+-         (((unsigned int)(n >> 44)) & 0x00004000);
++  return (((n >> 12)) & 0xff);
+ }
+ 
+ static __inline unsigned int
+-get_MMEnd_X0(tile_bundle_bits num)
++get_Imm8_Y1(tilegx_bundle_bits n)
+ {
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 18)) & 0x1f);
++  return (((unsigned int)(n >> 43)) & 0xff);
+ }
+ 
+ static __inline unsigned int
+-get_MMEnd_X1(tile_bundle_bits n)
++get_JumpOff_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 49)) & 0x1f);
++  return (((unsigned int)(n >> 31)) & 0x7ffffff);
+ }
+ 
+ static __inline unsigned int
+-get_MMStart_X0(tile_bundle_bits num)
++get_JumpOpcodeExtension_X1(tilegx_bundle_bits n)
+ {
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 23)) & 0x1f);
++  return (((unsigned int)(n >> 58)) & 0x1);
+ }
+ 
+ static __inline unsigned int
+-get_MMStart_X1(tile_bundle_bits n)
++get_MF_Imm14_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 54)) & 0x1f);
++  return (((unsigned int)(n >> 37)) & 0x3fff);
+ }
+ 
+ static __inline unsigned int
+-get_MT_Imm15_X1(tile_bundle_bits n)
++get_MT_Imm14_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 31)) & 0x0000003f) |
+-         (((unsigned int)(n >> 37)) & 0x00003fc0) |
+-         (((unsigned int)(n >> 44)) & 0x00004000);
+-}
+-
+-static __inline unsigned int
+-get_Mode(tile_bundle_bits n)
+-{
+-  return (((unsigned int)(n >> 63)) & 0x1);
+-}
+-
+-static __inline unsigned int
+-get_NoRegOpcodeExtension_SN(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 0)) & 0xf);
++         (((unsigned int)(n >> 37)) & 0x00003fc0);
+ }
+ 
+ static __inline unsigned int
+-get_Opcode_SN(tile_bundle_bits num)
++get_Mode(tilegx_bundle_bits n)
+ {
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 10)) & 0x3f);
++  return (((unsigned int)(n >> 62)) & 0x3);
+ }
+ 
+ static __inline unsigned int
+-get_Opcode_X0(tile_bundle_bits num)
++get_Opcode_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 28)) & 0x7);
+ }
+ 
+ static __inline unsigned int
+-get_Opcode_X1(tile_bundle_bits n)
++get_Opcode_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 59)) & 0xf);
++  return (((unsigned int)(n >> 59)) & 0x7);
+ }
+ 
+ static __inline unsigned int
+-get_Opcode_Y0(tile_bundle_bits num)
++get_Opcode_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 27)) & 0xf);
+ }
+ 
+ static __inline unsigned int
+-get_Opcode_Y1(tile_bundle_bits n)
++get_Opcode_Y1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 59)) & 0xf);
++  return (((unsigned int)(n >> 58)) & 0xf);
+ }
+ 
+ static __inline unsigned int
+-get_Opcode_Y2(tile_bundle_bits n)
++get_Opcode_Y2(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 56)) & 0x7);
+-}
+-
+-static __inline unsigned int
+-get_RROpcodeExtension_SN(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 4)) & 0xf);
++  return (((n >> 26)) & 0x00000001) |
++         (((unsigned int)(n >> 56)) & 0x00000002);
+ }
+ 
+ static __inline unsigned int
+-get_RRROpcodeExtension_X0(tile_bundle_bits num)
++get_RRROpcodeExtension_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 18)) & 0x1ff);
++  return (((n >> 18)) & 0x3ff);
+ }
+ 
+ static __inline unsigned int
+-get_RRROpcodeExtension_X1(tile_bundle_bits n)
++get_RRROpcodeExtension_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 49)) & 0x1ff);
++  return (((unsigned int)(n >> 49)) & 0x3ff);
+ }
+ 
+ static __inline unsigned int
+-get_RRROpcodeExtension_Y0(tile_bundle_bits num)
++get_RRROpcodeExtension_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 18)) & 0x3);
+ }
+ 
+ static __inline unsigned int
+-get_RRROpcodeExtension_Y1(tile_bundle_bits n)
++get_RRROpcodeExtension_Y1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 49)) & 0x3);
+ }
+ 
+ static __inline unsigned int
+-get_RouteOpcodeExtension_SN(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 0)) & 0x3ff);
+-}
+-
+-static __inline unsigned int
+-get_S_X0(tile_bundle_bits num)
++get_ShAmt_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 27)) & 0x1);
++  return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_S_X1(tile_bundle_bits n)
++get_ShAmt_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 58)) & 0x1);
++  return (((unsigned int)(n >> 43)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_ShAmt_X0(tile_bundle_bits num)
++get_ShAmt_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 12)) & 0x1f);
++  return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_ShAmt_X1(tile_bundle_bits n)
++get_ShAmt_Y1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 43)) & 0x1f);
++  return (((unsigned int)(n >> 43)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_ShAmt_Y0(tile_bundle_bits num)
++get_ShiftOpcodeExtension_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 12)) & 0x1f);
++  return (((n >> 18)) & 0x3ff);
+ }
+ 
+ static __inline unsigned int
+-get_ShAmt_Y1(tile_bundle_bits n)
++get_ShiftOpcodeExtension_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 43)) & 0x1f);
++  return (((unsigned int)(n >> 49)) & 0x3ff);
+ }
+ 
+ static __inline unsigned int
+-get_SrcA_X0(tile_bundle_bits num)
++get_ShiftOpcodeExtension_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 6)) & 0x3f);
++  return (((n >> 18)) & 0x3);
+ }
+ 
+ static __inline unsigned int
+-get_SrcA_X1(tile_bundle_bits n)
++get_ShiftOpcodeExtension_Y1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 37)) & 0x3f);
++  return (((unsigned int)(n >> 49)) & 0x3);
+ }
+ 
+ static __inline unsigned int
+-get_SrcA_Y0(tile_bundle_bits num)
++get_SrcA_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 6)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcA_Y1(tile_bundle_bits n)
++get_SrcA_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 37)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcA_Y2(tile_bundle_bits n)
++get_SrcA_Y0(tilegx_bundle_bits num)
+ {
+-  return (((n >> 26)) & 0x00000001) |
+-         (((unsigned int)(n >> 50)) & 0x0000003e);
++  const unsigned int n = (unsigned int)num;
++  return (((n >> 6)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcBDest_Y2(tile_bundle_bits num)
++get_SrcA_Y1(tilegx_bundle_bits n)
+ {
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 20)) & 0x3f);
++  return (((unsigned int)(n >> 37)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcB_X0(tile_bundle_bits num)
++get_SrcA_Y2(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 12)) & 0x3f);
++  return (((n >> 20)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcB_X1(tile_bundle_bits n)
++get_SrcBDest_Y2(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 43)) & 0x3f);
++  return (((unsigned int)(n >> 51)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcB_Y0(tile_bundle_bits num)
++get_SrcB_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_SrcB_Y1(tile_bundle_bits n)
++get_SrcB_X1(tilegx_bundle_bits n)
+ {
+   return (((unsigned int)(n >> 43)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_Src_SN(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 0)) & 0x3);
+-}
+-
+-static __inline unsigned int
+-get_UnOpcodeExtension_X0(tile_bundle_bits num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((n >> 12)) & 0x1f);
+-}
+-
+-static __inline unsigned int
+-get_UnOpcodeExtension_X1(tile_bundle_bits n)
+-{
+-  return (((unsigned int)(n >> 43)) & 0x1f);
+-}
+-
+-static __inline unsigned int
+-get_UnOpcodeExtension_Y0(tile_bundle_bits num)
++get_SrcB_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 12)) & 0x1f);
++  return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_UnOpcodeExtension_Y1(tile_bundle_bits n)
++get_SrcB_Y1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 43)) & 0x1f);
++  return (((unsigned int)(n >> 43)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_UnShOpcodeExtension_X0(tile_bundle_bits num)
++get_UnaryOpcodeExtension_X0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 17)) & 0x3ff);
++  return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_UnShOpcodeExtension_X1(tile_bundle_bits n)
++get_UnaryOpcodeExtension_X1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 48)) & 0x3ff);
++  return (((unsigned int)(n >> 43)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_UnShOpcodeExtension_Y0(tile_bundle_bits num)
++get_UnaryOpcodeExtension_Y0(tilegx_bundle_bits num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((n >> 17)) & 0x7);
++  return (((n >> 12)) & 0x3f);
+ }
+ 
+ static __inline unsigned int
+-get_UnShOpcodeExtension_Y1(tile_bundle_bits n)
++get_UnaryOpcodeExtension_Y1(tilegx_bundle_bits n)
+ {
+-  return (((unsigned int)(n >> 48)) & 0x7);
++  return (((unsigned int)(n >> 43)) & 0x3f);
+ }
+ 
+ 
+@@ -874,546 +722,441 @@ sign_extend(int n, int num_bits)
+ 
+ 
+ 
+-static __inline tile_bundle_bits
+-create_BrOff_SN(int num)
++static __inline tilegx_bundle_bits
++create_BFEnd_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3ff) << 0);
++  return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_BrOff_X1(int num)
++static __inline tilegx_bundle_bits
++create_BFOpcodeExtension_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x00007fff)) << 43) |
+-         (((tile_bundle_bits)(n & 0x00018000)) << 20);
++  return ((n & 0xf) << 24);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_BrType_X1(int num)
++static __inline tilegx_bundle_bits
++create_BFStart_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0xf)) << 31);
++  return ((n & 0x3f) << 18);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_Dest_Imm8_X1(int num)
++static __inline tilegx_bundle_bits
++create_BrOff_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x0000003f)) << 31) |
+-         (((tile_bundle_bits)(n & 0x000000c0)) << 43);
++  return (((tilegx_bundle_bits)(n & 0x0000003f)) << 31) |
++         (((tilegx_bundle_bits)(n & 0x0001ffc0)) << 37);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_Dest_SN(int num)
++static __inline tilegx_bundle_bits
++create_BrType_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3) << 2);
++  return (((tilegx_bundle_bits)(n & 0x1f)) << 54);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
++create_Dest_Imm8_X1(int num)
++{
++  const unsigned int n = (unsigned int)num;
++  return (((tilegx_bundle_bits)(n & 0x0000003f)) << 31) |
++         (((tilegx_bundle_bits)(n & 0x000000c0)) << 43);
++}
++
++static __inline tilegx_bundle_bits
+ create_Dest_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3f) << 0);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Dest_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3f)) << 31);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 31);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Dest_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3f) << 0);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Dest_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3f)) << 31);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 31);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Imm16_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0xffff) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Imm16_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0xffff)) << 43);
++  return (((tilegx_bundle_bits)(n & 0xffff)) << 43);
++}
++
++static __inline tilegx_bundle_bits
++create_Imm8OpcodeExtension_X0(int num)
++{
++  const unsigned int n = (unsigned int)num;
++  return ((n & 0xff) << 20);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_Imm8_SN(int num)
++static __inline tilegx_bundle_bits
++create_Imm8OpcodeExtension_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0xff) << 0);
++  return (((tilegx_bundle_bits)(n & 0xff)) << 51);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Imm8_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0xff) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Imm8_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0xff)) << 43);
++  return (((tilegx_bundle_bits)(n & 0xff)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Imm8_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0xff) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Imm8_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0xff)) << 43);
+-}
+-
+-static __inline tile_bundle_bits
+-create_ImmOpcodeExtension_X0(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x7f) << 20);
+-}
+-
+-static __inline tile_bundle_bits
+-create_ImmOpcodeExtension_X1(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x7f)) << 51);
+-}
+-
+-static __inline tile_bundle_bits
+-create_ImmRROpcodeExtension_SN(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3) << 8);
+-}
+-
+-static __inline tile_bundle_bits
+-create_JOffLong_X1(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x00007fff)) << 43) |
+-         (((tile_bundle_bits)(n & 0x00018000)) << 20) |
+-         (((tile_bundle_bits)(n & 0x001e0000)) << 14) |
+-         (((tile_bundle_bits)(n & 0x07e00000)) << 16) |
+-         (((tile_bundle_bits)(n & 0x18000000)) << 31);
+-}
+-
+-static __inline tile_bundle_bits
+-create_JOff_X1(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x00007fff)) << 43) |
+-         (((tile_bundle_bits)(n & 0x00018000)) << 20) |
+-         (((tile_bundle_bits)(n & 0x001e0000)) << 14) |
+-         (((tile_bundle_bits)(n & 0x07e00000)) << 16) |
+-         (((tile_bundle_bits)(n & 0x08000000)) << 31);
+-}
+-
+-static __inline tile_bundle_bits
+-create_MF_Imm15_X1(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x00003fff)) << 37) |
+-         (((tile_bundle_bits)(n & 0x00004000)) << 44);
++  return (((tilegx_bundle_bits)(n & 0xff)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_MMEnd_X0(int num)
++static __inline tilegx_bundle_bits
++create_JumpOff_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1f) << 18);
++  return (((tilegx_bundle_bits)(n & 0x7ffffff)) << 31);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_MMEnd_X1(int num)
++static __inline tilegx_bundle_bits
++create_JumpOpcodeExtension_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1f)) << 49);
++  return (((tilegx_bundle_bits)(n & 0x1)) << 58);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_MMStart_X0(int num)
++static __inline tilegx_bundle_bits
++create_MF_Imm14_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1f) << 23);
++  return (((tilegx_bundle_bits)(n & 0x3fff)) << 37);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_MMStart_X1(int num)
++static __inline tilegx_bundle_bits
++create_MT_Imm14_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1f)) << 54);
++  return (((tilegx_bundle_bits)(n & 0x0000003f)) << 31) |
++         (((tilegx_bundle_bits)(n & 0x00003fc0)) << 37);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_MT_Imm15_X1(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x0000003f)) << 31) |
+-         (((tile_bundle_bits)(n & 0x00003fc0)) << 37) |
+-         (((tile_bundle_bits)(n & 0x00004000)) << 44);
+-}
+-
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Mode(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1)) << 63);
+-}
+-
+-static __inline tile_bundle_bits
+-create_NoRegOpcodeExtension_SN(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0xf) << 0);
+-}
+-
+-static __inline tile_bundle_bits
+-create_Opcode_SN(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3f) << 10);
++  return (((tilegx_bundle_bits)(n & 0x3)) << 62);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Opcode_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x7) << 28);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Opcode_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0xf)) << 59);
++  return (((tilegx_bundle_bits)(n & 0x7)) << 59);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Opcode_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0xf) << 27);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Opcode_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0xf)) << 59);
++  return (((tilegx_bundle_bits)(n & 0xf)) << 58);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_Opcode_Y2(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x7)) << 56);
+-}
+-
+-static __inline tile_bundle_bits
+-create_RROpcodeExtension_SN(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0xf) << 4);
++  return ((n & 0x00000001) << 26) |
++         (((tilegx_bundle_bits)(n & 0x00000002)) << 56);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_RRROpcodeExtension_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1ff) << 18);
++  return ((n & 0x3ff) << 18);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_RRROpcodeExtension_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1ff)) << 49);
++  return (((tilegx_bundle_bits)(n & 0x3ff)) << 49);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_RRROpcodeExtension_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3) << 18);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_RRROpcodeExtension_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3)) << 49);
++  return (((tilegx_bundle_bits)(n & 0x3)) << 49);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_RouteOpcodeExtension_SN(int num)
++static __inline tilegx_bundle_bits
++create_ShAmt_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3ff) << 0);
++  return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_S_X0(int num)
++static __inline tilegx_bundle_bits
++create_ShAmt_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1) << 27);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_S_X1(int num)
++static __inline tilegx_bundle_bits
++create_ShAmt_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1)) << 58);
++  return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_ShAmt_X0(int num)
++static __inline tilegx_bundle_bits
++create_ShAmt_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1f) << 12);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_ShAmt_X1(int num)
++static __inline tilegx_bundle_bits
++create_ShiftOpcodeExtension_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1f)) << 43);
++  return ((n & 0x3ff) << 18);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_ShAmt_Y0(int num)
++static __inline tilegx_bundle_bits
++create_ShiftOpcodeExtension_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1f) << 12);
++  return (((tilegx_bundle_bits)(n & 0x3ff)) << 49);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_ShAmt_Y1(int num)
++static __inline tilegx_bundle_bits
++create_ShiftOpcodeExtension_Y0(int num)
++{
++  const unsigned int n = (unsigned int)num;
++  return ((n & 0x3) << 18);
++}
++
++static __inline tilegx_bundle_bits
++create_ShiftOpcodeExtension_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1f)) << 43);
++  return (((tilegx_bundle_bits)(n & 0x3)) << 49);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcA_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3f) << 6);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcA_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3f)) << 37);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 37);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcA_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3f) << 6);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcA_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3f)) << 37);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 37);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcA_Y2(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x00000001) << 26) |
+-         (((tile_bundle_bits)(n & 0x0000003e)) << 50);
++  return ((n & 0x3f) << 20);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcBDest_Y2(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3f) << 20);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 51);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcB_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcB_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3f)) << 43);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcB_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+   return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
++static __inline tilegx_bundle_bits
+ create_SrcB_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3f)) << 43);
+-}
+-
+-static __inline tile_bundle_bits
+-create_Src_SN(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3) << 0);
+-}
+-
+-static __inline tile_bundle_bits
+-create_UnOpcodeExtension_X0(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1f) << 12);
+-}
+-
+-static __inline tile_bundle_bits
+-create_UnOpcodeExtension_X1(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1f)) << 43);
+-}
+-
+-static __inline tile_bundle_bits
+-create_UnOpcodeExtension_Y0(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x1f) << 12);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_UnOpcodeExtension_Y1(int num)
++static __inline tilegx_bundle_bits
++create_UnaryOpcodeExtension_X0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x1f)) << 43);
+-}
+-
+-static __inline tile_bundle_bits
+-create_UnShOpcodeExtension_X0(int num)
+-{
+-  const unsigned int n = (unsigned int)num;
+-  return ((n & 0x3ff) << 17);
++  return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_UnShOpcodeExtension_X1(int num)
++static __inline tilegx_bundle_bits
++create_UnaryOpcodeExtension_X1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x3ff)) << 48);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 43);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_UnShOpcodeExtension_Y0(int num)
++static __inline tilegx_bundle_bits
++create_UnaryOpcodeExtension_Y0(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return ((n & 0x7) << 17);
++  return ((n & 0x3f) << 12);
+ }
+ 
+-static __inline tile_bundle_bits
+-create_UnShOpcodeExtension_Y1(int num)
++static __inline tilegx_bundle_bits
++create_UnaryOpcodeExtension_Y1(int num)
+ {
+   const unsigned int n = (unsigned int)num;
+-  return (((tile_bundle_bits)(n & 0x7)) << 48);
++  return (((tilegx_bundle_bits)(n & 0x3f)) << 43);
+ }
+ 
+ 
+-
+ typedef enum
+ {
+-  TILE_PIPELINE_X0,
+-  TILE_PIPELINE_X1,
+-  TILE_PIPELINE_Y0,
+-  TILE_PIPELINE_Y1,
+-  TILE_PIPELINE_Y2,
+-} tile_pipeline;
++  TILEGX_PIPELINE_X0,
++  TILEGX_PIPELINE_X1,
++  TILEGX_PIPELINE_Y0,
++  TILEGX_PIPELINE_Y1,
++  TILEGX_PIPELINE_Y2,
++} tilegx_pipeline;
+ 
+-#define tile_is_x_pipeline(p) ((int)(p) <= (int)TILE_PIPELINE_X1)
++#define tilegx_is_x_pipeline(p) ((int)(p) <= (int)TILEGX_PIPELINE_X1)
+ 
+ typedef enum
+ {
+-  TILE_OP_TYPE_REGISTER,
+-  TILE_OP_TYPE_IMMEDIATE,
+-  TILE_OP_TYPE_ADDRESS,
+-  TILE_OP_TYPE_SPR
+-} tile_operand_type;
++  TILEGX_OP_TYPE_REGISTER,
++  TILEGX_OP_TYPE_IMMEDIATE,
++  TILEGX_OP_TYPE_ADDRESS,
++  TILEGX_OP_TYPE_SPR
++} tilegx_operand_type;
+ 
+-/* This is the bit that determines if a bundle is in the Y encoding. */
+-#define TILE_BUNDLE_Y_ENCODING_MASK ((tile_bundle_bits)1 << 63)
++/* These are the bits that determine if a bundle is in the X encoding. */
++#define TILEGX_BUNDLE_MODE_MASK ((tilegx_bundle_bits)3 << 62)
+ 
+ enum
+ {
+   /* Maximum number of instructions in a bundle (2 for X, 3 for Y). */
+-  TILE_MAX_INSTRUCTIONS_PER_BUNDLE = 3,
++  TILEGX_MAX_INSTRUCTIONS_PER_BUNDLE = 3,
+ 
+   /* How many different pipeline encodings are there? X0, X1, Y0, Y1, Y2. */
+-  TILE_NUM_PIPELINE_ENCODINGS = 5,
++  TILEGX_NUM_PIPELINE_ENCODINGS = 5,
+ 
+-  /* Log base 2 of TILE_BUNDLE_SIZE_IN_BYTES. */
+-  TILE_LOG2_BUNDLE_SIZE_IN_BYTES = 3,
++  /* Log base 2 of TILEGX_BUNDLE_SIZE_IN_BYTES. */
++  TILEGX_LOG2_BUNDLE_SIZE_IN_BYTES = 3,
+ 
+   /* Instructions take this many bytes. */
+-  TILE_BUNDLE_SIZE_IN_BYTES = 1 << TILE_LOG2_BUNDLE_SIZE_IN_BYTES,
++  TILEGX_BUNDLE_SIZE_IN_BYTES = 1 << TILEGX_LOG2_BUNDLE_SIZE_IN_BYTES,
+ 
+-  /* Log base 2 of TILE_BUNDLE_ALIGNMENT_IN_BYTES. */
+-  TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES = 3,
++  /* Log base 2 of TILEGX_BUNDLE_ALIGNMENT_IN_BYTES. */
++  TILEGX_LOG2_BUNDLE_ALIGNMENT_IN_BYTES = 3,
+ 
+   /* Bundles should be aligned modulo this number of bytes. */
+-  TILE_BUNDLE_ALIGNMENT_IN_BYTES =
+-    (1 << TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES),
+-
+-  /* Log base 2 of TILE_SN_INSTRUCTION_SIZE_IN_BYTES. */
+-  TILE_LOG2_SN_INSTRUCTION_SIZE_IN_BYTES = 1,
+-
+-  /* Static network instructions take this many bytes. */
+-  TILE_SN_INSTRUCTION_SIZE_IN_BYTES =
+-    (1 << TILE_LOG2_SN_INSTRUCTION_SIZE_IN_BYTES),
++  TILEGX_BUNDLE_ALIGNMENT_IN_BYTES =
++    (1 << TILEGX_LOG2_BUNDLE_ALIGNMENT_IN_BYTES),
+ 
+   /* Number of registers (some are magic, such as network I/O). */
+-  TILE_NUM_REGISTERS = 64,
+-
+-  /* Number of static network registers. */
+-  TILE_NUM_SN_REGISTERS = 4
++  TILEGX_NUM_REGISTERS = 64,
+ };
+ 
+ 
+-struct tile_operand
++struct tilegx_operand
+ {
+   /* Is this operand a register, immediate or address? */
+-  tile_operand_type type;
++  tilegx_operand_type type;
+ 
+   /* The default relocation type for this operand.  */
+   signed int default_reloc : 16;
+@@ -1437,27 +1180,27 @@ struct tile_operand
+   unsigned int rightshift : 2;
+ 
+   /* Return the bits for this operand to be ORed into an existing bundle. */
+-  tile_bundle_bits (*insert) (int op);
++  tilegx_bundle_bits (*insert) (int op);
+ 
+   /* Extract this operand and return it. */
+-  unsigned int (*extract) (tile_bundle_bits bundle);
++  unsigned int (*extract) (tilegx_bundle_bits bundle);
+ };
+ 
+ 
+-extern const struct tile_operand tile_operands[];
++extern const struct tilegx_operand tilegx_operands[];
+ 
+ /* One finite-state machine per pipe for rapid instruction decoding. */
+ extern const unsigned short * const
+-tile_bundle_decoder_fsms[TILE_NUM_PIPELINE_ENCODINGS];
++tilegx_bundle_decoder_fsms[TILEGX_NUM_PIPELINE_ENCODINGS];
+ 
+ 
+-struct tile_opcode
++struct tilegx_opcode
+ {
+   /* The opcode mnemonic, e.g. "add" */
+   const char *name;
+ 
+   /* The enum value for this mnemonic. */
+-  tile_mnemonic mnemonic;
++  tilegx_mnemonic mnemonic;
+ 
+   /* A bit mask of which of the five pipes this instruction
+      is compatible with:
+@@ -1478,36 +1221,28 @@ struct tile_opcode
+   unsigned char can_bundle;
+ 
+   /* The description of the operands. Each of these is an
+-   * index into the tile_operands[] table. */
+-  unsigned char operands[TILE_NUM_PIPELINE_ENCODINGS][TILE_MAX_OPERANDS];
++   * index into the tilegx_operands[] table. */
++  unsigned char operands[TILEGX_NUM_PIPELINE_ENCODINGS][TILEGX_MAX_OPERANDS];
+ 
+ };
+ 
+-extern const struct tile_opcode tile_opcodes[];
+-
++extern const struct tilegx_opcode tilegx_opcodes[];
+ 
+ /* Used for non-textual disassembly into structs. */
+-struct tile_decoded_instruction
++struct tilegx_decoded_instruction
+ {
+-  const struct tile_opcode *opcode;
+-  const struct tile_operand *operands[TILE_MAX_OPERANDS];
+-  int operand_values[TILE_MAX_OPERANDS];
++  const struct tilegx_opcode *opcode;
++  const struct tilegx_operand *operands[TILEGX_MAX_OPERANDS];
++  long long operand_values[TILEGX_MAX_OPERANDS];
+ };
+ 
+ 
+ /* Disassemble a bundle into a struct for machine processing. */
+-extern int parse_insn_tile(tile_bundle_bits bits,
+-                           unsigned int pc,
+-                           struct tile_decoded_instruction
+-                           decoded[TILE_MAX_INSTRUCTIONS_PER_BUNDLE]);
+-
+-
+-/* Given a set of bundle bits and a specific pipe, returns which
+- * instruction the bundle contains in that pipe.
+- */
+-extern const struct tile_opcode *
+-find_opcode(tile_bundle_bits bits, tile_pipeline pipe);
++extern int parse_insn_tilegx(tilegx_bundle_bits bits,
++                             unsigned long long pc,
++                             struct tilegx_decoded_instruction
++                             decoded[TILEGX_MAX_INSTRUCTIONS_PER_BUNDLE]);
+ 
+ 
+ 
+-#endif /* opcode_tile_h */
++#endif /* opcode_tilegx_h */
+diff --git a/arch/tile/include/asm/opcode_constants_64.h b/arch/tile/include/asm/opcode_constants_64.h
+index 227d033..7101928 100644
+--- a/arch/tile/include/asm/opcode_constants_64.h
++++ b/arch/tile/include/asm/opcode_constants_64.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
+  *
+  *   This program is free software; you can redistribute it and/or
+  *   modify it under the terms of the GNU General Public License
+@@ -19,462 +19,591 @@
+ #define _TILE_OPCODE_CONSTANTS_H
+ enum
+ {
+-  ADDBS_U_SPECIAL_0_OPCODE_X0 = 98,
+-  ADDBS_U_SPECIAL_0_OPCODE_X1 = 68,
+-  ADDB_SPECIAL_0_OPCODE_X0 = 1,
+-  ADDB_SPECIAL_0_OPCODE_X1 = 1,
+-  ADDHS_SPECIAL_0_OPCODE_X0 = 99,
+-  ADDHS_SPECIAL_0_OPCODE_X1 = 69,
+-  ADDH_SPECIAL_0_OPCODE_X0 = 2,
+-  ADDH_SPECIAL_0_OPCODE_X1 = 2,
+-  ADDIB_IMM_0_OPCODE_X0 = 1,
+-  ADDIB_IMM_0_OPCODE_X1 = 1,
+-  ADDIH_IMM_0_OPCODE_X0 = 2,
+-  ADDIH_IMM_0_OPCODE_X1 = 2,
+-  ADDI_IMM_0_OPCODE_X0 = 3,
+-  ADDI_IMM_0_OPCODE_X1 = 3,
+-  ADDI_IMM_1_OPCODE_SN = 1,
+-  ADDI_OPCODE_Y0 = 9,
+-  ADDI_OPCODE_Y1 = 7,
+-  ADDLIS_OPCODE_X0 = 1,
+-  ADDLIS_OPCODE_X1 = 2,
+-  ADDLI_OPCODE_X0 = 2,
+-  ADDLI_OPCODE_X1 = 3,
+-  ADDS_SPECIAL_0_OPCODE_X0 = 96,
+-  ADDS_SPECIAL_0_OPCODE_X1 = 66,
+-  ADD_SPECIAL_0_OPCODE_X0 = 3,
+-  ADD_SPECIAL_0_OPCODE_X1 = 3,
+-  ADD_SPECIAL_0_OPCODE_Y0 = 0,
+-  ADD_SPECIAL_0_OPCODE_Y1 = 0,
+-  ADIFFB_U_SPECIAL_0_OPCODE_X0 = 4,
+-  ADIFFH_SPECIAL_0_OPCODE_X0 = 5,
+-  ANDI_IMM_0_OPCODE_X0 = 1,
+-  ANDI_IMM_0_OPCODE_X1 = 4,
+-  ANDI_OPCODE_Y0 = 10,
+-  ANDI_OPCODE_Y1 = 8,
+-  AND_SPECIAL_0_OPCODE_X0 = 6,
+-  AND_SPECIAL_0_OPCODE_X1 = 4,
+-  AND_SPECIAL_2_OPCODE_Y0 = 0,
+-  AND_SPECIAL_2_OPCODE_Y1 = 0,
+-  AULI_OPCODE_X0 = 3,
+-  AULI_OPCODE_X1 = 4,
+-  AVGB_U_SPECIAL_0_OPCODE_X0 = 7,
+-  AVGH_SPECIAL_0_OPCODE_X0 = 8,
+-  BBNST_BRANCH_OPCODE_X1 = 15,
+-  BBNS_BRANCH_OPCODE_X1 = 14,
+-  BBNS_OPCODE_SN = 63,
+-  BBST_BRANCH_OPCODE_X1 = 13,
+-  BBS_BRANCH_OPCODE_X1 = 12,
+-  BBS_OPCODE_SN = 62,
+-  BGEZT_BRANCH_OPCODE_X1 = 7,
+-  BGEZ_BRANCH_OPCODE_X1 = 6,
+-  BGEZ_OPCODE_SN = 61,
+-  BGZT_BRANCH_OPCODE_X1 = 5,
+-  BGZ_BRANCH_OPCODE_X1 = 4,
+-  BGZ_OPCODE_SN = 58,
+-  BITX_UN_0_SHUN_0_OPCODE_X0 = 1,
+-  BITX_UN_0_SHUN_0_OPCODE_Y0 = 1,
+-  BLEZT_BRANCH_OPCODE_X1 = 11,
+-  BLEZ_BRANCH_OPCODE_X1 = 10,
+-  BLEZ_OPCODE_SN = 59,
+-  BLZT_BRANCH_OPCODE_X1 = 9,
+-  BLZ_BRANCH_OPCODE_X1 = 8,
+-  BLZ_OPCODE_SN = 60,
+-  BNZT_BRANCH_OPCODE_X1 = 3,
+-  BNZ_BRANCH_OPCODE_X1 = 2,
+-  BNZ_OPCODE_SN = 57,
+-  BPT_NOREG_RR_IMM_0_OPCODE_SN = 1,
+-  BRANCH_OPCODE_X1 = 5,
+-  BYTEX_UN_0_SHUN_0_OPCODE_X0 = 2,
+-  BYTEX_UN_0_SHUN_0_OPCODE_Y0 = 2,
+-  BZT_BRANCH_OPCODE_X1 = 1,
+-  BZ_BRANCH_OPCODE_X1 = 0,
+-  BZ_OPCODE_SN = 56,
+-  CLZ_UN_0_SHUN_0_OPCODE_X0 = 3,
+-  CLZ_UN_0_SHUN_0_OPCODE_Y0 = 3,
+-  CRC32_32_SPECIAL_0_OPCODE_X0 = 9,
+-  CRC32_8_SPECIAL_0_OPCODE_X0 = 10,
+-  CTZ_UN_0_SHUN_0_OPCODE_X0 = 4,
+-  CTZ_UN_0_SHUN_0_OPCODE_Y0 = 4,
+-  DRAIN_UN_0_SHUN_0_OPCODE_X1 = 1,
+-  DTLBPR_UN_0_SHUN_0_OPCODE_X1 = 2,
+-  DWORD_ALIGN_SPECIAL_0_OPCODE_X0 = 95,
+-  FINV_UN_0_SHUN_0_OPCODE_X1 = 3,
+-  FLUSH_UN_0_SHUN_0_OPCODE_X1 = 4,
+-  FNOP_NOREG_RR_IMM_0_OPCODE_SN = 3,
+-  FNOP_UN_0_SHUN_0_OPCODE_X0 = 5,
+-  FNOP_UN_0_SHUN_0_OPCODE_X1 = 5,
+-  FNOP_UN_0_SHUN_0_OPCODE_Y0 = 5,
+-  FNOP_UN_0_SHUN_0_OPCODE_Y1 = 1,
+-  HALT_NOREG_RR_IMM_0_OPCODE_SN = 0,
+-  ICOH_UN_0_SHUN_0_OPCODE_X1 = 6,
+-  ILL_UN_0_SHUN_0_OPCODE_X1 = 7,
+-  ILL_UN_0_SHUN_0_OPCODE_Y1 = 2,
+-  IMM_0_OPCODE_SN = 0,
+-  IMM_0_OPCODE_X0 = 4,
+-  IMM_0_OPCODE_X1 = 6,
+-  IMM_1_OPCODE_SN = 1,
+-  IMM_OPCODE_0_X0 = 5,
+-  INTHB_SPECIAL_0_OPCODE_X0 = 11,
+-  INTHB_SPECIAL_0_OPCODE_X1 = 5,
+-  INTHH_SPECIAL_0_OPCODE_X0 = 12,
+-  INTHH_SPECIAL_0_OPCODE_X1 = 6,
+-  INTLB_SPECIAL_0_OPCODE_X0 = 13,
+-  INTLB_SPECIAL_0_OPCODE_X1 = 7,
+-  INTLH_SPECIAL_0_OPCODE_X0 = 14,
+-  INTLH_SPECIAL_0_OPCODE_X1 = 8,
+-  INV_UN_0_SHUN_0_OPCODE_X1 = 8,
+-  IRET_UN_0_SHUN_0_OPCODE_X1 = 9,
+-  JALB_OPCODE_X1 = 13,
+-  JALF_OPCODE_X1 = 12,
+-  JALRP_SPECIAL_0_OPCODE_X1 = 9,
+-  JALRR_IMM_1_OPCODE_SN = 3,
+-  JALR_RR_IMM_0_OPCODE_SN = 5,
+-  JALR_SPECIAL_0_OPCODE_X1 = 10,
+-  JB_OPCODE_X1 = 11,
+-  JF_OPCODE_X1 = 10,
+-  JRP_SPECIAL_0_OPCODE_X1 = 11,
+-  JRR_IMM_1_OPCODE_SN = 2,
+-  JR_RR_IMM_0_OPCODE_SN = 4,
+-  JR_SPECIAL_0_OPCODE_X1 = 12,
+-  LBADD_IMM_0_OPCODE_X1 = 22,
+-  LBADD_U_IMM_0_OPCODE_X1 = 23,
+-  LB_OPCODE_Y2 = 0,
+-  LB_UN_0_SHUN_0_OPCODE_X1 = 10,
+-  LB_U_OPCODE_Y2 = 1,
+-  LB_U_UN_0_SHUN_0_OPCODE_X1 = 11,
+-  LHADD_IMM_0_OPCODE_X1 = 24,
+-  LHADD_U_IMM_0_OPCODE_X1 = 25,
+-  LH_OPCODE_Y2 = 2,
+-  LH_UN_0_SHUN_0_OPCODE_X1 = 12,
+-  LH_U_OPCODE_Y2 = 3,
+-  LH_U_UN_0_SHUN_0_OPCODE_X1 = 13,
+-  LNK_SPECIAL_0_OPCODE_X1 = 13,
+-  LWADD_IMM_0_OPCODE_X1 = 26,
+-  LWADD_NA_IMM_0_OPCODE_X1 = 27,
+-  LW_NA_UN_0_SHUN_0_OPCODE_X1 = 24,
+-  LW_OPCODE_Y2 = 4,
+-  LW_UN_0_SHUN_0_OPCODE_X1 = 14,
+-  MAXB_U_SPECIAL_0_OPCODE_X0 = 15,
+-  MAXB_U_SPECIAL_0_OPCODE_X1 = 14,
+-  MAXH_SPECIAL_0_OPCODE_X0 = 16,
+-  MAXH_SPECIAL_0_OPCODE_X1 = 15,
+-  MAXIB_U_IMM_0_OPCODE_X0 = 4,
+-  MAXIB_U_IMM_0_OPCODE_X1 = 5,
+-  MAXIH_IMM_0_OPCODE_X0 = 5,
+-  MAXIH_IMM_0_OPCODE_X1 = 6,
+-  MFSPR_IMM_0_OPCODE_X1 = 7,
+-  MF_UN_0_SHUN_0_OPCODE_X1 = 15,
+-  MINB_U_SPECIAL_0_OPCODE_X0 = 17,
+-  MINB_U_SPECIAL_0_OPCODE_X1 = 16,
+-  MINH_SPECIAL_0_OPCODE_X0 = 18,
+-  MINH_SPECIAL_0_OPCODE_X1 = 17,
+-  MINIB_U_IMM_0_OPCODE_X0 = 6,
+-  MINIB_U_IMM_0_OPCODE_X1 = 8,
+-  MINIH_IMM_0_OPCODE_X0 = 7,
+-  MINIH_IMM_0_OPCODE_X1 = 9,
+-  MM_OPCODE_X0 = 6,
+-  MM_OPCODE_X1 = 7,
+-  MNZB_SPECIAL_0_OPCODE_X0 = 19,
+-  MNZB_SPECIAL_0_OPCODE_X1 = 18,
+-  MNZH_SPECIAL_0_OPCODE_X0 = 20,
+-  MNZH_SPECIAL_0_OPCODE_X1 = 19,
+-  MNZ_SPECIAL_0_OPCODE_X0 = 21,
+-  MNZ_SPECIAL_0_OPCODE_X1 = 20,
+-  MNZ_SPECIAL_1_OPCODE_Y0 = 0,
+-  MNZ_SPECIAL_1_OPCODE_Y1 = 1,
+-  MOVEI_IMM_1_OPCODE_SN = 0,
+-  MOVE_RR_IMM_0_OPCODE_SN = 8,
+-  MTSPR_IMM_0_OPCODE_X1 = 10,
+-  MULHHA_SS_SPECIAL_0_OPCODE_X0 = 22,
+-  MULHHA_SS_SPECIAL_7_OPCODE_Y0 = 0,
+-  MULHHA_SU_SPECIAL_0_OPCODE_X0 = 23,
+-  MULHHA_UU_SPECIAL_0_OPCODE_X0 = 24,
+-  MULHHA_UU_SPECIAL_7_OPCODE_Y0 = 1,
+-  MULHHSA_UU_SPECIAL_0_OPCODE_X0 = 25,
+-  MULHH_SS_SPECIAL_0_OPCODE_X0 = 26,
+-  MULHH_SS_SPECIAL_6_OPCODE_Y0 = 0,
+-  MULHH_SU_SPECIAL_0_OPCODE_X0 = 27,
+-  MULHH_UU_SPECIAL_0_OPCODE_X0 = 28,
+-  MULHH_UU_SPECIAL_6_OPCODE_Y0 = 1,
+-  MULHLA_SS_SPECIAL_0_OPCODE_X0 = 29,
+-  MULHLA_SU_SPECIAL_0_OPCODE_X0 = 30,
+-  MULHLA_US_SPECIAL_0_OPCODE_X0 = 31,
+-  MULHLA_UU_SPECIAL_0_OPCODE_X0 = 32,
+-  MULHLSA_UU_SPECIAL_0_OPCODE_X0 = 33,
+-  MULHLSA_UU_SPECIAL_5_OPCODE_Y0 = 0,
+-  MULHL_SS_SPECIAL_0_OPCODE_X0 = 34,
+-  MULHL_SU_SPECIAL_0_OPCODE_X0 = 35,
+-  MULHL_US_SPECIAL_0_OPCODE_X0 = 36,
+-  MULHL_UU_SPECIAL_0_OPCODE_X0 = 37,
+-  MULLLA_SS_SPECIAL_0_OPCODE_X0 = 38,
+-  MULLLA_SS_SPECIAL_7_OPCODE_Y0 = 2,
+-  MULLLA_SU_SPECIAL_0_OPCODE_X0 = 39,
+-  MULLLA_UU_SPECIAL_0_OPCODE_X0 = 40,
+-  MULLLA_UU_SPECIAL_7_OPCODE_Y0 = 3,
+-  MULLLSA_UU_SPECIAL_0_OPCODE_X0 = 41,
+-  MULLL_SS_SPECIAL_0_OPCODE_X0 = 42,
+-  MULLL_SS_SPECIAL_6_OPCODE_Y0 = 2,
+-  MULLL_SU_SPECIAL_0_OPCODE_X0 = 43,
+-  MULLL_UU_SPECIAL_0_OPCODE_X0 = 44,
+-  MULLL_UU_SPECIAL_6_OPCODE_Y0 = 3,
+-  MVNZ_SPECIAL_0_OPCODE_X0 = 45,
+-  MVNZ_SPECIAL_1_OPCODE_Y0 = 1,
+-  MVZ_SPECIAL_0_OPCODE_X0 = 46,
+-  MVZ_SPECIAL_1_OPCODE_Y0 = 2,
+-  MZB_SPECIAL_0_OPCODE_X0 = 47,
+-  MZB_SPECIAL_0_OPCODE_X1 = 21,
+-  MZH_SPECIAL_0_OPCODE_X0 = 48,
+-  MZH_SPECIAL_0_OPCODE_X1 = 22,
+-  MZ_SPECIAL_0_OPCODE_X0 = 49,
+-  MZ_SPECIAL_0_OPCODE_X1 = 23,
+-  MZ_SPECIAL_1_OPCODE_Y0 = 3,
+-  MZ_SPECIAL_1_OPCODE_Y1 = 2,
+-  NAP_UN_0_SHUN_0_OPCODE_X1 = 16,
+-  NOP_NOREG_RR_IMM_0_OPCODE_SN = 2,
+-  NOP_UN_0_SHUN_0_OPCODE_X0 = 6,
+-  NOP_UN_0_SHUN_0_OPCODE_X1 = 17,
+-  NOP_UN_0_SHUN_0_OPCODE_Y0 = 6,
+-  NOP_UN_0_SHUN_0_OPCODE_Y1 = 3,
+-  NOREG_RR_IMM_0_OPCODE_SN = 0,
+-  NOR_SPECIAL_0_OPCODE_X0 = 50,
+-  NOR_SPECIAL_0_OPCODE_X1 = 24,
+-  NOR_SPECIAL_2_OPCODE_Y0 = 1,
+-  NOR_SPECIAL_2_OPCODE_Y1 = 1,
+-  ORI_IMM_0_OPCODE_X0 = 8,
+-  ORI_IMM_0_OPCODE_X1 = 11,
+-  ORI_OPCODE_Y0 = 11,
+-  ORI_OPCODE_Y1 = 9,
+-  OR_SPECIAL_0_OPCODE_X0 = 51,
+-  OR_SPECIAL_0_OPCODE_X1 = 25,
+-  OR_SPECIAL_2_OPCODE_Y0 = 2,
+-  OR_SPECIAL_2_OPCODE_Y1 = 2,
+-  PACKBS_U_SPECIAL_0_OPCODE_X0 = 103,
+-  PACKBS_U_SPECIAL_0_OPCODE_X1 = 73,
+-  PACKHB_SPECIAL_0_OPCODE_X0 = 52,
+-  PACKHB_SPECIAL_0_OPCODE_X1 = 26,
+-  PACKHS_SPECIAL_0_OPCODE_X0 = 102,
+-  PACKHS_SPECIAL_0_OPCODE_X1 = 72,
+-  PACKLB_SPECIAL_0_OPCODE_X0 = 53,
+-  PACKLB_SPECIAL_0_OPCODE_X1 = 27,
+-  PCNT_UN_0_SHUN_0_OPCODE_X0 = 7,
+-  PCNT_UN_0_SHUN_0_OPCODE_Y0 = 7,
+-  RLI_SHUN_0_OPCODE_X0 = 1,
+-  RLI_SHUN_0_OPCODE_X1 = 1,
+-  RLI_SHUN_0_OPCODE_Y0 = 1,
+-  RLI_SHUN_0_OPCODE_Y1 = 1,
+-  RL_SPECIAL_0_OPCODE_X0 = 54,
+-  RL_SPECIAL_0_OPCODE_X1 = 28,
+-  RL_SPECIAL_3_OPCODE_Y0 = 0,
+-  RL_SPECIAL_3_OPCODE_Y1 = 0,
+-  RR_IMM_0_OPCODE_SN = 0,
+-  S1A_SPECIAL_0_OPCODE_X0 = 55,
+-  S1A_SPECIAL_0_OPCODE_X1 = 29,
+-  S1A_SPECIAL_0_OPCODE_Y0 = 1,
+-  S1A_SPECIAL_0_OPCODE_Y1 = 1,
+-  S2A_SPECIAL_0_OPCODE_X0 = 56,
+-  S2A_SPECIAL_0_OPCODE_X1 = 30,
+-  S2A_SPECIAL_0_OPCODE_Y0 = 2,
+-  S2A_SPECIAL_0_OPCODE_Y1 = 2,
+-  S3A_SPECIAL_0_OPCODE_X0 = 57,
+-  S3A_SPECIAL_0_OPCODE_X1 = 31,
+-  S3A_SPECIAL_5_OPCODE_Y0 = 1,
+-  S3A_SPECIAL_5_OPCODE_Y1 = 1,
+-  SADAB_U_SPECIAL_0_OPCODE_X0 = 58,
+-  SADAH_SPECIAL_0_OPCODE_X0 = 59,
+-  SADAH_U_SPECIAL_0_OPCODE_X0 = 60,
+-  SADB_U_SPECIAL_0_OPCODE_X0 = 61,
+-  SADH_SPECIAL_0_OPCODE_X0 = 62,
+-  SADH_U_SPECIAL_0_OPCODE_X0 = 63,
+-  SBADD_IMM_0_OPCODE_X1 = 28,
+-  SB_OPCODE_Y2 = 5,
+-  SB_SPECIAL_0_OPCODE_X1 = 32,
+-  SEQB_SPECIAL_0_OPCODE_X0 = 64,
+-  SEQB_SPECIAL_0_OPCODE_X1 = 33,
+-  SEQH_SPECIAL_0_OPCODE_X0 = 65,
+-  SEQH_SPECIAL_0_OPCODE_X1 = 34,
+-  SEQIB_IMM_0_OPCODE_X0 = 9,
+-  SEQIB_IMM_0_OPCODE_X1 = 12,
+-  SEQIH_IMM_0_OPCODE_X0 = 10,
+-  SEQIH_IMM_0_OPCODE_X1 = 13,
+-  SEQI_IMM_0_OPCODE_X0 = 11,
+-  SEQI_IMM_0_OPCODE_X1 = 14,
+-  SEQI_OPCODE_Y0 = 12,
+-  SEQI_OPCODE_Y1 = 10,
+-  SEQ_SPECIAL_0_OPCODE_X0 = 66,
+-  SEQ_SPECIAL_0_OPCODE_X1 = 35,
+-  SEQ_SPECIAL_5_OPCODE_Y0 = 2,
+-  SEQ_SPECIAL_5_OPCODE_Y1 = 2,
+-  SHADD_IMM_0_OPCODE_X1 = 29,
+-  SHL8II_IMM_0_OPCODE_SN = 3,
+-  SHLB_SPECIAL_0_OPCODE_X0 = 67,
+-  SHLB_SPECIAL_0_OPCODE_X1 = 36,
+-  SHLH_SPECIAL_0_OPCODE_X0 = 68,
+-  SHLH_SPECIAL_0_OPCODE_X1 = 37,
+-  SHLIB_SHUN_0_OPCODE_X0 = 2,
+-  SHLIB_SHUN_0_OPCODE_X1 = 2,
+-  SHLIH_SHUN_0_OPCODE_X0 = 3,
+-  SHLIH_SHUN_0_OPCODE_X1 = 3,
+-  SHLI_SHUN_0_OPCODE_X0 = 4,
+-  SHLI_SHUN_0_OPCODE_X1 = 4,
+-  SHLI_SHUN_0_OPCODE_Y0 = 2,
+-  SHLI_SHUN_0_OPCODE_Y1 = 2,
+-  SHL_SPECIAL_0_OPCODE_X0 = 69,
+-  SHL_SPECIAL_0_OPCODE_X1 = 38,
+-  SHL_SPECIAL_3_OPCODE_Y0 = 1,
+-  SHL_SPECIAL_3_OPCODE_Y1 = 1,
+-  SHR1_RR_IMM_0_OPCODE_SN = 9,
+-  SHRB_SPECIAL_0_OPCODE_X0 = 70,
+-  SHRB_SPECIAL_0_OPCODE_X1 = 39,
+-  SHRH_SPECIAL_0_OPCODE_X0 = 71,
+-  SHRH_SPECIAL_0_OPCODE_X1 = 40,
+-  SHRIB_SHUN_0_OPCODE_X0 = 5,
+-  SHRIB_SHUN_0_OPCODE_X1 = 5,
+-  SHRIH_SHUN_0_OPCODE_X0 = 6,
+-  SHRIH_SHUN_0_OPCODE_X1 = 6,
+-  SHRI_SHUN_0_OPCODE_X0 = 7,
+-  SHRI_SHUN_0_OPCODE_X1 = 7,
+-  SHRI_SHUN_0_OPCODE_Y0 = 3,
+-  SHRI_SHUN_0_OPCODE_Y1 = 3,
+-  SHR_SPECIAL_0_OPCODE_X0 = 72,
+-  SHR_SPECIAL_0_OPCODE_X1 = 41,
+-  SHR_SPECIAL_3_OPCODE_Y0 = 2,
+-  SHR_SPECIAL_3_OPCODE_Y1 = 2,
+-  SHUN_0_OPCODE_X0 = 7,
+-  SHUN_0_OPCODE_X1 = 8,
+-  SHUN_0_OPCODE_Y0 = 13,
+-  SHUN_0_OPCODE_Y1 = 11,
+-  SH_OPCODE_Y2 = 6,
+-  SH_SPECIAL_0_OPCODE_X1 = 42,
+-  SLTB_SPECIAL_0_OPCODE_X0 = 73,
+-  SLTB_SPECIAL_0_OPCODE_X1 = 43,
+-  SLTB_U_SPECIAL_0_OPCODE_X0 = 74,
+-  SLTB_U_SPECIAL_0_OPCODE_X1 = 44,
+-  SLTEB_SPECIAL_0_OPCODE_X0 = 75,
+-  SLTEB_SPECIAL_0_OPCODE_X1 = 45,
+-  SLTEB_U_SPECIAL_0_OPCODE_X0 = 76,
+-  SLTEB_U_SPECIAL_0_OPCODE_X1 = 46,
+-  SLTEH_SPECIAL_0_OPCODE_X0 = 77,
+-  SLTEH_SPECIAL_0_OPCODE_X1 = 47,
+-  SLTEH_U_SPECIAL_0_OPCODE_X0 = 78,
+-  SLTEH_U_SPECIAL_0_OPCODE_X1 = 48,
+-  SLTE_SPECIAL_0_OPCODE_X0 = 79,
+-  SLTE_SPECIAL_0_OPCODE_X1 = 49,
+-  SLTE_SPECIAL_4_OPCODE_Y0 = 0,
+-  SLTE_SPECIAL_4_OPCODE_Y1 = 0,
+-  SLTE_U_SPECIAL_0_OPCODE_X0 = 80,
+-  SLTE_U_SPECIAL_0_OPCODE_X1 = 50,
+-  SLTE_U_SPECIAL_4_OPCODE_Y0 = 1,
+-  SLTE_U_SPECIAL_4_OPCODE_Y1 = 1,
+-  SLTH_SPECIAL_0_OPCODE_X0 = 81,
+-  SLTH_SPECIAL_0_OPCODE_X1 = 51,
+-  SLTH_U_SPECIAL_0_OPCODE_X0 = 82,
+-  SLTH_U_SPECIAL_0_OPCODE_X1 = 52,
+-  SLTIB_IMM_0_OPCODE_X0 = 12,
+-  SLTIB_IMM_0_OPCODE_X1 = 15,
+-  SLTIB_U_IMM_0_OPCODE_X0 = 13,
+-  SLTIB_U_IMM_0_OPCODE_X1 = 16,
+-  SLTIH_IMM_0_OPCODE_X0 = 14,
+-  SLTIH_IMM_0_OPCODE_X1 = 17,
+-  SLTIH_U_IMM_0_OPCODE_X0 = 15,
+-  SLTIH_U_IMM_0_OPCODE_X1 = 18,
+-  SLTI_IMM_0_OPCODE_X0 = 16,
+-  SLTI_IMM_0_OPCODE_X1 = 19,
+-  SLTI_OPCODE_Y0 = 14,
+-  SLTI_OPCODE_Y1 = 12,
+-  SLTI_U_IMM_0_OPCODE_X0 = 17,
+-  SLTI_U_IMM_0_OPCODE_X1 = 20,
+-  SLTI_U_OPCODE_Y0 = 15,
+-  SLTI_U_OPCODE_Y1 = 13,
+-  SLT_SPECIAL_0_OPCODE_X0 = 83,
+-  SLT_SPECIAL_0_OPCODE_X1 = 53,
+-  SLT_SPECIAL_4_OPCODE_Y0 = 2,
+-  SLT_SPECIAL_4_OPCODE_Y1 = 2,
+-  SLT_U_SPECIAL_0_OPCODE_X0 = 84,
+-  SLT_U_SPECIAL_0_OPCODE_X1 = 54,
+-  SLT_U_SPECIAL_4_OPCODE_Y0 = 3,
+-  SLT_U_SPECIAL_4_OPCODE_Y1 = 3,
+-  SNEB_SPECIAL_0_OPCODE_X0 = 85,
+-  SNEB_SPECIAL_0_OPCODE_X1 = 55,
+-  SNEH_SPECIAL_0_OPCODE_X0 = 86,
+-  SNEH_SPECIAL_0_OPCODE_X1 = 56,
+-  SNE_SPECIAL_0_OPCODE_X0 = 87,
+-  SNE_SPECIAL_0_OPCODE_X1 = 57,
+-  SNE_SPECIAL_5_OPCODE_Y0 = 3,
+-  SNE_SPECIAL_5_OPCODE_Y1 = 3,
+-  SPECIAL_0_OPCODE_X0 = 0,
+-  SPECIAL_0_OPCODE_X1 = 1,
+-  SPECIAL_0_OPCODE_Y0 = 1,
+-  SPECIAL_0_OPCODE_Y1 = 1,
+-  SPECIAL_1_OPCODE_Y0 = 2,
+-  SPECIAL_1_OPCODE_Y1 = 2,
+-  SPECIAL_2_OPCODE_Y0 = 3,
+-  SPECIAL_2_OPCODE_Y1 = 3,
+-  SPECIAL_3_OPCODE_Y0 = 4,
+-  SPECIAL_3_OPCODE_Y1 = 4,
+-  SPECIAL_4_OPCODE_Y0 = 5,
+-  SPECIAL_4_OPCODE_Y1 = 5,
+-  SPECIAL_5_OPCODE_Y0 = 6,
+-  SPECIAL_5_OPCODE_Y1 = 6,
+-  SPECIAL_6_OPCODE_Y0 = 7,
+-  SPECIAL_7_OPCODE_Y0 = 8,
+-  SRAB_SPECIAL_0_OPCODE_X0 = 88,
+-  SRAB_SPECIAL_0_OPCODE_X1 = 58,
+-  SRAH_SPECIAL_0_OPCODE_X0 = 89,
+-  SRAH_SPECIAL_0_OPCODE_X1 = 59,
+-  SRAIB_SHUN_0_OPCODE_X0 = 8,
+-  SRAIB_SHUN_0_OPCODE_X1 = 8,
+-  SRAIH_SHUN_0_OPCODE_X0 = 9,
+-  SRAIH_SHUN_0_OPCODE_X1 = 9,
+-  SRAI_SHUN_0_OPCODE_X0 = 10,
+-  SRAI_SHUN_0_OPCODE_X1 = 10,
+-  SRAI_SHUN_0_OPCODE_Y0 = 4,
+-  SRAI_SHUN_0_OPCODE_Y1 = 4,
+-  SRA_SPECIAL_0_OPCODE_X0 = 90,
+-  SRA_SPECIAL_0_OPCODE_X1 = 60,
+-  SRA_SPECIAL_3_OPCODE_Y0 = 3,
+-  SRA_SPECIAL_3_OPCODE_Y1 = 3,
+-  SUBBS_U_SPECIAL_0_OPCODE_X0 = 100,
+-  SUBBS_U_SPECIAL_0_OPCODE_X1 = 70,
+-  SUBB_SPECIAL_0_OPCODE_X0 = 91,
+-  SUBB_SPECIAL_0_OPCODE_X1 = 61,
+-  SUBHS_SPECIAL_0_OPCODE_X0 = 101,
+-  SUBHS_SPECIAL_0_OPCODE_X1 = 71,
+-  SUBH_SPECIAL_0_OPCODE_X0 = 92,
+-  SUBH_SPECIAL_0_OPCODE_X1 = 62,
+-  SUBS_SPECIAL_0_OPCODE_X0 = 97,
+-  SUBS_SPECIAL_0_OPCODE_X1 = 67,
+-  SUB_SPECIAL_0_OPCODE_X0 = 93,
+-  SUB_SPECIAL_0_OPCODE_X1 = 63,
+-  SUB_SPECIAL_0_OPCODE_Y0 = 3,
+-  SUB_SPECIAL_0_OPCODE_Y1 = 3,
+-  SWADD_IMM_0_OPCODE_X1 = 30,
+-  SWINT0_UN_0_SHUN_0_OPCODE_X1 = 18,
+-  SWINT1_UN_0_SHUN_0_OPCODE_X1 = 19,
+-  SWINT2_UN_0_SHUN_0_OPCODE_X1 = 20,
+-  SWINT3_UN_0_SHUN_0_OPCODE_X1 = 21,
+-  SW_OPCODE_Y2 = 7,
+-  SW_SPECIAL_0_OPCODE_X1 = 64,
+-  TBLIDXB0_UN_0_SHUN_0_OPCODE_X0 = 8,
+-  TBLIDXB0_UN_0_SHUN_0_OPCODE_Y0 = 8,
+-  TBLIDXB1_UN_0_SHUN_0_OPCODE_X0 = 9,
+-  TBLIDXB1_UN_0_SHUN_0_OPCODE_Y0 = 9,
+-  TBLIDXB2_UN_0_SHUN_0_OPCODE_X0 = 10,
+-  TBLIDXB2_UN_0_SHUN_0_OPCODE_Y0 = 10,
+-  TBLIDXB3_UN_0_SHUN_0_OPCODE_X0 = 11,
+-  TBLIDXB3_UN_0_SHUN_0_OPCODE_Y0 = 11,
+-  TNS_UN_0_SHUN_0_OPCODE_X1 = 22,
+-  UN_0_SHUN_0_OPCODE_X0 = 11,
+-  UN_0_SHUN_0_OPCODE_X1 = 11,
+-  UN_0_SHUN_0_OPCODE_Y0 = 5,
+-  UN_0_SHUN_0_OPCODE_Y1 = 5,
+-  WH64_UN_0_SHUN_0_OPCODE_X1 = 23,
+-  XORI_IMM_0_OPCODE_X0 = 2,
+-  XORI_IMM_0_OPCODE_X1 = 21,
+-  XOR_SPECIAL_0_OPCODE_X0 = 94,
+-  XOR_SPECIAL_0_OPCODE_X1 = 65,
+-  XOR_SPECIAL_2_OPCODE_Y0 = 3,
+-  XOR_SPECIAL_2_OPCODE_Y1 = 3
++  ADDI_IMM8_OPCODE_X0 = 1,
++  ADDI_IMM8_OPCODE_X1 = 1,
++  ADDI_OPCODE_Y0 = 0,
++  ADDI_OPCODE_Y1 = 1,
++  ADDLI_OPCODE_X0 = 1,
++  ADDLI_OPCODE_X1 = 0,
++  ADDXI_IMM8_OPCODE_X0 = 2,
++  ADDXI_IMM8_OPCODE_X1 = 2,
++  ADDXI_OPCODE_Y0 = 1,
++  ADDXI_OPCODE_Y1 = 2,
++  ADDXLI_OPCODE_X0 = 2,
++  ADDXLI_OPCODE_X1 = 1,
++  ADDXSC_RRR_0_OPCODE_X0 = 1,
++  ADDXSC_RRR_0_OPCODE_X1 = 1,
++  ADDX_RRR_0_OPCODE_X0 = 2,
++  ADDX_RRR_0_OPCODE_X1 = 2,
++  ADDX_RRR_0_OPCODE_Y0 = 0,
++  ADDX_SPECIAL_0_OPCODE_Y1 = 0,
++  ADD_RRR_0_OPCODE_X0 = 3,
++  ADD_RRR_0_OPCODE_X1 = 3,
++  ADD_RRR_0_OPCODE_Y0 = 1,
++  ADD_SPECIAL_0_OPCODE_Y1 = 1,
++  ANDI_IMM8_OPCODE_X0 = 3,
++  ANDI_IMM8_OPCODE_X1 = 3,
++  ANDI_OPCODE_Y0 = 2,
++  ANDI_OPCODE_Y1 = 3,
++  AND_RRR_0_OPCODE_X0 = 4,
++  AND_RRR_0_OPCODE_X1 = 4,
++  AND_RRR_5_OPCODE_Y0 = 0,
++  AND_RRR_5_OPCODE_Y1 = 0,
++  BEQZT_BRANCH_OPCODE_X1 = 16,
++  BEQZ_BRANCH_OPCODE_X1 = 17,
++  BFEXTS_BF_OPCODE_X0 = 4,
++  BFEXTU_BF_OPCODE_X0 = 5,
++  BFINS_BF_OPCODE_X0 = 6,
++  BF_OPCODE_X0 = 3,
++  BGEZT_BRANCH_OPCODE_X1 = 18,
++  BGEZ_BRANCH_OPCODE_X1 = 19,
++  BGTZT_BRANCH_OPCODE_X1 = 20,
++  BGTZ_BRANCH_OPCODE_X1 = 21,
++  BLBCT_BRANCH_OPCODE_X1 = 22,
++  BLBC_BRANCH_OPCODE_X1 = 23,
++  BLBST_BRANCH_OPCODE_X1 = 24,
++  BLBS_BRANCH_OPCODE_X1 = 25,
++  BLEZT_BRANCH_OPCODE_X1 = 26,
++  BLEZ_BRANCH_OPCODE_X1 = 27,
++  BLTZT_BRANCH_OPCODE_X1 = 28,
++  BLTZ_BRANCH_OPCODE_X1 = 29,
++  BNEZT_BRANCH_OPCODE_X1 = 30,
++  BNEZ_BRANCH_OPCODE_X1 = 31,
++  BRANCH_OPCODE_X1 = 2,
++  CMOVEQZ_RRR_0_OPCODE_X0 = 5,
++  CMOVEQZ_RRR_4_OPCODE_Y0 = 0,
++  CMOVNEZ_RRR_0_OPCODE_X0 = 6,
++  CMOVNEZ_RRR_4_OPCODE_Y0 = 1,
++  CMPEQI_IMM8_OPCODE_X0 = 4,
++  CMPEQI_IMM8_OPCODE_X1 = 4,
++  CMPEQI_OPCODE_Y0 = 3,
++  CMPEQI_OPCODE_Y1 = 4,
++  CMPEQ_RRR_0_OPCODE_X0 = 7,
++  CMPEQ_RRR_0_OPCODE_X1 = 5,
++  CMPEQ_RRR_3_OPCODE_Y0 = 0,
++  CMPEQ_RRR_3_OPCODE_Y1 = 2,
++  CMPEXCH4_RRR_0_OPCODE_X1 = 6,
++  CMPEXCH_RRR_0_OPCODE_X1 = 7,
++  CMPLES_RRR_0_OPCODE_X0 = 8,
++  CMPLES_RRR_0_OPCODE_X1 = 8,
++  CMPLES_RRR_2_OPCODE_Y0 = 0,
++  CMPLES_RRR_2_OPCODE_Y1 = 0,
++  CMPLEU_RRR_0_OPCODE_X0 = 9,
++  CMPLEU_RRR_0_OPCODE_X1 = 9,
++  CMPLEU_RRR_2_OPCODE_Y0 = 1,
++  CMPLEU_RRR_2_OPCODE_Y1 = 1,
++  CMPLTSI_IMM8_OPCODE_X0 = 5,
++  CMPLTSI_IMM8_OPCODE_X1 = 5,
++  CMPLTSI_OPCODE_Y0 = 4,
++  CMPLTSI_OPCODE_Y1 = 5,
++  CMPLTS_RRR_0_OPCODE_X0 = 10,
++  CMPLTS_RRR_0_OPCODE_X1 = 10,
++  CMPLTS_RRR_2_OPCODE_Y0 = 2,
++  CMPLTS_RRR_2_OPCODE_Y1 = 2,
++  CMPLTUI_IMM8_OPCODE_X0 = 6,
++  CMPLTUI_IMM8_OPCODE_X1 = 6,
++  CMPLTU_RRR_0_OPCODE_X0 = 11,
++  CMPLTU_RRR_0_OPCODE_X1 = 11,
++  CMPLTU_RRR_2_OPCODE_Y0 = 3,
++  CMPLTU_RRR_2_OPCODE_Y1 = 3,
++  CMPNE_RRR_0_OPCODE_X0 = 12,
++  CMPNE_RRR_0_OPCODE_X1 = 12,
++  CMPNE_RRR_3_OPCODE_Y0 = 1,
++  CMPNE_RRR_3_OPCODE_Y1 = 3,
++  CMULAF_RRR_0_OPCODE_X0 = 13,
++  CMULA_RRR_0_OPCODE_X0 = 14,
++  CMULFR_RRR_0_OPCODE_X0 = 15,
++  CMULF_RRR_0_OPCODE_X0 = 16,
++  CMULHR_RRR_0_OPCODE_X0 = 17,
++  CMULH_RRR_0_OPCODE_X0 = 18,
++  CMUL_RRR_0_OPCODE_X0 = 19,
++  CNTLZ_UNARY_OPCODE_X0 = 1,
++  CNTLZ_UNARY_OPCODE_Y0 = 1,
++  CNTTZ_UNARY_OPCODE_X0 = 2,
++  CNTTZ_UNARY_OPCODE_Y0 = 2,
++  CRC32_32_RRR_0_OPCODE_X0 = 20,
++  CRC32_8_RRR_0_OPCODE_X0 = 21,
++  DBLALIGN2_RRR_0_OPCODE_X0 = 22,
++  DBLALIGN2_RRR_0_OPCODE_X1 = 13,
++  DBLALIGN4_RRR_0_OPCODE_X0 = 23,
++  DBLALIGN4_RRR_0_OPCODE_X1 = 14,
++  DBLALIGN6_RRR_0_OPCODE_X0 = 24,
++  DBLALIGN6_RRR_0_OPCODE_X1 = 15,
++  DBLALIGN_RRR_0_OPCODE_X0 = 25,
++  DRAIN_UNARY_OPCODE_X1 = 1,
++  DTLBPR_UNARY_OPCODE_X1 = 2,
++  EXCH4_RRR_0_OPCODE_X1 = 16,
++  EXCH_RRR_0_OPCODE_X1 = 17,
++  FDOUBLE_ADDSUB_RRR_0_OPCODE_X0 = 26,
++  FDOUBLE_ADD_FLAGS_RRR_0_OPCODE_X0 = 27,
++  FDOUBLE_MUL_FLAGS_RRR_0_OPCODE_X0 = 28,
++  FDOUBLE_PACK1_RRR_0_OPCODE_X0 = 29,
++  FDOUBLE_PACK2_RRR_0_OPCODE_X0 = 30,
++  FDOUBLE_SUB_FLAGS_RRR_0_OPCODE_X0 = 31,
++  FDOUBLE_UNPACK_MAX_RRR_0_OPCODE_X0 = 32,
++  FDOUBLE_UNPACK_MIN_RRR_0_OPCODE_X0 = 33,
++  FETCHADD4_RRR_0_OPCODE_X1 = 18,
++  FETCHADDGEZ4_RRR_0_OPCODE_X1 = 19,
++  FETCHADDGEZ_RRR_0_OPCODE_X1 = 20,
++  FETCHADD_RRR_0_OPCODE_X1 = 21,
++  FETCHAND4_RRR_0_OPCODE_X1 = 22,
++  FETCHAND_RRR_0_OPCODE_X1 = 23,
++  FETCHOR4_RRR_0_OPCODE_X1 = 24,
++  FETCHOR_RRR_0_OPCODE_X1 = 25,
++  FINV_UNARY_OPCODE_X1 = 3,
++  FLUSHWB_UNARY_OPCODE_X1 = 4,
++  FLUSH_UNARY_OPCODE_X1 = 5,
++  FNOP_UNARY_OPCODE_X0 = 3,
++  FNOP_UNARY_OPCODE_X1 = 6,
++  FNOP_UNARY_OPCODE_Y0 = 3,
++  FNOP_UNARY_OPCODE_Y1 = 8,
++  FSINGLE_ADD1_RRR_0_OPCODE_X0 = 34,
++  FSINGLE_ADDSUB2_RRR_0_OPCODE_X0 = 35,
++  FSINGLE_MUL1_RRR_0_OPCODE_X0 = 36,
++  FSINGLE_MUL2_RRR_0_OPCODE_X0 = 37,
++  FSINGLE_PACK1_UNARY_OPCODE_X0 = 4,
++  FSINGLE_PACK1_UNARY_OPCODE_Y0 = 4,
++  FSINGLE_PACK2_RRR_0_OPCODE_X0 = 38,
++  FSINGLE_SUB1_RRR_0_OPCODE_X0 = 39,
++  ICOH_UNARY_OPCODE_X1 = 7,
++  ILL_UNARY_OPCODE_X1 = 8,
++  ILL_UNARY_OPCODE_Y1 = 9,
++  IMM8_OPCODE_X0 = 4,
++  IMM8_OPCODE_X1 = 3,
++  INV_UNARY_OPCODE_X1 = 9,
++  IRET_UNARY_OPCODE_X1 = 10,
++  JALRP_UNARY_OPCODE_X1 = 11,
++  JALRP_UNARY_OPCODE_Y1 = 10,
++  JALR_UNARY_OPCODE_X1 = 12,
++  JALR_UNARY_OPCODE_Y1 = 11,
++  JAL_JUMP_OPCODE_X1 = 0,
++  JRP_UNARY_OPCODE_X1 = 13,
++  JRP_UNARY_OPCODE_Y1 = 12,
++  JR_UNARY_OPCODE_X1 = 14,
++  JR_UNARY_OPCODE_Y1 = 13,
++  JUMP_OPCODE_X1 = 4,
++  J_JUMP_OPCODE_X1 = 1,
++  LD1S_ADD_IMM8_OPCODE_X1 = 7,
++  LD1S_OPCODE_Y2 = 0,
++  LD1S_UNARY_OPCODE_X1 = 15,
++  LD1U_ADD_IMM8_OPCODE_X1 = 8,
++  LD1U_OPCODE_Y2 = 1,
++  LD1U_UNARY_OPCODE_X1 = 16,
++  LD2S_ADD_IMM8_OPCODE_X1 = 9,
++  LD2S_OPCODE_Y2 = 2,
++  LD2S_UNARY_OPCODE_X1 = 17,
++  LD2U_ADD_IMM8_OPCODE_X1 = 10,
++  LD2U_OPCODE_Y2 = 3,
++  LD2U_UNARY_OPCODE_X1 = 18,
++  LD4S_ADD_IMM8_OPCODE_X1 = 11,
++  LD4S_OPCODE_Y2 = 1,
++  LD4S_UNARY_OPCODE_X1 = 19,
++  LD4U_ADD_IMM8_OPCODE_X1 = 12,
++  LD4U_OPCODE_Y2 = 2,
++  LD4U_UNARY_OPCODE_X1 = 20,
++  LDNA_UNARY_OPCODE_X1 = 21,
++  LDNT1S_ADD_IMM8_OPCODE_X1 = 13,
++  LDNT1S_UNARY_OPCODE_X1 = 22,
++  LDNT1U_ADD_IMM8_OPCODE_X1 = 14,
++  LDNT1U_UNARY_OPCODE_X1 = 23,
++  LDNT2S_ADD_IMM8_OPCODE_X1 = 15,
++  LDNT2S_UNARY_OPCODE_X1 = 24,
++  LDNT2U_ADD_IMM8_OPCODE_X1 = 16,
++  LDNT2U_UNARY_OPCODE_X1 = 25,
++  LDNT4S_ADD_IMM8_OPCODE_X1 = 17,
++  LDNT4S_UNARY_OPCODE_X1 = 26,
++  LDNT4U_ADD_IMM8_OPCODE_X1 = 18,
++  LDNT4U_UNARY_OPCODE_X1 = 27,
++  LDNT_ADD_IMM8_OPCODE_X1 = 19,
++  LDNT_UNARY_OPCODE_X1 = 28,
++  LD_ADD_IMM8_OPCODE_X1 = 20,
++  LD_OPCODE_Y2 = 3,
++  LD_UNARY_OPCODE_X1 = 29,
++  LNK_UNARY_OPCODE_X1 = 30,
++  LNK_UNARY_OPCODE_Y1 = 14,
++  LWNA_ADD_IMM8_OPCODE_X1 = 21,
++  MFSPR_IMM8_OPCODE_X1 = 22,
++  MF_UNARY_OPCODE_X1 = 31,
++  MM_BF_OPCODE_X0 = 7,
++  MNZ_RRR_0_OPCODE_X0 = 40,
++  MNZ_RRR_0_OPCODE_X1 = 26,
++  MNZ_RRR_4_OPCODE_Y0 = 2,
++  MNZ_RRR_4_OPCODE_Y1 = 2,
++  MODE_OPCODE_YA2 = 1,
++  MODE_OPCODE_YB2 = 2,
++  MODE_OPCODE_YC2 = 3,
++  MTSPR_IMM8_OPCODE_X1 = 23,
++  MULAX_RRR_0_OPCODE_X0 = 41,
++  MULAX_RRR_3_OPCODE_Y0 = 2,
++  MULA_HS_HS_RRR_0_OPCODE_X0 = 42,
++  MULA_HS_HS_RRR_9_OPCODE_Y0 = 0,
++  MULA_HS_HU_RRR_0_OPCODE_X0 = 43,
++  MULA_HS_LS_RRR_0_OPCODE_X0 = 44,
++  MULA_HS_LU_RRR_0_OPCODE_X0 = 45,
++  MULA_HU_HU_RRR_0_OPCODE_X0 = 46,
++  MULA_HU_HU_RRR_9_OPCODE_Y0 = 1,
++  MULA_HU_LS_RRR_0_OPCODE_X0 = 47,
++  MULA_HU_LU_RRR_0_OPCODE_X0 = 48,
++  MULA_LS_LS_RRR_0_OPCODE_X0 = 49,
++  MULA_LS_LS_RRR_9_OPCODE_Y0 = 2,
++  MULA_LS_LU_RRR_0_OPCODE_X0 = 50,
++  MULA_LU_LU_RRR_0_OPCODE_X0 = 51,
++  MULA_LU_LU_RRR_9_OPCODE_Y0 = 3,
++  MULX_RRR_0_OPCODE_X0 = 52,
++  MULX_RRR_3_OPCODE_Y0 = 3,
++  MUL_HS_HS_RRR_0_OPCODE_X0 = 53,
++  MUL_HS_HS_RRR_8_OPCODE_Y0 = 0,
++  MUL_HS_HU_RRR_0_OPCODE_X0 = 54,
++  MUL_HS_LS_RRR_0_OPCODE_X0 = 55,
++  MUL_HS_LU_RRR_0_OPCODE_X0 = 56,
++  MUL_HU_HU_RRR_0_OPCODE_X0 = 57,
++  MUL_HU_HU_RRR_8_OPCODE_Y0 = 1,
++  MUL_HU_LS_RRR_0_OPCODE_X0 = 58,
++  MUL_HU_LU_RRR_0_OPCODE_X0 = 59,
++  MUL_LS_LS_RRR_0_OPCODE_X0 = 60,
++  MUL_LS_LS_RRR_8_OPCODE_Y0 = 2,
++  MUL_LS_LU_RRR_0_OPCODE_X0 = 61,
++  MUL_LU_LU_RRR_0_OPCODE_X0 = 62,
++  MUL_LU_LU_RRR_8_OPCODE_Y0 = 3,
++  MZ_RRR_0_OPCODE_X0 = 63,
++  MZ_RRR_0_OPCODE_X1 = 27,
++  MZ_RRR_4_OPCODE_Y0 = 3,
++  MZ_RRR_4_OPCODE_Y1 = 3,
++  NAP_UNARY_OPCODE_X1 = 32,
++  NOP_UNARY_OPCODE_X0 = 5,
++  NOP_UNARY_OPCODE_X1 = 33,
++  NOP_UNARY_OPCODE_Y0 = 5,
++  NOP_UNARY_OPCODE_Y1 = 15,
++  NOR_RRR_0_OPCODE_X0 = 64,
++  NOR_RRR_0_OPCODE_X1 = 28,
++  NOR_RRR_5_OPCODE_Y0 = 1,
++  NOR_RRR_5_OPCODE_Y1 = 1,
++  ORI_IMM8_OPCODE_X0 = 7,
++  ORI_IMM8_OPCODE_X1 = 24,
++  OR_RRR_0_OPCODE_X0 = 65,
++  OR_RRR_0_OPCODE_X1 = 29,
++  OR_RRR_5_OPCODE_Y0 = 2,
++  OR_RRR_5_OPCODE_Y1 = 2,
++  PCNT_UNARY_OPCODE_X0 = 6,
++  PCNT_UNARY_OPCODE_Y0 = 6,
++  REVBITS_UNARY_OPCODE_X0 = 7,
++  REVBITS_UNARY_OPCODE_Y0 = 7,
++  REVBYTES_UNARY_OPCODE_X0 = 8,
++  REVBYTES_UNARY_OPCODE_Y0 = 8,
++  ROTLI_SHIFT_OPCODE_X0 = 1,
++  ROTLI_SHIFT_OPCODE_X1 = 1,
++  ROTLI_SHIFT_OPCODE_Y0 = 0,
++  ROTLI_SHIFT_OPCODE_Y1 = 0,
++  ROTL_RRR_0_OPCODE_X0 = 66,
++  ROTL_RRR_0_OPCODE_X1 = 30,
++  ROTL_RRR_6_OPCODE_Y0 = 0,
++  ROTL_RRR_6_OPCODE_Y1 = 0,
++  RRR_0_OPCODE_X0 = 5,
++  RRR_0_OPCODE_X1 = 5,
++  RRR_0_OPCODE_Y0 = 5,
++  RRR_0_OPCODE_Y1 = 6,
++  RRR_1_OPCODE_Y0 = 6,
++  RRR_1_OPCODE_Y1 = 7,
++  RRR_2_OPCODE_Y0 = 7,
++  RRR_2_OPCODE_Y1 = 8,
++  RRR_3_OPCODE_Y0 = 8,
++  RRR_3_OPCODE_Y1 = 9,
++  RRR_4_OPCODE_Y0 = 9,
++  RRR_4_OPCODE_Y1 = 10,
++  RRR_5_OPCODE_Y0 = 10,
++  RRR_5_OPCODE_Y1 = 11,
++  RRR_6_OPCODE_Y0 = 11,
++  RRR_6_OPCODE_Y1 = 12,
++  RRR_7_OPCODE_Y0 = 12,
++  RRR_7_OPCODE_Y1 = 13,
++  RRR_8_OPCODE_Y0 = 13,
++  RRR_9_OPCODE_Y0 = 14,
++  SHIFT_OPCODE_X0 = 6,
++  SHIFT_OPCODE_X1 = 6,
++  SHIFT_OPCODE_Y0 = 15,
++  SHIFT_OPCODE_Y1 = 14,
++  SHL16INSLI_OPCODE_X0 = 7,
++  SHL16INSLI_OPCODE_X1 = 7,
++  SHL1ADDX_RRR_0_OPCODE_X0 = 67,
++  SHL1ADDX_RRR_0_OPCODE_X1 = 31,
++  SHL1ADDX_RRR_7_OPCODE_Y0 = 1,
++  SHL1ADDX_RRR_7_OPCODE_Y1 = 1,
++  SHL1ADD_RRR_0_OPCODE_X0 = 68,
++  SHL1ADD_RRR_0_OPCODE_X1 = 32,
++  SHL1ADD_RRR_1_OPCODE_Y0 = 0,
++  SHL1ADD_RRR_1_OPCODE_Y1 = 0,
++  SHL2ADDX_RRR_0_OPCODE_X0 = 69,
++  SHL2ADDX_RRR_0_OPCODE_X1 = 33,
++  SHL2ADDX_RRR_7_OPCODE_Y0 = 2,
++  SHL2ADDX_RRR_7_OPCODE_Y1 = 2,
++  SHL2ADD_RRR_0_OPCODE_X0 = 70,
++  SHL2ADD_RRR_0_OPCODE_X1 = 34,
++  SHL2ADD_RRR_1_OPCODE_Y0 = 1,
++  SHL2ADD_RRR_1_OPCODE_Y1 = 1,
++  SHL3ADDX_RRR_0_OPCODE_X0 = 71,
++  SHL3ADDX_RRR_0_OPCODE_X1 = 35,
++  SHL3ADDX_RRR_7_OPCODE_Y0 = 3,
++  SHL3ADDX_RRR_7_OPCODE_Y1 = 3,
++  SHL3ADD_RRR_0_OPCODE_X0 = 72,
++  SHL3ADD_RRR_0_OPCODE_X1 = 36,
++  SHL3ADD_RRR_1_OPCODE_Y0 = 2,
++  SHL3ADD_RRR_1_OPCODE_Y1 = 2,
++  SHLI_SHIFT_OPCODE_X0 = 2,
++  SHLI_SHIFT_OPCODE_X1 = 2,
++  SHLI_SHIFT_OPCODE_Y0 = 1,
++  SHLI_SHIFT_OPCODE_Y1 = 1,
++  SHLXI_SHIFT_OPCODE_X0 = 3,
++  SHLXI_SHIFT_OPCODE_X1 = 3,
++  SHLX_RRR_0_OPCODE_X0 = 73,
++  SHLX_RRR_0_OPCODE_X1 = 37,
++  SHL_RRR_0_OPCODE_X0 = 74,
++  SHL_RRR_0_OPCODE_X1 = 38,
++  SHL_RRR_6_OPCODE_Y0 = 1,
++  SHL_RRR_6_OPCODE_Y1 = 1,
++  SHRSI_SHIFT_OPCODE_X0 = 4,
++  SHRSI_SHIFT_OPCODE_X1 = 4,
++  SHRSI_SHIFT_OPCODE_Y0 = 2,
++  SHRSI_SHIFT_OPCODE_Y1 = 2,
++  SHRS_RRR_0_OPCODE_X0 = 75,
++  SHRS_RRR_0_OPCODE_X1 = 39,
++  SHRS_RRR_6_OPCODE_Y0 = 2,
++  SHRS_RRR_6_OPCODE_Y1 = 2,
++  SHRUI_SHIFT_OPCODE_X0 = 5,
++  SHRUI_SHIFT_OPCODE_X1 = 5,
++  SHRUI_SHIFT_OPCODE_Y0 = 3,
++  SHRUI_SHIFT_OPCODE_Y1 = 3,
++  SHRUXI_SHIFT_OPCODE_X0 = 6,
++  SHRUXI_SHIFT_OPCODE_X1 = 6,
++  SHRUX_RRR_0_OPCODE_X0 = 76,
++  SHRUX_RRR_0_OPCODE_X1 = 40,
++  SHRU_RRR_0_OPCODE_X0 = 77,
++  SHRU_RRR_0_OPCODE_X1 = 41,
++  SHRU_RRR_6_OPCODE_Y0 = 3,
++  SHRU_RRR_6_OPCODE_Y1 = 3,
++  SHUFFLEBYTES_RRR_0_OPCODE_X0 = 78,
++  ST1_ADD_IMM8_OPCODE_X1 = 25,
++  ST1_OPCODE_Y2 = 0,
++  ST1_RRR_0_OPCODE_X1 = 42,
++  ST2_ADD_IMM8_OPCODE_X1 = 26,
++  ST2_OPCODE_Y2 = 1,
++  ST2_RRR_0_OPCODE_X1 = 43,
++  ST4_ADD_IMM8_OPCODE_X1 = 27,
++  ST4_OPCODE_Y2 = 2,
++  ST4_RRR_0_OPCODE_X1 = 44,
++  STNT1_ADD_IMM8_OPCODE_X1 = 28,
++  STNT1_RRR_0_OPCODE_X1 = 45,
++  STNT2_ADD_IMM8_OPCODE_X1 = 29,
++  STNT2_RRR_0_OPCODE_X1 = 46,
++  STNT4_ADD_IMM8_OPCODE_X1 = 30,
++  STNT4_RRR_0_OPCODE_X1 = 47,
++  STNT_ADD_IMM8_OPCODE_X1 = 31,
++  STNT_RRR_0_OPCODE_X1 = 48,
++  ST_ADD_IMM8_OPCODE_X1 = 32,
++  ST_OPCODE_Y2 = 3,
++  ST_RRR_0_OPCODE_X1 = 49,
++  SUBXSC_RRR_0_OPCODE_X0 = 79,
++  SUBXSC_RRR_0_OPCODE_X1 = 50,
++  SUBX_RRR_0_OPCODE_X0 = 80,
++  SUBX_RRR_0_OPCODE_X1 = 51,
++  SUBX_RRR_0_OPCODE_Y0 = 2,
++  SUBX_RRR_0_OPCODE_Y1 = 2,
++  SUB_RRR_0_OPCODE_X0 = 81,
++  SUB_RRR_0_OPCODE_X1 = 52,
++  SUB_RRR_0_OPCODE_Y0 = 3,
++  SUB_RRR_0_OPCODE_Y1 = 3,
++  SWINT0_UNARY_OPCODE_X1 = 34,
++  SWINT1_UNARY_OPCODE_X1 = 35,
++  SWINT2_UNARY_OPCODE_X1 = 36,
++  SWINT3_UNARY_OPCODE_X1 = 37,
++  TBLIDXB0_UNARY_OPCODE_X0 = 9,
++  TBLIDXB0_UNARY_OPCODE_Y0 = 9,
++  TBLIDXB1_UNARY_OPCODE_X0 = 10,
++  TBLIDXB1_UNARY_OPCODE_Y0 = 10,
++  TBLIDXB2_UNARY_OPCODE_X0 = 11,
++  TBLIDXB2_UNARY_OPCODE_Y0 = 11,
++  TBLIDXB3_UNARY_OPCODE_X0 = 12,
++  TBLIDXB3_UNARY_OPCODE_Y0 = 12,
++  UNARY_RRR_0_OPCODE_X0 = 82,
++  UNARY_RRR_0_OPCODE_X1 = 53,
++  UNARY_RRR_1_OPCODE_Y0 = 3,
++  UNARY_RRR_1_OPCODE_Y1 = 3,
++  V1ADDI_IMM8_OPCODE_X0 = 8,
++  V1ADDI_IMM8_OPCODE_X1 = 33,
++  V1ADDUC_RRR_0_OPCODE_X0 = 83,
++  V1ADDUC_RRR_0_OPCODE_X1 = 54,
++  V1ADD_RRR_0_OPCODE_X0 = 84,
++  V1ADD_RRR_0_OPCODE_X1 = 55,
++  V1ADIFFU_RRR_0_OPCODE_X0 = 85,
++  V1AVGU_RRR_0_OPCODE_X0 = 86,
++  V1CMPEQI_IMM8_OPCODE_X0 = 9,
++  V1CMPEQI_IMM8_OPCODE_X1 = 34,
++  V1CMPEQ_RRR_0_OPCODE_X0 = 87,
++  V1CMPEQ_RRR_0_OPCODE_X1 = 56,
++  V1CMPLES_RRR_0_OPCODE_X0 = 88,
++  V1CMPLES_RRR_0_OPCODE_X1 = 57,
++  V1CMPLEU_RRR_0_OPCODE_X0 = 89,
++  V1CMPLEU_RRR_0_OPCODE_X1 = 58,
++  V1CMPLTSI_IMM8_OPCODE_X0 = 10,
++  V1CMPLTSI_IMM8_OPCODE_X1 = 35,
++  V1CMPLTS_RRR_0_OPCODE_X0 = 90,
++  V1CMPLTS_RRR_0_OPCODE_X1 = 59,
++  V1CMPLTUI_IMM8_OPCODE_X0 = 11,
++  V1CMPLTUI_IMM8_OPCODE_X1 = 36,
++  V1CMPLTU_RRR_0_OPCODE_X0 = 91,
++  V1CMPLTU_RRR_0_OPCODE_X1 = 60,
++  V1CMPNE_RRR_0_OPCODE_X0 = 92,
++  V1CMPNE_RRR_0_OPCODE_X1 = 61,
++  V1DDOTPUA_RRR_0_OPCODE_X0 = 161,
++  V1DDOTPUSA_RRR_0_OPCODE_X0 = 93,
++  V1DDOTPUS_RRR_0_OPCODE_X0 = 94,
++  V1DDOTPU_RRR_0_OPCODE_X0 = 162,
++  V1DOTPA_RRR_0_OPCODE_X0 = 95,
++  V1DOTPUA_RRR_0_OPCODE_X0 = 163,
++  V1DOTPUSA_RRR_0_OPCODE_X0 = 96,
++  V1DOTPUS_RRR_0_OPCODE_X0 = 97,
++  V1DOTPU_RRR_0_OPCODE_X0 = 164,
++  V1DOTP_RRR_0_OPCODE_X0 = 98,
++  V1INT_H_RRR_0_OPCODE_X0 = 99,
++  V1INT_H_RRR_0_OPCODE_X1 = 62,
++  V1INT_L_RRR_0_OPCODE_X0 = 100,
++  V1INT_L_RRR_0_OPCODE_X1 = 63,
++  V1MAXUI_IMM8_OPCODE_X0 = 12,
++  V1MAXUI_IMM8_OPCODE_X1 = 37,
++  V1MAXU_RRR_0_OPCODE_X0 = 101,
++  V1MAXU_RRR_0_OPCODE_X1 = 64,
++  V1MINUI_IMM8_OPCODE_X0 = 13,
++  V1MINUI_IMM8_OPCODE_X1 = 38,
++  V1MINU_RRR_0_OPCODE_X0 = 102,
++  V1MINU_RRR_0_OPCODE_X1 = 65,
++  V1MNZ_RRR_0_OPCODE_X0 = 103,
++  V1MNZ_RRR_0_OPCODE_X1 = 66,
++  V1MULTU_RRR_0_OPCODE_X0 = 104,
++  V1MULUS_RRR_0_OPCODE_X0 = 105,
++  V1MULU_RRR_0_OPCODE_X0 = 106,
++  V1MZ_RRR_0_OPCODE_X0 = 107,
++  V1MZ_RRR_0_OPCODE_X1 = 67,
++  V1SADAU_RRR_0_OPCODE_X0 = 108,
++  V1SADU_RRR_0_OPCODE_X0 = 109,
++  V1SHLI_SHIFT_OPCODE_X0 = 7,
++  V1SHLI_SHIFT_OPCODE_X1 = 7,
++  V1SHL_RRR_0_OPCODE_X0 = 110,
++  V1SHL_RRR_0_OPCODE_X1 = 68,
++  V1SHRSI_SHIFT_OPCODE_X0 = 8,
++  V1SHRSI_SHIFT_OPCODE_X1 = 8,
++  V1SHRS_RRR_0_OPCODE_X0 = 111,
++  V1SHRS_RRR_0_OPCODE_X1 = 69,
++  V1SHRUI_SHIFT_OPCODE_X0 = 9,
++  V1SHRUI_SHIFT_OPCODE_X1 = 9,
++  V1SHRU_RRR_0_OPCODE_X0 = 112,
++  V1SHRU_RRR_0_OPCODE_X1 = 70,
++  V1SUBUC_RRR_0_OPCODE_X0 = 113,
++  V1SUBUC_RRR_0_OPCODE_X1 = 71,
++  V1SUB_RRR_0_OPCODE_X0 = 114,
++  V1SUB_RRR_0_OPCODE_X1 = 72,
++  V2ADDI_IMM8_OPCODE_X0 = 14,
++  V2ADDI_IMM8_OPCODE_X1 = 39,
++  V2ADDSC_RRR_0_OPCODE_X0 = 115,
++  V2ADDSC_RRR_0_OPCODE_X1 = 73,
++  V2ADD_RRR_0_OPCODE_X0 = 116,
++  V2ADD_RRR_0_OPCODE_X1 = 74,
++  V2ADIFFS_RRR_0_OPCODE_X0 = 117,
++  V2AVGS_RRR_0_OPCODE_X0 = 118,
++  V2CMPEQI_IMM8_OPCODE_X0 = 15,
++  V2CMPEQI_IMM8_OPCODE_X1 = 40,
++  V2CMPEQ_RRR_0_OPCODE_X0 = 119,
++  V2CMPEQ_RRR_0_OPCODE_X1 = 75,
++  V2CMPLES_RRR_0_OPCODE_X0 = 120,
++  V2CMPLES_RRR_0_OPCODE_X1 = 76,
++  V2CMPLEU_RRR_0_OPCODE_X0 = 121,
++  V2CMPLEU_RRR_0_OPCODE_X1 = 77,
++  V2CMPLTSI_IMM8_OPCODE_X0 = 16,
++  V2CMPLTSI_IMM8_OPCODE_X1 = 41,
++  V2CMPLTS_RRR_0_OPCODE_X0 = 122,
++  V2CMPLTS_RRR_0_OPCODE_X1 = 78,
++  V2CMPLTUI_IMM8_OPCODE_X0 = 17,
++  V2CMPLTUI_IMM8_OPCODE_X1 = 42,
++  V2CMPLTU_RRR_0_OPCODE_X0 = 123,
++  V2CMPLTU_RRR_0_OPCODE_X1 = 79,
++  V2CMPNE_RRR_0_OPCODE_X0 = 124,
++  V2CMPNE_RRR_0_OPCODE_X1 = 80,
++  V2DOTPA_RRR_0_OPCODE_X0 = 125,
++  V2DOTP_RRR_0_OPCODE_X0 = 126,
++  V2INT_H_RRR_0_OPCODE_X0 = 127,
++  V2INT_H_RRR_0_OPCODE_X1 = 81,
++  V2INT_L_RRR_0_OPCODE_X0 = 128,
++  V2INT_L_RRR_0_OPCODE_X1 = 82,
++  V2MAXSI_IMM8_OPCODE_X0 = 18,
++  V2MAXSI_IMM8_OPCODE_X1 = 43,
++  V2MAXS_RRR_0_OPCODE_X0 = 129,
++  V2MAXS_RRR_0_OPCODE_X1 = 83,
++  V2MINSI_IMM8_OPCODE_X0 = 19,
++  V2MINSI_IMM8_OPCODE_X1 = 44,
++  V2MINS_RRR_0_OPCODE_X0 = 130,
++  V2MINS_RRR_0_OPCODE_X1 = 84,
++  V2MNZ_RRR_0_OPCODE_X0 = 131,
++  V2MNZ_RRR_0_OPCODE_X1 = 85,
++  V2MULFSC_RRR_0_OPCODE_X0 = 132,
++  V2MULS_RRR_0_OPCODE_X0 = 133,
++  V2MULTS_RRR_0_OPCODE_X0 = 134,
++  V2MZ_RRR_0_OPCODE_X0 = 135,
++  V2MZ_RRR_0_OPCODE_X1 = 86,
++  V2PACKH_RRR_0_OPCODE_X0 = 136,
++  V2PACKH_RRR_0_OPCODE_X1 = 87,
++  V2PACKL_RRR_0_OPCODE_X0 = 137,
++  V2PACKL_RRR_0_OPCODE_X1 = 88,
++  V2PACKUC_RRR_0_OPCODE_X0 = 138,
++  V2PACKUC_RRR_0_OPCODE_X1 = 89,
++  V2SADAS_RRR_0_OPCODE_X0 = 139,
++  V2SADAU_RRR_0_OPCODE_X0 = 140,
++  V2SADS_RRR_0_OPCODE_X0 = 141,
++  V2SADU_RRR_0_OPCODE_X0 = 142,
++  V2SHLI_SHIFT_OPCODE_X0 = 10,
++  V2SHLI_SHIFT_OPCODE_X1 = 10,
++  V2SHLSC_RRR_0_OPCODE_X0 = 143,
++  V2SHLSC_RRR_0_OPCODE_X1 = 90,
++  V2SHL_RRR_0_OPCODE_X0 = 144,
++  V2SHL_RRR_0_OPCODE_X1 = 91,
++  V2SHRSI_SHIFT_OPCODE_X0 = 11,
++  V2SHRSI_SHIFT_OPCODE_X1 = 11,
++  V2SHRS_RRR_0_OPCODE_X0 = 145,
++  V2SHRS_RRR_0_OPCODE_X1 = 92,
++  V2SHRUI_SHIFT_OPCODE_X0 = 12,
++  V2SHRUI_SHIFT_OPCODE_X1 = 12,
++  V2SHRU_RRR_0_OPCODE_X0 = 146,
++  V2SHRU_RRR_0_OPCODE_X1 = 93,
++  V2SUBSC_RRR_0_OPCODE_X0 = 147,
++  V2SUBSC_RRR_0_OPCODE_X1 = 94,
++  V2SUB_RRR_0_OPCODE_X0 = 148,
++  V2SUB_RRR_0_OPCODE_X1 = 95,
++  V4ADDSC_RRR_0_OPCODE_X0 = 149,
++  V4ADDSC_RRR_0_OPCODE_X1 = 96,
++  V4ADD_RRR_0_OPCODE_X0 = 150,
++  V4ADD_RRR_0_OPCODE_X1 = 97,
++  V4INT_H_RRR_0_OPCODE_X0 = 151,
++  V4INT_H_RRR_0_OPCODE_X1 = 98,
++  V4INT_L_RRR_0_OPCODE_X0 = 152,
++  V4INT_L_RRR_0_OPCODE_X1 = 99,
++  V4PACKSC_RRR_0_OPCODE_X0 = 153,
++  V4PACKSC_RRR_0_OPCODE_X1 = 100,
++  V4SHLSC_RRR_0_OPCODE_X0 = 154,
++  V4SHLSC_RRR_0_OPCODE_X1 = 101,
++  V4SHL_RRR_0_OPCODE_X0 = 155,
++  V4SHL_RRR_0_OPCODE_X1 = 102,
++  V4SHRS_RRR_0_OPCODE_X0 = 156,
++  V4SHRS_RRR_0_OPCODE_X1 = 103,
++  V4SHRU_RRR_0_OPCODE_X0 = 157,
++  V4SHRU_RRR_0_OPCODE_X1 = 104,
++  V4SUBSC_RRR_0_OPCODE_X0 = 158,
++  V4SUBSC_RRR_0_OPCODE_X1 = 105,
++  V4SUB_RRR_0_OPCODE_X0 = 159,
++  V4SUB_RRR_0_OPCODE_X1 = 106,
++  WH64_UNARY_OPCODE_X1 = 38,
++  XORI_IMM8_OPCODE_X0 = 20,
++  XORI_IMM8_OPCODE_X1 = 45,
++  XOR_RRR_0_OPCODE_X0 = 160,
++  XOR_RRR_0_OPCODE_X1 = 107,
++  XOR_RRR_5_OPCODE_Y0 = 3,
++  XOR_RRR_5_OPCODE_Y1 = 3
+ };
+ 
+ #endif /* !_TILE_OPCODE_CONSTANTS_H */
+diff --git a/arch/tile/include/asm/pgtable_64.h b/arch/tile/include/asm/pgtable_64.h
+new file mode 100644
+index 0000000..fd80328
+--- /dev/null
++++ b/arch/tile/include/asm/pgtable_64.h
+@@ -0,0 +1,175 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ */
++
++#ifndef _ASM_TILE_PGTABLE_64_H
++#define _ASM_TILE_PGTABLE_64_H
++
++/* The level-0 page table breaks the address space into 32-bit chunks. */
++#define PGDIR_SHIFT	HV_LOG2_L1_SPAN
++#define PGDIR_SIZE	HV_L1_SPAN
++#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++#define PTRS_PER_PGD	HV_L0_ENTRIES
++#define SIZEOF_PGD	(PTRS_PER_PGD * sizeof(pgd_t))
++
++/*
++ * The level-1 index is defined by the huge page size.  A PMD is composed
++ * of PTRS_PER_PMD pgd_t's and is the middle level of the page table.
++ */
++#define PMD_SHIFT	HV_LOG2_PAGE_SIZE_LARGE
++#define PMD_SIZE	HV_PAGE_SIZE_LARGE
++#define PMD_MASK	(~(PMD_SIZE-1))
++#define PTRS_PER_PMD	(1 << (PGDIR_SHIFT - PMD_SHIFT))
++#define SIZEOF_PMD	(PTRS_PER_PMD * sizeof(pmd_t))
++
++/*
++ * The level-2 index is defined by the difference between the huge
++ * page size and the normal page size.  A PTE is composed of
++ * PTRS_PER_PTE pte_t's and is the bottom level of the page table.
++ * Note that the hypervisor docs use PTE for what we call pte_t, so
++ * this nomenclature is somewhat confusing.
++ */
++#define PTRS_PER_PTE (1 << (HV_LOG2_PAGE_SIZE_LARGE - HV_LOG2_PAGE_SIZE_SMALL))
++#define SIZEOF_PTE	(PTRS_PER_PTE * sizeof(pte_t))
++
++/*
++ * Align the vmalloc area to an L2 page table, and leave a guard page
++ * at the beginning and end.  The vmalloc code also puts in an internal
++ * guard page between each allocation.
++ */
++#define _VMALLOC_END	HUGE_VMAP_BASE
++#define VMALLOC_END	(_VMALLOC_END - PAGE_SIZE)
++#define VMALLOC_START	(_VMALLOC_START + PAGE_SIZE)
++
++#define HUGE_VMAP_END	(HUGE_VMAP_BASE + PGDIR_SIZE)
++
++#ifndef __ASSEMBLY__
++
++/* We have no pud since we are a three-level page table. */
++#include <asm-generic/pgtable-nopud.h>
++
++static inline int pud_none(pud_t pud)
++{
++	return pud_val(pud) == 0;
++}
++
++static inline int pud_present(pud_t pud)
++{
++	return pud_val(pud) & _PAGE_PRESENT;
++}
++
++#define pmd_ERROR(e) \
++	pr_err("%s:%d: bad pmd 0x%016llx.\n", __FILE__, __LINE__, pmd_val(e))
++
++static inline void pud_clear(pud_t *pudp)
++{
++	__pte_clear(&pudp->pgd);
++}
++
++static inline int pud_bad(pud_t pud)
++{
++	return ((pud_val(pud) & _PAGE_ALL) != _PAGE_TABLE);
++}
++
++/* Return the page-table frame number (ptfn) that a pud_t points at. */
++#define pud_ptfn(pud) hv_pte_get_ptfn((pud).pgd)
++
++/*
++ * A given kernel pud_t maps to a kernel pmd_t table at a specific
++ * virtual address.  Since kernel pmd_t tables can be aligned at
++ * sub-page granularity, this macro can return non-page-aligned
++ * pointers, despite its name.
++ */
++#define pud_page_vaddr(pud) \
++	(__va((phys_addr_t)pud_ptfn(pud) << HV_LOG2_PAGE_TABLE_ALIGN))
++
++/*
++ * A pud_t points to a pmd_t array.  Since we can have multiple per
++ * page, we don't have a one-to-one mapping of pud_t's to pages.
++ */
++#define pud_page(pud) pfn_to_page(HV_PTFN_TO_PFN(pud_ptfn(pud)))
++
++static inline unsigned long pud_index(unsigned long address)
++{
++	return (address >> PUD_SHIFT) & (PTRS_PER_PUD - 1);
++}
++
++#define pmd_offset(pud, address) \
++	((pmd_t *)pud_page_vaddr(*(pud)) + pmd_index(address))
++
++static inline void __set_pmd(pmd_t *pmdp, pmd_t pmdval)
++{
++	set_pte(pmdp, pmdval);
++}
++
++/* Create a pmd from a PTFN and pgprot. */
++static inline pmd_t ptfn_pmd(unsigned long ptfn, pgprot_t prot)
++{
++	return hv_pte_set_ptfn(prot, ptfn);
++}
++
++/* Return the page-table frame number (ptfn) that a pmd_t points at. */
++static inline unsigned long pmd_ptfn(pmd_t pmd)
++{
++	return hv_pte_get_ptfn(pmd);
++}
++
++static inline void pmd_clear(pmd_t *pmdp)
++{
++	__pte_clear(pmdp);
++}
++
++/* Normalize an address to having the correct high bits set. */
++#define pgd_addr_normalize pgd_addr_normalize
++static inline unsigned long pgd_addr_normalize(unsigned long addr)
++{
++	return ((long)addr << (CHIP_WORD_SIZE() - CHIP_VA_WIDTH())) >>
++		(CHIP_WORD_SIZE() - CHIP_VA_WIDTH());
++}
++
++/* We don't define any pgds for these addresses. */
++static inline int pgd_addr_invalid(unsigned long addr)
++{
++	return addr >= MEM_HV_START ||
++		(addr > MEM_LOW_END && addr < MEM_HIGH_START);
++}
++
++/*
++ * Use atomic instructions to provide atomicity against the hypervisor.
++ */
++#define __HAVE_ARCH_PTEP_TEST_AND_CLEAR_YOUNG
++static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
++					    unsigned long addr, pte_t *ptep)
++{
++	return (__insn_fetchand(&ptep->val, ~HV_PTE_ACCESSED) >>
++		HV_PTE_INDEX_ACCESSED) & 0x1;
++}
++
++#define __HAVE_ARCH_PTEP_SET_WRPROTECT
++static inline void ptep_set_wrprotect(struct mm_struct *mm,
++				      unsigned long addr, pte_t *ptep)
++{
++	__insn_fetchand(&ptep->val, ~HV_PTE_WRITABLE);
++}
++
++#define __HAVE_ARCH_PTEP_GET_AND_CLEAR
++static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
++				       unsigned long addr, pte_t *ptep)
++{
++	return hv_pte(__insn_exch(&ptep->val, 0UL));
++}
++
++#endif /* __ASSEMBLY__ */
++
++#endif /* _ASM_TILE_PGTABLE_64_H */
+diff --git a/arch/tile/include/asm/spinlock_64.h b/arch/tile/include/asm/spinlock_64.h
+new file mode 100644
+index 0000000..72be590
+--- /dev/null
++++ b/arch/tile/include/asm/spinlock_64.h
+@@ -0,0 +1,161 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * 64-bit SMP ticket spinlocks, allowing only a single CPU anywhere
++ * (the type definitions are in asm/spinlock_types.h)
++ */
++
++#ifndef _ASM_TILE_SPINLOCK_64_H
++#define _ASM_TILE_SPINLOCK_64_H
++
++/* Shifts and masks for the various fields in "lock". */
++#define __ARCH_SPIN_CURRENT_SHIFT	17
++#define __ARCH_SPIN_NEXT_MASK		0x7fff
++#define __ARCH_SPIN_NEXT_OVERFLOW	0x8000
++
++/*
++ * Return the "current" portion of a ticket lock value,
++ * i.e. the number that currently owns the lock.
++ */
++static inline int arch_spin_current(u32 val)
++{
++	return val >> __ARCH_SPIN_CURRENT_SHIFT;
++}
++
++/*
++ * Return the "next" portion of a ticket lock value,
++ * i.e. the number that the next task to try to acquire the lock will get.
++ */
++static inline int arch_spin_next(u32 val)
++{
++	return val & __ARCH_SPIN_NEXT_MASK;
++}
++
++/* The lock is locked if a task would have to wait to get it. */
++static inline int arch_spin_is_locked(arch_spinlock_t *lock)
++{
++	u32 val = lock->lock;
++	return arch_spin_current(val) != arch_spin_next(val);
++}
++
++/* Bump the current ticket so the next task owns the lock. */
++static inline void arch_spin_unlock(arch_spinlock_t *lock)
++{
++	wmb();  /* guarantee anything modified under the lock is visible */
++	__insn_fetchadd4(&lock->lock, 1U << __ARCH_SPIN_CURRENT_SHIFT);
++}
++
++void arch_spin_unlock_wait(arch_spinlock_t *lock);
++
++void arch_spin_lock_slow(arch_spinlock_t *lock, u32 val);
++
++/* Grab the "next" ticket number and bump it atomically.
++ * If the current ticket is not ours, go to the slow path.
++ * We also take the slow path if the "next" value overflows.
++ */
++static inline void arch_spin_lock(arch_spinlock_t *lock)
++{
++	u32 val = __insn_fetchadd4(&lock->lock, 1);
++	u32 ticket = val & (__ARCH_SPIN_NEXT_MASK | __ARCH_SPIN_NEXT_OVERFLOW);
++	if (unlikely(arch_spin_current(val) != ticket))
++		arch_spin_lock_slow(lock, ticket);
++}
++
++/* Try to get the lock, and return whether we succeeded. */
++int arch_spin_trylock(arch_spinlock_t *lock);
++
++/* We cannot take an interrupt after getting a ticket, so don't enable them. */
++#define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
++
++/*
++ * Read-write spinlocks, allowing multiple readers
++ * but only one writer.
++ *
++ * We use fetchadd() for readers, and fetchor() with the sign bit
++ * for writers.
++ */
++
++#define __WRITE_LOCK_BIT (1 << 31)
++
++static inline int arch_write_val_locked(int val)
++{
++	return val < 0;  /* Optimize "val & __WRITE_LOCK_BIT". */
++}
++
++/**
++ * read_can_lock - would read_trylock() succeed?
++ * @lock: the rwlock in question.
++ */
++static inline int arch_read_can_lock(arch_rwlock_t *rw)
++{
++	return !arch_write_val_locked(rw->lock);
++}
++
++/**
++ * write_can_lock - would write_trylock() succeed?
++ * @lock: the rwlock in question.
++ */
++static inline int arch_write_can_lock(arch_rwlock_t *rw)
++{
++	return rw->lock == 0;
++}
++
++extern void __read_lock_failed(arch_rwlock_t *rw);
++
++static inline void arch_read_lock(arch_rwlock_t *rw)
++{
++	u32 val = __insn_fetchaddgez4(&rw->lock, 1);
++	if (unlikely(arch_write_val_locked(val)))
++		__read_lock_failed(rw);
++}
++
++extern void __write_lock_failed(arch_rwlock_t *rw, u32 val);
++
++static inline void arch_write_lock(arch_rwlock_t *rw)
++{
++	u32 val = __insn_fetchor4(&rw->lock, __WRITE_LOCK_BIT);
++	if (unlikely(val != 0))
++		__write_lock_failed(rw, val);
++}
++
++static inline void arch_read_unlock(arch_rwlock_t *rw)
++{
++	__insn_mf();
++	__insn_fetchadd4(&rw->lock, -1);
++}
++
++static inline void arch_write_unlock(arch_rwlock_t *rw)
++{
++	__insn_mf();
++	rw->lock = 0;
++}
++
++static inline int arch_read_trylock(arch_rwlock_t *rw)
++{
++	return !arch_write_val_locked(__insn_fetchaddgez4(&rw->lock, 1));
++}
++
++static inline int arch_write_trylock(arch_rwlock_t *rw)
++{
++	u32 val = __insn_fetchor4(&rw->lock, __WRITE_LOCK_BIT);
++	if (likely(val == 0))
++		return 1;
++	if (!arch_write_val_locked(val))
++		__insn_fetchand4(&rw->lock, ~__WRITE_LOCK_BIT);
++	return 0;
++}
++
++#define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
++#define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
++
++#endif /* _ASM_TILE_SPINLOCK_64_H */
+diff --git a/arch/tile/kernel/futex_64.S b/arch/tile/kernel/futex_64.S
+new file mode 100644
+index 0000000..f465d1e
+--- /dev/null
++++ b/arch/tile/kernel/futex_64.S
+@@ -0,0 +1,55 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Atomically access user memory, but use MMU to avoid propagating
++ * kernel exceptions.
++ */
++
++#include <linux/linkage.h>
++#include <asm/errno.h>
++#include <asm/futex.h>
++#include <asm/page.h>
++#include <asm/processor.h>
++
++/*
++ * Provide a set of atomic memory operations supporting <asm/futex.h>.
++ *
++ * r0: user address to manipulate
++ * r1: new value to write, or for cmpxchg, old value to compare against
++ * r2: (cmpxchg only) new value to write
++ *
++ * Return __get_user struct, r0 with value, r1 with error.
++ */
++#define FUTEX_OP(name, ...) \
++STD_ENTRY(futex_##name)			\
++	__VA_ARGS__;			\
++	{				\
++	 move   r1, zero;		\
++	 jrp    lr			\
++	};				\
++	STD_ENDPROC(futex_##name);	\
++	.pushsection __ex_table,"a";	\
++	.quad 1b, get_user_fault;	\
++	.popsection
++
++	.pushsection .fixup,"ax"
++get_user_fault:
++	{ movei r1, -EFAULT; jrp lr }
++	ENDPROC(get_user_fault)
++	.popsection
++
++FUTEX_OP(cmpxchg, mtspr CMPEXCH_VALUE, r1; 1: cmpexch4 r0, r0, r2)
++FUTEX_OP(set, 1: exch4 r0, r0, r1)
++FUTEX_OP(add, 1: fetchadd4 r0, r0, r1)
++FUTEX_OP(or, 1: fetchor4 r0, r0, r1)
++FUTEX_OP(andn, nor r1, r1, zero; 1: fetchand4 r0, r0, r1)
+diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
+new file mode 100644
+index 0000000..6bc3a93
+--- /dev/null
++++ b/arch/tile/kernel/head_64.S
+@@ -0,0 +1,269 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * TILE startup code.
++ */
++
++#include <linux/linkage.h>
++#include <linux/init.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/thread_info.h>
++#include <asm/processor.h>
++#include <asm/asm-offsets.h>
++#include <hv/hypervisor.h>
++#include <arch/chip.h>
++#include <arch/spr_def.h>
++
++/*
++ * This module contains the entry code for kernel images. It performs the
++ * minimal setup needed to call the generic C routines.
++ */
++
++	__HEAD
++ENTRY(_start)
++	/* Notify the hypervisor of what version of the API we want */
++	{
++	  movei r1, TILE_CHIP
++	  movei r2, TILE_CHIP_REV
++	}
++	{
++	  moveli r0, _HV_VERSION
++	  jal hv_init
++	}
++	/* Get a reasonable default ASID in r0 */
++	{
++	  move r0, zero
++	  jal hv_inquire_asid
++	}
++
++	/*
++	 * Install the default page table.  The relocation required to
++	 * statically define the table is a bit too complex, so we have
++	 * to plug in the pointer from the L0 to the L1 table by hand.
++	 * We only do this on the first cpu to boot, though, since the
++	 * other CPUs should see a properly-constructed page table.
++	 */
++	{
++	  v4int_l r2, zero, r0    /* ASID for hv_install_context */
++	  moveli r4, hw1_last(swapper_pgprot - PAGE_OFFSET)
++	}
++	{
++	  shl16insli r4, r4, hw0(swapper_pgprot - PAGE_OFFSET)
++	}
++	{
++	  ld r1, r4               /* access_pte for hv_install_context */
++	}
++	{
++	  moveli r0, hw1_last(.Lsv_data_pmd - PAGE_OFFSET)
++	  moveli r6, hw1_last(temp_data_pmd - PAGE_OFFSET)
++	}
++	{
++	  /* After initializing swapper_pgprot, HV_PTE_GLOBAL is set. */
++	  bfextu r7, r1, HV_PTE_INDEX_GLOBAL, HV_PTE_INDEX_GLOBAL
++	  inv r4
++	}
++	bnez r7, .Lno_write
++	{
++	  shl16insli r0, r0, hw0(.Lsv_data_pmd - PAGE_OFFSET)
++	  shl16insli r6, r6, hw0(temp_data_pmd - PAGE_OFFSET)
++	}
++	{
++	  /* Cut off the low bits of the PT address. */
++	  shrui r6, r6, HV_LOG2_PAGE_TABLE_ALIGN
++	  /* Start with our access pte. */
++	  move r5, r1
++	}
++	{
++	  /* Stuff the address into the page table pointer slot of the PTE. */
++	  bfins r5, r6, HV_PTE_INDEX_PTFN, \
++			HV_PTE_INDEX_PTFN + HV_PTE_PTFN_BITS - 1
++	}
++	{
++	  /* Store the L0 data PTE. */
++	  st r0, r5
++	  addli r6, r6, (temp_code_pmd - temp_data_pmd) >> \
++			HV_LOG2_PAGE_TABLE_ALIGN
++	}
++	{
++	  addli r0, r0, .Lsv_code_pmd - .Lsv_data_pmd
++	  bfins r5, r6, HV_PTE_INDEX_PTFN, \
++			HV_PTE_INDEX_PTFN + HV_PTE_PTFN_BITS - 1
++	}
++	/* Store the L0 code PTE. */
++	st r0, r5
++
++.Lno_write:
++	moveli lr, hw2_last(1f)
++	{
++	  shl16insli lr, lr, hw1(1f)
++	  moveli r0, hw1_last(swapper_pg_dir - PAGE_OFFSET)
++	}
++	{
++	  shl16insli lr, lr, hw0(1f)
++	  shl16insli r0, r0, hw0(swapper_pg_dir - PAGE_OFFSET)
++	}
++	{
++	  move r3, zero
++	  j hv_install_context
++	}
++1:
++
++	/* Install the interrupt base. */
++	moveli r0, hw2_last(MEM_SV_START)
++	shl16insli r0, r0, hw1(MEM_SV_START)
++	shl16insli r0, r0, hw0(MEM_SV_START)
++	mtspr SPR_INTERRUPT_VECTOR_BASE_K, r0
++
++	/*
++	 * Get our processor number and save it away in SAVE_K_0.
++	 * Extract stuff from the topology structure: r4 = y, r6 = x,
++	 * r5 = width.  FIXME: consider whether we want to just make these
++	 * 64-bit values (and if so fix smp_topology write below, too).
++	 */
++	jal hv_inquire_topology
++	{
++	  v4int_l r5, zero, r1    /* r5 = width */
++	  shrui r4, r0, 32        /* r4 = y */
++	}
++	{
++	  v4int_l r6, zero, r0    /* r6 = x */
++	  mul_lu_lu r4, r4, r5
++	}
++	{
++	  add r4, r4, r6          /* r4 == cpu == y*width + x */
++	}
++
++#ifdef CONFIG_SMP
++	/*
++	 * Load up our per-cpu offset.  When the first (master) tile
++	 * boots, this value is still zero, so we will load boot_pc
++	 * with start_kernel, and boot_sp with init_stack + THREAD_SIZE.
++	 * The master tile initializes the per-cpu offset array, so that
++	 * when subsequent (secondary) tiles boot, they will instead load
++	 * from their per-cpu versions of boot_sp and boot_pc.
++	 */
++	moveli r5, hw2_last(__per_cpu_offset)
++	shl16insli r5, r5, hw1(__per_cpu_offset)
++	shl16insli r5, r5, hw0(__per_cpu_offset)
++	shl3add r5, r4, r5
++	ld r5, r5
++	bnez r5, 1f
++
++	/*
++	 * Save the width and height to the smp_topology variable
++	 * for later use.
++	 */
++	moveli r0, hw2_last(smp_topology + HV_TOPOLOGY_WIDTH_OFFSET)
++	shl16insli r0, r0, hw1(smp_topology + HV_TOPOLOGY_WIDTH_OFFSET)
++	shl16insli r0, r0, hw0(smp_topology + HV_TOPOLOGY_WIDTH_OFFSET)
++	st r0, r1
++1:
++#else
++	move r5, zero
++#endif
++
++	/* Load and go with the correct pc and sp. */
++	{
++	  moveli r1, hw2_last(boot_sp)
++	  moveli r0, hw2_last(boot_pc)
++	}
++	{
++	  shl16insli r1, r1, hw1(boot_sp)
++	  shl16insli r0, r0, hw1(boot_pc)
++	}
++	{
++	  shl16insli r1, r1, hw0(boot_sp)
++	  shl16insli r0, r0, hw0(boot_pc)
++	}
++	{
++	  add r1, r1, r5
++	  add r0, r0, r5
++	}
++	ld r0, r0
++	ld sp, r1
++	or r4, sp, r4
++	mtspr SPR_SYSTEM_SAVE_K_0, r4  /* save ksp0 + cpu */
++	addi sp, sp, -STACK_TOP_DELTA
++	{
++	  move lr, zero   /* stop backtraces in the called function */
++	  jr r0
++	}
++	ENDPROC(_start)
++
++__PAGE_ALIGNED_BSS
++	.align PAGE_SIZE
++ENTRY(empty_zero_page)
++	.fill PAGE_SIZE,1,0
++	END(empty_zero_page)
++
++	.macro PTE cpa, bits1
++	.quad HV_PTE_PAGE | HV_PTE_DIRTY | HV_PTE_PRESENT | HV_PTE_ACCESSED |\
++	      HV_PTE_GLOBAL | (HV_PTE_MODE_CACHE_NO_L3 << HV_PTE_INDEX_MODE) |\
++	      (\bits1) | (HV_CPA_TO_PFN(\cpa) << HV_PTE_INDEX_PFN)
++	.endm
++
++__PAGE_ALIGNED_DATA
++	.align PAGE_SIZE
++ENTRY(swapper_pg_dir)
++	.org swapper_pg_dir + HV_L0_INDEX(PAGE_OFFSET) * HV_PTE_SIZE
++.Lsv_data_pmd:
++	.quad 0  /* PTE temp_data_pmd - PAGE_OFFSET, 0 */
++	.org swapper_pg_dir + HV_L0_INDEX(MEM_SV_START) * HV_PTE_SIZE
++.Lsv_code_pmd:
++	.quad 0  /* PTE temp_code_pmd - PAGE_OFFSET, 0 */
++	.org swapper_pg_dir + HV_L0_SIZE
++	END(swapper_pg_dir)
++
++	.align HV_PAGE_TABLE_ALIGN
++ENTRY(temp_data_pmd)
++	/*
++	 * We fill the PAGE_OFFSET pmd with huge pages with
++	 * VA = PA + PAGE_OFFSET.  We remap things with more precise access
++	 * permissions later.
++	 */
++	.set addr, 0
++	.rept HV_L1_ENTRIES
++	PTE addr, HV_PTE_READABLE | HV_PTE_WRITABLE
++	.set addr, addr + HV_PAGE_SIZE_LARGE
++	.endr
++	.org temp_data_pmd + HV_L1_SIZE
++	END(temp_data_pmd)
++
++	.align HV_PAGE_TABLE_ALIGN
++ENTRY(temp_code_pmd)
++	/*
++	 * We fill the MEM_SV_START pmd with huge pages with
++	 * VA = PA + PAGE_OFFSET.  We remap things with more precise access
++	 * permissions later.
++	 */
++	.set addr, 0
++	.rept HV_L1_ENTRIES
++	PTE addr, HV_PTE_READABLE | HV_PTE_EXECUTABLE
++	.set addr, addr + HV_PAGE_SIZE_LARGE
++	.endr
++	.org temp_code_pmd + HV_L1_SIZE
++	END(temp_code_pmd)
++
++	/*
++	 * Isolate swapper_pgprot to its own cache line, since each cpu
++	 * starting up will read it using VA-is-PA and local homing.
++	 * This would otherwise likely conflict with other data on the cache
++	 * line, once we have set its permanent home in the page tables.
++	 */
++	__INITDATA
++	.align CHIP_L2_LINE_SIZE()
++ENTRY(swapper_pgprot)
++	.quad HV_PTE_PRESENT | (HV_PTE_MODE_CACHE_NO_L3 << HV_PTE_INDEX_MODE)
++	.align CHIP_L2_LINE_SIZE()
++	END(swapper_pgprot)
+diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
+new file mode 100644
+index 0000000..79c93e1
+--- /dev/null
++++ b/arch/tile/kernel/intvec_64.S
+@@ -0,0 +1,1231 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Linux interrupt vectors.
++ */
++
++#include <linux/linkage.h>
++#include <linux/errno.h>
++#include <linux/unistd.h>
++#include <asm/ptrace.h>
++#include <asm/thread_info.h>
++#include <asm/irqflags.h>
++#include <asm/asm-offsets.h>
++#include <asm/types.h>
++#include <hv/hypervisor.h>
++#include <arch/abi.h>
++#include <arch/interrupts.h>
++#include <arch/spr_def.h>
++
++#ifdef CONFIG_PREEMPT
++# error "No support for kernel preemption currently"
++#endif
++
++#define PTREGS_PTR(reg, ptreg) addli reg, sp, C_ABI_SAVE_AREA_SIZE + (ptreg)
++
++#define PTREGS_OFFSET_SYSCALL PTREGS_OFFSET_REG(TREG_SYSCALL_NR)
++
++
++	.macro  push_reg reg, ptr=sp, delta=-8
++	{
++	 st     \ptr, \reg
++	 addli  \ptr, \ptr, \delta
++	}
++	.endm
++
++	.macro  pop_reg reg, ptr=sp, delta=8
++	{
++	 ld     \reg, \ptr
++	 addli  \ptr, \ptr, \delta
++	}
++	.endm
++
++	.macro  pop_reg_zero reg, zreg, ptr=sp, delta=8
++	{
++	 move   \zreg, zero
++	 ld     \reg, \ptr
++	 addi   \ptr, \ptr, \delta
++	}
++	.endm
++
++	.macro  push_extra_callee_saves reg
++	PTREGS_PTR(\reg, PTREGS_OFFSET_REG(51))
++	push_reg r51, \reg
++	push_reg r50, \reg
++	push_reg r49, \reg
++	push_reg r48, \reg
++	push_reg r47, \reg
++	push_reg r46, \reg
++	push_reg r45, \reg
++	push_reg r44, \reg
++	push_reg r43, \reg
++	push_reg r42, \reg
++	push_reg r41, \reg
++	push_reg r40, \reg
++	push_reg r39, \reg
++	push_reg r38, \reg
++	push_reg r37, \reg
++	push_reg r36, \reg
++	push_reg r35, \reg
++	push_reg r34, \reg, PTREGS_OFFSET_BASE - PTREGS_OFFSET_REG(34)
++	.endm
++
++	.macro  panic str
++	.pushsection .rodata, "a"
++1:
++	.asciz  "\str"
++	.popsection
++	{
++	 moveli r0, hw2_last(1b)
++	}
++	{
++	 shl16insli r0, r0, hw1(1b)
++	}
++	{
++	 shl16insli r0, r0, hw0(1b)
++	 jal    panic
++	}
++	.endm
++
++
++#ifdef __COLLECT_LINKER_FEEDBACK__
++	.pushsection .text.intvec_feedback,"ax"
++intvec_feedback:
++	.popsection
++#endif
++
++	/*
++	 * Default interrupt handler.
++	 *
++	 * vecnum is where we'll put this code.
++	 * c_routine is the C routine we'll call.
++	 *
++	 * The C routine is passed two arguments:
++	 * - A pointer to the pt_regs state.
++	 * - The interrupt vector number.
++	 *
++	 * The "processing" argument specifies the code for processing
++	 * the interrupt. Defaults to "handle_interrupt".
++	 */
++	.macro  int_hand vecnum, vecname, c_routine, processing=handle_interrupt
++	.org    (\vecnum << 8)
++intvec_\vecname:
++	/* Temporarily save a register so we have somewhere to work. */
++
++	mtspr   SPR_SYSTEM_SAVE_K_1, r0
++	mfspr   r0, SPR_EX_CONTEXT_K_1
++
++	andi    r0, r0, SPR_EX_CONTEXT_1_1__PL_MASK  /* mask off ICS */
++
++	.ifc    \vecnum, INT_DOUBLE_FAULT
++	/*
++	 * For double-faults from user-space, fall through to the normal
++	 * register save and stack setup path.  Otherwise, it's the
++	 * hypervisor giving us one last chance to dump diagnostics, and we
++	 * branch to the kernel_double_fault routine to do so.
++	 */
++	beqz    r0, 1f
++	j       _kernel_double_fault
++1:
++	.else
++	/*
++	 * If we're coming from user-space, then set sp to the top of
++	 * the kernel stack.  Otherwise, assume sp is already valid.
++	 */
++	{
++	 bnez   r0, 0f
++	 move   r0, sp
++	}
++	.endif
++
++	.ifc    \c_routine, do_page_fault
++	/*
++	 * The page_fault handler may be downcalled directly by the
++	 * hypervisor even when Linux is running and has ICS set.
++	 *
++	 * In this case the contents of EX_CONTEXT_K_1 reflect the
++	 * previous fault and can't be relied on to choose whether or
++	 * not to reinitialize the stack pointer.  So we add a test
++	 * to see whether SYSTEM_SAVE_K_2 has the high bit set,
++	 * and if so we don't reinitialize sp, since we must be coming
++	 * from Linux.  (In fact the precise case is !(val & ~1),
++	 * but any Linux PC has to have the high bit set.)
++	 *
++	 * Note that the hypervisor *always* sets SYSTEM_SAVE_K_2 for
++	 * any path that turns into a downcall to one of our TLB handlers.
++	 *
++	 * FIXME: if we end up never using this path, perhaps we should
++	 * prevent the hypervisor from generating downcalls in this case.
++	 * The advantage of getting a downcall is we can panic in Linux.
++	 */
++	mfspr   r0, SPR_SYSTEM_SAVE_K_2
++	{
++	 bltz   r0, 0f    /* high bit in S_S_1_2 is for a PC to use */
++	 move   r0, sp
++	}
++	.endif
++
++
++	/*
++	 * SYSTEM_SAVE_K_0 holds the cpu number in the low bits, and
++	 * the current stack top in the higher bits.  So we recover
++	 * our stack top by just masking off the low bits, then
++	 * point sp at the top aligned address on the actual stack page.
++	 */
++	mfspr   r0, SPR_SYSTEM_SAVE_K_0
++	mm      r0, zero, LOG2_THREAD_SIZE, 63
++
++0:
++	/*
++	 * Align the stack mod 64 so we can properly predict what
++	 * cache lines we need to write-hint to reduce memory fetch
++	 * latency as we enter the kernel.  The layout of memory is
++	 * as follows, with cache line 0 at the lowest VA, and cache
++	 * line 8 just below the r0 value this "andi" computes.
++	 * Note that we never write to cache line 8, and we skip
++	 * cache lines 1-3 for syscalls.
++	 *
++	 *    cache line 8: ptregs padding (two words)
++	 *    cache line 7: sp, lr, pc, ex1, faultnum, orig_r0, flags, cmpexch
++	 *    cache line 6: r46...r53 (tp)
++	 *    cache line 5: r38...r45
++	 *    cache line 4: r30...r37
++	 *    cache line 3: r22...r29
++	 *    cache line 2: r14...r21
++	 *    cache line 1: r6...r13
++	 *    cache line 0: 2 x frame, r0..r5
++	 */
++	andi    r0, r0, -64
++
++	/*
++	 * Push the first four registers on the stack, so that we can set
++	 * them to vector-unique values before we jump to the common code.
++	 *
++	 * Registers are pushed on the stack as a struct pt_regs,
++	 * with the sp initially just above the struct, and when we're
++	 * done, sp points to the base of the struct, minus
++	 * C_ABI_SAVE_AREA_SIZE, so we can directly jal to C code.
++	 *
++	 * This routine saves just the first four registers, plus the
++	 * stack context so we can do proper backtracing right away,
++	 * and defers to handle_interrupt to save the rest.
++	 * The backtracer needs pc, ex1, lr, sp, r52, and faultnum.
++	 */
++	addli   r0, r0, PTREGS_OFFSET_LR - (PTREGS_SIZE + KSTK_PTREGS_GAP)
++	wh64    r0   /* cache line 7 */
++	{
++	 st     r0, lr
++	 addli  r0, r0, PTREGS_OFFSET_SP - PTREGS_OFFSET_LR
++	}
++	{
++	 st     r0, sp
++	 addli  sp, r0, PTREGS_OFFSET_REG(52) - PTREGS_OFFSET_SP
++	}
++	wh64    sp   /* cache line 6 */
++	{
++	 st     sp, r52
++	 addli  sp, sp, PTREGS_OFFSET_REG(1) - PTREGS_OFFSET_REG(52)
++	}
++	wh64    sp   /* cache line 0 */
++	{
++	 st     sp, r1
++	 addli  sp, sp, PTREGS_OFFSET_REG(2) - PTREGS_OFFSET_REG(1)
++	}
++	{
++	 st     sp, r2
++	 addli  sp, sp, PTREGS_OFFSET_REG(3) - PTREGS_OFFSET_REG(2)
++	}
++	{
++	 st     sp, r3
++	 addli  sp, sp, PTREGS_OFFSET_PC - PTREGS_OFFSET_REG(3)
++	}
++	mfspr   r0, SPR_EX_CONTEXT_K_0
++	.ifc \processing,handle_syscall
++	/*
++	 * Bump the saved PC by one bundle so that when we return, we won't
++	 * execute the same swint instruction again.  We need to do this while
++	 * we're in the critical section.
++	 */
++	addi    r0, r0, 8
++	.endif
++	{
++	 st     sp, r0
++	 addli  sp, sp, PTREGS_OFFSET_EX1 - PTREGS_OFFSET_PC
++	}
++	mfspr   r0, SPR_EX_CONTEXT_K_1
++	{
++	 st     sp, r0
++	 addi   sp, sp, PTREGS_OFFSET_FAULTNUM - PTREGS_OFFSET_EX1
++	/*
++	 * Use r0 for syscalls so it's a temporary; use r1 for interrupts
++	 * so that it gets passed through unchanged to the handler routine.
++	 * Note that the .if conditional confusingly spans bundles.
++	 */
++	 .ifc \processing,handle_syscall
++	 movei  r0, \vecnum
++	}
++	{
++	 st     sp, r0
++	 .else
++	 movei  r1, \vecnum
++	}
++	{
++	 st     sp, r1
++	 .endif
++	 addli  sp, sp, PTREGS_OFFSET_REG(0) - PTREGS_OFFSET_FAULTNUM
++	}
++	mfspr   r0, SPR_SYSTEM_SAVE_K_1    /* Original r0 */
++	{
++	 st     sp, r0
++	 addi   sp, sp, -PTREGS_OFFSET_REG(0) - 8
++	}
++	{
++	 st     sp, zero        /* write zero into "Next SP" frame pointer */
++	 addi   sp, sp, -8      /* leave SP pointing at bottom of frame */
++	}
++	.ifc \processing,handle_syscall
++	j       handle_syscall
++	.else
++	/* Capture per-interrupt SPR context to registers. */
++	.ifc \c_routine, do_page_fault
++	mfspr   r2, SPR_SYSTEM_SAVE_K_3   /* address of page fault */
++	mfspr   r3, SPR_SYSTEM_SAVE_K_2   /* info about page fault */
++	.else
++	.ifc \vecnum, INT_ILL_TRANS
++	mfspr   r2, ILL_TRANS_REASON
++	.else
++	.ifc \vecnum, INT_DOUBLE_FAULT
++	mfspr   r2, SPR_SYSTEM_SAVE_K_2   /* double fault info from HV */
++	.else
++	.ifc \c_routine, do_trap
++	mfspr   r2, GPV_REASON
++	.else
++	.ifc \c_routine, op_handle_perf_interrupt
++	mfspr   r2, PERF_COUNT_STS
++#if CHIP_HAS_AUX_PERF_COUNTERS()
++	.else
++	.ifc \c_routine, op_handle_aux_perf_interrupt
++	mfspr   r2, AUX_PERF_COUNT_STS
++	.endif
++#endif
++	.endif
++	.endif
++	.endif
++	.endif
++	.endif
++	/* Put function pointer in r0 */
++	moveli  r0, hw2_last(\c_routine)
++	shl16insli r0, r0, hw1(\c_routine)
++	{
++	 shl16insli r0, r0, hw0(\c_routine)
++	 j       \processing
++	}
++	.endif
++	ENDPROC(intvec_\vecname)
++
++#ifdef __COLLECT_LINKER_FEEDBACK__
++	.pushsection .text.intvec_feedback,"ax"
++	.org    (\vecnum << 5)
++	FEEDBACK_ENTER_EXPLICIT(intvec_\vecname, .intrpt1, 1 << 8)
++	jrp     lr
++	.popsection
++#endif
++
++	.endm
++
++
++	/*
++	 * Save the rest of the registers that we didn't save in the actual
++	 * vector itself.  We can't use r0-r10 inclusive here.
++	 */
++	.macro  finish_interrupt_save, function
++
++	/* If it's a syscall, save a proper orig_r0, otherwise just zero. */
++	PTREGS_PTR(r52, PTREGS_OFFSET_ORIG_R0)
++	{
++	 .ifc \function,handle_syscall
++	 st     r52, r0
++	 .else
++	 st     r52, zero
++	 .endif
++	 PTREGS_PTR(r52, PTREGS_OFFSET_TP)
++	}
++	st      r52, tp
++	{
++	 mfspr  tp, CMPEXCH_VALUE
++	 PTREGS_PTR(r52, PTREGS_OFFSET_CMPEXCH)
++	}
++
++	/*
++	 * For ordinary syscalls, we save neither caller- nor callee-
++	 * save registers, since the syscall invoker doesn't expect the
++	 * caller-saves to be saved, and the called kernel functions will
++	 * take care of saving the callee-saves for us.
++	 *
++	 * For interrupts we save just the caller-save registers.  Saving
++	 * them is required (since the "caller" can't save them).  Again,
++	 * the called kernel functions will restore the callee-save
++	 * registers for us appropriately.
++	 *
++	 * On return, we normally restore nothing special for syscalls,
++	 * and just the caller-save registers for interrupts.
++	 *
++	 * However, there are some important caveats to all this:
++	 *
++	 * - We always save a few callee-save registers to give us
++	 *   some scratchpad registers to carry across function calls.
++	 *
++	 * - fork/vfork/etc require us to save all the callee-save
++	 *   registers, which we do in PTREGS_SYSCALL_ALL_REGS, below.
++	 *
++	 * - We always save r0..r5 and r10 for syscalls, since we need
++	 *   to reload them a bit later for the actual kernel call, and
++	 *   since we might need them for -ERESTARTNOINTR, etc.
++	 *
++	 * - Before invoking a signal handler, we save the unsaved
++	 *   callee-save registers so they are visible to the
++	 *   signal handler or any ptracer.
++	 *
++	 * - If the unsaved callee-save registers are modified, we set
++	 *   a bit in pt_regs so we know to reload them from pt_regs
++	 *   and not just rely on the kernel function unwinding.
++	 *   (Done for ptrace register writes and SA_SIGINFO handler.)
++	 */
++	{
++	 st     r52, tp
++	 PTREGS_PTR(r52, PTREGS_OFFSET_REG(33))
++	}
++	wh64    r52    /* cache line 4 */
++	push_reg r33, r52
++	push_reg r32, r52
++	push_reg r31, r52
++	.ifc \function,handle_syscall
++	push_reg r30, r52, PTREGS_OFFSET_SYSCALL - PTREGS_OFFSET_REG(30)
++	push_reg TREG_SYSCALL_NR_NAME, r52, \
++	  PTREGS_OFFSET_REG(5) - PTREGS_OFFSET_SYSCALL
++	.else
++
++	push_reg r30, r52, PTREGS_OFFSET_REG(29) - PTREGS_OFFSET_REG(30)
++	wh64    r52   /* cache line 3 */
++	push_reg r29, r52
++	push_reg r28, r52
++	push_reg r27, r52
++	push_reg r26, r52
++	push_reg r25, r52
++	push_reg r24, r52
++	push_reg r23, r52
++	push_reg r22, r52
++	wh64    r52   /* cache line 2 */
++	push_reg r21, r52
++	push_reg r20, r52
++	push_reg r19, r52
++	push_reg r18, r52
++	push_reg r17, r52
++	push_reg r16, r52
++	push_reg r15, r52
++	push_reg r14, r52
++	wh64    r52   /* cache line 1 */
++	push_reg r13, r52
++	push_reg r12, r52
++	push_reg r11, r52
++	push_reg r10, r52
++	push_reg r9, r52
++	push_reg r8, r52
++	push_reg r7, r52
++	push_reg r6, r52
++
++	.endif
++
++	push_reg r5, r52
++	st      r52, r4
++
++	/* Load tp with our per-cpu offset. */
++#ifdef CONFIG_SMP
++	{
++	 mfspr  r20, SPR_SYSTEM_SAVE_K_0
++	 moveli r21, hw2_last(__per_cpu_offset)
++	}
++	{
++	 shl16insli r21, r21, hw1(__per_cpu_offset)
++	 bfextu r20, r20, 0, LOG2_THREAD_SIZE-1
++	}
++	shl16insli r21, r21, hw0(__per_cpu_offset)
++	shl3add r20, r20, r21
++	ld      tp, r20
++#else
++	move    tp, zero
++#endif
++
++	/*
++	 * If we will be returning to the kernel, we will need to
++	 * reset the interrupt masks to the state they had before.
++	 * Set DISABLE_IRQ in flags iff we came from PL1 with irqs disabled.
++	 */
++	mfspr   r32, SPR_EX_CONTEXT_K_1
++	{
++	 andi   r32, r32, SPR_EX_CONTEXT_1_1__PL_MASK  /* mask off ICS */
++	 PTREGS_PTR(r21, PTREGS_OFFSET_FLAGS)
++	}
++	beqzt   r32, 1f       /* zero if from user space */
++	IRQS_DISABLED(r32)    /* zero if irqs enabled */
++#if PT_FLAGS_DISABLE_IRQ != 1
++# error Value of IRQS_DISABLED used to set PT_FLAGS_DISABLE_IRQ; fix
++#endif
++1:
++	.ifnc \function,handle_syscall
++	/* Record the fact that we saved the caller-save registers above. */
++	ori     r32, r32, PT_FLAGS_CALLER_SAVES
++	.endif
++	st      r21, r32
++
++#ifdef __COLLECT_LINKER_FEEDBACK__
++	/*
++	 * Notify the feedback routines that we were in the
++	 * appropriate fixed interrupt vector area.  Note that we
++	 * still have ICS set at this point, so we can't invoke any
++	 * atomic operations or we will panic.  The feedback
++	 * routines internally preserve r0..r10 and r30 up.
++	 */
++	.ifnc \function,handle_syscall
++	shli    r20, r1, 5
++	.else
++	moveli  r20, INT_SWINT_1 << 5
++	.endif
++	moveli  r21, hw2_last(intvec_feedback)
++	shl16insli r21, r21, hw1(intvec_feedback)
++	shl16insli r21, r21, hw0(intvec_feedback)
++	add     r20, r20, r21
++	jalr    r20
++
++	/* And now notify the feedback routines that we are here. */
++	FEEDBACK_ENTER(\function)
++#endif
++
++	/*
++	 * we've captured enough state to the stack (including in
++	 * particular our EX_CONTEXT state) that we can now release
++	 * the interrupt critical section and replace it with our
++	 * standard "interrupts disabled" mask value.  This allows
++	 * synchronous interrupts (and profile interrupts) to punch
++	 * through from this point onwards.
++	 */
++	.ifc \function,handle_nmi
++	IRQ_DISABLE_ALL(r20)
++	.else
++	IRQ_DISABLE(r20, r21)
++	.endif
++	mtspr   INTERRUPT_CRITICAL_SECTION, zero
++
++	/*
++	 * Prepare the first 256 stack bytes to be rapidly accessible
++	 * without having to fetch the background data.
++	 */
++	addi    r52, sp, -64
++	{
++	 wh64   r52
++	 addi   r52, r52, -64
++	}
++	{
++	 wh64   r52
++	 addi   r52, r52, -64
++	}
++	{
++	 wh64   r52
++	 addi   r52, r52, -64
++	}
++	wh64    r52
++
++#ifdef CONFIG_TRACE_IRQFLAGS
++	.ifnc \function,handle_nmi
++	/*
++	 * We finally have enough state set up to notify the irq
++	 * tracing code that irqs were disabled on entry to the handler.
++	 * The TRACE_IRQS_OFF call clobbers registers r0-r29.
++	 * For syscalls, we already have the register state saved away
++	 * on the stack, so we don't bother to do any register saves here,
++	 * and later we pop the registers back off the kernel stack.
++	 * For interrupt handlers, save r0-r3 in callee-saved registers.
++	 */
++	.ifnc \function,handle_syscall
++	{ move r30, r0; move r31, r1 }
++	{ move r32, r2; move r33, r3 }
++	.endif
++	TRACE_IRQS_OFF
++	.ifnc \function,handle_syscall
++	{ move r0, r30; move r1, r31 }
++	{ move r2, r32; move r3, r33 }
++	.endif
++	.endif
++#endif
++
++	.endm
++
++	/*
++	 * Redispatch a downcall.
++	 */
++	.macro  dc_dispatch vecnum, vecname
++	.org    (\vecnum << 8)
++intvec_\vecname:
++	j       hv_downcall_dispatch
++	ENDPROC(intvec_\vecname)
++	.endm
++
++	/*
++	 * Common code for most interrupts.  The C function we're eventually
++	 * going to is in r0, and the faultnum is in r1; the original
++	 * values for those registers are on the stack.
++	 */
++	.pushsection .text.handle_interrupt,"ax"
++handle_interrupt:
++	finish_interrupt_save handle_interrupt
++
++	/* Jump to the C routine; it should enable irqs as soon as possible. */
++	{
++	 jalr   r0
++	 PTREGS_PTR(r0, PTREGS_OFFSET_BASE)
++	}
++	FEEDBACK_REENTER(handle_interrupt)
++	{
++	 movei  r30, 0   /* not an NMI */
++	 j      interrupt_return
++	}
++	STD_ENDPROC(handle_interrupt)
++
++/*
++ * This routine takes a boolean in r30 indicating if this is an NMI.
++ * If so, we also expect a boolean in r31 indicating whether to
++ * re-enable the oprofile interrupts.
++ */
++STD_ENTRY(interrupt_return)
++	/* If we're resuming to kernel space, don't check thread flags. */
++	{
++	 bnez   r30, .Lrestore_all  /* NMIs don't special-case user-space */
++	 PTREGS_PTR(r29, PTREGS_OFFSET_EX1)
++	}
++	ld      r29, r29
++	andi    r29, r29, SPR_EX_CONTEXT_1_1__PL_MASK  /* mask off ICS */
++	{
++	 beqzt  r29, .Lresume_userspace
++	 PTREGS_PTR(r29, PTREGS_OFFSET_PC)
++	}
++
++	/* If we're resuming to _cpu_idle_nap, bump PC forward by 8. */
++	moveli  r27, hw2_last(_cpu_idle_nap)
++	{
++	 ld     r28, r29
++	 shl16insli r27, r27, hw1(_cpu_idle_nap)
++	}
++	{
++	 shl16insli r27, r27, hw0(_cpu_idle_nap)
++	}
++	{
++	 cmpeq  r27, r27, r28
++	}
++	{
++	 blbc   r27, .Lrestore_all
++	 addi   r28, r28, 8
++	}
++	st      r29, r28
++	j       .Lrestore_all
++
++.Lresume_userspace:
++	FEEDBACK_REENTER(interrupt_return)
++
++	/*
++	 * Disable interrupts so as to make sure we don't
++	 * miss an interrupt that sets any of the thread flags (like
++	 * need_resched or sigpending) between sampling and the iret.
++	 * Routines like schedule() or do_signal() may re-enable
++	 * interrupts before returning.
++	 */
++	IRQ_DISABLE(r20, r21)
++	TRACE_IRQS_OFF  /* Note: clobbers registers r0-r29 */
++
++	/* Get base of stack in r32; note r30/31 are used as arguments here. */
++	GET_THREAD_INFO(r32)
++
++
++	/* Check to see if there is any work to do before returning to user. */
++	{
++	 addi   r29, r32, THREAD_INFO_FLAGS_OFFSET
++	 moveli r1, hw1_last(_TIF_ALLWORK_MASK)
++	}
++	{
++	 ld     r29, r29
++	 shl16insli r1, r1, hw0(_TIF_ALLWORK_MASK)
++	}
++	and     r1, r29, r1
++	beqzt   r1, .Lrestore_all
++
++	/*
++	 * Make sure we have all the registers saved for signal
++	 * handling or single-step.  Call out to C code to figure out
++	 * exactly what we need to do for each flag bit, then if
++	 * necessary, reload the flags and recheck.
++	 */
++	push_extra_callee_saves r0
++	{
++	 PTREGS_PTR(r0, PTREGS_OFFSET_BASE)
++	 jal    do_work_pending
++	}
++	bnez    r0, .Lresume_userspace
++
++	/*
++	 * In the NMI case we
++	 * omit the call to single_process_check_nohz, which normally checks
++	 * to see if we should start or stop the scheduler tick, because
++	 * we can't call arbitrary Linux code from an NMI context.
++	 * We always call the homecache TLB deferral code to re-trigger
++	 * the deferral mechanism.
++	 *
++	 * The other chunk of responsibility this code has is to reset the
++	 * interrupt masks appropriately to reset irqs and NMIs.  We have
++	 * to call TRACE_IRQS_OFF and TRACE_IRQS_ON to support all the
++	 * lockdep-type stuff, but we can't set ICS until afterwards, since
++	 * ICS can only be used in very tight chunks of code to avoid
++	 * tripping over various assertions that it is off.
++	 */
++.Lrestore_all:
++	PTREGS_PTR(r0, PTREGS_OFFSET_EX1)
++	{
++	 ld      r0, r0
++	 PTREGS_PTR(r32, PTREGS_OFFSET_FLAGS)
++	}
++	{
++	 andi   r0, r0, SPR_EX_CONTEXT_1_1__PL_MASK
++	 ld     r32, r32
++	}
++	bnez    r0, 1f
++	j       2f
++#if PT_FLAGS_DISABLE_IRQ != 1
++# error Assuming PT_FLAGS_DISABLE_IRQ == 1 so we can use blbct below
++#endif
++1:	blbct   r32, 2f
++	IRQ_DISABLE(r20,r21)
++	TRACE_IRQS_OFF
++	movei   r0, 1
++	mtspr   INTERRUPT_CRITICAL_SECTION, r0
++	beqzt   r30, .Lrestore_regs
++	j       3f
++2:	TRACE_IRQS_ON
++	movei   r0, 1
++	mtspr   INTERRUPT_CRITICAL_SECTION, r0
++	IRQ_ENABLE(r20, r21)
++	beqzt   r30, .Lrestore_regs
++3:
++
++
++	/*
++	 * We now commit to returning from this interrupt, since we will be
++	 * doing things like setting EX_CONTEXT SPRs and unwinding the stack
++	 * frame.  No calls should be made to any other code after this point.
++	 * This code should only be entered with ICS set.
++	 * r32 must still be set to ptregs.flags.
++	 * We launch loads to each cache line separately first, so we can
++	 * get some parallelism out of the memory subsystem.
++	 * We start zeroing caller-saved registers throughout, since
++	 * that will save some cycles if this turns out to be a syscall.
++	 */
++.Lrestore_regs:
++	FEEDBACK_REENTER(interrupt_return)   /* called from elsewhere */
++
++	/*
++	 * Rotate so we have one high bit and one low bit to test.
++	 * - low bit says whether to restore all the callee-saved registers,
++	 *   or just r30-r33, and r52 up.
++	 * - high bit (i.e. sign bit) says whether to restore all the
++	 *   caller-saved registers, or just r0.
++	 */
++#if PT_FLAGS_CALLER_SAVES != 2 || PT_FLAGS_RESTORE_REGS != 4
++# error Rotate trick does not work :-)
++#endif
++	{
++	 rotli  r20, r32, 62
++	 PTREGS_PTR(sp, PTREGS_OFFSET_REG(0))
++	}
++
++	/*
++	 * Load cache lines 0, 4, 6 and 7, in that order, then use
++	 * the last loaded value, which makes it likely that the other
++	 * cache lines have also loaded, at which point we should be
++	 * able to safely read all the remaining words on those cache
++	 * lines without waiting for the memory subsystem.
++	 */
++	pop_reg r0, sp, PTREGS_OFFSET_REG(30) - PTREGS_OFFSET_REG(0)
++	pop_reg r30, sp, PTREGS_OFFSET_REG(52) - PTREGS_OFFSET_REG(30)
++	pop_reg_zero r52, r3, sp, PTREGS_OFFSET_CMPEXCH - PTREGS_OFFSET_REG(52)
++	pop_reg_zero r21, r27, sp, PTREGS_OFFSET_EX1 - PTREGS_OFFSET_CMPEXCH
++	pop_reg_zero lr, r2, sp, PTREGS_OFFSET_PC - PTREGS_OFFSET_EX1
++	{
++	 mtspr  CMPEXCH_VALUE, r21
++	 move   r4, zero
++	}
++	pop_reg r21, sp, PTREGS_OFFSET_REG(31) - PTREGS_OFFSET_PC
++	{
++	 mtspr  SPR_EX_CONTEXT_K_1, lr
++	 andi   lr, lr, SPR_EX_CONTEXT_1_1__PL_MASK  /* mask off ICS */
++	}
++	{
++	 mtspr  SPR_EX_CONTEXT_K_0, r21
++	 move   r5, zero
++	}
++
++	/* Restore callee-saveds that we actually use. */
++	pop_reg_zero r31, r6
++	pop_reg_zero r32, r7
++	pop_reg_zero r33, r8, sp, PTREGS_OFFSET_REG(29) - PTREGS_OFFSET_REG(33)
++
++	/*
++	 * If we modified other callee-saveds, restore them now.
++	 * This is rare, but could be via ptrace or signal handler.
++	 */
++	{
++	 move   r9, zero
++	 blbs   r20, .Lrestore_callees
++	}
++.Lcontinue_restore_regs:
++
++	/* Check if we're returning from a syscall. */
++	{
++	 move   r10, zero
++	 bltzt  r20, 1f  /* no, so go restore callee-save registers */
++	}
++
++	/*
++	 * Check if we're returning to userspace.
++	 * Note that if we're not, we don't worry about zeroing everything.
++	 */
++	{
++	 addli  sp, sp, PTREGS_OFFSET_LR - PTREGS_OFFSET_REG(29)
++	 bnez   lr, .Lkernel_return
++	}
++
++	/*
++	 * On return from syscall, we've restored r0 from pt_regs, but we
++	 * clear the remainder of the caller-saved registers.  We could
++	 * restore the syscall arguments, but there's not much point,
++	 * and it ensures user programs aren't trying to use the
++	 * caller-saves if we clear them, as well as avoiding leaking
++	 * kernel pointers into userspace.
++	 */
++	pop_reg_zero lr, r11, sp, PTREGS_OFFSET_TP - PTREGS_OFFSET_LR
++	pop_reg_zero tp, r12, sp, PTREGS_OFFSET_SP - PTREGS_OFFSET_TP
++	{
++	 ld     sp, sp
++	 move   r13, zero
++	 move   r14, zero
++	}
++	{ move r15, zero; move r16, zero }
++	{ move r17, zero; move r18, zero }
++	{ move r19, zero; move r20, zero }
++	{ move r21, zero; move r22, zero }
++	{ move r23, zero; move r24, zero }
++	{ move r25, zero; move r26, zero }
++
++	/* Set r1 to errno if we are returning an error, otherwise zero. */
++	{
++	 moveli r29, 4096
++	 sub    r1, zero, r0
++	}
++	{
++	 move   r28, zero
++	 cmpltu r29, r1, r29
++	}
++	{
++	 mnz    r1, r29, r1
++	 move   r29, zero
++	}
++	iret
++
++	/*
++	 * Not a syscall, so restore caller-saved registers.
++	 * First kick off loads for cache lines 1-3, which we're touching
++	 * for the first time here.
++	 */
++	.align 64
++1:	pop_reg r29, sp, PTREGS_OFFSET_REG(21) - PTREGS_OFFSET_REG(29)
++	pop_reg r21, sp, PTREGS_OFFSET_REG(13) - PTREGS_OFFSET_REG(21)
++	pop_reg r13, sp, PTREGS_OFFSET_REG(1) - PTREGS_OFFSET_REG(13)
++	pop_reg r1
++	pop_reg r2
++	pop_reg r3
++	pop_reg r4
++	pop_reg r5
++	pop_reg r6
++	pop_reg r7
++	pop_reg r8
++	pop_reg r9
++	pop_reg r10
++	pop_reg r11
++	pop_reg r12, sp, 16
++	/* r13 already restored above */
++	pop_reg r14
++	pop_reg r15
++	pop_reg r16
++	pop_reg r17
++	pop_reg r18
++	pop_reg r19
++	pop_reg r20, sp, 16
++	/* r21 already restored above */
++	pop_reg r22
++	pop_reg r23
++	pop_reg r24
++	pop_reg r25
++	pop_reg r26
++	pop_reg r27
++	pop_reg r28, sp, PTREGS_OFFSET_LR - PTREGS_OFFSET_REG(28)
++	/* r29 already restored above */
++	bnez    lr, .Lkernel_return
++	pop_reg lr, sp, PTREGS_OFFSET_TP - PTREGS_OFFSET_LR
++	pop_reg tp, sp, PTREGS_OFFSET_SP - PTREGS_OFFSET_TP
++	ld      sp, sp
++	iret
++
++	/*
++	 * We can't restore tp when in kernel mode, since a thread might
++	 * have migrated from another cpu and brought a stale tp value.
++	 */
++.Lkernel_return:
++	pop_reg lr, sp, PTREGS_OFFSET_SP - PTREGS_OFFSET_LR
++	ld      sp, sp
++	iret
++
++	/* Restore callee-saved registers from r34 to r51. */
++.Lrestore_callees:
++	addli  sp, sp, PTREGS_OFFSET_REG(34) - PTREGS_OFFSET_REG(29)
++	pop_reg r34
++	pop_reg r35
++	pop_reg r36
++	pop_reg r37
++	pop_reg r38
++	pop_reg r39
++	pop_reg r40
++	pop_reg r41
++	pop_reg r42
++	pop_reg r43
++	pop_reg r44
++	pop_reg r45
++	pop_reg r46
++	pop_reg r47
++	pop_reg r48
++	pop_reg r49
++	pop_reg r50
++	pop_reg r51, sp, PTREGS_OFFSET_REG(29) - PTREGS_OFFSET_REG(51)
++	j .Lcontinue_restore_regs
++	STD_ENDPROC(interrupt_return)
++
++	/*
++	 * "NMI" interrupts mask ALL interrupts before calling the
++	 * handler, and don't check thread flags, etc., on the way
++	 * back out.  In general, the only things we do here for NMIs
++	 * are register save/restore and dataplane kernel-TLB management.
++	 * We don't (for example) deal with start/stop of the sched tick.
++	 */
++	.pushsection .text.handle_nmi,"ax"
++handle_nmi:
++	finish_interrupt_save handle_nmi
++	{
++	 jalr   r0
++	 PTREGS_PTR(r0, PTREGS_OFFSET_BASE)
++	}
++	FEEDBACK_REENTER(handle_nmi)
++	{
++	 movei  r30, 1
++	 move   r31, r0
++	}
++	j       interrupt_return
++	STD_ENDPROC(handle_nmi)
++
++	/*
++	 * Parallel code for syscalls to handle_interrupt.
++	 */
++	.pushsection .text.handle_syscall,"ax"
++handle_syscall:
++	finish_interrupt_save handle_syscall
++
++	/* Enable irqs. */
++	TRACE_IRQS_ON
++	IRQ_ENABLE(r20, r21)
++
++	/* Bump the counter for syscalls made on this tile. */
++	moveli r20, hw2_last(irq_stat + IRQ_CPUSTAT_SYSCALL_COUNT_OFFSET)
++	shl16insli r20, r20, hw1(irq_stat + IRQ_CPUSTAT_SYSCALL_COUNT_OFFSET)
++	shl16insli r20, r20, hw0(irq_stat + IRQ_CPUSTAT_SYSCALL_COUNT_OFFSET)
++	add     r20, r20, tp
++	ld4s    r21, r20
++	addi    r21, r21, 1
++	st4     r20, r21
++
++	/* Trace syscalls, if requested. */
++	GET_THREAD_INFO(r31)
++	addi	r31, r31, THREAD_INFO_FLAGS_OFFSET
++	ld	r30, r31
++	andi    r30, r30, _TIF_SYSCALL_TRACE
++	{
++	 addi   r30, r31, THREAD_INFO_STATUS_OFFSET - THREAD_INFO_FLAGS_OFFSET
++	 beqzt	r30, .Lrestore_syscall_regs
++	}
++	jal	do_syscall_trace
++	FEEDBACK_REENTER(handle_syscall)
++
++	/*
++	 * We always reload our registers from the stack at this
++	 * point.  They might be valid, if we didn't build with
++	 * TRACE_IRQFLAGS, and this isn't a dataplane tile, and we're not
++	 * doing syscall tracing, but there are enough cases now that it
++	 * seems simplest just to do the reload unconditionally.
++	 */
++.Lrestore_syscall_regs:
++	{
++	 ld     r30, r30
++	 PTREGS_PTR(r11, PTREGS_OFFSET_REG(0))
++	}
++	pop_reg r0,  r11
++	pop_reg r1,  r11
++	pop_reg r2,  r11
++	pop_reg r3,  r11
++	pop_reg r4,  r11
++	pop_reg r5,  r11, PTREGS_OFFSET_SYSCALL - PTREGS_OFFSET_REG(5)
++	{
++	 ld     TREG_SYSCALL_NR_NAME, r11
++	 moveli r21, __NR_syscalls
++	}
++
++	/* Ensure that the syscall number is within the legal range. */
++	{
++	 moveli r20, hw2(sys_call_table)
++	 blbs   r30, .Lcompat_syscall
++	}
++	{
++	 cmpltu r21, TREG_SYSCALL_NR_NAME, r21
++	 shl16insli r20, r20, hw1(sys_call_table)
++	}
++	{
++	 blbc   r21, .Linvalid_syscall
++	 shl16insli r20, r20, hw0(sys_call_table)
++	}
++.Lload_syscall_pointer:
++	shl3add r20, TREG_SYSCALL_NR_NAME, r20
++	ld      r20, r20
++
++	/* Jump to syscall handler. */
++	jalr    r20
++.Lhandle_syscall_link: /* value of "lr" after "jalr r20" above */
++
++	/*
++	 * Write our r0 onto the stack so it gets restored instead
++	 * of whatever the user had there before.
++	 * In compat mode, sign-extend r0 before storing it.
++	 */
++	{
++	 PTREGS_PTR(r29, PTREGS_OFFSET_REG(0))
++	 blbct  r30, 1f
++	}
++	addxi   r0, r0, 0
++1:	st      r29, r0
++
++.Lsyscall_sigreturn_skip:
++	FEEDBACK_REENTER(handle_syscall)
++
++	/* Do syscall trace again, if requested. */
++	ld	r30, r31
++	andi    r30, r30, _TIF_SYSCALL_TRACE
++	beqzt	r30, 1f
++	jal	do_syscall_trace
++	FEEDBACK_REENTER(handle_syscall)
++1:	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++
++.Lcompat_syscall:
++	/*
++	 * Load the base of the compat syscall table in r20, and
++	 * range-check the syscall number (duplicated from 64-bit path).
++	 * Sign-extend all the user's passed arguments to make them consistent.
++	 * Also save the original "r(n)" values away in "r(11+n)" in
++	 * case the syscall table entry wants to validate them.
++	 */
++	moveli  r20, hw2(compat_sys_call_table)
++	{
++	 cmpltu r21, TREG_SYSCALL_NR_NAME, r21
++	 shl16insli r20, r20, hw1(compat_sys_call_table)
++	}
++	{
++	 blbc   r21, .Linvalid_syscall
++	 shl16insli r20, r20, hw0(compat_sys_call_table)
++	}
++	{ move r11, r0; addxi r0, r0, 0 }
++	{ move r12, r1; addxi r1, r1, 0 }
++	{ move r13, r2; addxi r2, r2, 0 }
++	{ move r14, r3; addxi r3, r3, 0 }
++	{ move r15, r4; addxi r4, r4, 0 }
++	{ move r16, r5; addxi r5, r5, 0 }
++	j .Lload_syscall_pointer
++
++.Linvalid_syscall:
++	/* Report an invalid syscall back to the user program */
++	{
++	 PTREGS_PTR(r29, PTREGS_OFFSET_REG(0))
++	 movei  r28, -ENOSYS
++	}
++	st      r29, r28
++	j       .Lresume_userspace   /* jump into middle of interrupt_return */
++	STD_ENDPROC(handle_syscall)
++
++	/* Return the address for oprofile to suppress in backtraces. */
++STD_ENTRY_SECTION(handle_syscall_link_address, .text.handle_syscall)
++	lnk     r0
++	{
++	 addli  r0, r0, .Lhandle_syscall_link - .
++	 jrp    lr
++	}
++	STD_ENDPROC(handle_syscall_link_address)
++
++STD_ENTRY(ret_from_fork)
++	jal     sim_notify_fork
++	jal     schedule_tail
++	FEEDBACK_REENTER(ret_from_fork)
++	j       .Lresume_userspace
++	STD_ENDPROC(ret_from_fork)
++
++/* Various stub interrupt handlers and syscall handlers */
++
++STD_ENTRY_LOCAL(_kernel_double_fault)
++	mfspr   r1, SPR_EX_CONTEXT_K_0
++	move    r2, lr
++	move    r3, sp
++	move    r4, r52
++	addi    sp, sp, -C_ABI_SAVE_AREA_SIZE
++	j       kernel_double_fault
++	STD_ENDPROC(_kernel_double_fault)
++
++STD_ENTRY_LOCAL(bad_intr)
++	mfspr   r2, SPR_EX_CONTEXT_K_0
++	panic   "Unhandled interrupt %#x: PC %#lx"
++	STD_ENDPROC(bad_intr)
++
++/* Put address of pt_regs in reg and jump. */
++#define PTREGS_SYSCALL(x, reg)                          \
++	STD_ENTRY(_##x);                                \
++	{                                               \
++	 PTREGS_PTR(reg, PTREGS_OFFSET_BASE);           \
++	 j      x                                       \
++	};                                              \
++	STD_ENDPROC(_##x)
++
++/*
++ * Special-case sigreturn to not write r0 to the stack on return.
++ * This is technically more efficient, but it also avoids difficulties
++ * in the 64-bit OS when handling 32-bit compat code, since we must not
++ * sign-extend r0 for the sigreturn return-value case.
++ */
++#define PTREGS_SYSCALL_SIGRETURN(x, reg)                \
++	STD_ENTRY(_##x);                                \
++	addli   lr, lr, .Lsyscall_sigreturn_skip - .Lhandle_syscall_link; \
++	{                                               \
++	 PTREGS_PTR(reg, PTREGS_OFFSET_BASE);           \
++	 j      x                                       \
++	};                                              \
++	STD_ENDPROC(_##x)
++
++PTREGS_SYSCALL(sys_execve, r3)
++PTREGS_SYSCALL(sys_sigaltstack, r2)
++PTREGS_SYSCALL_SIGRETURN(sys_rt_sigreturn, r0)
++#ifdef CONFIG_COMPAT
++PTREGS_SYSCALL(compat_sys_execve, r3)
++PTREGS_SYSCALL(compat_sys_sigaltstack, r2)
++PTREGS_SYSCALL_SIGRETURN(compat_sys_rt_sigreturn, r0)
++#endif
++
++/* Save additional callee-saves to pt_regs, put address in r4 and jump. */
++STD_ENTRY(_sys_clone)
++	push_extra_callee_saves r4
++	j       sys_clone
++	STD_ENDPROC(_sys_clone)
++
++/* The single-step support may need to read all the registers. */
++int_unalign:
++	push_extra_callee_saves r0
++	j       do_trap
++
++/* Include .intrpt1 array of interrupt vectors */
++	.section ".intrpt1", "ax"
++
++#define op_handle_perf_interrupt bad_intr
++#define op_handle_aux_perf_interrupt bad_intr
++
++#ifndef CONFIG_HARDWALL
++#define do_hardwall_trap bad_intr
++#endif
++
++	int_hand     INT_MEM_ERROR, MEM_ERROR, bad_intr
++	int_hand     INT_SINGLE_STEP_3, SINGLE_STEP_3, bad_intr
++#if CONFIG_KERNEL_PL == 2
++	int_hand     INT_SINGLE_STEP_2, SINGLE_STEP_2, gx_singlestep_handle
++	int_hand     INT_SINGLE_STEP_1, SINGLE_STEP_1, bad_intr
++#else
++	int_hand     INT_SINGLE_STEP_2, SINGLE_STEP_2, bad_intr
++	int_hand     INT_SINGLE_STEP_1, SINGLE_STEP_1, gx_singlestep_handle
++#endif
++	int_hand     INT_SINGLE_STEP_0, SINGLE_STEP_0, bad_intr
++	int_hand     INT_IDN_COMPLETE, IDN_COMPLETE, bad_intr
++	int_hand     INT_UDN_COMPLETE, UDN_COMPLETE, bad_intr
++	int_hand     INT_ITLB_MISS, ITLB_MISS, do_page_fault
++	int_hand     INT_ILL, ILL, do_trap
++	int_hand     INT_GPV, GPV, do_trap
++	int_hand     INT_IDN_ACCESS, IDN_ACCESS, do_trap
++	int_hand     INT_UDN_ACCESS, UDN_ACCESS, do_trap
++	int_hand     INT_SWINT_3, SWINT_3, do_trap
++	int_hand     INT_SWINT_2, SWINT_2, do_trap
++	int_hand     INT_SWINT_1, SWINT_1, SYSCALL, handle_syscall
++	int_hand     INT_SWINT_0, SWINT_0, do_trap
++	int_hand     INT_ILL_TRANS, ILL_TRANS, do_trap
++	int_hand     INT_UNALIGN_DATA, UNALIGN_DATA, int_unalign
++	int_hand     INT_DTLB_MISS, DTLB_MISS, do_page_fault
++	int_hand     INT_DTLB_ACCESS, DTLB_ACCESS, do_page_fault
++	int_hand     INT_IDN_FIREWALL, IDN_FIREWALL, bad_intr
++	int_hand     INT_UDN_FIREWALL, UDN_FIREWALL, do_hardwall_trap
++	int_hand     INT_TILE_TIMER, TILE_TIMER, do_timer_interrupt
++	int_hand     INT_IDN_TIMER, IDN_TIMER, bad_intr
++	int_hand     INT_UDN_TIMER, UDN_TIMER, bad_intr
++	int_hand     INT_IDN_AVAIL, IDN_AVAIL, bad_intr
++	int_hand     INT_UDN_AVAIL, UDN_AVAIL, bad_intr
++	int_hand     INT_IPI_3, IPI_3, bad_intr
++#if CONFIG_KERNEL_PL == 2
++	int_hand     INT_IPI_2, IPI_2, tile_dev_intr
++	int_hand     INT_IPI_1, IPI_1, bad_intr
++#else
++	int_hand     INT_IPI_2, IPI_2, bad_intr
++	int_hand     INT_IPI_1, IPI_1, tile_dev_intr
++#endif
++	int_hand     INT_IPI_0, IPI_0, bad_intr
++	int_hand     INT_PERF_COUNT, PERF_COUNT, \
++		     op_handle_perf_interrupt, handle_nmi
++	int_hand     INT_AUX_PERF_COUNT, AUX_PERF_COUNT, \
++		     op_handle_perf_interrupt, handle_nmi
++	int_hand     INT_INTCTRL_3, INTCTRL_3, bad_intr
++#if CONFIG_KERNEL_PL == 2
++	dc_dispatch  INT_INTCTRL_2, INTCTRL_2
++	int_hand     INT_INTCTRL_1, INTCTRL_1, bad_intr
++#else
++	int_hand     INT_INTCTRL_2, INTCTRL_2, bad_intr
++	dc_dispatch  INT_INTCTRL_1, INTCTRL_1
++#endif
++	int_hand     INT_INTCTRL_0, INTCTRL_0, bad_intr
++	int_hand     INT_MESSAGE_RCV_DWNCL, MESSAGE_RCV_DWNCL, \
++		     hv_message_intr
++	int_hand     INT_DEV_INTR_DWNCL, DEV_INTR_DWNCL, bad_intr
++	int_hand     INT_I_ASID, I_ASID, bad_intr
++	int_hand     INT_D_ASID, D_ASID, bad_intr
++	int_hand     INT_DOUBLE_FAULT, DOUBLE_FAULT, do_trap
++
++	/* Synthetic interrupt delivered only by the simulator */
++	int_hand     INT_BREAKPOINT, BREAKPOINT, do_breakpoint
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index 8e86334..9c45d8b 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -630,8 +630,8 @@ out:
+ 
+ #ifdef CONFIG_COMPAT
+ long compat_sys_execve(const char __user *path,
+-		       const compat_uptr_t __user *argv,
+-		       const compat_uptr_t __user *envp,
++		       compat_uptr_t __user *argv,
++		       compat_uptr_t __user *envp,
+ 		       struct pt_regs *regs)
+ {
+ 	long error;
+diff --git a/arch/tile/kernel/regs_64.S b/arch/tile/kernel/regs_64.S
+new file mode 100644
+index 0000000..f748c1e
+--- /dev/null
++++ b/arch/tile/kernel/regs_64.S
+@@ -0,0 +1,145 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/linkage.h>
++#include <asm/system.h>
++#include <asm/ptrace.h>
++#include <asm/asm-offsets.h>
++#include <arch/spr_def.h>
++#include <asm/processor.h>
++
++/*
++ * See <asm/system.h>; called with prev and next task_struct pointers.
++ * "prev" is returned in r0 for _switch_to and also for ret_from_fork.
++ *
++ * We want to save pc/sp in "prev", and get the new pc/sp from "next".
++ * We also need to save all the callee-saved registers on the stack.
++ *
++ * Intel enables/disables access to the hardware cycle counter in
++ * seccomp (secure computing) environments if necessary, based on
++ * has_secure_computing().  We might want to do this at some point,
++ * though it would require virtualizing the other SPRs under WORLD_ACCESS.
++ *
++ * Since we're saving to the stack, we omit sp from this list.
++ * And for parallels with other architectures, we save lr separately,
++ * in the thread_struct itself (as the "pc" field).
++ *
++ * This code also needs to be aligned with process.c copy_thread()
++ */
++
++#if CALLEE_SAVED_REGS_COUNT != 24
++# error Mismatch between <asm/system.h> and kernel/entry.S
++#endif
++#define FRAME_SIZE ((2 + CALLEE_SAVED_REGS_COUNT) * 8)
++
++#define SAVE_REG(r) { st r12, r; addi r12, r12, 8 }
++#define LOAD_REG(r) { ld r, r12; addi r12, r12, 8 }
++#define FOR_EACH_CALLEE_SAVED_REG(f)					\
++							f(r30); f(r31); \
++	f(r32); f(r33); f(r34); f(r35);	f(r36); f(r37); f(r38); f(r39); \
++	f(r40); f(r41); f(r42); f(r43); f(r44); f(r45); f(r46); f(r47); \
++	f(r48); f(r49); f(r50); f(r51); f(r52);
++
++STD_ENTRY_SECTION(__switch_to, .sched.text)
++	{
++	  move r10, sp
++	  st sp, lr
++	}
++	{
++	  addli r11, sp, -FRAME_SIZE + 8
++	  addli sp, sp, -FRAME_SIZE
++	}
++	{
++	  st r11, r10
++	  addli r4, r1, TASK_STRUCT_THREAD_KSP_OFFSET
++	}
++	{
++	  ld r13, r4   /* Load new sp to a temp register early. */
++	  addi r12, sp, 16
++	}
++	FOR_EACH_CALLEE_SAVED_REG(SAVE_REG)
++	addli r3, r0, TASK_STRUCT_THREAD_KSP_OFFSET
++	{
++	  st r3, sp
++	  addli r3, r0, TASK_STRUCT_THREAD_PC_OFFSET
++	}
++	{
++	  st r3, lr
++	  addli r4, r1, TASK_STRUCT_THREAD_PC_OFFSET
++	}
++	{
++	  ld lr, r4
++	  addi r12, r13, 16
++	}
++	{
++	  /* Update sp and ksp0 simultaneously to avoid backtracer warnings. */
++	  move sp, r13
++	  mtspr SPR_SYSTEM_SAVE_K_0, r2
++	}
++	FOR_EACH_CALLEE_SAVED_REG(LOAD_REG)
++.L__switch_to_pc:
++	{
++	  addli sp, sp, FRAME_SIZE
++	  jrp lr   /* r0 is still valid here, so return it */
++	}
++	STD_ENDPROC(__switch_to)
++
++/* Return a suitable address for the backtracer for suspended threads */
++STD_ENTRY_SECTION(get_switch_to_pc, .sched.text)
++	lnk r0
++	{
++	  addli r0, r0, .L__switch_to_pc - .
++	  jrp lr
++	}
++	STD_ENDPROC(get_switch_to_pc)
++
++STD_ENTRY(get_pt_regs)
++	.irp reg, r0, r1, r2, r3, r4, r5, r6, r7, \
++		 r8, r9, r10, r11, r12, r13, r14, r15, \
++		 r16, r17, r18, r19, r20, r21, r22, r23, \
++		 r24, r25, r26, r27, r28, r29, r30, r31, \
++		 r32, r33, r34, r35, r36, r37, r38, r39, \
++		 r40, r41, r42, r43, r44, r45, r46, r47, \
++		 r48, r49, r50, r51, r52, tp, sp
++	{
++	 st r0, \reg
++	 addi r0, r0, 8
++	}
++	.endr
++	{
++	 st r0, lr
++	 addi r0, r0, PTREGS_OFFSET_PC - PTREGS_OFFSET_LR
++	}
++	lnk r1
++	{
++	 st r0, r1
++	 addi r0, r0, PTREGS_OFFSET_EX1 - PTREGS_OFFSET_PC
++	}
++	mfspr r1, INTERRUPT_CRITICAL_SECTION
++	shli r1, r1, SPR_EX_CONTEXT_1_1__ICS_SHIFT
++	ori r1, r1, KERNEL_PL
++	{
++	 st r0, r1
++	 addi r0, r0, PTREGS_OFFSET_FAULTNUM - PTREGS_OFFSET_EX1
++	}
++	{
++	 st r0, zero       /* clear faultnum */
++	 addi r0, r0, PTREGS_OFFSET_ORIG_R0 - PTREGS_OFFSET_FAULTNUM
++	}
++	{
++	 st r0, zero       /* clear orig_r0 */
++	 addli r0, r0, -PTREGS_OFFSET_ORIG_R0    /* restore r0 to base */
++	}
++	jrp lr
++	STD_ENDPROC(get_pt_regs)
+diff --git a/arch/tile/kernel/tile-desc_64.c b/arch/tile/kernel/tile-desc_64.c
+new file mode 100644
+index 0000000..d57007b
+--- /dev/null
++++ b/arch/tile/kernel/tile-desc_64.c
+@@ -0,0 +1,2200 @@
++/* This define is BFD_RELOC_##x for real bfd, or -1 for everyone else. */
++#define BFD_RELOC(x) -1
++
++/* Special registers. */
++#define TREG_LR 55
++#define TREG_SN 56
++#define TREG_ZERO 63
++
++/* FIXME: Rename this. */
++#include <asm/opcode-tile_64.h>
++
++#include <linux/stddef.h>
++
++const struct tilegx_opcode tilegx_opcodes[334] =
++{
++ { "bpt", TILEGX_OPC_BPT, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "info", TILEGX_OPC_INFO, 0xf, 1, TREG_ZERO, 1,
++    { { 0 }, { 1 }, { 2 }, { 3 }, { 0, } },
++  },
++  { "infol", TILEGX_OPC_INFOL, 0x3, 1, TREG_ZERO, 1,
++    { { 4 }, { 5 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "move", TILEGX_OPC_MOVE, 0xf, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 8, 9 }, { 10, 11 }, { 12, 13 }, { 0, } },
++  },
++  { "movei", TILEGX_OPC_MOVEI, 0xf, 2, TREG_ZERO, 1,
++    { { 6, 0 }, { 8, 1 }, { 10, 2 }, { 12, 3 }, { 0, } },
++  },
++  { "moveli", TILEGX_OPC_MOVELI, 0x3, 2, TREG_ZERO, 1,
++    { { 6, 4 }, { 8, 5 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch", TILEGX_OPC_PREFETCH, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "prefetch_add_l1", TILEGX_OPC_PREFETCH_ADD_L1, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch_add_l1_fault", TILEGX_OPC_PREFETCH_ADD_L1_FAULT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch_add_l2", TILEGX_OPC_PREFETCH_ADD_L2, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch_add_l2_fault", TILEGX_OPC_PREFETCH_ADD_L2_FAULT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch_add_l3", TILEGX_OPC_PREFETCH_ADD_L3, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch_add_l3_fault", TILEGX_OPC_PREFETCH_ADD_L3_FAULT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "prefetch_l1", TILEGX_OPC_PREFETCH_L1, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "prefetch_l1_fault", TILEGX_OPC_PREFETCH_L1_FAULT, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "prefetch_l2", TILEGX_OPC_PREFETCH_L2, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "prefetch_l2_fault", TILEGX_OPC_PREFETCH_L2_FAULT, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "prefetch_l3", TILEGX_OPC_PREFETCH_L3, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "prefetch_l3_fault", TILEGX_OPC_PREFETCH_L3_FAULT, 0x12, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 14 } },
++  },
++  { "raise", TILEGX_OPC_RAISE, 0x2, 0, TREG_ZERO, 1,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "add", TILEGX_OPC_ADD, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "addi", TILEGX_OPC_ADDI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 10, 11, 2 }, { 12, 13, 3 }, { 0, } },
++  },
++  { "addli", TILEGX_OPC_ADDLI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 4 }, { 8, 9, 5 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "addx", TILEGX_OPC_ADDX, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "addxi", TILEGX_OPC_ADDXI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 10, 11, 2 }, { 12, 13, 3 }, { 0, } },
++  },
++  { "addxli", TILEGX_OPC_ADDXLI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 4 }, { 8, 9, 5 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "addxsc", TILEGX_OPC_ADDXSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "and", TILEGX_OPC_AND, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "andi", TILEGX_OPC_ANDI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 10, 11, 2 }, { 12, 13, 3 }, { 0, } },
++  },
++  { "beqz", TILEGX_OPC_BEQZ, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "beqzt", TILEGX_OPC_BEQZT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bfexts", TILEGX_OPC_BFEXTS, 0x1, 4, TREG_ZERO, 1,
++    { { 6, 7, 21, 22 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bfextu", TILEGX_OPC_BFEXTU, 0x1, 4, TREG_ZERO, 1,
++    { { 6, 7, 21, 22 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bfins", TILEGX_OPC_BFINS, 0x1, 4, TREG_ZERO, 1,
++    { { 23, 7, 21, 22 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bgez", TILEGX_OPC_BGEZ, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bgezt", TILEGX_OPC_BGEZT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bgtz", TILEGX_OPC_BGTZ, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bgtzt", TILEGX_OPC_BGTZT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "blbc", TILEGX_OPC_BLBC, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "blbct", TILEGX_OPC_BLBCT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "blbs", TILEGX_OPC_BLBS, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "blbst", TILEGX_OPC_BLBST, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "blez", TILEGX_OPC_BLEZ, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "blezt", TILEGX_OPC_BLEZT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bltz", TILEGX_OPC_BLTZ, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bltzt", TILEGX_OPC_BLTZT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bnez", TILEGX_OPC_BNEZ, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "bnezt", TILEGX_OPC_BNEZT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 20 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "clz", TILEGX_OPC_CLZ, 0x5, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 0, }, { 10, 11 }, { 0, }, { 0, } },
++  },
++  { "cmoveqz", TILEGX_OPC_CMOVEQZ, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "cmovnez", TILEGX_OPC_CMOVNEZ, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "cmpeq", TILEGX_OPC_CMPEQ, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "cmpeqi", TILEGX_OPC_CMPEQI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 10, 11, 2 }, { 12, 13, 3 }, { 0, } },
++  },
++  { "cmpexch", TILEGX_OPC_CMPEXCH, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmpexch4", TILEGX_OPC_CMPEXCH4, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmples", TILEGX_OPC_CMPLES, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "cmpleu", TILEGX_OPC_CMPLEU, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "cmplts", TILEGX_OPC_CMPLTS, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "cmpltsi", TILEGX_OPC_CMPLTSI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 10, 11, 2 }, { 12, 13, 3 }, { 0, } },
++  },
++  { "cmpltu", TILEGX_OPC_CMPLTU, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "cmpltui", TILEGX_OPC_CMPLTUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmpne", TILEGX_OPC_CMPNE, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "cmul", TILEGX_OPC_CMUL, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmula", TILEGX_OPC_CMULA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmulaf", TILEGX_OPC_CMULAF, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmulf", TILEGX_OPC_CMULF, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmulfr", TILEGX_OPC_CMULFR, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmulh", TILEGX_OPC_CMULH, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "cmulhr", TILEGX_OPC_CMULHR, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "crc32_32", TILEGX_OPC_CRC32_32, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "crc32_8", TILEGX_OPC_CRC32_8, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ctz", TILEGX_OPC_CTZ, 0x5, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 0, }, { 10, 11 }, { 0, }, { 0, } },
++  },
++  { "dblalign", TILEGX_OPC_DBLALIGN, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "dblalign2", TILEGX_OPC_DBLALIGN2, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "dblalign4", TILEGX_OPC_DBLALIGN4, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "dblalign6", TILEGX_OPC_DBLALIGN6, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "drain", TILEGX_OPC_DRAIN, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "dtlbpr", TILEGX_OPC_DTLBPR, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "exch", TILEGX_OPC_EXCH, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "exch4", TILEGX_OPC_EXCH4, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_add_flags", TILEGX_OPC_FDOUBLE_ADD_FLAGS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_addsub", TILEGX_OPC_FDOUBLE_ADDSUB, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_mul_flags", TILEGX_OPC_FDOUBLE_MUL_FLAGS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_pack1", TILEGX_OPC_FDOUBLE_PACK1, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_pack2", TILEGX_OPC_FDOUBLE_PACK2, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_sub_flags", TILEGX_OPC_FDOUBLE_SUB_FLAGS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_unpack_max", TILEGX_OPC_FDOUBLE_UNPACK_MAX, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fdouble_unpack_min", TILEGX_OPC_FDOUBLE_UNPACK_MIN, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchadd", TILEGX_OPC_FETCHADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchadd4", TILEGX_OPC_FETCHADD4, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchaddgez", TILEGX_OPC_FETCHADDGEZ, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchaddgez4", TILEGX_OPC_FETCHADDGEZ4, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchand", TILEGX_OPC_FETCHAND, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchand4", TILEGX_OPC_FETCHAND4, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchor", TILEGX_OPC_FETCHOR, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fetchor4", TILEGX_OPC_FETCHOR4, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "finv", TILEGX_OPC_FINV, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "flush", TILEGX_OPC_FLUSH, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "flushwb", TILEGX_OPC_FLUSHWB, 0x2, 0, TREG_ZERO, 1,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fnop", TILEGX_OPC_FNOP, 0xf, 0, TREG_ZERO, 1,
++    { {  }, {  }, {  }, {  }, { 0, } },
++  },
++  { "fsingle_add1", TILEGX_OPC_FSINGLE_ADD1, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fsingle_addsub2", TILEGX_OPC_FSINGLE_ADDSUB2, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fsingle_mul1", TILEGX_OPC_FSINGLE_MUL1, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fsingle_mul2", TILEGX_OPC_FSINGLE_MUL2, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fsingle_pack1", TILEGX_OPC_FSINGLE_PACK1, 0x5, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 0, }, { 10, 11 }, { 0, }, { 0, } },
++  },
++  { "fsingle_pack2", TILEGX_OPC_FSINGLE_PACK2, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "fsingle_sub1", TILEGX_OPC_FSINGLE_SUB1, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "icoh", TILEGX_OPC_ICOH, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ill", TILEGX_OPC_ILL, 0xa, 0, TREG_ZERO, 1,
++    { { 0, }, {  }, { 0, }, {  }, { 0, } },
++  },
++  { "inv", TILEGX_OPC_INV, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "iret", TILEGX_OPC_IRET, 0x2, 0, TREG_ZERO, 1,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "j", TILEGX_OPC_J, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 25 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "jal", TILEGX_OPC_JAL, 0x2, 1, TREG_LR, 1,
++    { { 0, }, { 25 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "jalr", TILEGX_OPC_JALR, 0xa, 1, TREG_LR, 1,
++    { { 0, }, { 9 }, { 0, }, { 13 }, { 0, } },
++  },
++  { "jalrp", TILEGX_OPC_JALRP, 0xa, 1, TREG_LR, 1,
++    { { 0, }, { 9 }, { 0, }, { 13 }, { 0, } },
++  },
++  { "jr", TILEGX_OPC_JR, 0xa, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 13 }, { 0, } },
++  },
++  { "jrp", TILEGX_OPC_JRP, 0xa, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 13 }, { 0, } },
++  },
++  { "ld", TILEGX_OPC_LD, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld1s", TILEGX_OPC_LD1S, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld1s_add", TILEGX_OPC_LD1S_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ld1u", TILEGX_OPC_LD1U, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld1u_add", TILEGX_OPC_LD1U_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ld2s", TILEGX_OPC_LD2S, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld2s_add", TILEGX_OPC_LD2S_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ld2u", TILEGX_OPC_LD2U, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld2u_add", TILEGX_OPC_LD2U_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ld4s", TILEGX_OPC_LD4S, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld4s_add", TILEGX_OPC_LD4S_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ld4u", TILEGX_OPC_LD4U, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 26, 14 } },
++  },
++  { "ld4u_add", TILEGX_OPC_LD4U_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ld_add", TILEGX_OPC_LD_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldna", TILEGX_OPC_LDNA, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldna_add", TILEGX_OPC_LDNA_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt", TILEGX_OPC_LDNT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt1s", TILEGX_OPC_LDNT1S, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt1s_add", TILEGX_OPC_LDNT1S_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt1u", TILEGX_OPC_LDNT1U, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt1u_add", TILEGX_OPC_LDNT1U_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt2s", TILEGX_OPC_LDNT2S, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt2s_add", TILEGX_OPC_LDNT2S_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt2u", TILEGX_OPC_LDNT2U, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt2u_add", TILEGX_OPC_LDNT2U_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt4s", TILEGX_OPC_LDNT4S, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt4s_add", TILEGX_OPC_LDNT4S_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt4u", TILEGX_OPC_LDNT4U, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt4u_add", TILEGX_OPC_LDNT4U_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "ldnt_add", TILEGX_OPC_LDNT_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 8, 15, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "lnk", TILEGX_OPC_LNK, 0xa, 1, TREG_ZERO, 1,
++    { { 0, }, { 8 }, { 0, }, { 12 }, { 0, } },
++  },
++  { "mf", TILEGX_OPC_MF, 0x2, 0, TREG_ZERO, 1,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mfspr", TILEGX_OPC_MFSPR, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 8, 27 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mm", TILEGX_OPC_MM, 0x1, 4, TREG_ZERO, 1,
++    { { 23, 7, 21, 22 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mnz", TILEGX_OPC_MNZ, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "mtspr", TILEGX_OPC_MTSPR, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 28, 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_hs_hs", TILEGX_OPC_MUL_HS_HS, 0x5, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 10, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mul_hs_hu", TILEGX_OPC_MUL_HS_HU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_hs_ls", TILEGX_OPC_MUL_HS_LS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_hs_lu", TILEGX_OPC_MUL_HS_LU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_hu_hu", TILEGX_OPC_MUL_HU_HU, 0x5, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 10, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mul_hu_ls", TILEGX_OPC_MUL_HU_LS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_hu_lu", TILEGX_OPC_MUL_HU_LU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_ls_ls", TILEGX_OPC_MUL_LS_LS, 0x5, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 10, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mul_ls_lu", TILEGX_OPC_MUL_LS_LU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mul_lu_lu", TILEGX_OPC_MUL_LU_LU, 0x5, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 10, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mula_hs_hs", TILEGX_OPC_MULA_HS_HS, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mula_hs_hu", TILEGX_OPC_MULA_HS_HU, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mula_hs_ls", TILEGX_OPC_MULA_HS_LS, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mula_hs_lu", TILEGX_OPC_MULA_HS_LU, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mula_hu_hu", TILEGX_OPC_MULA_HU_HU, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mula_hu_ls", TILEGX_OPC_MULA_HU_LS, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mula_hu_lu", TILEGX_OPC_MULA_HU_LU, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mula_ls_ls", TILEGX_OPC_MULA_LS_LS, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mula_ls_lu", TILEGX_OPC_MULA_LS_LU, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "mula_lu_lu", TILEGX_OPC_MULA_LU_LU, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mulax", TILEGX_OPC_MULAX, 0x5, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 24, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mulx", TILEGX_OPC_MULX, 0x5, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 10, 11, 18 }, { 0, }, { 0, } },
++  },
++  { "mz", TILEGX_OPC_MZ, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "nap", TILEGX_OPC_NAP, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "nop", TILEGX_OPC_NOP, 0xf, 0, TREG_ZERO, 1,
++    { {  }, {  }, {  }, {  }, { 0, } },
++  },
++  { "nor", TILEGX_OPC_NOR, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "or", TILEGX_OPC_OR, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "ori", TILEGX_OPC_ORI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "pcnt", TILEGX_OPC_PCNT, 0x5, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 0, }, { 10, 11 }, { 0, }, { 0, } },
++  },
++  { "revbits", TILEGX_OPC_REVBITS, 0x5, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 0, }, { 10, 11 }, { 0, }, { 0, } },
++  },
++  { "revbytes", TILEGX_OPC_REVBYTES, 0x5, 2, TREG_ZERO, 1,
++    { { 6, 7 }, { 0, }, { 10, 11 }, { 0, }, { 0, } },
++  },
++  { "rotl", TILEGX_OPC_ROTL, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "rotli", TILEGX_OPC_ROTLI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 10, 11, 31 }, { 12, 13, 32 }, { 0, } },
++  },
++  { "shl", TILEGX_OPC_SHL, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shl16insli", TILEGX_OPC_SHL16INSLI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 4 }, { 8, 9, 5 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "shl1add", TILEGX_OPC_SHL1ADD, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shl1addx", TILEGX_OPC_SHL1ADDX, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shl2add", TILEGX_OPC_SHL2ADD, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shl2addx", TILEGX_OPC_SHL2ADDX, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shl3add", TILEGX_OPC_SHL3ADD, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shl3addx", TILEGX_OPC_SHL3ADDX, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shli", TILEGX_OPC_SHLI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 10, 11, 31 }, { 12, 13, 32 }, { 0, } },
++  },
++  { "shlx", TILEGX_OPC_SHLX, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "shlxi", TILEGX_OPC_SHLXI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "shrs", TILEGX_OPC_SHRS, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shrsi", TILEGX_OPC_SHRSI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 10, 11, 31 }, { 12, 13, 32 }, { 0, } },
++  },
++  { "shru", TILEGX_OPC_SHRU, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "shrui", TILEGX_OPC_SHRUI, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 10, 11, 31 }, { 12, 13, 32 }, { 0, } },
++  },
++  { "shrux", TILEGX_OPC_SHRUX, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "shruxi", TILEGX_OPC_SHRUXI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "shufflebytes", TILEGX_OPC_SHUFFLEBYTES, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "st", TILEGX_OPC_ST, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 14, 33 } },
++  },
++  { "st1", TILEGX_OPC_ST1, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 14, 33 } },
++  },
++  { "st1_add", TILEGX_OPC_ST1_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "st2", TILEGX_OPC_ST2, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 14, 33 } },
++  },
++  { "st2_add", TILEGX_OPC_ST2_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "st4", TILEGX_OPC_ST4, 0x12, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 14, 33 } },
++  },
++  { "st4_add", TILEGX_OPC_ST4_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "st_add", TILEGX_OPC_ST_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt", TILEGX_OPC_STNT, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt1", TILEGX_OPC_STNT1, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt1_add", TILEGX_OPC_STNT1_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt2", TILEGX_OPC_STNT2, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt2_add", TILEGX_OPC_STNT2_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt4", TILEGX_OPC_STNT4, 0x2, 2, TREG_ZERO, 1,
++    { { 0, }, { 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt4_add", TILEGX_OPC_STNT4_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "stnt_add", TILEGX_OPC_STNT_ADD, 0x2, 3, TREG_ZERO, 1,
++    { { 0, }, { 15, 17, 34 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "sub", TILEGX_OPC_SUB, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "subx", TILEGX_OPC_SUBX, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "subxsc", TILEGX_OPC_SUBXSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "swint0", TILEGX_OPC_SWINT0, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "swint1", TILEGX_OPC_SWINT1, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "swint2", TILEGX_OPC_SWINT2, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "swint3", TILEGX_OPC_SWINT3, 0x2, 0, TREG_ZERO, 0,
++    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
++  },
++  { "tblidxb0", TILEGX_OPC_TBLIDXB0, 0x5, 2, TREG_ZERO, 1,
++    { { 23, 7 }, { 0, }, { 24, 11 }, { 0, }, { 0, } },
++  },
++  { "tblidxb1", TILEGX_OPC_TBLIDXB1, 0x5, 2, TREG_ZERO, 1,
++    { { 23, 7 }, { 0, }, { 24, 11 }, { 0, }, { 0, } },
++  },
++  { "tblidxb2", TILEGX_OPC_TBLIDXB2, 0x5, 2, TREG_ZERO, 1,
++    { { 23, 7 }, { 0, }, { 24, 11 }, { 0, }, { 0, } },
++  },
++  { "tblidxb3", TILEGX_OPC_TBLIDXB3, 0x5, 2, TREG_ZERO, 1,
++    { { 23, 7 }, { 0, }, { 24, 11 }, { 0, }, { 0, } },
++  },
++  { "v1add", TILEGX_OPC_V1ADD, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1addi", TILEGX_OPC_V1ADDI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1adduc", TILEGX_OPC_V1ADDUC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1adiffu", TILEGX_OPC_V1ADIFFU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1avgu", TILEGX_OPC_V1AVGU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpeq", TILEGX_OPC_V1CMPEQ, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpeqi", TILEGX_OPC_V1CMPEQI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmples", TILEGX_OPC_V1CMPLES, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpleu", TILEGX_OPC_V1CMPLEU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmplts", TILEGX_OPC_V1CMPLTS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpltsi", TILEGX_OPC_V1CMPLTSI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpltu", TILEGX_OPC_V1CMPLTU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpltui", TILEGX_OPC_V1CMPLTUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1cmpne", TILEGX_OPC_V1CMPNE, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1ddotpu", TILEGX_OPC_V1DDOTPU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1ddotpua", TILEGX_OPC_V1DDOTPUA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1ddotpus", TILEGX_OPC_V1DDOTPUS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1ddotpusa", TILEGX_OPC_V1DDOTPUSA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1dotp", TILEGX_OPC_V1DOTP, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1dotpa", TILEGX_OPC_V1DOTPA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1dotpu", TILEGX_OPC_V1DOTPU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1dotpua", TILEGX_OPC_V1DOTPUA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1dotpus", TILEGX_OPC_V1DOTPUS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1dotpusa", TILEGX_OPC_V1DOTPUSA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1int_h", TILEGX_OPC_V1INT_H, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1int_l", TILEGX_OPC_V1INT_L, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1maxu", TILEGX_OPC_V1MAXU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1maxui", TILEGX_OPC_V1MAXUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1minu", TILEGX_OPC_V1MINU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1minui", TILEGX_OPC_V1MINUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1mnz", TILEGX_OPC_V1MNZ, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1multu", TILEGX_OPC_V1MULTU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1mulu", TILEGX_OPC_V1MULU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1mulus", TILEGX_OPC_V1MULUS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1mz", TILEGX_OPC_V1MZ, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1sadau", TILEGX_OPC_V1SADAU, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1sadu", TILEGX_OPC_V1SADU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1shl", TILEGX_OPC_V1SHL, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1shli", TILEGX_OPC_V1SHLI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1shrs", TILEGX_OPC_V1SHRS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1shrsi", TILEGX_OPC_V1SHRSI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1shru", TILEGX_OPC_V1SHRU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1shrui", TILEGX_OPC_V1SHRUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1sub", TILEGX_OPC_V1SUB, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v1subuc", TILEGX_OPC_V1SUBUC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2add", TILEGX_OPC_V2ADD, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2addi", TILEGX_OPC_V2ADDI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2addsc", TILEGX_OPC_V2ADDSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2adiffs", TILEGX_OPC_V2ADIFFS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2avgs", TILEGX_OPC_V2AVGS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpeq", TILEGX_OPC_V2CMPEQ, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpeqi", TILEGX_OPC_V2CMPEQI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmples", TILEGX_OPC_V2CMPLES, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpleu", TILEGX_OPC_V2CMPLEU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmplts", TILEGX_OPC_V2CMPLTS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpltsi", TILEGX_OPC_V2CMPLTSI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpltu", TILEGX_OPC_V2CMPLTU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpltui", TILEGX_OPC_V2CMPLTUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2cmpne", TILEGX_OPC_V2CMPNE, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2dotp", TILEGX_OPC_V2DOTP, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2dotpa", TILEGX_OPC_V2DOTPA, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2int_h", TILEGX_OPC_V2INT_H, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2int_l", TILEGX_OPC_V2INT_L, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2maxs", TILEGX_OPC_V2MAXS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2maxsi", TILEGX_OPC_V2MAXSI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2mins", TILEGX_OPC_V2MINS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2minsi", TILEGX_OPC_V2MINSI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2mnz", TILEGX_OPC_V2MNZ, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2mulfsc", TILEGX_OPC_V2MULFSC, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2muls", TILEGX_OPC_V2MULS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2mults", TILEGX_OPC_V2MULTS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2mz", TILEGX_OPC_V2MZ, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2packh", TILEGX_OPC_V2PACKH, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2packl", TILEGX_OPC_V2PACKL, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2packuc", TILEGX_OPC_V2PACKUC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2sadas", TILEGX_OPC_V2SADAS, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2sadau", TILEGX_OPC_V2SADAU, 0x1, 3, TREG_ZERO, 1,
++    { { 23, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2sads", TILEGX_OPC_V2SADS, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2sadu", TILEGX_OPC_V2SADU, 0x1, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shl", TILEGX_OPC_V2SHL, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shli", TILEGX_OPC_V2SHLI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shlsc", TILEGX_OPC_V2SHLSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shrs", TILEGX_OPC_V2SHRS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shrsi", TILEGX_OPC_V2SHRSI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shru", TILEGX_OPC_V2SHRU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2shrui", TILEGX_OPC_V2SHRUI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 29 }, { 8, 9, 30 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2sub", TILEGX_OPC_V2SUB, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v2subsc", TILEGX_OPC_V2SUBSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4add", TILEGX_OPC_V4ADD, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4addsc", TILEGX_OPC_V4ADDSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4int_h", TILEGX_OPC_V4INT_H, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4int_l", TILEGX_OPC_V4INT_L, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4packsc", TILEGX_OPC_V4PACKSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4shl", TILEGX_OPC_V4SHL, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4shlsc", TILEGX_OPC_V4SHLSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4shrs", TILEGX_OPC_V4SHRS, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4shru", TILEGX_OPC_V4SHRU, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4sub", TILEGX_OPC_V4SUB, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "v4subsc", TILEGX_OPC_V4SUBSC, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "wh64", TILEGX_OPC_WH64, 0x2, 1, TREG_ZERO, 1,
++    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
++  },
++  { "xor", TILEGX_OPC_XOR, 0xf, 3, TREG_ZERO, 1,
++    { { 6, 7, 16 }, { 8, 9, 17 }, { 10, 11, 18 }, { 12, 13, 19 }, { 0, } },
++  },
++  { "xori", TILEGX_OPC_XORI, 0x3, 3, TREG_ZERO, 1,
++    { { 6, 7, 0 }, { 8, 9, 1 }, { 0, }, { 0, }, { 0, } },
++  },
++  { NULL, TILEGX_OPC_NONE, 0, 0, TREG_ZERO, 0, { { 0, } },
++  }
++};
++#define BITFIELD(start, size) ((start) | (((1 << (size)) - 1) << 6))
++#define CHILD(array_index) (TILEGX_OPC_NONE + (array_index))
++
++static const unsigned short decode_X0_fsm[936] =
++{
++  BITFIELD(22, 9) /* index 0 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_BFEXTS,
++  TILEGX_OPC_BFEXTS, TILEGX_OPC_BFEXTS, TILEGX_OPC_BFEXTS, TILEGX_OPC_BFEXTU,
++  TILEGX_OPC_BFEXTU, TILEGX_OPC_BFEXTU, TILEGX_OPC_BFEXTU, TILEGX_OPC_BFINS,
++  TILEGX_OPC_BFINS, TILEGX_OPC_BFINS, TILEGX_OPC_BFINS, TILEGX_OPC_MM,
++  TILEGX_OPC_MM, TILEGX_OPC_MM, TILEGX_OPC_MM, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, CHILD(528), CHILD(578),
++  CHILD(583), CHILD(588), CHILD(593), CHILD(598), TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, CHILD(603), CHILD(620), CHILD(637), CHILD(654), CHILD(671),
++  CHILD(703), CHILD(797), CHILD(814), CHILD(831), CHILD(848), CHILD(865),
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, CHILD(889), TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  CHILD(906), CHILD(906), CHILD(906), CHILD(906), CHILD(906),
++  BITFIELD(6, 2) /* index 513 */,
++  TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, CHILD(518),
++  BITFIELD(8, 2) /* index 518 */,
++  TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, CHILD(523),
++  BITFIELD(10, 2) /* index 523 */,
++  TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_MOVELI,
++  BITFIELD(20, 2) /* index 528 */,
++  TILEGX_OPC_NONE, CHILD(533), TILEGX_OPC_ADDXI, CHILD(548),
++  BITFIELD(6, 2) /* index 533 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(538),
++  BITFIELD(8, 2) /* index 538 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(543),
++  BITFIELD(10, 2) /* index 543 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_MOVEI,
++  BITFIELD(0, 2) /* index 548 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(553),
++  BITFIELD(2, 2) /* index 553 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(558),
++  BITFIELD(4, 2) /* index 558 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(563),
++  BITFIELD(6, 2) /* index 563 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(568),
++  BITFIELD(8, 2) /* index 568 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(573),
++  BITFIELD(10, 2) /* index 573 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_INFO,
++  BITFIELD(20, 2) /* index 578 */,
++  TILEGX_OPC_CMPEQI, TILEGX_OPC_CMPLTSI, TILEGX_OPC_CMPLTUI, TILEGX_OPC_ORI,
++  BITFIELD(20, 2) /* index 583 */,
++  TILEGX_OPC_V1ADDI, TILEGX_OPC_V1CMPEQI, TILEGX_OPC_V1CMPLTSI,
++  TILEGX_OPC_V1CMPLTUI,
++  BITFIELD(20, 2) /* index 588 */,
++  TILEGX_OPC_V1MAXUI, TILEGX_OPC_V1MINUI, TILEGX_OPC_V2ADDI,
++  TILEGX_OPC_V2CMPEQI,
++  BITFIELD(20, 2) /* index 593 */,
++  TILEGX_OPC_V2CMPLTSI, TILEGX_OPC_V2CMPLTUI, TILEGX_OPC_V2MAXSI,
++  TILEGX_OPC_V2MINSI,
++  BITFIELD(20, 2) /* index 598 */,
++  TILEGX_OPC_XORI, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(18, 4) /* index 603 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_ADDXSC, TILEGX_OPC_ADDX, TILEGX_OPC_ADD,
++  TILEGX_OPC_AND, TILEGX_OPC_CMOVEQZ, TILEGX_OPC_CMOVNEZ, TILEGX_OPC_CMPEQ,
++  TILEGX_OPC_CMPLES, TILEGX_OPC_CMPLEU, TILEGX_OPC_CMPLTS, TILEGX_OPC_CMPLTU,
++  TILEGX_OPC_CMPNE, TILEGX_OPC_CMULAF, TILEGX_OPC_CMULA, TILEGX_OPC_CMULFR,
++  BITFIELD(18, 4) /* index 620 */,
++  TILEGX_OPC_CMULF, TILEGX_OPC_CMULHR, TILEGX_OPC_CMULH, TILEGX_OPC_CMUL,
++  TILEGX_OPC_CRC32_32, TILEGX_OPC_CRC32_8, TILEGX_OPC_DBLALIGN2,
++  TILEGX_OPC_DBLALIGN4, TILEGX_OPC_DBLALIGN6, TILEGX_OPC_DBLALIGN,
++  TILEGX_OPC_FDOUBLE_ADDSUB, TILEGX_OPC_FDOUBLE_ADD_FLAGS,
++  TILEGX_OPC_FDOUBLE_MUL_FLAGS, TILEGX_OPC_FDOUBLE_PACK1,
++  TILEGX_OPC_FDOUBLE_PACK2, TILEGX_OPC_FDOUBLE_SUB_FLAGS,
++  BITFIELD(18, 4) /* index 637 */,
++  TILEGX_OPC_FDOUBLE_UNPACK_MAX, TILEGX_OPC_FDOUBLE_UNPACK_MIN,
++  TILEGX_OPC_FSINGLE_ADD1, TILEGX_OPC_FSINGLE_ADDSUB2,
++  TILEGX_OPC_FSINGLE_MUL1, TILEGX_OPC_FSINGLE_MUL2, TILEGX_OPC_FSINGLE_PACK2,
++  TILEGX_OPC_FSINGLE_SUB1, TILEGX_OPC_MNZ, TILEGX_OPC_MULAX,
++  TILEGX_OPC_MULA_HS_HS, TILEGX_OPC_MULA_HS_HU, TILEGX_OPC_MULA_HS_LS,
++  TILEGX_OPC_MULA_HS_LU, TILEGX_OPC_MULA_HU_HU, TILEGX_OPC_MULA_HU_LS,
++  BITFIELD(18, 4) /* index 654 */,
++  TILEGX_OPC_MULA_HU_LU, TILEGX_OPC_MULA_LS_LS, TILEGX_OPC_MULA_LS_LU,
++  TILEGX_OPC_MULA_LU_LU, TILEGX_OPC_MULX, TILEGX_OPC_MUL_HS_HS,
++  TILEGX_OPC_MUL_HS_HU, TILEGX_OPC_MUL_HS_LS, TILEGX_OPC_MUL_HS_LU,
++  TILEGX_OPC_MUL_HU_HU, TILEGX_OPC_MUL_HU_LS, TILEGX_OPC_MUL_HU_LU,
++  TILEGX_OPC_MUL_LS_LS, TILEGX_OPC_MUL_LS_LU, TILEGX_OPC_MUL_LU_LU,
++  TILEGX_OPC_MZ,
++  BITFIELD(18, 4) /* index 671 */,
++  TILEGX_OPC_NOR, CHILD(688), TILEGX_OPC_ROTL, TILEGX_OPC_SHL1ADDX,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL2ADDX, TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL3ADDX, TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHLX, TILEGX_OPC_SHL,
++  TILEGX_OPC_SHRS, TILEGX_OPC_SHRUX, TILEGX_OPC_SHRU, TILEGX_OPC_SHUFFLEBYTES,
++  TILEGX_OPC_SUBXSC,
++  BITFIELD(12, 2) /* index 688 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(693),
++  BITFIELD(14, 2) /* index 693 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(698),
++  BITFIELD(16, 2) /* index 698 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_MOVE,
++  BITFIELD(18, 4) /* index 703 */,
++  TILEGX_OPC_SUBX, TILEGX_OPC_SUB, CHILD(720), TILEGX_OPC_V1ADDUC,
++  TILEGX_OPC_V1ADD, TILEGX_OPC_V1ADIFFU, TILEGX_OPC_V1AVGU,
++  TILEGX_OPC_V1CMPEQ, TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLEU,
++  TILEGX_OPC_V1CMPLTS, TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPNE,
++  TILEGX_OPC_V1DDOTPUSA, TILEGX_OPC_V1DDOTPUS, TILEGX_OPC_V1DOTPA,
++  BITFIELD(12, 4) /* index 720 */,
++  TILEGX_OPC_NONE, CHILD(737), CHILD(742), CHILD(747), CHILD(752), CHILD(757),
++  CHILD(762), CHILD(767), CHILD(772), CHILD(777), CHILD(782), CHILD(787),
++  CHILD(792), TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 737 */,
++  TILEGX_OPC_CLZ, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 742 */,
++  TILEGX_OPC_CTZ, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 747 */,
++  TILEGX_OPC_FNOP, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 752 */,
++  TILEGX_OPC_FSINGLE_PACK1, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 757 */,
++  TILEGX_OPC_NOP, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 762 */,
++  TILEGX_OPC_PCNT, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 767 */,
++  TILEGX_OPC_REVBITS, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 772 */,
++  TILEGX_OPC_REVBYTES, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 777 */,
++  TILEGX_OPC_TBLIDXB0, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 782 */,
++  TILEGX_OPC_TBLIDXB1, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 787 */,
++  TILEGX_OPC_TBLIDXB2, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(16, 2) /* index 792 */,
++  TILEGX_OPC_TBLIDXB3, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(18, 4) /* index 797 */,
++  TILEGX_OPC_V1DOTPUSA, TILEGX_OPC_V1DOTPUS, TILEGX_OPC_V1DOTP,
++  TILEGX_OPC_V1INT_H, TILEGX_OPC_V1INT_L, TILEGX_OPC_V1MAXU,
++  TILEGX_OPC_V1MINU, TILEGX_OPC_V1MNZ, TILEGX_OPC_V1MULTU, TILEGX_OPC_V1MULUS,
++  TILEGX_OPC_V1MULU, TILEGX_OPC_V1MZ, TILEGX_OPC_V1SADAU, TILEGX_OPC_V1SADU,
++  TILEGX_OPC_V1SHL, TILEGX_OPC_V1SHRS,
++  BITFIELD(18, 4) /* index 814 */,
++  TILEGX_OPC_V1SHRU, TILEGX_OPC_V1SUBUC, TILEGX_OPC_V1SUB, TILEGX_OPC_V2ADDSC,
++  TILEGX_OPC_V2ADD, TILEGX_OPC_V2ADIFFS, TILEGX_OPC_V2AVGS,
++  TILEGX_OPC_V2CMPEQ, TILEGX_OPC_V2CMPLES, TILEGX_OPC_V2CMPLEU,
++  TILEGX_OPC_V2CMPLTS, TILEGX_OPC_V2CMPLTU, TILEGX_OPC_V2CMPNE,
++  TILEGX_OPC_V2DOTPA, TILEGX_OPC_V2DOTP, TILEGX_OPC_V2INT_H,
++  BITFIELD(18, 4) /* index 831 */,
++  TILEGX_OPC_V2INT_L, TILEGX_OPC_V2MAXS, TILEGX_OPC_V2MINS, TILEGX_OPC_V2MNZ,
++  TILEGX_OPC_V2MULFSC, TILEGX_OPC_V2MULS, TILEGX_OPC_V2MULTS, TILEGX_OPC_V2MZ,
++  TILEGX_OPC_V2PACKH, TILEGX_OPC_V2PACKL, TILEGX_OPC_V2PACKUC,
++  TILEGX_OPC_V2SADAS, TILEGX_OPC_V2SADAU, TILEGX_OPC_V2SADS,
++  TILEGX_OPC_V2SADU, TILEGX_OPC_V2SHLSC,
++  BITFIELD(18, 4) /* index 848 */,
++  TILEGX_OPC_V2SHL, TILEGX_OPC_V2SHRS, TILEGX_OPC_V2SHRU, TILEGX_OPC_V2SUBSC,
++  TILEGX_OPC_V2SUB, TILEGX_OPC_V4ADDSC, TILEGX_OPC_V4ADD, TILEGX_OPC_V4INT_H,
++  TILEGX_OPC_V4INT_L, TILEGX_OPC_V4PACKSC, TILEGX_OPC_V4SHLSC,
++  TILEGX_OPC_V4SHL, TILEGX_OPC_V4SHRS, TILEGX_OPC_V4SHRU, TILEGX_OPC_V4SUBSC,
++  TILEGX_OPC_V4SUB,
++  BITFIELD(18, 3) /* index 865 */,
++  CHILD(874), CHILD(877), CHILD(880), CHILD(883), CHILD(886), TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(21, 1) /* index 874 */,
++  TILEGX_OPC_XOR, TILEGX_OPC_NONE,
++  BITFIELD(21, 1) /* index 877 */,
++  TILEGX_OPC_V1DDOTPUA, TILEGX_OPC_NONE,
++  BITFIELD(21, 1) /* index 880 */,
++  TILEGX_OPC_V1DDOTPU, TILEGX_OPC_NONE,
++  BITFIELD(21, 1) /* index 883 */,
++  TILEGX_OPC_V1DOTPUA, TILEGX_OPC_NONE,
++  BITFIELD(21, 1) /* index 886 */,
++  TILEGX_OPC_V1DOTPU, TILEGX_OPC_NONE,
++  BITFIELD(18, 4) /* index 889 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_ROTLI, TILEGX_OPC_SHLI, TILEGX_OPC_SHLXI,
++  TILEGX_OPC_SHRSI, TILEGX_OPC_SHRUI, TILEGX_OPC_SHRUXI, TILEGX_OPC_V1SHLI,
++  TILEGX_OPC_V1SHRSI, TILEGX_OPC_V1SHRUI, TILEGX_OPC_V2SHLI,
++  TILEGX_OPC_V2SHRSI, TILEGX_OPC_V2SHRUI, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE,
++  BITFIELD(0, 2) /* index 906 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(911),
++  BITFIELD(2, 2) /* index 911 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(916),
++  BITFIELD(4, 2) /* index 916 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(921),
++  BITFIELD(6, 2) /* index 921 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(926),
++  BITFIELD(8, 2) /* index 926 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(931),
++  BITFIELD(10, 2) /* index 931 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  TILEGX_OPC_INFOL,
++};
++
++static const unsigned short decode_X1_fsm[1206] =
++{
++  BITFIELD(53, 9) /* index 0 */,
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513), CHILD(513),
++  CHILD(513), CHILD(513), CHILD(513), CHILD(513), TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI,
++  TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_ADDXLI, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_BEQZT,
++  TILEGX_OPC_BEQZT, TILEGX_OPC_BEQZ, TILEGX_OPC_BEQZ, TILEGX_OPC_BGEZT,
++  TILEGX_OPC_BGEZT, TILEGX_OPC_BGEZ, TILEGX_OPC_BGEZ, TILEGX_OPC_BGTZT,
++  TILEGX_OPC_BGTZT, TILEGX_OPC_BGTZ, TILEGX_OPC_BGTZ, TILEGX_OPC_BLBCT,
++  TILEGX_OPC_BLBCT, TILEGX_OPC_BLBC, TILEGX_OPC_BLBC, TILEGX_OPC_BLBST,
++  TILEGX_OPC_BLBST, TILEGX_OPC_BLBS, TILEGX_OPC_BLBS, TILEGX_OPC_BLEZT,
++  TILEGX_OPC_BLEZT, TILEGX_OPC_BLEZ, TILEGX_OPC_BLEZ, TILEGX_OPC_BLTZT,
++  TILEGX_OPC_BLTZT, TILEGX_OPC_BLTZ, TILEGX_OPC_BLTZ, TILEGX_OPC_BNEZT,
++  TILEGX_OPC_BNEZT, TILEGX_OPC_BNEZ, TILEGX_OPC_BNEZ, CHILD(528), CHILD(578),
++  CHILD(598), CHILD(663), CHILD(683), CHILD(688), CHILD(693), CHILD(698),
++  CHILD(703), CHILD(708), CHILD(713), CHILD(718), TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL,
++  TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_JAL, TILEGX_OPC_J, TILEGX_OPC_J,
++  TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J,
++  TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J,
++  TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J,
++  TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J,
++  TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J,
++  TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J, TILEGX_OPC_J,
++  CHILD(723), CHILD(740), CHILD(772), CHILD(789), CHILD(1108), CHILD(1125),
++  CHILD(1142), TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, CHILD(1159), TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176), CHILD(1176),
++  CHILD(1176),
++  BITFIELD(37, 2) /* index 513 */,
++  TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, CHILD(518),
++  BITFIELD(39, 2) /* index 518 */,
++  TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, CHILD(523),
++  BITFIELD(41, 2) /* index 523 */,
++  TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_ADDLI, TILEGX_OPC_MOVELI,
++  BITFIELD(51, 2) /* index 528 */,
++  TILEGX_OPC_NONE, CHILD(533), TILEGX_OPC_ADDXI, CHILD(548),
++  BITFIELD(37, 2) /* index 533 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(538),
++  BITFIELD(39, 2) /* index 538 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(543),
++  BITFIELD(41, 2) /* index 543 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_MOVEI,
++  BITFIELD(31, 2) /* index 548 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(553),
++  BITFIELD(33, 2) /* index 553 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(558),
++  BITFIELD(35, 2) /* index 558 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(563),
++  BITFIELD(37, 2) /* index 563 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(568),
++  BITFIELD(39, 2) /* index 568 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(573),
++  BITFIELD(41, 2) /* index 573 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_INFO,
++  BITFIELD(51, 2) /* index 578 */,
++  TILEGX_OPC_CMPEQI, TILEGX_OPC_CMPLTSI, TILEGX_OPC_CMPLTUI, CHILD(583),
++  BITFIELD(31, 2) /* index 583 */,
++  TILEGX_OPC_LD1S_ADD, TILEGX_OPC_LD1S_ADD, TILEGX_OPC_LD1S_ADD, CHILD(588),
++  BITFIELD(33, 2) /* index 588 */,
++  TILEGX_OPC_LD1S_ADD, TILEGX_OPC_LD1S_ADD, TILEGX_OPC_LD1S_ADD, CHILD(593),
++  BITFIELD(35, 2) /* index 593 */,
++  TILEGX_OPC_LD1S_ADD, TILEGX_OPC_LD1S_ADD, TILEGX_OPC_LD1S_ADD,
++  TILEGX_OPC_PREFETCH_ADD_L1_FAULT,
++  BITFIELD(51, 2) /* index 598 */,
++  CHILD(603), CHILD(618), CHILD(633), CHILD(648),
++  BITFIELD(31, 2) /* index 603 */,
++  TILEGX_OPC_LD1U_ADD, TILEGX_OPC_LD1U_ADD, TILEGX_OPC_LD1U_ADD, CHILD(608),
++  BITFIELD(33, 2) /* index 608 */,
++  TILEGX_OPC_LD1U_ADD, TILEGX_OPC_LD1U_ADD, TILEGX_OPC_LD1U_ADD, CHILD(613),
++  BITFIELD(35, 2) /* index 613 */,
++  TILEGX_OPC_LD1U_ADD, TILEGX_OPC_LD1U_ADD, TILEGX_OPC_LD1U_ADD,
++  TILEGX_OPC_PREFETCH_ADD_L1,
++  BITFIELD(31, 2) /* index 618 */,
++  TILEGX_OPC_LD2S_ADD, TILEGX_OPC_LD2S_ADD, TILEGX_OPC_LD2S_ADD, CHILD(623),
++  BITFIELD(33, 2) /* index 623 */,
++  TILEGX_OPC_LD2S_ADD, TILEGX_OPC_LD2S_ADD, TILEGX_OPC_LD2S_ADD, CHILD(628),
++  BITFIELD(35, 2) /* index 628 */,
++  TILEGX_OPC_LD2S_ADD, TILEGX_OPC_LD2S_ADD, TILEGX_OPC_LD2S_ADD,
++  TILEGX_OPC_PREFETCH_ADD_L2_FAULT,
++  BITFIELD(31, 2) /* index 633 */,
++  TILEGX_OPC_LD2U_ADD, TILEGX_OPC_LD2U_ADD, TILEGX_OPC_LD2U_ADD, CHILD(638),
++  BITFIELD(33, 2) /* index 638 */,
++  TILEGX_OPC_LD2U_ADD, TILEGX_OPC_LD2U_ADD, TILEGX_OPC_LD2U_ADD, CHILD(643),
++  BITFIELD(35, 2) /* index 643 */,
++  TILEGX_OPC_LD2U_ADD, TILEGX_OPC_LD2U_ADD, TILEGX_OPC_LD2U_ADD,
++  TILEGX_OPC_PREFETCH_ADD_L2,
++  BITFIELD(31, 2) /* index 648 */,
++  TILEGX_OPC_LD4S_ADD, TILEGX_OPC_LD4S_ADD, TILEGX_OPC_LD4S_ADD, CHILD(653),
++  BITFIELD(33, 2) /* index 653 */,
++  TILEGX_OPC_LD4S_ADD, TILEGX_OPC_LD4S_ADD, TILEGX_OPC_LD4S_ADD, CHILD(658),
++  BITFIELD(35, 2) /* index 658 */,
++  TILEGX_OPC_LD4S_ADD, TILEGX_OPC_LD4S_ADD, TILEGX_OPC_LD4S_ADD,
++  TILEGX_OPC_PREFETCH_ADD_L3_FAULT,
++  BITFIELD(51, 2) /* index 663 */,
++  CHILD(668), TILEGX_OPC_LDNT1S_ADD, TILEGX_OPC_LDNT1U_ADD,
++  TILEGX_OPC_LDNT2S_ADD,
++  BITFIELD(31, 2) /* index 668 */,
++  TILEGX_OPC_LD4U_ADD, TILEGX_OPC_LD4U_ADD, TILEGX_OPC_LD4U_ADD, CHILD(673),
++  BITFIELD(33, 2) /* index 673 */,
++  TILEGX_OPC_LD4U_ADD, TILEGX_OPC_LD4U_ADD, TILEGX_OPC_LD4U_ADD, CHILD(678),
++  BITFIELD(35, 2) /* index 678 */,
++  TILEGX_OPC_LD4U_ADD, TILEGX_OPC_LD4U_ADD, TILEGX_OPC_LD4U_ADD,
++  TILEGX_OPC_PREFETCH_ADD_L3,
++  BITFIELD(51, 2) /* index 683 */,
++  TILEGX_OPC_LDNT2U_ADD, TILEGX_OPC_LDNT4S_ADD, TILEGX_OPC_LDNT4U_ADD,
++  TILEGX_OPC_LDNT_ADD,
++  BITFIELD(51, 2) /* index 688 */,
++  TILEGX_OPC_LD_ADD, TILEGX_OPC_LDNA_ADD, TILEGX_OPC_MFSPR, TILEGX_OPC_MTSPR,
++  BITFIELD(51, 2) /* index 693 */,
++  TILEGX_OPC_ORI, TILEGX_OPC_ST1_ADD, TILEGX_OPC_ST2_ADD, TILEGX_OPC_ST4_ADD,
++  BITFIELD(51, 2) /* index 698 */,
++  TILEGX_OPC_STNT1_ADD, TILEGX_OPC_STNT2_ADD, TILEGX_OPC_STNT4_ADD,
++  TILEGX_OPC_STNT_ADD,
++  BITFIELD(51, 2) /* index 703 */,
++  TILEGX_OPC_ST_ADD, TILEGX_OPC_V1ADDI, TILEGX_OPC_V1CMPEQI,
++  TILEGX_OPC_V1CMPLTSI,
++  BITFIELD(51, 2) /* index 708 */,
++  TILEGX_OPC_V1CMPLTUI, TILEGX_OPC_V1MAXUI, TILEGX_OPC_V1MINUI,
++  TILEGX_OPC_V2ADDI,
++  BITFIELD(51, 2) /* index 713 */,
++  TILEGX_OPC_V2CMPEQI, TILEGX_OPC_V2CMPLTSI, TILEGX_OPC_V2CMPLTUI,
++  TILEGX_OPC_V2MAXSI,
++  BITFIELD(51, 2) /* index 718 */,
++  TILEGX_OPC_V2MINSI, TILEGX_OPC_XORI, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(49, 4) /* index 723 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_ADDXSC, TILEGX_OPC_ADDX, TILEGX_OPC_ADD,
++  TILEGX_OPC_AND, TILEGX_OPC_CMPEQ, TILEGX_OPC_CMPEXCH4, TILEGX_OPC_CMPEXCH,
++  TILEGX_OPC_CMPLES, TILEGX_OPC_CMPLEU, TILEGX_OPC_CMPLTS, TILEGX_OPC_CMPLTU,
++  TILEGX_OPC_CMPNE, TILEGX_OPC_DBLALIGN2, TILEGX_OPC_DBLALIGN4,
++  TILEGX_OPC_DBLALIGN6,
++  BITFIELD(49, 4) /* index 740 */,
++  TILEGX_OPC_EXCH4, TILEGX_OPC_EXCH, TILEGX_OPC_FETCHADD4,
++  TILEGX_OPC_FETCHADDGEZ4, TILEGX_OPC_FETCHADDGEZ, TILEGX_OPC_FETCHADD,
++  TILEGX_OPC_FETCHAND4, TILEGX_OPC_FETCHAND, TILEGX_OPC_FETCHOR4,
++  TILEGX_OPC_FETCHOR, TILEGX_OPC_MNZ, TILEGX_OPC_MZ, TILEGX_OPC_NOR,
++  CHILD(757), TILEGX_OPC_ROTL, TILEGX_OPC_SHL1ADDX,
++  BITFIELD(43, 2) /* index 757 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(762),
++  BITFIELD(45, 2) /* index 762 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(767),
++  BITFIELD(47, 2) /* index 767 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_MOVE,
++  BITFIELD(49, 4) /* index 772 */,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL2ADDX, TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL3ADDX, TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHLX, TILEGX_OPC_SHL,
++  TILEGX_OPC_SHRS, TILEGX_OPC_SHRUX, TILEGX_OPC_SHRU, TILEGX_OPC_ST1,
++  TILEGX_OPC_ST2, TILEGX_OPC_ST4, TILEGX_OPC_STNT1, TILEGX_OPC_STNT2,
++  TILEGX_OPC_STNT4,
++  BITFIELD(46, 7) /* index 789 */,
++  TILEGX_OPC_STNT, TILEGX_OPC_STNT, TILEGX_OPC_STNT, TILEGX_OPC_STNT,
++  TILEGX_OPC_STNT, TILEGX_OPC_STNT, TILEGX_OPC_STNT, TILEGX_OPC_STNT,
++  TILEGX_OPC_ST, TILEGX_OPC_ST, TILEGX_OPC_ST, TILEGX_OPC_ST, TILEGX_OPC_ST,
++  TILEGX_OPC_ST, TILEGX_OPC_ST, TILEGX_OPC_ST, TILEGX_OPC_SUBXSC,
++  TILEGX_OPC_SUBXSC, TILEGX_OPC_SUBXSC, TILEGX_OPC_SUBXSC, TILEGX_OPC_SUBXSC,
++  TILEGX_OPC_SUBXSC, TILEGX_OPC_SUBXSC, TILEGX_OPC_SUBXSC, TILEGX_OPC_SUBX,
++  TILEGX_OPC_SUBX, TILEGX_OPC_SUBX, TILEGX_OPC_SUBX, TILEGX_OPC_SUBX,
++  TILEGX_OPC_SUBX, TILEGX_OPC_SUBX, TILEGX_OPC_SUBX, TILEGX_OPC_SUB,
++  TILEGX_OPC_SUB, TILEGX_OPC_SUB, TILEGX_OPC_SUB, TILEGX_OPC_SUB,
++  TILEGX_OPC_SUB, TILEGX_OPC_SUB, TILEGX_OPC_SUB, CHILD(918), CHILD(927),
++  CHILD(1006), CHILD(1090), CHILD(1099), TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_V1ADDUC, TILEGX_OPC_V1ADDUC, TILEGX_OPC_V1ADDUC,
++  TILEGX_OPC_V1ADDUC, TILEGX_OPC_V1ADDUC, TILEGX_OPC_V1ADDUC,
++  TILEGX_OPC_V1ADDUC, TILEGX_OPC_V1ADDUC, TILEGX_OPC_V1ADD, TILEGX_OPC_V1ADD,
++  TILEGX_OPC_V1ADD, TILEGX_OPC_V1ADD, TILEGX_OPC_V1ADD, TILEGX_OPC_V1ADD,
++  TILEGX_OPC_V1ADD, TILEGX_OPC_V1ADD, TILEGX_OPC_V1CMPEQ, TILEGX_OPC_V1CMPEQ,
++  TILEGX_OPC_V1CMPEQ, TILEGX_OPC_V1CMPEQ, TILEGX_OPC_V1CMPEQ,
++  TILEGX_OPC_V1CMPEQ, TILEGX_OPC_V1CMPEQ, TILEGX_OPC_V1CMPEQ,
++  TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLES,
++  TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLES,
++  TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLES, TILEGX_OPC_V1CMPLEU,
++  TILEGX_OPC_V1CMPLEU, TILEGX_OPC_V1CMPLEU, TILEGX_OPC_V1CMPLEU,
++  TILEGX_OPC_V1CMPLEU, TILEGX_OPC_V1CMPLEU, TILEGX_OPC_V1CMPLEU,
++  TILEGX_OPC_V1CMPLEU, TILEGX_OPC_V1CMPLTS, TILEGX_OPC_V1CMPLTS,
++  TILEGX_OPC_V1CMPLTS, TILEGX_OPC_V1CMPLTS, TILEGX_OPC_V1CMPLTS,
++  TILEGX_OPC_V1CMPLTS, TILEGX_OPC_V1CMPLTS, TILEGX_OPC_V1CMPLTS,
++  TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPLTU,
++  TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPLTU,
++  TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPLTU, TILEGX_OPC_V1CMPNE,
++  TILEGX_OPC_V1CMPNE, TILEGX_OPC_V1CMPNE, TILEGX_OPC_V1CMPNE,
++  TILEGX_OPC_V1CMPNE, TILEGX_OPC_V1CMPNE, TILEGX_OPC_V1CMPNE,
++  TILEGX_OPC_V1CMPNE, TILEGX_OPC_V1INT_H, TILEGX_OPC_V1INT_H,
++  TILEGX_OPC_V1INT_H, TILEGX_OPC_V1INT_H, TILEGX_OPC_V1INT_H,
++  TILEGX_OPC_V1INT_H, TILEGX_OPC_V1INT_H, TILEGX_OPC_V1INT_H,
++  TILEGX_OPC_V1INT_L, TILEGX_OPC_V1INT_L, TILEGX_OPC_V1INT_L,
++  TILEGX_OPC_V1INT_L, TILEGX_OPC_V1INT_L, TILEGX_OPC_V1INT_L,
++  TILEGX_OPC_V1INT_L, TILEGX_OPC_V1INT_L,
++  BITFIELD(43, 3) /* index 918 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_DRAIN, TILEGX_OPC_DTLBPR, TILEGX_OPC_FINV,
++  TILEGX_OPC_FLUSHWB, TILEGX_OPC_FLUSH, TILEGX_OPC_FNOP, TILEGX_OPC_ICOH,
++  BITFIELD(43, 3) /* index 927 */,
++  CHILD(936), TILEGX_OPC_INV, TILEGX_OPC_IRET, TILEGX_OPC_JALRP,
++  TILEGX_OPC_JALR, TILEGX_OPC_JRP, TILEGX_OPC_JR, CHILD(991),
++  BITFIELD(31, 2) /* index 936 */,
++  CHILD(941), CHILD(966), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(33, 2) /* index 941 */,
++  TILEGX_OPC_ILL, TILEGX_OPC_ILL, TILEGX_OPC_ILL, CHILD(946),
++  BITFIELD(35, 2) /* index 946 */,
++  TILEGX_OPC_ILL, CHILD(951), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(37, 2) /* index 951 */,
++  TILEGX_OPC_ILL, CHILD(956), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(39, 2) /* index 956 */,
++  TILEGX_OPC_ILL, CHILD(961), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(41, 2) /* index 961 */,
++  TILEGX_OPC_ILL, TILEGX_OPC_ILL, TILEGX_OPC_BPT, TILEGX_OPC_ILL,
++  BITFIELD(33, 2) /* index 966 */,
++  TILEGX_OPC_ILL, TILEGX_OPC_ILL, TILEGX_OPC_ILL, CHILD(971),
++  BITFIELD(35, 2) /* index 971 */,
++  TILEGX_OPC_ILL, CHILD(976), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(37, 2) /* index 976 */,
++  TILEGX_OPC_ILL, CHILD(981), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(39, 2) /* index 981 */,
++  TILEGX_OPC_ILL, CHILD(986), TILEGX_OPC_ILL, TILEGX_OPC_ILL,
++  BITFIELD(41, 2) /* index 986 */,
++  TILEGX_OPC_ILL, TILEGX_OPC_ILL, TILEGX_OPC_RAISE, TILEGX_OPC_ILL,
++  BITFIELD(31, 2) /* index 991 */,
++  TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, CHILD(996),
++  BITFIELD(33, 2) /* index 996 */,
++  TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, CHILD(1001),
++  BITFIELD(35, 2) /* index 1001 */,
++  TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, TILEGX_OPC_LD1S,
++  TILEGX_OPC_PREFETCH_L1_FAULT,
++  BITFIELD(43, 3) /* index 1006 */,
++  CHILD(1015), CHILD(1030), CHILD(1045), CHILD(1060), CHILD(1075),
++  TILEGX_OPC_LDNA, TILEGX_OPC_LDNT1S, TILEGX_OPC_LDNT1U,
++  BITFIELD(31, 2) /* index 1015 */,
++  TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, CHILD(1020),
++  BITFIELD(33, 2) /* index 1020 */,
++  TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, CHILD(1025),
++  BITFIELD(35, 2) /* index 1025 */,
++  TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_PREFETCH,
++  BITFIELD(31, 2) /* index 1030 */,
++  TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, CHILD(1035),
++  BITFIELD(33, 2) /* index 1035 */,
++  TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, CHILD(1040),
++  BITFIELD(35, 2) /* index 1040 */,
++  TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, TILEGX_OPC_LD2S,
++  TILEGX_OPC_PREFETCH_L2_FAULT,
++  BITFIELD(31, 2) /* index 1045 */,
++  TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, CHILD(1050),
++  BITFIELD(33, 2) /* index 1050 */,
++  TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, CHILD(1055),
++  BITFIELD(35, 2) /* index 1055 */,
++  TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_PREFETCH_L2,
++  BITFIELD(31, 2) /* index 1060 */,
++  TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, CHILD(1065),
++  BITFIELD(33, 2) /* index 1065 */,
++  TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, CHILD(1070),
++  BITFIELD(35, 2) /* index 1070 */,
++  TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, TILEGX_OPC_LD4S,
++  TILEGX_OPC_PREFETCH_L3_FAULT,
++  BITFIELD(31, 2) /* index 1075 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, CHILD(1080),
++  BITFIELD(33, 2) /* index 1080 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, CHILD(1085),
++  BITFIELD(35, 2) /* index 1085 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, TILEGX_OPC_PREFETCH_L3,
++  BITFIELD(43, 3) /* index 1090 */,
++  TILEGX_OPC_LDNT2S, TILEGX_OPC_LDNT2U, TILEGX_OPC_LDNT4S, TILEGX_OPC_LDNT4U,
++  TILEGX_OPC_LDNT, TILEGX_OPC_LD, TILEGX_OPC_LNK, TILEGX_OPC_MF,
++  BITFIELD(43, 3) /* index 1099 */,
++  TILEGX_OPC_NAP, TILEGX_OPC_NOP, TILEGX_OPC_SWINT0, TILEGX_OPC_SWINT1,
++  TILEGX_OPC_SWINT2, TILEGX_OPC_SWINT3, TILEGX_OPC_WH64, TILEGX_OPC_NONE,
++  BITFIELD(49, 4) /* index 1108 */,
++  TILEGX_OPC_V1MAXU, TILEGX_OPC_V1MINU, TILEGX_OPC_V1MNZ, TILEGX_OPC_V1MZ,
++  TILEGX_OPC_V1SHL, TILEGX_OPC_V1SHRS, TILEGX_OPC_V1SHRU, TILEGX_OPC_V1SUBUC,
++  TILEGX_OPC_V1SUB, TILEGX_OPC_V2ADDSC, TILEGX_OPC_V2ADD, TILEGX_OPC_V2CMPEQ,
++  TILEGX_OPC_V2CMPLES, TILEGX_OPC_V2CMPLEU, TILEGX_OPC_V2CMPLTS,
++  TILEGX_OPC_V2CMPLTU,
++  BITFIELD(49, 4) /* index 1125 */,
++  TILEGX_OPC_V2CMPNE, TILEGX_OPC_V2INT_H, TILEGX_OPC_V2INT_L,
++  TILEGX_OPC_V2MAXS, TILEGX_OPC_V2MINS, TILEGX_OPC_V2MNZ, TILEGX_OPC_V2MZ,
++  TILEGX_OPC_V2PACKH, TILEGX_OPC_V2PACKL, TILEGX_OPC_V2PACKUC,
++  TILEGX_OPC_V2SHLSC, TILEGX_OPC_V2SHL, TILEGX_OPC_V2SHRS, TILEGX_OPC_V2SHRU,
++  TILEGX_OPC_V2SUBSC, TILEGX_OPC_V2SUB,
++  BITFIELD(49, 4) /* index 1142 */,
++  TILEGX_OPC_V4ADDSC, TILEGX_OPC_V4ADD, TILEGX_OPC_V4INT_H,
++  TILEGX_OPC_V4INT_L, TILEGX_OPC_V4PACKSC, TILEGX_OPC_V4SHLSC,
++  TILEGX_OPC_V4SHL, TILEGX_OPC_V4SHRS, TILEGX_OPC_V4SHRU, TILEGX_OPC_V4SUBSC,
++  TILEGX_OPC_V4SUB, TILEGX_OPC_XOR, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(49, 4) /* index 1159 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_ROTLI, TILEGX_OPC_SHLI, TILEGX_OPC_SHLXI,
++  TILEGX_OPC_SHRSI, TILEGX_OPC_SHRUI, TILEGX_OPC_SHRUXI, TILEGX_OPC_V1SHLI,
++  TILEGX_OPC_V1SHRSI, TILEGX_OPC_V1SHRUI, TILEGX_OPC_V2SHLI,
++  TILEGX_OPC_V2SHRSI, TILEGX_OPC_V2SHRUI, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE,
++  BITFIELD(31, 2) /* index 1176 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(1181),
++  BITFIELD(33, 2) /* index 1181 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(1186),
++  BITFIELD(35, 2) /* index 1186 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(1191),
++  BITFIELD(37, 2) /* index 1191 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(1196),
++  BITFIELD(39, 2) /* index 1196 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  CHILD(1201),
++  BITFIELD(41, 2) /* index 1201 */,
++  TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI, TILEGX_OPC_SHL16INSLI,
++  TILEGX_OPC_INFOL,
++};
++
++static const unsigned short decode_Y0_fsm[178] =
++{
++  BITFIELD(27, 4) /* index 0 */,
++  CHILD(17), TILEGX_OPC_ADDXI, CHILD(32), TILEGX_OPC_CMPEQI,
++  TILEGX_OPC_CMPLTSI, CHILD(62), CHILD(67), CHILD(118), CHILD(123),
++  CHILD(128), CHILD(133), CHILD(153), CHILD(158), CHILD(163), CHILD(168),
++  CHILD(173),
++  BITFIELD(6, 2) /* index 17 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(22),
++  BITFIELD(8, 2) /* index 22 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(27),
++  BITFIELD(10, 2) /* index 27 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_MOVEI,
++  BITFIELD(0, 2) /* index 32 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(37),
++  BITFIELD(2, 2) /* index 37 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(42),
++  BITFIELD(4, 2) /* index 42 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(47),
++  BITFIELD(6, 2) /* index 47 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(52),
++  BITFIELD(8, 2) /* index 52 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(57),
++  BITFIELD(10, 2) /* index 57 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_INFO,
++  BITFIELD(18, 2) /* index 62 */,
++  TILEGX_OPC_ADDX, TILEGX_OPC_ADD, TILEGX_OPC_SUBX, TILEGX_OPC_SUB,
++  BITFIELD(15, 5) /* index 67 */,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD,
++  TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD,
++  TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD, CHILD(100),
++  CHILD(109), TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(12, 3) /* index 100 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_CLZ, TILEGX_OPC_CTZ, TILEGX_OPC_FNOP,
++  TILEGX_OPC_FSINGLE_PACK1, TILEGX_OPC_NOP, TILEGX_OPC_PCNT,
++  TILEGX_OPC_REVBITS,
++  BITFIELD(12, 3) /* index 109 */,
++  TILEGX_OPC_REVBYTES, TILEGX_OPC_TBLIDXB0, TILEGX_OPC_TBLIDXB1,
++  TILEGX_OPC_TBLIDXB2, TILEGX_OPC_TBLIDXB3, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  TILEGX_OPC_NONE,
++  BITFIELD(18, 2) /* index 118 */,
++  TILEGX_OPC_CMPLES, TILEGX_OPC_CMPLEU, TILEGX_OPC_CMPLTS, TILEGX_OPC_CMPLTU,
++  BITFIELD(18, 2) /* index 123 */,
++  TILEGX_OPC_CMPEQ, TILEGX_OPC_CMPNE, TILEGX_OPC_MULAX, TILEGX_OPC_MULX,
++  BITFIELD(18, 2) /* index 128 */,
++  TILEGX_OPC_CMOVEQZ, TILEGX_OPC_CMOVNEZ, TILEGX_OPC_MNZ, TILEGX_OPC_MZ,
++  BITFIELD(18, 2) /* index 133 */,
++  TILEGX_OPC_AND, TILEGX_OPC_NOR, CHILD(138), TILEGX_OPC_XOR,
++  BITFIELD(12, 2) /* index 138 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(143),
++  BITFIELD(14, 2) /* index 143 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(148),
++  BITFIELD(16, 2) /* index 148 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_MOVE,
++  BITFIELD(18, 2) /* index 153 */,
++  TILEGX_OPC_ROTL, TILEGX_OPC_SHL, TILEGX_OPC_SHRS, TILEGX_OPC_SHRU,
++  BITFIELD(18, 2) /* index 158 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_SHL1ADDX, TILEGX_OPC_SHL2ADDX,
++  TILEGX_OPC_SHL3ADDX,
++  BITFIELD(18, 2) /* index 163 */,
++  TILEGX_OPC_MUL_HS_HS, TILEGX_OPC_MUL_HU_HU, TILEGX_OPC_MUL_LS_LS,
++  TILEGX_OPC_MUL_LU_LU,
++  BITFIELD(18, 2) /* index 168 */,
++  TILEGX_OPC_MULA_HS_HS, TILEGX_OPC_MULA_HU_HU, TILEGX_OPC_MULA_LS_LS,
++  TILEGX_OPC_MULA_LU_LU,
++  BITFIELD(18, 2) /* index 173 */,
++  TILEGX_OPC_ROTLI, TILEGX_OPC_SHLI, TILEGX_OPC_SHRSI, TILEGX_OPC_SHRUI,
++};
++
++static const unsigned short decode_Y1_fsm[167] =
++{
++  BITFIELD(58, 4) /* index 0 */,
++  TILEGX_OPC_NONE, CHILD(17), TILEGX_OPC_ADDXI, CHILD(32), TILEGX_OPC_CMPEQI,
++  TILEGX_OPC_CMPLTSI, CHILD(62), CHILD(67), CHILD(117), CHILD(122),
++  CHILD(127), CHILD(132), CHILD(152), CHILD(157), CHILD(162), TILEGX_OPC_NONE,
++  BITFIELD(37, 2) /* index 17 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(22),
++  BITFIELD(39, 2) /* index 22 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, CHILD(27),
++  BITFIELD(41, 2) /* index 27 */,
++  TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_ADDI, TILEGX_OPC_MOVEI,
++  BITFIELD(31, 2) /* index 32 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(37),
++  BITFIELD(33, 2) /* index 37 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(42),
++  BITFIELD(35, 2) /* index 42 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(47),
++  BITFIELD(37, 2) /* index 47 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(52),
++  BITFIELD(39, 2) /* index 52 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, CHILD(57),
++  BITFIELD(41, 2) /* index 57 */,
++  TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_ANDI, TILEGX_OPC_INFO,
++  BITFIELD(49, 2) /* index 62 */,
++  TILEGX_OPC_ADDX, TILEGX_OPC_ADD, TILEGX_OPC_SUBX, TILEGX_OPC_SUB,
++  BITFIELD(47, 4) /* index 67 */,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL1ADD,
++  TILEGX_OPC_SHL1ADD, TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL2ADD,
++  TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL2ADD, TILEGX_OPC_SHL3ADD,
++  TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD, TILEGX_OPC_SHL3ADD, CHILD(84),
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_NONE,
++  BITFIELD(43, 3) /* index 84 */,
++  CHILD(93), CHILD(96), CHILD(99), CHILD(102), CHILD(105), CHILD(108),
++  CHILD(111), CHILD(114),
++  BITFIELD(46, 1) /* index 93 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_FNOP,
++  BITFIELD(46, 1) /* index 96 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_ILL,
++  BITFIELD(46, 1) /* index 99 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_JALRP,
++  BITFIELD(46, 1) /* index 102 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_JALR,
++  BITFIELD(46, 1) /* index 105 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_JRP,
++  BITFIELD(46, 1) /* index 108 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_JR,
++  BITFIELD(46, 1) /* index 111 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_LNK,
++  BITFIELD(46, 1) /* index 114 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_NOP,
++  BITFIELD(49, 2) /* index 117 */,
++  TILEGX_OPC_CMPLES, TILEGX_OPC_CMPLEU, TILEGX_OPC_CMPLTS, TILEGX_OPC_CMPLTU,
++  BITFIELD(49, 2) /* index 122 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_CMPEQ, TILEGX_OPC_CMPNE,
++  BITFIELD(49, 2) /* index 127 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_NONE, TILEGX_OPC_MNZ, TILEGX_OPC_MZ,
++  BITFIELD(49, 2) /* index 132 */,
++  TILEGX_OPC_AND, TILEGX_OPC_NOR, CHILD(137), TILEGX_OPC_XOR,
++  BITFIELD(43, 2) /* index 137 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(142),
++  BITFIELD(45, 2) /* index 142 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, CHILD(147),
++  BITFIELD(47, 2) /* index 147 */,
++  TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_OR, TILEGX_OPC_MOVE,
++  BITFIELD(49, 2) /* index 152 */,
++  TILEGX_OPC_ROTL, TILEGX_OPC_SHL, TILEGX_OPC_SHRS, TILEGX_OPC_SHRU,
++  BITFIELD(49, 2) /* index 157 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_SHL1ADDX, TILEGX_OPC_SHL2ADDX,
++  TILEGX_OPC_SHL3ADDX,
++  BITFIELD(49, 2) /* index 162 */,
++  TILEGX_OPC_ROTLI, TILEGX_OPC_SHLI, TILEGX_OPC_SHRSI, TILEGX_OPC_SHRUI,
++};
++
++static const unsigned short decode_Y2_fsm[118] =
++{
++  BITFIELD(62, 2) /* index 0 */,
++  TILEGX_OPC_NONE, CHILD(5), CHILD(66), CHILD(109),
++  BITFIELD(55, 3) /* index 5 */,
++  CHILD(14), CHILD(14), CHILD(14), CHILD(17), CHILD(40), CHILD(40), CHILD(40),
++  CHILD(43),
++  BITFIELD(26, 1) /* index 14 */,
++  TILEGX_OPC_LD1S, TILEGX_OPC_LD1U,
++  BITFIELD(26, 1) /* index 17 */,
++  CHILD(20), CHILD(30),
++  BITFIELD(51, 2) /* index 20 */,
++  TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, CHILD(25),
++  BITFIELD(53, 2) /* index 25 */,
++  TILEGX_OPC_LD1S, TILEGX_OPC_LD1S, TILEGX_OPC_LD1S,
++  TILEGX_OPC_PREFETCH_L1_FAULT,
++  BITFIELD(51, 2) /* index 30 */,
++  TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, CHILD(35),
++  BITFIELD(53, 2) /* index 35 */,
++  TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_LD1U, TILEGX_OPC_PREFETCH,
++  BITFIELD(26, 1) /* index 40 */,
++  TILEGX_OPC_LD2S, TILEGX_OPC_LD2U,
++  BITFIELD(26, 1) /* index 43 */,
++  CHILD(46), CHILD(56),
++  BITFIELD(51, 2) /* index 46 */,
++  TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, CHILD(51),
++  BITFIELD(53, 2) /* index 51 */,
++  TILEGX_OPC_LD2S, TILEGX_OPC_LD2S, TILEGX_OPC_LD2S,
++  TILEGX_OPC_PREFETCH_L2_FAULT,
++  BITFIELD(51, 2) /* index 56 */,
++  TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, CHILD(61),
++  BITFIELD(53, 2) /* index 61 */,
++  TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_LD2U, TILEGX_OPC_PREFETCH_L2,
++  BITFIELD(56, 2) /* index 66 */,
++  CHILD(71), CHILD(74), CHILD(90), CHILD(93),
++  BITFIELD(26, 1) /* index 71 */,
++  TILEGX_OPC_NONE, TILEGX_OPC_LD4S,
++  BITFIELD(26, 1) /* index 74 */,
++  TILEGX_OPC_NONE, CHILD(77),
++  BITFIELD(51, 2) /* index 77 */,
++  TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, CHILD(82),
++  BITFIELD(53, 2) /* index 82 */,
++  TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, TILEGX_OPC_LD4S, CHILD(87),
++  BITFIELD(55, 1) /* index 87 */,
++  TILEGX_OPC_LD4S, TILEGX_OPC_PREFETCH_L3_FAULT,
++  BITFIELD(26, 1) /* index 90 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_LD,
++  BITFIELD(26, 1) /* index 93 */,
++  CHILD(96), TILEGX_OPC_LD,
++  BITFIELD(51, 2) /* index 96 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, CHILD(101),
++  BITFIELD(53, 2) /* index 101 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, TILEGX_OPC_LD4U, CHILD(106),
++  BITFIELD(55, 1) /* index 106 */,
++  TILEGX_OPC_LD4U, TILEGX_OPC_PREFETCH_L3,
++  BITFIELD(26, 1) /* index 109 */,
++  CHILD(112), CHILD(115),
++  BITFIELD(57, 1) /* index 112 */,
++  TILEGX_OPC_ST1, TILEGX_OPC_ST4,
++  BITFIELD(57, 1) /* index 115 */,
++  TILEGX_OPC_ST2, TILEGX_OPC_ST,
++};
++
++#undef BITFIELD
++#undef CHILD
++const unsigned short * const
++tilegx_bundle_decoder_fsms[TILEGX_NUM_PIPELINE_ENCODINGS] =
++{
++  decode_X0_fsm,
++  decode_X1_fsm,
++  decode_Y0_fsm,
++  decode_Y1_fsm,
++  decode_Y2_fsm
++};
++const struct tilegx_operand tilegx_operands[35] =
++{
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_IMM8_X0),
++    8, 1, 0, 0, 0, 0,
++    create_Imm8_X0, get_Imm8_X0
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_IMM8_X1),
++    8, 1, 0, 0, 0, 0,
++    create_Imm8_X1, get_Imm8_X1
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_IMM8_Y0),
++    8, 1, 0, 0, 0, 0,
++    create_Imm8_Y0, get_Imm8_Y0
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_IMM8_Y1),
++    8, 1, 0, 0, 0, 0,
++    create_Imm8_Y1, get_Imm8_Y1
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_IMM16_X0_HW0_LAST),
++    16, 1, 0, 0, 0, 0,
++    create_Imm16_X0, get_Imm16_X0
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_IMM16_X1_HW0_LAST),
++    16, 1, 0, 0, 0, 0,
++    create_Imm16_X1, get_Imm16_X1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 0, 1, 0, 0,
++    create_Dest_X0, get_Dest_X0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcA_X0, get_SrcA_X0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 0, 1, 0, 0,
++    create_Dest_X1, get_Dest_X1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcA_X1, get_SrcA_X1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 0, 1, 0, 0,
++    create_Dest_Y0, get_Dest_Y0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcA_Y0, get_SrcA_Y0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 0, 1, 0, 0,
++    create_Dest_Y1, get_Dest_Y1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcA_Y1, get_SrcA_Y1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcA_Y2, get_SrcA_Y2
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 1, 0, 0,
++    create_SrcA_X1, get_SrcA_X1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcB_X0, get_SrcB_X0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcB_X1, get_SrcB_X1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcB_Y0, get_SrcB_Y0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcB_Y1, get_SrcB_Y1
++  },
++  {
++    TILEGX_OP_TYPE_ADDRESS, BFD_RELOC(TILEGX_BROFF_X1),
++    17, 1, 0, 0, 1, TILEGX_LOG2_BUNDLE_ALIGNMENT_IN_BYTES,
++    create_BrOff_X1, get_BrOff_X1
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(NONE),
++    6, 0, 0, 0, 0, 0,
++    create_BFStart_X0, get_BFStart_X0
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(NONE),
++    6, 0, 0, 0, 0, 0,
++    create_BFEnd_X0, get_BFEnd_X0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 1, 0, 0,
++    create_Dest_X0, get_Dest_X0
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 1, 0, 0,
++    create_Dest_Y0, get_Dest_Y0
++  },
++  {
++    TILEGX_OP_TYPE_ADDRESS, BFD_RELOC(TILEGX_JUMPOFF_X1),
++    27, 1, 0, 0, 1, TILEGX_LOG2_BUNDLE_ALIGNMENT_IN_BYTES,
++    create_JumpOff_X1, get_JumpOff_X1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 0, 1, 0, 0,
++    create_SrcBDest_Y2, get_SrcBDest_Y2
++  },
++  {
++    TILEGX_OP_TYPE_SPR, BFD_RELOC(TILEGX_MF_IMM14_X1),
++    14, 0, 0, 0, 0, 0,
++    create_MF_Imm14_X1, get_MF_Imm14_X1
++  },
++  {
++    TILEGX_OP_TYPE_SPR, BFD_RELOC(TILEGX_MT_IMM14_X1),
++    14, 0, 0, 0, 0, 0,
++    create_MT_Imm14_X1, get_MT_Imm14_X1
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_SHAMT_X0),
++    6, 0, 0, 0, 0, 0,
++    create_ShAmt_X0, get_ShAmt_X0
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_SHAMT_X1),
++    6, 0, 0, 0, 0, 0,
++    create_ShAmt_X1, get_ShAmt_X1
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_SHAMT_Y0),
++    6, 0, 0, 0, 0, 0,
++    create_ShAmt_Y0, get_ShAmt_Y0
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_SHAMT_Y1),
++    6, 0, 0, 0, 0, 0,
++    create_ShAmt_Y1, get_ShAmt_Y1
++  },
++  {
++    TILEGX_OP_TYPE_REGISTER, BFD_RELOC(NONE),
++    6, 0, 1, 0, 0, 0,
++    create_SrcBDest_Y2, get_SrcBDest_Y2
++  },
++  {
++    TILEGX_OP_TYPE_IMMEDIATE, BFD_RELOC(TILEGX_DEST_IMM8_X1),
++    8, 1, 0, 0, 0, 0,
++    create_Dest_Imm8_X1, get_Dest_Imm8_X1
++  }
++};
++
++
++
++
++/* Given a set of bundle bits and the lookup FSM for a specific pipe,
++ * returns which instruction the bundle contains in that pipe.
++ */
++static const struct tilegx_opcode *
++find_opcode(tilegx_bundle_bits bits, const unsigned short *table)
++{
++  int index = 0;
++
++  while (1)
++  {
++    unsigned short bitspec = table[index];
++    unsigned int bitfield =
++      ((unsigned int)(bits >> (bitspec & 63))) & (bitspec >> 6);
++
++    unsigned short next = table[index + 1 + bitfield];
++    if (next <= TILEGX_OPC_NONE)
++      return &tilegx_opcodes[next];
++
++    index = next - TILEGX_OPC_NONE;
++  }
++}
++
++
++int
++parse_insn_tilegx(tilegx_bundle_bits bits,
++                  unsigned long long pc,
++                  struct tilegx_decoded_instruction
++                  decoded[TILEGX_MAX_INSTRUCTIONS_PER_BUNDLE])
++{
++  int num_instructions = 0;
++  int pipe;
++
++  int min_pipe, max_pipe;
++  if ((bits & TILEGX_BUNDLE_MODE_MASK) == 0)
++  {
++    min_pipe = TILEGX_PIPELINE_X0;
++    max_pipe = TILEGX_PIPELINE_X1;
++  }
++  else
++  {
++    min_pipe = TILEGX_PIPELINE_Y0;
++    max_pipe = TILEGX_PIPELINE_Y2;
++  }
++
++  /* For each pipe, find an instruction that fits. */
++  for (pipe = min_pipe; pipe <= max_pipe; pipe++)
++  {
++    const struct tilegx_opcode *opc;
++    struct tilegx_decoded_instruction *d;
++    int i;
++
++    d = &decoded[num_instructions++];
++    opc = find_opcode (bits, tilegx_bundle_decoder_fsms[pipe]);
++    d->opcode = opc;
++
++    /* Decode each operand, sign extending, etc. as appropriate. */
++    for (i = 0; i < opc->num_operands; i++)
++    {
++      const struct tilegx_operand *op =
++        &tilegx_operands[opc->operands[pipe][i]];
++      int raw_opval = op->extract (bits);
++      long long opval;
++
++      if (op->is_signed)
++      {
++        /* Sign-extend the operand. */
++        int shift = (int)((sizeof(int) * 8) - op->num_bits);
++        raw_opval = (raw_opval << shift) >> shift;
++      }
++
++      /* Adjust PC-relative scaled branch offsets. */
++      if (op->type == TILEGX_OP_TYPE_ADDRESS)
++        opval = (raw_opval * TILEGX_BUNDLE_SIZE_IN_BYTES) + pc;
++      else
++        opval = raw_opval;
++
++      /* Record the final value. */
++      d->operands[i] = op;
++      d->operand_values[i] = opval;
++    }
++  }
++
++  return num_instructions;
++}
+diff --git a/arch/tile/lib/memchr_64.c b/arch/tile/lib/memchr_64.c
+new file mode 100644
+index 0000000..84fdc8d
+--- /dev/null
++++ b/arch/tile/lib/memchr_64.c
+@@ -0,0 +1,71 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++void *memchr(const void *s, int c, size_t n)
++{
++	const uint64_t *last_word_ptr;
++	const uint64_t *p;
++	const char *last_byte_ptr;
++	uintptr_t s_int;
++	uint64_t goal, before_mask, v, bits;
++	char *ret;
++
++	if (__builtin_expect(n == 0, 0)) {
++		/* Don't dereference any memory if the array is empty. */
++		return NULL;
++	}
++
++	/* Get an aligned pointer. */
++	s_int = (uintptr_t) s;
++	p = (const uint64_t *)(s_int & -8);
++
++	/* Create eight copies of the byte for which we are looking. */
++	goal = 0x0101010101010101ULL * (uint8_t) c;
++
++	/* Read the first word, but munge it so that bytes before the array
++	 * will not match goal.
++	 *
++	 * Note that this shift count expression works because we know
++	 * shift counts are taken mod 64.
++	 */
++	before_mask = (1ULL << (s_int << 3)) - 1;
++	v = (*p | before_mask) ^ (goal & before_mask);
++
++	/* Compute the address of the last byte. */
++	last_byte_ptr = (const char *)s + n - 1;
++
++	/* Compute the address of the word containing the last byte. */
++	last_word_ptr = (const uint64_t *)((uintptr_t) last_byte_ptr & -8);
++
++	while ((bits = __insn_v1cmpeq(v, goal)) == 0) {
++		if (__builtin_expect(p == last_word_ptr, 0)) {
++			/* We already read the last word in the array,
++			 * so give up.
++			 */
++			return NULL;
++		}
++		v = *++p;
++	}
++
++	/* We found a match, but it might be in a byte past the end
++	 * of the array.
++	 */
++	ret = ((char *)p) + (__insn_ctz(bits) >> 3);
++	return (ret <= last_byte_ptr) ? ret : NULL;
++}
++EXPORT_SYMBOL(memchr);
+diff --git a/arch/tile/lib/memcpy_64.c b/arch/tile/lib/memcpy_64.c
+new file mode 100644
+index 0000000..3fab9a6
+--- /dev/null
++++ b/arch/tile/lib/memcpy_64.c
+@@ -0,0 +1,220 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++#define __memcpy memcpy
++/* EXPORT_SYMBOL() is in arch/tile/lib/exports.c since this should be asm. */
++
++/* Must be 8 bytes in size. */
++#define word_t uint64_t
++
++#if CHIP_L2_LINE_SIZE() != 64 && CHIP_L2_LINE_SIZE() != 128
++#error "Assumes 64 or 128 byte line size"
++#endif
++
++/* How many cache lines ahead should we prefetch? */
++#define PREFETCH_LINES_AHEAD 3
++
++/*
++ * Provide "base versions" of load and store for the normal code path.
++ * The kernel provides other versions for userspace copies.
++ */
++#define ST(p, v) (*(p) = (v))
++#define LD(p) (*(p))
++
++#ifndef USERCOPY_FUNC
++#define ST1 ST
++#define ST2 ST
++#define ST4 ST
++#define ST8 ST
++#define LD1 LD
++#define LD2 LD
++#define LD4 LD
++#define LD8 LD
++#define RETVAL dstv
++void *memcpy(void *__restrict dstv, const void *__restrict srcv, size_t n)
++#else
++/*
++ * Special kernel version will provide implementation of the LDn/STn
++ * macros to return a count of uncopied bytes due to mm fault.
++ */
++#define RETVAL 0
++int USERCOPY_FUNC(void *__restrict dstv, const void *__restrict srcv, size_t n)
++#endif
++{
++	char *__restrict dst1 = (char *)dstv;
++	const char *__restrict src1 = (const char *)srcv;
++	const char *__restrict src1_end;
++	const char *__restrict prefetch;
++	word_t *__restrict dst8;    /* 8-byte pointer to destination memory. */
++	word_t final; /* Final bytes to write to trailing word, if any */
++	long i;
++
++	if (n < 16) {
++		for (; n; n--)
++			ST1(dst1++, LD1(src1++));
++		return RETVAL;
++	}
++
++	/*
++	 * Locate the end of source memory we will copy.  Don't
++	 * prefetch past this.
++	 */
++	src1_end = src1 + n - 1;
++
++	/* Prefetch ahead a few cache lines, but not past the end. */
++	prefetch = src1;
++	for (i = 0; i < PREFETCH_LINES_AHEAD; i++) {
++		__insn_prefetch(prefetch);
++		prefetch += CHIP_L2_LINE_SIZE();
++		prefetch = (prefetch > src1_end) ? prefetch : src1;
++	}
++
++	/* Copy bytes until dst is word-aligned. */
++	for (; (uintptr_t)dst1 & (sizeof(word_t) - 1); n--)
++		ST1(dst1++, LD1(src1++));
++
++	/* 8-byte pointer to destination memory. */
++	dst8 = (word_t *)dst1;
++
++	if (__builtin_expect((uintptr_t)src1 & (sizeof(word_t) - 1), 0)) {
++		/*
++		 * Misaligned copy.  Copy 8 bytes at a time, but don't
++		 * bother with other fanciness.
++		 *
++		 * TODO: Consider prefetching and using wh64 as well.
++		 */
++
++		/* Create an aligned src8. */
++		const word_t *__restrict src8 =
++			(const word_t *)((uintptr_t)src1 & -sizeof(word_t));
++		word_t b;
++
++		word_t a = LD8(src8++);
++		for (; n >= sizeof(word_t); n -= sizeof(word_t)) {
++			b = LD8(src8++);
++			a = __insn_dblalign(a, b, src1);
++			ST8(dst8++, a);
++			a = b;
++		}
++
++		if (n == 0)
++			return RETVAL;
++
++		b = ((const char *)src8 <= src1_end) ? *src8 : 0;
++
++		/*
++		 * Final source bytes to write to trailing partial
++		 * word, if any.
++		 */
++		final = __insn_dblalign(a, b, src1);
++	} else {
++		/* Aligned copy. */
++
++		const word_t* __restrict src8 = (const word_t *)src1;
++
++		/* src8 and dst8 are both word-aligned. */
++		if (n >= CHIP_L2_LINE_SIZE()) {
++			/* Copy until 'dst' is cache-line-aligned. */
++			for (; (uintptr_t)dst8 & (CHIP_L2_LINE_SIZE() - 1);
++			     n -= sizeof(word_t))
++				ST8(dst8++, LD8(src8++));
++
++			for (; n >= CHIP_L2_LINE_SIZE(); ) {
++				__insn_wh64(dst8);
++
++				/*
++				 * Prefetch and advance to next line
++				 * to prefetch, but don't go past the end
++				 */
++				__insn_prefetch(prefetch);
++				prefetch += CHIP_L2_LINE_SIZE();
++				prefetch = (prefetch > src1_end) ? prefetch :
++					(const char *)src8;
++
++				/*
++				 * Copy an entire cache line.  Manually
++				 * unrolled to avoid idiosyncracies of
++				 * compiler unrolling.
++				 */
++#define COPY_WORD(offset) ({ ST8(dst8+offset, LD8(src8+offset)); n -= 8; })
++				COPY_WORD(0);
++				COPY_WORD(1);
++				COPY_WORD(2);
++				COPY_WORD(3);
++				COPY_WORD(4);
++				COPY_WORD(5);
++				COPY_WORD(6);
++				COPY_WORD(7);
++#if CHIP_L2_LINE_SIZE() == 128
++				COPY_WORD(8);
++				COPY_WORD(9);
++				COPY_WORD(10);
++				COPY_WORD(11);
++				COPY_WORD(12);
++				COPY_WORD(13);
++				COPY_WORD(14);
++				COPY_WORD(15);
++#elif CHIP_L2_LINE_SIZE() != 64
++# error Fix code that assumes particular L2 cache line sizes
++#endif
++
++				dst8 += CHIP_L2_LINE_SIZE() / sizeof(word_t);
++				src8 += CHIP_L2_LINE_SIZE() / sizeof(word_t);
++			}
++		}
++
++		for (; n >= sizeof(word_t); n -= sizeof(word_t))
++			ST8(dst8++, LD8(src8++));
++
++		if (__builtin_expect(n == 0, 1))
++			return RETVAL;
++
++		final = LD8(src8);
++	}
++
++	/* n != 0 if we get here.  Write out any trailing bytes. */
++	dst1 = (char *)dst8;
++	if (n & 4) {
++		ST4((uint32_t *)dst1, final);
++		dst1 += 4;
++		final >>= 32;
++		n &= 3;
++	}
++	if (n & 2) {
++		ST2((uint16_t *)dst1, final);
++		dst1 += 2;
++		final >>= 16;
++		n &= 1;
++	}
++	if (n)
++		ST1((uint8_t *)dst1, final);
++
++	return RETVAL;
++}
++
++
++#ifdef USERCOPY_FUNC
++#undef ST1
++#undef ST2
++#undef ST4
++#undef ST8
++#undef LD1
++#undef LD2
++#undef LD4
++#undef LD8
++#undef USERCOPY_FUNC
++#endif
+diff --git a/arch/tile/lib/memcpy_user_64.c b/arch/tile/lib/memcpy_user_64.c
+new file mode 100644
+index 0000000..4763b3a
+--- /dev/null
++++ b/arch/tile/lib/memcpy_user_64.c
+@@ -0,0 +1,86 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Do memcpy(), but trap and return "n" when a load or store faults.
++ *
++ * Note: this idiom only works when memcpy() compiles to a leaf function.
++ * If "sp" is updated during memcpy, the "jrp lr" will be incorrect.
++ *
++ * Also note that we are capturing "n" from the containing scope here.
++ */
++
++#define _ST(p, inst, v)						\
++	({							\
++		asm("1: " #inst " %0, %1;"			\
++		    ".pushsection .coldtext.memcpy,\"ax\";"	\
++		    "2: { move r0, %2; jrp lr };"		\
++		    ".section __ex_table,\"a\";"		\
++		    ".quad 1b, 2b;"				\
++		    ".popsection"				\
++		    : "=m" (*(p)) : "r" (v), "r" (n));		\
++	})
++
++#define _LD(p, inst)						\
++	({							\
++		unsigned long __v;				\
++		asm("1: " #inst " %0, %1;"			\
++		    ".pushsection .coldtext.memcpy,\"ax\";"	\
++		    "2: { move r0, %2; jrp lr };"		\
++		    ".section __ex_table,\"a\";"		\
++		    ".quad 1b, 2b;"				\
++		    ".popsection"				\
++		    : "=r" (__v) : "m" (*(p)), "r" (n));	\
++		__v;						\
++	})
++
++#define USERCOPY_FUNC __copy_to_user_inatomic
++#define ST1(p, v) _ST((p), st1, (v))
++#define ST2(p, v) _ST((p), st2, (v))
++#define ST4(p, v) _ST((p), st4, (v))
++#define ST8(p, v) _ST((p), st, (v))
++#define LD1 LD
++#define LD2 LD
++#define LD4 LD
++#define LD8 LD
++#include "memcpy_64.c"
++
++#define USERCOPY_FUNC __copy_from_user_inatomic
++#define ST1 ST
++#define ST2 ST
++#define ST4 ST
++#define ST8 ST
++#define LD1(p) _LD((p), ld1u)
++#define LD2(p) _LD((p), ld2u)
++#define LD4(p) _LD((p), ld4u)
++#define LD8(p) _LD((p), ld)
++#include "memcpy_64.c"
++
++#define USERCOPY_FUNC __copy_in_user_inatomic
++#define ST1(p, v) _ST((p), st1, (v))
++#define ST2(p, v) _ST((p), st2, (v))
++#define ST4(p, v) _ST((p), st4, (v))
++#define ST8(p, v) _ST((p), st, (v))
++#define LD1(p) _LD((p), ld1u)
++#define LD2(p) _LD((p), ld2u)
++#define LD4(p) _LD((p), ld4u)
++#define LD8(p) _LD((p), ld)
++#include "memcpy_64.c"
++
++unsigned long __copy_from_user_zeroing(void *to, const void __user *from,
++				       unsigned long n)
++{
++	unsigned long rc = __copy_from_user_inatomic(to, from, n);
++	if (unlikely(rc))
++		memset(to + n - rc, 0, rc);
++	return rc;
++}
+diff --git a/arch/tile/lib/memset_64.c b/arch/tile/lib/memset_64.c
+new file mode 100644
+index 0000000..3873085
+--- /dev/null
++++ b/arch/tile/lib/memset_64.c
+@@ -0,0 +1,145 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <arch/chip.h>
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++#undef memset
++
++void *memset(void *s, int c, size_t n)
++{
++	uint64_t *out64;
++	int n64, to_align64;
++	uint64_t v64;
++	uint8_t *out8 = s;
++
++	/* Experimentation shows that a trivial tight loop is a win up until
++	 * around a size of 20, where writing a word at a time starts to win.
++	 */
++#define BYTE_CUTOFF 20
++
++#if BYTE_CUTOFF < 7
++	/* This must be at least at least this big, or some code later
++	 * on doesn't work.
++	 */
++#error "BYTE_CUTOFF is too small"
++#endif
++
++	if (n < BYTE_CUTOFF) {
++		/* Strangely, this turns out to be the tightest way to
++		 * write this loop.
++		 */
++		if (n != 0) {
++			do {
++				/* Strangely, combining these into one line
++				 * performs worse.
++				 */
++				*out8 = c;
++				out8++;
++			} while (--n != 0);
++		}
++
++		return s;
++	}
++
++	/* Align 'out8'. We know n >= 7 so this won't write past the end. */
++	while (((uintptr_t) out8 & 7) != 0) {
++		*out8++ = c;
++		--n;
++	}
++
++	/* Align 'n'. */
++	while (n & 7)
++		out8[--n] = c;
++
++	out64 = (uint64_t *) out8;
++	n64 = n >> 3;
++
++	/* Tile input byte out to 64 bits. */
++	/* KLUDGE */
++	v64 = 0x0101010101010101ULL * (uint8_t)c;
++
++	/* This must be at least 8 or the following loop doesn't work. */
++#define CACHE_LINE_SIZE_IN_DOUBLEWORDS (CHIP_L2_LINE_SIZE() / 8)
++
++	/* Determine how many words we need to emit before the 'out32'
++	 * pointer becomes aligned modulo the cache line size.
++	 */
++	to_align64 = (-((uintptr_t)out64 >> 3)) &
++		(CACHE_LINE_SIZE_IN_DOUBLEWORDS - 1);
++
++	/* Only bother aligning and using wh64 if there is at least
++	 * one full cache line to process.  This check also prevents
++	 * overrunning the end of the buffer with alignment words.
++	 */
++	if (to_align64 <= n64 - CACHE_LINE_SIZE_IN_DOUBLEWORDS) {
++		int lines_left;
++
++		/* Align out64 mod the cache line size so we can use wh64. */
++		n64 -= to_align64;
++		for (; to_align64 != 0; to_align64--) {
++			*out64 = v64;
++			out64++;
++		}
++
++		/* Use unsigned divide to turn this into a right shift. */
++		lines_left = (unsigned)n64 / CACHE_LINE_SIZE_IN_DOUBLEWORDS;
++
++		do {
++			/* Only wh64 a few lines at a time, so we don't
++			 * exceed the maximum number of victim lines.
++			 */
++			int x = ((lines_left < CHIP_MAX_OUTSTANDING_VICTIMS())
++				  ? lines_left
++				  : CHIP_MAX_OUTSTANDING_VICTIMS());
++			uint64_t *wh = out64;
++			int i = x;
++			int j;
++
++			lines_left -= x;
++
++			do {
++				__insn_wh64(wh);
++				wh += CACHE_LINE_SIZE_IN_DOUBLEWORDS;
++			} while (--i);
++
++			for (j = x * (CACHE_LINE_SIZE_IN_DOUBLEWORDS / 4);
++			     j != 0; j--) {
++				*out64++ = v64;
++				*out64++ = v64;
++				*out64++ = v64;
++				*out64++ = v64;
++			}
++		} while (lines_left != 0);
++
++		/* We processed all full lines above, so only this many
++		 * words remain to be processed.
++		 */
++		n64 &= CACHE_LINE_SIZE_IN_DOUBLEWORDS - 1;
++	}
++
++	/* Now handle any leftover values. */
++	if (n64 != 0) {
++		do {
++			*out64 = v64;
++			out64++;
++		} while (--n64 != 0);
++	}
++
++	return s;
++}
++EXPORT_SYMBOL(memset);
+diff --git a/arch/tile/lib/spinlock_64.c b/arch/tile/lib/spinlock_64.c
+new file mode 100644
+index 0000000..d6fb958
+--- /dev/null
++++ b/arch/tile/lib/spinlock_64.c
+@@ -0,0 +1,104 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/spinlock.h>
++#include <linux/module.h>
++#include <asm/processor.h>
++
++#include "spinlock_common.h"
++
++/*
++ * Read the spinlock value without allocating in our cache and without
++ * causing an invalidation to another cpu with a copy of the cacheline.
++ * This is important when we are spinning waiting for the lock.
++ */
++static inline u32 arch_spin_read_noalloc(void *lock)
++{
++	return atomic_cmpxchg((atomic_t *)lock, -1, -1);
++}
++
++/*
++ * Wait until the high bits (current) match my ticket.
++ * If we notice the overflow bit set on entry, we clear it.
++ */
++void arch_spin_lock_slow(arch_spinlock_t *lock, u32 my_ticket)
++{
++	if (unlikely(my_ticket & __ARCH_SPIN_NEXT_OVERFLOW)) {
++		__insn_fetchand4(&lock->lock, ~__ARCH_SPIN_NEXT_OVERFLOW);
++		my_ticket &= ~__ARCH_SPIN_NEXT_OVERFLOW;
++	}
++
++	for (;;) {
++		u32 val = arch_spin_read_noalloc(lock);
++		u32 delta = my_ticket - arch_spin_current(val);
++		if (delta == 0)
++			return;
++		relax((128 / CYCLES_PER_RELAX_LOOP) * delta);
++	}
++}
++EXPORT_SYMBOL(arch_spin_lock_slow);
++
++/*
++ * Check the lock to see if it is plausible, and try to get it with cmpxchg().
++ */
++int arch_spin_trylock(arch_spinlock_t *lock)
++{
++	u32 val = arch_spin_read_noalloc(lock);
++	if (unlikely(arch_spin_current(val) != arch_spin_next(val)))
++		return 0;
++	return cmpxchg(&lock->lock, val, (val + 1) & ~__ARCH_SPIN_NEXT_OVERFLOW)
++		== val;
++}
++EXPORT_SYMBOL(arch_spin_trylock);
++
++void arch_spin_unlock_wait(arch_spinlock_t *lock)
++{
++	u32 iterations = 0;
++	while (arch_spin_is_locked(lock))
++		delay_backoff(iterations++);
++}
++EXPORT_SYMBOL(arch_spin_unlock_wait);
++
++/*
++ * If the read lock fails due to a writer, we retry periodically
++ * until the value is positive and we write our incremented reader count.
++ */
++void __read_lock_failed(arch_rwlock_t *rw)
++{
++	u32 val;
++	int iterations = 0;
++	do {
++		delay_backoff(iterations++);
++		val = __insn_fetchaddgez4(&rw->lock, 1);
++	} while (unlikely(arch_write_val_locked(val)));
++}
++EXPORT_SYMBOL(__read_lock_failed);
++
++/*
++ * If we failed because there were readers, clear the "writer" bit
++ * so we don't block additional readers.  Otherwise, there was another
++ * writer anyway, so our "fetchor" made no difference.  Then wait,
++ * issuing periodic fetchor instructions, till we get the lock.
++ */
++void __write_lock_failed(arch_rwlock_t *rw, u32 val)
++{
++	int iterations = 0;
++	do {
++		if (!arch_write_val_locked(val))
++			val = __insn_fetchand4(&rw->lock, ~__WRITE_LOCK_BIT);
++		delay_backoff(iterations++);
++		val = __insn_fetchor4(&rw->lock, __WRITE_LOCK_BIT);
++	} while (val != 0);
++}
++EXPORT_SYMBOL(__write_lock_failed);
+diff --git a/arch/tile/lib/strchr_64.c b/arch/tile/lib/strchr_64.c
+new file mode 100644
+index 0000000..617a927
+--- /dev/null
++++ b/arch/tile/lib/strchr_64.c
+@@ -0,0 +1,67 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++#undef strchr
++
++char *strchr(const char *s, int c)
++{
++	int z, g;
++
++	/* Get an aligned pointer. */
++	const uintptr_t s_int = (uintptr_t) s;
++	const uint64_t *p = (const uint64_t *)(s_int & -8);
++
++	/* Create eight copies of the byte for which we are looking. */
++	const uint64_t goal = 0x0101010101010101ULL * (uint8_t) c;
++
++	/* Read the first aligned word, but force bytes before the string to
++	 * match neither zero nor goal (we make sure the high bit of each
++	 * byte is 1, and the low 7 bits are all the opposite of the goal
++	 * byte).
++	 *
++	 * Note that this shift count expression works because we know shift
++	 * counts are taken mod 64.
++	 */
++	const uint64_t before_mask = (1ULL << (s_int << 3)) - 1;
++	uint64_t v = (*p | before_mask) ^
++		(goal & __insn_v1shrsi(before_mask, 1));
++
++	uint64_t zero_matches, goal_matches;
++	while (1) {
++		/* Look for a terminating '\0'. */
++		zero_matches = __insn_v1cmpeqi(v, 0);
++
++		/* Look for the goal byte. */
++		goal_matches = __insn_v1cmpeq(v, goal);
++
++		if (__builtin_expect((zero_matches | goal_matches) != 0, 0))
++			break;
++
++		v = *++p;
++	}
++
++	z = __insn_ctz(zero_matches);
++	g = __insn_ctz(goal_matches);
++
++	/* If we found c before '\0' we got a match. Note that if c == '\0'
++	 * then g == z, and we correctly return the address of the '\0'
++	 * rather than NULL.
++	 */
++	return (g <= z) ? ((char *)p) + (g >> 3) : NULL;
++}
++EXPORT_SYMBOL(strchr);
+diff --git a/arch/tile/lib/strlen_64.c b/arch/tile/lib/strlen_64.c
+new file mode 100644
+index 0000000..1c92d46
+--- /dev/null
++++ b/arch/tile/lib/strlen_64.c
+@@ -0,0 +1,38 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++#undef strlen
++
++size_t strlen(const char *s)
++{
++	/* Get an aligned pointer. */
++	const uintptr_t s_int = (uintptr_t) s;
++	const uint64_t *p = (const uint64_t *)(s_int & -8);
++
++	/* Read the first word, but force bytes before the string to be nonzero.
++	 * This expression works because we know shift counts are taken mod 64.
++	 */
++	uint64_t v = *p | ((1ULL << (s_int << 3)) - 1);
++
++	uint64_t bits;
++	while ((bits = __insn_v1cmpeqi(v, 0)) == 0)
++		v = *++p;
++
++	return ((const char *)p) + (__insn_ctz(bits) >> 3) - s;
++}
++EXPORT_SYMBOL(strlen);
+diff --git a/arch/tile/lib/usercopy_64.S b/arch/tile/lib/usercopy_64.S
+new file mode 100644
+index 0000000..2ff44f8
+--- /dev/null
++++ b/arch/tile/lib/usercopy_64.S
+@@ -0,0 +1,196 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/linkage.h>
++#include <asm/errno.h>
++#include <asm/cache.h>
++#include <arch/chip.h>
++
++/* Access user memory, but use MMU to avoid propagating kernel exceptions. */
++
++	.pushsection .fixup,"ax"
++
++get_user_fault:
++	{ movei r1, -EFAULT; move r0, zero }
++	jrp lr
++	ENDPROC(get_user_fault)
++
++put_user_fault:
++	{ movei r0, -EFAULT; jrp lr }
++	ENDPROC(put_user_fault)
++
++	.popsection
++
++/*
++ * __get_user_N functions take a pointer in r0, and return 0 in r1
++ * on success, with the value in r0; or else -EFAULT in r1.
++ */
++#define __get_user_N(bytes, LOAD) \
++	STD_ENTRY(__get_user_##bytes); \
++1:	{ LOAD r0, r0; move r1, zero }; \
++	jrp lr; \
++	STD_ENDPROC(__get_user_##bytes); \
++	.pushsection __ex_table,"a"; \
++	.quad 1b, get_user_fault; \
++	.popsection
++
++__get_user_N(1, ld1u)
++__get_user_N(2, ld2u)
++__get_user_N(4, ld4u)
++__get_user_N(8, ld)
++
++/*
++ * __put_user_N functions take a value in r0 and a pointer in r1,
++ * and return 0 in r0 on success or -EFAULT on failure.
++ */
++#define __put_user_N(bytes, STORE) \
++	STD_ENTRY(__put_user_##bytes); \
++1:	{ STORE r1, r0; move r0, zero }; \
++	jrp lr; \
++	STD_ENDPROC(__put_user_##bytes); \
++	.pushsection __ex_table,"a"; \
++	.quad 1b, put_user_fault; \
++	.popsection
++
++__put_user_N(1, st1)
++__put_user_N(2, st2)
++__put_user_N(4, st4)
++__put_user_N(8, st)
++
++/*
++ * strnlen_user_asm takes the pointer in r0, and the length bound in r1.
++ * It returns the length, including the terminating NUL, or zero on exception.
++ * If length is greater than the bound, returns one plus the bound.
++ */
++STD_ENTRY(strnlen_user_asm)
++	{ beqz r1, 2f; addi r3, r0, -1 }  /* bias down to include NUL */
++1:      { ld1u r4, r0; addi r1, r1, -1 }
++	beqz r4, 2f
++	{ bnezt r1, 1b; addi r0, r0, 1 }
++2:      { sub r0, r0, r3; jrp lr }
++	STD_ENDPROC(strnlen_user_asm)
++	.pushsection .fixup,"ax"
++strnlen_user_fault:
++	{ move r0, zero; jrp lr }
++	ENDPROC(strnlen_user_fault)
++	.section __ex_table,"a"
++	.quad 1b, strnlen_user_fault
++	.popsection
++
++/*
++ * strncpy_from_user_asm takes the kernel target pointer in r0,
++ * the userspace source pointer in r1, and the length bound (including
++ * the trailing NUL) in r2.  On success, it returns the string length
++ * (not including the trailing NUL), or -EFAULT on failure.
++ */
++STD_ENTRY(strncpy_from_user_asm)
++	{ beqz r2, 2f; move r3, r0 }
++1:      { ld1u r4, r1; addi r1, r1, 1; addi r2, r2, -1 }
++	{ st1 r0, r4; addi r0, r0, 1 }
++	beqz r2, 2f
++	bnezt r4, 1b
++	addi r0, r0, -1   /* don't count the trailing NUL */
++2:      { sub r0, r0, r3; jrp lr }
++	STD_ENDPROC(strncpy_from_user_asm)
++	.pushsection .fixup,"ax"
++strncpy_from_user_fault:
++	{ movei r0, -EFAULT; jrp lr }
++	ENDPROC(strncpy_from_user_fault)
++	.section __ex_table,"a"
++	.quad 1b, strncpy_from_user_fault
++	.popsection
++
++/*
++ * clear_user_asm takes the user target address in r0 and the
++ * number of bytes to zero in r1.
++ * It returns the number of uncopiable bytes (hopefully zero) in r0.
++ * Note that we don't use a separate .fixup section here since we fall
++ * through into the "fixup" code as the last straight-line bundle anyway.
++ */
++STD_ENTRY(clear_user_asm)
++	{ beqz r1, 2f; or r2, r0, r1 }
++	andi r2, r2, 7
++	beqzt r2, .Lclear_aligned_user_asm
++1:      { st1 r0, zero; addi r0, r0, 1; addi r1, r1, -1 }
++	bnezt r1, 1b
++2:      { move r0, r1; jrp lr }
++	.pushsection __ex_table,"a"
++	.quad 1b, 2b
++	.popsection
++
++.Lclear_aligned_user_asm:
++1:      { st r0, zero; addi r0, r0, 8; addi r1, r1, -8 }
++	bnezt r1, 1b
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(clear_user_asm)
++	.pushsection __ex_table,"a"
++	.quad 1b, 2b
++	.popsection
++
++/*
++ * flush_user_asm takes the user target address in r0 and the
++ * number of bytes to flush in r1.
++ * It returns the number of unflushable bytes (hopefully zero) in r0.
++ */
++STD_ENTRY(flush_user_asm)
++	beqz r1, 2f
++	{ movei r2, L2_CACHE_BYTES; add r1, r0, r1 }
++	{ sub r2, zero, r2; addi r1, r1, L2_CACHE_BYTES-1 }
++	{ and r0, r0, r2; and r1, r1, r2 }
++	{ sub r1, r1, r0 }
++1:      { flush r0; addi r1, r1, -CHIP_FLUSH_STRIDE() }
++	{ addi r0, r0, CHIP_FLUSH_STRIDE(); bnezt r1, 1b }
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(flush_user_asm)
++	.pushsection __ex_table,"a"
++	.quad 1b, 2b
++	.popsection
++
++/*
++ * inv_user_asm takes the user target address in r0 and the
++ * number of bytes to invalidate in r1.
++ * It returns the number of not inv'able bytes (hopefully zero) in r0.
++ */
++STD_ENTRY(inv_user_asm)
++	beqz r1, 2f
++	{ movei r2, L2_CACHE_BYTES; add r1, r0, r1 }
++	{ sub r2, zero, r2; addi r1, r1, L2_CACHE_BYTES-1 }
++	{ and r0, r0, r2; and r1, r1, r2 }
++	{ sub r1, r1, r0 }
++1:      { inv r0; addi r1, r1, -CHIP_INV_STRIDE() }
++	{ addi r0, r0, CHIP_INV_STRIDE(); bnezt r1, 1b }
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(inv_user_asm)
++	.pushsection __ex_table,"a"
++	.quad 1b, 2b
++	.popsection
++
++/*
++ * finv_user_asm takes the user target address in r0 and the
++ * number of bytes to flush-invalidate in r1.
++ * It returns the number of not finv'able bytes (hopefully zero) in r0.
++ */
++STD_ENTRY(finv_user_asm)
++	beqz r1, 2f
++	{ movei r2, L2_CACHE_BYTES; add r1, r0, r1 }
++	{ sub r2, zero, r2; addi r1, r1, L2_CACHE_BYTES-1 }
++	{ and r0, r0, r2; and r1, r1, r2 }
++	{ sub r1, r1, r0 }
++1:      { finv r0; addi r1, r1, -CHIP_FINV_STRIDE() }
++	{ addi r0, r0, CHIP_FINV_STRIDE(); bnezt r1, 1b }
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(finv_user_asm)
++	.pushsection __ex_table,"a"
++	.quad 1b, 2b
++	.popsection
+diff --git a/arch/tile/mm/migrate_64.S b/arch/tile/mm/migrate_64.S
+new file mode 100644
+index 0000000..e76fea6
+--- /dev/null
++++ b/arch/tile/mm/migrate_64.S
+@@ -0,0 +1,187 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * This routine is a helper for migrating the home of a set of pages to
++ * a new cpu.  See the documentation in homecache.c for more information.
++ */
++
++#include <linux/linkage.h>
++#include <linux/threads.h>
++#include <asm/page.h>
++#include <asm/thread_info.h>
++#include <asm/types.h>
++#include <asm/asm-offsets.h>
++#include <hv/hypervisor.h>
++
++	.text
++
++/*
++ * First, some definitions that apply to all the code in the file.
++ */
++
++/* Locals (caller-save) */
++#define r_tmp		r10
++#define r_save_sp	r11
++
++/* What we save where in the stack frame; must include all callee-saves. */
++#define FRAME_SP	8
++#define FRAME_R30	16
++#define FRAME_R31	24
++#define FRAME_R32	32
++#define FRAME_R33	40
++#define FRAME_SIZE	48
++
++
++
++
++/*
++ * On entry:
++ *
++ *   r0 the new context PA to install (moved to r_context)
++ *   r1 PTE to use for context access (moved to r_access)
++ *   r2 ASID to use for new context (moved to r_asid)
++ *   r3 pointer to cpumask with just this cpu set in it (r_my_cpumask)
++ */
++
++/* Arguments (caller-save) */
++#define r_context_in	r0
++#define r_access_in	r1
++#define r_asid_in	r2
++#define r_my_cpumask	r3
++
++/* Locals (callee-save); must not be more than FRAME_xxx above. */
++#define r_save_ics	r30
++#define r_context	r31
++#define r_access	r32
++#define r_asid		r33
++
++/*
++ * Caller-save locals and frame constants are the same as
++ * for homecache_migrate_stack_and_flush.
++ */
++
++STD_ENTRY(flush_and_install_context)
++	/*
++	 * Create a stack frame; we can't touch it once we flush the
++	 * cache until we install the new page table and flush the TLB.
++	 */
++	{
++	 move r_save_sp, sp
++	 st sp, lr
++	 addi sp, sp, -FRAME_SIZE
++	}
++	addi r_tmp, sp, FRAME_SP
++	{
++	 st r_tmp, r_save_sp
++	 addi r_tmp, sp, FRAME_R30
++	}
++	{
++	 st r_tmp, r30
++	 addi r_tmp, sp, FRAME_R31
++	}
++	{
++	 st r_tmp, r31
++	 addi r_tmp, sp, FRAME_R32
++	}
++	{
++	 st r_tmp, r32
++	 addi r_tmp, sp, FRAME_R33
++	}
++	st r_tmp, r33
++
++	/* Move some arguments to callee-save registers. */
++	{
++	 move r_context, r_context_in
++	 move r_access, r_access_in
++	}
++	move r_asid, r_asid_in
++
++	/* Disable interrupts, since we can't use our stack. */
++	{
++	 mfspr r_save_ics, INTERRUPT_CRITICAL_SECTION
++	 movei r_tmp, 1
++	}
++	mtspr INTERRUPT_CRITICAL_SECTION, r_tmp
++
++	/* First, flush our L2 cache. */
++	{
++	 move r0, zero  /* cache_pa */
++	 moveli r1, hw2_last(HV_FLUSH_EVICT_L2)  /* cache_control */
++	}
++	{
++	 shl16insli r1, r1, hw1(HV_FLUSH_EVICT_L2)
++	 move r2, r_my_cpumask  /* cache_cpumask */
++	}
++	{
++	 shl16insli r1, r1, hw0(HV_FLUSH_EVICT_L2)
++	 move r3, zero  /* tlb_va */
++	}
++	{
++	 move r4, zero  /* tlb_length */
++	 move r5, zero  /* tlb_pgsize */
++	}
++	{
++	 move r6, zero  /* tlb_cpumask */
++	 move r7, zero  /* asids */
++	}
++	{
++	 move r8, zero  /* asidcount */
++	 jal hv_flush_remote
++	}
++	bnez r0, 1f
++
++	/* Now install the new page table. */
++	{
++	 move r0, r_context
++	 move r1, r_access
++	}
++	{
++	 move r2, r_asid
++	 movei r3, HV_CTX_DIRECTIO
++	}
++	jal hv_install_context
++	bnez r0, 1f
++
++	/* Finally, flush the TLB. */
++	{
++	 movei r0, 0   /* preserve_global */
++	 jal hv_flush_all
++	}
++
++1:      /* Reset interrupts back how they were before. */
++	mtspr INTERRUPT_CRITICAL_SECTION, r_save_ics
++
++	/* Restore the callee-saved registers and return. */
++	addli lr, sp, FRAME_SIZE
++	{
++	 ld lr, lr
++	 addli r_tmp, sp, FRAME_R30
++	}
++	{
++	 ld r30, r_tmp
++	 addli r_tmp, sp, FRAME_R31
++	}
++	{
++	 ld r31, r_tmp
++	 addli r_tmp, sp, FRAME_R32
++	}
++	{
++	 ld r32, r_tmp
++	 addli r_tmp, sp, FRAME_R33
++	}
++	{
++	 ld r33, r_tmp
++	 addi sp, sp, FRAME_SIZE
++	}
++	jrp lr
++	STD_ENDPROC(flush_and_install_context)
+diff --git a/drivers/input/input-compat.h b/drivers/input/input-compat.h
+index 4d8ea32..22be27b 100644
+--- a/drivers/input/input-compat.h
++++ b/drivers/input/input-compat.h
+@@ -19,7 +19,7 @@
+ 
+ /* Note to the author of this code: did it ever occur to
+    you why the ifdefs are needed? Think about it again. -AK */
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) || defined(CONFIG_TILE)
+ #  define INPUT_COMPAT_TEST is_compat_task()
+ #elif defined(CONFIG_S390)
+ #  define INPUT_COMPAT_TEST test_thread_flag(TIF_31BIT)
 -- 
-1.7.0.4
+1.6.5.2
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
