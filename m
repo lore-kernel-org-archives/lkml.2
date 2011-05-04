@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab1EDRlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 13:41:00 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43634 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab1EDRk6 (ORCPT
+	id S1755010Ab1EDRlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 13:41:47 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49661 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab1EDRlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 13:40:58 -0400
-Date: Wed, 4 May 2011 13:40:56 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Per Forlin <per.forlin@linaro.org>
-cc: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>,
-        linaro-dev@lists.linaro.org, linux-mmc@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] sdio: optimized SDIO IRQ handling for single irq
-In-Reply-To: <BANLkTinptOJrpdwbLOF_Th-Jz9gKj5Y6dQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1105041335570.24613@xanadu.home>
-References: <1304525161-14448-1-git-send-email-per.forlin@linaro.org> <1304525161-14448-2-git-send-email-per.forlin@linaro.org> <BANLkTi=LsmSepyUMbO7q2hG5-HWbRduO+Q@mail.gmail.com> <BANLkTinptOJrpdwbLOF_Th-Jz9gKj5Y6dQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 4 May 2011 13:41:45 -0400
+Date: Wed, 4 May 2011 10:41:36 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>, Jeff Layton <jlayton@redhat.com>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: [PATCH v3 2/3] ext4: Wait for writeback to complete while making
+	pages writable
+Message-ID: <20110504174136.GG20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110321164305.GC7153@quack.suse.cz> <20110406232938.GF1110@tux1.beaverton.ibm.com> <20110407165700.GB7363@quack.suse.cz> <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-926479970-1304530857=:24613"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110422000226.GA22189@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+In order to stabilize pages during disk writes, ext4_page_mkwrite must wait for
+writeback operations to complete before making a page writable.  Furthermore,
+the function must return locked pages, and recheck the writeback status if the
+page lock is ever dropped.
 
---8323328-926479970-1304530857=:24613
-Content-Type: TEXT/PLAIN; charset=iso-8859-2
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-On Wed, 4 May 2011, Per Forlin wrote:
+ fs/ext4/inode.c |   24 +++++++++++++++++++-----
+ 1 files changed, 19 insertions(+), 5 deletions(-)
 
-> 2011/5/4 Micha³ Miros³aw <mirqus@gmail.com>:
-> > 2011/5/4 Per Forlin <per.forlin@linaro.org>:
-> >> From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
-> >>
-> >> If there is only 1 function registered it is possible to
-> >> improve performance by directly calling the irq handler
-> >> and avoiding the overhead of reading the CCCR registers.
-> >>
-> > [...]
-> >> --- a/drivers/mmc/core/sdio_irq.c
-> >> +++ b/drivers/mmc/core/sdio_irq.c
-> >> @@ -32,6 +32,16 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
-> >>        int i, ret, count;
-> >>        unsigned char pending;
-> >>
-> >> +       /*
-> >> +        * Optimization, if there is only 1 function registered
-> >> +        * call irq handler directly
-> >> +        */
-> >> +       if (card->sdio_single_irq && card->sdio_single_irq->irq_handler) {
-> >> +               struct sdio_func *func = card->sdio_single_irq;
-> >> +               func->irq_handler(func);
-> >> +               return 1;
-> >> +       }
-> > [...]
-> >
-> > The second condition can be avoided:
-> >
-> > in process_sdio_pending_irqs():
-> >
-> > if (card->sdio_irq_func)
-> >   call handler and return
-> >
-> I added the second condition as a sanity check. Same check is used in
-> the main for loop
-> >	ret = -EINVAL;
-> >			} else if (func->irq_handler) {
-> >				func->irq_handler(func);
-> Is the second check necessary here?
-
-Yes because we want to be notified if the hardware returns pending 
-interrupt flags for interrupts we didn't claim.
-
-> > in sdio_claim_irq():
-> >
-> >  card->func->irq_handler = ...
-> >  if (host->sdio_irqs == 1)
-> >    card->sdio_irq_func = func;
-> >  else
-> >    card->sdio_irq_func = NULL;
-> I wanted to keep it simple and use same function in claim and release.
-> Your code looks nice.
-> Is if safe to not check the condition "(card->host->caps &
-> MMC_CAP_SDIO_IRQ)". What happens if the SDIO is in polling mode?
-
-You cannot avoid checking MMC_CAP_SDIO_IRQ.  If it isn't set the CCCr 
-register must be polled in all cases.
-
-
-Nicolas
---8323328-926479970-1304530857=:24613--
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 3db34b2..1d162a2 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -5809,15 +5809,19 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 		goto out_unlock;
+ 	}
+ 	ret = 0;
+-	if (PageMappedToDisk(page))
+-		goto out_unlock;
++
++	lock_page(page);
++	wait_on_page_writeback(page);
++	if (PageMappedToDisk(page)) {
++		up_read(&inode->i_alloc_sem);
++		return VM_FAULT_LOCKED;
++	}
+ 
+ 	if (page->index == size >> PAGE_CACHE_SHIFT)
+ 		len = size & ~PAGE_CACHE_MASK;
+ 	else
+ 		len = PAGE_CACHE_SIZE;
+ 
+-	lock_page(page);
+ 	/*
+ 	 * return if we have all the buffers mapped. This avoid
+ 	 * the need to call write_begin/write_end which does a
+@@ -5827,8 +5831,8 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	if (page_has_buffers(page)) {
+ 		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+ 					ext4_bh_unmapped)) {
+-			unlock_page(page);
+-			goto out_unlock;
++			up_read(&inode->i_alloc_sem);
++			return VM_FAULT_LOCKED;
+ 		}
+ 	}
+ 	unlock_page(page);
+@@ -5848,6 +5852,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	if (ret < 0)
+ 		goto out_unlock;
+ 	ret = 0;
++
++	/*
++	 * write_begin/end might have created a dirty page and someone
++	 * could wander in and start the IO.  Make sure that hasn't
++	 * happened.
++	 */
++	lock_page(page);
++	wait_on_page_writeback(page);
++	up_read(&inode->i_alloc_sem);
++	return VM_FAULT_LOCKED;
+ out_unlock:
+ 	if (ret)
+ 		ret = VM_FAULT_SIGBUS;
