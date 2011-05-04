@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab1EDObg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 10:31:36 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:40715 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab1EDObf (ORCPT
+	id S1754226Ab1EDOff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 10:35:35 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:32195 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753167Ab1EDOfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 10:31:35 -0400
-X-Auth-Info: b6zKnNy2oyuLY2yR5oVwMZfna3ZK5CW0dS6Zw9yt94s=
-Message-ID: <4DC163D7.9010309@grandegger.com>
-Date: Wed, 04 May 2011 16:33:59 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 4 May 2011 10:35:34 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: lsihS18VM1lg90w49LpXQaPaeUSuNMb3vRl_d1eiCGA8vFg
+ rDq2AL5aK4IfyHu6PukP_nJ.8WybqLk2P8rZe4AKnGCRVxh.kg5fe3R1.Vde
+ D6_Z0YspDxJsbOKvsJ3lpPqI1WLWUEnjxJV8SUxMKR_TRaeOslx8Fz94Midm
+ o_wy3CMu7MbMNBPwxW91EOEgBK3z7pAM5eyTP._xj4pbAPFNBW01Qs5yAK4T
+ mqg8mVzp7LKHnJhShM3Z4MFy0leW06cTIFrpQoVBHeQSGKa0Yxs.Ww60RLgb
+ I0KfSroC5dakRgszHgz38W6txjCFgFGS9qaUCJL4zaRkD97Ab
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 4 May 2011 09:35:30 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+In-Reply-To: <20110504142532.GC17294@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1105040934570.5495@router.home>
+References: <BANLkTi=6_oXX1BM5O3kJ6bVevh9=ydjj3g@mail.gmail.com> <20110504083559.GB25724@elte.hu> <alpine.LFD.2.02.1105041124080.3005@ionos> <20110504101932.GA3392@elte.hu> <alpine.LFD.2.02.1105041233280.3005@ionos> <BANLkTinxe=gSERoOHOohb1V-CZ0c9BSy2Q@mail.gmail.com>
+ <20110504112746.GE8007@htj.dyndns.org> <alpine.LFD.2.02.1105041417330.3005@ionos> <20110504132022.GA17294@htj.dyndns.org> <alpine.LFD.2.02.1105041539050.3005@ionos> <20110504142532.GC17294@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, Netdev@vger.kernel.org,
-        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <201104271525.28512.arnd@arndb.de> <15AD189F851849F69A011B6F4D1DDB6C@subhasishg> <201105041511.54095.arnd@arndb.de>
-In-Reply-To: <201105041511.54095.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, 4 May 2011, Tejun Heo wrote:
 
-On 05/04/2011 03:11 PM, Arnd Bergmann wrote:
-> On Wednesday 04 May 2011, Subhasish Ghosh wrote:
->> CAN requires mail box IDs to be programmed in. But, the socket
->> CAN subsystem supports only software filtering of the mail box IDs.
->>
->> So, the mail box IDs programmed into socket CAN during initialization
->> does not propagate into the hardware. This is planned to be a future
->> implementation in Socket CAN.
->>
->> In our case, we support hardware filtering, to work around with this,
->> Wolfgang (Socket CAN owner) suggested that we implement
->> this using sysfs.
->>
->> These setting are not for debugging, but to program the mail box IDs
->> into the hardware. 
-> 
-> Ok, I see. Can you point me to that discussion?
-> 
-> Wolfgang, I'm a bit worried by the API being split between sockets and sysfs.
-> The problem is that once the sysfs API is established, users will start
-> relying on it, and you can no longer migrate away from it, even when
-> a later version of the Socket CAN also supports setting through a different
-> interface. What is the current interface to set mail box IDs in software?
+> The cmpxchg_double optimization made the fast path go quite faster
+> when CPU supports it but it may as well slow things down considerably
+> if CPU doesn't, due to extra irq on/off's.  Anyways, here's hoping
+> that the slow down is acceptable compared to the base code without
+> cmpxchg_double and the ugliness can be removed.
 
-Note that this CAN controller is *very* special. It cannot handle all
-CAN id's due to a lack or resources. The PRUSS firmware is able to
-manage just up to 8 different CAN identifiers out of the usual 4096
-(12-bit) or even more for the extended CAN ids using 29 bits. There is
-no other CAN controller with such rather serious limitations and
-therefore there exists also no appropriate interface. I think using
-sysfs is OK for such device-specific parameters, at least for the time
-being.
+I think we are all in agreement. First path to fix the percpu macros:
 
-> How hard would it be to implement that feature in Socket CAN?
 
-CAN controllers usually provide some kind of hardware CAN id filtering,
-but in a very hardware dependent way. A generic interface may be able to
-handle the PRUSS restrictions as well. CAN devices are usually
-configured through the netlink interface. e.g.
+Subject: percpu: Fix irqsafe_cpu_cmpxchg_double
 
-  $ ip link set can0 up type can bitrate 125000
+The function in the macro was not updated when the function was given a bool return value.
 
-and such a common interface would be netlink based as well.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> Is that something that Subhasish or someone else could to as a prerequisite
-> to merging the driver?
+---
+ include/linux/percpu.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Any ideas on how to handle hardware filtering in a generic way are
-welcome. I will try to come up with a proposal sooner than later.
+Index: linux-2.6/include/linux/percpu.h
+===================================================================
+--- linux-2.6.orig/include/linux/percpu.h	2011-05-04 09:33:08.000000000 -0500
++++ linux-2.6/include/linux/percpu.h	2011-05-04 09:33:39.000000000 -0500
+@@ -948,7 +948,7 @@ do {									\
+ 	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
+ # endif
+ # define irqsafe_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+-	__pcpu_double_call_return_int(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
++	__pcpu_double_call_return_bool(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
+ #endif
 
-Wolfgang.
+ #endif /* __LINUX_PERCPU_H */
