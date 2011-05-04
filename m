@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab1EDRpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 13:45:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51749 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab1EDRpj convert rfc822-to-8bit (ORCPT
+	id S1754950Ab1EDRtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 13:49:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59721 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab1EDRtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 13:45:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=bPfbOtsVLr093p48SsV0GyoqKqCPZU7sSEq2eMOsUhzdTt7PdasxEbjg0klRbgQ4vp
-         bAUCsP/7+kPURSxIdayqpK8q9UwREpS2UA/dywyYD56wUHy2A70s6/vqlUw1NkpKPmMs
-         6JtpgsawWkzvVQQi8s6o10eKnEUTNlIrmn+dQ=
+	Wed, 4 May 2011 13:49:22 -0400
+Date: Wed, 4 May 2011 19:49:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christian Hoffmann <email@christianhoffmann.info>
+cc: john stultz <johnstul@us.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Long timeout when booting >= 2.6.38
+In-Reply-To: <4DC1832E.5030806@christianhoffmann.info>
+Message-ID: <alpine.LFD.2.02.1105041931510.3005@ionos>
+References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info> <1304470839.3037.12.camel@work-vm>
+ <4DC100D0.1030302@christianhoffmann.info> <alpine.LFD.2.02.1105041015220.3005@ionos> <4DC1832E.5030806@christianhoffmann.info>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <m3d3jybjf3.fsf@linux-m68k.org>
-References: <alpine.DEB.2.00.1105041629390.2629@ayla.of.borg>
-	<m3d3jybjf3.fsf@linux-m68k.org>
-Date: Wed, 4 May 2011 19:45:37 +0200
-X-Google-Sender-Auth: uW1nTvV1YV7793b-Z5BkKiDNWCY
-Message-ID: <BANLkTind9TLfuyVmRnRZJotFPgOebwf-dw@mail.gmail.com>
-Subject: Re: [PATCH] m68k/atari: Do not use "/" in interrupt names
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 17:00, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->> diff --git a/arch/m68k/atari/atakeyb.c b/arch/m68k/atari/atakeyb.c
->> index e1ada31..779efdc 100644
->> --- a/arch/m68k/atari/atakeyb.c
->> +++ b/arch/m68k/atari/atakeyb.c
->> @@ -572,7 +572,7 @@ int atari_keyb_init(void)
->>       kb_state.len = 0;
->>
->>       error = request_irq(IRQ_MFP_ACIA, atari_keyboard_interrupt,
->> -                         IRQ_TYPE_SLOW, "keyboard/mouse/MIDI",
->> +                         IRQ_TYPE_SLOW, "keyboard:mouse:MIDI",
->
-> The name is not a path, but an enumeration, so the slash should probably
-> be changed to a comma instead.
+On Wed, 4 May 2011, Christian Hoffmann wrote:
+> Hi,
+> 
+> > Huch. There is something badly wrong. Can you provide the output of
+> > 
+> >   cat /sys/devices/system/clocksource/clocksource0/available_clocksource
+> > 
+> > please ?
+> 
+> $ cat /sys/devices/system/clocksource/clocksource0/available_clocksource
+> tsc hpet acpi_pm
 
-I thought about that, but comma (albeit followed by a space) is also used to
-separate multiple interrupt handlers for shared interrupts.
+Hmm. So I really wonder why it refuses to switch to acpi_pm when you
+select it on the kernel command line.
+ 
+Does "echo acpi_pm > /sys/devices/system/clocksource/clocksource0/current_clocksource"
+work ?
 
-Gr{oetje,eeting}s,
+> > > [  147.940143] Refined TSC clocksource calibration: 2809.409 MHz.
+> > > [  147.940147] Switching to clocksource tsc
+> > 
+> > I just looked at the two boot logs you provided. So the main
+> > difference is that TSC gets installed way later.
+> > 
+> > Can you please boot the "working" kernel with clocksource=hpet on the
+> > commandline and verify whether the boot hang appears there as well?
+> > 
+> 
+> No, it works fine. See http://pastebin.com/raw.php?i=4wJWkiNM.
 
-                        Geert
+Ok. That excludes HPET. So the only difference left is the late
+registration of TSC which happens _AFTER_ the hang.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Can you boot the non working kernel with "lpj=28098860" on the kernel
+command line ?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+
+	tglx
