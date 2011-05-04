@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1EDTID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 15:08:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4715 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387Ab1EDTIB (ORCPT
+	id S1755258Ab1EDTI7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 15:08:59 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:46309 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab1EDTI6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 15:08:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=XczKobbgGT4zQl6BsqbkTlbAzy90pOYCEHUiaSWIJEBB4pPQG1ivc/azU3zOhfTqsw
-         Y+IiZZ1/wdeXoOVNTWxQ==
-Date: Wed, 4 May 2011 12:07:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] m68k SLUB fix for 2.6.39
-In-Reply-To: <1304521355.2810.21.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.00.1105041203250.22426@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site> <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
- <1304521355.2810.21.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 4 May 2011 15:08:58 -0400
+Date: Wed, 4 May 2011 21:08:42 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: [hid-picolcd] Avoid compile warning/error triggered by
+ copy_from_user()
+Message-ID: <20110504210842.50edc842@neptune.home>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, James Bottomley wrote:
+With CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y compilation of PicoLCD
+driver fails on copy_from_user(), without it a warning is generated:
 
-> Yes, but I also encountered it after I applied you patch, which is why I
-> still pushed the Kconfig patch.  It's possible, since there were a huge
-> number of patches flying around that the kernel base was contaminated,
-> so I'll strip down to just linus HEAD + parisc coherence patches,
-> reverting the Kconfig one and try again.
-> 
+  CC [M]  drivers/hid/hid-picolcd.o
+In file included from /usr/src/linux-2.6/arch/x86/include/asm/uaccess.h:571,
+                 from /usr/src/linux-2.6/arch/x86/include/asm/sections.h:5,
+                 from /usr/src/linux-2.6/arch/x86/include/asm/hw_irq.h:26,
+                 from /usr/src/linux-2.6/include/linux/irq.h:359,
+                 from /usr/src/linux-2.6/arch/x86/include/asm/hardirq.h:5,
+                 from /usr/src/linux-2.6/include/linux/hardirq.h:7,
+                 from /usr/src/linux-2.6/include/linux/interrupt.h:12,
+                 from /usr/src/linux-2.6/include/linux/usb.h:15,
+                 from /usr/src/linux-2.6/drivers/hid/hid-picolcd.c:25:
+In function 'copy_from_user',
+    inlined from 'picolcd_debug_eeprom_write' at drivers/hid/hid-picolcd.c:1592:
+arch/x86/include/asm/uaccess_32.h:212: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
 
-Great, and if that works out successfully this time around I think we'll 
-either need to fix each individual arch Kconfig that we know doesn't work 
-well (at least parisc because of the scheduling issue) so that it at least 
-enables CONFIG_NUMA implicitly for discontigmem unless CONFIG_BROKEN is 
-set.
+gcc-4.4.5 is not able to track size calculation when it is stored into
+a variable, thus tell copy_from_user() maximum size via
+min(*max-size*, *effective-size*) explicitly and inline how much to copy
+at most.
 
-The ideal solution is probably to rely on CONFIG_NEED_MULTIPLE_NODES 
-rather than CONFIG_NUMA, which is why it was introduced in the first place 
-since it was duplicating data structures for both NUMA and discontigmem.  
-That's apparently broken somewhere in the kernel that turned your SMP box 
-into an UP.
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+--
+
+diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+index b2f56a1..9d8710f 100644
+--- a/drivers/hid/hid-picolcd.c
++++ b/drivers/hid/hid-picolcd.c
+@@ -1585,11 +1585,11 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
+ 	memset(raw_data, 0, sizeof(raw_data));
+ 	raw_data[0] = *off & 0xff;
+ 	raw_data[1] = (*off >> 8) & 0xff;
+-	raw_data[2] = s < 20 ? s : 20;
++	raw_data[2] = min((size_t)20, s);
+ 	if (*off + raw_data[2] > 0xff)
+ 		raw_data[2] = 0x100 - *off;
+ 
+-	if (copy_from_user(raw_data+3, u, raw_data[2]))
++	if (copy_from_user(raw_data+3, u, min((u8)20, raw_data[2])))
+ 		return -EFAULT;
+ 	resp = picolcd_send_and_wait(data->hdev, REPORT_EE_WRITE, raw_data,
+ 			sizeof(raw_data));
