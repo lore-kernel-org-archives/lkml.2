@@ -1,51 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1EDQxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 12:53:52 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:56252 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab1EDQxv (ORCPT
+	id S1754368Ab1EDQ4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 12:56:06 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:49020 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab1EDQ4E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 12:53:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=RvAHBk/9iepowBsWBdaxMtUF8W2kEj1n42mj/sz9n0ID8Q7o5GbVYPhsWh9fWeasSO
-         +26GEMaNcZ6em09qp+T3D+qNCYG42dKzAQe1pzZeinl1wRZaU4LYHe0f5UjtOAX014/2
-         UEpSlB/lvH4FZw7fhDseKuIUmeZf0BkPixZ/s=
-Subject: [PATCH] sched: Wrap nr_spread_over with CONFIG_SCHED_DEBUG.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 May 2011 22:53:46 +0600
-Message-ID: <1304528026.15681.3.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 May 2011 12:56:04 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
+Thread-Topic: linux-next: Tree for May 4 (hyperv / vmbus)
+Thread-Index: AQHMCntOk+LR4a+Ld0eJSEbT0o5RQpR84xkw
+Date: Wed, 4 May 2011 16:56:02 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481DFD54@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <20110504144759.802483cc.sfr@canb.auug.org.au>
+ <20110504094908.b8295d22.randy.dunlap@oracle.com>
+In-Reply-To: <20110504094908.b8295d22.randy.dunlap@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- nr_spread_over is used when CONFIG_SCHED_DEBUG is set. So wrap nr_spread_over with CONFIG_SCHED_DEBUG.
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 8cb0a57..0b91adf 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -328,7 +328,9 @@ struct cfs_rq {
- 	 */
- 	struct sched_entity *curr, *next, *last, *skip;
- 
-+#ifdef	CONFIG_SCHED_DEBUG
- 	unsigned int nr_spread_over;
-+#endif
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
+> -----Original Message-----
+> From: devel-bounces@linuxdriverproject.org [mailto:devel-
+> bounces@linuxdriverproject.org] On Behalf Of Randy Dunlap
+> Sent: Wednesday, May 04, 2011 12:49 PM
+> To: Stephen Rothwell; driverdevel; gregkh@suse.de
+> Cc: Haiyang Zhang; linux-next@vger.kernel.org; LKML
+> Subject: Re: linux-next: Tree for May 4 (hyperv / vmbus)
+> 
+> On Wed, 4 May 2011 14:47:59 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> >
+> > Changes since 20110503:
+> 
+> 
+> when CONFIG_ACPI is not enabled:
+> 
+> 
+> drivers/staging/hv/vmbus_drv.c:736: warning: 'struct acpi_device' declared inside
+> parameter list
+> drivers/staging/hv/vmbus_drv.c:736: warning: its scope is only this definition or
+> declaration, which is probably not what you want
+> drivers/staging/hv/vmbus_drv.c: In function 'vmbus_acpi_add':
+> drivers/staging/hv/vmbus_drv.c:741: error: dereferencing pointer to incomplete
+> type
+> drivers/staging/hv/vmbus_drv.c: At top level:
+> drivers/staging/hv/vmbus_drv.c:758: error: variable 'vmbus_acpi_driver' has
+> initializer but incomplete type
+> drivers/staging/hv/vmbus_drv.c:759: error: unknown field 'name' specified in
+> initializer
+> drivers/staging/hv/vmbus_drv.c:759: warning: excess elements in struct initializer
+> drivers/staging/hv/vmbus_drv.c:759: warning: (near initialization for
+> 'vmbus_acpi_driver')
+> drivers/staging/hv/vmbus_drv.c:760: error: unknown field 'ids' specified in
+> initializer
+> drivers/staging/hv/vmbus_drv.c:760: warning: excess elements in struct initializer
+> drivers/staging/hv/vmbus_drv.c:760: warning: (near initialization for
+> 'vmbus_acpi_driver')
+> drivers/staging/hv/vmbus_drv.c:761: error: unknown field 'ops' specified in
+> initializer
+> drivers/staging/hv/vmbus_drv.c:761: error: extra brace group at end of initializer
+> drivers/staging/hv/vmbus_drv.c:761: error: (near initialization for
+> 'vmbus_acpi_driver')
+> drivers/staging/hv/vmbus_drv.c:763: warning: excess elements in struct initializer
+> drivers/staging/hv/vmbus_drv.c:763: warning: (near initialization for
+> 'vmbus_acpi_driver')
+> drivers/staging/hv/vmbus_drv.c: In function 'vmbus_acpi_init':
+> drivers/staging/hv/vmbus_drv.c:771: error: implicit declaration of function
+> 'acpi_bus_register_driver'
+> drivers/staging/hv/vmbus_drv.c: In function 'vmbus_acpi_exit':
+> drivers/staging/hv/vmbus_drv.c:780: error: implicit declaration of function
+> 'acpi_bus_unregister_driver'
+> make[4]: *** [drivers/staging/hv/vmbus_drv.o] Error 1
+> make[3]: *** [drivers/staging/hv] Error 2
+> 
+> 
+> 
+> 
+> 
+> vmbus_drv.c sure looks like it requires (depends on) both ACPI and PCI.
+> That should be expressed somewhere in its Kconfig file.
 
+Greg,
+
+Do you want me to send you a patch to fix this?
+
+Regards,
+
+K. Y
+> 
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code
+> ***
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
 
