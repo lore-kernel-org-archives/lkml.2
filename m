@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1EEN53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 09:57:29 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:60369 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754160Ab1EEN51 (ORCPT
+	id S1754267Ab1EEN62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 09:58:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55403 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab1EEN61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 09:57:27 -0400
-Date: Thu, 5 May 2011 09:57:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tony Vroon <tony@linx.net>
-cc: linux-usb@vger.kernel.org, <usb-storage@lists.one-eyed-alien.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: ums-realtek: Unneeded SubClass & Protocol entries (Fujitsu S760
- laptop)
-In-Reply-To: <4DC26B50.7070604@linx.net>
-Message-ID: <Pine.LNX.4.44L0.1105050955270.1893-100000@iolanthe.rowland.org>
+	Thu, 5 May 2011 09:58:27 -0400
+Date: Thu, 5 May 2011 15:58:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Dave Kleikamp <dkleikamp@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, paulmck@us.ibm.com
+Subject: Re: idle issues running sembench on 128 cpus
+In-Reply-To: <alpine.LFD.2.02.1105050110440.3005@ionos>
+Message-ID: <alpine.LFD.2.02.1105051556580.3005@ionos>
+References: <4DC1C95B.4040706@gmail.com> <m2pqnyyva8.fsf@firstfloor.org> <alpine.LFD.2.02.1105050023070.3005@ionos> <20110504230349.GC2925@one.firstfloor.org> <alpine.LFD.2.02.1105050110440.3005@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, Tony Vroon wrote:
-
-> On 05/04/11 17:35, Alan Stern wrote:
-> > Does the patch below cause the message to 
-> > go away?
+On Thu, 5 May 2011, Thomas Gleixner wrote:
+> On Thu, 5 May 2011, Andi Kleen wrote:
+> > > No, it does not even need refcounting. We can access it outside of the
+> > 
+> > Ok.
+> > 
+> > > lock as this is atomic context called on the cpu which is about to go
+> > > idle and therefor the device cannot go away. Easy and straightforward
+> > > fix.
+> > 
+> > Ok. Patch appended. Looks good?
 > 
-> Tested-By: Tony Vroon <tony@linx.net>
+> Mostly. See below.
+>  
+> > BTW why must the lock be irqsave?
 > 
-> - -ums-realtek 1-1.6:1.0: This device (0bda,0138,3882 S 06 P 50) has
-> unneeded SubClass and Protocol entries in unusual_devs.h (kernel
-> 2.6.39-rc5-00274-g609cfda)
-> - -   Please send a copy of this message to <linux-usb@vger.kernel.org>
-> and <usb-storage@lists.one-eyed-alien.net>
+> Good question. Probably safety frist paranoia :)
 > 
-> That is with your patch applied to 2.6.39-rc6-00041-g5895198. Many thanks.
+> Indeed that code should only be called from irq disabled regions, so
+> we could avoid the irqsave there. Otherwise that needs to be irqsave
+> for obvious reasons.
 
-Sorry, I don't quite understand what you mean.  Do those "- -" strings 
-indicate that the message is not present when the patch is applied?
+Just looked through all the call sites. Both intel_idle and
+processor_idle notify ENTER with interrups disabled, but EXIT with
+interrupts enabled. So when we want to remove irqsave from the
+spinlock that needs to be fixed as well.
 
-Alan Stern
+Thanks,
 
+        tglx
