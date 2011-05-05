@@ -1,1147 +1,2453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1EEV55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 17:57:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35739 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1EEV54 (ORCPT
+	id S1753587Ab1EEVWN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 17:22:13 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56268 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1EEVWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 17:57:56 -0400
+	Thu, 5 May 2011 17:22:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=the2masters.de; s=mail;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=u1D7KIrEnby4KSrM1+VJEoMqe9SYfknn5y+HhrVM2zmJeHwPiyFGPFhEtSPHsvSH1N
-         S7NNtfMDg0iHhHbmfbe3zIU0jveD1PeYdXjp4feKT3jws0LpiuUSrBsDL4xb8nbLSq1C
-         RRwXSwT/wsVpG0D3da9bkSLg2OtgAU0C7OPjo=
-Message-ID: <4DC31D5F.8070209@the2masters.de>
-Date: Thu, 05 May 2011 23:57:51 +0200
-From: Stefan Hellermann <stefan@the2masters.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=YVOCGLHyYN8WukZSQOZOf6BX6x3GNwbk7XMEViPkWR19VvinbQ0VpNA9A7Uz/foF+D
+         aiuPn3gZGIq0U9EkhSupoCdxog1/XlEbInIw21cbVsP5E3+XvGDeLVc0F+sT8Dt2jtAq
+         MCkcsa0Z+Yv1xMaRZm4CN+nW5iBCwXaQwmBUw=
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+To: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: b43-dev@lists.infradead.org,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Greg KH <greg@kroah.com>,
+        =?UTF-8?q?Michael=20B=C3=BCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
+Date: Thu,  5 May 2011 23:59:43 +0200
+Message-Id: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: yinghai@kernel.org
-Subject: Re: early crash on ancient tablet related to no-bootmem
-References: <4DC30251.9040902@the2masters.de>
-In-Reply-To: <4DC30251.9040902@the2masters.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: yinghai@kernel.org
+Cc: Greg KH <greg@kroah.com>
+Cc: Michael Büsch <mb@bu3sch.de>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: George Kashperko <george@znau.edu.ua>
+Cc: Arend van Spriel <arend@broadcom.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Andy Botting <andy@andybotting.com>
+Cc: linuxdriverproject <devel@linuxdriverproject.org>
+Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+---
+V2: Rename to axi
+    Use DEFINE_PCI_DEVICE_TABLE in bridge
+    Make use of pr_fmt and pr_*
+    Store core class
+    Rename bridge to not b43 specific
+    Replace magic 0x1000 with BCMAI_CORE_SIZE
+    Remove some old "ssb" names and defines
+    Move BCMAI_ADDR_BASE def
+    Add drvdata field
+V3: Fix reloading (kfree issue)
+    Add 14e4:0x4331
+    Fix non-initialized struct issue
+    Drop useless inline functions wrappers for pci core drv
+    Proper pr_* usage
+V3.1: Include forgotten changes (pr_* and include related)
+    Explain why we dare to implement empty release function
+V4: Add ABI documentation
+    Move struct device to wrapper and alloc it dynamically
+    checkpatch.pl pointed fixes
+V5: Rename to bcma, AXI was really bad name
+    Use EXPORT_SYMBOL_GPL
+    Set pci driver fields in one place
+    Drop unlikely
+    Use BCMA_CORE_SIZE for calc in awrite32
+    Add README
+    Fix compilation (delay.h)
+---
+ Documentation/ABI/testing/sysfs-bus-bcma    |   31 ++
+ drivers/Kconfig                             |    2 +
+ drivers/Makefile                            |    1 +
+ drivers/bcma/Kconfig                        |   33 +++
+ drivers/bcma/Makefile                       |    7 +
+ drivers/bcma/README                         |   18 ++
+ drivers/bcma/TODO                           |    3 +
+ drivers/bcma/bcma_private.h                 |   31 ++
+ drivers/bcma/core.c                         |   51 ++++
+ drivers/bcma/driver_chipcommon.c            |   87 ++++++
+ drivers/bcma/driver_chipcommon_pmu.c        |  134 +++++++++
+ drivers/bcma/driver_pci.c                   |  163 +++++++++++
+ drivers/bcma/host_pci.c                     |  196 +++++++++++++
+ drivers/bcma/main.c                         |  271 ++++++++++++++++++
+ drivers/bcma/scan.c                         |  392 +++++++++++++++++++++++++++
+ drivers/bcma/scan.h                         |   56 ++++
+ include/linux/bcma/bcma.h                   |  232 ++++++++++++++++
+ include/linux/bcma/bcma_driver_chipcommon.h |  297 ++++++++++++++++++++
+ include/linux/bcma/bcma_driver_pci.h        |   89 ++++++
+ include/linux/bcma/bcma_regs.h              |   34 +++
+ include/linux/mod_devicetable.h             |   17 ++
+ scripts/mod/file2alias.c                    |   22 ++
+ 22 files changed, 2167 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-bcma
+ create mode 100644 drivers/bcma/Kconfig
+ create mode 100644 drivers/bcma/Makefile
+ create mode 100644 drivers/bcma/README
+ create mode 100644 drivers/bcma/TODO
+ create mode 100644 drivers/bcma/bcma_private.h
+ create mode 100644 drivers/bcma/core.c
+ create mode 100644 drivers/bcma/driver_chipcommon.c
+ create mode 100644 drivers/bcma/driver_chipcommon_pmu.c
+ create mode 100644 drivers/bcma/driver_pci.c
+ create mode 100644 drivers/bcma/host_pci.c
+ create mode 100644 drivers/bcma/main.c
+ create mode 100644 drivers/bcma/scan.c
+ create mode 100644 drivers/bcma/scan.h
+ create mode 100644 include/linux/bcma/bcma.h
+ create mode 100644 include/linux/bcma/bcma_driver_chipcommon.h
+ create mode 100644 include/linux/bcma/bcma_driver_pci.h
+ create mode 100644 include/linux/bcma/bcma_regs.h
 
-Is this BIOS-88 RAM map supposed to work?
-
-Am 05.05.2011 22:02, schrieb Stefan Hellermann:
-> Hi!
-> 
-> I have an really old tablet PC. It's and 486 with 40MHz and 8MB Ram
-> (http://www.homecomputermuseum.de/comp/327_de.htm)
-> I sometimes test new kernels on it, and since the invention of
-> CONFIG_NO_BOOTMEM it does not work with this option enabled. So 2.6.36
-> without NO_BOOTMEM work, every newer Kernel will hang, only visible with
-> earlyprintk=vga.
-> 
-> Bootlog:
-> Booting the kernel.
-> Linux version 2.6.36 (stefan@hel-stefan.lan) (gcc version 4.6.0 20110428
-> (Red Hat 4.6.0-6) (GCC) ) #5 Thu May 5 21:49:09 CEST 2011
-> BIOS-provided physical RAM map:
->  BIOS-88: 0000000000000000 - 000000000009f000 (usable)
->  BIOS-88: 0000000000100000 - 0000000000840000 (usable)
-> bootconsole [earlyser0] enabled
-> Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
-> DMI not present or invalid.
-> last_pfn = 0x840 max_arch_pfn = 0x100000
-> init_memory_mapping: 0000000000000000-0000000000840000
-> 8MB LOWMEM available.
->   mapped low ram: 0 - 00840000
->   low ram: 0 - 00840000
-> Zone PFN ranges:
->   DMA      0x00000001 -> 0x00001000
->   Normal   empty
-> Movable zone start PFN for each node
-> early_node_map[2] active PFN ranges
->     0: 0x00000001 -> 0x0000009f
->     0: 0x00000100 -> 0x00000840
-> BUG: Int 6: CR2 (null)
->      EDI c034663c  ESI (null)  EBP c0329f38  ESP c0329ef4
->      EBX c0346380  EDX 00000006  ECX ffffffff  EAX fffffff4
->      err (null)  EIP c0353191   CS c0320060  flg 00010082
-> Stack: (null) c030c533 000007cd (null) c030c533 00000001 (null) (null)
->        00000003 0000083f 00000018 00000002 00000002 c0329f6c c03534d6 (null)
->        (null) 00000100 00000840 (null) c0329f64 00000001 00001000 (null)
-> Pid: 0, comm: swapper Not tainted 2.6.36 #5
-> Call Trace:
->  [<c02e3707>] ? 0xc02e3707
->  [<c035e6e5>] 0xc035e6e5
->  [<c0353191>] ? 0xc0353191
->  [<c03534d6>] 0xc03534d6
->  [<c034f1cd>] 0xc034f1cd
->  [<c034a824>] 0xc034a824
->  [<c03513cb>] ? 0xc03513cb
->  [<c0349432>] 0xc0349432
->  [<c0349066>] 0xc0349066
-> 
-> with NO_BOOTMEM=y. Is it possible to resolve this symbols somehow?
-> CONFIG_FRAMEPOINTER=y. With latest git the crash is about the same.
-> 
-> Bootlog of 2.6.36 without NO_BOOTMEM:
-> 
-> Decompressing Linux... Parsing ELF... done.
-> Booting the kernel.
-> Linux version 2.6.36 (stefan@hel-stefan.lan) (gcc version 4.6.0 20110428
-> (Red Hat 4.6.0-6) (GCC) ) #4 Thu May 5 21:25:47 CEST 2011
-> BIOS-provided physical RAM map:
->  BIOS-88: 0000000000000000 - 000000000009f000 (usable)
->  BIOS-88: 0000000000100000 - 0000000000840000 (usable)
-> bootconsole [earlyser0] enabled
-> Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
-> DMI not present or invalid.
-> last_pfn = 0x840 max_arch_pfn = 0x100000
-> init_memory_mapping: 0000000000000000-0000000000840000
-> 8MB LOWMEM available.
->   mapped low ram: 0 - 00840000
->   low ram: 0 - 00840000
->   node 0 low ram: 00000000 - 00840000
->   node 0 bootmap 00001000 - 00001108
-> (5/32 early reservations) ==> bootmem [0000000000 - 0000840000]
->   #0 [0000100000 - 000038dfa8]    TEXT DATA BSS ==> [0000100000 -
-> 000038dfa8]
->   #1 [000009f000 - 0000100000]    BIOS reserved ==> [000009f000 -
-> 0000100000]
->   #2 [000038e000 - 0000390000]              BRK ==> [000038e000 -
-> 0000390000]
->   #3 [0000007000 - 0000008000]          PGTABLE ==> [0000007000 -
-> 0000008000]
->   #4 [0000001000 - 0000002000]          BOOTMAP ==> [0000001000 -
-> 0000002000]
-> Zone PFN ranges:
->   DMA      0x00000001 -> 0x00001000
->   Normal   empty
-> Movable zone start PFN for each node
-> early_node_map[2] active PFN ranges
->     0: 0x00000001 -> 0x0000009f
->     0: 0x00000100 -> 0x00000840
-> Allocating PCI resources starting at 840000 (gap: 840000:ff7c0000)
-> Built 1 zonelists in Zone order, mobility grouping off.  Total pages: 1997
-> Kernel command line: root=/dev/hda2 parport=0x378,7 init=/etc/preinit
-> noinitrd earlyprintk=ttyS0,9600
-> PID hash table entries: 32 (order: -5, 128 bytes)
-> Dentry cache hash table entries: 1024 (order: 0, 4096 bytes)
-> Inode-cache hash table entries: 1024 (order: 0, 4096 bytes)
-> Initializing CPU#0
-> Memory: 5320k/8448k available (1933k kernel code, 2736k reserved, 387k
-> data, 196k init, 0k highmem)
-> virtual kernel memory layout:
->     fixmap  : 0xfffe4000 - 0xfffff000   ( 108 kB)
->     vmalloc : 0xc1040000 - 0xfffe2000   (1007 MB)
->     lowmem  : 0xc0000000 - 0xc0840000   (   8 MB)
->       .init : 0xc0345000 - 0xc0376000   ( 196 kB)
->       .data : 0xc02e356b - 0xc03442e4   ( 387 kB)
->       .text : 0xc0100000 - 0xc02e356b   (1933 kB)
-> Checking if this processor honours the WP bit even in supervisor mode...Ok.
-> SLUB: Genslabs=13, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-> NR_IRQS:16
-> Console: colour VGA+ 80x25
-> console [tty0] enabled, bootconsole disabled
-> 
-> 
-> 
-> One remark: Only 8MB Ram, so I had to change CONFIG_PHYSICAL_START and
-> even grub does not work on this machine. But there is something called
-> grub4dos that works...
-> 
-> config:
-> 
-> #
-> # Automatically generated make config: don't edit
-> # Linux kernel version: 2.6.36
-> # Thu May  5 21:43:11 2011
-> #
-> # CONFIG_64BIT is not set
-> CONFIG_X86_32=y
-> # CONFIG_X86_64 is not set
-> CONFIG_X86=y
-> CONFIG_INSTRUCTION_DECODER=y
-> CONFIG_OUTPUT_FORMAT="elf32-i386"
-> CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
-> CONFIG_GENERIC_CMOS_UPDATE=y
-> CONFIG_CLOCKSOURCE_WATCHDOG=y
-> CONFIG_GENERIC_CLOCKEVENTS=y
-> CONFIG_LOCKDEP_SUPPORT=y
-> CONFIG_STACKTRACE_SUPPORT=y
-> CONFIG_HAVE_LATENCYTOP_SUPPORT=y
-> CONFIG_MMU=y
-> CONFIG_ZONE_DMA=y
-> # CONFIG_NEED_DMA_MAP_STATE is not set
-> CONFIG_NEED_SG_DMA_LENGTH=y
-> CONFIG_GENERIC_ISA_DMA=y
-> CONFIG_GENERIC_IOMAP=y
-> CONFIG_GENERIC_BUG=y
-> CONFIG_GENERIC_HWEIGHT=y
-> CONFIG_ARCH_MAY_HAVE_PC_FDC=y
-> # CONFIG_RWSEM_GENERIC_SPINLOCK is not set
-> CONFIG_RWSEM_XCHGADD_ALGORITHM=y
-> CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-> CONFIG_GENERIC_CALIBRATE_DELAY=y
-> # CONFIG_GENERIC_TIME_VSYSCALL is not set
-> CONFIG_ARCH_HAS_CPU_RELAX=y
-> CONFIG_ARCH_HAS_DEFAULT_IDLE=y
-> CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
-> CONFIG_HAVE_SETUP_PER_CPU_AREA=y
-> CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
-> CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
-> # CONFIG_HAVE_CPUMASK_OF_CPU_MAP is not set
-> CONFIG_ARCH_HIBERNATION_POSSIBLE=y
-> CONFIG_ARCH_SUSPEND_POSSIBLE=y
-> # CONFIG_ZONE_DMA32 is not set
-> CONFIG_ARCH_POPULATES_NODE_MAP=y
-> # CONFIG_AUDIT_ARCH is not set
-> CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
-> CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
-> CONFIG_HAVE_EARLY_RES=y
-> CONFIG_GENERIC_HARDIRQS=y
-> CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
-> CONFIG_GENERIC_IRQ_PROBE=y
-> CONFIG_X86_32_LAZY_GS=y
-> CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-ecx -fcall-saved-edx"
-> CONFIG_KTIME_SCALAR=y
-> CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-> CONFIG_CONSTRUCTORS=y
-> 
-> #
-> # General setup
-> #
-> CONFIG_EXPERIMENTAL=y
-> CONFIG_BROKEN_ON_SMP=y
-> CONFIG_INIT_ENV_ARG_LIMIT=32
-> CONFIG_CROSS_COMPILE=""
-> CONFIG_LOCALVERSION=""
-> # CONFIG_LOCALVERSION_AUTO is not set
-> CONFIG_HAVE_KERNEL_GZIP=y
-> CONFIG_HAVE_KERNEL_BZIP2=y
-> CONFIG_HAVE_KERNEL_LZMA=y
-> CONFIG_HAVE_KERNEL_LZO=y
-> CONFIG_KERNEL_GZIP=y
-> # CONFIG_KERNEL_BZIP2 is not set
-> # CONFIG_KERNEL_LZMA is not set
-> # CONFIG_KERNEL_LZO is not set
-> CONFIG_SWAP=y
-> # CONFIG_SYSVIPC is not set
-> # CONFIG_POSIX_MQUEUE is not set
-> # CONFIG_BSD_PROCESS_ACCT is not set
-> # CONFIG_TASKSTATS is not set
-> # CONFIG_AUDIT is not set
-> 
-> #
-> # RCU Subsystem
-> #
-> # CONFIG_TREE_RCU is not set
-> CONFIG_TINY_RCU=y
-> # CONFIG_TREE_RCU_TRACE is not set
-> # CONFIG_IKCONFIG is not set
-> CONFIG_LOG_BUF_SHIFT=14
-> CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
-> # CONFIG_CGROUPS is not set
-> # CONFIG_SYSFS_DEPRECATED_V2 is not set
-> # CONFIG_RELAY is not set
-> # CONFIG_NAMESPACES is not set
-> # CONFIG_BLK_DEV_INITRD is not set
-> # CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-> CONFIG_SYSCTL=y
-> CONFIG_ANON_INODES=y
-> CONFIG_EMBEDDED=y
-> CONFIG_UID16=y
-> CONFIG_SYSCTL_SYSCALL=y
-> # CONFIG_KALLSYMS is not set
-> CONFIG_HOTPLUG=y
-> CONFIG_PRINTK=y
-> CONFIG_BUG=y
-> CONFIG_ELF_CORE=y
-> CONFIG_PCSPKR_PLATFORM=y
-> CONFIG_BASE_FULL=y
-> CONFIG_FUTEX=y
-> CONFIG_EPOLL=y
-> CONFIG_SIGNALFD=y
-> CONFIG_TIMERFD=y
-> CONFIG_EVENTFD=y
-> CONFIG_SHMEM=y
-> CONFIG_AIO=y
-> 
-> #
-> # Kernel Performance Events And Counters
-> #
-> CONFIG_PERF_EVENTS=y
-> # CONFIG_VM_EVENT_COUNTERS is not set
-> # CONFIG_SLUB_DEBUG is not set
-> # CONFIG_COMPAT_BRK is not set
-> # CONFIG_SLAB is not set
-> CONFIG_SLUB=y
-> # CONFIG_SLOB is not set
-> # CONFIG_PROFILING is not set
-> CONFIG_HAVE_OPROFILE=y
-> CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
-> CONFIG_HAVE_IOREMAP_PROT=y
-> CONFIG_HAVE_KPROBES=y
-> CONFIG_HAVE_KRETPROBES=y
-> CONFIG_HAVE_OPTPROBES=y
-> CONFIG_HAVE_ARCH_TRACEHOOK=y
-> CONFIG_HAVE_DMA_ATTRS=y
-> CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
-> CONFIG_HAVE_DMA_API_DEBUG=y
-> CONFIG_HAVE_HW_BREAKPOINT=y
-> CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
-> CONFIG_HAVE_USER_RETURN_NOTIFIER=y
-> CONFIG_HAVE_PERF_EVENTS_NMI=y
-> 
-> #
-> # GCOV-based kernel profiling
-> #
-> CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-> CONFIG_RT_MUTEXES=y
-> CONFIG_BASE_SMALL=0
-> # CONFIG_MODULES is not set
-> CONFIG_BLOCK=y
-> # CONFIG_LBDAF is not set
-> # CONFIG_BLK_DEV_BSG is not set
-> # CONFIG_BLK_DEV_INTEGRITY is not set
-> 
-> #
-> # IO Schedulers
-> #
-> CONFIG_IOSCHED_NOOP=y
-> # CONFIG_IOSCHED_DEADLINE is not set
-> CONFIG_IOSCHED_CFQ=y
-> CONFIG_DEFAULT_CFQ=y
-> # CONFIG_DEFAULT_NOOP is not set
-> CONFIG_DEFAULT_IOSCHED="cfq"
-> # CONFIG_INLINE_SPIN_TRYLOCK is not set
-> # CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
-> # CONFIG_INLINE_SPIN_LOCK is not set
-> # CONFIG_INLINE_SPIN_LOCK_BH is not set
-> # CONFIG_INLINE_SPIN_LOCK_IRQ is not set
-> # CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
-> CONFIG_INLINE_SPIN_UNLOCK=y
-> # CONFIG_INLINE_SPIN_UNLOCK_BH is not set
-> CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
-> # CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
-> # CONFIG_INLINE_READ_TRYLOCK is not set
-> # CONFIG_INLINE_READ_LOCK is not set
-> # CONFIG_INLINE_READ_LOCK_BH is not set
-> # CONFIG_INLINE_READ_LOCK_IRQ is not set
-> # CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
-> CONFIG_INLINE_READ_UNLOCK=y
-> # CONFIG_INLINE_READ_UNLOCK_BH is not set
-> CONFIG_INLINE_READ_UNLOCK_IRQ=y
-> # CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
-> # CONFIG_INLINE_WRITE_TRYLOCK is not set
-> # CONFIG_INLINE_WRITE_LOCK is not set
-> # CONFIG_INLINE_WRITE_LOCK_BH is not set
-> # CONFIG_INLINE_WRITE_LOCK_IRQ is not set
-> # CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
-> CONFIG_INLINE_WRITE_UNLOCK=y
-> # CONFIG_INLINE_WRITE_UNLOCK_BH is not set
-> CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
-> # CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
-> # CONFIG_MUTEX_SPIN_ON_OWNER is not set
-> CONFIG_FREEZER=y
-> 
-> #
-> # Processor type and features
-> #
-> # CONFIG_NO_HZ is not set
-> # CONFIG_HIGH_RES_TIMERS is not set
-> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-> # CONFIG_SMP is not set
-> # CONFIG_X86_EXTENDED_PLATFORM is not set
-> CONFIG_SCHED_OMIT_FRAME_POINTER=y
-> # CONFIG_PARAVIRT_GUEST is not set
-> CONFIG_NO_BOOTMEM=y
-> # CONFIG_MEMTEST is not set
-> # CONFIG_M386 is not set
-> CONFIG_M486=y
-> # CONFIG_M586 is not set
-> # CONFIG_M586TSC is not set
-> # CONFIG_M586MMX is not set
-> # CONFIG_M686 is not set
-> # CONFIG_MPENTIUMII is not set
-> # CONFIG_MPENTIUMIII is not set
-> # CONFIG_MPENTIUMM is not set
-> # CONFIG_MPENTIUM4 is not set
-> # CONFIG_MK6 is not set
-> # CONFIG_MK7 is not set
-> # CONFIG_MK8 is not set
-> # CONFIG_MCRUSOE is not set
-> # CONFIG_MEFFICEON is not set
-> # CONFIG_MWINCHIPC6 is not set
-> # CONFIG_MWINCHIP3D is not set
-> # CONFIG_MGEODEGX1 is not set
-> # CONFIG_MGEODE_LX is not set
-> # CONFIG_MCYRIXIII is not set
-> # CONFIG_MVIAC3_2 is not set
-> # CONFIG_MVIAC7 is not set
-> # CONFIG_MCORE2 is not set
-> # CONFIG_MATOM is not set
-> # CONFIG_X86_GENERIC is not set
-> CONFIG_X86_CPU=y
-> CONFIG_X86_INTERNODE_CACHE_SHIFT=4
-> CONFIG_X86_CMPXCHG=y
-> CONFIG_X86_L1_CACHE_SHIFT=4
-> CONFIG_X86_XADD=y
-> # CONFIG_X86_PPRO_FENCE is not set
-> CONFIG_X86_F00F_BUG=y
-> CONFIG_X86_INVD_BUG=y
-> CONFIG_X86_WP_WORKS_OK=y
-> CONFIG_X86_INVLPG=y
-> CONFIG_X86_BSWAP=y
-> CONFIG_X86_POPAD_OK=y
-> CONFIG_X86_ALIGNMENT_16=y
-> CONFIG_X86_MINIMUM_CPU_FAMILY=4
-> # CONFIG_PROCESSOR_SELECT is not set
-> CONFIG_CPU_SUP_INTEL=y
-> CONFIG_CPU_SUP_CYRIX_32=y
-> CONFIG_CPU_SUP_AMD=y
-> CONFIG_CPU_SUP_CENTAUR=y
-> CONFIG_CPU_SUP_TRANSMETA_32=y
-> CONFIG_CPU_SUP_UMC_32=y
-> # CONFIG_HPET_TIMER is not set
-> CONFIG_DMI=y
-> # CONFIG_IOMMU_HELPER is not set
-> # CONFIG_IOMMU_API is not set
-> CONFIG_NR_CPUS=1
-> CONFIG_PREEMPT_NONE=y
-> # CONFIG_PREEMPT_VOLUNTARY is not set
-> # CONFIG_PREEMPT is not set
-> # CONFIG_X86_UP_APIC is not set
-> # CONFIG_X86_MCE is not set
-> # CONFIG_VM86 is not set
-> CONFIG_TOSHIBA=y
-> # CONFIG_I8K is not set
-> # CONFIG_X86_REBOOTFIXUPS is not set
-> # CONFIG_MICROCODE is not set
-> # CONFIG_X86_MSR is not set
-> # CONFIG_X86_CPUID is not set
-> CONFIG_NOHIGHMEM=y
-> # CONFIG_HIGHMEM4G is not set
-> CONFIG_VMSPLIT_3G=y
-> # CONFIG_VMSPLIT_3G_OPT is not set
-> # CONFIG_VMSPLIT_2G is not set
-> # CONFIG_VMSPLIT_2G_OPT is not set
-> # CONFIG_VMSPLIT_1G is not set
-> CONFIG_PAGE_OFFSET=0xC0000000
-> # CONFIG_X86_PAE is not set
-> # CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
-> CONFIG_ARCH_FLATMEM_ENABLE=y
-> CONFIG_ARCH_SPARSEMEM_ENABLE=y
-> CONFIG_ARCH_SELECT_MEMORY_MODEL=y
-> CONFIG_ILLEGAL_POINTER_VALUE=0
-> CONFIG_SELECT_MEMORY_MODEL=y
-> CONFIG_FLATMEM_MANUAL=y
-> # CONFIG_SPARSEMEM_MANUAL is not set
-> CONFIG_FLATMEM=y
-> CONFIG_FLAT_NODE_MEM_MAP=y
-> CONFIG_SPARSEMEM_STATIC=y
-> CONFIG_PAGEFLAGS_EXTENDED=y
-> CONFIG_SPLIT_PTLOCK_CPUS=4
-> # CONFIG_PHYS_ADDR_T_64BIT is not set
-> CONFIG_ZONE_DMA_FLAG=1
-> CONFIG_BOUNCE=y
-> CONFIG_VIRT_TO_BUS=y
-> # CONFIG_KSM is not set
-> CONFIG_DEFAULT_MMAP_MIN_ADDR=0
-> # CONFIG_X86_CHECK_BIOS_CORRUPTION is not set
-> # CONFIG_X86_RESERVE_LOW_64K is not set
-> # CONFIG_MATH_EMULATION is not set
-> # CONFIG_MTRR is not set
-> # CONFIG_SECCOMP is not set
-> # CONFIG_CC_STACKPROTECTOR is not set
-> CONFIG_HZ_100=y
-> # CONFIG_HZ_250 is not set
-> # CONFIG_HZ_300 is not set
-> # CONFIG_HZ_1000 is not set
-> CONFIG_HZ=100
-> # CONFIG_SCHED_HRTICK is not set
-> # CONFIG_KEXEC is not set
-> CONFIG_PHYSICAL_START=0x100000
-> # CONFIG_RELOCATABLE is not set
-> CONFIG_PHYSICAL_ALIGN=0x100000
-> # CONFIG_COMPAT_VDSO is not set
-> # CONFIG_CMDLINE_BOOL is not set
-> 
-> #
-> # Power management and ACPI options
-> #
-> CONFIG_PM=y
-> # CONFIG_PM_DEBUG is not set
-> CONFIG_PM_SLEEP=y
-> CONFIG_SUSPEND_NVS=y
-> CONFIG_SUSPEND=y
-> CONFIG_SUSPEND_FREEZER=y
-> # CONFIG_HIBERNATION is not set
-> CONFIG_PM_RUNTIME=y
-> CONFIG_PM_OPS=y
-> # CONFIG_SFI is not set
-> CONFIG_X86_APM_BOOT=y
-> CONFIG_APM=y
-> # CONFIG_APM_IGNORE_USER_SUSPEND is not set
-> CONFIG_APM_DO_ENABLE=y
-> CONFIG_APM_CPU_IDLE=y
-> CONFIG_APM_DISPLAY_BLANK=y
-> CONFIG_APM_ALLOW_INTS=y
-> 
-> #
-> # CPU Frequency scaling
-> #
-> # CONFIG_CPU_FREQ is not set
-> # CONFIG_CPU_IDLE is not set
-> 
-> #
-> # Bus options (PCI etc.)
-> #
-> # CONFIG_PCI is not set
-> # CONFIG_ARCH_SUPPORTS_MSI is not set
-> CONFIG_ISA_DMA_API=y
-> CONFIG_ISA=y
-> # CONFIG_EISA is not set
-> # CONFIG_MCA is not set
-> # CONFIG_SCx200 is not set
-> # CONFIG_OLPC is not set
-> # CONFIG_OLPC_OPENFIRMWARE is not set
-> CONFIG_PCCARD=y
-> CONFIG_PCMCIA=y
-> CONFIG_PCMCIA_LOAD_CIS=y
-> 
-> #
-> # PC-card bridges
-> #
-> CONFIG_I82365=y
-> # CONFIG_TCIC is not set
-> CONFIG_PCMCIA_PROBE=y
-> CONFIG_PCCARD_NONSTATIC=y
-> 
-> #
-> # Executable file formats / Emulations
-> #
-> CONFIG_BINFMT_ELF=y
-> # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-> CONFIG_HAVE_AOUT=y
-> # CONFIG_BINFMT_AOUT is not set
-> # CONFIG_BINFMT_MISC is not set
-> CONFIG_HAVE_ATOMIC_IOMAP=y
-> CONFIG_NET=y
-> 
-> #
-> # Networking options
-> #
-> CONFIG_PACKET=y
-> CONFIG_UNIX=y
-> # CONFIG_NET_KEY is not set
-> CONFIG_INET=y
-> # CONFIG_IP_MULTICAST is not set
-> # CONFIG_IP_ADVANCED_ROUTER is not set
-> CONFIG_IP_FIB_HASH=y
-> # CONFIG_IP_PNP is not set
-> # CONFIG_NET_IPIP is not set
-> # CONFIG_NET_IPGRE is not set
-> # CONFIG_ARPD is not set
-> # CONFIG_SYN_COOKIES is not set
-> # CONFIG_INET_AH is not set
-> # CONFIG_INET_ESP is not set
-> # CONFIG_INET_IPCOMP is not set
-> # CONFIG_INET_XFRM_TUNNEL is not set
-> # CONFIG_INET_TUNNEL is not set
-> # CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-> # CONFIG_INET_XFRM_MODE_TUNNEL is not set
-> # CONFIG_INET_XFRM_MODE_BEET is not set
-> # CONFIG_INET_LRO is not set
-> # CONFIG_INET_DIAG is not set
-> # CONFIG_TCP_CONG_ADVANCED is not set
-> CONFIG_TCP_CONG_CUBIC=y
-> CONFIG_DEFAULT_TCP_CONG="cubic"
-> # CONFIG_TCP_MD5SIG is not set
-> CONFIG_IPV6=y
-> # CONFIG_IPV6_PRIVACY is not set
-> # CONFIG_IPV6_ROUTER_PREF is not set
-> # CONFIG_IPV6_OPTIMISTIC_DAD is not set
-> # CONFIG_INET6_AH is not set
-> # CONFIG_INET6_ESP is not set
-> # CONFIG_INET6_IPCOMP is not set
-> # CONFIG_IPV6_MIP6 is not set
-> # CONFIG_INET6_XFRM_TUNNEL is not set
-> # CONFIG_INET6_TUNNEL is not set
-> # CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
-> # CONFIG_INET6_XFRM_MODE_TUNNEL is not set
-> # CONFIG_INET6_XFRM_MODE_BEET is not set
-> # CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION is not set
-> # CONFIG_IPV6_SIT is not set
-> # CONFIG_IPV6_TUNNEL is not set
-> # CONFIG_IPV6_MULTIPLE_TABLES is not set
-> # CONFIG_IPV6_MROUTE is not set
-> # CONFIG_NETWORK_SECMARK is not set
-> # CONFIG_NETWORK_PHY_TIMESTAMPING is not set
-> # CONFIG_NETFILTER is not set
-> # CONFIG_IP_DCCP is not set
-> # CONFIG_IP_SCTP is not set
-> # CONFIG_RDS is not set
-> # CONFIG_TIPC is not set
-> # CONFIG_ATM is not set
-> # CONFIG_L2TP is not set
-> # CONFIG_BRIDGE is not set
-> # CONFIG_NET_DSA is not set
-> # CONFIG_VLAN_8021Q is not set
-> # CONFIG_DECNET is not set
-> # CONFIG_LLC2 is not set
-> # CONFIG_IPX is not set
-> # CONFIG_ATALK is not set
-> # CONFIG_X25 is not set
-> # CONFIG_LAPB is not set
-> # CONFIG_ECONET is not set
-> # CONFIG_WAN_ROUTER is not set
-> # CONFIG_PHONET is not set
-> # CONFIG_IEEE802154 is not set
-> # CONFIG_NET_SCHED is not set
-> # CONFIG_DCB is not set
-> 
-> #
-> # Network testing
-> #
-> # CONFIG_NET_PKTGEN is not set
-> # CONFIG_HAMRADIO is not set
-> # CONFIG_CAN is not set
-> # CONFIG_IRDA is not set
-> # CONFIG_BT is not set
-> # CONFIG_AF_RXRPC is not set
-> # CONFIG_WIRELESS is not set
-> # CONFIG_WIMAX is not set
-> # CONFIG_RFKILL is not set
-> # CONFIG_NET_9P is not set
-> # CONFIG_CAIF is not set
-> 
-> #
-> # Device Drivers
-> #
-> 
-> #
-> # Generic Driver Options
-> #
-> CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-> CONFIG_DEVTMPFS=y
-> # CONFIG_DEVTMPFS_MOUNT is not set
-> CONFIG_STANDALONE=y
-> # CONFIG_PREVENT_FIRMWARE_BUILD is not set
-> CONFIG_FW_LOADER=y
-> CONFIG_FIRMWARE_IN_KERNEL=y
-> CONFIG_EXTRA_FIRMWARE=""
-> # CONFIG_SYS_HYPERVISOR is not set
-> # CONFIG_CONNECTOR is not set
-> # CONFIG_MTD is not set
-> CONFIG_PARPORT=y
-> CONFIG_PARPORT_PC=y
-> CONFIG_PARPORT_PC_FIFO=y
-> # CONFIG_PARPORT_PC_SUPERIO is not set
-> # CONFIG_PARPORT_PC_PCMCIA is not set
-> # CONFIG_PARPORT_GSC is not set
-> # CONFIG_PARPORT_AX88796 is not set
-> # CONFIG_PARPORT_1284 is not set
-> # CONFIG_PNP is not set
-> CONFIG_BLK_DEV=y
-> CONFIG_BLK_DEV_FD=y
-> # CONFIG_BLK_DEV_XD is not set
-> # CONFIG_PARIDE is not set
-> # CONFIG_BLK_DEV_COW_COMMON is not set
-> # CONFIG_BLK_DEV_LOOP is not set
-> 
-> #
-> # DRBD disabled because PROC_FS, INET or CONNECTOR not selected
-> #
-> # CONFIG_BLK_DEV_NBD is not set
-> # CONFIG_BLK_DEV_RAM is not set
-> # CONFIG_CDROM_PKTCDVD is not set
-> # CONFIG_ATA_OVER_ETH is not set
-> # CONFIG_BLK_DEV_HD is not set
-> # CONFIG_MISC_DEVICES is not set
-> CONFIG_HAVE_IDE=y
-> CONFIG_IDE=y
-> 
-> #
-> # Please see Documentation/ide/ide.txt for help/info on IDE drives
-> #
-> # CONFIG_BLK_DEV_IDE_SATA is not set
-> CONFIG_IDE_GD=y
-> CONFIG_IDE_GD_ATA=y
-> # CONFIG_IDE_GD_ATAPI is not set
-> CONFIG_BLK_DEV_IDECS=y
-> # CONFIG_BLK_DEV_IDECD is not set
-> # CONFIG_BLK_DEV_IDETAPE is not set
-> # CONFIG_IDE_TASK_IOCTL is not set
-> # CONFIG_IDE_PROC_FS is not set
-> 
-> #
-> # IDE chipset support/bugfixes
-> #
-> CONFIG_IDE_GENERIC=y
-> # CONFIG_BLK_DEV_PLATFORM is not set
-> # CONFIG_BLK_DEV_CMD640 is not set
-> 
-> #
-> # Other IDE chipsets support
-> #
-> 
-> #
-> # Note: most of these also require special kernel boot parameters
-> #
-> # CONFIG_BLK_DEV_4DRIVES is not set
-> # CONFIG_BLK_DEV_ALI14XX is not set
-> # CONFIG_BLK_DEV_DTC2278 is not set
-> # CONFIG_BLK_DEV_HT6560B is not set
-> # CONFIG_BLK_DEV_QD65XX is not set
-> # CONFIG_BLK_DEV_UMC8672 is not set
-> # CONFIG_BLK_DEV_IDEDMA is not set
-> 
-> #
-> # SCSI device support
-> #
-> CONFIG_SCSI_MOD=y
-> # CONFIG_RAID_ATTRS is not set
-> # CONFIG_SCSI is not set
-> # CONFIG_SCSI_DMA is not set
-> # CONFIG_SCSI_NETLINK is not set
-> # CONFIG_ATA is not set
-> # CONFIG_MD is not set
-> # CONFIG_MACINTOSH_DRIVERS is not set
-> CONFIG_NETDEVICES=y
-> # CONFIG_DUMMY is not set
-> # CONFIG_BONDING is not set
-> # CONFIG_MACVLAN is not set
-> # CONFIG_EQUALIZER is not set
-> # CONFIG_TUN is not set
-> # CONFIG_VETH is not set
-> # CONFIG_ARCNET is not set
-> # CONFIG_PHYLIB is not set
-> # CONFIG_NET_ETHERNET is not set
-> # CONFIG_NETDEV_1000 is not set
-> # CONFIG_NETDEV_10000 is not set
-> # CONFIG_TR is not set
-> # CONFIG_WLAN is not set
-> 
-> #
-> # Enable WiMAX (Networking options) to see the WiMAX drivers
-> #
-> CONFIG_NET_PCMCIA=y
-> # CONFIG_PCMCIA_3C589 is not set
-> CONFIG_PCMCIA_3C574=y
-> # CONFIG_PCMCIA_FMVJ18X is not set
-> # CONFIG_PCMCIA_PCNET is not set
-> # CONFIG_PCMCIA_NMCLAN is not set
-> # CONFIG_PCMCIA_SMC91C92 is not set
-> # CONFIG_PCMCIA_XIRC2PS is not set
-> # CONFIG_PCMCIA_AXNET is not set
-> # CONFIG_WAN is not set
-> 
-> #
-> # CAIF transport drivers
-> #
-> CONFIG_PLIP=y
-> CONFIG_PPP=y
-> # CONFIG_PPP_MULTILINK is not set
-> # CONFIG_PPP_FILTER is not set
-> CONFIG_PPP_ASYNC=y
-> # CONFIG_PPP_SYNC_TTY is not set
-> # CONFIG_PPP_DEFLATE is not set
-> # CONFIG_PPP_BSDCOMP is not set
-> # CONFIG_PPP_MPPE is not set
-> CONFIG_PPPOE=y
-> # CONFIG_SLIP is not set
-> CONFIG_SLHC=y
-> # CONFIG_NETCONSOLE is not set
-> # CONFIG_NETPOLL is not set
-> # CONFIG_NET_POLL_CONTROLLER is not set
-> # CONFIG_ISDN is not set
-> # CONFIG_PHONE is not set
-> 
-> #
-> # Input device support
-> #
-> CONFIG_INPUT=y
-> # CONFIG_INPUT_FF_MEMLESS is not set
-> # CONFIG_INPUT_POLLDEV is not set
-> # CONFIG_INPUT_SPARSEKMAP is not set
-> 
-> #
-> # Userland interfaces
-> #
-> # CONFIG_INPUT_MOUSEDEV is not set
-> # CONFIG_INPUT_JOYDEV is not set
-> # CONFIG_INPUT_EVDEV is not set
-> # CONFIG_INPUT_EVBUG is not set
-> 
-> #
-> # Input Device Drivers
-> #
-> CONFIG_INPUT_KEYBOARD=y
-> CONFIG_KEYBOARD_ATKBD=y
-> # CONFIG_KEYBOARD_LKKBD is not set
-> # CONFIG_KEYBOARD_NEWTON is not set
-> # CONFIG_KEYBOARD_OPENCORES is not set
-> # CONFIG_KEYBOARD_STOWAWAY is not set
-> # CONFIG_KEYBOARD_SUNKBD is not set
-> # CONFIG_KEYBOARD_XTKBD is not set
-> # CONFIG_INPUT_MOUSE is not set
-> # CONFIG_INPUT_JOYSTICK is not set
-> # CONFIG_INPUT_TABLET is not set
-> # CONFIG_INPUT_TOUCHSCREEN is not set
-> CONFIG_INPUT_MISC=y
-> # CONFIG_INPUT_AD714X is not set
-> CONFIG_INPUT_PCSPKR=y
-> # CONFIG_INPUT_WISTRON_BTNS is not set
-> # CONFIG_INPUT_UINPUT is not set
-> # CONFIG_INPUT_ADXL34X is not set
-> 
-> #
-> # Hardware I/O ports
-> #
-> CONFIG_SERIO=y
-> CONFIG_SERIO_I8042=y
-> # CONFIG_SERIO_SERPORT is not set
-> # CONFIG_SERIO_CT82C710 is not set
-> # CONFIG_SERIO_PARKBD is not set
-> CONFIG_SERIO_LIBPS2=y
-> # CONFIG_SERIO_RAW is not set
-> # CONFIG_SERIO_ALTERA_PS2 is not set
-> # CONFIG_GAMEPORT is not set
-> 
-> #
-> # Character devices
-> #
-> CONFIG_VT=y
-> CONFIG_CONSOLE_TRANSLATIONS=y
-> CONFIG_VT_CONSOLE=y
-> CONFIG_HW_CONSOLE=y
-> # CONFIG_VT_HW_CONSOLE_BINDING is not set
-> # CONFIG_DEVKMEM is not set
-> # CONFIG_SERIAL_NONSTANDARD is not set
-> # CONFIG_N_GSM is not set
-> 
-> #
-> # Serial drivers
-> #
-> CONFIG_SERIAL_8250=y
-> CONFIG_SERIAL_8250_CONSOLE=y
-> CONFIG_FIX_EARLYCON_MEM=y
-> CONFIG_SERIAL_8250_CS=y
-> CONFIG_SERIAL_8250_NR_UARTS=2
-> CONFIG_SERIAL_8250_RUNTIME_UARTS=2
-> CONFIG_SERIAL_8250_EXTENDED=y
-> # CONFIG_SERIAL_8250_MANY_PORTS is not set
-> # CONFIG_SERIAL_8250_SHARE_IRQ is not set
-> CONFIG_SERIAL_8250_DETECT_IRQ=y
-> # CONFIG_SERIAL_8250_RSA is not set
-> 
-> #
-> # Non-8250 serial port support
-> #
-> CONFIG_SERIAL_CORE=y
-> CONFIG_SERIAL_CORE_CONSOLE=y
-> # CONFIG_SERIAL_TIMBERDALE is not set
-> # CONFIG_SERIAL_ALTERA_JTAGUART is not set
-> # CONFIG_SERIAL_ALTERA_UART is not set
-> CONFIG_UNIX98_PTYS=y
-> # CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
-> # CONFIG_LEGACY_PTYS is not set
-> # CONFIG_PRINTER is not set
-> # CONFIG_PPDEV is not set
-> # CONFIG_IPMI_HANDLER is not set
-> # CONFIG_HW_RANDOM is not set
-> # CONFIG_NVRAM is not set
-> CONFIG_RTC=y
-> # CONFIG_DTLK is not set
-> # CONFIG_R3964 is not set
-> 
-> #
-> # PCMCIA character devices
-> #
-> # CONFIG_SYNCLINK_CS is not set
-> # CONFIG_CARDMAN_4000 is not set
-> # CONFIG_CARDMAN_4040 is not set
-> # CONFIG_IPWIRELESS is not set
-> # CONFIG_MWAVE is not set
-> # CONFIG_PC8736x_GPIO is not set
-> # CONFIG_NSC_GPIO is not set
-> # CONFIG_CS5535_GPIO is not set
-> # CONFIG_RAW_DRIVER is not set
-> # CONFIG_HANGCHECK_TIMER is not set
-> # CONFIG_TCG_TPM is not set
-> # CONFIG_TELCLOCK is not set
-> CONFIG_DEVPORT=y
-> # CONFIG_RAMOOPS is not set
-> # CONFIG_I2C is not set
-> # CONFIG_SPI is not set
-> 
-> #
-> # PPS support
-> #
-> # CONFIG_PPS is not set
-> CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
-> # CONFIG_GPIOLIB is not set
-> # CONFIG_W1 is not set
-> # CONFIG_POWER_SUPPLY is not set
-> # CONFIG_HWMON is not set
-> # CONFIG_THERMAL is not set
-> # CONFIG_WATCHDOG is not set
-> CONFIG_SSB_POSSIBLE=y
-> 
-> #
-> # Sonics Silicon Backplane
-> #
-> # CONFIG_SSB is not set
-> # CONFIG_MFD_SUPPORT is not set
-> # CONFIG_REGULATOR is not set
-> # CONFIG_MEDIA_SUPPORT is not set
-> 
-> #
-> # Graphics support
-> #
-> # CONFIG_DRM is not set
-> # CONFIG_VGASTATE is not set
-> # CONFIG_VIDEO_OUTPUT_CONTROL is not set
-> # CONFIG_FB is not set
-> # CONFIG_BACKLIGHT_LCD_SUPPORT is not set
-> 
-> #
-> # Display device support
-> #
-> # CONFIG_DISPLAY_SUPPORT is not set
-> 
-> #
-> # Console display driver support
-> #
-> CONFIG_VGA_CONSOLE=y
-> # CONFIG_VGACON_SOFT_SCROLLBACK is not set
-> # CONFIG_MDA_CONSOLE is not set
-> CONFIG_DUMMY_CONSOLE=y
-> # CONFIG_SOUND is not set
-> # CONFIG_HID_SUPPORT is not set
-> # CONFIG_USB_SUPPORT is not set
-> # CONFIG_MMC is not set
-> # CONFIG_MEMSTICK is not set
-> # CONFIG_NEW_LEDS is not set
-> # CONFIG_ACCESSIBILITY is not set
-> # CONFIG_EDAC is not set
-> # CONFIG_RTC_CLASS is not set
-> # CONFIG_DMADEVICES is not set
-> # CONFIG_AUXDISPLAY is not set
-> # CONFIG_UIO is not set
-> # CONFIG_STAGING is not set
-> # CONFIG_X86_PLATFORM_DEVICES is not set
-> 
-> #
-> # Firmware Drivers
-> #
-> # CONFIG_EDD is not set
-> CONFIG_FIRMWARE_MEMMAP=y
-> # CONFIG_DELL_RBU is not set
-> # CONFIG_DCDBAS is not set
-> # CONFIG_DMIID is not set
-> # CONFIG_ISCSI_IBFT_FIND is not set
-> 
-> #
-> # File systems
-> #
-> CONFIG_EXT2_FS=y
-> # CONFIG_EXT2_FS_XATTR is not set
-> # CONFIG_EXT2_FS_XIP is not set
-> CONFIG_EXT3_FS=y
-> # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-> # CONFIG_EXT3_FS_XATTR is not set
-> # CONFIG_EXT4_FS is not set
-> CONFIG_JBD=y
-> # CONFIG_REISERFS_FS is not set
-> # CONFIG_JFS_FS is not set
-> # CONFIG_FS_POSIX_ACL is not set
-> # CONFIG_XFS_FS is not set
-> # CONFIG_OCFS2_FS is not set
-> # CONFIG_BTRFS_FS is not set
-> # CONFIG_NILFS2_FS is not set
-> CONFIG_FILE_LOCKING=y
-> CONFIG_FSNOTIFY=y
-> CONFIG_DNOTIFY=y
-> CONFIG_INOTIFY_USER=y
-> # CONFIG_QUOTA is not set
-> # CONFIG_AUTOFS_FS is not set
-> # CONFIG_AUTOFS4_FS is not set
-> # CONFIG_FUSE_FS is not set
-> 
-> #
-> # Caches
-> #
-> # CONFIG_FSCACHE is not set
-> 
-> #
-> # CD-ROM/DVD Filesystems
-> #
-> # CONFIG_ISO9660_FS is not set
-> # CONFIG_UDF_FS is not set
-> 
-> #
-> # DOS/FAT/NT Filesystems
-> #
-> CONFIG_FAT_FS=y
-> CONFIG_MSDOS_FS=y
-> CONFIG_VFAT_FS=y
-> CONFIG_FAT_DEFAULT_CODEPAGE=850
-> CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-15"
-> # CONFIG_NTFS_FS is not set
-> 
-> #
-> # Pseudo filesystems
-> #
-> CONFIG_PROC_FS=y
-> # CONFIG_PROC_KCORE is not set
-> CONFIG_PROC_SYSCTL=y
-> CONFIG_PROC_PAGE_MONITOR=y
-> CONFIG_SYSFS=y
-> CONFIG_TMPFS=y
-> # CONFIG_TMPFS_POSIX_ACL is not set
-> # CONFIG_HUGETLBFS is not set
-> # CONFIG_HUGETLB_PAGE is not set
-> # CONFIG_CONFIGFS_FS is not set
-> # CONFIG_MISC_FILESYSTEMS is not set
-> # CONFIG_NETWORK_FILESYSTEMS is not set
-> 
-> #
-> # Partition Types
-> #
-> # CONFIG_PARTITION_ADVANCED is not set
-> CONFIG_MSDOS_PARTITION=y
-> CONFIG_NLS=y
-> CONFIG_NLS_DEFAULT="iso8859-15"
-> # CONFIG_NLS_CODEPAGE_437 is not set
-> # CONFIG_NLS_CODEPAGE_737 is not set
-> # CONFIG_NLS_CODEPAGE_775 is not set
-> CONFIG_NLS_CODEPAGE_850=y
-> # CONFIG_NLS_CODEPAGE_852 is not set
-> # CONFIG_NLS_CODEPAGE_855 is not set
-> # CONFIG_NLS_CODEPAGE_857 is not set
-> # CONFIG_NLS_CODEPAGE_860 is not set
-> # CONFIG_NLS_CODEPAGE_861 is not set
-> # CONFIG_NLS_CODEPAGE_862 is not set
-> # CONFIG_NLS_CODEPAGE_863 is not set
-> # CONFIG_NLS_CODEPAGE_864 is not set
-> # CONFIG_NLS_CODEPAGE_865 is not set
-> # CONFIG_NLS_CODEPAGE_866 is not set
-> # CONFIG_NLS_CODEPAGE_869 is not set
-> # CONFIG_NLS_CODEPAGE_936 is not set
-> # CONFIG_NLS_CODEPAGE_950 is not set
-> # CONFIG_NLS_CODEPAGE_932 is not set
-> # CONFIG_NLS_CODEPAGE_949 is not set
-> # CONFIG_NLS_CODEPAGE_874 is not set
-> # CONFIG_NLS_ISO8859_8 is not set
-> # CONFIG_NLS_CODEPAGE_1250 is not set
-> # CONFIG_NLS_CODEPAGE_1251 is not set
-> CONFIG_NLS_ASCII=y
-> # CONFIG_NLS_ISO8859_1 is not set
-> # CONFIG_NLS_ISO8859_2 is not set
-> # CONFIG_NLS_ISO8859_3 is not set
-> # CONFIG_NLS_ISO8859_4 is not set
-> # CONFIG_NLS_ISO8859_5 is not set
-> # CONFIG_NLS_ISO8859_6 is not set
-> # CONFIG_NLS_ISO8859_7 is not set
-> # CONFIG_NLS_ISO8859_9 is not set
-> # CONFIG_NLS_ISO8859_13 is not set
-> # CONFIG_NLS_ISO8859_14 is not set
-> CONFIG_NLS_ISO8859_15=y
-> # CONFIG_NLS_KOI8_R is not set
-> # CONFIG_NLS_KOI8_U is not set
-> # CONFIG_NLS_UTF8 is not set
-> # CONFIG_DLM is not set
-> 
-> #
-> # Kernel hacking
-> #
-> CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-> # CONFIG_PRINTK_TIME is not set
-> # CONFIG_ENABLE_WARN_DEPRECATED is not set
-> # CONFIG_ENABLE_MUST_CHECK is not set
-> CONFIG_FRAME_WARN=0
-> # CONFIG_MAGIC_SYSRQ is not set
-> # CONFIG_STRIP_ASM_SYMS is not set
-> # CONFIG_UNUSED_SYMBOLS is not set
-> # CONFIG_DEBUG_FS is not set
-> # CONFIG_HEADERS_CHECK is not set
-> # CONFIG_DEBUG_KERNEL is not set
-> # CONFIG_HARDLOCKUP_DETECTOR is not set
-> CONFIG_DEBUG_BUGVERBOSE=y
-> # CONFIG_DEBUG_MEMORY_INIT is not set
-> CONFIG_ARCH_WANT_FRAME_POINTERS=y
-> CONFIG_FRAME_POINTER=y
-> # CONFIG_SYSCTL_SYSCALL_CHECK is not set
-> CONFIG_USER_STACKTRACE_SUPPORT=y
-> CONFIG_HAVE_FUNCTION_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
-> CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-> CONFIG_HAVE_DYNAMIC_FTRACE=y
-> CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-> CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
-> CONFIG_TRACING_SUPPORT=y
-> # CONFIG_FTRACE is not set
-> # CONFIG_DMA_API_DEBUG is not set
-> # CONFIG_ATOMIC64_SELFTEST is not set
-> # CONFIG_SAMPLES is not set
-> CONFIG_HAVE_ARCH_KGDB=y
-> CONFIG_HAVE_ARCH_KMEMCHECK=y
-> # CONFIG_STRICT_DEVMEM is not set
-> CONFIG_X86_VERBOSE_BOOTUP=y
-> CONFIG_EARLY_PRINTK=y
-> # CONFIG_4KSTACKS is not set
-> CONFIG_DOUBLEFAULT=y
-> # CONFIG_IOMMU_STRESS is not set
-> CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-> CONFIG_IO_DELAY_TYPE_0X80=0
-> CONFIG_IO_DELAY_TYPE_0XED=1
-> CONFIG_IO_DELAY_TYPE_UDELAY=2
-> CONFIG_IO_DELAY_TYPE_NONE=3
-> CONFIG_IO_DELAY_0X80=y
-> # CONFIG_IO_DELAY_0XED is not set
-> # CONFIG_IO_DELAY_UDELAY is not set
-> # CONFIG_IO_DELAY_NONE is not set
-> CONFIG_DEFAULT_IO_DELAY_TYPE=0
-> # CONFIG_OPTIMIZE_INLINING is not set
-> 
-> #
-> # Security options
-> #
-> # CONFIG_KEYS is not set
-> # CONFIG_SECURITY is not set
-> # CONFIG_SECURITYFS is not set
-> CONFIG_DEFAULT_SECURITY_DAC=y
-> CONFIG_DEFAULT_SECURITY=""
-> # CONFIG_CRYPTO is not set
-> CONFIG_HAVE_KVM=y
-> # CONFIG_VIRTUALIZATION is not set
-> # CONFIG_BINARY_PRINTF is not set
-> 
-> #
-> # Library routines
-> #
-> CONFIG_BITREVERSE=y
-> CONFIG_GENERIC_FIND_FIRST_BIT=y
-> CONFIG_GENERIC_FIND_NEXT_BIT=y
-> CONFIG_GENERIC_FIND_LAST_BIT=y
-> CONFIG_CRC_CCITT=y
-> # CONFIG_CRC16 is not set
-> # CONFIG_CRC_T10DIF is not set
-> # CONFIG_CRC_ITU_T is not set
-> CONFIG_CRC32=y
-> # CONFIG_CRC7 is not set
-> # CONFIG_LIBCRC32C is not set
-> CONFIG_HAS_IOMEM=y
-> CONFIG_HAS_IOPORT=y
-> CONFIG_HAS_DMA=y
-> CONFIG_NLATTR=y
-> 
-> 
+diff --git a/Documentation/ABI/testing/sysfs-bus-bcma b/Documentation/ABI/testing/sysfs-bus-bcma
+new file mode 100644
+index 0000000..ad3cd69
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-bcma
+@@ -0,0 +1,31 @@
++What:		/sys/bus/bcma/devices/.../class
++Date:		May 2011
++KernelVersion:	2.6.40
++Contact:	Rafał Miłecki <zajec5@gmail.com>
++Description:
++		Each AXI core is identified by few fields, including class it
++		belongs to. See include/linux/bcma/bcma.h for possible values.
++
++What:		/sys/bus/bcma/devices/.../manuf
++Date:		May 2011
++KernelVersion:	2.6.40
++Contact:	Rafał Miłecki <zajec5@gmail.com>
++Description:
++		Each AXI core has it's manufacturer id. See
++		include/linux/bcma/bcma.h for possible values.
++
++What:		/sys/bus/bcma/devices/.../rev
++Date:		May 2011
++KernelVersion:	2.6.40
++Contact:	Rafał Miłecki <zajec5@gmail.com>
++Description:
++		AXI cores of the same type can still slightly differ depending
++		on their revision. Use it for detailed programming.
++
++What:		/sys/bus/bcma/devices/.../id
++Date:		May 2011
++KernelVersion:	2.6.40
++Contact:	Rafał Miłecki <zajec5@gmail.com>
++Description:
++		There are a few types of AXI cores, they can be identified by
++		id field.
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 177c7d1..aca7067 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -68,6 +68,8 @@ source "drivers/watchdog/Kconfig"
+ 
+ source "drivers/ssb/Kconfig"
+ 
++source "drivers/bcma/Kconfig"
++
+ source "drivers/mfd/Kconfig"
+ 
+ source "drivers/regulator/Kconfig"
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 3f135b6..a29527f 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -110,6 +110,7 @@ obj-$(CONFIG_HID)		+= hid/
+ obj-$(CONFIG_PPC_PS3)		+= ps3/
+ obj-$(CONFIG_OF)		+= of/
+ obj-$(CONFIG_SSB)		+= ssb/
++obj-$(CONFIG_BCMA)		+= bcma/
+ obj-$(CONFIG_VHOST_NET)		+= vhost/
+ obj-$(CONFIG_VLYNQ)		+= vlynq/
+ obj-$(CONFIG_STAGING)		+= staging/
+diff --git a/drivers/bcma/Kconfig b/drivers/bcma/Kconfig
+new file mode 100644
+index 0000000..353781b
+--- /dev/null
++++ b/drivers/bcma/Kconfig
+@@ -0,0 +1,33 @@
++config BCMA_POSSIBLE
++	bool
++	depends on HAS_IOMEM && HAS_DMA
++	default y
++
++menu "Broadcom specific AMBA"
++	depends on BCMA_POSSIBLE
++
++config BCMA
++	tristate "BCMA support"
++	depends on BCMA_POSSIBLE
++	help
++	  Bus driver for Broadcom specific Advanced Microcontroller Bus
++	  Architecture.
++
++config BCMA_HOST_PCI_POSSIBLE
++	bool
++	depends on BCMA && PCI = y
++	default y
++
++config BCMA_HOST_PCI
++	bool "Support for BCMA on PCI-host bus"
++	depends on BCMA_HOST_PCI_POSSIBLE
++
++config BCMA_DEBUG
++	bool "BCMA debugging"
++	depends on BCMA
++	help
++	  This turns on additional debugging messages.
++
++	  If unsure, say N
++
++endmenu
+diff --git a/drivers/bcma/Makefile b/drivers/bcma/Makefile
+new file mode 100644
+index 0000000..0d56245
+--- /dev/null
++++ b/drivers/bcma/Makefile
+@@ -0,0 +1,7 @@
++bcma-y					+= main.o scan.o core.o
++bcma-y					+= driver_chipcommon.o driver_chipcommon_pmu.o
++bcma-y					+= driver_pci.o
++bcma-$(CONFIG_BCMA_HOST_PCI)		+= host_pci.o
++obj-$(CONFIG_BCMA)			+= bcma.o
++
++ccflags-$(CONFIG_BCMA_DEBUG)		:= -DDEBUG
+diff --git a/drivers/bcma/README b/drivers/bcma/README
+new file mode 100644
+index 0000000..b52cd2b
+--- /dev/null
++++ b/drivers/bcma/README
+@@ -0,0 +1,18 @@
++Broadcom introduced new bus as replacement for older SSB. It is based on AMBA,
++however from programming point of view there is nothing AMBA specific we use.
++
++Standard AMBA drivers are platform specific, have hardcoded addresses and use
++AMBA standard fields like CID and PID.
++
++In case of Broadcom's cards every device consists of:
++1) Broadcom specific AMBA device. It is put on AMBA bus, but can not be treated
++   as standard AMBA device. Reading it's CID or PID can cause machine lockup.
++2) AMBA standard devices called ports or wrappers. They have CIDs (AMBA_CID)
++   and PIDs (0x103BB369), but we do not use that info for anything. One of that
++   devices is used for managing Broadcom specific core.
++
++Addresses of AMBA devices are not hardcoded in driver and have to be read from
++EPROM.
++
++In this situation we decided to introduce separated bus with devices identified
++by Broadcom specific fields, read from EPROM.
+diff --git a/drivers/bcma/TODO b/drivers/bcma/TODO
+new file mode 100644
+index 0000000..45eadc9
+--- /dev/null
++++ b/drivers/bcma/TODO
+@@ -0,0 +1,3 @@
++- Interrupts
++- Defines for PCI core driver
++- Convert bcma_bus->cores into linked list
+diff --git a/drivers/bcma/bcma_private.h b/drivers/bcma/bcma_private.h
+new file mode 100644
+index 0000000..2a55f3e
+--- /dev/null
++++ b/drivers/bcma/bcma_private.h
+@@ -0,0 +1,31 @@
++#ifndef LINUX_BCMA_PRIVATE_H_
++#define LINUX_BCMA_PRIVATE_H_
++
++#ifndef pr_fmt
++#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
++#endif
++
++#include <linux/bcma/bcma.h>
++#include <linux/delay.h>
++
++#define BCMA_ADDR_BASE		0x18000000
++#define BCMA_WRAP_BASE		0x18100000
++
++#define BCMA_CORE_SIZE		0x1000
++
++struct bcma_bus;
++
++/* main.c */
++extern int bcma_bus_register(struct bcma_bus *bus);
++extern void bcma_bus_unregister(struct bcma_bus *bus);
++
++/* scan.c */
++int bcma_bus_scan(struct bcma_bus *bus);
++
++#ifdef CONFIG_BCMA_HOST_PCI
++/* host_pci.c */
++extern int __init bcma_host_pci_init(void);
++extern void __exit bcma_host_pci_exit(void);
++#endif /* CONFIG_BCMA_HOST_PCI */
++
++#endif
+diff --git a/drivers/bcma/core.c b/drivers/bcma/core.c
+new file mode 100644
+index 0000000..ced379f
+--- /dev/null
++++ b/drivers/bcma/core.c
+@@ -0,0 +1,51 @@
++/*
++ * Broadcom specific AMBA
++ * Core ops
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "bcma_private.h"
++#include <linux/bcma/bcma.h>
++
++bool bcma_core_is_enabled(struct bcma_device *core)
++{
++	if ((bcma_aread32(core, BCMA_IOCTL) & (BCMA_IOCTL_CLK | BCMA_IOCTL_FGC))
++	    != BCMA_IOCTL_CLK)
++		return false;
++	if (bcma_aread32(core, BCMA_RESET_CTL) & BCMA_RESET_CTL_RESET)
++		return false;
++	return true;
++}
++EXPORT_SYMBOL_GPL(bcma_core_is_enabled);
++
++static void bcma_core_disable(struct bcma_device *core, u32 flags)
++{
++	if (bcma_aread32(core, BCMA_RESET_CTL) & BCMA_RESET_CTL_RESET)
++		return;
++
++	bcma_awrite32(core, BCMA_IOCTL, flags);
++	bcma_aread32(core, BCMA_IOCTL);
++	udelay(10);
++
++	bcma_awrite32(core, BCMA_RESET_CTL, BCMA_RESET_CTL_RESET);
++	udelay(1);
++}
++
++int bcma_core_enable(struct bcma_device *core, u32 flags)
++{
++	bcma_core_disable(core, flags);
++
++	bcma_awrite32(core, BCMA_IOCTL, (BCMA_IOCTL_CLK | BCMA_IOCTL_FGC | flags));
++	bcma_aread32(core, BCMA_IOCTL);
++
++	bcma_awrite32(core, BCMA_RESET_CTL, 0);
++	udelay(1);
++
++	bcma_awrite32(core, BCMA_IOCTL, (BCMA_IOCTL_CLK | flags));
++	bcma_aread32(core, BCMA_IOCTL);
++	udelay(1);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(bcma_core_enable);
+diff --git a/drivers/bcma/driver_chipcommon.c b/drivers/bcma/driver_chipcommon.c
+new file mode 100644
+index 0000000..caf5960
+--- /dev/null
++++ b/drivers/bcma/driver_chipcommon.c
+@@ -0,0 +1,87 @@
++/*
++ * Broadcom specific AMBA
++ * ChipCommon core driver
++ *
++ * Copyright 2005, Broadcom Corporation
++ * Copyright 2006, 2007, Michael Buesch <mb@bu3sch.de>
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "bcma_private.h"
++#include <linux/bcma/bcma.h>
++
++static inline u32 bcma_cc_write32_masked(struct bcma_drv_cc *cc, u16 offset,
++					 u32 mask, u32 value)
++{
++	value &= mask;
++	value |= bcma_cc_read32(cc, offset) & ~mask;
++	bcma_cc_write32(cc, offset, value);
++
++	return value;
++}
++
++void bcma_core_chipcommon_init(struct bcma_drv_cc *cc)
++{
++	if (cc->core->id.rev >= 11)
++		cc->status = bcma_cc_read32(cc, BCMA_CC_CHIPSTAT);
++	cc->capabilities = bcma_cc_read32(cc, BCMA_CC_CAP);
++	if (cc->core->id.rev >= 35)
++		cc->capabilities_ext = bcma_cc_read32(cc, BCMA_CC_CAP_EXT);
++
++	bcma_cc_write32(cc, 0x58, 0);
++	bcma_cc_write32(cc, 0x5C, 0);
++
++	if (cc->capabilities & BCMA_CC_CAP_PMU)
++		bcma_pmu_init(cc);
++	if (cc->capabilities & BCMA_CC_CAP_PCTL)
++		pr_err("Power control not implemented!\n");
++}
++
++/* Set chip watchdog reset timer to fire in 'ticks' backplane cycles */
++void bcma_chipco_watchdog_timer_set(struct bcma_drv_cc *cc, u32 ticks)
++{
++	/* instant NMI */
++	bcma_cc_write32(cc, BCMA_CC_WATCHDOG, ticks);
++}
++
++void bcma_chipco_irq_mask(struct bcma_drv_cc *cc, u32 mask, u32 value)
++{
++	bcma_cc_write32_masked(cc, BCMA_CC_IRQMASK, mask, value);
++}
++
++u32 bcma_chipco_irq_status(struct bcma_drv_cc *cc, u32 mask)
++{
++	return bcma_cc_read32(cc, BCMA_CC_IRQSTAT) & mask;
++}
++
++u32 bcma_chipco_gpio_in(struct bcma_drv_cc *cc, u32 mask)
++{
++	return bcma_cc_read32(cc, BCMA_CC_GPIOIN) & mask;
++}
++
++u32 bcma_chipco_gpio_out(struct bcma_drv_cc *cc, u32 mask, u32 value)
++{
++	return bcma_cc_write32_masked(cc, BCMA_CC_GPIOOUT, mask, value);
++}
++
++u32 bcma_chipco_gpio_outen(struct bcma_drv_cc *cc, u32 mask, u32 value)
++{
++	return bcma_cc_write32_masked(cc, BCMA_CC_GPIOOUTEN, mask, value);
++}
++
++u32 bcma_chipco_gpio_control(struct bcma_drv_cc *cc, u32 mask, u32 value)
++{
++	return bcma_cc_write32_masked(cc, BCMA_CC_GPIOCTL, mask, value);
++}
++EXPORT_SYMBOL_GPL(bcma_chipco_gpio_control);
++
++u32 bcma_chipco_gpio_intmask(struct bcma_drv_cc *cc, u32 mask, u32 value)
++{
++	return bcma_cc_write32_masked(cc, BCMA_CC_GPIOIRQ, mask, value);
++}
++
++u32 bcma_chipco_gpio_polarity(struct bcma_drv_cc *cc, u32 mask, u32 value)
++{
++	return bcma_cc_write32_masked(cc, BCMA_CC_GPIOPOL, mask, value);
++}
+diff --git a/drivers/bcma/driver_chipcommon_pmu.c b/drivers/bcma/driver_chipcommon_pmu.c
+new file mode 100644
+index 0000000..f44177a
+--- /dev/null
++++ b/drivers/bcma/driver_chipcommon_pmu.c
+@@ -0,0 +1,134 @@
++/*
++ * Broadcom specific AMBA
++ * ChipCommon Power Management Unit driver
++ *
++ * Copyright 2009, Michael Buesch <mb@bu3sch.de>
++ * Copyright 2007, Broadcom Corporation
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "bcma_private.h"
++#include <linux/bcma/bcma.h>
++
++static void bcma_chipco_chipctl_maskset(struct bcma_drv_cc *cc,
++					u32 offset, u32 mask, u32 set)
++{
++	u32 value;
++
++	bcma_cc_read32(cc, BCMA_CC_CHIPCTL_ADDR);
++	bcma_cc_write32(cc, BCMA_CC_CHIPCTL_ADDR, offset);
++	bcma_cc_read32(cc, BCMA_CC_CHIPCTL_ADDR);
++	value = bcma_cc_read32(cc, BCMA_CC_CHIPCTL_DATA);
++	value &= mask;
++	value |= set;
++	bcma_cc_write32(cc, BCMA_CC_CHIPCTL_DATA, value);
++	bcma_cc_read32(cc, BCMA_CC_CHIPCTL_DATA);
++}
++
++static void bcma_pmu_pll_init(struct bcma_drv_cc *cc)
++{
++	struct bcma_bus *bus = cc->core->bus;
++
++	switch (bus->chipinfo.id) {
++	case 0x4313:
++	case 0x4331:
++	case 43224:
++	case 43225:
++		break;
++	default:
++		pr_err("PLL init unknown for device 0x%04X\n",
++			bus->chipinfo.id);
++	}
++}
++
++static void bcma_pmu_resources_init(struct bcma_drv_cc *cc)
++{
++	struct bcma_bus *bus = cc->core->bus;
++	u32 min_msk = 0, max_msk = 0;
++
++	switch (bus->chipinfo.id) {
++	case 0x4313:
++		min_msk = 0x200D;
++		max_msk = 0xFFFF;
++		break;
++	case 43224:
++		break;
++	default:
++		pr_err("PMU resource config unknown for device 0x%04X\n",
++			bus->chipinfo.id);
++	}
++
++	/* Set the resource masks. */
++	if (min_msk)
++		bcma_cc_write32(cc, BCMA_CC_PMU_MINRES_MSK, min_msk);
++	if (max_msk)
++		bcma_cc_write32(cc, BCMA_CC_PMU_MAXRES_MSK, max_msk);
++}
++
++void bcma_pmu_swreg_init(struct bcma_drv_cc *cc)
++{
++	struct bcma_bus *bus = cc->core->bus;
++
++	switch (bus->chipinfo.id) {
++	case 0x4313:
++	case 0x4331:
++	case 43224:
++		break;
++	default:
++		pr_err("PMU switch/regulators init unknown for device "
++			"0x%04X\n", bus->chipinfo.id);
++	}
++}
++
++void bcma_pmu_workarounds(struct bcma_drv_cc *cc)
++{
++	struct bcma_bus *bus = cc->core->bus;
++
++	switch (bus->chipinfo.id) {
++	case 0x4313:
++		bcma_chipco_chipctl_maskset(cc, 0, ~0, 0x7);
++		break;
++	case 0x4331:
++		pr_err("Enabling Ext PA lines not implemented\n");
++		break;
++	case 43224:
++		if (bus->chipinfo.rev == 0) {
++			pr_err("Workarounds for 43224 rev 0 not fully "
++				"implemented\n");
++			bcma_chipco_chipctl_maskset(cc, 0, ~0, 0xF0);
++		} else {
++			bcma_chipco_chipctl_maskset(cc, 0, ~0, 0xF0);
++		}
++		break;
++	default:
++		pr_err("Workarounds unknown for device 0x%04X\n",
++			bus->chipinfo.id);
++	}
++}
++
++void bcma_pmu_init(struct bcma_drv_cc *cc)
++{
++	u32 pmucap;
++
++	pmucap = bcma_cc_read32(cc, BCMA_CC_PMU_CAP);
++	cc->pmu.rev = (pmucap & BCMA_CC_PMU_CAP_REVISION);
++
++	pr_debug("Found rev %u PMU (capabilities 0x%08X)\n", cc->pmu.rev,
++		 pmucap);
++
++	if (cc->pmu.rev == 1)
++		bcma_cc_mask32(cc, BCMA_CC_PMU_CTL,
++			      ~BCMA_CC_PMU_CTL_NOILPONW);
++	else
++		bcma_cc_set32(cc, BCMA_CC_PMU_CTL,
++			     BCMA_CC_PMU_CTL_NOILPONW);
++
++	if (cc->core->id.id == 0x4329 && cc->core->id.rev == 2)
++		pr_err("Fix for 4329b0 bad LPOM state not implemented!\n");
++
++	bcma_pmu_pll_init(cc);
++	bcma_pmu_resources_init(cc);
++	bcma_pmu_swreg_init(cc);
++	bcma_pmu_workarounds(cc);
++}
+diff --git a/drivers/bcma/driver_pci.c b/drivers/bcma/driver_pci.c
+new file mode 100644
+index 0000000..b98b835
+--- /dev/null
++++ b/drivers/bcma/driver_pci.c
+@@ -0,0 +1,163 @@
++/*
++ * Broadcom specific AMBA
++ * PCI Core
++ *
++ * Copyright 2005, Broadcom Corporation
++ * Copyright 2006, 2007, Michael Buesch <mb@bu3sch.de>
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "bcma_private.h"
++#include <linux/bcma/bcma.h>
++
++/**************************************************
++ * R/W ops.
++ **************************************************/
++
++static u32 bcma_pcie_read(struct bcma_drv_pci *pc, u32 address)
++{
++	pcicore_write32(pc, 0x130, address);
++	pcicore_read32(pc, 0x130);
++	return pcicore_read32(pc, 0x134);
++}
++
++#if 0
++static void bcma_pcie_write(struct bcma_drv_pci *pc, u32 address, u32 data)
++{
++	pcicore_write32(pc, 0x130, address);
++	pcicore_read32(pc, 0x130);
++	pcicore_write32(pc, 0x134, data);
++}
++#endif
++
++static void bcma_pcie_mdio_set_phy(struct bcma_drv_pci *pc, u8 phy)
++{
++	const u16 mdio_control = 0x128;
++	const u16 mdio_data = 0x12C;
++	u32 v;
++	int i;
++
++	v = (1 << 30); /* Start of Transaction */
++	v |= (1 << 28); /* Write Transaction */
++	v |= (1 << 17); /* Turnaround */
++	v |= (0x1F << 18);
++	v |= (phy << 4);
++	pcicore_write32(pc, mdio_data, v);
++
++	udelay(10);
++	for (i = 0; i < 200; i++) {
++		v = pcicore_read32(pc, mdio_control);
++		if (v & 0x100 /* Trans complete */)
++			break;
++		msleep(1);
++	}
++}
++
++static u16 bcma_pcie_mdio_read(struct bcma_drv_pci *pc, u8 device, u8 address)
++{
++	const u16 mdio_control = 0x128;
++	const u16 mdio_data = 0x12C;
++	int max_retries = 10;
++	u16 ret = 0;
++	u32 v;
++	int i;
++
++	v = 0x80; /* Enable Preamble Sequence */
++	v |= 0x2; /* MDIO Clock Divisor */
++	pcicore_write32(pc, mdio_control, v);
++
++	if (pc->core->id.rev >= 10) {
++		max_retries = 200;
++		bcma_pcie_mdio_set_phy(pc, device);
++	}
++
++	v = (1 << 30); /* Start of Transaction */
++	v |= (1 << 29); /* Read Transaction */
++	v |= (1 << 17); /* Turnaround */
++	if (pc->core->id.rev < 10)
++		v |= (u32)device << 22;
++	v |= (u32)address << 18;
++	pcicore_write32(pc, mdio_data, v);
++	/* Wait for the device to complete the transaction */
++	udelay(10);
++	for (i = 0; i < 200; i++) {
++		v = pcicore_read32(pc, mdio_control);
++		if (v & 0x100 /* Trans complete */) {
++			udelay(10);
++			ret = pcicore_read32(pc, mdio_data);
++			break;
++		}
++		msleep(1);
++	}
++	pcicore_write32(pc, mdio_control, 0);
++	return ret;
++}
++
++static void bcma_pcie_mdio_write(struct bcma_drv_pci *pc, u8 device,
++				u8 address, u16 data)
++{
++	const u16 mdio_control = 0x128;
++	const u16 mdio_data = 0x12C;
++	int max_retries = 10;
++	u32 v;
++	int i;
++
++	v = 0x80; /* Enable Preamble Sequence */
++	v |= 0x2; /* MDIO Clock Divisor */
++	pcicore_write32(pc, mdio_control, v);
++
++	if (pc->core->id.rev >= 10) {
++		max_retries = 200;
++		bcma_pcie_mdio_set_phy(pc, device);
++	}
++
++	v = (1 << 30); /* Start of Transaction */
++	v |= (1 << 28); /* Write Transaction */
++	v |= (1 << 17); /* Turnaround */
++	if (pc->core->id.rev < 10)
++		v |= (u32)device << 22;
++	v |= (u32)address << 18;
++	v |= data;
++	pcicore_write32(pc, mdio_data, v);
++	/* Wait for the device to complete the transaction */
++	udelay(10);
++	for (i = 0; i < max_retries; i++) {
++		v = pcicore_read32(pc, mdio_control);
++		if (v & 0x100 /* Trans complete */)
++			break;
++		msleep(1);
++	}
++	pcicore_write32(pc, mdio_control, 0);
++}
++
++/**************************************************
++ * Workarounds.
++ **************************************************/
++
++static u8 bcma_pcicore_polarity_workaround(struct bcma_drv_pci *pc)
++{
++	return (bcma_pcie_read(pc, 0x204) & 0x10) ? 0xC0 : 0x80;
++}
++
++static void bcma_pcicore_serdes_workaround(struct bcma_drv_pci *pc)
++{
++	const u8 serdes_pll_device = 0x1D;
++	const u8 serdes_rx_device = 0x1F;
++	u16 tmp;
++
++	bcma_pcie_mdio_write(pc, serdes_rx_device, 1 /* Control */,
++			      bcma_pcicore_polarity_workaround(pc));
++	tmp = bcma_pcie_mdio_read(pc, serdes_pll_device, 1 /* Control */);
++	if (tmp & 0x4000)
++		bcma_pcie_mdio_write(pc, serdes_pll_device, 1, tmp & ~0x4000);
++}
++
++/**************************************************
++ * Init.
++ **************************************************/
++
++void bcma_core_pci_init(struct bcma_drv_pci *pc)
++{
++	bcma_pcicore_serdes_workaround(pc);
++}
+diff --git a/drivers/bcma/host_pci.c b/drivers/bcma/host_pci.c
+new file mode 100644
+index 0000000..99dd36e
+--- /dev/null
++++ b/drivers/bcma/host_pci.c
+@@ -0,0 +1,196 @@
++/*
++ * Broadcom specific AMBA
++ * PCI Host
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "bcma_private.h"
++#include <linux/bcma/bcma.h>
++#include <linux/pci.h>
++
++static void bcma_host_pci_switch_core(struct bcma_device *core)
++{
++	pci_write_config_dword(core->bus->host_pci, BCMA_PCI_BAR0_WIN,
++			       core->addr);
++	pci_write_config_dword(core->bus->host_pci, BCMA_PCI_BAR0_WIN2,
++			       core->wrap);
++	core->bus->mapped_core = core;
++	pr_debug("Switched to core: 0x%X\n", core->id.id);
++}
++
++static u8 bcma_host_pci_read8(struct bcma_device *core, u16 offset)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	return ioread8(core->bus->mmio + offset);
++}
++
++static u16 bcma_host_pci_read16(struct bcma_device *core, u16 offset)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	return ioread16(core->bus->mmio + offset);
++}
++
++static u32 bcma_host_pci_read32(struct bcma_device *core, u16 offset)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	return ioread32(core->bus->mmio + offset);
++}
++
++static void bcma_host_pci_write8(struct bcma_device *core, u16 offset,
++				 u8 value)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	iowrite8(value, core->bus->mmio + offset);
++}
++
++static void bcma_host_pci_write16(struct bcma_device *core, u16 offset,
++				 u16 value)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	iowrite16(value, core->bus->mmio + offset);
++}
++
++static void bcma_host_pci_write32(struct bcma_device *core, u16 offset,
++				 u32 value)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	iowrite32(value, core->bus->mmio + offset);
++}
++
++static u32 bcma_host_pci_aread32(struct bcma_device *core, u16 offset)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	return ioread32(core->bus->mmio + (1 * BCMA_CORE_SIZE) + offset);
++}
++
++static void bcma_host_pci_awrite32(struct bcma_device *core, u16 offset,
++				  u32 value)
++{
++	if (core->bus->mapped_core != core)
++		bcma_host_pci_switch_core(core);
++	iowrite32(value, core->bus->mmio + (1 * BCMA_CORE_SIZE) + offset);
++}
++
++const struct bcma_host_ops bcma_host_pci_ops = {
++	.read8		= bcma_host_pci_read8,
++	.read16		= bcma_host_pci_read16,
++	.read32		= bcma_host_pci_read32,
++	.write8		= bcma_host_pci_write8,
++	.write16	= bcma_host_pci_write16,
++	.write32	= bcma_host_pci_write32,
++	.aread32	= bcma_host_pci_aread32,
++	.awrite32	= bcma_host_pci_awrite32,
++};
++
++static int bcma_host_pci_probe(struct pci_dev *dev,
++			     const struct pci_device_id *id)
++{
++	struct bcma_bus *bus;
++	int err = -ENOMEM;
++	const char *name;
++	u32 val;
++
++	/* Alloc */
++	bus = kzalloc(sizeof(*bus), GFP_KERNEL);
++	if (!bus)
++		goto out;
++
++	/* Basic PCI configuration */
++	err = pci_enable_device(dev);
++	if (err)
++		goto err_kfree_bus;
++
++	name = dev_name(&dev->dev);
++	if (dev->driver && dev->driver->name)
++		name = dev->driver->name;
++	err = pci_request_regions(dev, name);
++	if (err)
++		goto err_pci_disable;
++	pci_set_master(dev);
++
++	/* Disable the RETRY_TIMEOUT register (0x41) to keep
++	 * PCI Tx retries from interfering with C3 CPU state */
++	pci_read_config_dword(dev, 0x40, &val);
++	if ((val & 0x0000ff00) != 0)
++		pci_write_config_dword(dev, 0x40, val & 0xffff00ff);
++
++	/* SSB needed additional powering up, do we have any AMBA PCI cards? */
++	if (!pci_is_pcie(dev))
++		pr_err("PCI card detected, report problems.\n");
++
++	/* Map MMIO */
++	err = -ENOMEM;
++	bus->mmio = pci_iomap(dev, 0, ~0UL);
++	if (!bus->mmio)
++		goto err_pci_release_regions;
++
++	/* Host specific */
++	bus->host_pci = dev;
++	bus->hosttype = BCMA_HOSTTYPE_PCI;
++	bus->ops = &bcma_host_pci_ops;
++
++	/* Register */
++	err = bcma_bus_register(bus);
++	if (err)
++		goto err_pci_unmap_mmio;
++
++	pci_set_drvdata(dev, bus);
++
++out:
++	return err;
++
++err_pci_unmap_mmio:
++	pci_iounmap(dev, bus->mmio);
++err_pci_release_regions:
++	pci_release_regions(dev);
++err_pci_disable:
++	pci_disable_device(dev);
++err_kfree_bus:
++	kfree(bus);
++	return err;
++}
++
++static void bcma_host_pci_remove(struct pci_dev *dev)
++{
++	struct bcma_bus *bus = pci_get_drvdata(dev);
++
++	bcma_bus_unregister(bus);
++	pci_iounmap(dev, bus->mmio);
++	pci_release_regions(dev);
++	pci_disable_device(dev);
++	kfree(bus);
++	pci_set_drvdata(dev, NULL);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(bcma_pci_bridge_tbl) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4331) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4353) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4727) },
++	{ 0, },
++};
++MODULE_DEVICE_TABLE(pci, bcma_pci_bridge_tbl);
++
++static struct pci_driver bcma_pci_bridge_driver = {
++	.name = "bcma-pci-bridge",
++	.id_table = bcma_pci_bridge_tbl,
++	.probe = bcma_host_pci_probe,
++	.remove = bcma_host_pci_remove,
++};
++
++int __init bcma_host_pci_init(void)
++{
++	return pci_register_driver(&bcma_pci_bridge_driver);
++}
++
++void __exit bcma_host_pci_exit(void)
++{
++	pci_unregister_driver(&bcma_pci_bridge_driver);
++}
+diff --git a/drivers/bcma/main.c b/drivers/bcma/main.c
+new file mode 100644
+index 0000000..a46c0fd
+--- /dev/null
++++ b/drivers/bcma/main.c
+@@ -0,0 +1,271 @@
++/*
++ * Broadcom specific AMBA
++ * Bus subsystem
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "bcma_private.h"
++#include <linux/bcma/bcma.h>
++
++MODULE_DESCRIPTION("Broadcom's specific AMBA driver");
++MODULE_LICENSE("GPL");
++
++static int bcma_bus_match(struct device *dev, struct device_driver *drv);
++static int bcma_device_probe(struct device *dev);
++static int bcma_device_remove(struct device *dev);
++
++static ssize_t manuf_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	return sprintf(buf, "0x%03X\n", wrapper->core->id.manuf);
++}
++static ssize_t id_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	return sprintf(buf, "0x%03X\n", wrapper->core->id.id);
++}
++static ssize_t rev_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	return sprintf(buf, "0x%02X\n", wrapper->core->id.rev);
++}
++static ssize_t class_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	return sprintf(buf, "0x%X\n", wrapper->core->id.class);
++}
++static struct device_attribute bcma_device_attrs[] = {
++	__ATTR_RO(manuf),
++	__ATTR_RO(id),
++	__ATTR_RO(rev),
++	__ATTR_RO(class),
++	__ATTR_NULL,
++};
++
++static struct bus_type bcma_bus_type = {
++	.name		= "bcma",
++	.match		= bcma_bus_match,
++	.probe		= bcma_device_probe,
++	.remove		= bcma_device_remove,
++	.dev_attrs	= bcma_device_attrs,
++};
++
++static struct bcma_device *bcma_find_core(struct bcma_bus *bus, u16 coreid)
++{
++	u8 i;
++	for (i = 0; i < bus->nr_cores; i++) {
++		if (bus->cores[i].id.id == coreid)
++			return &bus->cores[i];
++	}
++	return NULL;
++}
++
++static void bcma_release_core_dev(struct device *dev)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	kfree(wrapper);
++}
++
++static int bcma_register_cores(struct bcma_bus *bus)
++{
++	struct bcma_device *core;
++	struct __bcma_dev_wrapper *wrapper;
++	int i, err, dev_id = 0;
++
++	for (i = 0; i < bus->nr_cores; i++) {
++		core = &(bus->cores[i]);
++
++		/* We support that cores ourself */
++		switch (core->id.id) {
++		case BCMA_CORE_CHIPCOMMON:
++		case BCMA_CORE_PCI:
++		case BCMA_CORE_PCIE:
++			continue;
++		}
++
++		wrapper = kzalloc(sizeof(*wrapper), GFP_KERNEL);
++		if (!wrapper) {
++			pr_err("Could not allocate wrapper for core 0x%03X\n",
++			       core->id.id);
++			continue;
++		}
++
++		wrapper->core = core;
++		wrapper->dev.release = bcma_release_core_dev;
++		wrapper->dev.bus = &bcma_bus_type;
++		dev_set_name(&wrapper->dev, "bcma%d:%d", 0/*bus->num*/, dev_id);
++
++		switch (bus->hosttype) {
++		case BCMA_HOSTTYPE_PCI:
++			wrapper->dev.parent = &bus->host_pci->dev;
++			break;
++		case BCMA_HOSTTYPE_NONE:
++		case BCMA_HOSTTYPE_SDIO:
++			break;
++		}
++
++		err = device_register(&wrapper->dev);
++		if (err) {
++			pr_err("Could not register dev for core 0x%03X\n",
++			       core->id.id);
++			kfree(wrapper);
++			continue;
++		}
++		core->dev = &wrapper->dev;
++		dev_id++;
++	}
++
++	return 0;
++}
++
++static void bcma_unregister_cores(struct bcma_bus *bus)
++{
++	struct bcma_device *core;
++	int i;
++
++	for (i = 0; i < bus->nr_cores; i++) {
++		core = &(bus->cores[i]);
++		if (core->dev)
++			device_unregister(core->dev);
++	}
++}
++
++int bcma_bus_register(struct bcma_bus *bus)
++{
++	int err;
++	struct bcma_device *core;
++
++	/* Scan for devices (cores) */
++	err = bcma_bus_scan(bus);
++	if (err) {
++		pr_err("Failed to scan: %d\n", err);
++		return -1;
++	}
++
++	/* Init CC core */
++	core = bcma_find_core(bus, BCMA_CORE_CHIPCOMMON);
++	if (core) {
++		bus->drv_cc.core = core;
++		bcma_core_chipcommon_init(&bus->drv_cc);
++	}
++
++	/* Init PCIE core */
++	core = bcma_find_core(bus, BCMA_CORE_PCIE);
++	if (core) {
++		bus->drv_pci.core = core;
++		bcma_core_pci_init(&bus->drv_pci);
++	}
++
++	/* Register found cores */
++	bcma_register_cores(bus);
++
++	pr_info("Bus registered\n");
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(bcma_bus_register);
++
++void bcma_bus_unregister(struct bcma_bus *bus)
++{
++	bcma_unregister_cores(bus);
++}
++EXPORT_SYMBOL_GPL(bcma_bus_unregister);
++
++int __bcma_driver_register(struct bcma_driver *drv, struct module *owner)
++{
++	drv->drv.name = drv->name;
++	drv->drv.bus = &bcma_bus_type;
++	drv->drv.owner = owner;
++
++	return driver_register(&drv->drv);
++}
++EXPORT_SYMBOL_GPL(__bcma_driver_register);
++
++void bcma_driver_unregister(struct bcma_driver *drv)
++{
++	driver_unregister(&drv->drv);
++}
++EXPORT_SYMBOL_GPL(bcma_driver_unregister);
++
++static int bcma_bus_match(struct device *dev, struct device_driver *drv)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	struct bcma_device *core = wrapper->core;
++	struct bcma_driver *adrv = container_of(drv, struct bcma_driver, drv);
++	const struct bcma_device_id *cid = &core->id;
++	const struct bcma_device_id *did;
++
++	for (did = adrv->id_table; did->manuf || did->id || did->rev; did++) {
++	    if ((did->manuf == cid->manuf || did->manuf == BCMA_ANY_MANUF) &&
++		(did->id == cid->id || did->id == BCMA_ANY_ID) &&
++		(did->rev == cid->rev || did->rev == BCMA_ANY_REV) &&
++		(did->class == cid->class || did->class == BCMA_ANY_CLASS))
++			return 1;
++	}
++	return 0;
++}
++
++static int bcma_device_probe(struct device *dev)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	struct bcma_device *core = wrapper->core;
++	struct bcma_driver *adrv = container_of(dev->driver, struct bcma_driver,
++					       drv);
++	int err = 0;
++
++	if (adrv->probe)
++		err = adrv->probe(core);
++
++	return err;
++}
++
++static int bcma_device_remove(struct device *dev)
++{
++	struct __bcma_dev_wrapper *wrapper = container_of(dev,
++						struct __bcma_dev_wrapper, dev);
++	struct bcma_device *core = wrapper->core;
++	struct bcma_driver *adrv = container_of(dev->driver, struct bcma_driver,
++					       drv);
++
++	if (adrv->remove)
++		adrv->remove(core);
++
++	return 0;
++}
++
++static int __init bcma_modinit(void)
++{
++	int err;
++
++	err = bus_register(&bcma_bus_type);
++	if (err)
++		return err;
++
++#ifdef CONFIG_BCMA_HOST_PCI
++	err = bcma_host_pci_init();
++	if (err) {
++		pr_err("PCI host initialization failed\n");
++		err = 0;
++	}
++#endif
++
++	return err;
++}
++fs_initcall(bcma_modinit);
++
++static void __exit bcma_modexit(void)
++{
++#ifdef CONFIG_BCMA_HOST_PCI
++	bcma_host_pci_exit();
++#endif
++	bus_unregister(&bcma_bus_type);
++}
++module_exit(bcma_modexit)
+diff --git a/drivers/bcma/scan.c b/drivers/bcma/scan.c
+new file mode 100644
+index 0000000..ddf3d26
+--- /dev/null
++++ b/drivers/bcma/scan.c
+@@ -0,0 +1,392 @@
++/*
++ * Broadcom specific AMBA
++ * Bus scanning
++ *
++ * Licensed under the GNU/GPL. See COPYING for details.
++ */
++
++#include "scan.h"
++#include "bcma_private.h"
++
++#include <linux/bcma/bcma.h>
++#include <linux/bcma/bcma_regs.h>
++#include <linux/pci.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
++
++const char *bcma_device_name(u16 coreid)
++{
++	switch (coreid) {
++	case BCMA_CORE_OOB_ROUTER:
++		return "OOB Router";
++	case BCMA_CORE_INVALID:
++		return "Invalid";
++	case BCMA_CORE_CHIPCOMMON:
++		return "ChipCommon";
++	case BCMA_CORE_ILINE20:
++		return "ILine 20";
++	case BCMA_CORE_SRAM:
++		return "SRAM";
++	case BCMA_CORE_SDRAM:
++		return "SDRAM";
++	case BCMA_CORE_PCI:
++		return "PCI";
++	case BCMA_CORE_MIPS:
++		return "MIPS";
++	case BCMA_CORE_ETHERNET:
++		return "Fast Ethernet";
++	case BCMA_CORE_V90:
++		return "V90";
++	case BCMA_CORE_USB11_HOSTDEV:
++		return "USB 1.1 Hostdev";
++	case BCMA_CORE_ADSL:
++		return "ADSL";
++	case BCMA_CORE_ILINE100:
++		return "ILine 100";
++	case BCMA_CORE_IPSEC:
++		return "IPSEC";
++	case BCMA_CORE_UTOPIA:
++		return "UTOPIA";
++	case BCMA_CORE_PCMCIA:
++		return "PCMCIA";
++	case BCMA_CORE_INTERNAL_MEM:
++		return "Internal Memory";
++	case BCMA_CORE_MEMC_SDRAM:
++		return "MEMC SDRAM";
++	case BCMA_CORE_OFDM:
++		return "OFDM";
++	case BCMA_CORE_EXTIF:
++		return "EXTIF";
++	case BCMA_CORE_80211:
++		return "IEEE 802.11";
++	case BCMA_CORE_PHY_A:
++		return "PHY A";
++	case BCMA_CORE_PHY_B:
++		return "PHY B";
++	case BCMA_CORE_PHY_G:
++		return "PHY G";
++	case BCMA_CORE_MIPS_3302:
++		return "MIPS 3302";
++	case BCMA_CORE_USB11_HOST:
++		return "USB 1.1 Host";
++	case BCMA_CORE_USB11_DEV:
++		return "USB 1.1 Device";
++	case BCMA_CORE_USB20_HOST:
++		return "USB 2.0 Host";
++	case BCMA_CORE_USB20_DEV:
++		return "USB 2.0 Device";
++	case BCMA_CORE_SDIO_HOST:
++		return "SDIO Host";
++	case BCMA_CORE_ROBOSWITCH:
++		return "Roboswitch";
++	case BCMA_CORE_PARA_ATA:
++		return "PATA";
++	case BCMA_CORE_SATA_XORDMA:
++		return "SATA XOR-DMA";
++	case BCMA_CORE_ETHERNET_GBIT:
++		return "GBit Ethernet";
++	case BCMA_CORE_PCIE:
++		return "PCIe";
++	case BCMA_CORE_PHY_N:
++		return "PHY N";
++	case BCMA_CORE_SRAM_CTL:
++		return "SRAM Controller";
++	case BCMA_CORE_MINI_MACPHY:
++		return "Mini MACPHY";
++	case BCMA_CORE_ARM_1176:
++		return "ARM 1176";
++	case BCMA_CORE_ARM_7TDMI:
++		return "ARM 7TDMI";
++	case BCMA_CORE_PHY_LP:
++		return "PHY LP";
++	case BCMA_CORE_PMU:
++		return "PMU";
++	case BCMA_CORE_PHY_SSN:
++		return "PHY SSN";
++	case BCMA_CORE_SDIO_DEV:
++		return "SDIO Device";
++	case BCMA_CORE_ARM_CM3:
++		return "ARM CM3";
++	case BCMA_CORE_PHY_HT:
++		return "PHY HT";
++	case BCMA_CORE_MIPS_74K:
++		return "MIPS 74K";
++	case BCMA_CORE_MAC_GBIT:
++		return "GBit MAC";
++	case BCMA_CORE_DDR12_MEM_CTL:
++		return "DDR1/DDR2 Memory Controller";
++	case BCMA_CORE_PCIE_RC:
++		return "PCIe Root Complex";
++	case BCMA_CORE_OCP_OCP_BRIDGE:
++		return "OCP to OCP Bridge";
++	case BCMA_CORE_SHARED_COMMON:
++		return "Common Shared";
++	case BCMA_CORE_OCP_AHB_BRIDGE:
++		return "OCP to AHB Bridge";
++	case BCMA_CORE_SPI_HOST:
++		return "SPI Host";
++	case BCMA_CORE_I2S:
++		return "I2S";
++	case BCMA_CORE_SDR_DDR1_MEM_CTL:
++		return "SDR/DDR1 Memory Controller";
++	case BCMA_CORE_SHIM:
++		return "SHIM";
++	case BCMA_CORE_DEFAULT:
++		return "Default";
++	}
++	return "UNKNOWN";
++}
++
++static u32 bcma_scan_read32(struct bcma_bus *bus, u8 current_coreidx,
++		       u16 offset)
++{
++	return readl(bus->mmio + offset);
++}
++
++static void bcma_scan_switch_core(struct bcma_bus *bus, u32 addr)
++{
++	if (bus->hosttype == BCMA_HOSTTYPE_PCI)
++		pci_write_config_dword(bus->host_pci, BCMA_PCI_BAR0_WIN,
++				       addr);
++}
++
++static u32 bcma_erom_get_ent(struct bcma_bus *bus, u32 **eromptr)
++{
++	u32 ent = readl(*eromptr);
++	(*eromptr)++;
++	return ent;
++}
++
++static void bcma_erom_push_ent(u32 **eromptr)
++{
++	(*eromptr)--;
++}
++
++static s32 bcma_erom_get_ci(struct bcma_bus *bus, u32 **eromptr)
++{
++	u32 ent = bcma_erom_get_ent(bus, eromptr);
++	if (!(ent & SCAN_ER_VALID))
++		return -1;
++	if ((ent & SCAN_ER_TAG) != SCAN_ER_TAG_CI)
++		return -2;
++	return ent;
++}
++
++static bool bcma_erom_is_end(struct bcma_bus *bus, u32 **eromptr)
++{
++	u32 ent = bcma_erom_get_ent(bus, eromptr);
++	bcma_erom_push_ent(eromptr);
++	return (ent == (SCAN_ER_TAG_END | SCAN_ER_VALID));
++}
++
++static bool bcma_erom_is_bridge(struct bcma_bus *bus, u32 **eromptr)
++{
++	u32 ent = bcma_erom_get_ent(bus, eromptr);
++	bcma_erom_push_ent(eromptr);
++	return (((ent & SCAN_ER_VALID)) &&
++		((ent & SCAN_ER_TAGX) == SCAN_ER_TAG_ADDR) &&
++		((ent & SCAN_ADDR_TYPE) == SCAN_ADDR_TYPE_BRIDGE));
++}
++
++static void bcma_erom_skip_component(struct bcma_bus *bus, u32 **eromptr)
++{
++	u32 ent;
++	while (1) {
++		ent = bcma_erom_get_ent(bus, eromptr);
++		if ((ent & SCAN_ER_VALID) &&
++		    ((ent & SCAN_ER_TAG) == SCAN_ER_TAG_CI))
++			break;
++		if (ent == (SCAN_ER_TAG_END | SCAN_ER_VALID))
++			break;
++	}
++	bcma_erom_push_ent(eromptr);
++}
++
++static s32 bcma_erom_get_mst_port(struct bcma_bus *bus, u32 **eromptr)
++{
++	u32 ent = bcma_erom_get_ent(bus, eromptr);
++	if (!(ent & SCAN_ER_VALID))
++		return -1;
++	if ((ent & SCAN_ER_TAG) != SCAN_ER_TAG_MP)
++		return -2;
++	return ent;
++}
++
++static s32 bcma_erom_get_addr_desc(struct bcma_bus *bus, u32 **eromptr,
++				  u32 type, u8 port)
++{
++	u32 addrl, addrh, sizel, sizeh = 0;
++	u32 size;
++
++	u32 ent = bcma_erom_get_ent(bus, eromptr);
++	if ((!(ent & SCAN_ER_VALID)) ||
++	    ((ent & SCAN_ER_TAGX) != SCAN_ER_TAG_ADDR) ||
++	    ((ent & SCAN_ADDR_TYPE) != type) ||
++	    (((ent & SCAN_ADDR_PORT) >> SCAN_ADDR_PORT_SHIFT) != port)) {
++		bcma_erom_push_ent(eromptr);
++		return -1;
++	}
++
++	addrl = ent & SCAN_ADDR_ADDR;
++	if (ent & SCAN_ADDR_AG32)
++		addrh = bcma_erom_get_ent(bus, eromptr);
++	else
++		addrh = 0;
++
++	if ((ent & SCAN_ADDR_SZ) == SCAN_ADDR_SZ_SZD) {
++		size = bcma_erom_get_ent(bus, eromptr);
++		sizel = size & SCAN_SIZE_SZ;
++		if (size & SCAN_SIZE_SG32)
++			sizeh = bcma_erom_get_ent(bus, eromptr);
++	} else
++		sizel = SCAN_ADDR_SZ_BASE <<
++				((ent & SCAN_ADDR_SZ) >> SCAN_ADDR_SZ_SHIFT);
++
++	return addrl;
++}
++
++int bcma_bus_scan(struct bcma_bus *bus)
++{
++	u32 erombase;
++	u32 __iomem *eromptr, *eromend;
++
++	s32 cia, cib;
++	u8 ports[2], wrappers[2];
++
++	s32 tmp;
++	u8 i, j;
++
++	bus->nr_cores = 0;
++
++	bcma_scan_switch_core(bus, BCMA_ADDR_BASE);
++
++	tmp = bcma_scan_read32(bus, 0, BCMA_CC_ID);
++	bus->chipinfo.id = (tmp & BCMA_CC_ID_ID) >> BCMA_CC_ID_ID_SHIFT;
++	bus->chipinfo.rev = (tmp & BCMA_CC_ID_REV) >> BCMA_CC_ID_REV_SHIFT;
++	bus->chipinfo.pkg = (tmp & BCMA_CC_ID_PKG) >> BCMA_CC_ID_PKG_SHIFT;
++
++	erombase = bcma_scan_read32(bus, 0, BCMA_CC_EROM);
++	eromptr = bus->mmio;
++	eromend = eromptr + BCMA_CORE_SIZE / sizeof(u32);
++
++	bcma_scan_switch_core(bus, erombase);
++
++	while (eromptr < eromend) {
++		struct bcma_device core = { };
++		core.bus = bus;
++
++		/* get CIs */
++		cia = bcma_erom_get_ci(bus, &eromptr);
++		if (cia < 0) {
++			bcma_erom_push_ent(&eromptr);
++			if (bcma_erom_is_end(bus, &eromptr))
++				break;
++			return -1;
++		}
++		cib = bcma_erom_get_ci(bus, &eromptr);
++		if (cib < 0)
++			return -2;
++
++		/* parse CIs */
++		core.id.class = (cia & SCAN_CIA_CLASS) >> SCAN_CIA_CLASS_SHIFT;
++		core.id.id = (cia & SCAN_CIA_ID) >> SCAN_CIA_ID_SHIFT;
++		core.id.manuf = (cia & SCAN_CIA_MANUF) >> SCAN_CIA_MANUF_SHIFT;
++		ports[0] = (cib & SCAN_CIB_NMP) >> SCAN_CIB_NMP_SHIFT;
++		ports[1] = (cib & SCAN_CIB_NSP) >> SCAN_CIB_NSP_SHIFT;
++		wrappers[0] = (cib & SCAN_CIB_NMW) >> SCAN_CIB_NMW_SHIFT;
++		wrappers[1] = (cib & SCAN_CIB_NSW) >> SCAN_CIB_NSW_SHIFT;
++		core.id.rev = (cib & SCAN_CIB_REV) >> SCAN_CIB_REV_SHIFT;
++
++		if (((core.id.manuf == BCMA_MANUF_ARM) &&
++		     (core.id.id == 0xFFF)) ||
++		    (ports[1] == 0)) {
++			bcma_erom_skip_component(bus, &eromptr);
++			continue;
++		}
++
++		/* check if component is a core at all */
++		if (wrappers[0] + wrappers[1] == 0) {
++			/* we could save addrl of the router
++			if (cid == BCMA_CORE_OOB_ROUTER)
++			 */
++			bcma_erom_skip_component(bus, &eromptr);
++			continue;
++		}
++
++		if (bcma_erom_is_bridge(bus, &eromptr)) {
++			bcma_erom_skip_component(bus, &eromptr);
++			continue;
++		}
++
++		/* get & parse master ports */
++		for (i = 0; i < ports[0]; i++) {
++			u32 mst_port_d = bcma_erom_get_mst_port(bus, &eromptr);
++			if (mst_port_d < 0)
++				return -3;
++		}
++
++		/* get & parse slave ports */
++		for (i = 0; i < ports[1]; i++) {
++			for (j = 0; ; j++) {
++				tmp = bcma_erom_get_addr_desc(bus, &eromptr,
++					SCAN_ADDR_TYPE_SLAVE, i);
++				if (tmp < 0) {
++					/* no more entries for port _i_ */
++					/* pr_debug("erom: slave port %d "
++					 * "has %d descriptors\n", i, j); */
++					break;
++				} else {
++					if (i == 0 && j == 0)
++						core.addr = tmp;
++				}
++			}
++		}
++
++		/* get & parse master wrappers */
++		for (i = 0; i < wrappers[0]; i++) {
++			for (j = 0; ; j++) {
++				tmp = bcma_erom_get_addr_desc(bus, &eromptr,
++					SCAN_ADDR_TYPE_MWRAP, i);
++				if (tmp < 0) {
++					/* no more entries for port _i_ */
++					/* pr_debug("erom: master wrapper %d "
++					 * "has %d descriptors\n", i, j); */
++					break;
++				} else {
++					if (i == 0 && j == 0)
++						core.wrap = tmp;
++				}
++			}
++		}
++
++		/* get & parse slave wrappers */
++		for (i = 0; i < wrappers[1]; i++) {
++			u8 hack = (ports[1] == 1) ? 0 : 1;
++			for (j = 0; ; j++) {
++				tmp = bcma_erom_get_addr_desc(bus, &eromptr,
++					SCAN_ADDR_TYPE_SWRAP, i + hack);
++				if (tmp < 0) {
++					/* no more entries for port _i_ */
++					/* pr_debug("erom: master wrapper %d "
++					 * has %d descriptors\n", i, j); */
++					break;
++				} else {
++					if (wrappers[0] == 0 && !i && !j)
++						core.wrap = tmp;
++				}
++			}
++		}
++
++		pr_info("Core %d found: %s "
++			"(manuf 0x%03X, id 0x%03X, rev 0x%02X, class 0x%X)\n",
++			bus->nr_cores, bcma_device_name(core.id.id),
++			core.id.manuf, core.id.id, core.id.rev,
++			core.id.class);
++
++		core.core_index = bus->nr_cores;
++		bus->cores[bus->nr_cores++] = core;
++	}
++
++	return 0;
++}
+diff --git a/drivers/bcma/scan.h b/drivers/bcma/scan.h
+new file mode 100644
+index 0000000..113e6a6
+--- /dev/null
++++ b/drivers/bcma/scan.h
+@@ -0,0 +1,56 @@
++#ifndef BCMA_SCAN_H_
++#define BCMA_SCAN_H_
++
++#define BCMA_ADDR_BASE		0x18000000
++#define BCMA_WRAP_BASE		0x18100000
++
++#define SCAN_ER_VALID		0x00000001
++#define SCAN_ER_TAGX		0x00000006 /* we have to ignore 0x8 bit when checking tag for SCAN_ER_TAG_ADDR */
++#define SCAN_ER_TAG		0x0000000E
++#define  SCAN_ER_TAG_CI		0x00000000
++#define  SCAN_ER_TAG_MP		0x00000002
++#define  SCAN_ER_TAG_ADDR	0x00000004
++#define  SCAN_ER_TAG_END	0x0000000E
++#define SCAN_ER_BAD		0xFFFFFFFF
++
++#define SCAN_CIA_CLASS		0x000000F0
++#define SCAN_CIA_CLASS_SHIFT	4
++#define SCAN_CIA_ID		0x000FFF00
++#define SCAN_CIA_ID_SHIFT	8
++#define SCAN_CIA_MANUF		0xFFF00000
++#define SCAN_CIA_MANUF_SHIFT	20
++
++#define SCAN_CIB_NMP		0x000001F0
++#define SCAN_CIB_NMP_SHIFT	4
++#define SCAN_CIB_NSP		0x00003E00
++#define SCAN_CIB_NSP_SHIFT	9
++#define SCAN_CIB_NMW		0x0007C000
++#define SCAN_CIB_NMW_SHIFT	14
++#define SCAN_CIB_NSW		0x00F80000
++#define SCAN_CIB_NSW_SHIFT	17
++#define SCAN_CIB_REV		0xFF000000
++#define SCAN_CIB_REV_SHIFT	24
++
++#define SCAN_ADDR_AG32		0x00000008
++#define SCAN_ADDR_SZ		0x00000030
++#define SCAN_ADDR_SZ_SHIFT	4
++#define  SCAN_ADDR_SZ_4K	0x00000000
++#define  SCAN_ADDR_SZ_8K	0x00000010
++#define  SCAN_ADDR_SZ_16K	0x00000020
++#define  SCAN_ADDR_SZ_SZD	0x00000030
++#define SCAN_ADDR_TYPE		0x000000C0
++#define  SCAN_ADDR_TYPE_SLAVE	0x00000000
++#define  SCAN_ADDR_TYPE_BRIDGE	0x00000040
++#define  SCAN_ADDR_TYPE_SWRAP	0x00000080
++#define  SCAN_ADDR_TYPE_MWRAP	0x000000C0
++#define SCAN_ADDR_PORT		0x00000F00
++#define SCAN_ADDR_PORT_SHIFT	8
++#define SCAN_ADDR_ADDR		0xFFFFF000
++
++#define SCAN_ADDR_SZ_BASE	0x00001000	/* 4KB */
++
++#define SCAN_SIZE_SZ_ALIGN	0x00000FFF
++#define SCAN_SIZE_SZ		0xFFFFF000
++#define SCAN_SIZE_SG32		0x00000008
++
++#endif /* BCMA_SCAN_H_ */
+diff --git a/include/linux/bcma/bcma.h b/include/linux/bcma/bcma.h
+new file mode 100644
+index 0000000..0df6633
+--- /dev/null
++++ b/include/linux/bcma/bcma.h
+@@ -0,0 +1,232 @@
++#ifndef LINUX_BCMA_H_
++#define LINUX_BCMA_H_
++
++#include <linux/pci.h>
++#include <linux/mod_devicetable.h>
++
++#include <linux/bcma/bcma_driver_chipcommon.h>
++#include <linux/bcma/bcma_driver_pci.h>
++
++#include "bcma_regs.h"
++
++struct bcma_device;
++struct bcma_bus;
++
++enum bcma_hosttype {
++	BCMA_HOSTTYPE_NONE,
++	BCMA_HOSTTYPE_PCI,
++	BCMA_HOSTTYPE_SDIO,
++};
++
++struct bcma_chipinfo {
++	u16 id;
++	u8 rev;
++	u8 pkg;
++};
++
++struct bcma_host_ops {
++	u8 (*read8)(struct bcma_device *core, u16 offset);
++	u16 (*read16)(struct bcma_device *core, u16 offset);
++	u32 (*read32)(struct bcma_device *core, u16 offset);
++	void (*write8)(struct bcma_device *core, u16 offset, u8 value);
++	void (*write16)(struct bcma_device *core, u16 offset, u16 value);
++	void (*write32)(struct bcma_device *core, u16 offset, u32 value);
++	/* Agent ops */
++	u32 (*aread32)(struct bcma_device *core, u16 offset);
++	void (*awrite32)(struct bcma_device *core, u16 offset, u32 value);
++};
++
++/* Core manufacturers */
++#define BCMA_MANUF_ARM			0x43B
++#define BCMA_MANUF_MIPS			0x4A7
++#define BCMA_MANUF_BCM			0x4BF
++
++/* Core class values. */
++#define BCMA_CL_SIM			0x0
++#define BCMA_CL_EROM			0x1
++#define BCMA_CL_CORESIGHT		0x9
++#define BCMA_CL_VERIF			0xB
++#define BCMA_CL_OPTIMO			0xD
++#define BCMA_CL_GEN			0xE
++#define BCMA_CL_PRIMECELL		0xF
++
++/* Core-ID values. */
++#define BCMA_CORE_OOB_ROUTER		0x367	/* Out of band */
++#define BCMA_CORE_INVALID		0x700
++#define BCMA_CORE_CHIPCOMMON		0x800
++#define BCMA_CORE_ILINE20		0x801
++#define BCMA_CORE_SRAM			0x802
++#define BCMA_CORE_SDRAM			0x803
++#define BCMA_CORE_PCI			0x804
++#define BCMA_CORE_MIPS			0x805
++#define BCMA_CORE_ETHERNET		0x806
++#define BCMA_CORE_V90			0x807
++#define BCMA_CORE_USB11_HOSTDEV		0x808
++#define BCMA_CORE_ADSL			0x809
++#define BCMA_CORE_ILINE100		0x80A
++#define BCMA_CORE_IPSEC			0x80B
++#define BCMA_CORE_UTOPIA		0x80C
++#define BCMA_CORE_PCMCIA		0x80D
++#define BCMA_CORE_INTERNAL_MEM		0x80E
++#define BCMA_CORE_MEMC_SDRAM		0x80F
++#define BCMA_CORE_OFDM			0x810
++#define BCMA_CORE_EXTIF			0x811
++#define BCMA_CORE_80211			0x812
++#define BCMA_CORE_PHY_A			0x813
++#define BCMA_CORE_PHY_B			0x814
++#define BCMA_CORE_PHY_G			0x815
++#define BCMA_CORE_MIPS_3302		0x816
++#define BCMA_CORE_USB11_HOST		0x817
++#define BCMA_CORE_USB11_DEV		0x818
++#define BCMA_CORE_USB20_HOST		0x819
++#define BCMA_CORE_USB20_DEV		0x81A
++#define BCMA_CORE_SDIO_HOST		0x81B
++#define BCMA_CORE_ROBOSWITCH		0x81C
++#define BCMA_CORE_PARA_ATA		0x81D
++#define BCMA_CORE_SATA_XORDMA		0x81E
++#define BCMA_CORE_ETHERNET_GBIT		0x81F
++#define BCMA_CORE_PCIE			0x820
++#define BCMA_CORE_PHY_N			0x821
++#define BCMA_CORE_SRAM_CTL		0x822
++#define BCMA_CORE_MINI_MACPHY		0x823
++#define BCMA_CORE_ARM_1176		0x824
++#define BCMA_CORE_ARM_7TDMI		0x825
++#define BCMA_CORE_PHY_LP		0x826
++#define BCMA_CORE_PMU			0x827
++#define BCMA_CORE_PHY_SSN		0x828
++#define BCMA_CORE_SDIO_DEV		0x829
++#define BCMA_CORE_ARM_CM3		0x82A
++#define BCMA_CORE_PHY_HT		0x82B
++#define BCMA_CORE_MIPS_74K		0x82C
++#define BCMA_CORE_MAC_GBIT		0x82D
++#define BCMA_CORE_DDR12_MEM_CTL		0x82E
++#define BCMA_CORE_PCIE_RC		0x82F	/* PCIe Root Complex */
++#define BCMA_CORE_OCP_OCP_BRIDGE	0x830
++#define BCMA_CORE_SHARED_COMMON		0x831
++#define BCMA_CORE_OCP_AHB_BRIDGE	0x832
++#define BCMA_CORE_SPI_HOST		0x833
++#define BCMA_CORE_I2S			0x834
++#define BCMA_CORE_SDR_DDR1_MEM_CTL	0x835	/* SDR/DDR1 memory controller core */
++#define BCMA_CORE_SHIM			0x837	/* SHIM component in ubus/6362 */
++#define BCMA_CORE_DEFAULT		0xFFF
++
++#define BCMA_MAX_NR_CORES		16
++
++/* 1) It is not allowed to put struct device statically in bcma_device
++ * 2) We can not just use pointer to struct device because we use container_of
++ * 3) We do not have pointer to struct bcma_device in struct device
++ * Solution: use such a dummy wrapper
++ */
++struct __bcma_dev_wrapper {
++	struct device dev;
++	struct bcma_device *core;
++};
++
++struct bcma_device {
++	struct bcma_bus *bus;
++	struct bcma_device_id id;
++
++	struct device *dev;
++
++	u8 core_index;
++
++	u32 addr;
++	u32 wrap;
++
++	void *drvdata;
++};
++
++static inline void *bcma_get_drvdata(struct bcma_device *core)
++{
++	return core->drvdata;
++}
++static inline void bcma_set_drvdata(struct bcma_device *core, void *drvdata)
++{
++	core->drvdata = drvdata;
++}
++
++struct bcma_driver {
++	const char *name;
++	const struct bcma_device_id *id_table;
++
++	int (*probe)(struct bcma_device *dev);
++	void (*remove)(struct bcma_device *dev);
++	int (*suspend)(struct bcma_device *dev, pm_message_t state);
++	int (*resume)(struct bcma_device *dev);
++	void (*shutdown)(struct bcma_device *dev);
++
++	struct device_driver drv;
++};
++extern
++int __bcma_driver_register(struct bcma_driver *drv, struct module *owner);
++static inline int bcma_driver_register(struct bcma_driver *drv)
++{
++	return __bcma_driver_register(drv, THIS_MODULE);
++}
++extern void bcma_driver_unregister(struct bcma_driver *drv);
++
++struct bcma_bus {
++	/* The MMIO area. */
++	void __iomem *mmio;
++
++	const struct bcma_host_ops *ops;
++
++	enum bcma_hosttype hosttype;
++	union {
++		/* Pointer to the PCI bus (only for BCMA_HOSTTYPE_PCI) */
++		struct pci_dev *host_pci;
++		/* Pointer to the SDIO device (only for BCMA_HOSTTYPE_SDIO) */
++		struct sdio_func *host_sdio;
++	};
++
++	struct bcma_chipinfo chipinfo;
++
++	struct bcma_device *mapped_core;
++	struct bcma_device cores[BCMA_MAX_NR_CORES];
++	u8 nr_cores;
++
++	struct bcma_drv_cc drv_cc;
++	struct bcma_drv_pci drv_pci;
++};
++
++extern inline u32 bcma_read8(struct bcma_device *core, u16 offset)
++{
++	return core->bus->ops->read8(core, offset);
++}
++extern inline u32 bcma_read16(struct bcma_device *core, u16 offset)
++{
++	return core->bus->ops->read16(core, offset);
++}
++extern inline u32 bcma_read32(struct bcma_device *core, u16 offset)
++{
++	return core->bus->ops->read32(core, offset);
++}
++extern inline
++void bcma_write8(struct bcma_device *core, u16 offset, u32 value)
++{
++	core->bus->ops->write8(core, offset, value);
++}
++extern inline
++void bcma_write16(struct bcma_device *core, u16 offset, u32 value)
++{
++	core->bus->ops->write16(core, offset, value);
++}
++extern inline
++void bcma_write32(struct bcma_device *core, u16 offset, u32 value)
++{
++	core->bus->ops->write32(core, offset, value);
++}
++extern inline u32 bcma_aread32(struct bcma_device *core, u16 offset)
++{
++	return core->bus->ops->aread32(core, offset);
++}
++extern inline
++void bcma_awrite32(struct bcma_device *core, u16 offset, u32 value)
++{
++	core->bus->ops->awrite32(core, offset, value);
++}
++
++extern bool bcma_core_is_enabled(struct bcma_device *core);
++extern int bcma_core_enable(struct bcma_device *core, u32 flags);
++
++#endif /* LINUX_BCMA_H_ */
+diff --git a/include/linux/bcma/bcma_driver_chipcommon.h b/include/linux/bcma/bcma_driver_chipcommon.h
+new file mode 100644
+index 0000000..4f8fd6a
+--- /dev/null
++++ b/include/linux/bcma/bcma_driver_chipcommon.h
+@@ -0,0 +1,297 @@
++#ifndef LINUX_BCMA_DRIVER_CC_H_
++#define LINUX_BCMA_DRIVER_CC_H_
++
++/** ChipCommon core registers. **/
++#define BCMA_CC_ID			0x0000
++#define  BCMA_CC_ID_ID			0x0000FFFF
++#define  BCMA_CC_ID_ID_SHIFT		0
++#define  BCMA_CC_ID_REV			0x000F0000
++#define  BCMA_CC_ID_REV_SHIFT		16
++#define  BCMA_CC_ID_PKG			0x00F00000
++#define  BCMA_CC_ID_PKG_SHIFT		20
++#define  BCMA_CC_ID_NRCORES		0x0F000000
++#define  BCMA_CC_ID_NRCORES_SHIFT	24
++#define  BCMA_CC_ID_TYPE		0xF0000000
++#define  BCMA_CC_ID_TYPE_SHIFT		28
++#define BCMA_CC_CAP			0x0004		/* Capabilities */
++#define  BCMA_CC_CAP_NRUART		0x00000003	/* # of UARTs */
++#define  BCMA_CC_CAP_MIPSEB		0x00000004	/* MIPS in BigEndian Mode */
++#define  BCMA_CC_CAP_UARTCLK		0x00000018	/* UART clock select */
++#define   BCMA_CC_CAP_UARTCLK_INT	0x00000008	/* UARTs are driven by internal divided clock */
++#define  BCMA_CC_CAP_UARTGPIO		0x00000020	/* UARTs on GPIO 15-12 */
++#define  BCMA_CC_CAP_EXTBUS		0x000000C0	/* External buses present */
++#define  BCMA_CC_CAP_FLASHT		0x00000700	/* Flash Type */
++#define   BCMA_CC_FLASHT_NONE		0x00000000	/* No flash */
++#define   BCMA_CC_FLASHT_STSER		0x00000100	/* ST serial flash */
++#define   BCMA_CC_FLASHT_ATSER		0x00000200	/* Atmel serial flash */
++#define	  BCMA_CC_FLASHT_PARA		0x00000700	/* Parallel flash */
++#define  BCMA_CC_CAP_PLLT		0x00038000	/* PLL Type */
++#define   BCMA_PLLTYPE_NONE		0x00000000
++#define   BCMA_PLLTYPE_1		0x00010000	/* 48Mhz base, 3 dividers */
++#define   BCMA_PLLTYPE_2		0x00020000	/* 48Mhz, 4 dividers */
++#define   BCMA_PLLTYPE_3		0x00030000	/* 25Mhz, 2 dividers */
++#define   BCMA_PLLTYPE_4		0x00008000	/* 48Mhz, 4 dividers */
++#define   BCMA_PLLTYPE_5		0x00018000	/* 25Mhz, 4 dividers */
++#define   BCMA_PLLTYPE_6		0x00028000	/* 100/200 or 120/240 only */
++#define   BCMA_PLLTYPE_7		0x00038000	/* 25Mhz, 4 dividers */
++#define  BCMA_CC_CAP_PCTL		0x00040000	/* Power Control */
++#define  BCMA_CC_CAP_OTPS		0x00380000	/* OTP size */
++#define  BCMA_CC_CAP_OTPS_SHIFT		19
++#define  BCMA_CC_CAP_OTPS_BASE		5
++#define  BCMA_CC_CAP_JTAGM		0x00400000	/* JTAG master present */
++#define  BCMA_CC_CAP_BROM		0x00800000	/* Internal boot ROM active */
++#define  BCMA_CC_CAP_64BIT		0x08000000	/* 64-bit Backplane */
++#define  BCMA_CC_CAP_PMU		0x10000000	/* PMU available (rev >= 20) */
++#define  BCMA_CC_CAP_ECI		0x20000000	/* ECI available (rev >= 20) */
++#define  BCMA_CC_CAP_SPROM		0x40000000	/* SPROM present */
++#define BCMA_CC_CORECTL			0x0008
++#define  BCMA_CC_CORECTL_UARTCLK0	0x00000001	/* Drive UART with internal clock */
++#define	 BCMA_CC_CORECTL_SE		0x00000002	/* sync clk out enable (corerev >= 3) */
++#define  BCMA_CC_CORECTL_UARTCLKEN	0x00000008	/* UART clock enable (rev >= 21) */
++#define BCMA_CC_BIST			0x000C
++#define BCMA_CC_OTPS			0x0010		/* OTP status */
++#define	 BCMA_CC_OTPS_PROGFAIL		0x80000000
++#define	 BCMA_CC_OTPS_PROTECT		0x00000007
++#define	 BCMA_CC_OTPS_HW_PROTECT	0x00000001
++#define	 BCMA_CC_OTPS_SW_PROTECT	0x00000002
++#define	 BCMA_CC_OTPS_CID_PROTECT	0x00000004
++#define BCMA_CC_OTPC			0x0014		/* OTP control */
++#define	 BCMA_CC_OTPC_RECWAIT		0xFF000000
++#define	 BCMA_CC_OTPC_PROGWAIT		0x00FFFF00
++#define	 BCMA_CC_OTPC_PRW_SHIFT		8
++#define	 BCMA_CC_OTPC_MAXFAIL		0x00000038
++#define	 BCMA_CC_OTPC_VSEL		0x00000006
++#define	 BCMA_CC_OTPC_SELVL		0x00000001
++#define BCMA_CC_OTPP			0x0018		/* OTP prog */
++#define	 BCMA_CC_OTPP_COL		0x000000FF
++#define	 BCMA_CC_OTPP_ROW		0x0000FF00
++#define	 BCMA_CC_OTPP_ROW_SHIFT		8
++#define	 BCMA_CC_OTPP_READERR		0x10000000
++#define	 BCMA_CC_OTPP_VALUE		0x20000000
++#define	 BCMA_CC_OTPP_READ		0x40000000
++#define	 BCMA_CC_OTPP_START		0x80000000
++#define	 BCMA_CC_OTPP_BUSY		0x80000000
++#define BCMA_CC_IRQSTAT			0x0020
++#define BCMA_CC_IRQMASK			0x0024
++#define	 BCMA_CC_IRQ_GPIO		0x00000001	/* gpio intr */
++#define	 BCMA_CC_IRQ_EXT		0x00000002	/* ro: ext intr pin (corerev >= 3) */
++#define	 BCMA_CC_IRQ_WDRESET		0x80000000	/* watchdog reset occurred */
++#define BCMA_CC_CHIPCTL			0x0028		/* Rev >= 11 only */
++#define BCMA_CC_CHIPSTAT		0x002C		/* Rev >= 11 only */
++#define BCMA_CC_JCMD			0x0030		/* Rev >= 10 only */
++#define  BCMA_CC_JCMD_START		0x80000000
++#define  BCMA_CC_JCMD_BUSY		0x80000000
++#define  BCMA_CC_JCMD_PAUSE		0x40000000
++#define  BCMA_CC_JCMD0_ACC_MASK		0x0000F000
++#define  BCMA_CC_JCMD0_ACC_IRDR		0x00000000
++#define  BCMA_CC_JCMD0_ACC_DR		0x00001000
++#define  BCMA_CC_JCMD0_ACC_IR		0x00002000
++#define  BCMA_CC_JCMD0_ACC_RESET	0x00003000
++#define  BCMA_CC_JCMD0_ACC_IRPDR	0x00004000
++#define  BCMA_CC_JCMD0_ACC_PDR		0x00005000
++#define  BCMA_CC_JCMD0_IRW_MASK		0x00000F00
++#define  BCMA_CC_JCMD_ACC_MASK		0x000F0000	/* Changes for corerev 11 */
++#define  BCMA_CC_JCMD_ACC_IRDR		0x00000000
++#define  BCMA_CC_JCMD_ACC_DR		0x00010000
++#define  BCMA_CC_JCMD_ACC_IR		0x00020000
++#define  BCMA_CC_JCMD_ACC_RESET		0x00030000
++#define  BCMA_CC_JCMD_ACC_IRPDR		0x00040000
++#define  BCMA_CC_JCMD_ACC_PDR		0x00050000
++#define  BCMA_CC_JCMD_IRW_MASK		0x00001F00
++#define  BCMA_CC_JCMD_IRW_SHIFT		8
++#define  BCMA_CC_JCMD_DRW_MASK		0x0000003F
++#define BCMA_CC_JIR			0x0034		/* Rev >= 10 only */
++#define BCMA_CC_JDR			0x0038		/* Rev >= 10 only */
++#define BCMA_CC_JCTL			0x003C		/* Rev >= 10 only */
++#define  BCMA_CC_JCTL_FORCE_CLK		4		/* Force clock */
++#define  BCMA_CC_JCTL_EXT_EN		2		/* Enable external targets */
++#define  BCMA_CC_JCTL_EN		1		/* Enable Jtag master */
++#define BCMA_CC_FLASHCTL		0x0040
++#define  BCMA_CC_FLASHCTL_START		0x80000000
++#define  BCMA_CC_FLASHCTL_BUSY		BCMA_CC_FLASHCTL_START
++#define BCMA_CC_FLASHADDR		0x0044
++#define BCMA_CC_FLASHDATA		0x0048
++#define BCMA_CC_BCAST_ADDR		0x0050
++#define BCMA_CC_BCAST_DATA		0x0054
++#define BCMA_CC_GPIOIN			0x0060
++#define BCMA_CC_GPIOOUT			0x0064
++#define BCMA_CC_GPIOOUTEN		0x0068
++#define BCMA_CC_GPIOCTL			0x006C
++#define BCMA_CC_GPIOPOL			0x0070
++#define BCMA_CC_GPIOIRQ			0x0074
++#define BCMA_CC_WATCHDOG		0x0080
++#define BCMA_CC_GPIOTIMER		0x0088		/* LED powersave (corerev >= 16) */
++#define  BCMA_CC_GPIOTIMER_ONTIME_SHIFT	16
++#define BCMA_CC_GPIOTOUTM		0x008C		/* LED powersave (corerev >= 16) */
++#define BCMA_CC_CLOCK_N			0x0090
++#define BCMA_CC_CLOCK_SB		0x0094
++#define BCMA_CC_CLOCK_PCI		0x0098
++#define BCMA_CC_CLOCK_M2		0x009C
++#define BCMA_CC_CLOCK_MIPS		0x00A0
++#define BCMA_CC_CLKDIV			0x00A4		/* Rev >= 3 only */
++#define	 BCMA_CC_CLKDIV_SFLASH		0x0F000000
++#define	 BCMA_CC_CLKDIV_SFLASH_SHIFT	24
++#define	 BCMA_CC_CLKDIV_OTP		0x000F0000
++#define	 BCMA_CC_CLKDIV_OTP_SHIFT	16
++#define	 BCMA_CC_CLKDIV_JTAG		0x00000F00
++#define	 BCMA_CC_CLKDIV_JTAG_SHIFT	8
++#define	 BCMA_CC_CLKDIV_UART		0x000000FF
++#define BCMA_CC_CAP_EXT			0x00AC		/* Capabilities */
++#define BCMA_CC_PLLONDELAY		0x00B0		/* Rev >= 4 only */
++#define BCMA_CC_FREFSELDELAY		0x00B4		/* Rev >= 4 only */
++#define BCMA_CC_SLOWCLKCTL		0x00B8		/* 6 <= Rev <= 9 only */
++#define  BCMA_CC_SLOWCLKCTL_SRC		0x00000007	/* slow clock source mask */
++#define	  BCMA_CC_SLOWCLKCTL_SRC_LPO	0x00000000	/* source of slow clock is LPO */
++#define   BCMA_CC_SLOWCLKCTL_SRC_XTAL	0x00000001	/* source of slow clock is crystal */
++#define	  BCMA_CC_SLOECLKCTL_SRC_PCI	0x00000002	/* source of slow clock is PCI */
++#define  BCMA_CC_SLOWCLKCTL_LPOFREQ	0x00000200	/* LPOFreqSel, 1: 160Khz, 0: 32KHz */
++#define  BCMA_CC_SLOWCLKCTL_LPOPD	0x00000400	/* LPOPowerDown, 1: LPO is disabled, 0: LPO is enabled */
++#define  BCMA_CC_SLOWCLKCTL_FSLOW	0x00000800	/* ForceSlowClk, 1: sb/cores running on slow clock, 0: power logic control */
++#define  BCMA_CC_SLOWCLKCTL_IPLL	0x00001000	/* IgnorePllOffReq, 1/0: power logic ignores/honors PLL clock disable requests from core */
++#define  BCMA_CC_SLOWCLKCTL_ENXTAL	0x00002000	/* XtalControlEn, 1/0: power logic does/doesn't disable crystal when appropriate */
++#define  BCMA_CC_SLOWCLKCTL_XTALPU	0x00004000	/* XtalPU (RO), 1/0: crystal running/disabled */
++#define  BCMA_CC_SLOWCLKCTL_CLKDIV	0xFFFF0000	/* ClockDivider (SlowClk = 1/(4+divisor)) */
++#define  BCMA_CC_SLOWCLKCTL_CLKDIV_SHIFT	16
++#define BCMA_CC_SYSCLKCTL		0x00C0		/* Rev >= 3 only */
++#define	 BCMA_CC_SYSCLKCTL_IDLPEN	0x00000001	/* ILPen: Enable Idle Low Power */
++#define	 BCMA_CC_SYSCLKCTL_ALPEN	0x00000002	/* ALPen: Enable Active Low Power */
++#define	 BCMA_CC_SYSCLKCTL_PLLEN	0x00000004	/* ForcePLLOn */
++#define	 BCMA_CC_SYSCLKCTL_FORCEALP	0x00000008	/* Force ALP (or HT if ALPen is not set */
++#define	 BCMA_CC_SYSCLKCTL_FORCEHT	0x00000010	/* Force HT */
++#define  BCMA_CC_SYSCLKCTL_CLKDIV	0xFFFF0000	/* ClkDiv  (ILP = 1/(4+divisor)) */
++#define  BCMA_CC_SYSCLKCTL_CLKDIV_SHIFT	16
++#define BCMA_CC_CLKSTSTR		0x00C4		/* Rev >= 3 only */
++#define BCMA_CC_EROM			0x00FC
++#define BCMA_CC_PCMCIA_CFG		0x0100
++#define BCMA_CC_PCMCIA_MEMWAIT		0x0104
++#define BCMA_CC_PCMCIA_ATTRWAIT		0x0108
++#define BCMA_CC_PCMCIA_IOWAIT		0x010C
++#define BCMA_CC_IDE_CFG			0x0110
++#define BCMA_CC_IDE_MEMWAIT		0x0114
++#define BCMA_CC_IDE_ATTRWAIT		0x0118
++#define BCMA_CC_IDE_IOWAIT		0x011C
++#define BCMA_CC_PROG_CFG		0x0120
++#define BCMA_CC_PROG_WAITCNT		0x0124
++#define BCMA_CC_FLASH_CFG		0x0128
++#define BCMA_CC_FLASH_WAITCNT		0x012C
++#define BCMA_CC_CLKCTLST		0x01E0 /* Clock control and status (rev >= 20) */
++#define  BCMA_CC_CLKCTLST_FORCEALP	0x00000001 /* Force ALP request */
++#define  BCMA_CC_CLKCTLST_FORCEHT	0x00000002 /* Force HT request */
++#define  BCMA_CC_CLKCTLST_FORCEILP	0x00000004 /* Force ILP request */
++#define  BCMA_CC_CLKCTLST_HAVEALPREQ	0x00000008 /* ALP available request */
++#define  BCMA_CC_CLKCTLST_HAVEHTREQ	0x00000010 /* HT available request */
++#define  BCMA_CC_CLKCTLST_HWCROFF	0x00000020 /* Force HW clock request off */
++#define  BCMA_CC_CLKCTLST_HAVEHT	0x00010000 /* HT available */
++#define  BCMA_CC_CLKCTLST_HAVEALP	0x00020000 /* APL available */
++#define BCMA_CC_HW_WORKAROUND		0x01E4 /* Hardware workaround (rev >= 20) */
++#define BCMA_CC_UART0_DATA		0x0300
++#define BCMA_CC_UART0_IMR		0x0304
++#define BCMA_CC_UART0_FCR		0x0308
++#define BCMA_CC_UART0_LCR		0x030C
++#define BCMA_CC_UART0_MCR		0x0310
++#define BCMA_CC_UART0_LSR		0x0314
++#define BCMA_CC_UART0_MSR		0x0318
++#define BCMA_CC_UART0_SCRATCH		0x031C
++#define BCMA_CC_UART1_DATA		0x0400
++#define BCMA_CC_UART1_IMR		0x0404
++#define BCMA_CC_UART1_FCR		0x0408
++#define BCMA_CC_UART1_LCR		0x040C
++#define BCMA_CC_UART1_MCR		0x0410
++#define BCMA_CC_UART1_LSR		0x0414
++#define BCMA_CC_UART1_MSR		0x0418
++#define BCMA_CC_UART1_SCRATCH		0x041C
++/* PMU registers (rev >= 20) */
++#define BCMA_CC_PMU_CTL			0x0600 /* PMU control */
++#define  BCMA_CC_PMU_CTL_ILP_DIV	0xFFFF0000 /* ILP div mask */
++#define  BCMA_CC_PMU_CTL_ILP_DIV_SHIFT	16
++#define  BCMA_CC_PMU_CTL_NOILPONW	0x00000200 /* No ILP on wait */
++#define  BCMA_CC_PMU_CTL_HTREQEN	0x00000100 /* HT req enable */
++#define  BCMA_CC_PMU_CTL_ALPREQEN	0x00000080 /* ALP req enable */
++#define  BCMA_CC_PMU_CTL_XTALFREQ	0x0000007C /* Crystal freq */
++#define  BCMA_CC_PMU_CTL_XTALFREQ_SHIFT	2
++#define  BCMA_CC_PMU_CTL_ILPDIVEN	0x00000002 /* ILP div enable */
++#define  BCMA_CC_PMU_CTL_LPOSEL		0x00000001 /* LPO sel */
++#define BCMA_CC_PMU_CAP			0x0604 /* PMU capabilities */
++#define  BCMA_CC_PMU_CAP_REVISION	0x000000FF /* Revision mask */
++#define BCMA_CC_PMU_STAT		0x0608 /* PMU status */
++#define  BCMA_CC_PMU_STAT_INTPEND	0x00000040 /* Interrupt pending */
++#define  BCMA_CC_PMU_STAT_SBCLKST	0x00000030 /* Backplane clock status? */
++#define  BCMA_CC_PMU_STAT_HAVEALP	0x00000008 /* ALP available */
++#define  BCMA_CC_PMU_STAT_HAVEHT	0x00000004 /* HT available */
++#define  BCMA_CC_PMU_STAT_RESINIT	0x00000003 /* Res init */
++#define BCMA_CC_PMU_RES_STAT		0x060C /* PMU res status */
++#define BCMA_CC_PMU_RES_PEND		0x0610 /* PMU res pending */
++#define BCMA_CC_PMU_TIMER		0x0614 /* PMU timer */
++#define BCMA_CC_PMU_MINRES_MSK		0x0618 /* PMU min res mask */
++#define BCMA_CC_PMU_MAXRES_MSK		0x061C /* PMU max res mask */
++#define BCMA_CC_PMU_RES_TABSEL		0x0620 /* PMU res table sel */
++#define BCMA_CC_PMU_RES_DEPMSK		0x0624 /* PMU res dep mask */
++#define BCMA_CC_PMU_RES_UPDNTM		0x0628 /* PMU res updown timer */
++#define BCMA_CC_PMU_RES_TIMER		0x062C /* PMU res timer */
++#define BCMA_CC_PMU_CLKSTRETCH		0x0630 /* PMU clockstretch */
++#define BCMA_CC_PMU_WATCHDOG		0x0634 /* PMU watchdog */
++#define BCMA_CC_PMU_RES_REQTS		0x0640 /* PMU res req timer sel */
++#define BCMA_CC_PMU_RES_REQT		0x0644 /* PMU res req timer */
++#define BCMA_CC_PMU_RES_REQM		0x0648 /* PMU res req mask */
++#define BCMA_CC_CHIPCTL_ADDR		0x0650
++#define BCMA_CC_CHIPCTL_DATA		0x0654
++#define BCMA_CC_REGCTL_ADDR		0x0658
++#define BCMA_CC_REGCTL_DATA		0x065C
++#define BCMA_CC_PLLCTL_ADDR		0x0660
++#define BCMA_CC_PLLCTL_DATA		0x0664
++
++/* Data for the PMU, if available.
++ * Check availability with ((struct bcma_chipcommon)->capabilities & BCMA_CC_CAP_PMU)
++ */
++struct bcma_chipcommon_pmu {
++	u8 rev;			/* PMU revision */
++	u32 crystalfreq;	/* The active crystal frequency (in kHz) */
++};
++
++struct bcma_drv_cc {
++	struct bcma_device *core;
++	u32 status;
++	u32 capabilities;
++	u32 capabilities_ext;
++	/* Fast Powerup Delay constant */
++	u16 fast_pwrup_delay;
++	struct bcma_chipcommon_pmu pmu;
++};
++
++/* Register access */
++#define bcma_cc_read32(cc, offset) \
++	bcma_read32((cc)->core, offset)
++#define bcma_cc_write32(cc, offset, val) \
++	bcma_write32((cc)->core, offset, val)
++
++#define bcma_cc_mask32(cc, offset, mask) \
++	bcma_cc_write32(cc, offset, bcma_cc_read32(cc, offset) & (mask))
++#define bcma_cc_set32(cc, offset, set) \
++	bcma_cc_write32(cc, offset, bcma_cc_read32(cc, offset) | (set))
++#define bcma_cc_maskset32(cc, offset, mask, set) \
++	bcma_cc_write32(cc, offset, (bcma_cc_read32(cc, offset) & (mask)) | (set))
++
++extern void bcma_core_chipcommon_init(struct bcma_drv_cc *cc);
++
++extern void bcma_chipco_suspend(struct bcma_drv_cc *cc);
++extern void bcma_chipco_resume(struct bcma_drv_cc *cc);
++
++extern void bcma_chipco_watchdog_timer_set(struct bcma_drv_cc *cc,
++					  u32 ticks);
++
++void bcma_chipco_irq_mask(struct bcma_drv_cc *cc, u32 mask, u32 value);
++
++u32 bcma_chipco_irq_status(struct bcma_drv_cc *cc, u32 mask);
++
++/* Chipcommon GPIO pin access. */
++u32 bcma_chipco_gpio_in(struct bcma_drv_cc *cc, u32 mask);
++u32 bcma_chipco_gpio_out(struct bcma_drv_cc *cc, u32 mask, u32 value);
++u32 bcma_chipco_gpio_outen(struct bcma_drv_cc *cc, u32 mask, u32 value);
++u32 bcma_chipco_gpio_control(struct bcma_drv_cc *cc, u32 mask, u32 value);
++u32 bcma_chipco_gpio_intmask(struct bcma_drv_cc *cc, u32 mask, u32 value);
++u32 bcma_chipco_gpio_polarity(struct bcma_drv_cc *cc, u32 mask, u32 value);
++
++/* PMU support */
++extern void bcma_pmu_init(struct bcma_drv_cc *cc);
++
++#endif /* LINUX_BCMA_DRIVER_CC_H_ */
+diff --git a/include/linux/bcma/bcma_driver_pci.h b/include/linux/bcma/bcma_driver_pci.h
+new file mode 100644
+index 0000000..b7e191c
+--- /dev/null
++++ b/include/linux/bcma/bcma_driver_pci.h
+@@ -0,0 +1,89 @@
++#ifndef LINUX_BCMA_DRIVER_PCI_H_
++#define LINUX_BCMA_DRIVER_PCI_H_
++
++#include <linux/types.h>
++
++struct pci_dev;
++
++/** PCI core registers. **/
++#define BCMA_CORE_PCI_CTL			0x0000	/* PCI Control */
++#define  BCMA_CORE_PCI_CTL_RST_OE		0x00000001 /* PCI_RESET Output Enable */
++#define  BCMA_CORE_PCI_CTL_RST			0x00000002 /* PCI_RESET driven out to pin */
++#define  BCMA_CORE_PCI_CTL_CLK_OE		0x00000004 /* Clock gate Output Enable */
++#define  BCMA_CORE_PCI_CTL_CLK			0x00000008 /* Gate for clock driven out to pin */
++#define BCMA_CORE_PCI_ARBCTL			0x0010	/* PCI Arbiter Control */
++#define  BCMA_CORE_PCI_ARBCTL_INTERN		0x00000001 /* Use internal arbiter */
++#define  BCMA_CORE_PCI_ARBCTL_EXTERN		0x00000002 /* Use external arbiter */
++#define  BCMA_CORE_PCI_ARBCTL_PARKID		0x00000006 /* Mask, selects which agent is parked on an idle bus */
++#define   BCMA_CORE_PCI_ARBCTL_PARKID_LAST	0x00000000 /* Last requestor */
++#define   BCMA_CORE_PCI_ARBCTL_PARKID_4710	0x00000002 /* 4710 */
++#define   BCMA_CORE_PCI_ARBCTL_PARKID_EXT0	0x00000004 /* External requestor 0 */
++#define   BCMA_CORE_PCI_ARBCTL_PARKID_EXT1	0x00000006 /* External requestor 1 */
++#define BCMA_CORE_PCI_ISTAT			0x0020	/* Interrupt status */
++#define  BCMA_CORE_PCI_ISTAT_INTA		0x00000001 /* PCI INTA# */
++#define  BCMA_CORE_PCI_ISTAT_INTB		0x00000002 /* PCI INTB# */
++#define  BCMA_CORE_PCI_ISTAT_SERR		0x00000004 /* PCI SERR# (write to clear) */
++#define  BCMA_CORE_PCI_ISTAT_PERR		0x00000008 /* PCI PERR# (write to clear) */
++#define  BCMA_CORE_PCI_ISTAT_PME		0x00000010 /* PCI PME# */
++#define BCMA_CORE_PCI_IMASK			0x0024	/* Interrupt mask */
++#define  BCMA_CORE_PCI_IMASK_INTA		0x00000001 /* PCI INTA# */
++#define  BCMA_CORE_PCI_IMASK_INTB		0x00000002 /* PCI INTB# */
++#define  BCMA_CORE_PCI_IMASK_SERR		0x00000004 /* PCI SERR# */
++#define  BCMA_CORE_PCI_IMASK_PERR		0x00000008 /* PCI PERR# */
++#define  BCMA_CORE_PCI_IMASK_PME		0x00000010 /* PCI PME# */
++#define BCMA_CORE_PCI_MBOX			0x0028	/* Backplane to PCI Mailbox */
++#define  BCMA_CORE_PCI_MBOX_F0_0		0x00000100 /* PCI function 0, INT 0 */
++#define  BCMA_CORE_PCI_MBOX_F0_1		0x00000200 /* PCI function 0, INT 1 */
++#define  BCMA_CORE_PCI_MBOX_F1_0		0x00000400 /* PCI function 1, INT 0 */
++#define  BCMA_CORE_PCI_MBOX_F1_1		0x00000800 /* PCI function 1, INT 1 */
++#define  BCMA_CORE_PCI_MBOX_F2_0		0x00001000 /* PCI function 2, INT 0 */
++#define  BCMA_CORE_PCI_MBOX_F2_1		0x00002000 /* PCI function 2, INT 1 */
++#define  BCMA_CORE_PCI_MBOX_F3_0		0x00004000 /* PCI function 3, INT 0 */
++#define  BCMA_CORE_PCI_MBOX_F3_1		0x00008000 /* PCI function 3, INT 1 */
++#define BCMA_CORE_PCI_BCAST_ADDR		0x0050	/* Backplane Broadcast Address */
++#define  BCMA_CORE_PCI_BCAST_ADDR_MASK		0x000000FF
++#define BCMA_CORE_PCI_BCAST_DATA		0x0054	/* Backplane Broadcast Data */
++#define BCMA_CORE_PCI_GPIO_IN			0x0060	/* rev >= 2 only */
++#define BCMA_CORE_PCI_GPIO_OUT			0x0064	/* rev >= 2 only */
++#define BCMA_CORE_PCI_GPIO_ENABLE		0x0068	/* rev >= 2 only */
++#define BCMA_CORE_PCI_GPIO_CTL			0x006C	/* rev >= 2 only */
++#define BCMA_CORE_PCI_SBTOPCI0			0x0100	/* Backplane to PCI translation 0 (sbtopci0) */
++#define  BCMA_CORE_PCI_SBTOPCI0_MASK		0xFC000000
++#define BCMA_CORE_PCI_SBTOPCI1			0x0104	/* Backplane to PCI translation 1 (sbtopci1) */
++#define  BCMA_CORE_PCI_SBTOPCI1_MASK		0xFC000000
++#define BCMA_CORE_PCI_SBTOPCI2			0x0108	/* Backplane to PCI translation 2 (sbtopci2) */
++#define  BCMA_CORE_PCI_SBTOPCI2_MASK		0xC0000000
++#define BCMA_CORE_PCI_PCICFG0			0x0400	/* PCI config space 0 (rev >= 8) */
++#define BCMA_CORE_PCI_PCICFG1			0x0500	/* PCI config space 1 (rev >= 8) */
++#define BCMA_CORE_PCI_PCICFG2			0x0600	/* PCI config space 2 (rev >= 8) */
++#define BCMA_CORE_PCI_PCICFG3			0x0700	/* PCI config space 3 (rev >= 8) */
++#define BCMA_CORE_PCI_SPROM(wordoffset)		(0x0800 + ((wordoffset) * 2)) /* SPROM shadow area (72 bytes) */
++
++/* SBtoPCIx */
++#define BCMA_CORE_PCI_SBTOPCI_MEM		0x00000000
++#define BCMA_CORE_PCI_SBTOPCI_IO		0x00000001
++#define BCMA_CORE_PCI_SBTOPCI_CFG0		0x00000002
++#define BCMA_CORE_PCI_SBTOPCI_CFG1		0x00000003
++#define BCMA_CORE_PCI_SBTOPCI_PREF		0x00000004 /* Prefetch enable */
++#define BCMA_CORE_PCI_SBTOPCI_BURST		0x00000008 /* Burst enable */
++#define BCMA_CORE_PCI_SBTOPCI_MRM		0x00000020 /* Memory Read Multiple */
++#define BCMA_CORE_PCI_SBTOPCI_RC		0x00000030 /* Read Command mask (rev >= 11) */
++#define  BCMA_CORE_PCI_SBTOPCI_RC_READ		0x00000000 /* Memory read */
++#define  BCMA_CORE_PCI_SBTOPCI_RC_READL		0x00000010 /* Memory read line */
++#define  BCMA_CORE_PCI_SBTOPCI_RC_READM		0x00000020 /* Memory read multiple */
++
++/* PCIcore specific boardflags */
++#define BCMA_CORE_PCI_BFL_NOPCI			0x00000400 /* Board leaves PCI floating */
++
++struct bcma_drv_pci {
++	struct bcma_device *core;
++	u8 setup_done:1;
++};
++
++/* Register access */
++#define pcicore_read32(pc, offset)		bcma_read32((pc)->core, offset)
++#define pcicore_write32(pc, offset, val)	bcma_write32((pc)->core, offset, val)
++
++extern void bcma_core_pci_init(struct bcma_drv_pci *pc);
++
++#endif /* LINUX_BCMA_DRIVER_PCI_H_ */
+diff --git a/include/linux/bcma/bcma_regs.h b/include/linux/bcma/bcma_regs.h
+new file mode 100644
+index 0000000..f82d88a
+--- /dev/null
++++ b/include/linux/bcma/bcma_regs.h
+@@ -0,0 +1,34 @@
++#ifndef LINUX_BCMA_REGS_H_
++#define LINUX_BCMA_REGS_H_
++
++/* Agent registers (common for every core) */
++#define BCMA_IOCTL			0x0408
++#define  BCMA_IOCTL_CLK			0x0001
++#define  BCMA_IOCTL_FGC			0x0002
++#define  BCMA_IOCTL_CORE_BITS		0x3FFC
++#define  BCMA_IOCTL_PME_EN		0x4000
++#define  BCMA_IOCTL_BIST_EN		0x8000
++#define BCMA_RESET_CTL			0x0800
++#define  BCMA_RESET_CTL_RESET		0x0001
++
++/* BCMA PCI config space registers. */
++#define BCMA_PCI_PMCSR			0x44
++#define  BCMA_PCI_PE			0x100
++#define BCMA_PCI_BAR0_WIN		0x80	/* Backplane address space 0 */
++#define BCMA_PCI_BAR1_WIN		0x84	/* Backplane address space 1 */
++#define BCMA_PCI_SPROMCTL		0x88	/* SPROM control */
++#define  BCMA_PCI_SPROMCTL_WE		0x10	/* SPROM write enable */
++#define BCMA_PCI_BAR1_CONTROL		0x8c	/* Address space 1 burst control */
++#define BCMA_PCI_IRQS			0x90	/* PCI interrupts */
++#define BCMA_PCI_IRQMASK		0x94	/* PCI IRQ control and mask (pcirev >= 6 only) */
++#define BCMA_PCI_BACKPLANE_IRQS		0x98	/* Backplane Interrupts */
++#define BCMA_PCI_BAR0_WIN2		0xAC
++#define BCMA_PCI_GPIO_IN		0xB0	/* GPIO Input (pcirev >= 3 only) */
++#define BCMA_PCI_GPIO_OUT		0xB4	/* GPIO Output (pcirev >= 3 only) */
++#define BCMA_PCI_GPIO_OUT_ENABLE	0xB8	/* GPIO Output Enable/Disable (pcirev >= 3 only) */
++#define  BCMA_PCI_GPIO_SCS		0x10	/* PCI config space bit 4 for 4306c0 slow clock source */
++#define  BCMA_PCI_GPIO_HWRAD		0x20	/* PCI config space GPIO 13 for hw radio disable */
++#define  BCMA_PCI_GPIO_XTAL		0x40	/* PCI config space GPIO 14 for Xtal powerup */
++#define  BCMA_PCI_GPIO_PLL		0x80	/* PCI config space GPIO 15 for PLL powerdown */
++
++#endif /* LINUX_BCMA_REGS_H_ */
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 48c007d..ae28e93 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -382,6 +382,23 @@ struct ssb_device_id {
+ #define SSB_ANY_ID		0xFFFF
+ #define SSB_ANY_REV		0xFF
+ 
++/* Broadcom's specific AMBA core, see drivers/bcma/ */
++struct bcma_device_id {
++	__u16	manuf;
++	__u16	id;
++	__u8	rev;
++	__u8	class;
++};
++#define BCMA_CORE(_manuf, _id, _rev, _class)  \
++	{ .manuf = _manuf, .id = _id, .rev = _rev, .class = _class, }
++#define BCMA_CORETABLE_END  \
++	{ 0, },
++
++#define BCMA_ANY_MANUF		0xFFFF
++#define BCMA_ANY_ID		0xFFFF
++#define BCMA_ANY_REV		0xFF
++#define BCMA_ANY_CLASS		0xFF
++
+ struct virtio_device_id {
+ 	__u32 device;
+ 	__u32 vendor;
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 88f3f07..e26e2fb 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -702,6 +702,24 @@ static int do_ssb_entry(const char *filename,
+ 	return 1;
+ }
+ 
++/* Looks like: bcma:mNidNrevNclN. */
++static int do_bcma_entry(const char *filename,
++			 struct bcma_device_id *id, char *alias)
++{
++	id->manuf = TO_NATIVE(id->manuf);
++	id->id = TO_NATIVE(id->id);
++	id->rev = TO_NATIVE(id->rev);
++	id->class = TO_NATIVE(id->class);
++
++	strcpy(alias, "bcma:");
++	ADD(alias, "m", id->manuf != BCMA_ANY_MANUF, id->manuf);
++	ADD(alias, "id", id->id != BCMA_ANY_ID, id->id);
++	ADD(alias, "rev", id->rev != BCMA_ANY_REV, id->rev);
++	ADD(alias, "cl", id->class != BCMA_ANY_CLASS, id->class);
++	add_wildcard(alias);
++	return 1;
++}
++
+ /* Looks like: virtio:dNvN */
+ static int do_virtio_entry(const char *filename, struct virtio_device_id *id,
+ 			   char *alias)
+@@ -968,6 +986,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+ 		do_table(symval, sym->st_size,
+ 			 sizeof(struct ssb_device_id), "ssb",
+ 			 do_ssb_entry, mod);
++	else if (sym_is(symname, "__mod_bcma_device_table"))
++		do_table(symval, sym->st_size,
++			 sizeof(struct bcma_device_id), "bcma",
++			 do_bcma_entry, mod);
+ 	else if (sym_is(symname, "__mod_virtio_device_table"))
+ 		do_table(symval, sym->st_size,
+ 			 sizeof(struct virtio_device_id), "virtio",
+-- 
+1.7.3.4
 
