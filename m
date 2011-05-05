@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab1EEPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:25:09 -0400
-Received: from kroah.org ([198.145.64.141]:40488 "EHLO coco.kroah.org"
+	id S932075Ab1EEP0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:26:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55376 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab1EEPZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:25:08 -0400
-Date: Thu, 5 May 2011 08:25:01 -0700
-From: Greg KH <greg@kroah.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: -longterm kernels (Was: Re: [stable] Patch Upstream: iwlwifi:
- fix skb usage after free)
-Message-ID: <20110505152501.GA14146@kroah.com>
-References: <201105030110.p431A5W0005426@hera.kernel.org>
- <20110504223605.GA5967@kroah.com>
- <20110505145854.GA4670@redhat.com>
+	id S1754161Ab1EEP0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:26:19 -0400
+Date: Thu, 5 May 2011 17:26:01 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jeff Layton <jlayton@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v3 0/3] data integrity: Stabilize pages during
+ writeback for ext4
+Message-ID: <20110505152601.GI5323@quack.suse.cz>
+References: <20110411124229.47bc28f6@corrin.poochiereds.net>
+ <1302543595-sup-4352@think>
+ <1302569212.2580.13.camel@mingming-laptop>
+ <20110412005719.GA23077@infradead.org>
+ <1302742128.2586.274.camel@mingming-laptop>
+ <20110422000226.GA22189@tux1.beaverton.ibm.com>
+ <20110504173704.GE20579@tux1.beaverton.ibm.com>
+ <20110504184644.GA23246@infradead.org>
+ <1304536162-sup-3721@think>
+ <20110504235706.GJ20579@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110505145854.GA4670@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110504235706.GJ20579@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 04:58:55PM +0200, Stanislaw Gruszka wrote:
-> (Removing Cc as probably not interested, adding LKML)
-> 
-> On Wed, May 04, 2011 at 03:36:05PM -0700, Greg KH wrote:
-> > > Cc: stable@kernel.org # 2.6.32+
+  Hello,
+
+On Wed 04-05-11 16:57:06, Darrick J. Wong wrote:
+> On Wed, May 04, 2011 at 03:21:55PM -0400, Chris Mason wrote:
+> > Excerpts from Christoph Hellwig's message of 2011-05-04 14:46:44 -0400:
+> > > This seems to miss out on a lot of the generic functionality like
+> > > write_cache_pages and block_page_mkwrite and just patch it into
+> > > the ext4 copy & paste variants.  Please make sure your patches also
+> > > work for filesystem that use more of the generic functionality like
+> > > xfs or ext2 (the latter one might be fun for the mmap case).
 > > 
-> > This doesn't apply to the .32 or .33-stable kernels.  If you wish to see
-> > it there, can someone please provide a backport and send it to
-> > stable@kernel.org ?
-> Done.
+> > Probably after the block_commit_write in block_page_mkwrite()
+> > Another question is, do we want to introduce a wait_on_stable_page_writeback()?
 > 
-> BTW, Greg, perhaps -logterm releasing policy should be revised somehow.
-> Currently we have .32, .33, .34, .35 -longterm, what is kind a much.
+> Something like this here?  It fixes block_page_mkwrite users and sticks in a
+> simple page_mkwrite for fses that don't provide one at all.  From a quick wac
+> run it seems to make xfs work.  ext2 seems to have some issues with modifying a
+> buffer_head's bh_data without locking the bh during the update, so I guess it
+> needs some review.
+  Yes, ext2 is rather difficult because of all the metadata updates to
+buffers happening. That would need a serious work I suspect.
 
-It's not "much" if you rely on that kernel version, right?
+> fs: Modify/provide generic writepage/page_mkwrite functions to wait for writeback
+> 
+> Modify the generic writepage function, and add an empty page_mkwrite function,
+> to wait for page writeback to finish before allowing writes.  This is so that
+> simple filesystems have stable pages during write operations.
+> 
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> ---
+> 
+>  fs/buffer.c  |    1 +
+>  mm/filemap.c |   10 ++++++++++
+>  2 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index a08bb8e..cf9a795 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -2361,6 +2361,7 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+>  	if (!ret)
+>  		ret = block_commit_write(page, 0, end);
+>  
+> +	wait_on_page_writeback(page);
+>  	if (unlikely(ret)) {
+>  		unlock_page(page);
+>  		if (ret == -ENOMEM)
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index c22675f..9cb4e51 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1713,8 +1713,18 @@ page_not_uptodate:
+>  }
+>  EXPORT_SYMBOL(filemap_fault);
+>  
+> +static int empty_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> +{
+> +	struct page *page = vmf->page;
+> +
+> +	lock_page(page);
+> +	wait_on_page_writeback(page);
+> +	return VM_FAULT_LOCKED;
+> +}
+> +
+  I guess you miss the whether the page has been truncated here (in which
+case you should return VM_FAULT_NOPAGE).
 
-Nor if you aren't doing the work, no one forces anyone to backport any
-patches to older kernels if they don't want to.  The above patch was
-asked to be backported as the original submitter wanted it there, hence
-my asking for them to do it if they really wanted it.
+>  const struct vm_operations_struct generic_file_vm_ops = {
+>  	.fault		= filemap_fault,
+> +	.page_mkwrite	= empty_page_mkwrite,
+>  };
+>  
+>  /* This is used for a general mmap of a disk file */
 
-> If
-> I could suggest something, would be nice to have longterm chosen
-> versions predictable and constants i.e. one from every 3 kernel
-> releases, like .35, .38, .41 ... . That would make distributions, that
-> try to do release every half year very happy, because they will know
-> what kernel to choose, which will be widely supported and tested.
-
-The distros are the ones doing this -stable and -longterm work, so they
-very well know exactly what is going on.  If they want to have a
-specific kernel version marked as "-longterm", then they do the work to
-do so.
-
-What happens in the future, with future releases, is always unknown, as
-hey, it's the future :)
-
-So I really fail to understand what you are asking for here.
-
-> Also
-> developers will have a bit less work with backporting fixes, as having
-> same bug in n and n-3 release is less probable, than having the same bug
-> in n and n-1.
-
-Again, no developer has to backport anything they don't want to, please
-never feel any pressure from me or any other stable/longterm maintainer
-to do so.  In this specific case, that was the request of the original
-developer, hence my request back to them.
-
-thanks,
-
-greg k-h
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
