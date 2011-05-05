@@ -1,218 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1EEMVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:21:33 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:19582 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752635Ab1EEMVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:21:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsQDAO2Uwk15LBzagWdsb2JhbACmNBUBARYmJcYpDoV5BJ4r
-Date: Thu, 5 May 2011 22:21:17 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: linux-kernel@vger.kernel.org, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
-Message-ID: <20110505122117.GB26837@dastard>
-References: <20110423224403.5fd1136a@neptune.home>
- <20110427050850.GG12436@dastard>
- <20110427182622.05a068a2@neptune.home>
- <20110428194528.GA1627@x4.trippels.de>
- <20110429011929.GA13542@dastard>
- <20110504005736.GA2958@cucamonga.audible.transient.net>
- <20110505002126.GA26797@dastard>
- <20110505022613.GA26837@dastard>
+	id S1753798Ab1EEM1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:27:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41974 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753170Ab1EEM1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:27:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
+   d="scan'208";a="638441823"
+Date: Thu, 5 May 2011 20:27:32 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] writeback: avoid extra sync work at enqueue time
+Message-ID: <20110505122732.GC1294@localhost>
+References: <20110502031750.135798606@intel.com>
+ <20110502033035.789279347@intel.com>
+ <20110504212427.GI6968@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110505022613.GA26837@dastard>
+In-Reply-To: <20110504212427.GI6968@quack.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 12:26:13PM +1000, Dave Chinner wrote:
-> On Thu, May 05, 2011 at 10:21:26AM +1000, Dave Chinner wrote:
-> > On Wed, May 04, 2011 at 12:57:36AM +0000, Jamie Heilman wrote:
-> > > Dave Chinner wrote:
-> > > > OK, so the common elements here appears to be root filesystems
-> > > > with small log sizes, which means they are tail pushing all the
-> > > > time metadata operations are in progress. Definitely seems like a
-> > > > race in the AIL workqueue trigger mechanism. I'll see if I can
-> > > > reproduce this and cook up a patch to fix it.
-> > > 
-> > > Is there value in continuing to post sysrq-w, sysrq-l, xfs_info, and
-> > > other assorted feedback wrt this issue?  I've had it happen twice now
-> > > myself in the past week or so, though I have no reliable reproduction
-> > > technique.  Just wondering if more data points will help isolate the
-> > > cause, and if so, how to be prepared to get them.
-> > > 
-> > > For whatever its worth, my last lockup was while running
-> > > 2.6.39-rc5-00127-g1be6a1f with a preempt config without cgroups.
+On Thu, May 05, 2011 at 05:24:27AM +0800, Jan Kara wrote:
+> On Mon 02-05-11 11:17:53, Wu Fengguang wrote:
+> > This removes writeback_control.wb_start and does more straightforward
+> > sync livelock prevention by setting .older_than_this to prevent extra
+> > inodes from being enqueued in the first place.
 > > 
-> > Can you all try the patch below? I've managed to trigger a couple of
-> > xlog_wait() lockups in some controlled load tests. The lockups don't
-> > appear to occur with the following patch to he race condition in
-> > the AIL workqueue trigger.
+> > --- linux-next.orig/fs/fs-writeback.c	2011-05-02 11:17:24.000000000 +0800
+> > +++ linux-next/fs/fs-writeback.c	2011-05-02 11:17:27.000000000 +0800
+> > @@ -683,10 +672,12 @@ static long wb_writeback(struct bdi_writ
+> >  	 *                   (quickly) tag currently dirty pages
+> >  	 *                   (maybe slowly) sync all tagged pages
+> >  	 */
+> > -	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
+> > +	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync) {
+> >  		write_chunk = LONG_MAX;
+> > +		oldest_jif = jiffies;
+> > +		wbc.older_than_this = &oldest_jif;
+> > +	}
+>   What are the implications of not doing dirty-time livelock avoidance for
+> other types of writeback? Is that a mistake? I'd prefer to have in
+> wb_writeback():
+> if (wbc.for_kupdate)
+> 	oldest_jif = jiffies - msecs_to_jiffies(dirty_expire_interval * 10);
+> else
+> 	oldest_jif = jiffies;
+> wbc.older_than_this = &oldest_jif;
 > 
-> They are still there, just harder to hit.
-> 
-> FWIW, I've also discovered that "echo 2 > /proc/sys/vm/drop_caches"
-> gets the system moving again because that changes the push target.
-> 
-> I've found two more bugs, and now my test case is now reliably
-> reproducably a 5-10s pause at ~1M created 1byte files and then
-> hanging at about 1.25M files. So there's yet another problem lurking
-> that I need to get to the bottom of.
+> And when you have this, you can make wbc.older_than_this just a plain
+> number and remove all those checks for wbc.older_than_this == NULL.
 
-Which, of course, was the real regression. The patch below has
-survived a couple of hours of testing, which fixes all 4 of the
-problems I found. Please test.
+Good point. Here is the fixed patch. Will you send the patch to change
+the type when the current patches are settled down?
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
-
-xfs: fix race conditions and regressions in AIL pushing
-
-From: Dave Chinner <dchinner@redhat.com>
-
-The recent conversion of the xfsaild functionality to a work queue
-introduced a hard-to-hit log space grant hang. There are four
-problems being hit.
-
-The first problem is that the use of the XFS_AIL_PUSHING_BIT to
-determine whether a push is currently in progress is racy.  When the
-AIL push work completes, it checked whether the target changed and
-cleared the PUSHING bit to allow a new push to be requeued. The race
-condition is as follows:
-
-	Thread 1		push work
-
-	smp_wmb()
-				smp_rmb()
-				check ailp->xa_target unchanged
-	update ailp->xa_target
-	test/set PUSHING bit
-	does not queue
-				clear PUSHING bit
-				does not requeue
-
-Now that the push target is updated, new attempts to push the AIL
-will not trigger as the push target will be the same, and hence
-despite trying to push the AIL we won't ever wake it again.
-
-The fix is to ensure that the AIL push work clears the PUSHING bit
-before it checks if the target is unchanged.
-
-As a result, both push triggers operate on the same test/set bit
-criteria, so even if we race in the push work and miss the target
-update, the thread requesting the push will still set the PUSHING
-bit and queue the push work to occur. For safety sake, the same
-queue check is done if the push work detects the target change,
-though only one of the two will will queue new work due to the use
-of test_and_set_bit() checks.
-
-The second problem is a target mismatch between the item pushing
-loop and the target itself. The push trigger checks for the target
-increasing (i.e. new target > current) while the push loop only
-pushes items that have a LSN < current. As a result, we can get the
-situation where the push target is X, the items at the tail of the
-AIL have LSN X and they don't get pushed. The push work then
-completes thinking it is done, and cannot be restarted until the
-push target increases to >= X + 1. If the push target then never
-increases (because the tail is not moving), then we never run the
-push work again and we stall.
-
-The third problem is that updating the push target is not safe on 32
-bit machines. We cannot copy a 64 bit LSN without the possibility of
-corrupting the result when racing with another updating thread. We
-have function to do this update safely without needing to care about
-32/64 bit issues - xfs_trans_ail_copy_lsn() - so use that when
-updating the AIL push target.
-
-THe final problem, and the ultimate cause of the regression is that
-there are two exit paths from the AIL push work. One does the right
-thing with clearing the PUSH bit and rechecking the target, while
-the other simply returns if the AIL is empty when the push work
-starts. This exit path needs to do the same PUSHING bit clearing and
-target checking as the normal other "no more work to be done" path.
-
-Note: this needs to be split into 4 patches to push into mainline.
-This is an aggregated patch just for testing.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Thanks,
+Fengguang
 ---
- fs/xfs/xfs_trans_ail.c |   24 ++++++++++++++----------
- 1 files changed, 14 insertions(+), 10 deletions(-)
+Subject: writeback: avoid extra sync work at enqueue time
+Date: Sat Apr 23 11:26:07 CST 2011
 
-diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
-index acdb92f..ab0d045 100644
---- a/fs/xfs/xfs_trans_ail.c
-+++ b/fs/xfs/xfs_trans_ail.c
-@@ -368,8 +368,7 @@ xfs_ail_worker(
- 		 */
- 		xfs_trans_ail_cursor_done(ailp, cur);
- 		spin_unlock(&ailp->xa_lock);
--		ailp->xa_last_pushed_lsn = 0;
--		return;
-+		goto out_done;
- 	}
+This removes writeback_control.wb_start and does more straightforward
+sync livelock prevention by setting .older_than_this to prevent extra
+inodes from being enqueued in the first place.
+
+CC: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c         |   16 +++-------------
+ include/linux/writeback.h |    3 ---
+ 2 files changed, 3 insertions(+), 16 deletions(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2011-05-04 20:19:20.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-05 13:15:42.000000000 +0800
+@@ -544,15 +544,6 @@ static int writeback_sb_inodes(struct su
+ 			continue;
+ 		}
  
- 	XFS_STATS_INC(xs_push_ail);
-@@ -387,7 +386,7 @@ xfs_ail_worker(
- 	 */
- 	lsn = lip->li_lsn;
- 	flush_log = stuck = count = 0;
--	while ((XFS_LSN_CMP(lip->li_lsn, target) < 0)) {
-+	while ((XFS_LSN_CMP(lip->li_lsn, target) <= 0)) {
- 		int	lock_result;
- 		/*
- 		 * If we can lock the item without sleeping, unlock the AIL
-@@ -482,19 +481,24 @@ xfs_ail_worker(
- 	/* assume we have more work to do in a short while */
- 	tout = 10;
- 	if (!count) {
-+out_done:
- 		/* We're past our target or empty, so idle */
- 		ailp->xa_last_pushed_lsn = 0;
- 
- 		/*
--		 * Check for an updated push target before clearing the
--		 * XFS_AIL_PUSHING_BIT. If the target changed, we've got more
--		 * work to do. Wait a bit longer before starting that work.
-+		 * We clear the XFS_AIL_PUSHING_BIT first before checking
-+		 * whether the target has changed. If the target has changed,
-+		 * this pushes the requeue race directly onto the result of the
-+		 * atomic test/set bit, so we are guaranteed that either the
-+		 * the pusher that changed the target or ourselves will requeue
-+		 * the work (but not both).
- 		 */
-+		clear_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags);
- 		smp_rmb();
--		if (ailp->xa_target == target) {
--			clear_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags);
-+		if (ailp->xa_target == target ||
-+		    (test_and_set_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags)))
- 			return;
+-		/*
+-		 * Was this inode dirtied after sync_sb_inodes was called?
+-		 * This keeps sync from extra jobs and livelock.
+-		 */
+-		if (inode_dirtied_after(inode, wbc->wb_start)) {
+-			spin_unlock(&inode->i_lock);
+-			return 1;
 -		}
+-
+ 		__iget(inode);
+ 
+ 		pages_skipped = wbc->pages_skipped;
+@@ -585,9 +576,6 @@ static void __writeback_inodes_wb(struct
+ {
+ 	int ret = 0;
+ 
+-	if (!wbc->wb_start)
+-		wbc->wb_start = jiffies; /* livelock avoidance */
+-
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = wb_inode(wb->b_io.prev);
+ 		struct super_block *sb = inode->i_sb;
+@@ -686,7 +674,9 @@ static long wb_writeback(struct bdi_writ
+ 	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
+ 		write_chunk = LONG_MAX;
+ 
+-	wbc.wb_start = jiffies; /* livelock avoidance */
++	oldest_jif = jiffies;
++	wbc.older_than_this = &oldest_jif;
 +
- 		tout = 50;
- 	} else if (XFS_LSN_CMP(lsn, target) >= 0) {
+ 	for (;;) {
  		/*
-@@ -553,7 +557,7 @@ xfs_ail_push(
- 	 * the XFS_AIL_PUSHING_BIT.
- 	 */
- 	smp_wmb();
--	ailp->xa_target = threshold_lsn;
-+	xfs_trans_ail_copy_lsn(ailp, &ailp->xa_target, &threshold_lsn);
- 	if (!test_and_set_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags))
- 		queue_delayed_work(xfs_syncd_wq, &ailp->xa_work, 0);
- }
+ 		 * Stop writeback when nr_pages has been consumed
+--- linux-next.orig/include/linux/writeback.h	2011-05-04 20:19:20.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-05-05 13:14:53.000000000 +0800
+@@ -26,9 +26,6 @@ struct writeback_control {
+ 	enum writeback_sync_modes sync_mode;
+ 	unsigned long *older_than_this;	/* If !NULL, only write back inodes
+ 					   older than this */
+-	unsigned long wb_start;         /* Time writeback_inodes_wb was
+-					   called. This is needed to avoid
+-					   extra jobs and livelock */
+ 	long nr_to_write;		/* Write this many pages, and decrement
+ 					   this for each page written */
+ 	long pages_skipped;		/* Pages which were not written */
