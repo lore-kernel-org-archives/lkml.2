@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab1EEChn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 22:37:43 -0400
-Received: from mout.perfora.net ([74.208.4.194]:50905 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab1EEChm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 22:37:42 -0400
-Date: Wed, 4 May 2011 22:37:15 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Wilson <wilsons@start.ca>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH 0/8] avoid allocation in show_numa_map()
-Message-ID: <20110505023715.GA4569@fibrous.localdomain>
-References: <1303947349-3620-1-git-send-email-wilsons@start.ca> <20110504161020.e2d0a7f2.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504161020.e2d0a7f2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Provags-ID: V02:K0:c5BtnxEbSTwECRdua+Qmvh1BjYnUQX0jBsZm+mBpyBj
- a0MwNLlB2F1uDy7gJgrIicflJ/WP4f9wkghRZgVke+nFMYa7h9
- 769LFmHolOTxzkBCnZX7+5B+sBftf38526ymL+GVJj4i6uLKJq
- y4jHjvlsSc1oLlUrHOAVW7ov4dsaTq/wWIEEmF0bFiej6pKFxz
- mMbp/ib3ye9TSUbnncqRtS4Cw0DToLtChL0VMKPrts=
+	id S1752838Ab1EECy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 22:54:59 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45031 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab1EECy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 22:54:58 -0400
+Subject: Re: [PATCH] time: Add locking to xtime access in get_seconds()
+From: john stultz <johnstul@us.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <m2oc3jxgtt.fsf@firstfloor.org>
+References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org>
+	 <m2oc3jxgtt.fsf@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 19:54:50 -0700
+Message-ID: <1304564090.2943.36.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 04:10:20PM -0700, Andrew Morton wrote:
-> On Wed, 27 Apr 2011 19:35:41 -0400
-> Stephen Wilson <wilsons@start.ca> wrote:
+On Tue, 2011-05-03 at 20:52 -0700, Andi Kleen wrote:
+> John Stultz <john.stultz@linaro.org> writes:
 > 
-> > Recently a concern was raised[1] that performing an allocation while holding a
-> > reference on a tasks mm could lead to a stalemate in the oom killer.  The
-> > concern was specific to the goings-on in /proc.  Hugh Dickins stated the issue
-> > thusly:
-> > 
-> >     ...imagine what happens if the system is out of memory, and the mm
-> >     we're looking at is selected for killing by the OOM killer: while we
-> >     wait in __get_free_page for more memory, no memory is freed from the
-> >     selected mm because it cannot reach exit_mmap while we hold that
-> >     reference.
-> > 
-> > The primary goal of this series is to eliminate repeated allocation/free cycles
-> > currently happening in show_numa_maps() while we hold a reference to an mm.
-> > 
-> > The strategy is to perform the allocation once when /proc/pid/numa_maps is
-> > opened, before a reference on the target tasks mm is taken.
-> > 
-> > Unfortunately, show_numa_maps() is implemented in mm/mempolicy.c while the
-> > primary procfs implementation  lives in fs/proc/task_mmu.c.  This makes
-> > clean cooperation between show_numa_maps() and the other seq_file operations
-> > (start(), stop(), etc) difficult.
-> > 
-> > 
-> > Patches 1-5 convert show_numa_maps() to use the generic walk_page_range()
-> > functionality instead of the mempolicy.c specific page table walking logic.
-> > Also, get_vma_policy() is exported.  This makes the show_numa_maps()
-> > implementation independent of mempolicy.c. 
-> > 
-> > Patch 6 moves show_numa_maps() and supporting routines over to
-> > fs/proc/task_mmu.c.
-> > 
-> > Finally, patches 7 and 8 provide minor cleanup and eliminates the troublesome
-> > allocation.
-> > 
-> >  
-> > Please note that moving show_numa_maps() into fs/proc/task_mmu.c essentially
-> > reverts 1a75a6c825 and 48fce3429d.  Also, please see the discussion at [2].  My
-> > main justifications for moving the code back into task_mmu.c is:
-> > 
-> >   - Having the show() operation "miles away" from the corresponding
-> >     seq_file iteration operations is a maintenance burden. 
-> >     
-> >   - The need to export ad hoc info like struct proc_maps_private is
-> >     eliminated.
-> > 
-> > 
-> > These patches are based on v2.6.39-rc5.
+> > From: John Stultz <johnstul@us.ibm.com>
+> >
+> > So get_seconds() has always been lock free, with the assumption
+> > that accessing a long will be atomic.
+> >
+> > However, recently I came across an odd bug where time() access could
+> > occasionally be inconsistent, but only on power7 hardware. The
 > 
-> The patches look reasonable.  It would be nice to get some more review
-> happening (poke).
-
-If anyone would like me to resend the series please let me know.
-
-> > 
-> > Please note that this series is VERY LIGHTLY TESTED.  I have been using
-> > CONFIG_NUMA_EMU=y thus far as I will not have access to a real NUMA system for
-> > another week or two.
+> Shouldn't a single rmb() be enough to avoid that?
 > 
-> "lightly tested" evokes fear, but the patches don't look too scary to
-> me.
+> If not then I suspect there's a lot more code buggy on that CPU than
+> just the time.
 
-Indeed.  I hope to have some real hardware to test the patches on by
-the end of the week; fingers crossed.  Will certainly address any
-issues that come up at that time. 
+So interestingly, I've found that the issue was not as complex as I
+first assumed.  While the rmb() is probably a good idea for
+get_seconds(), but it alone does not solve the issue I was seeing,
+making it clear my theory wasn't correct.
+
+The problem was reported against the 2.6.32-stable kernel, and had not
+been seen in later kernels. I had assumed the change to logarithmic time
+accumulation basically reduced the window for for the issue to be seen,
+but it would likely still show up eventually.
+
+When the rmb() alone did not solve this issue, I looked to see why the
+locking did resolve it, and then it was clear: The old
+update_xtime_cache() function doesn't set the xtime_cache values
+atomically.
+
+Now, the xtime_cache writing is done under the xtime_lock, so the
+get_seconds() locking resolves the issue, but isn't appropriate since
+get_seconds() is called from machine check handlers.
+
+So the fix here for the 2.6.32-stable tree is to just update xtime_cache
+in one go as done with the following patch.
+
+I also added the rmb() for good measure, and the rmb() should probably
+also go upstream since theoretically there maybe a platform that could
+do out of order syscalls.
+
+I suspect the reason this hasn't been triggered on x86 or power6 is due
+to compiler or processor optimizations reordering the assignment to in
+effect make it atomic. Or maybe the timing window to see the issue is
+harder to observe?
 
 
-> Did you look at using apply_to_page_range()?
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 
-I did not look into it deeply, no.  The main reason for using
-walk_page_range() was that it supports hugetlb vma's in the same way as
-was done in mempolicy.c's check_huge_range().  The algorithm was a very
-natural fit so I ran with it.
+Index: linux-2.6.32.y/kernel/time/timekeeping.c
+===================================================================
+--- linux-2.6.32.y.orig/kernel/time/timekeeping.c	2011-05-04 19:34:21.604314152 -0700
++++ linux-2.6.32.y/kernel/time/timekeeping.c	2011-05-04 19:39:09.972203989 -0700
+@@ -168,8 +168,10 @@ int __read_mostly timekeeping_suspended;
+ static struct timespec xtime_cache __attribute__ ((aligned (16)));
+ void update_xtime_cache(u64 nsec)
+ {
+-	xtime_cache = xtime;
+-	timespec_add_ns(&xtime_cache, nsec);
++	/* use temporary timespec so xtime_cache is updated atomically */
++	struct timespec ts = xtime;
++	timespec_add_ns(&ts, nsec);
++	xtime_cache = ts;
+ }
+ 
+ /* must hold xtime_lock */
+@@ -859,6 +861,7 @@ EXPORT_SYMBOL_GPL(monotonic_to_bootbased
+ 
+ unsigned long get_seconds(void)
+ {
++	rmb();
+ 	return xtime_cache.tv_sec;
+ }
+ EXPORT_SYMBOL(get_seconds);
 
 
-> I'm trying to remember why we're carrying both walk_page_range() and
-> apply_to_page_range() but can't immediately think of a reason.
->
-> There's also an apply_to_page_range_batch() in -mm but that code is
-> broken on PPC and not much is happening with it, so it will probably go
-> away again.
-
-
--- 
-steve
 
