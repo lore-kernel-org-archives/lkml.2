@@ -1,95 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1EEOy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 10:54:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59562 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab1EEOy2 (ORCPT
+	id S1754280Ab1EEOys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:54:48 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:55759 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132Ab1EEOyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:54:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=JmztG9W7ahLAfKR/+Bmaxh/8u4c/bkHsOzigUyZNZ6pdetf1GxpbueGKCO84hte+bj
-         iq4yfN69vr1otuG2HQ0CojAITSVsJaV9eJCityDwn29kZcjU7uFjhUNrxddkJU6d1744
-         DarQfdD3oz8c7w9INlOCsi++pJTcF3Y0rlKZE=
-Subject: Re: [PATCH] C2port:Fix deprecated exported interfaces c2port.h
-From: Wanlong Gao <wanlong.gao@gmail.com>
-Reply-To: wanlong.gao@gmail.com
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, giometti@linux.it
-In-Reply-To: <20110505143901.GA12487@suse.de>
-References: <1304598549-3561-1-git-send-email-wanlong.gao@gmail.com>
-	 <20110505141024.GA6461@suse.de> <1304605840.1903.7.camel@Tux>
-	 <20110505143901.GA12487@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Linux kernel
-Date: Thu, 05 May 2011 22:54:16 +0800
-Message-ID: <1304607256.1903.12.camel@Tux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Thu, 5 May 2011 10:54:46 -0400
+Date: Thu, 5 May 2011 09:54:30 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Nick Kossifidis <mickflemm@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ath5k regression associating with APs in 2.6.38
+Message-ID: <20110505145430.GB13727@thinkpad-t410>
+Mail-Followup-To: Nick Kossifidis <mickflemm@gmail.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Jiri Slaby <jirislaby@gmail.com>,
+	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
+	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110504153819.GA4551@thinkpad-t410>
+ <20110504172716.GC18541@tuxdriver.com>
+ <20110504192639.GB4551@thinkpad-t410>
+ <BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
+ <20110505135207.GA13727@thinkpad-t410>
+ <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 2011-05-05四的 07:39 -0700，Greg KH wroted ：
-> On Thu, May 05, 2011 at 10:30:40PM +0800, Wanlong Gao wrote:
-> > on 2011-05-05 07:10 -0700，Greg KH wroted：
-> > > On Thu, May 05, 2011 at 08:29:09PM +0800, Wanlong Gao wrote:
-> > > > From: Wanlong Gao <wanlong.gao@gmail.com>
-> > > > 
-> > > > Change to_class_dev to to_device since the struct class_device had
-> > > > merged to struct device.
-> > > > Fix the to_c2port_device interface since the struct c2port_device
-> > > > has no member named class.
-> > > > 
-> > > > Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> > > > ---
-> > > >  include/linux/c2port.h |    4 ++--
-> > > 
-> > > I don't know why you sent this to me, have you looked at the
-> > > scripts/get_maintainer.pl tool?
-> > Yes, I have, but I just get the linux-kernel open list, so I have
-> > no idea but send it to you.
+On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
+> Hmm I don't see any errors from reset/phy code, can you disable
+> Network Manager/wpa-supplicant and test connection on an open network
+> using iw ? It 'll give us a better picture...
 > 
-> Ok, you are right that get_maintainers.pl doesn't show anything, but
-> look at the git history, you will see that Rodolfo Giometti
-> <giometti@linux.it> originally added this code, so that is who you need
-> to copy on any patch.
-I see, I see, thank you very much.
-> 
-> > > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/include/linux/c2port.h b/include/linux/c2port.h
-> > > > index 2a5cd86..7e6bd33 100644
-> > > > --- a/include/linux/c2port.h
-> > > > +++ b/include/linux/c2port.h
-> > > > @@ -60,8 +60,8 @@ struct c2port_ops {
-> > > >   * Exported functions
-> > > >   */
-> > > >  
-> > > > -#define to_class_dev(obj) container_of((obj), struct class_device, kobj)
-> > > > -#define to_c2port_device(obj) container_of((obj), struct c2port_device, class)
-> > > > +#define to_device(obj) container_of(obj, struct device, kobj)
-> > > > +#define to_c2port_device(obj) container_of(obj, struct c2port_device, dev.kobj)
-> > > 
-> > > Doesn't this break the build?  If not, something is really wrong here.
-> > The interface just exported but not used in the kernel code, so it will
-> > not break the build. The class_device structure is deprecated in your
-> > driver-core, so it really has something wrong here.
-> 
-> What is wrong is that these macros are never used, otherwise they would
-> break the build.  So I'm pretty sure you can just remove them safely,
-> but run it by Rodolfo first please.
-Thanks a lot for your tips, I'll just remove it.
-> 
-> thanks,
-> 
-> greg k-h
+> If iw doesn't return any scan results we are probably hitting a PHY/RF
+> error specific to your device (not all vendors follow the reference
+> design). Maybe we should follow a blacklist/whitelist approach for
+> this feature.
 
-Best regards
-Wanlong Gao
+Will do. I just got another log from my tester, which is more typical of
+what he's been getting. I've pasted a portion of it below. The full log
+can be viewed at
 
+https://launchpadlibrarian.net/71137619/20110504_020639rc6%23201105050227_boot4_syslog
+
+Thanks,
+Seth
+
+
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): new 802.11 WiFi device (driver: 'ath5k' ifindex: 3)
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): exported as /org/freedesktop/NetworkManager/Devices/1
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): now managed
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 1 -> 2 (reason 2)
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): bringing up device.
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): preparing device.
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): deactivating device (reason: 2).
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: supplicant_interface_acquire: assertion `mgr_state == NM_SUPPLICANT_MANAGER_STATE_IDLE' failed
+May  5 08:57:16 AcerAspire5100 kernel: [   25.844302] ADDRCONF(NETDEV_UP): wlan0: link is not ready
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> modem-manager is now available
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <warn> bluez error getting default adapter: The name org.bluez was not provided by any .service files
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> Trying to start the supplicant...
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant manager state:  down -> idle
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 2 -> 3 (reason 0)
+May  5 08:57:16 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant interface state:  starting -> ready
+...
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) starting connection 'Auto aureola'
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 3 -> 4 (reason 0)
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 1 of 5 (Device Prepare) scheduled...
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 1 of 5 (Device Prepare) started...
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) scheduled...
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 1 of 5 (Device Prepare) complete.
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) starting...
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 4 -> 5 (reason 0)
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0/wireless): access point 'Auto aureola' has security, but secrets are required.
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 5 -> 6 (reason 0)
+May  5 08:57:38 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) complete.
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 1 of 5 (Device Prepare) scheduled...
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 1 of 5 (Device Prepare) started...
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 6 -> 4 (reason 0)
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) scheduled...
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 1 of 5 (Device Prepare) complete.
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) starting...
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> (wlan0): device state change: 4 -> 5 (reason 0)
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0/wireless): connection 'Auto aureola' has security, and secrets exist.  No new secrets needed.
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Config: added 'ssid' value 'aureola'
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Config: added 'scan_ssid' value '1'
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Config: added 'key_mgmt' value 'WPA-PSK'
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Config: added 'psk' value '<omitted>'
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: nm_setting_802_1x_get_pkcs11_engine_path: assertion `NM_IS_SETTING_802_1X (setting)' failed
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: nm_setting_802_1x_get_pkcs11_module_path: assertion `NM_IS_SETTING_802_1X (setting)' failed
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) complete.
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> Config: set interface ap_scan to 1
+May  5 08:57:39 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant connection state:  inactive -> scanning
+May  5 08:57:41 AcerAspire5100 wpa_supplicant[734]: Trying to associate with c0:3f:0e:b9:f3:b2 (SSID='aureola' freq=2452 MHz)
+May  5 08:57:41 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant connection state:  scanning -> associating
+May  5 08:57:41 AcerAspire5100 kernel: [   51.261113] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
+May  5 08:57:41 AcerAspire5100 kernel: [   51.460049] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
+May  5 08:57:41 AcerAspire5100 kernel: [   51.660091] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
+May  5 08:57:42 AcerAspire5100 kernel: [   51.860048] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
+May  5 08:57:51 AcerAspire5100 wpa_supplicant[734]: Authentication with c0:3f:0e:b9:f3:b2 timed out.
+May  5 08:57:51 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant connection state:  associating -> disconnected
+May  5 08:57:51 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant connection state:  disconnected -> scanning
+May  5 08:57:51 AcerAspire5100 kernel: [   61.396045] ath5k phy0: (ath5k_chan_set:434): channel set, resetting (2452 -> 2412 MHz)
+May  5 08:57:51 AcerAspire5100 kernel: [   61.396051] ath5k phy0: (ath5k_reset:2648): resetting
+May  5 08:57:51 AcerAspire5100 kernel: [   61.397135] ath5k phy0: (ath5k_rx_start:1099): cachelsz 32 rx_bufsize 2368
+May  5 08:57:51 AcerAspire5100 kernel: [   61.452053] ath5k phy0: (ath5k_chan_set:434): channel set, resetting (2412 -> 2417 MHz)
+May  5 08:57:51 AcerAspire5100 kernel: [   61.452059] ath5k phy0: (ath5k_reset:2648): resetting
+May  5 08:57:51 AcerAspire5100 kernel: [   61.453143] ath5k phy0: (ath5k_rx_start:1099): cachelsz 32 rx_bufsize 2368
+May  5 08:57:51 AcerAspire5100 kernel: [   61.508053] ath5k phy0: (ath5k_chan_set:434): channel set, resetting (2417 -> 2422 MHz)
+May  5 08:57:51 AcerAspire5100 kernel: [   61.508059] ath5k phy0: (ath5k_reset:2648): resetting
+May  5 08:57:51 AcerAspire5100 kernel: [   61.509143] ath5k phy0: (ath5k_rx_start:1099): cachelsz 32 rx_bufsize 2368
+May  5 08:57:51 AcerAspire5100 kernel: [   61.564045] ath5k phy0: (ath5k_chan_set:434): channel set, resetting (2422 -> 2427 MHz)
+May  5 08:57:52 AcerAspire5100 wpa_supplicant[734]: Trying to associate with c0:3f:0e:b9:f3:b2 (SSID='aureola' freq=2452 MHz)
+May  5 08:57:52 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant connection state:  scanning -> associating
+May  5 08:57:52 AcerAspire5100 kernel: [   62.364741] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
+May  5 08:57:52 AcerAspire5100 kernel: [   62.564061] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
+May  5 08:57:53 AcerAspire5100 kernel: [   62.764058] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
+May  5 08:57:53 AcerAspire5100 kernel: [   62.964061] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
+May  5 08:58:02 AcerAspire5100 wpa_supplicant[734]: Authentication with c0:3f:0e:b9:f3:b2 timed out.
+May  5 08:58:02 AcerAspire5100 NetworkManager[703]: <info> (wlan0): supplicant connection state:  associating -> disconnected
