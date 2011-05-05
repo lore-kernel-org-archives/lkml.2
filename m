@@ -1,126 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab1EENhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 09:37:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51247 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab1EENhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 09:37:47 -0400
-Date: Thu, 5 May 2011 15:37:43 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: remove .nonblocking and
- .encountered_congestion
-Message-ID: <20110505133743.GD5323@quack.suse.cz>
-References: <20110505133002.GA7724@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505133002.GA7724@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754166Ab1EENiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 09:38:08 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35297 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754009Ab1EENiG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 09:38:06 -0400
+Date: Thu, 5 May 2011 14:38:37 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic
+ Systems TS-5xxx detection
+Message-ID: <20110505143837.7790edd5@lxorguk.ukuu.org.uk>
+In-Reply-To: <1304537667-sup-2171@sfl>
+References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<20110430110705.5ca3376b@lxorguk.ukuu.org.uk>
+	<1304520382-sup-3361@sfl>
+	<20110504162954.7ecf5b5e@lxorguk.ukuu.org.uk>
+	<1304537667-sup-2171@sfl>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-05-11 21:30:02, Wu Fengguang wrote:
-> [allyesconfig compile tested]
-> [it modifies 3 filesystems all at once, is it OK?]
-> 
-> Remove two unused struct writeback_control fields:
-> 
-> 	.encountered_congestion	(completley unused)
-> 	.nonblocking		(never set, checked/showed in XFS,NFS/btrfs)
-> 
-> Proposed-by: Christoph Hellwig <hch@infradead.org>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-  Yep. Makes sense.
-Reviewed-by: Jan Kara <jack@suse.cz>
-  BTW: I've noticed you removed ->for_background check from
-nfs_write_inode(). That's OK because for_background => WB_SYNC_NONE but I
-guess you should mention it in the changelog.
+> I've looked at that, and the board doesn't support DMI. Elements we have
+> are the processor (i.e. AMD ElanSC520), the BIOS, maybe the memory and
+> PCI bus layouts...
 
-								Honza
-> ---
->  fs/nfs/write.c               |    3 +--
->  fs/xfs/linux-2.6/xfs_aops.c  |    2 +-
->  include/linux/writeback.h    |    2 --
->  include/trace/events/btrfs.h |    6 ++----
->  4 files changed, 4 insertions(+), 9 deletions(-)
-> 
-> --- linux-next.orig/fs/xfs/linux-2.6/xfs_aops.c	2011-05-05 21:10:01.000000000 +0800
-> +++ linux-next/fs/xfs/linux-2.6/xfs_aops.c	2011-05-05 21:10:37.000000000 +0800
-> @@ -970,7 +970,7 @@ xfs_vm_writepage(
->  	offset = page_offset(page);
->  	type = IO_OVERWRITE;
->  
-> -	if (wbc->sync_mode == WB_SYNC_NONE && wbc->nonblocking)
-> +	if (wbc->sync_mode == WB_SYNC_NONE)
->  		nonblocking = 1;
->  
->  	do {
-> --- linux-next.orig/include/trace/events/btrfs.h	2011-05-05 21:07:31.000000000 +0800
-> +++ linux-next/include/trace/events/btrfs.h	2011-05-05 21:09:47.000000000 +0800
-> @@ -284,7 +284,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
->  		__field(	long,   pages_skipped		)
->  		__field(	loff_t, range_start		)
->  		__field(	loff_t, range_end		)
-> -		__field(	char,   nonblocking		)
->  		__field(	char,   for_kupdate		)
->  		__field(	char,   for_reclaim		)
->  		__field(	char,   range_cyclic		)
-> @@ -299,7 +298,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
->  		__entry->pages_skipped	= wbc->pages_skipped;
->  		__entry->range_start	= wbc->range_start;
->  		__entry->range_end	= wbc->range_end;
-> -		__entry->nonblocking	= wbc->nonblocking;
->  		__entry->for_kupdate	= wbc->for_kupdate;
->  		__entry->for_reclaim	= wbc->for_reclaim;
->  		__entry->range_cyclic	= wbc->range_cyclic;
-> @@ -310,13 +308,13 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
->  
->  	TP_printk("root = %llu(%s), ino = %lu, page_index = %lu, "
->  		  "nr_to_write = %ld, pages_skipped = %ld, range_start = %llu, "
-> -		  "range_end = %llu, nonblocking = %d, for_kupdate = %d, "
-> +		  "range_end = %llu, for_kupdate = %d, "
->  		  "for_reclaim = %d, range_cyclic = %d, writeback_index = %lu",
->  		  show_root_type(__entry->root_objectid),
->  		  (unsigned long)__entry->ino, __entry->index,
->  		  __entry->nr_to_write, __entry->pages_skipped,
->  		  __entry->range_start, __entry->range_end,
-> -		  __entry->nonblocking, __entry->for_kupdate,
-> +		  __entry->for_kupdate,
->  		  __entry->for_reclaim, __entry->range_cyclic,
->  		  (unsigned long)__entry->writeback_index)
->  );
-> --- linux-next.orig/fs/nfs/write.c	2011-05-05 21:10:52.000000000 +0800
-> +++ linux-next/fs/nfs/write.c	2011-05-05 21:11:19.000000000 +0800
-> @@ -1564,8 +1564,7 @@ int nfs_write_inode(struct inode *inode,
->  		int status;
->  		bool sync = true;
->  
-> -		if (wbc->sync_mode == WB_SYNC_NONE || wbc->nonblocking ||
-> -		    wbc->for_background)
-> +		if (wbc->sync_mode == WB_SYNC_NONE)
->  			sync = false;
->  
->  		status = pnfs_layoutcommit_inode(inode, sync);
-> --- linux-next.orig/include/linux/writeback.h	2011-05-05 21:07:16.000000000 +0800
-> +++ linux-next/include/linux/writeback.h	2011-05-05 21:13:20.000000000 +0800
-> @@ -36,8 +36,6 @@ struct writeback_control {
->  	loff_t range_start;
->  	loff_t range_end;
->  
-> -	unsigned nonblocking:1;		/* Don't get stuck on request queues */
-> -	unsigned encountered_congestion:1; /* An output: a queue is full */
->  	unsigned for_kupdate:1;		/* A kupdate writeback */
->  	unsigned for_background:1;	/* A background writeback */
->  	unsigned tagged_sync:1;		/* do livelock prevention for sync */
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Well the CPU is a big help that cuts it down a lot. PCI bridge
+subvendor/dev can be a good way to identify boards as well if they
+manufacturers have actually bothered to set them properly.
