@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab1EECy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 22:54:59 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45031 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab1EECy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 22:54:58 -0400
-Subject: Re: [PATCH] time: Add locking to xtime access in get_seconds()
-From: john stultz <johnstul@us.ibm.com>
+	id S1752937Ab1EEDDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 23:03:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752741Ab1EEDDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 23:03:15 -0400
+Date: Wed, 4 May 2011 23:02:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <m2oc3jxgtt.fsf@firstfloor.org>
-References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org>
-	 <m2oc3jxgtt.fsf@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 May 2011 19:54:50 -0700
-Message-ID: <1304564090.2943.36.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [RFC] Kdump and memory error handling
+Message-ID: <20110505030256.GA11823@redhat.com>
+References: <20110504193509.GA5342@in.ibm.com>
+ <20110504203914.GC1737@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504203914.GC1737@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 20:52 -0700, Andi Kleen wrote:
-> John Stultz <john.stultz@linaro.org> writes:
+On Wed, May 04, 2011 at 10:39:14PM +0200, Andi Kleen wrote:
+> > Any thoughts/suggestions?
 > 
-> > From: John Stultz <johnstul@us.ibm.com>
-> >
-> > So get_seconds() has always been lock free, with the assumption
-> > that accessing a long will be atomic.
-> >
-> > However, recently I came across an odd bug where time() access could
-> > occasionally be inconsistent, but only on power7 hardware. The
+> My old attempts to solve this are
 > 
-> Shouldn't a single rmb() be enough to avoid that?
+> Don't dump on MCE:
 > 
-> If not then I suspect there's a lot more code buggy on that CPU than
-> just the time.
+> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/xpanic
+> 
+> Handle dumps of corrupted memory regresions:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/crashdump
+> 
 
-So interestingly, I've found that the issue was not as complex as I
-first assumed.  While the rmb() is probably a good idea for
-get_seconds(), but it alone does not solve the issue I was seeing,
-making it clear my theory wasn't correct.
+This idea of disabling mce temporarily sounds interesting. 
 
-The problem was reported against the 2.6.32-stable kernel, and had not
-been seen in later kernels. I had assumed the change to logarithmic time
-accumulation basically reduced the window for for the issue to be seen,
-but it would likely still show up eventually.
+The slim dump giving access to log buffers makes most sense to me. Why
+not leave it to user space to filter out only log buffers. So if a 
+crash happens due to MCE, we can probably append an ELF note section
+to vmcore and may be user space filtering utitliy (makedumpfile) can
+extract and save only log portion of dump if it is an MCE triggered crash.
 
-When the rmb() alone did not solve this issue, I looked to see why the
-locking did resolve it, and then it was clear: The old
-update_xtime_cache() function doesn't set the xtime_cache values
-atomically.
+Of course this needs to be coupled with Andi's patch of disabling mce
+temporarily so that makedumpfile does not induce another crash.
 
-Now, the xtime_cache writing is done under the xtime_lock, so the
-get_seconds() locking resolves the issue, but isn't appropriate since
-get_seconds() is called from machine check handlers.
+On a side note, can we just save log buf in NVRAM area and access later
+using pstore (by tony luck) and if we can detect that system has that
+NVRAM capability then skip kdump or something like that.
 
-So the fix here for the 2.6.32-stable tree is to just update xtime_cache
-in one go as done with the following patch.
-
-I also added the rmb() for good measure, and the rmb() should probably
-also go upstream since theoretically there maybe a platform that could
-do out of order syscalls.
-
-I suspect the reason this hasn't been triggered on x86 or power6 is due
-to compiler or processor optimizations reordering the assignment to in
-effect make it atomic. Or maybe the timing window to see the issue is
-harder to observe?
-
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-
-Index: linux-2.6.32.y/kernel/time/timekeeping.c
-===================================================================
---- linux-2.6.32.y.orig/kernel/time/timekeeping.c	2011-05-04 19:34:21.604314152 -0700
-+++ linux-2.6.32.y/kernel/time/timekeeping.c	2011-05-04 19:39:09.972203989 -0700
-@@ -168,8 +168,10 @@ int __read_mostly timekeeping_suspended;
- static struct timespec xtime_cache __attribute__ ((aligned (16)));
- void update_xtime_cache(u64 nsec)
- {
--	xtime_cache = xtime;
--	timespec_add_ns(&xtime_cache, nsec);
-+	/* use temporary timespec so xtime_cache is updated atomically */
-+	struct timespec ts = xtime;
-+	timespec_add_ns(&ts, nsec);
-+	xtime_cache = ts;
- }
- 
- /* must hold xtime_lock */
-@@ -859,6 +861,7 @@ EXPORT_SYMBOL_GPL(monotonic_to_bootbased
- 
- unsigned long get_seconds(void)
- {
-+	rmb();
- 	return xtime_cache.tv_sec;
- }
- EXPORT_SYMBOL(get_seconds);
-
-
-
+Thanks
+Vivek
