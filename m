@@ -1,284 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1EEAV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 20:21:57 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:42331 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553Ab1EEAVz convert rfc822-to-8bit (ORCPT
+	id S1752718Ab1EEA2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 20:28:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55180 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab1EEA2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 20:21:55 -0400
-From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv2 5/5] TPS65911: Comparator: Add comparator driver
-Date: Wed, 4 May 2011 19:21:46 -0500
-Message-Id: <A9ADABDA-9D43-44CC-92D8-113C42AA5EE0@slimlogic.co.uk>
-Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com, lrg@ti.com,
-        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Wed, 4 May 2011 20:28:00 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=IkcTkHD0fZMA:10 a=zQSY6UDsadtM+gnI04odLQ==:17 a=VoT-eGZ1-G7JeJ36t9kA:9 a=ufGS9ynEWyjam_VhElYA:7 a=QEXdDO2ut3YA:10 a=zQSY6UDsadtM+gnI04odLQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.69.197.246
+Subject: Oops with Kernel 2.6.38.5
+From: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
+To: Kernel List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 20:27:57 -0400
+Message-ID: <1304555277.2059.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds functionality to the tps65911 chip driver.
+I am resending this to the kernel mailing list.  I sent it before
+as an attachment.  I have just included the bare essentials this time.
+Hope it helps.
 
-Two of the comparators are configurable by software and measures
-VCCS voltage to detect high or low voltage scenarios.
 
-Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
----
- drivers/mfd/Kconfig               |    7 ++
- drivers/mfd/Makefile              |    1 +
- drivers/mfd/tps65911-comparator.c |  188 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65910.h      |    4 +
- 4 files changed, 200 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/tps65911-comparator.c
+Kernel Oops for v 2.6.38.5
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 65930a7..8c748f4 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -679,6 +679,13 @@ config MFD_TPS65910
- 	  if you say yes here you get support for the TPS65910 series of
- 	  Power Management chips.
- 
-+config TPS65911_COMPARATOR
-+	tristate "TPS65911 Comparator"
-+	depends on MFD_TPS65910
-+	help
-+	  if you say yes here you get support for the TPS65910 comparator
-+	  module.
-+
- endif # MFD_SUPPORT
- 
- menu "Multimedia Capabilities Port drivers"
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index c771eed..320de3e 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -89,3 +89,4 @@ obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
- obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
- obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-gpio.o tps65910-irq.o
-+obj-$(CONFIG_TPS65911_COMP)	+= tps65911-comparator.o
-diff --git a/drivers/mfd/tps65911-comparator.c b/drivers/mfd/tps65911-comparator.c
-new file mode 100644
-index 0000000..b8b985b
---- /dev/null
-+++ b/drivers/mfd/tps65911-comparator.c
-@@ -0,0 +1,188 @@
-+/*
-+ * tps65910.c  --  TI TPS6591x
-+ *
-+ * Copyright 2010 Texas Instruments Inc.
-+ *
-+ * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/debugfs.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/tps65910.h>
-+
-+#define COMP					0
-+#define COMP1					1
-+#define COMP2					2
-+
-+/* Comparator 1 voltage selection table in milivolts */
-+static const u16 COMP_VSEL_TABLE[] = {
-+	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
-+	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
-+	3100, 3150, 3200, 3250, 3300, 3350, 3400, 3450,
-+	3500,
-+};
-+
-+struct comparator {
-+	const char *name;
-+	int reg;
-+	int uV_max;
-+	const u16 *vsel_table;
-+};
-+
-+static struct comparator tps_comparators[] = {
-+	{
-+		.name = "COMP1",
-+		.reg = TPS65911_VMBCH,
-+		.uV_max = 3500,
-+		.vsel_table = COMP_VSEL_TABLE,
-+	},
-+	{
-+		.name = "COMP2",
-+		.reg = TPS65911_VMBCH2,
-+		.uV_max = 3500,
-+		.vsel_table = COMP_VSEL_TABLE,
-+	},
-+};
-+
-+static int comp_threshold_set(struct tps65910 *tps65910, int id, int voltage)
-+{
-+	struct comparator tps_comp = tps_comparators[id];
-+	int curr_voltage = 0;
-+	int ret;
-+	u8 index = 0, val;
-+
-+	if (id == COMP)
-+		return 0;
-+
-+	while (curr_voltage < tps_comp.uV_max) {
-+		curr_voltage = tps_comp.vsel_table[index];
-+		if (curr_voltage >= voltage)
-+			break;
-+		else if (curr_voltage < voltage)
-+			index ++;
-+	}
-+
-+	if (curr_voltage > tps_comp.uV_max)
-+		return -EINVAL;
-+	
-+	val = index << 1;
-+	ret = tps65910->write(tps65910, tps_comp.reg, 1, &val);
-+
-+	return ret;
-+}
-+
-+static int comp_threshold_get(struct tps65910 *tps65910, int id)
-+{
-+	struct comparator tps_comp = tps_comparators[id];
-+	int ret;
-+	u8 val;
-+
-+	if (id == COMP)
-+		return 0;
-+
-+	ret = tps65910->read(tps65910, tps_comp.reg, 1, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	val >>= 1;
-+	return tps_comp.vsel_table[val];
-+}
-+
-+static ssize_t comp_threshold_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct tps65910 *tps65910 = dev_get_drvdata(dev->parent);
-+	struct attribute comp_attr = attr->attr;
-+	int id, uVolt;
-+
-+	if (!strcmp(comp_attr.name, "comp1_threshold"))
-+		id = COMP1;
-+	else if (!strcmp(comp_attr.name, "comp2_threshold"))
-+		id = COMP2;
-+	else
-+		return -EINVAL;
-+
-+	uVolt = comp_threshold_get(tps65910, id);
-+
-+	return sprintf(buf, "%d\n", uVolt);
-+}
-+
-+static DEVICE_ATTR(comp1_threshold, S_IRUGO, comp_threshold_show, NULL);
-+static DEVICE_ATTR(comp2_threshold, S_IRUGO, comp_threshold_show, NULL);
-+
-+static __devinit int tps65911_comparator_probe(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
-+	struct tps65910_platform_data *pdata = dev_get_platdata(tps65910->dev);
-+	int ret;
-+
-+	ret = comp_threshold_set(tps65910, COMP1,  pdata->vmbch_threshold);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot set COMP1 threshold\n");
-+		return ret;
-+	}
-+
-+	ret = comp_threshold_set(tps65910, COMP2, pdata->vmbch2_threshold);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot set COMP2 theshold\n");
-+		return ret;
-+	}
-+
-+	/* Create sysfs entry */
-+	ret = device_create_file(&pdev->dev, &dev_attr_comp1_threshold);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add COMP1 sysfs file\n");
-+
-+	ret = device_create_file(&pdev->dev, &dev_attr_comp2_threshold);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add COMP2 sysfs file\n");
-+
-+	return ret;
-+}
-+
-+static __devexit int tps65911_comparator_remove(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910;
-+
-+	tps65910 = dev_get_drvdata(pdev->dev.parent);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tps65911_comparator_driver = {
-+	.driver = {
-+		.name = "tps65911-comparator",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = tps65911_comparator_probe,
-+	.remove = __devexit_p(tps65911_comparator_remove),
-+};
-+
-+static int __init tps65911_comparator_init(void)
-+{
-+	return platform_driver_register(&tps65911_comparator_driver);
-+}
-+subsys_initcall(tps65911_comparator_init);
-+
-+static void __exit tps65911_comparator_exit(void)
-+{
-+	platform_driver_unregister(&tps65911_comparator_driver);
-+}
-+module_exit(tps65911_comparator_exit);
-+
-+MODULE_AUTHOR("Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>");
-+MODULE_DESCRIPTION("TPS65911 comparator driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:tps65911-comparator");
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 5f77006..8bb85b9 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -121,6 +121,8 @@
- #define TPS65911_LDO6					0x35
- #define TPS65911_LDO4					0x36
- #define TPS65911_LDO3					0x37
-+#define TPS65911_VMBCH					0x6A
-+#define TPS65911_VMBCH2					0x6B
- 
- /*
-  * List of register bitfields for component TPS65910
-@@ -746,6 +748,8 @@ struct tps65910_board {
- 	int gpio_base;
- 	int irq;
- 	int irq_base;
-+	int vmbch_threshold;
-+	int vmbch2_threshold;
- 	struct regulator_init_data *tps65910_pmic_init_data;
- };
- 
--- 
-1.7.1
+
+May  2 19:00:11 localhost kernel: [   47.919691] EXT4-fs (sda6): re-mounted. Opts: commit=0
+May  2 19:00:12 localhost kernel: [   48.451802] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+May  2 19:00:12 localhost kernel: [   48.451808] IP: [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+May  2 19:00:12 localhost kernel: [   48.451815] PGD 0
+May  2 19:00:12 localhost kernel: [   48.451817] Oops: 0000 [#1] SMP
+May  2 19:00:12 localhost kernel: [   48.451819] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host4/scsi_host/host4/link_power_management_policy
+May  2 19:00:12 localhost kernel: [   48.451823] CPU 1
+May  2 19:00:12 localhost kernel: [   48.451824] Modules linked in: binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep nvidia(P) arc4 snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy usblp snd_seq_oss snd_seq_midi iwlagn snd_rawmidi snd_seq_midi_event uvcvideo videodev v4l2_compat_ioctl32 iwlcore snd_seq snd_timer mac80211 snd_seq_device joydev cfg80211 snd psmouse soundcore serio_raw snd_page_alloc jmb38x_ms memstick video lp parport usbhid hid ahci r8169 libahci sdhci_pci sdhci firewire_ohci firewire_core crc_itu_t btrfs zlib_deflate libcrc32c
+May  2 19:00:12 localhost kernel: [   48.451859]
+May  2 19:00:12 localhost kernel: [   48.451861] Pid: 295, comm: scsi_eh_4 Tainted: P            2.6.38.5-core2 #1 System76, Inc. Serval Professional/Serval Professional
+May  2 19:00:12 localhost kernel: [   48.451867] RIP: 0010:[<ffffffff813f98e1>]  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+May  2 19:00:12 localhost kernel: [   48.451870] RSP: 0018:ffff880132defbf0  EFLAGS: 00010246
+May  2 19:00:12 localhost kernel: [   48.451872] RAX: 0000000000000000 RBX: ffff880132f40000 RCX: 0000000000000000
+May  2 19:00:12 localhost kernel: [   48.451874] RDX: ffff88013377c000 RSI: ffff880132f40000 RDI: 0000000000000000
+May  2 19:00:12 localhost kernel: [   48.451876] RBP: ffff880132defce0 R08: ffff88013377dc58 R09: ffff880132defd98
+May  2 19:00:12 localhost kernel: [   48.451878] R10: 0000000000000000 R11: 00000000ffffffff R12: 0000000000000000
+May  2 19:00:12 localhost kernel: [   48.451880] R13: 0000000000000000 R14: ffff88013377c000 R15: 0000000000000000
+May  2 19:00:12 localhost kernel: [   48.451882] FS:  0000000000000000(0000) GS:ffff8800bf700000(0000) knlGS:0000000000000000
+May  2 19:00:12 localhost kernel: [   48.451884] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+May  2 19:00:12 localhost kernel: [   48.451886] CR2: 0000000000000018 CR3: 0000000001a03000 CR4: 00000000000406e0
+May  2 19:00:12 localhost kernel: [   48.451888] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+May  2 19:00:12 localhost kernel: [   48.451890] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+May  2 19:00:12 localhost kernel: [   48.451892] Process scsi_eh_4 (pid: 295, threadinfo ffff880132dee000, task ffff880133b416c0)
+May  2 19:00:12 localhost kernel: [   48.451894] Stack:
+May  2 19:00:12 localhost kernel: [   48.451895]  0000000000000000 ffff880132defcc0 0000000000000000 ffff880132f42738
+May  2 19:00:12 localhost kernel: [   48.451899]  ffffffff813ee8f0 ffffffff813eefe0 ffff880132defd98 ffff88013377f190
+May  2 19:00:12 localhost kernel: [   48.451903]  ffffffffa00b3e30 ffffffff813ef030 0000000032defc60 ffff880100000000
+May  2 19:00:12 localhost kernel: [   48.451906] Call Trace:
+May  2 19:00:12 localhost kernel: [   48.451910]  [<ffffffff813ee8f0>] ? ata_std_postreset+0x0/0x190
+May  2 19:00:12 localhost kernel: [   48.451913]  [<ffffffff813eefe0>] ? sata_std_hardreset+0x0/0x50
+May  2 19:00:12 localhost kernel: [   48.451919]  [<ffffffffa00b3e30>] ? ahci_softreset+0x0/0x1d0 [libahci]
+May  2 19:00:12 localhost kernel: [   48.451922]  [<ffffffff813ef030>] ? ata_std_prereset+0x0/0xd0
+May  2 19:00:12 localhost kernel: [   48.451925]  [<ffffffff81400867>] sata_pmp_error_handler+0x607/0xc30
+May  2 19:00:12 localhost kernel: [   48.451928]  [<ffffffff813ef030>] ? ata_std_prereset+0x0/0xd0
+May  2 19:00:12 localhost kernel: [   48.451931]  [<ffffffffa00b3e30>] ? ahci_softreset+0x0/0x1d0 [libahci]
+May  2 19:00:12 localhost kernel: [   48.451935]  [<ffffffffa00b3970>] ? ahci_hardreset+0x0/0x110 [libahci]
+May  2 19:00:12 localhost kernel: [   48.451939]  [<ffffffffa00b2790>] ? ahci_postreset+0x0/0x60 [libahci]
+May  2 19:00:12 localhost kernel: [   48.451943]  [<ffffffff813e86a9>] ? ata_wait_register+0x49/0xc0
+May  2 19:00:12 localhost kernel: [   48.451947]  [<ffffffffa00b273f>] ahci_error_handler+0x1f/0x70 [libahci]
+May  2 19:00:12 localhost kernel: [   48.451950]  [<ffffffff813faade>] ata_scsi_error+0x5be/0x900
+May  2 19:00:12 localhost kernel: [   48.451953]  [<ffffffff813cf724>] scsi_error_handler+0x124/0x650
+May  2 19:00:12 localhost kernel: [   48.451956]  [<ffffffff813cf600>] ? scsi_error_handler+0x0/0x650
+May  2 19:00:12 localhost kernel: [   48.451960]  [<ffffffff810834b6>] kthread+0x96/0xa0
+May  2 19:00:12 localhost kernel: [   48.451963]  [<ffffffff8100cd64>] kernel_thread_helper+0x4/0x10
+May  2 19:00:12 localhost kernel: [   48.451966]  [<ffffffff81083420>] ? kthread+0x0/0xa0
+May  2 19:00:12 localhost kernel: [   48.451968]  [<ffffffff8100cd60>] ? kernel_thread_helper+0x0/0x10
+May  2 19:00:12 localhost kernel: [   48.451970] Code: 8b 95 70 ff ff ff b8 00 00 00 00 48 3b 9a 10 2e 00 00 48 0f 44 c2 48 89 85 70 ff ff ff 48 8b 8d 70 ff ff ff f6 83 69 02 00 00 01 <48> 8b 41 18 0f 85 48 01 00 00 48 85 c9 74 12 48 8b 51 08 48 83
+May  2 19:00:12 localhost kernel: [   48.451998] RIP  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+May  2 19:00:12 localhost kernel: [   48.452001]  RSP <ffff880132defbf0>
+May  2 19:00:12 localhost kernel: [   48.452002] CR2: 0000000000000018
+May  2 19:00:12 localhost kernel: [   48.452005] ---[ end trace 87b7b160e066e854 ]---
+May  2 19:04:10 localhost kernel: imklog 4.6.4, log source = /proc/kmsg started.
+May  2 19:04:10 localhost kernel: [    0.000000] Initializing cgroup subsys cpuset
+
+
+Linux bean 2.6.38.4-core2 #2 SMP Fri Apr 22 02:58:16 EDT 2011 x86_64 x86_64 x86_64 GNU/Linux
+
+Gnu C                  4.5.2
+Gnu make               3.81
+binutils               2.21.0.20110327
+util-linux             2.17.2
+mount                  support
+module-init-tools      3.12
+e2fsprogs              1.41.14
+pcmciautils            015
+PPP                    2.4.5
+Linux C Library        2.13
+Dynamic linker (ldd)   2.13
+Procps                 3.2.8
+Net-tools              1.60
+Kbd                    1.15
+Sh-utils               8.5
+wireless-tools         30
+Modules Loaded         binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep nvidia snd_pcm arc4 snd_seq_midi snd_rawmidi snd_seq_midi_event uvcvideo videodev v4l2_compat_ioctl32 snd_seq snd_timer snd_seq_device iwlagn iwlcore snd joydev mac80211 soundcore snd_page_alloc jmb38x_ms memstick psmouse serio_raw cfg80211 video lp parport ahci sdhci_pci firewire_ohci firewire_core libahci crc_itu_t sdhci r8169
+
+
+
+
 
