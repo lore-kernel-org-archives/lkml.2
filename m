@@ -1,369 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab1EERmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 13:42:22 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4018 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab1EERmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 13:42:20 -0400
-From: tim.gardner@canonical.com
-To: linux-fbdev@vger.kernel.org
-Cc: lethal@linux-sh.org, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [PATCH] fbcon -- fix race between open and removal of framebuffers
-Date: Thu,  5 May 2011 11:41:47 -0600
-Message-Id: <1304617307-7389-2-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com>
-References: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com>
+	id S1755500Ab1EERrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 13:47:11 -0400
+Received: from christianhoffmann.info ([88.175.101.52]:40111 "EHLO
+	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab1EERrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 13:47:09 -0400
+Message-ID: <4DC2E298.4090603@christianhoffmann.info>
+Date: Thu, 05 May 2011 19:47:04 +0200
+From: Christian Hoffmann <email@christianhoffmann.info>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: john stultz <johnstul@us.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Long timeout when booting >= 2.6.38
+References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info>  <1304470839.3037.12.camel@work-vm>  <4DC100D0.1030302@christianhoffmann.info> <1304558210.2943.24.camel@work-vm> <alpine.LFD.2.02.1105051025290.3005@ionos>
+In-Reply-To: <alpine.LFD.2.02.1105051025290.3005@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Whitcroft <apw@canonical.com>
+On 05/05/2011 10:25 AM, Thomas Gleixner wrote:
+> On Wed, 4 May 2011, john stultz wrote:
+>
+>> On Wed, 2011-05-04 at 09:31 +0200, Christian Hoffmann wrote:
+>>> In fact, switching to acpi_pm doesn't seem to work:
+>>>
+>>> $ dmesg | grep clock
+>>>
+>>> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+
+>>> root=/dev/mapper/vg-root ro quiet splash vt.handoff=7 clocksource=acpi_pm
+>>> [    0.000000] Kernel command line:
+>>> BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ root=/dev/mapper/vg-root ro
+>>> quiet splash vt.handoff=7 clocksource=acpi_pm
+>>> [    0.000000] hpet clockevent registered
+>>> [    1.413835] Switching to clocksource hpet
+>>> [    1.420762] Override clocksource acpi_pm is not HRT compatible.
+>>> Cannot switch while in HRT/NOHZ mode
+>>> [  147.940143] Refined TSC clocksource calibration: 2809.409 MHz.
+>>> [  147.940147] Switching to clocksource tsc
+>>
+>> So I think I've sorted this out.
+>>
+>> The watchdog code is what enables CLOCK_SOURCE_VALID_FOR_HRES, but we
+>> actually end up selecting the clocksource before we enqueue it into the
+>> watchdog list, so that's why we see the warning.
+>>
+>> I suspect the following will resolve this detail.
+>
+> It does. Good catch!
+>
+>> Signed-off-by: John Stultz<johnstul@us.ibm.com>
+>>
+>> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+>> index 6519cf6..0e17c10 100644
+>> --- a/kernel/time/clocksource.c
+>> +++ b/kernel/time/clocksource.c
+>> @@ -685,8 +685,8 @@ int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
+>>   	/* Add clocksource to the clcoksource list */
+>>   	mutex_lock(&clocksource_mutex);
+>>   	clocksource_enqueue(cs);
+>> -	clocksource_select();
+>>   	clocksource_enqueue_watchdog(cs);
+>> +	clocksource_select();
+>>   	mutex_unlock(&clocksource_mutex);
+>>   	return 0;
+>>   }
+>> @@ -706,8 +706,8 @@ int clocksource_register(struct clocksource *cs)
+>>
+>>   	mutex_lock(&clocksource_mutex);
+>>   	clocksource_enqueue(cs);
+>> -	clocksource_select();
+>>   	clocksource_enqueue_watchdog(cs);
+>> +	clocksource_select();
+>>   	mutex_unlock(&clocksource_mutex);
+>>   	return 0;
+>>   }
+>>
 
-Currently there is no locking for updates to the registered_fb list.
-This allows an open through /dev/fbN to pick up a registered framebuffer
-pointer in parallel with it being released, as happens when a conflicting
-framebuffer is ejected or on module unload.  There is also no reference
-counting on the framebuffer descriptor which is referenced from all open
-files, leading to references to released or reused memory to persist on
-these open files.
+I can now select clocksource=acpi_pm as kernel parameter. The boot still 
+hangs after "MSI quirk detected...", but the timestamps in dmesg don't 
+show the jump anymore.
 
-This patch adds a reference count to the framebuffer descriptor to prevent
-it from being released until after all pending opens are closed.  This
-allows the pending opens to detect the closed status and unmap themselves.
-It also adds locking to the framebuffer lookup path, locking it against
-the removal path such that it is possible to atomically lookup and take a
-reference to the descriptor.  It also adds locking to the read and write
-paths which currently could access the framebuffer descriptor after it
-has been freed.  Finally it moves the device to FBINFO_STATE_REMOVED to
-indicate that all access should be errored for this device.
+[    1.426107] NET: Registered protocol family 1
+[    1.426162] pci 0000:00:01.0: MSI quirk detected; subordinate MSI 
+disabled
+[    2.300212] pci 0000:01:05.0: Boot video device
+[    2.300226] PCI: CLS 64 bytes, default 64
 
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
-Acked-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Leann Ogasawara <leann.ogasawara@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/video/fbmem.c |  132 ++++++++++++++++++++++++++++++++++++++-----------
- include/linux/fb.h    |    2 +
- 2 files changed, 105 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index e0c2284..c8562c1 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -42,6 +42,8 @@
- 
- #define FBPIXMAPSIZE	(1024 * 8)
- 
-+/* Protects the registered framebuffer list and count. */
-+static DEFINE_SPINLOCK(registered_lock);
- struct fb_info *registered_fb[FB_MAX] __read_mostly;
- int num_registered_fb __read_mostly;
- 
-@@ -694,9 +696,7 @@ static ssize_t
- fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- {
- 	unsigned long p = *ppos;
--	struct inode *inode = file->f_path.dentry->d_inode;
--	int fbidx = iminor(inode);
--	struct fb_info *info = registered_fb[fbidx];
-+	struct fb_info *info = file->private_data;
- 	u8 *buffer, *dst;
- 	u8 __iomem *src;
- 	int c, cnt = 0, err = 0;
-@@ -705,19 +705,28 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 	if (!info || ! info->screen_base)
- 		return -ENODEV;
- 
--	if (info->state != FBINFO_STATE_RUNNING)
--		return -EPERM;
-+	if (!lock_fb_info(info))
-+		return -ENODEV;
-+
-+	if (info->state != FBINFO_STATE_RUNNING) {
-+		err = -EPERM;
-+		goto out_fb_info;
-+	}
- 
--	if (info->fbops->fb_read)
--		return info->fbops->fb_read(info, buf, count, ppos);
-+	if (info->fbops->fb_read) {
-+		err = info->fbops->fb_read(info, buf, count, ppos);
-+		goto out_fb_info;
-+	}
- 	
- 	total_size = info->screen_size;
- 
- 	if (total_size == 0)
- 		total_size = info->fix.smem_len;
- 
--	if (p >= total_size)
--		return 0;
-+	if (p >= total_size) {
-+		err = 0;
-+		goto out_fb_info;
-+	}
- 
- 	if (count >= total_size)
- 		count = total_size;
-@@ -727,8 +736,10 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 
- 	buffer = kmalloc((count > PAGE_SIZE) ? PAGE_SIZE : count,
- 			 GFP_KERNEL);
--	if (!buffer)
--		return -ENOMEM;
-+	if (!buffer) {
-+		err = -ENOMEM;
-+		goto out_fb_info;
-+	}
- 
- 	src = (u8 __iomem *) (info->screen_base + p);
- 
-@@ -751,19 +762,21 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 		cnt += c;
- 		count -= c;
- 	}
-+	if (!err)
-+		err = cnt;
- 
- 	kfree(buffer);
-+out_fb_info:
-+	unlock_fb_info(info);
- 
--	return (err) ? err : cnt;
-+	return err;
- }
- 
- static ssize_t
- fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- {
- 	unsigned long p = *ppos;
--	struct inode *inode = file->f_path.dentry->d_inode;
--	int fbidx = iminor(inode);
--	struct fb_info *info = registered_fb[fbidx];
-+	struct fb_info *info = file->private_data;
- 	u8 *buffer, *src;
- 	u8 __iomem *dst;
- 	int c, cnt = 0, err = 0;
-@@ -772,8 +785,13 @@ fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 	if (!info || !info->screen_base)
- 		return -ENODEV;
- 
--	if (info->state != FBINFO_STATE_RUNNING)
--		return -EPERM;
-+	if (!lock_fb_info(info))
-+		return -ENODEV;
-+
-+	if (info->state != FBINFO_STATE_RUNNING) {
-+		err = -EPERM;
-+		goto out_fb_info;
-+	}
- 
- 	if (info->fbops->fb_write)
- 		return info->fbops->fb_write(info, buf, count, ppos);
-@@ -783,8 +801,10 @@ fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 	if (total_size == 0)
- 		total_size = info->fix.smem_len;
- 
--	if (p > total_size)
--		return -EFBIG;
-+	if (p > total_size) {
-+		err = -EFBIG;
-+		goto out_fb_info;
-+	}
- 
- 	if (count > total_size) {
- 		err = -EFBIG;
-@@ -800,8 +820,10 @@ fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 
- 	buffer = kmalloc((count > PAGE_SIZE) ? PAGE_SIZE : count,
- 			 GFP_KERNEL);
--	if (!buffer)
--		return -ENOMEM;
-+	if (!buffer) {
-+		err = -ENOMEM;
-+		goto out_fb_info;
-+	}
- 
- 	dst = (u8 __iomem *) (info->screen_base + p);
- 
-@@ -825,10 +847,14 @@ fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 		cnt += c;
- 		count -= c;
- 	}
-+	if (cnt)
-+		err = cnt;
- 
- 	kfree(buffer);
-+out_fb_info:
-+	unlock_fb_info(info);
- 
--	return (cnt) ? cnt : err;
-+	return err;
- }
- 
- int
-@@ -1303,8 +1329,7 @@ static long fb_compat_ioctl(struct file *file, unsigned int cmd,
- static int
- fb_mmap(struct file *file, struct vm_area_struct * vma)
- {
--	int fbidx = iminor(file->f_path.dentry->d_inode);
--	struct fb_info *info = registered_fb[fbidx];
-+	struct fb_info * const info = file->private_data;
- 	struct fb_ops *fb = info->fbops;
- 	unsigned long off;
- 	unsigned long start;
-@@ -1316,6 +1341,11 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
- 	if (!fb)
- 		return -ENODEV;
- 	mutex_lock(&info->mm_lock);
-+	if (info->state == FBINFO_STATE_REMOVED) {
-+		mutex_unlock(&info->mm_lock);
-+		return -ENODEV;
-+	}
-+
- 	if (fb->fb_mmap) {
- 		int res;
- 		res = fb->fb_mmap(info, vma);
-@@ -1352,6 +1382,34 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
- 	return 0;
- }
- 
-+static struct fb_info *get_framebuffer_info(int idx)
-+__acquires(&registered_lock)
-+__releases(&registered_lock)
-+{
-+	struct fb_info *fb_info;
-+
-+	spin_lock(&registered_lock);
-+	fb_info = registered_fb[idx];
-+	fb_info->ref_count++;
-+	spin_unlock(&registered_lock);
-+
-+	return fb_info;
-+}
-+
-+static void put_framebuffer_info(struct fb_info *fb_info)
-+__acquires(&registered_lock)
-+__releases(&registered_lock)
-+{
-+	int keep;
-+
-+	spin_lock(&registered_lock);
-+	keep = --fb_info->ref_count;
-+	spin_unlock(&registered_lock);
-+
-+	if (!keep && fb_info->fbops->fb_destroy)
-+		fb_info->fbops->fb_destroy(fb_info);
-+}
-+
- static int
- fb_open(struct inode *inode, struct file *file)
- __acquires(&info->lock)
-@@ -1363,13 +1421,17 @@ __releases(&info->lock)
- 
- 	if (fbidx >= FB_MAX)
- 		return -ENODEV;
--	info = registered_fb[fbidx];
-+	info = get_framebuffer_info(fbidx);
- 	if (!info)
- 		request_module("fb%d", fbidx);
--	info = registered_fb[fbidx];
-+	info = get_framebuffer_info(fbidx);
- 	if (!info)
- 		return -ENODEV;
- 	mutex_lock(&info->lock);
-+	if (info->state == FBINFO_STATE_REMOVED) {
-+		res = -ENODEV;
-+		goto out;
-+	}
- 	if (!try_module_get(info->fbops->owner)) {
- 		res = -ENODEV;
- 		goto out;
-@@ -1386,6 +1448,8 @@ __releases(&info->lock)
- #endif
- out:
- 	mutex_unlock(&info->lock);
-+	if (res)
-+		put_framebuffer_info(info);
- 	return res;
- }
- 
-@@ -1401,6 +1465,7 @@ __releases(&info->lock)
- 		info->fbops->fb_release(info,1);
- 	module_put(info->fbops->owner);
- 	mutex_unlock(&info->lock);
-+	put_framebuffer_info(info);
- 	return 0;
- }
- 
-@@ -1549,6 +1614,7 @@ register_framebuffer(struct fb_info *fb_info)
- 	fb_info->node = i;
- 	mutex_init(&fb_info->lock);
- 	mutex_init(&fb_info->mm_lock);
-+	fb_info->ref_count = 1;
- 
- 	fb_info->dev = device_create(fb_class, fb_info->device,
- 				     MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
-@@ -1592,7 +1658,6 @@ register_framebuffer(struct fb_info *fb_info)
- 	return 0;
- }
- 
--
- /**
-  *	unregister_framebuffer - releases a frame buffer device
-  *	@fb_info: frame buffer info structure
-@@ -1627,6 +1692,16 @@ unregister_framebuffer(struct fb_info *fb_info)
- 		return -ENODEV;
- 	event.info = fb_info;
- 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
-+	if (!ret) {
-+		mutex_lock(&fb_info->mm_lock);
-+		/*
-+		 * We must prevent any operations for this transition, we
-+		 * already have info->lock so grab the info->mm_lock to hold
-+		 * the remainder.
-+		 */
-+		fb_info->state = FBINFO_STATE_REMOVED;
-+		mutex_unlock(&fb_info->mm_lock);
-+	}
- 	unlock_fb_info(fb_info);
- 
- 	if (ret) {
-@@ -1646,8 +1721,7 @@ unregister_framebuffer(struct fb_info *fb_info)
- 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
- 
- 	/* this may free fb info */
--	if (fb_info->fbops->fb_destroy)
--		fb_info->fbops->fb_destroy(fb_info);
-+	put_framebuffer_info(fb_info);
- done:
- 	return ret;
- }
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index df728c1..60de3fa 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -834,6 +834,7 @@ struct fb_tile_ops {
- struct fb_info {
- 	int node;
- 	int flags;
-+	int ref_count;
- 	struct mutex lock;		/* Lock for open/release/ioctl funcs */
- 	struct mutex mm_lock;		/* Lock for fb_mmap and smem_* fields */
- 	struct fb_var_screeninfo var;	/* Current var */
-@@ -873,6 +874,7 @@ struct fb_info {
- 	void *pseudo_palette;		/* Fake palette of 16 colors */ 
- #define FBINFO_STATE_RUNNING	0
- #define FBINFO_STATE_SUSPENDED	1
-+#define FBINFO_STATE_REMOVED	2
- 	u32 state;			/* Hardware state i.e suspend */
- 	void *fbcon_par;                /* fbcon use-only private area */
- 	/* From here on everything is device dependent */
--- 
-1.7.0.4
+Full dmesg is here:
+http://pastebin.com/raw.php?i=3Fctvsrp
+
+Rgds,
+Chris
 
