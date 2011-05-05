@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab1EESp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 14:45:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49686 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab1EESp0 (ORCPT
+	id S932147Ab1EESpn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 14:45:43 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:41580 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab1EESpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 14:45:26 -0400
-Date: Thu, 5 May 2011 14:45:05 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, hpa@linux.intel.com
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] Re: [PATCH] Two patches fixing regression introduced
- by 'x86-64, mm: Put early page table high' - does not work.
-Message-ID: <20110505184505.GC10142@dumpdata.com>
-References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com>
- <4DBEEA69.7010000@zytor.com>
- <20110502180802.GA7498@dumpdata.com>
- <4DBEF8EC.7080301@zytor.com>
- <20110502193436.GA14666@dumpdata.com>
- <4DBF0D0C.8000105@zytor.com>
- <20110505162849.GA482@dumpdata.com>
+	Thu, 5 May 2011 14:45:42 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: "jdossantos@docs.homelinux.org" <jdossantos@docs.homelinux.org>
+CC: KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Error in Hyper-V modules hv_vmbus
+Thread-Topic: Error in Hyper-V modules hv_vmbus
+Thread-Index: AQHMCkBpETUemc5uTUuEnNLkft8sE5R8045QgAHGp4CAAGSWgP//lEgw
+Date: Thu, 5 May 2011 18:45:39 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A5DD5@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <0e67fbb5ce27bd8d1210f0b7b8d5069c@docs.homelinux.org>
+ <8AFC7968D54FB448A30D8F38F259C562498A3FF3@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <42a623fd771f05f5bcabec8d632673e3@docs.homelinux.org>
+ <f814458e9b05dd1d3f22c5bffa3ea18a@docs.homelinux.org>
+In-Reply-To: <f814458e9b05dd1d3f22c5bffa3ea18a@docs.homelinux.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505162849.GA482@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4DC2F03F.0058:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p45Ijmxm007202
 
-On Thu, May 05, 2011 at 12:28:49PM -0400, Konrad Rzeszutek Wilk wrote:
-> > >> OK, sounds like a plan then.  I like it because it doesn't affect the
-> > >> native kernel.
-> .. snip..
+
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of jdossantos@docs.homelinux.org
+> Sent: Thursday, May 05, 2011 11:05 AM
+> To: Hank Janssen
+> Cc: KY Srinivasan; linux-kernel@vger.kernel.org
+> Subject: RE: Error in Hyper-V modules hv_vmbus
 > 
-> > First things first... are you pushing the workaround (you can add my
-> > Acked-by:) or should I?
+> > Yes in ubuntu server (i tested the newest version 11.04) there is no
+> > problem, the hyper-v modules are compiled and activated
+> > as default in the released kernel (2.6.38-8), network, timesync and
+> > all others integrated components are working fine. This is the lsmod
+> > output:
+> > lsmod | grep hv_
+> > hv_utils               12850  0
+> > hv_netvsc              36467  0
+> > hv_timesource          12423  0 [permanent]
+> > hv_vmbus               50431  2 hv_utils,hv_netvsc
+> >
+> > Now I have downloaded the newest rc kernel and done the same steps
+> > like in the debian installation, after a reboot I get same errors and
+> > integrated components failed to works...Now I check the hyper-v
+> > modules source from 2.6.38-8 ubuntu kernel and the new one
+> >
+> > Regards
+> > Juan Dos Santos
 > 
-> Grrr.. While it works on my machines, it does not work on some of the AMD opteron
-> CPU machines. I asked Stefan Bader from Canonical to run a simple bootup test with
-> 2.6.39-rc6 (Linus picked it already), and if it crashed, to use the 
-> one that Stefano came up with.
+>  Ok, now I have setup again debian 6.0.1a and compiled the 2.6.39-rc6
+>  kernel but with the hyper-v staging drivers from ubuntu kernel 2.6.38-8
+>  source (just replaced the hv directory, I know maybe it's dirty :) ).
+>  But now all is working fine! I have now a debian system with kernel
+>  2.6.39-rc6 with all integrated components running..looks that the
+>  hyper-v modules in the ubuntu kernel are more stable that in the newest
+>  official rc kernel?!
 > 
-> And sure enough - it crashed and Stefano's fix worked. I've Stefano's
-> patch in stable/bug-fixes-for-x86 and I am OK reverting the fix I came up.
+>  Regards
+>  Juan
 
-To make it easier, I made a branch called 
+Juan,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-for-rc6
+I just spun up the debian VM and I downloaded the latest staging and the rc5 that
+failed for you and I was about to compile it.
 
-that has all the right magic sauce in it:
+Let me see what happened between rc5 and rc6 to see what might have solved the
+problem you were seeing.
 
-Konrad Rzeszutek Wilk (1):
-      Revert "xen/mmu: Add workaround "x86-64, mm: Put early page table high""
+I would say that in general the older kernels (certainly 35 and 36) are more stable
+than mainline for our drivers. We are making so many changes to mainline right now 
+and that sometimes there are a few bugs that creep in that we have not caught yet. 
 
-Sedat Dilek (1):
-      x86/mm: Fix section mismatch derived from native_pagetable_reserve()
+They are not so much functional as structural changes.
 
-Stefano Stabellini (1):
-      x86,xen: introduce x86_init.mapping.pagetable_reserve
+But I would not recommend running it in production unless you like to live
+dangerously. :)
 
+Hank.
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
