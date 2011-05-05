@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab1EEXGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 19:06:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60195 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab1EEXGb (ORCPT
+	id S1754346Ab1EEXw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 19:52:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:41793 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab1EEXw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 19:06:31 -0400
-Date: Fri, 6 May 2011 01:06:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Aditya Kali <adityakali@google.com>
-Subject: Re: [PATCH] x86: Change trap definitions to enumerated values
-In-Reply-To: <BANLkTin3_xWVZVcvz81+t=A+hjjf+7KfCw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1105060053320.3005@ionos>
-References: <1304462995-1825-1-git-send-email-vnagarnaik@google.com> <BANLkTin3_xWVZVcvz81+t=A+hjjf+7KfCw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 5 May 2011 19:52:57 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=3rvgeqzMqd0A:10 a=MvGstEdyO5kA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=yQdBAQUQAAAA:8 a=Tly-RBvnqlyTgAoUWCkA:9 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 65.28.92.85
+Date: Thu, 05 May 2011 18:52:56 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: vt6655: Fix warnings if CONFIG_PM is not defined
+Message-ID: <4dc33858.EtMzWfSQT1slcY9R%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, Vaibhav Nagarnaik wrote:
-> Steven
-> 
-> This patch has the formatting as you suggested. Does this work for you?
-> 
-> Thomas
-> 
-> Can you please take a look at the patches and provide your comments?
+If staging:vt6655 is built without CONFIG_DM being defined, there are large
+numbers of warnings of the following form due to use of #if instead of #ifdef:
 
-Can you please stop that nonsense ?
+In file included from drivers/staging/vt6655/upc.h:32,
+                 from drivers/staging/vt6655/mac.h:39,
+                 from drivers/staging/vt6655/wroute.c:34:
+drivers/staging/vt6655/device.h:399:5: warning: "CONFIG_PM" is not defined
 
-You posted the patch on Tuesday, sent a reminder on Wednesday and
-another one on Thursday.
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
 
-Do you really think that I'm a robot waiting for your patches to
-magically surface on LKML and then dropping any other activity to take
-care of them ?
 
-I have seen that patch and it's in my list to take care of, just not a
-top priority level issue. It's neither a bug fix nor anything which
-radically improves the kernel. So what?
-
-I don't mind a polite reminder after a week or two in case I actually
-missed a patch, but that daily reminder is just a PITA.
-
-Thanks,
-
-	tglx
+Index: wireless-testing/drivers/staging/vt6655/device.h
+===================================================================
+--- wireless-testing.orig/drivers/staging/vt6655/device.h
++++ wireless-testing/drivers/staging/vt6655/device.h
+@@ -396,7 +396,7 @@ typedef struct __device_info {
+ 
+     struct pci_dev*             pcid;
+ 
+-#if CONFIG_PM
++#ifdef CONFIG_PM
+     u32                         pci_state[16];
+ #endif
+ 
