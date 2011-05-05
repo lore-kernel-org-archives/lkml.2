@@ -1,19 +1,19 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1EEOIV (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 5 May 2011 10:08:21 -0400
-Received: from 236.121.91-79.rev.gaoland.net ([79.91.121.236]:43804 "EHLO
+	id S1755152Ab1EEOJr (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 5 May 2011 10:09:47 -0400
+Received: from 236.121.91-79.rev.gaoland.net ([79.91.121.236]:43799 "EHLO
 	mx.synack.fr" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754693Ab1EEOHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:07:00 -0400
+	id S1754647Ab1EEOG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:06:58 -0400
 From: y@vger.kernel.org
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         netfilter-devel@vger.kernel.org, jamal <hadi@cyberus.ca>,
         Patrick McHardy <kaber@trash.net>,
         Grzegorz Nosek <root@localdomain.pl>, Samir Bellabes <sam@synack.fr>
-Subject: [RFC v4 02/11] lsm: reintroduce security_socket_post_accept()
-Date: Thu,  5 May 2011 15:59:12 +0200
-Message-Id: <1304603961-2517-3-git-send-email-y>
+Subject: [RFC v4 11/11] snet: introduce security/snet, Makefile and Kconfig changes
+Date: Thu,  5 May 2011 15:59:21 +0200
+Message-Id: <1304603961-2517-12-git-send-email-y>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304603961-2517-1-git-send-email-y>
 References: <1304603961-2517-1-git-send-email-y>
@@ -23,124 +23,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Samir Bellabes <sam@synack.fr>
 
-snet needs to reintroduce this hook, as it was designed to be: a hook for
-updating security informations on objects.
-
-Originally, This was a direct revert of commit
-8651d5c0b1f874c5b8307ae2b858bc40f9f02482.
-
-But from the comment of Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> :
-
-> Please move security_socket_post_accept() to before fd_install().
-> Otherwise, other threads which share fd tables can use
-> security-informations-not-yet-updated accept()ed sockets.
+this patch creates folder security/snet and adds changes for Kconfig and Makefile
 
 Signed-off-by: Samir Bellabes <sam@synack.fr>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- include/linux/security.h |   13 +++++++++++++
- net/socket.c             |    2 ++
- security/capability.c    |    5 +++++
- security/security.c      |    5 +++++
- 4 files changed, 25 insertions(+), 0 deletions(-)
+ security/Kconfig       |    6 ++++++
+ security/Makefile      |    2 ++
+ security/snet/Kconfig  |   11 +++++++++++
+ security/snet/Makefile |   15 +++++++++++++++
+ 4 files changed, 34 insertions(+), 0 deletions(-)
+ create mode 100644 security/snet/Kconfig
+ create mode 100644 security/snet/Makefile
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index da0d59e..02effe5 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -875,6 +875,11 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@sock contains the listening socket structure.
-  *	@newsock contains the newly created server socket for connection.
-  *	Return 0 if permission is granted.
-+ * @socket_post_accept:
-+ *	This hook allows a security module to copy security
-+ *	information into the newly created socket's inode.
-+ *	@sock contains the listening socket structure.
-+ *	@newsock contains the newly created server socket for connection.
-  * @socket_sendmsg:
-  *	Check permission before transmitting a message to another socket.
-  *	@sock contains the socket structure.
-@@ -1587,6 +1592,8 @@ struct security_operations {
- 			       struct sockaddr *address, int addrlen);
- 	int (*socket_listen) (struct socket *sock, int backlog);
- 	int (*socket_accept) (struct socket *sock, struct socket *newsock);
-+	void (*socket_post_accept) (struct socket *sock,
-+				    struct socket *newsock);
- 	int (*socket_sendmsg) (struct socket *sock,
- 			       struct msghdr *msg, int size);
- 	int (*socket_recvmsg) (struct socket *sock,
-@@ -2555,6 +2562,7 @@ int security_socket_bind(struct socket *sock, struct sockaddr *address, int addr
- int security_socket_connect(struct socket *sock, struct sockaddr *address, int addrlen);
- int security_socket_listen(struct socket *sock, int backlog);
- int security_socket_accept(struct socket *sock, struct socket *newsock);
-+void security_socket_post_accept(struct socket *sock, struct socket *newsock);
- int security_socket_sendmsg(struct socket *sock, struct msghdr *msg, int size);
- int security_socket_recvmsg(struct socket *sock, struct msghdr *msg,
- 			    int size, int flags);
-@@ -2640,6 +2648,11 @@ static inline int security_socket_accept(struct socket *sock,
- 	return 0;
- }
+diff --git a/security/Kconfig b/security/Kconfig
+index 95accd4..7e393c4 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -184,6 +184,7 @@ source security/selinux/Kconfig
+ source security/smack/Kconfig
+ source security/tomoyo/Kconfig
+ source security/apparmor/Kconfig
++source security/snet/Kconfig
  
-+static inline void security_socket_post_accept(struct socket *sock,
-+					       struct socket *newsock)
-+{
-+}
+ source security/integrity/ima/Kconfig
+ 
+@@ -193,6 +194,7 @@ choice
+ 	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
+ 	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
+ 	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
++	default DEFAULT_SECURITY_SNET if SECURITY_SNET
+ 	default DEFAULT_SECURITY_DAC
+ 
+ 	help
+@@ -211,6 +213,9 @@ choice
+ 	config DEFAULT_SECURITY_APPARMOR
+ 		bool "AppArmor" if SECURITY_APPARMOR=y
+ 
++	config DEFAULT_SECURITY_SNET
++		bool "snet" if SECURITY_SNET=y
 +
- static inline int security_socket_sendmsg(struct socket *sock,
- 					  struct msghdr *msg, int size)
- {
-diff --git a/net/socket.c b/net/socket.c
-index d588e9e..7807904 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1535,6 +1535,8 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
- 			goto out_fd;
- 	}
+ 	config DEFAULT_SECURITY_DAC
+ 		bool "Unix Discretionary Access Controls"
  
-+	security_socket_post_accept(sock, newsock);
+@@ -222,6 +227,7 @@ config DEFAULT_SECURITY
+ 	default "smack" if DEFAULT_SECURITY_SMACK
+ 	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
+ 	default "apparmor" if DEFAULT_SECURITY_APPARMOR
++	default "snet" if DEFAULT_SECURITY_SNET
+ 	default "" if DEFAULT_SECURITY_DAC
+ 
+ endmenu
+diff --git a/security/Makefile b/security/Makefile
+index 8bb0fe9..9e769b2 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)	+= selinux
+ subdir-$(CONFIG_SECURITY_SMACK)		+= smack
+ subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
+ subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
++subdir-$(CONFIG_SECURITY_SNET)		+= snet
+ 
+ # always enable default capabilities
+ obj-y					+= commoncap.o
+@@ -21,6 +22,7 @@ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
+ obj-$(CONFIG_AUDIT)			+= lsm_audit.o
+ obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
++obj-$(CONFIG_SECURITY_SNET)		+= snet/built-in.o
+ obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
+ 
+ # Object integrity file lists
+diff --git a/security/snet/Kconfig b/security/snet/Kconfig
+new file mode 100644
+index 0000000..6dabd7d
+--- /dev/null
++++ b/security/snet/Kconfig
+@@ -0,0 +1,11 @@
++#
++# snet
++#
 +
- 	/* File flags are not inherited via accept() unlike another OSes. */
- 
- 	fd_install(newfd, newfile);
-diff --git a/security/capability.c b/security/capability.c
-index 1f8bbe2..da68c60 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -593,6 +593,10 @@ static int cap_socket_accept(struct socket *sock, struct socket *newsock)
- 	return 0;
- }
- 
-+static void cap_socket_post_accept(struct socket *sock, struct socket *newsock)
-+{
-+}
++config SECURITY_SNET
++	bool "snet - Security for NETwork syscalls"
++	depends on SECURITY_NETWORK
++	default n
++	---help---
++	If this option is enabled, the kernel will include support for reporting
++	networking's syscalls to userspace and wait for a verdict
+diff --git a/security/snet/Makefile b/security/snet/Makefile
+new file mode 100644
+index 0000000..002c102
+--- /dev/null
++++ b/security/snet/Makefile
+@@ -0,0 +1,15 @@
++#
++# Makefile for building the Security Network Events module.
++#
++obj-$(CONFIG_SECURITY_SNET) :=  snet.o
 +
- static int cap_socket_sendmsg(struct socket *sock, struct msghdr *msg, int size)
- {
- 	return 0;
-@@ -1022,6 +1026,7 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, socket_connect);
- 	set_to_cap_if_null(ops, socket_listen);
- 	set_to_cap_if_null(ops, socket_accept);
-+	set_to_cap_if_null(ops, socket_post_accept);
- 	set_to_cap_if_null(ops, socket_sendmsg);
- 	set_to_cap_if_null(ops, socket_recvmsg);
- 	set_to_cap_if_null(ops, socket_getsockname);
-diff --git a/security/security.c b/security/security.c
-index 84187d8..eda2b75 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1038,6 +1038,11 @@ int security_socket_accept(struct socket *sock, struct socket *newsock)
- 	return security_ops->socket_accept(sock, newsock);
- }
- 
-+void security_socket_post_accept(struct socket *sock, struct socket *newsock)
-+{
-+	security_ops->socket_post_accept(sock, newsock);
-+}
-+
- int security_socket_sendmsg(struct socket *sock, struct msghdr *msg, int size)
- {
- 	return security_ops->socket_sendmsg(sock, msg, size);
++snet-y := snet_event.o \
++	  snet_netlink_helper.o \
++	  snet_netlink.o \
++	  snet_verdict.o \
++	  snet_ticket_helper.o \
++	  snet_ticket.o \
++	  snet_hooks.o \
++	  snet_core.o \
++	  snet_stats.o \
++	  snet_utils.o
 -- 
 1.7.4.1
 
