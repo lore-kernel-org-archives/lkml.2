@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab1EEI5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 04:57:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63345 "EHLO mx1.redhat.com"
+	id S1753338Ab1EEJDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 05:03:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30576 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab1EEI5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 04:57:35 -0400
-Date: Thu, 5 May 2011 11:56:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Krishna Kumar <krkumar2@in.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, lguest@lists.ozlabs.org,
-        Shirley Ma <xma@us.ibm.com>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, netdev@vger.kernel.org,
-        habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        virtualization@lists.linux-foundation.org, steved@us.ibm.com,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com
-Subject: Re: [PATCH 07/18] virtio ring: inline function to check for events
-Message-ID: <20110505085656.GC17647@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com>
- <cc4596a5ecdbf8dd37b5567a36667e3841f18ca3.1304541919.git.mst@redhat.com>
- <BANLkTi=eH-iK7L2LBAm0eqidapqXqhSqxw@mail.gmail.com>
+	id S1751338Ab1EEJDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 05:03:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,318,1301900400"; 
+   d="scan'208";a="742685790"
+From: "Tian, Kevin" <kevin.tian@intel.com>
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>
+Date: Thu, 5 May 2011 17:03:04 +0800
+Subject: RE: [PATCH] x86: skip migrating percpu irq in fixup_irqs
+Thread-Topic: [PATCH] x86: skip migrating percpu irq in fixup_irqs
+Thread-Index: AcwLAUzXREy4TyQ3TgGAoJriEIEXoAAACVGw
+Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F3A9@shsmsx502.ccr.corp.intel.com>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F327@shsmsx502.ccr.corp.intel.com>
+ <1304585343.26692.71.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1304585343.26692.71.camel@zakaz.uk.xensource.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=eH-iK7L2LBAm0eqidapqXqhSqxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4593REZ004762
 
-On Thu, May 05, 2011 at 09:34:46AM +0100, Stefan Hajnoczi wrote:
-> On Wed, May 4, 2011 at 9:51 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > With the new used_event and avail_event and features, both
-> > host and guest need similar logic to check whether events are
-> > enabled, so it helps to put the common code in the header.
-> >
-> > Note that Xen has similar logic for notification hold-off
-> > in include/xen/interface/io/ring.h with req_event and req_prod
-> > corresponding to event_idx + 1 and new_idx respectively.
-> > +1 comes from the fact that req_event and req_prod in Xen start at 1,
-> > while event index in virtio starts at 0.
-> >
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/linux/virtio_ring.h |   14 ++++++++++++++
-> >  1 files changed, 14 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> > index f791772..2a3b0ea 100644
-> > --- a/include/linux/virtio_ring.h
-> > +++ b/include/linux/virtio_ring.h
-> > @@ -124,6 +124,20 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
-> >                + sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
-> >  }
-> >
-> > +/* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
-> > +/* Assuming a given event_idx value from the other size, if
+> From: Ian Campbell [mailto:Ian.Campbell@eu.citrix.com]
+> Sent: Thursday, May 05, 2011 4:49 PM
 > 
-> s/other size/other side/ ?
+> On Thu, 2011-05-05 at 09:15 +0100, Tian, Kevin wrote:
+> > x86: skip migrating percpu irq in fixup_irqs
+> >
+> > IRQF_PER_CPU is used by Xen for a set of virtual interrupts binding to
+> > a specific vcpu, but it's not recognized in fixup_irqs which simply
+> > atempts to migrate it to other vcpus. In most cases this just works,
+> > because Xen event channel chip silently fails the set_affinity ops for
+> > irqs marked as IRQF_PER_CPU. But there's a special category (like used
+> > for pv spinlock) also adds a IRQ_DISABLED flag, used as polled only
+> > event channels which don't expect any instance injected. However
+> > fixup_irqs absolutely masks/unmasks irqs which makes such special type
+> > irq injected unexpectely while there's no handler for it.
+> >
+> > This error is triggered on some box when doing reboot. The fix is to
+> > recognize IRQF_PER_CPU flag early before the affinity change, which
+> > actually matches the rationale of IRQF_PER_CPU.
 > 
-> Stefan
+> Skipping affinity fixup for PER_CPU IRQs seems logical enough (so I suspect this
+> patch is good in its own right) but if the real issue you are fixing is that
+> IRQ_DISABLED IQRs are getting unmasked should that issue be addressed
+> directly rather than relying on it being a side-effect of PER_CPU-ness?
 
-Exactly. Good catch, thanks.
+actually this is one thing I'm not sure and would like to hear more suggestions.
+imo affinity and percpu are same type of attributes, which describe the 
+constraints to host a given irq, while disabled/masked are another type of
+attributes which describe whether to accept an irq instance (mask is for
+short period). even without the IRQ_DISABLED issue, this patch is also 
+required though it doesn't expose observable failure. I didn't bake the 2nd
+patch to avoid unmask for IRQ_DISABLED, because I want to know whether
+this is desired, e.g. IRQ_DISABLED is set in the fly when there can be still
+one instance pending?
 
--- 
-MST
+Thanks
+Kevin
+
+> 
+> > Signed-off-by: Fengzhe Zhang <fengzhe.zhang@intel.com>
+> > Signed-off-by: Kevin Tian <kevin.tian@intel.com>
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > CC: Ingo Molnar <mingo@redhat.com>
+> > CC: H. Peter Anvin <hpa@zytor.com>
+> > CC: Ian Campbell <Ian.Campbell@citrix.com>
+> > CC: Jan Beulich <JBeulich@novell.com>
+> >
+> > diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c index
+> > 1cb0b9f..544efe2 100644
+> > --- a/arch/x86/kernel/irq.c
+> > +++ b/arch/x86/kernel/irq.c
+> > @@ -249,7 +249,7 @@ void fixup_irqs(void)
+> >
+> >                 data = irq_desc_get_irq_data(desc);
+> >                 affinity = data->affinity;
+> > -               if (!irq_has_action(irq) ||
+> > +               if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
+> >                     cpumask_subset(affinity, cpu_online_mask)) {
+> >                         raw_spin_unlock(&desc->lock);
+> >                         continue;
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
