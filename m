@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab1EEBQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 21:16:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35332 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab1EEBQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 21:16:56 -0400
-Subject: Re: Long timeout when booting >= 2.6.38
-From: john stultz <johnstul@us.ibm.com>
-To: Christian Hoffmann <email@christianhoffmann.info>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <4DC100D0.1030302@christianhoffmann.info>
-References: <4DBEFCBA.3070501@christianhoffmann.info>
-	 <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>
-	 <1304372955.3226.15.camel@work-vm>
-	 <4DBF2FB4.8000304@christianhoffmann.info>
-	 <1304470839.3037.12.camel@work-vm>
-	 <4DC100D0.1030302@christianhoffmann.info>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 May 2011 18:16:50 -0700
-Message-ID: <1304558210.2943.24.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752063Ab1EEBSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 21:18:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61976 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab1EEBSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 21:18:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Wz0GcTFH0cs+Pbrd5A/ZDBsPEVjITAtauLQcj236FKPQzKxv7OE0GlCtov0id5bv4F
+         vnkFNK+5ze2HSdZQkRuA==
+MIME-Version: 1.0
+In-Reply-To: <BANLkTim_QtaQLa9GV5hMZyCmW_WAz_Ucvg@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
+	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+	<BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com>
+	<BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
+	<BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com>
+	<BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
+	<BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com>
+	<BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
+	<BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com>
+	<alpine.LSU.2.00.1104060837590.4909@sister.anvils>
+	<BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
+	<BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
+	<BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com>
+	<alpine.LSU.2.00.1104070718120.28555@sister.anvils>
+	<BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com>
+	<BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
+	<BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com>
+	<BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
+	<BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com>
+	<BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
+	<BANLkTikZ1szdH5HZdjKEEzG2+1VPusWEeg@mail.gmail.com>
+	<BANLkTingV3eiHEco+36YyM4YTDHFHc9_jA@mail.gmail.com>
+	<BANLkTi=D+oe_zyxA1Oj5S36F6Tk0J+26iQ@mail.gmail.com>
+	<BANLkTim_QtaQLa9GV5hMZyCmW_WAz_Ucvg@mail.gmail.com>
+Date: Wed, 4 May 2011 18:18:09 -0700
+Message-ID: <BANLkTik-s3Gr6GDMN4L24wX2BK9n3okzQA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-04 at 09:31 +0200, Christian Hoffmann wrote:
-> In fact, switching to acpi_pm doesn't seem to work:
-> 
-> $ dmesg | grep clock
-> 
-> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ 
-> root=/dev/mapper/vg-root ro quiet splash vt.handoff=7 clocksource=acpi_pm
-> [    0.000000] Kernel command line: 
-> BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ root=/dev/mapper/vg-root ro 
-> quiet splash vt.handoff=7 clocksource=acpi_pm
-> [    0.000000] hpet clockevent registered
-> [    1.413835] Switching to clocksource hpet
-> [    1.420762] Override clocksource acpi_pm is not HRT compatible. 
-> Cannot switch while in HRT/NOHZ mode
-> [  147.940143] Refined TSC clocksource calibration: 2809.409 MHz.
-> [  147.940147] Switching to clocksource tsc
+On Wed, May 4, 2011 at 5:38 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>> A more conservative alternative could
+>> be to enable the guard page special case under an new GUP flag, but
+>> this loses much of the elegance of your original proposal...
+>
+> How about only doing that only for FOLL_MLOCK?
 
-So I think I've sorted this out.
+Sounds reasonable.
 
-The watchdog code is what enables CLOCK_SOURCE_VALID_FOR_HRES, but we
-actually end up selecting the clocksource before we enqueue it into the
-watchdog list, so that's why we see the warning.
+> Also, looking at mm/mlock.c, why _do_ we call get_user_pages() even if
+> the vma isn't mlocked? That looks bogus. Since we have dropped the
+> mm_semaphore, an unlock may have happened, and afaik we should *not*
+> try to bring those pages back in at all. There's this whole comment
+> about that in the caller ("__mlock_vma_pages_range() double checks the
+> vma flags, so that it won't mlock pages if the vma was already
+> munlocked."), but despite that it would actually call
+> __get_user_pages() even if the VM_LOCKED bit had been cleared (it just
+> wouldn't call it with the FOLL_MLOCK flag).
 
-I suspect the following will resolve this detail.
+There are two reasons VM_LOCKED might be cleared in
+__mlock_vma_pages_range(). It could be that one of the VM_SPECIAL
+flags were set on the VMA, in which case mlock() won't set VM_LOCKED
+but it still must make the pages present. Or, there is an munlock()
+executing concurrently with mlock() - in that case, the conservative
+thing to do is to give the same results as if the mlock() had
+completed before the munlock(). That is, the mlock() would have broken
+COW / made the pages present and the munlock() would have cleared the
+VM_LOCKED and PageMlocked flags.
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> UNTESTED! And maybe there was some really subtle reason to still call
+> __get_user_pages() without that FOLL_MLOCK thing that I'm missing.
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index 6519cf6..0e17c10 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -685,8 +685,8 @@ int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
- 	/* Add clocksource to the clcoksource list */
- 	mutex_lock(&clocksource_mutex);
- 	clocksource_enqueue(cs);
--	clocksource_select();
- 	clocksource_enqueue_watchdog(cs);
-+	clocksource_select();
- 	mutex_unlock(&clocksource_mutex);
- 	return 0;
- }
-@@ -706,8 +706,8 @@ int clocksource_register(struct clocksource *cs)
- 
- 	mutex_lock(&clocksource_mutex);
- 	clocksource_enqueue(cs);
--	clocksource_select();
- 	clocksource_enqueue_watchdog(cs);
-+	clocksource_select();
- 	mutex_unlock(&clocksource_mutex);
- 	return 0;
- }
+I think we want the mm/memory.c part of this proposal without the
+mm/mlock.c part.
 
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
