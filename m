@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab1EEPLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:11:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39171 "EHLO mga09.intel.com"
+	id S1755035Ab1EEPNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:13:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754067Ab1EEPLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:11:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
-   d="scan'208";a="638512024"
-Message-ID: <4DC2BE12.7030308@intel.com>
-Date: Thu, 05 May 2011 08:11:14 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: =?UTF-8?B?5bq35YmR5paM?= <kjbmail@gmail.com>
-CC: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jiang, Dave" <dave.jiang@intel.com>
-Subject: Re: Can I/OAT DMA engineer access PCI MMIO space
-References: <4DBA8F30.2060206@gmail.com>	 <1304316260.1589.2.camel@vkoul-udesk3>  <4DBF66C0.9020600@gmail.com> <1304395926.1589.27.camel@vkoul-udesk3> <4DBFA152.8000709@gmail.com> <4DC02622.90000@intel.com> <4DC263C6.1040805@gmail.com>
-In-Reply-To: <4DC263C6.1040805@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754287Ab1EEPNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:13:01 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH] blkdev: Do not return -EOPNOTSUPP if discard is supported
+Date: Thu,  5 May 2011 17:12:45 +0200
+Message-Id: <1304608365-17199-1-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ adding Dave ]
+Currently we return -EOPNOTSUPP in blkdev_issue_discard() if any of the
+bio fails due to underlying device not supporting discard request.
+However, if the device is for example dm device composed of devices
+which some of them support discard and some of them does not, it is ok
+for some bios to fail with EOPNOTSUPP, but it does not mean that discard
+is not supported at all.
 
-On 5/5/2011 1:45 AM, 康剑斌 wrote:
-> Thanks.
-> I directly read pci bar address and program it into descriptors, ioatdma
-> works.
-> Some problem is, when PCI transfer failed (Using a NTB connect to
-> another system, and the system power down),
-> ioatdma will cause kernel oops.
->
-> BUG_ON(is_ioat_bug(chanerr));
-> in drivers/dma/ioat/dma_v3.c, line 365
->
-> It seems that HW reports a 'IOAT_CHANERR_DEST_ADDR_ERR', and drivers
-> can't recover from this situation.
+This commit removes the check for bios failed with EOPNOTSUPP and change
+blkdev_issue_discard() to return operation not supported if and only if
+the device does not actually supports it, not just part of the device as
+some bios might indicate.
 
-Ah ok, this is expected with the current upstream ioatdma driver.  The 
-driver assumes that all transfers are mem-to-mem (ASYNC_TX_DMA or 
-NET_DMA) and that a destination address error is a fatal error (similar 
-to a kernel page fault).
+This change also fixes problem with BLKDISCARD ioctl() which now works
+correctly on such dm devices.
 
-With NTB, where failures are expected, the driver would need to be 
-modified to expect the error, recover from it, and report it to the 
-application.
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+CC: Jens Axboe <jaxboe@fusionio.com>
+CC: Jeff Moyer <jmoyer@redhat.com>
+---
+ block/blk-lib.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
-> What does dma-slave mean? Just like DMA_SLAVE flag existing in other DMA
-> drivers?
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index d7a98d3..78e627e 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -19,11 +19,8 @@ static void bio_batch_end_io(struct bio *bio, int err)
+ {
+ 	struct bio_batch *bb = bio->bi_private;
+ 
+-	if (err) {
+-		if (err == -EOPNOTSUPP)
+-			set_bit(BIO_EOPNOTSUPP, &bb->flags);
++	if (err && (err != -EOPNOTSUPP))
+ 		clear_bit(BIO_UPTODATE, &bb->flags);
+-	}
+ 	if (atomic_dec_and_test(&bb->done))
+ 		complete(bb->wait);
+ 	bio_put(bio);
+@@ -107,9 +104,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion(&wait);
+ 
+-	if (test_bit(BIO_EOPNOTSUPP, &bb.flags))
+-		ret = -EOPNOTSUPP;
+-	else if (!test_bit(BIO_UPTODATE, &bb.flags))
++	if (!test_bit(BIO_UPTODATE, &bb.flags))
+ 		ret = -EIO;
+ 
+ 	return ret;
+-- 
+1.7.4.4
 
-Yes, DMA_SLAVE is the generic framework to associate a dma offload 
-device with an mmio peripheral.
-
---
-Dan
