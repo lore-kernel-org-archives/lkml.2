@@ -1,152 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab1EEAV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 20:21:27 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:42301 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635Ab1EEAVZ convert rfc822-to-8bit (ORCPT
+	id S1752921Ab1EEAVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 20:21:32 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:6014 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752019Ab1EEAVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 20:21:25 -0400
-From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+	Wed, 4 May 2011 20:21:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQEAB3swU15LBzagWdsb2JhbACmHhUBARYmJcgHDoV5BJ4B
+Date: Thu, 5 May 2011 10:21:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
+Message-ID: <20110505002126.GA26797@dastard>
+References: <20110423224403.5fd1136a@neptune.home>
+ <20110427050850.GG12436@dastard>
+ <20110427182622.05a068a2@neptune.home>
+ <20110428194528.GA1627@x4.trippels.de>
+ <20110429011929.GA13542@dastard>
+ <20110504005736.GA2958@cucamonga.audible.transient.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv2 1/5] MFD: TPS65910: Add support for TPS65911 device
-Date: Wed, 4 May 2011 19:21:21 -0500
-Message-Id: <A6D68D26-06DE-4FF5-ABF3-372D742F606F@slimlogic.co.uk>
-Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com, lrg@ti.com,
-        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+In-Reply-To: <20110504005736.GA2958@cucamonga.audible.transient.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPS65911 is the next generation of the TPS65910 family of
-PMIC chips. It adds a few features:
+On Wed, May 04, 2011 at 12:57:36AM +0000, Jamie Heilman wrote:
+> Dave Chinner wrote:
+> > OK, so the common elements here appears to be root filesystems
+> > with small log sizes, which means they are tail pushing all the
+> > time metadata operations are in progress. Definitely seems like a
+> > race in the AIL workqueue trigger mechanism. I'll see if I can
+> > reproduce this and cook up a patch to fix it.
+> 
+> Is there value in continuing to post sysrq-w, sysrq-l, xfs_info, and
+> other assorted feedback wrt this issue?  I've had it happen twice now
+> myself in the past week or so, though I have no reliable reproduction
+> technique.  Just wondering if more data points will help isolate the
+> cause, and if so, how to be prepared to get them.
+> 
+> For whatever its worth, my last lockup was while running
+> 2.6.39-rc5-00127-g1be6a1f with a preempt config without cgroups.
 
-- Watchdog Timer
-- PWM & LED generators
-- Comparators for system control status
+Can you all try the patch below? I've managed to trigger a couple of
+xlog_wait() lockups in some controlled load tests. The lockups don't
+appear to occur with the following patch to he race condition in
+the AIL workqueue trigger.
 
-It also adds a set of Interrupts and GPIOs, among other things.
+Cheers,
 
-The driver exports a function to identify between different
-versions of the tps65910 family, allowing other modules to
-identify the capabilities of the current chip.
-
-Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
----
- drivers/mfd/tps65910.c       |    5 +++-
- include/linux/mfd/tps65910.h |   46 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index bf649cf..11c4a66 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -139,6 +139,8 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	struct tps65910_platform_data *init_data;
- 	int ret = 0;
- 
-+	tps65910->id = id->driver_data;
-+
- 	pmic_plat_data = dev_get_platdata(&i2c->dev);
- 	if (!pmic_plat_data)
- 		return -EINVAL;
-@@ -192,7 +194,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
- }
- 
- static const struct i2c_device_id tps65910_i2c_id[] = {
--       { "tps65910", 0 },
-+       { "tps65910", TPS65910 },
-+       { "tps65911", TPS65911 },
-        { }
- };
- MODULE_DEVICE_TABLE(i2c, tps65910_i2c_id);
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index be08a0c..6ceea0d 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -17,6 +17,14 @@
- #ifndef __LINUX_MFD_TPS65910_H
- #define __LINUX_MFD_TPS65910_H
- 
-+/* TPS chip id list */
-+#define TPS65910			0
-+#define TPS65911			1
-+
-+/* TPS regulator type list */
-+#define REGULATOR_LDO			0
-+#define REGULATOR_DCDC			1
-+
- /*
-  * List of registers for component TPS65910
-  *
-@@ -97,6 +105,21 @@
- #define TPS65910_MAX_REGISTER				0x80
- 
- /*
-+ * List of registers specific to TPS65911
-+ */
-+#define TPS65911_VDDCTRL				0x27
-+#define TPS65911_VDDCTRL_OP				0x28
-+#define TPS65911_VDDCTRL_SR				0x29
-+#define TPS65911_LDO1					0x30
-+#define TPS65911_LDO2					0x31
-+#define TPS65911_LDO5					0x32
-+#define TPS65911_LDO8					0x33
-+#define TPS65911_LDO7					0x34
-+#define TPS65911_LDO6					0x35
-+#define TPS65911_LDO4					0x36
-+#define TPS65911_LDO3					0x37
-+
-+/*
-  * List of register bitfields for component TPS65910
-  *
-  */
-@@ -702,6 +725,23 @@
- #define JTAGVERNUM_VERNUM_SHIFT				0
- 
- 
-+/* Register VDDCTRL (0x27) bit definitions */
-+#define VDDCTRL_ST_MASK                                  0x03
-+#define VDDCTRL_ST_SHIFT                                 0
-+
-+
-+/*Register VDDCTRL_OP  (0x28) bit definitios */
-+#define VDDCTRL_OP_CMD_MASK                              0x80
-+#define VDDCTRL_OP_CMD_SHIFT                             7
-+#define VDDCTRL_OP_SEL_MASK                              0x7F
-+#define VDDCTRL_OP_SEL_SHIFT                             0
-+
-+
-+/*Register VDDCTRL_SR  (0x29) bit definitions */
-+#define VDDCTRL_SR_SEL_MASK                              0x7F
-+#define VDDCTRL_SR_SEL_SHIFT                             0
-+
-+
- /* IRQ Definitions */
- #define TPS65910_IRQ_VBAT_VMBDCH			0
- #define TPS65910_IRQ_VBAT_VMHI				1
-@@ -742,6 +782,7 @@ struct tps65910 {
- 	struct device *dev;
- 	struct i2c_client *i2c_client;
- 	struct mutex io_mutex;
-+	unsigned int id;
- 	int (*read)(struct tps65910 *tps65910, u8 reg, int size, void *dest);
- 	int (*write)(struct tps65910 *tps65910, u8 reg, int size, void *src);
- 
-@@ -771,4 +812,9 @@ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
- int tps65910_irq_init(struct tps65910 *tps65910, int irq,
- 		struct tps65910_platform_data *pdata);
- 
-+static inline int tps65910_chip_id(struct tps65910 *tps65910)
-+{
-+	return tps65910->id;
-+}
-+
- #endif /*  __LINUX_MFD_TPS65910_H */
+Dave.
 -- 
-1.7.1
+Dave Chinner
+david@fromorbit.com
 
+xfs: fix race condition queuing AIL pushes
+
+From: Dave Chinner <dchinner@redhat.com>
+
+The recent conversion of the xfsaild functionality to a work queue
+introduced a hard-to-hit log space grant hang. The problem is that
+the use of the XFS_AIL_PUSHING_BIT to determine whether a push is
+currently in progress is racy.
+
+When the AIL push work completes, it checked whether the target
+changed and cleared the PUSHING bit to allow a new push to be
+requeued. The race condition is as follows:
+
+	Thread 1		push work
+
+	smp_wmb()
+				smp_rmb()
+				check ailp->xa_target unchanged
+	update ailp->xa_target
+	test/set PUSHING bit
+	does not queue
+				clear PUSHING bit
+				does not requeue
+
+Now that the push target is updated, new attempts to push the AIL
+will not trigger as the push target will be the same, and hence
+despite trying to push the AIL we won't ever wake it again.
+
+The fix is to ensure that the AIL push work clears the PUSHING bit
+before it checks if the target is unchanged.
+
+As a result, both push triggers operate on the same test/set bit
+criteria, so even if we race in the push work and miss the target
+update, the thread requesting the push will still set the PUSHING
+bit and queue the push work to occur. For safety sake, the same
+queue check is done if the push work detects the target change,
+though only one of the two will will queue new work due to the use
+of test_and_set_bit() checks.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/xfs_trans_ail.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
+index acdb92f..b7606d9 100644
+--- a/fs/xfs/xfs_trans_ail.c
++++ b/fs/xfs/xfs_trans_ail.c
+@@ -486,15 +486,19 @@ xfs_ail_worker(
+ 		ailp->xa_last_pushed_lsn = 0;
+ 
+ 		/*
+-		 * Check for an updated push target before clearing the
+-		 * XFS_AIL_PUSHING_BIT. If the target changed, we've got more
+-		 * work to do. Wait a bit longer before starting that work.
++		 * We clear the XFS_AIL_PUSHING_BIT first before checking
++		 * whether the target has changed. If the target has changed,
++		 * this pushes the requeue race directly onto the result of the
++		 * atomic test/set bit, so we are guaranteed that either the
++		 * the pusher that changed the target or ourselves will requeue
++		 * the work (but not both).
+ 		 */
++		clear_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags);
+ 		smp_rmb();
+-		if (ailp->xa_target == target) {
+-			clear_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags);
++		if (ailp->xa_target == target ||
++		    (test_and_set_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags)))
+ 			return;
+-		}
++
+ 		tout = 50;
+ 	} else if (XFS_LSN_CMP(lsn, target) >= 0) {
+ 		/*
