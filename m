@@ -1,92 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab1EEWGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 18:06:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45108 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab1EEWGu (ORCPT
+	id S1754093Ab1EEWHX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 18:07:23 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:53236 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752727Ab1EEWHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 18:06:50 -0400
-Message-ID: <4DC31F72.5050206@kernel.org>
-Date: Thu, 05 May 2011 15:06:42 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Stefan Hellermann <stefan@the2masters.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: early crash on ancient tablet related to no-bootmem
-References: <4DC30251.9040902@the2masters.de> <4DC31D5F.8070209@the2masters.de>
-In-Reply-To: <4DC31D5F.8070209@the2masters.de>
-Content-Type: text/plain; charset=ISO-8859-15
+	Thu, 5 May 2011 18:07:22 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=bdbGxQ1BOsnpyWEH6Zn6OQk53Hz4IX3k26yjJv5D9MyyjiwjtDPo2uDmSk+KNdM5cuXpxNd8vmW/09yNnUEjeWXUK07S3nRZbvq/t/IVDnub2cdcY11jwbOo+t7PAjYp;
+Date: Thu, 5 May 2011 15:07:19 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
+Subject: Re: [PATCH] Fixes a small error in Documentation/HOWTO
+Message-Id: <20110505150719.f4d480ad.rdunlap@xenotime.net>
+In-Reply-To: <20110405020717.GA2506@gmail.com>
+References: <AANLkTinHAfGi84LWzP2rCqpzB6nmj-B2jU_pEPf89Lcz@mail.gmail.com>
+	<20110403045201.GA2598@gmail.com>
+	<4D99230C.6040403@cn.fujitsu.com>
+	<20110404111829.af8bc108.rdunlap@xenotime.net>
+	<BANLkTinSC1UTEQxS0iCKu4tMX-9CUY3rJg@mail.gmail.com>
+	<20110405020717.GA2506@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DC31F77.0110,ss=1,fgs=0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2011 02:57 PM, Stefan Hellermann wrote:
-> CC: yinghai@kernel.org
+On Tue, 5 Apr 2011 10:07:20 +0800 Harry Wei wrote:
+
+> On Tue, Apr 05, 2011 at 09:59:55AM +0800, harryxiyou wrote:
+> > On Tue, Apr 5, 2011 at 2:18 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > 
+> > > On Mon, 04 Apr 2011 09:46:52 +0800 Li Zefan wrote:
+> > >
+> > > > > Your updated link for HOWTO is just for linux-2.6.38. This link
+> > > > > should be up-to-date kernel code. So i have corrected your
+> > > > > patch like following.
+> > > > >
+> > > > > Thanks.
+> > > > > Best Regards.
+> > > > > Harry Wei.
+> > > > >
+> > > > > Signed-off-by: Someone Something <fordhaivat@gmail.com>
+> > > > > Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> > > >
+> > > > Did he sign the patch? If not, you can't do this, and Instead you
+> > > > must ask him for his SOB.
+> > > >
+> > > > And I'll appreciate if you add:
+> > > >
+> > > >       From: Someone ...
+> > > >
+> > > > because your change is not significant enough to make you the author
+> > > > of the patch.
+> > >
+> > > Regardless of that latter part, we cannot merge the patch from SS,
+> > > like Xiaochen Wang said, since the name is false.
+> Hi Randy,
+>     I have corrected this patch like following. This may be well 
+> for us.
 > 
-> Is this BIOS-88 RAM map supposed to work?
+> Thanks.
+> BR.
+> Harry Wei.
 > 
-> Am 05.05.2011 22:02, schrieb Stefan Hellermann:
->> Hi!
->>
->> I have an really old tablet PC. It's and 486 with 40MHz and 8MB Ram
->> (http://www.homecomputermuseum.de/comp/327_de.htm)
->> I sometimes test new kernels on it, and since the invention of
->> CONFIG_NO_BOOTMEM it does not work with this option enabled. So 2.6.36
->> without NO_BOOTMEM work, every newer Kernel will hang, only visible with
->> earlyprintk=vga.
->>
->> Bootlog:
->> Booting the kernel.
->> Linux version 2.6.36 (stefan@hel-stefan.lan) (gcc version 4.6.0 20110428
->> (Red Hat 4.6.0-6) (GCC) ) #5 Thu May 5 21:49:09 CEST 2011
->> BIOS-provided physical RAM map:
->>  BIOS-88: 0000000000000000 - 000000000009f000 (usable)
->>  BIOS-88: 0000000000100000 - 0000000000840000 (usable)
->> bootconsole [earlyser0] enabled
->> Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
->> DMI not present or invalid.
->> last_pfn = 0x840 max_arch_pfn = 0x100000
->> init_memory_mapping: 0000000000000000-0000000000840000
->> 8MB LOWMEM available.
->>   mapped low ram: 0 - 00840000
->>   low ram: 0 - 00840000
->> Zone PFN ranges:
->>   DMA      0x00000001 -> 0x00001000
->>   Normal   empty
->> Movable zone start PFN for each node
->> early_node_map[2] active PFN ranges
->>     0: 0x00000001 -> 0x0000009f
->>     0: 0x00000100 -> 0x00000840
->> BUG: Int 6: CR2 (null)
->>      EDI c034663c  ESI (null)  EBP c0329f38  ESP c0329ef4
->>      EBX c0346380  EDX 00000006  ECX ffffffff  EAX fffffff4
->>      err (null)  EIP c0353191   CS c0320060  flg 00010082
->> Stack: (null) c030c533 000007cd (null) c030c533 00000001 (null) (null)
->>        00000003 0000083f 00000018 00000002 00000002 c0329f6c c03534d6 (null)
->>        (null) 00000100 00000840 (null) c0329f64 00000001 00001000 (null)
->> Pid: 0, comm: swapper Not tainted 2.6.36 #5
->> Call Trace:
->>  [<c02e3707>] ? 0xc02e3707
->>  [<c035e6e5>] 0xc035e6e5
->>  [<c0353191>] ? 0xc0353191
->>  [<c03534d6>] 0xc03534d6
->>  [<c034f1cd>] 0xc034f1cd
->>  [<c034a824>] 0xc034a824
->>  [<c03513cb>] ? 0xc03513cb
->>  [<c0349432>] 0xc0349432
->>  [<c0349066>] 0xc0349066
->>
->> with NO_BOOTMEM=y. Is it possible to resolve this symbols somehow?
->> CONFIG_FRAMEPOINTER=y. With latest git the crash is about the same.
+> From: Someone Something <fordhaivat@gmail.com>
 
-can you please boot with "ignore_loglevel debug memblock=debug"?
 
-Thanks
+Linus tells me that we don't want fake names or email addresses in
+the development tree, so this won't do.
 
-Yinghai
+Harry, can you just send me a patch from you, with your Signed-off-by:
+so that I can apply it, please?
+
+
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> ---
+>  Documentation/HOWTO |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+> index 365bda9..81bc1a9 100644
+> --- a/Documentation/HOWTO
+> +++ b/Documentation/HOWTO
+> @@ -209,7 +209,7 @@ tools.  One such tool that is particularly recommended is the Linux
+>  Cross-Reference project, which is able to present source code in a
+>  self-referential, indexed webpage format. An excellent up-to-date
+>  repository of the kernel code may be found at:
+> -	http://users.sosdg.org/~qiyong/lxr/
+> +	http://lxr.linux.no/+trees
+>  
+>  
+>  The development process
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
