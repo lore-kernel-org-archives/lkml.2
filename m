@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1EEXBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 19:01:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40241 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733Ab1EEXBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 19:01:40 -0400
-Date: Thu, 5 May 2011 15:53:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
- workaround
-Message-ID: <20110505225302.GC12316@suse.de>
-References: <20110419204117.979118654@clark.kroah.org>
- <1303263653.3464.65.camel@localhost>
- <20110420020128.GA27631@suse.de>
- <1303265862.3464.77.camel@localhost>
- <20110420031105.GA11945@suse.de>
- <1303274910.3464.95.camel@localhost>
- <20110420050617.GA16756@suse.de>
- <1303356555.3464.128.camel@localhost>
+	id S1754151Ab1EEW7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 18:59:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45474 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1EEW7n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 18:59:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=dLUkIzEQbpa1DbRxvLeJ2p0Exgv8c6U+bcekVqsQ/zOWr1wQu0CfLBh+HpazYtRl5e
+         eNKgTynJaVGmupFcBTY6Cg2x92txIQsIkaRioKWVqu2k+62h4LF6IqH4bq5yRNgZLi/j
+         ZHwwHlYlTO6DsXDy1ubl5i6z0j+gW8Y+WQ1cw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303356555.3464.128.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Fri, 6 May 2011 08:59:23 +1000
+Message-ID: <BANLkTi=epFN2EZBj9n8pac6h7F4RWmyk+Q@mail.gmail.com>
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
+To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        =?ISO-8859-1?Q?Michael_B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 21, 2011 at 04:29:15AM +0100, Ben Hutchings wrote:
-> > We got a few new quirks added for AMD hardware platforms that fix
-> > problems.
-> 
-> Maybe, but I still haven't seen anyone explain what those problems are!
+Rafa³,
 
-I'll let the AMD people answer this.
+A minor nit:
 
-> > It took 3 patches to get there, yes, but now, as time goes
-> > on, adding new ones is even easier as the .32 code matches the .39 code
-> > in this area due to these patches being added.
-> > 
-> > Now if you find problems in these, great, let me know and I will work to
-> > resolve them.
-> > 
-> > As for regressions, what are you referring to?
-> 
-> These are the regressions I'm aware of in the last few updates:
-> 
-> 2.6.32.36: 'x86: Cleanup highmap after brk is concluded' broke
-> hibernation on x86-64 and some x86-32 machines (reverted in .37)
-> 2.6.32.36: 'signal: Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from
-> spoofing the signal code' broke glibc aio (fixed in .37)
-> 2.6.32.34: powerpc kdump/kexec changes didn't compile on UP or 32-bit
-> (fixed in .37)
-> 2.6.32.30: 'x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
-> systems' broke the revision check for other quirks (fixed in .34)
+On Fri, May 6, 2011 at 07:59, Rafa³ Mi³ecki <zajec5@gmail.com> wrote:
+> diff --git a/Documentation/ABI/testing/sysfs-bus-bcma b/Documentation/ABI/testing/sysfs-bus-bcma
+> new file mode 100644
+> index 0000000..ad3cd69
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-bcma
+> @@ -0,0 +1,31 @@
+> +What:          /sys/bus/bcma/devices/.../class
+> +Date:          May 2011
+> +KernelVersion: 2.6.40
+> +Contact:       Rafa³ Mi³ecki <zajec5@gmail.com>
+> +Description:
+> +               Each AXI core is identified by few fields, including class it
+> +               belongs to. See include/linux/bcma/bcma.h for possible values.
 
-Bugs are always a part of life, the fact that we fix them is what is
-important.
+Should this not read BCMA or something similar, not AXI?
 
-> 2.6.32.29: 'USB: Prevent buggy hubs from crashing the USB stack' broke
-> MUSB on BeagleBoards (still unfixed?)
+Ditto for the rest of the changes to this file.
 
-This woried me, as I don't recall anyone notifying me of it.  Then I saw
-your revert, and I noticed that all you really need to resolve this is
-commit id ec95d35a6bd0047f05fe8a21e6c52f8bb418da55 to be added to the
-tree.  I'll go queue that one up for the next .32-stable tree.
+Thanks,
 
-So all should be resolved now, right?
+-- 
+Julian Calaby
 
-thanks,
-
-greg k-h
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
