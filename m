@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab1EETZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 15:25:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48199 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab1EETZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 15:25:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RXhmCOU1YxsynW3cvlX4EJ2zPosFfNAgZVBMFep5OcKe5fJq6PtWL39RhGDx5VW/+2
-         0b1P6+c7/ccWFm+6etoZz+zPLFCPM+1Gn17eHyG3n4ZkmyRdzfb6+xa7CQA9lbKqHhoO
-         jWhAnPTi3pfvqswlQhxUF/P0pPiE4pVeC/RB8=
-Message-ID: <4DC2F84F.8030107@gmail.com>
-Date: Thu, 05 May 2011 21:19:43 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1304531920-2890-1-git-send-email-josef@redhat.com>
-In-Reply-To: <1304531920-2890-1-git-send-email-josef@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754490Ab1EETUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 15:20:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab1EETUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 15:20:08 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 3/5] efi: Merge contiguous memory regions of the same type and attribute
+Date: Thu,  5 May 2011 15:19:44 -0400
+Message-Id: <1304623186-18261-3-git-send-email-mjg@redhat.com>
+In-Reply-To: <1304623186-18261-1-git-send-email-mjg@redhat.com>
+References: <1304623186-18261-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/05/2011 19:58, Josef Bacik ha scritto:
-> +		if (offset>= i_size_read(inode)) {
-> +			mutex_unlock(&inode->i_mutex);
-> +			return -ENXIO;
-> +		}
-> +		offset = i_size_read(inode);
-> +		break;
+Some firmware implementations assume that physically contiguous regions
+will be contiguous in virtual address space. This assumption is, obviously,
+entirely unjustifiable. Said firmware implementations lack the good grace
+to handle their failings in a measured and reasonable manner, instead
+tending to shit all over address space and oopsing the kernel.
 
-I can add that generic_file_llseek_unlocked means *unlocked* so you 
-shouldn't unlock any mutex but only return a value. The current version, 
-in case of SEEK_END uses directly i_size indeed, so maybe I'm missing 
-something.
+In an ideal universe these firmware implementations would simultaneously
+catch fire and cease to be a problem, but since some of them are present
+in attractively thin and shiny metal devices vanity wins out and some
+poor developer spends an extended period of time surrounded by a
+growing array of empty bottles until the underlying reason becomes
+apparent. Said developer presents this patch, which simply merges
+adjacent regions if they happen to be contiguous and have the same EFI
+memory type and caching attributes.
 
-Marco
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/platform/efi/efi.c |   30 +++++++++++++++++++++++++++++-
+ 1 files changed, 29 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 7daae27..a46a73e 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -498,13 +498,41 @@ static void __init runtime_code_page_mkexec(void)
+  */
+ void __init efi_enter_virtual_mode(void)
+ {
+-	efi_memory_desc_t *md;
++	efi_memory_desc_t *md, *prev_md = NULL;
+ 	efi_status_t status;
+ 	unsigned long size;
+ 	u64 end, systab, addr, npages, end_pfn;
+ 	void *p, *va;
+ 
+ 	efi.systab = NULL;
++
++	/* Merge contiguous regions of the same type and attribute */
++	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
++		u64 prev_size;
++		md = p;
++
++		if (!prev_md) {
++			prev_md = md;
++			continue;
++		}
++
++		if (prev_md->type != md->type ||
++		    prev_md->attribute != md->attribute) {
++			prev_md = md;
++			continue;
++		}
++
++		prev_size = prev_md->num_pages << EFI_PAGE_SHIFT;
++
++		if (md->phys_addr == (prev_md->phys_addr + prev_size)) {
++			prev_md->num_pages += md->num_pages;
++			md->type = EFI_RESERVED_TYPE;
++			md->attribute = 0;
++			continue;
++		}
++		prev_md = md;
++	}
++
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+ 		if (!(md->attribute & EFI_MEMORY_RUNTIME))
+-- 
+1.7.5
+
