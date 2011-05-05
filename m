@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab1EEP0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:26:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55376 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab1EEP0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:26:19 -0400
-Date: Thu, 5 May 2011 17:26:01 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jeff Layton <jlayton@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 0/3] data integrity: Stabilize pages during
- writeback for ext4
-Message-ID: <20110505152601.GI5323@quack.suse.cz>
-References: <20110411124229.47bc28f6@corrin.poochiereds.net>
- <1302543595-sup-4352@think>
- <1302569212.2580.13.camel@mingming-laptop>
- <20110412005719.GA23077@infradead.org>
- <1302742128.2586.274.camel@mingming-laptop>
- <20110422000226.GA22189@tux1.beaverton.ibm.com>
- <20110504173704.GE20579@tux1.beaverton.ibm.com>
- <20110504184644.GA23246@infradead.org>
- <1304536162-sup-3721@think>
- <20110504235706.GJ20579@tux1.beaverton.ibm.com>
+	id S1755282Ab1EEP1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:27:22 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:51066 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1EEP1V convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:27:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=NushKYPZX6eSnP65lRQSsWp2LKb1lGGFOulB9Dd7Bb5q8VDZVBtqgOP++z3VK36M2u
+         HwkyVTWbvj1bBayFAidMuWGtO0r7cfBXJAa218PgavCxZzTUL34CPSOKP/dTx+HkoYsD
+         pDqxteEuRrX8Z3Wlc5PFHyqowYw1CDuOS4ljs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504235706.GJ20579@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110503191525.GE11574@pengutronix.de>
+References: <1304440079.16287.7.camel@phoenix> <20110503191525.GE11574@pengutronix.de>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 5 May 2011 23:26:59 +0800
+Message-ID: <BANLkTi=hMU0cdiGAaj5oqKvPQD1T=6soYA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] mfd: mc13xxx-core: put mutex lock down to
+ mc13xxx_reg_rmw function
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Yong Shen <yong.shen@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+> I havn't looked deeply, but I guess this can have unwanted side effects
+> here. Before you had:
+>
+>        lock()
+>        do(something)
+>        do(something, else, that, needs, rmw)
+>        unlock()
+>
+> and you introduced an unlock()/lock() between these two do()s.
+>
+Indeed, you are right. I cannot change it this way.
 
-On Wed 04-05-11 16:57:06, Darrick J. Wong wrote:
-> On Wed, May 04, 2011 at 03:21:55PM -0400, Chris Mason wrote:
-> > Excerpts from Christoph Hellwig's message of 2011-05-04 14:46:44 -0400:
-> > > This seems to miss out on a lot of the generic functionality like
-> > > write_cache_pages and block_page_mkwrite and just patch it into
-> > > the ext4 copy & paste variants.  Please make sure your patches also
-> > > work for filesystem that use more of the generic functionality like
-> > > xfs or ext2 (the latter one might be fun for the mmap case).
-> > 
-> > Probably after the block_commit_write in block_page_mkwrite()
-> > Another question is, do we want to introduce a wait_on_stable_page_writeback()?
-> 
-> Something like this here?  It fixes block_page_mkwrite users and sticks in a
-> simple page_mkwrite for fses that don't provide one at all.  From a quick wac
-> run it seems to make xfs work.  ext2 seems to have some issues with modifying a
-> buffer_head's bh_data without locking the bh during the update, so I guess it
-> needs some review.
-  Yes, ext2 is rather difficult because of all the metadata updates to
-buffers happening. That would need a serious work I suspect.
-
-> fs: Modify/provide generic writepage/page_mkwrite functions to wait for writeback
-> 
-> Modify the generic writepage function, and add an empty page_mkwrite function,
-> to wait for page writeback to finish before allowing writes.  This is so that
-> simple filesystems have stable pages during write operations.
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
-> 
->  fs/buffer.c  |    1 +
->  mm/filemap.c |   10 ++++++++++
->  2 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index a08bb8e..cf9a795 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -2361,6 +2361,7 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
->  	if (!ret)
->  		ret = block_commit_write(page, 0, end);
->  
-> +	wait_on_page_writeback(page);
->  	if (unlikely(ret)) {
->  		unlock_page(page);
->  		if (ret == -ENOMEM)
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index c22675f..9cb4e51 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -1713,8 +1713,18 @@ page_not_uptodate:
->  }
->  EXPORT_SYMBOL(filemap_fault);
->  
-> +static int empty_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> +{
-> +	struct page *page = vmf->page;
-> +
-> +	lock_page(page);
-> +	wait_on_page_writeback(page);
-> +	return VM_FAULT_LOCKED;
-> +}
-> +
-  I guess you miss the whether the page has been truncated here (in which
-case you should return VM_FAULT_NOPAGE).
-
->  const struct vm_operations_struct generic_file_vm_ops = {
->  	.fault		= filemap_fault,
-> +	.page_mkwrite	= empty_page_mkwrite,
->  };
->  
->  /* This is used for a general mmap of a disk file */
-
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> I'm not convinced this change is good, though I agree that
+>
+>        lock()
+>        rmw(...)
+>        unlock()
+>
+> looks ugly, but imho this can better be fixed by adding a wrapper for
+> that sequence if you really want.
+>
+> Best regards
+> Uwe
+>
+> --
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
