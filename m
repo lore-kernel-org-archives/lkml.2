@@ -1,63 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1EEMLN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:11:13 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59404 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689Ab1EEMLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:11:12 -0400
-Date: Thu, 5 May 2011 14:10:59 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Chris Samuel <chris@csamuel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use
- ax/bx as a pair
-Message-ID: <20110505121059.GA31473@elte.hu>
-References: <1303566747.12067.10.camel@localhost.localdomain>
- <201104261450.15786.chris@csamuel.org>
- <20110426081237.GD806@elte.hu>
- <201105052157.06317.chris@csamuel.org>
+	id S1753949Ab1EEMWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:22:36 -0400
+Received: from wolff.to ([65.117.131.163]:44004 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751426Ab1EEMWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:22:35 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 May 2011 08:22:35 EDT
+Date: Thu, 5 May 2011 07:12:27 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: linux-kernel@vger.kernel.org
+Subject: Thank you: Phillip Lougher and Lasse Collin
+Message-ID: <20110505121227.GA13727@wolff.to>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201105052157.06317.chris@csamuel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'd like to publicly thank Phillip Lougher and Lasse Collin for their
+work developing XZ compression for squashfs and getting it in the upstream
+kernel, allowing its use in Fedora.
 
-* Chris Samuel <chris@csamuel.org> wrote:
+This change has kept us from having to cut packages from the Live Desktop
+(gnome), KDE and Games spins as these spins had been growing in size
+each release and were going to be too big for Fedora 15 without the
+space savings of XZ relative to GZIP. For Fedora 16 we will be also using
+a squashfs image to reduce the memory requirements of anaconda and having
+the ability to use XZ instead of GZIP will provide significant savings
+there as well.
 
-> On Tue, 26 Apr 2011 06:12:37 PM Ingo Molnar wrote:
-> 
-> > Just asking, does the box now boot to user-space, or are there
-> > other  regressions left?
-> 
-> Final update on this - I can now boot all the way to userspace
-> successfully using an unpatched 2.6.39-rc6 with the parameters:
-> 
-> noapic scsi_mod.scan=sync
-> 
-> So I'm really happy, thanks so much to everyone for their help!
-
-Thanks for the update!
-
-Note that the noapic and the scsi-sync-scan boot parameter suggests that 
-there's two regressions remaining.
-
-The stock kernel wont boot - you can work it around via boot options but most 
-users wont be able to do that.
-
-Thanks,
-
-	Ingo
+Thanks for making linux better!
