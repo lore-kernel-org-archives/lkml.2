@@ -1,144 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab1EESS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 14:18:27 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:26937
-	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755626Ab1EESS0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 14:18:26 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz936eK1432Nzz1202hzz8275bh8275dhz2dh668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mail11.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-IronPort-AV: E=Sophos;i="4.64,321,1301889600"; 
-   d="scan'208";a="32666448"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier.adi@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Date: Thu, 5 May 2011 19:18:19 +0100
-Subject: RE: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
-Thread-Topic: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
-Thread-Index: AcwLPBJ839WXOjlLQwK9e1A3G4r9XgAFKVaw
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917713AAF12FF98@LIMKCMBX1.ad.analog.com>
-References: <1304610513-16008-1-git-send-email-lars@metafoo.de>
-In-Reply-To: <1304610513-16008-1-git-send-email-lars@metafoo.de>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755760Ab1EESUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 14:20:23 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:33504 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755696Ab1EESUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 14:20:22 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 10nIlsoVM1k6PivL.CslAk_aFsfVkOvPXsWUeK8UK8JIz0B
+ DVDui.ZkbNwL3peYwej5yDJTKBke2wHJfGUJW5hyqQ.F2iMLI.84osVbFEAP
+ AFz57I57voab0Gpl67O8j0aTtnlY__sT__fW0OvcQ5e0HBLaFkCNYs4Is9AO
+ h2ZXip6k5rtbklo5PdRiwYvNE0pq25Wu8r2LGIkwRzKyeniJjt1I7WNd.H3x
+ EjlxiavMlE6YRgVbZZh13Y7jvZR3sRejKFVXA.MftXIwEV3QBmWRPapGzPyO
+ rRbiYljQXKLwYsS2_zbeit6x3fooVcPjQasW5YRN0jL31kKYgEHiHelQbXle
+ NbUSrhxz.8di_F5q6XeF2EQ--
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 5 May 2011 13:20:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
+In-Reply-To: <20110505095421.GD30950@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1105051319230.6821@router.home>
+References: <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com> <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home> <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com> <alpine.DEB.2.00.1105041421280.5495@router.home>
+ <BANLkTi=efcVkGb+DReZ+i1p5j4QXJYjKjQ@mail.gmail.com> <alpine.DEB.2.00.1105041454190.5495@router.home> <BANLkTik7AHGr7+BG8nE16j-ayctD0LOH=w@mail.gmail.com> <BANLkTimvxOMuPJ0W0npo5i3gwFqdRw74Pw@mail.gmail.com> <alpine.LFD.2.02.1105042325500.3005@ionos>
+ <20110505095421.GD30950@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote on 2011-05-05:
-> There is a small typo in the Analog Devices driver mailinglist address.
->
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
->  MAINTAINERS |   20 ++++++++++----------
->  1 files changed, 10 insertions(+), 10 deletions(-)
-> diff --git a/MAINTAINERS b/MAINTAINERS index 9f926c0..97b6584 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -287,35 +287,35 @@ F:      sound/pci/ad1889.*
->
->  AD525X ANALOG DEVICES DIGITAL POTENTIOMETERS DRIVER
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/AD5254
->  S:   Supported
->  F:   drivers/misc/ad525x_dpot.c
->
->  AD5398 CURRENT REGULATOR DRIVER (AD5398/AD5821)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/AD5398
->  S:   Supported
->  F:   drivers/regulator/ad5398.c
->
->  AD714X CAPACITANCE TOUCH SENSOR DRIVER (AD7142/3/7/8/7A)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/AD7142
->  S:   Supported
->  F:   drivers/input/misc/ad714x.c
->
->  AD7877 TOUCHSCREEN DRIVER
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/AD7877
->  S:   Supported
->  F:   drivers/input/touchscreen/ad7877.c
->
->  AD7879 TOUCHSCREEN DRIVER (AD7879/AD7889)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/AD7879
->  S:   Supported
->  F:   drivers/input/touchscreen/ad7879.c
-> @@ -341,7 +341,7 @@ F:        drivers/net/wireless/adm8211.*
->
->  ADP5520 BACKLIGHT DRIVER WITH IO EXPANDER (ADP5520/ADP5501)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/ADP5520
->  S:   Supported
->  F:   drivers/mfd/adp5520.c
-> @@ -352,7 +352,7 @@ F:        drivers/input/keyboard/adp5520-keys.c
->
->  ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/ADP5588
->  S:   Supported
->  F:   drivers/input/keyboard/adp5588-keys.c
-> @@ -360,7 +360,7 @@ F:        drivers/gpio/adp5588-gpio.c
->
->  ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/ADP8860
->  S:   Supported
->  F:   drivers/video/backlight/adp8860_bl.c
-> @@ -387,7 +387,7 @@ F:        drivers/hwmon/adt7475.c
->
->  ADXL34X THREE-AXIS DIGITAL ACCELEROMETER DRIVER (ADXL345/ADXL346)
->  M:   Michael Hennerich <michael.hennerich@analog.com>
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
->  W:   http://wiki.analog.com/ADXL345 S:       Supported
->  F:   drivers/input/misc/adxl34x.c @@ -526,7 +526,7 @@ S:     Maintained
->  F:   drivers/infiniband/hw/amso1100/
->
->  ANALOG DEVICES INC ASOC CODEC DRIVERS
-> -L:   device-driver-devel@blackfin.uclinux.org
-> +L:   device-drivers-devel@blackfin.uclinux.org
- L:     alsa-devel@alsa-project.org (moderated for non-subscribers)
- W:     http://wiki.analog.com/ S:      Supported
+On Thu, 5 May 2011, Tejun Heo wrote:
 
-Greetings,
-Michael
+> Anyways, that's what I've been thinking.  I'll get to it in the next
+> devel cycle or the one after that.  What do you guys think about soft
+> irq masking idea?
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368; Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
-
+Great idea. Would make the whole irq on/off business much cheaper.
 
