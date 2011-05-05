@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab1EEPs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:48:56 -0400
-Received: from smtp-out-227.synserver.de ([212.40.185.227]:1055 "HELO
-	smtp-out-227.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754427Ab1EEPsy (ORCPT
+	id S1755331Ab1EEPuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:50:09 -0400
+Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:45221 "EHLO
+	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753362Ab1EEPuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:48:54 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 31570
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Michael Hennerich <michael.hennerich@analog.com>,
-        linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] MAINTAINERS: Fix Analog Devices mailinglist address
-Date: Thu,  5 May 2011 17:48:33 +0200
-Message-Id: <1304610513-16008-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
+	Thu, 5 May 2011 11:50:07 -0400
+Subject: [PATCH] RCU: remove alignment padding from rcu_data on 64 bit
+ builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Dipankar Sarma <dipankar@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 May 2011 16:50:04 +0100
+Message-ID: <1304610604.1984.6.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a small typo in the Analog Devices driver mailinglist address.
+Reorder rcu_data to remove 8 bytes of alignment padding on 64 bit builds
+so saving a total of 16 bytes per cpu, (rcu_sched_data & rcu_bh_data).
+    
+When CONFIG_NO_HZ is set, it shrinks the size of this structure from 264
+to 256 bytes allowing it to fit into one fewer cache lines.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
 ---
- MAINTAINERS |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 9f926c0..97b6584 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -287,35 +287,35 @@ F:	sound/pci/ad1889.*
+patch against v2.6.39-rc6
+compiled & tested on x86_64
+
+I've been running with this patch for some weeks and have not seen any
+issues.
+
+regards
+Richard
+
+
+
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index e8f057e..fcced0f 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -176,6 +176,9 @@ struct rcu_data {
+ 	bool		qs_pending;	/* Core waits for quiesc state. */
+ 	bool		beenonline;	/* CPU online at least once. */
+ 	bool		preemptable;	/* Preemptable RCU? */
++
++	int cpu;
++
+ 	struct rcu_node *mynode;	/* This CPU's leaf of hierarchy */
+ 	unsigned long grpmask;		/* Mask to apply to leaf qsmask. */
  
- AD525X ANALOG DEVICES DIGITAL POTENTIOMETERS DRIVER
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/AD5254
- S:	Supported
- F:	drivers/misc/ad525x_dpot.c
+@@ -238,8 +241,6 @@ struct rcu_data {
+ 	unsigned long n_rp_gp_started;
+ 	unsigned long n_rp_need_fqs;
+ 	unsigned long n_rp_need_nothing;
+-
+-	int cpu;
+ };
  
- AD5398 CURRENT REGULATOR DRIVER (AD5398/AD5821)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/AD5398
- S:	Supported
- F:	drivers/regulator/ad5398.c
- 
- AD714X CAPACITANCE TOUCH SENSOR DRIVER (AD7142/3/7/8/7A)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/AD7142
- S:	Supported
- F:	drivers/input/misc/ad714x.c
- 
- AD7877 TOUCHSCREEN DRIVER
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/AD7877
- S:	Supported
- F:	drivers/input/touchscreen/ad7877.c
- 
- AD7879 TOUCHSCREEN DRIVER (AD7879/AD7889)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/AD7879
- S:	Supported
- F:	drivers/input/touchscreen/ad7879.c
-@@ -341,7 +341,7 @@ F:	drivers/net/wireless/adm8211.*
- 
- ADP5520 BACKLIGHT DRIVER WITH IO EXPANDER (ADP5520/ADP5501)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/ADP5520
- S:	Supported
- F:	drivers/mfd/adp5520.c
-@@ -352,7 +352,7 @@ F:	drivers/input/keyboard/adp5520-keys.c
- 
- ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/ADP5588
- S:	Supported
- F:	drivers/input/keyboard/adp5588-keys.c
-@@ -360,7 +360,7 @@ F:	drivers/gpio/adp5588-gpio.c
- 
- ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/ADP8860
- S:	Supported
- F:	drivers/video/backlight/adp8860_bl.c
-@@ -387,7 +387,7 @@ F:	drivers/hwmon/adt7475.c
- 
- ADXL34X THREE-AXIS DIGITAL ACCELEROMETER DRIVER (ADXL345/ADXL346)
- M:	Michael Hennerich <michael.hennerich@analog.com>
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- W:	http://wiki.analog.com/ADXL345
- S:	Supported
- F:	drivers/input/misc/adxl34x.c
-@@ -526,7 +526,7 @@ S:	Maintained
- F:	drivers/infiniband/hw/amso1100/
- 
- ANALOG DEVICES INC ASOC CODEC DRIVERS
--L:	device-driver-devel@blackfin.uclinux.org
-+L:	device-drivers-devel@blackfin.uclinux.org
- L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
- W:	http://wiki.analog.com/
- S:	Supported
--- 
-1.7.2.5
+ /* Values for signaled field in struct rcu_state. */
+
 
