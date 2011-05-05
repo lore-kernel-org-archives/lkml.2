@@ -1,145 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab1EDX5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 19:57:13 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:57888 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756152Ab1EDX5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 19:57:11 -0400
-Date: Wed, 4 May 2011 16:57:06 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jeff Layton <jlayton@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 0/3] data integrity: Stabilize pages during
-	writeback for ext4
-Message-ID: <20110504235706.GJ20579@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110408203135.GH1110@tux1.beaverton.ibm.com> <20110411124229.47bc28f6@corrin.poochiereds.net> <1302543595-sup-4352@think> <1302569212.2580.13.camel@mingming-laptop> <20110412005719.GA23077@infradead.org> <1302742128.2586.274.camel@mingming-laptop> <20110422000226.GA22189@tux1.beaverton.ibm.com> <20110504173704.GE20579@tux1.beaverton.ibm.com> <20110504184644.GA23246@infradead.org> <1304536162-sup-3721@think>
+	id S1756285Ab1EEABj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 20:01:39 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:15943 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248Ab1EEABi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 20:01:38 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-132.messagelabs.com!1304553696!24590317!1
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.178]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Jamie Iles <jamie@jamieiles.com>
+Date: Wed, 4 May 2011 19:01:35 -0500
+Subject: Re: [RFC PATCH 1/3] basic_mmio_gpio: split into a gpio library and
+ platform device
+Thread-Topic: Re: [RFC PATCH 1/3] basic_mmio_gpio: split into a gpio library
+ and platform device
+Thread-Index: AcwKt5mG5ksZRLVQTCSRC/sbWrGFcw==
+Message-ID: <0D753D10438DA54287A00B027084269764D29BEAEE@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304536162-sup-3721@think>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4501h1A003256
 
-On Wed, May 04, 2011 at 03:21:55PM -0400, Chris Mason wrote:
-> Excerpts from Christoph Hellwig's message of 2011-05-04 14:46:44 -0400:
-> > This seems to miss out on a lot of the generic functionality like
-> > write_cache_pages and block_page_mkwrite and just patch it into
-> > the ext4 copy & paste variants.  Please make sure your patches also
-> > work for filesystem that use more of the generic functionality like
-> > xfs or ext2 (the latter one might be fun for the mmap case).
+On Wed, 4 May 2011 16:07:35 +0100, Jamie Iles wrote,
+>
+> Allow GPIO_BASIC_MMIO_CORE to be used to provide an accessor library
+> for implementing GPIO drivers whilst abstracting the register access
+> detail.  Based on a patch from Anton Vorontsov[1] and adapted to allow
+> bgpio_chip to be embedded in another structure.
+
+[snip]
+
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index cfbdef1..91a295d 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -6,6 +6,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
 > 
-> Probably after the block_commit_write in block_page_mkwrite()
-> Another question is, do we want to introduce a wait_on_stable_page_writeback()?
+>  obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
+>  obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
+> +obj-$(CONFIG_GPIO_BASIC_MMIO_CORE)	+= basic_mmio_gpio.o
+>  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
 
-Something like this here?  It fixes block_page_mkwrite users and sticks in a
-simple page_mkwrite for fses that don't provide one at all.  From a quick wac
-run it seems to make xfs work.  ext2 seems to have some issues with modifying a
-buffer_head's bh_data without locking the bh during the update, so I guess it
-needs some review.
+The line above can be removed.  GPIO_BASIC_MMIO selects GPIO_BASIC_MMIO_CORE.
 
---D
+>  obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
+>  obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
+> diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
+> index b2ec45f..6b1c6e5 100644
+> --- a/drivers/gpio/basic_mmio_gpio.c
+> +++ b/drivers/gpio/basic_mmio_gpio.c
 
---
+[snip]
 
-fs: Modify/provide generic writepage/page_mkwrite functions to wait for writeback
+> +static int __devinit bgpio_pdev_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct resource *r;
+> +	void __iomem *dat;
+> +	void __iomem *set;
+> +	void __iomem *clr;
+> +	void __iomem *dirout;
+> +	void __iomem *dirin;
+> +	unsigned long sz;
+> +	bool be;
+> +	int err;
+> +	struct bgpio_chip *bgc;
+> +	struct bgpio_pdata *pdata = dev_get_platdata(dev);
+> +
+> +	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dat");
+> +	if (!r)
+> +		return -EINVAL;
+> +
+> +	sz = resource_size(r);
+> +
+> +	dat = bgpio_map(pdev, "dat", sz, &err);
+> +	if (!dat)
+> +		return err ? err : -EINVAL;
+> +
+> +	set = bgpio_map(pdev, "set", sz, &err);
+> +	if (err)
+> +		return err;
+> +
+> +	clr = bgpio_map(pdev, "clr", sz, &err);
+> +	if (err)
+> +		return err;
+> +
+> +	dirout = bgpio_map(pdev, "dirout", sz, &err);
+> +	if (err)
+> +		return err;
+> +
+> +	dirin = bgpio_map(pdev, "dirin", sz, &err);
+> +	if (err)
+> +		return err;
+> +
+> +	be = !strcmp(platform_get_device_id(pdev)->name, "basic-mmio-gpio-be");
+> +
+> +	bgc = devm_kzalloc(&pdev->dev, sizeof(*bgc), GFP_KERNEL);
+> +	if (!bgc)
+> +		return -ENOMEM;
+> +
+> +	err = bgpio_init(bgc, dev, sz, dat, set, clr, dirout, dirin, be);
+> +	if (err)
+> +		return err;
+> +
+> +	if (pdata) {
+> +		bgc->gc.base = pdata->base;
+> +		if (pdata->ngpio > 0)
+> +			bgc->gc.ngpio = pdata->ngpio;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, bgc);
+> +
+> +	return 0;
+> +}
 
-Modify the generic writepage function, and add an empty page_mkwrite function,
-to wait for page writeback to finish before allowing writes.  This is so that
-simple filesystems have stable pages during write operations.
+Unless I missed it, the probe should end by actually adding the gpiochip:
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
+-	return 0;
++	return gpiochip_add(&bgc->gc);
 
- fs/buffer.c  |    1 +
- mm/filemap.c |   10 ++++++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index a08bb8e..cf9a795 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2361,6 +2361,7 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	if (!ret)
- 		ret = block_commit_write(page, 0, end);
- 
-+	wait_on_page_writeback(page);
- 	if (unlikely(ret)) {
- 		unlock_page(page);
- 		if (ret == -ENOMEM)
-diff --git a/mm/filemap.c b/mm/filemap.c
-index c22675f..9cb4e51 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1713,8 +1713,18 @@ page_not_uptodate:
- }
- EXPORT_SYMBOL(filemap_fault);
- 
-+static int empty_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	struct page *page = vmf->page;
-+
-+	lock_page(page);
-+	wait_on_page_writeback(page);
-+	return VM_FAULT_LOCKED;
-+}
-+
- const struct vm_operations_struct generic_file_vm_ops = {
- 	.fault		= filemap_fault,
-+	.page_mkwrite	= empty_page_mkwrite,
- };
- 
- /* This is used for a general mmap of a disk file */
---
-
-Here's the beginning of a patch against ext2 also.  It fixes most of the
-checksum errors when metadata writes are in progress, though I suspect there
-are more spots that I haven't caught yet.
-
---
-
-ext2: Lock buffer_heads during metadata update
-
-ext2 does not protect buffer head that represent metadata against modifications
-during write operations.  This is a problem if the memory buffer needs to be
-stable during writes; I think there are a few more spots in ext2 that need this
-treatment. :)
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
-
- fs/ext2/inode.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 788e09a..5314b0b 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1426,6 +1426,7 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
- 	if (IS_ERR(raw_inode))
-  		return -EIO;
- 
-+	lock_buffer(bh);
- 	/* For fields not not tracking in the in-memory inode,
- 	 * initialise them to zero for new inodes. */
- 	if (ei->i_state & EXT2_STATE_NEW)
-@@ -1502,6 +1503,8 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
- 		}
- 	} else for (n = 0; n < EXT2_N_BLOCKS; n++)
- 		raw_inode->i_block[n] = ei->i_data[n];
-+	unlock_buffer(bh);
-+
- 	mark_buffer_dirty(bh);
- 	if (do_sync) {
- 		sync_dirty_buffer(bh);
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
