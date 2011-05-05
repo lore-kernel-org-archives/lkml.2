@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab1EEPI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:08:26 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:6289 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab1EEPIY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:08:24 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "gregkh@suse.de" <gregkh@suse.de>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
-Thread-Topic: linux-next: Tree for May 4 (hyperv / vmbus)
-Thread-Index: AQHMCntDW7pkpEnFr0aGj9XnC6EQgpR+VQGggAB2MgD//4xNwA==
-Date: Thu, 5 May 2011 15:08:23 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A58B1@TK5EX14MBXC114.redmond.corp.microsoft.com>
-References: <20110504144759.802483cc.sfr@canb.auug.org.au>
-	<20110504094908.b8295d22.randy.dunlap@oracle.com>
- <8AFC7968D54FB448A30D8F38F259C562498A5852@TK5EX14MBXC114.redmond.corp.microsoft.com>
- <6E21E5352C11B742B20C142EB499E0481E039F@TK5EX14MBXC124.redmond.corp.microsoft.com>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481E039F@TK5EX14MBXC124.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754955Ab1EEPLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:11:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39171 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754067Ab1EEPLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:11:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
+   d="scan'208";a="638512024"
+Message-ID: <4DC2BE12.7030308@intel.com>
+Date: Thu, 05 May 2011 08:11:14 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
+To: =?UTF-8?B?5bq35YmR5paM?= <kjbmail@gmail.com>
+CC: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jiang, Dave" <dave.jiang@intel.com>
+Subject: Re: Can I/OAT DMA engineer access PCI MMIO space
+References: <4DBA8F30.2060206@gmail.com>	 <1304316260.1589.2.camel@vkoul-udesk3>  <4DBF66C0.9020600@gmail.com> <1304395926.1589.27.camel@vkoul-udesk3> <4DBFA152.8000709@gmail.com> <4DC02622.90000@intel.com> <4DC263C6.1040805@gmail.com>
+In-Reply-To: <4DC263C6.1040805@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[ adding Dave ]
 
+On 5/5/2011 1:45 AM, 康剑斌 wrote:
+> Thanks.
+> I directly read pci bar address and program it into descriptors, ioatdma
+> works.
+> Some problem is, when PCI transfer failed (Using a NTB connect to
+> another system, and the system power down),
+> ioatdma will cause kernel oops.
+>
+> BUG_ON(is_ioat_bug(chanerr));
+> in drivers/dma/ioat/dma_v3.c, line 365
+>
+> It seems that HW reports a 'IOAT_CHANERR_DEST_ADDR_ERR', and drivers
+> can't recover from this situation.
 
-> -----Original Message-----
-> From: KY Srinivasan
-> Sent: Thursday, May 05, 2011 8:02 AM
-> To: Hank Janssen; Randy Dunlap; Stephen Rothwell; driverdevel;
-> gregkh@suse.de
-> Cc: Haiyang Zhang; linux-next@vger.kernel.org; LKML
-> Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
-> > > -----Original Message-----
-> > > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> > > owner@vger.kernel.org] On Behalf Of Randy Dunlap
-> > > Sent: Wednesday, May 04, 2011 9:49 AM
-> > > To: Stephen Rothwell; driverdevel; gregkh@suse.de
-> > > Cc: linux-next@vger.kernel.org; LKML; Hank Janssen; Haiyang Zhang
-> > > Subject: Re: linux-next: Tree for May 4 (hyperv / vmbus)
-> > >
-> > > On Wed, 4 May 2011 14:47:59 +1000 Stephen Rothwell wrote:
-> > >
-> > > > Hi all,
-> > > >
-> > > > Changes since 20110503:
-> > >
-> > >
-> > > when CONFIG_ACPI is not enabled:
-> > >
-> > >
-> > >
-> > > vmbus_drv.c sure looks like it requires (depends on) both ACPI and PCI.
-> > > That should be expressed somewhere in its Kconfig file.
-> > >
-> >
-> > Randy,
-> >
-> > Oops, I will submit a patch today to correct it. Thanks for catching it.
-> >
-> > Hank.
-> 
-> Hank,
-> 
-> This patch was submitted yesterday.
-> 
-> K. Y
+Ah ok, this is expected with the current upstream ioatdma driver.  The 
+driver assumes that all transfers are mem-to-mem (ASYNC_TX_DMA or 
+NET_DMA) and that a destination address error is a fatal error (similar 
+to a kernel page fault).
 
-Completely missed it :)
+With NTB, where failures are expected, the driver would need to be 
+modified to expect the error, recover from it, and report it to the 
+application.
 
-Thanks,
+> What does dma-slave mean? Just like DMA_SLAVE flag existing in other DMA
+> drivers?
 
-Hank.
+Yes, DMA_SLAVE is the generic framework to associate a dma offload 
+device with an mmio peripheral.
 
+--
+Dan
