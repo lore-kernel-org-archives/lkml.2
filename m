@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab1EEUap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 16:30:45 -0400
-Received: from nm2-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.245]:35995 "HELO
-	nm2-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751796Ab1EEUan (ORCPT
+	id S1753287Ab1EEUfa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 16:35:30 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:43679 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1EEUf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 16:30:43 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 59465.12209.bm@omp1002.mail.kr3.yahoo.com
-Message-ID: <439189.38928.qm@web70701.mail.kr3.yahoo.com>
-X-YMail-OSG: ez2cjYEVM1kTb6B7sExio85j0A8FfU5a3GA.usEnheOwi8J
- zBrAMPjMMDnINn5wmlP9HfPmkg7SBhpWRn_a6YEU90HjUhzd.4PvnVZpYZEM
- N9giIhbX1MpEd2jKBvJ7yJYU13TAUQhS50r1Q38Q7cWLrkPhfSOTIohC5UGk
- kU2KdL.scZ_HilNpp8mIJDl_6KWEwq0TPp8Xh_ZuD7p16TTOxZIgdyvgtFlc
- G9eOJ0SfUWsHL_EPnYKoTrWaVwEbxVPzp.rYr4lPoXBzJTcrLgYithfv1av4
- BJKkwKIy_WFeOdszvhHnsDm_mujZnT6A0t0P6IbC1yIwdEN2bRdop1AG_aUF
- r.NRpJKQ1hNqqOD3bSplxAberGJg.BkAyYF1ODDf3cukehrU_5SA5_UqD1Dm
- dkN2YkM8j6ba175YTHaKG2Ouaahw6AMLf.4biQIgXcoulseB3myxNRoOpdZf
- PGrQbuxXg.rzS4ht8v7biZenilXnHgZaCvM0sTh1VrINoIte6HivWNpG71Vi
- ZR8.Y3xPoykaNw6OcnCsFEByAqm9AvniupaZ650R0H6SkppYFIUM7NM7NVzJ
- JuSfbv.dVsJkYP4uLhYWwQycJgc.WDogRsZBjsaCf8LwMZuc1O07R.qlpH48
- pMGgMXzJQggHElTUinXGaLYi4Xq1tBdt5Kiq5xTb0WxdIQ_gJToD8XI2hUND
- SYbOrMGxKzaJcdwKFlqfwYcMC9YWlXfuwU8YtWZ9XK4VRAyzBzIxpkTncLxr
- DVg4jlzFPg9lN3Qp2sUgo6o9cgAoHiLtwjdZ3ARKkX.ILWeMQ7ncPjlinG2L
- vpK6SbvqnhwvkVztdSCwwj7ic3XDKsmuCdg92kyrmIMaXj_2SzEZ8R68Dqv6
- lWHwfTgQ1JfdTIpZ8SzwfR57tZCigRVJTZ47wLxHLi_ak5NJGgOmYZCOMCNu
- ehXgG3vWAIzrpe5KRIzw8qk2au4dRYpnMCwYYYQCiovKMRk3adC0Qd2lr1sW
- WcOROBVjmkQ--
-X-RocketYMMF: sanstraz
-X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.111.303096
-Date: Fri, 6 May 2011 05:30:41 +0900 (KST)
-From: olivier <mr.olivier.blanchard@gmail.com>
-Reply-To: mrolivier.blanchard1@live.com
-Subject: CONTACT WESTERN UNION AND PICK UP.
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 5 May 2011 16:35:29 -0400
+Date: Thu, 5 May 2011 22:35:13 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
+Message-ID: <20110505223513.3654c041@neptune.home>
+In-Reply-To: <20110505122117.GB26837@dastard>
+References: <20110423224403.5fd1136a@neptune.home>
+	<20110427050850.GG12436@dastard>
+	<20110427182622.05a068a2@neptune.home>
+	<20110428194528.GA1627@x4.trippels.de>
+	<20110429011929.GA13542@dastard>
+	<20110504005736.GA2958@cucamonga.audible.transient.net>
+	<20110505002126.GA26797@dastard>
+	<20110505022613.GA26837@dastard>
+	<20110505122117.GB26837@dastard>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 05 May 2011 Dave Chinner wrote:
+> On Thu, May 05, 2011 at 12:26:13PM +1000, Dave Chinner wrote:
+> > On Thu, May 05, 2011 at 10:21:26AM +1000, Dave Chinner wrote:
+> > > On Wed, May 04, 2011 at 12:57:36AM +0000, Jamie Heilman wrote:
+> > > > Dave Chinner wrote:
+> > > > > OK, so the common elements here appears to be root filesystems
+> > > > > with small log sizes, which means they are tail pushing all the
+> > > > > time metadata operations are in progress. Definitely seems like a
+> > > > > race in the AIL workqueue trigger mechanism. I'll see if I can
+> > > > > reproduce this and cook up a patch to fix it.
+> > > > 
+> > > > Is there value in continuing to post sysrq-w, sysrq-l, xfs_info, and
+> > > > other assorted feedback wrt this issue?  I've had it happen twice now
+> > > > myself in the past week or so, though I have no reliable reproduction
+> > > > technique.  Just wondering if more data points will help isolate the
+> > > > cause, and if so, how to be prepared to get them.
+> > > > 
+> > > > For whatever its worth, my last lockup was while running
+> > > > 2.6.39-rc5-00127-g1be6a1f with a preempt config without cgroups.
+> > > 
+> > > Can you all try the patch below? I've managed to trigger a couple of
+> > > xlog_wait() lockups in some controlled load tests. The lockups don't
+> > > appear to occur with the following patch to he race condition in
+> > > the AIL workqueue trigger.
+> > 
+> > They are still there, just harder to hit.
+> > 
+> > FWIW, I've also discovered that "echo 2 > /proc/sys/vm/drop_caches"
+> > gets the system moving again because that changes the push target.
+> > 
+> > I've found two more bugs, and now my test case is now reliably
+> > reproducably a 5-10s pause at ~1M created 1byte files and then
+> > hanging at about 1.25M files. So there's yet another problem lurking
+> > that I need to get to the bottom of.
+> 
+> Which, of course, was the real regression. The patch below has
+> survived a couple of hours of testing, which fixes all 4 of the
+> problems I found. Please test.
 
-Attn:Beneficiary.
+Successfully survives my 2-hours session of today. Will continue testing
+during week-end and see if it also survives the longer whole-day sessions.
 
-This order of transfer is from IMF concern this payment to you first $7000 was sent today. We have concluded to effect your payment through western union $7000 daily until the ($500,000.00 is completed.
+Will report results at end of week-end (or earlier in case of trouble).
 
-MTCN: 765-580-0722
-Sender Firs Name; Vongchith
-Sender Last Name: Phommachack
-Track your payment on the website:www.westernunion.com
+Thanks,
+Bruno
 
-Please,contact Mrs CHINENYE JOSEPH, if there's any problem contact her to  issue you the text question and answer so that you can pick up the amount below email is her office email address (westernunwire_moneybf@w.cn) forward her your Telephone number and address so that she will be sure
-Regard,
-Mr Olivier Blanchard
+> Cheers,
+> 
+> Dave.
