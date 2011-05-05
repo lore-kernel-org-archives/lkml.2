@@ -1,147 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab1EEN7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 09:59:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44054 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754208Ab1EEN7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 09:59:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
-   d="scan'208";a="688613323"
-Date: Thu, 5 May 2011 21:59:02 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: remove .nonblocking and
- .encountered_congestion
-Message-ID: <20110505135902.GA9409@localhost>
-References: <20110505133002.GA7724@localhost>
- <20110505133743.GD5323@quack.suse.cz>
+	id S1754416Ab1EEOB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:01:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35717 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab1EEOBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:01:54 -0400
+Date: Thu, 5 May 2011 10:01:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/2] xen/mmu: Add workaround "x86-64, mm: Put early page
+ table high"
+Message-ID: <20110505140124.GD4386@dumpdata.com>
+References: <1304356942-17656-1-git-send-email-konrad.wilk@oracle.com>
+ <1304356942-17656-2-git-send-email-konrad.wilk@oracle.com>
+ <20110503005527.GA6735@router-fw-old.local.net-space.pl>
+ <20110503151206.GA8868@dumpdata.com>
+ <20110503195141.GA15775@router-fw-old.local.net-space.pl>
+ <20110504185903.GA29903@router-fw-old.local.net-space.pl>
+ <alpine.DEB.2.00.1105051133570.10886@kaball-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110505133743.GD5323@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1105051133570.10886@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4DC2ADC4.0019:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 09:37:43PM +0800, Jan Kara wrote:
-> On Thu 05-05-11 21:30:02, Wu Fengguang wrote:
-> > [allyesconfig compile tested]
-> > [it modifies 3 filesystems all at once, is it OK?]
+On Thu, May 05, 2011 at 01:55:22PM +0100, Stefano Stabellini wrote:
+> On Wed, 4 May 2011, Daniel Kiper wrote:
+> > On Tue, May 03, 2011 at 09:51:41PM +0200, Daniel Kiper wrote:
+> > > On Tue, May 03, 2011 at 11:12:06AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > On Tue, May 03, 2011 at 02:55:27AM +0200, Daniel Kiper wrote:
+> > > > > On Mon, May 02, 2011 at 01:22:21PM -0400, Konrad Rzeszutek Wilk wrote:
 > > 
-> > Remove two unused struct writeback_control fields:
+> > [...]
 > > 
-> > 	.encountered_congestion	(completley unused)
-> > 	.nonblocking		(never set, checked/showed in XFS,NFS/btrfs)
+> > > > > I think that (Stefano please confirm or not) this patch was prepared
+> > > > > as workaround for similar issues. However, I do not like this patch
+> > > > > because on systems with small amount of memory it leaves huge (to some
+> > > > > extent) hole between max_low_pfn and 4G. Additionally, it affects
+> > > > > memory hotplug a bit because it allocates memory starting from current
+> > > > > max_mfn. It also breaks memory hotplug on i386 (maybe also others
+> > > > > thinks, however, I could not confirm that). If it stay for some
+> > > > > reason it should be amended in follwing way:
+> > > > >
+> > > > > #ifdef CONFIG_X86_32
+> > > > >         xen_extra_mem_start = mem_end;
+> > > > > #else
+> > > > >         xen_extra_mem_start = max((1ULL << 32), mem_end);
+> > > > > #endif
+> > > > >
+> > > > > Regarding comment for this patch it should be mentioned that without this
+> > > > > patch e820_end_of_low_ram_pfn() is not broken. It is not called simply.
+> > > > >
+> > > > > Last but least. I found that memory sizes below and including exactly 1 GiB and
+> > > > > exactly 2 GiB, 3 GiB (maybe higher, i.e. 4 GiB, 5 GiB, ...; I was not able to test
+> > > > > them because I do not have sufficient memory) are magic. It means that if memory
+> > > > > is set with those sizes everything is working good (without 4b239f458c229de044d6905c2b0f9fe16ed9e01e
+> > > > > and 24bdb0b62cc82120924762ae6bc85afc8c3f2b26 applied). It means that domU
+> > > > > should be tested with sizes which are not power of two nor multiple of that.
+> > > >
+> > > > Hmm, I thought I did test 1500M.
+> > >
+> > > It does not work on my machine (24bdb0b62cc82120924762ae6bc85afc8c3f2b26
+> > > removed and 4b239f458c229de044d6905c2b0f9fe16ed9e01e applied).
 > > 
-> > Proposed-by: Christoph Hellwig <hch@infradead.org>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
->   Yep. Makes sense.
-> Reviewed-by: Jan Kara <jack@suse.cz>
->   BTW: I've noticed you removed ->for_background check from
-> nfs_write_inode(). That's OK because for_background => WB_SYNC_NONE but I
-> guess you should mention it in the changelog.
+> > It does not work on my machine (x86_64) with Linux Kernel Ver. 2.6.39-rc6 without
+> > git commit 24bdb0b62cc82120924762ae6bc85afc8c3f2b26 (xen: do not create the extra
+> > e820 region at an addr lower than 4G). As I said ealier bug introduced by git
+> > commit 4b239f458c229de044d6905c2b0f9fe16ed9e01e (x86-64, mm: Put early page table
+> > high) is probably hidden (repaird/workarounded ???) by git commit
+> > 24bdb0b62cc82120924762ae6bc85afc8c3f2b26 (xen: do not create the extra
+> > e820 region at an addr lower than 4G).
+> > 
+> > Konrad, Stefano could you confirm that ??? If it is true
+> > how could I help you in removing this bug ???
+> 
+> The reason why "xen: do not create the extra e820 region at an addr
+> lower than 4G" is needed is the following:
+> 
+> starting the extra memory region at an address lower than 4G is
+> dangerous because if the extra memory region spans the 4G boundary then
+> e820_end_of_ram_pfn will get confused and return 0x100000000, therefore
+> init_memory_mapping will setup 1:1 mapping for 0-0x100000000, including
+> the whole 3G-4G range.
+> Of course this is wrong because among other things will cause the kernel
+> to remap the IOAPIC MMIO registers that should go through the fixmap
+> instead.
+> I don't think "x86-64, mm: Put early page table high" is related to the
+> bug that this commit is trying to solve.
+> 
+> Could you please explain in details what problems do this patch create?
+> 
+> In any case you are right about the fact that the change is not needed
+> on X86_32 so if it has any bad side effects on X86_32 we can always do
 
-Good point!
+Why not? Can't you boot a 32-bit Dom0 on those machines?
 
-Thanks,
-Fengguang
----
-Subject: writeback: remove .nonblocking and .encountered_congestion
-Date: Thu May 05 21:10:38 CST 2011
-
-Remove two unused struct writeback_control fields:
-
-	.encountered_congestion	(completley unused)
-	.nonblocking		(never set, checked/showed in XFS,NFS/btrfs)
-
-The .for_background check in nfs_write_inode() is also removed btw,
-as .for_background implies WB_SYNC_NONE.
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-Proposed-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/nfs/write.c               |    3 +--
- fs/xfs/linux-2.6/xfs_aops.c  |    2 +-
- include/linux/writeback.h    |    2 --
- include/trace/events/btrfs.h |    6 ++----
- 4 files changed, 4 insertions(+), 9 deletions(-)
-
---- linux-next.orig/fs/xfs/linux-2.6/xfs_aops.c	2011-05-05 21:10:01.000000000 +0800
-+++ linux-next/fs/xfs/linux-2.6/xfs_aops.c	2011-05-05 21:10:37.000000000 +0800
-@@ -970,7 +970,7 @@ xfs_vm_writepage(
- 	offset = page_offset(page);
- 	type = IO_OVERWRITE;
- 
--	if (wbc->sync_mode == WB_SYNC_NONE && wbc->nonblocking)
-+	if (wbc->sync_mode == WB_SYNC_NONE)
- 		nonblocking = 1;
- 
- 	do {
---- linux-next.orig/include/trace/events/btrfs.h	2011-05-05 21:07:31.000000000 +0800
-+++ linux-next/include/trace/events/btrfs.h	2011-05-05 21:09:47.000000000 +0800
-@@ -284,7 +284,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
- 		__field(	long,   pages_skipped		)
- 		__field(	loff_t, range_start		)
- 		__field(	loff_t, range_end		)
--		__field(	char,   nonblocking		)
- 		__field(	char,   for_kupdate		)
- 		__field(	char,   for_reclaim		)
- 		__field(	char,   range_cyclic		)
-@@ -299,7 +298,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
- 		__entry->pages_skipped	= wbc->pages_skipped;
- 		__entry->range_start	= wbc->range_start;
- 		__entry->range_end	= wbc->range_end;
--		__entry->nonblocking	= wbc->nonblocking;
- 		__entry->for_kupdate	= wbc->for_kupdate;
- 		__entry->for_reclaim	= wbc->for_reclaim;
- 		__entry->range_cyclic	= wbc->range_cyclic;
-@@ -310,13 +308,13 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
- 
- 	TP_printk("root = %llu(%s), ino = %lu, page_index = %lu, "
- 		  "nr_to_write = %ld, pages_skipped = %ld, range_start = %llu, "
--		  "range_end = %llu, nonblocking = %d, for_kupdate = %d, "
-+		  "range_end = %llu, for_kupdate = %d, "
- 		  "for_reclaim = %d, range_cyclic = %d, writeback_index = %lu",
- 		  show_root_type(__entry->root_objectid),
- 		  (unsigned long)__entry->ino, __entry->index,
- 		  __entry->nr_to_write, __entry->pages_skipped,
- 		  __entry->range_start, __entry->range_end,
--		  __entry->nonblocking, __entry->for_kupdate,
-+		  __entry->for_kupdate,
- 		  __entry->for_reclaim, __entry->range_cyclic,
- 		  (unsigned long)__entry->writeback_index)
- );
---- linux-next.orig/fs/nfs/write.c	2011-05-05 21:10:52.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2011-05-05 21:11:19.000000000 +0800
-@@ -1564,8 +1564,7 @@ int nfs_write_inode(struct inode *inode,
- 		int status;
- 		bool sync = true;
- 
--		if (wbc->sync_mode == WB_SYNC_NONE || wbc->nonblocking ||
--		    wbc->for_background)
-+		if (wbc->sync_mode == WB_SYNC_NONE)
- 			sync = false;
- 
- 		status = pnfs_layoutcommit_inode(inode, sync);
---- linux-next.orig/include/linux/writeback.h	2011-05-05 21:07:16.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-05-05 21:13:20.000000000 +0800
-@@ -36,8 +36,6 @@ struct writeback_control {
- 	loff_t range_start;
- 	loff_t range_end;
- 
--	unsigned nonblocking:1;		/* Don't get stuck on request queues */
--	unsigned encountered_congestion:1; /* An output: a queue is full */
- 	unsigned for_kupdate:1;		/* A kupdate writeback */
- 	unsigned for_background:1;	/* A background writeback */
- 	unsigned tagged_sync:1;		/* do livelock prevention for sync */
+> the following, like you suggested:
+> 
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 90bac0a..721f576 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -227,7 +227,11 @@ char * __init xen_memory_setup(void)
+>  
+>  	memcpy(map_raw, map, sizeof(map));
+>  	e820.nr_map = 0;
+> +#ifdef CONFIG_X86_32
+> +	xen_extra_mem_start = mem_end;
+> +#else
+>  	xen_extra_mem_start = max((1ULL << 32), mem_end);
+> +#endif
+>  	for (i = 0; i < memmap.nr_entries; i++) {
+>  		unsigned long long end;
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
