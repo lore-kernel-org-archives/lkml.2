@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1EEM1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:27:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41974 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753170Ab1EEM1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:27:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
-   d="scan'208";a="638441823"
-Date: Thu, 5 May 2011 20:27:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] writeback: avoid extra sync work at enqueue time
-Message-ID: <20110505122732.GC1294@localhost>
-References: <20110502031750.135798606@intel.com>
- <20110502033035.789279347@intel.com>
- <20110504212427.GI6968@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504212427.GI6968@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753994Ab1EEM37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:29:59 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39991 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab1EEM36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:29:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=gO+DqsWqrfonZXu3k2PMiKUj5R7RbsTQHtV7AKgy1IeWzZ00hkfIHxBW2N1luWAS4A
+         cRIo9IOeBBG2+3wUsKufVojG4p198qszaNfeWP9VO0gQKUxRaRs7+5lonIpUzFx3Yag3
+         9oS7pNJw7vVPQ4kKbOGObyYJBk/wb5DQ/vH7U=
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] C2port:Fix deprecated exported interfaces c2port.h
+Date: Thu,  5 May 2011 20:29:09 +0800
+Message-Id: <1304598549-3561-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 05:24:27AM +0800, Jan Kara wrote:
-> On Mon 02-05-11 11:17:53, Wu Fengguang wrote:
-> > This removes writeback_control.wb_start and does more straightforward
-> > sync livelock prevention by setting .older_than_this to prevent extra
-> > inodes from being enqueued in the first place.
-> > 
-> > --- linux-next.orig/fs/fs-writeback.c	2011-05-02 11:17:24.000000000 +0800
-> > +++ linux-next/fs/fs-writeback.c	2011-05-02 11:17:27.000000000 +0800
-> > @@ -683,10 +672,12 @@ static long wb_writeback(struct bdi_writ
-> >  	 *                   (quickly) tag currently dirty pages
-> >  	 *                   (maybe slowly) sync all tagged pages
-> >  	 */
-> > -	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
-> > +	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync) {
-> >  		write_chunk = LONG_MAX;
-> > +		oldest_jif = jiffies;
-> > +		wbc.older_than_this = &oldest_jif;
-> > +	}
->   What are the implications of not doing dirty-time livelock avoidance for
-> other types of writeback? Is that a mistake? I'd prefer to have in
-> wb_writeback():
-> if (wbc.for_kupdate)
-> 	oldest_jif = jiffies - msecs_to_jiffies(dirty_expire_interval * 10);
-> else
-> 	oldest_jif = jiffies;
-> wbc.older_than_this = &oldest_jif;
-> 
-> And when you have this, you can make wbc.older_than_this just a plain
-> number and remove all those checks for wbc.older_than_this == NULL.
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
-Good point. Here is the fixed patch. Will you send the patch to change
-the type when the current patches are settled down?
+Change to_class_dev to to_device since the struct class_device had
+merged to struct device.
+Fix the to_c2port_device interface since the struct c2port_device
+has no member named class.
 
-Thanks,
-Fengguang
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
 ---
-Subject: writeback: avoid extra sync work at enqueue time
-Date: Sat Apr 23 11:26:07 CST 2011
+ include/linux/c2port.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This removes writeback_control.wb_start and does more straightforward
-sync livelock prevention by setting .older_than_this to prevent extra
-inodes from being enqueued in the first place.
+diff --git a/include/linux/c2port.h b/include/linux/c2port.h
+index 2a5cd86..7e6bd33 100644
+--- a/include/linux/c2port.h
++++ b/include/linux/c2port.h
+@@ -60,8 +60,8 @@ struct c2port_ops {
+  * Exported functions
+  */
+ 
+-#define to_class_dev(obj) container_of((obj), struct class_device, kobj)
+-#define to_c2port_device(obj) container_of((obj), struct c2port_device, class)
++#define to_device(obj) container_of(obj, struct device, kobj)
++#define to_c2port_device(obj) container_of(obj, struct c2port_device, dev.kobj)
+ 
+ extern struct c2port_device *c2port_device_register(char *name,
+ 					struct c2port_ops *ops, void *devdata);
+-- 
+1.7.4.1
 
-CC: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c         |   16 +++-------------
- include/linux/writeback.h |    3 ---
- 2 files changed, 3 insertions(+), 16 deletions(-)
-
---- linux-next.orig/fs/fs-writeback.c	2011-05-04 20:19:20.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-05 13:15:42.000000000 +0800
-@@ -544,15 +544,6 @@ static int writeback_sb_inodes(struct su
- 			continue;
- 		}
- 
--		/*
--		 * Was this inode dirtied after sync_sb_inodes was called?
--		 * This keeps sync from extra jobs and livelock.
--		 */
--		if (inode_dirtied_after(inode, wbc->wb_start)) {
--			spin_unlock(&inode->i_lock);
--			return 1;
--		}
--
- 		__iget(inode);
- 
- 		pages_skipped = wbc->pages_skipped;
-@@ -585,9 +576,6 @@ static void __writeback_inodes_wb(struct
- {
- 	int ret = 0;
- 
--	if (!wbc->wb_start)
--		wbc->wb_start = jiffies; /* livelock avoidance */
--
- 	while (!list_empty(&wb->b_io)) {
- 		struct inode *inode = wb_inode(wb->b_io.prev);
- 		struct super_block *sb = inode->i_sb;
-@@ -686,7 +674,9 @@ static long wb_writeback(struct bdi_writ
- 	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
- 		write_chunk = LONG_MAX;
- 
--	wbc.wb_start = jiffies; /* livelock avoidance */
-+	oldest_jif = jiffies;
-+	wbc.older_than_this = &oldest_jif;
-+
- 	for (;;) {
- 		/*
- 		 * Stop writeback when nr_pages has been consumed
---- linux-next.orig/include/linux/writeback.h	2011-05-04 20:19:20.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-05-05 13:14:53.000000000 +0800
-@@ -26,9 +26,6 @@ struct writeback_control {
- 	enum writeback_sync_modes sync_mode;
- 	unsigned long *older_than_this;	/* If !NULL, only write back inodes
- 					   older than this */
--	unsigned long wb_start;         /* Time writeback_inodes_wb was
--					   called. This is needed to avoid
--					   extra jobs and livelock */
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
