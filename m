@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1EEUlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 16:41:07 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:44327 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab1EEUlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 16:41:05 -0400
-Subject: Re: [PATCH] time: Add locking to xtime access in get_seconds()
-From: john stultz <johnstul@us.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1304627098.3131.1.camel@edumazet-laptop>
-References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org>
-	 <m2oc3jxgtt.fsf@firstfloor.org> <1304564090.2943.36.camel@work-vm>
-	 <20110505175713.GG2925@one.firstfloor.org>
-	 <1304626621.20980.19.camel@work-vm>
-	 <1304627098.3131.1.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 May 2011 13:40:50 -0700
-Message-ID: <1304628050.20980.34.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1753338Ab1EEUs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 16:48:57 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:14269 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1EEUs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 16:48:56 -0400
+Date: Thu, 5 May 2011 22:42:09 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: J Freyensee <james_p_freyensee@linux.intel.com>
+cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
+In-Reply-To: <1304616467.8860.80.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1105052238540.894@swampdragon.chaosbits.net>
+References: <james_p_freyensee@linux.intel.com>  <1303515150-1718-4-git-send-email-james_p_freyensee@linux.intel.com>  <alpine.LNX.2.00.1104240212390.28014@swampdragon.chaosbits.net> <1304616467.8860.80.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-05 at 22:24 +0200, Eric Dumazet wrote:
-> Le jeudi 05 mai 2011 à 13:17 -0700, john stultz a écrit :
-> > On Thu, 2011-05-05 at 19:57 +0200, Andi Kleen wrote:
-> > > > I suspect the reason this hasn't been triggered on x86 or power6 is due
-> > > > to compiler or processor optimizations reordering the assignment to in
-> > > > effect make it atomic. Or maybe the timing window to see the issue is
-> > > > harder to observe?
-> > > 
-> > > On x86 all aligned stores are atomic. So I don't see how this 
-> > > could be a problem ever.
+On Thu, 5 May 2011, J Freyensee wrote:
+
+> On Sun, 2011-04-24 at 02:55 +0200, Jesper Juhl wrote:
+...
 > > 
-> > No no. The issue was with the fact that in update_xtime_cache we modify
-> > xtime_cache twice (once setting it possibly backwards to xtime, then
-> > adding in the nsec offset).
-> > 
-> > Since get_seconds does no locking, this issue should be visible
-> > anywhere, as long as you manage to hit the race window between the first
-> > assignment and the second.
-> > 
-> > However, in the testing, the issue only showed up on P7, but not P6 or
-> > x86.
-> > 
-> > My guess was that the code:
-> > 
-> > xtime_cache.sec = xtime.sec
-> > xtime_cache.nsec = xtime.nsec
-> > xtime_cache.sec = xtime_cache.sec 
-> > 		 + div(xtime_cache.nsec + nsec, NSEC_PER_SEC, &rem);
-> > xtime_cache.nsec = rem
-> > 
-> > Was getting rearranged to:
-> > 
-> > xtime_cache.sec = xtime.sec 
-> > 		+ div(xtime.nsec + nsec, NSEC_PER_SEC, &rem);
-> > xtime_cache.nsec = rem
-> > 
-> > 
-> > Which makes the xtime_cache.sec update atomic.
-> > 
-> > But its just a guess.
+> >  kbuff is a local variable. What's the point in assigning NULL to it just 
+> > before you return? Just get rid of that silly assignment.
 > 
-> Sure (disassembly could help to check this), but get_seconds() reads
-> xtime.tv_sec  ;)
+> I err on the side of paranoia and default to attempting to use good
+> programming practices and rather receiving comments like this, than the
+> alternative where I should have assigned something to NULL/0 and I
+> introduce a security flaw in the driver/kernel.
+> 
 
-Currently, yes. 
-But as I mentioned in an earlier mail, the problem was with
-2.6.32-stable.
+That is all well and good, but assigning to a local variable just before 
+it goes out of scope is utterly pointless. Nothing can access the variable 
+afterwards, so it's value is completely irrelevant at that point.
 
-thanks
--john
-
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
