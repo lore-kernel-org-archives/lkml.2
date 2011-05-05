@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab1EEQuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 12:50:13 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57988 "EHLO
+	id S1755653Ab1EEQu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 12:50:27 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57992 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436Ab1EEQuL (ORCPT
+	with ESMTP id S1755565Ab1EEQuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 12:50:11 -0400
+	Thu, 5 May 2011 12:50:14 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: EDAC devel <linux-edac@vger.kernel.org>
 Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/4] EDAC, MCE, AMD: Add hw_inject and cpu sysfs attrs
-Date: Thu,  5 May 2011 18:49:35 +0200
-Message-Id: <1304614176-7063-4-git-send-email-bp@amd64.org>
+Subject: [PATCH 4/4] EDAC, MCE, AMD: Add an injector function
+Date: Thu,  5 May 2011 18:49:36 +0200
+Message-Id: <1304614176-7063-5-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1304614176-7063-1-git-send-email-bp@amd64.org>
 References: <1304614176-7063-1-git-send-email-bp@amd64.org>
@@ -23,116 +23,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add sysfs handlers for the 'hw_inject' and 'cpu' attrs.
+Selectively inject either a real MCE or a sw-only version which
+exercises the decoding code only. The hardware-injected MCE triggers a
+machine check exception (#MC) so that the MCE handler can be bothered to
+do something too.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/mce_amd_inj.c |   78 +++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 74 insertions(+), 4 deletions(-)
+ drivers/edac/mce_amd_inj.c |   49 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 48 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-index eb36e15..3a50e0c 100644
+index 3a50e0c..82cbf8c 100644
 --- a/drivers/edac/mce_amd_inj.c
 +++ b/drivers/edac/mce_amd_inj.c
-@@ -67,8 +67,11 @@ static ssize_t edac_inject_##reg##_store(struct kobject *kobj,		\
- 	unsigned long value;						\
- 									\
- 	ret = strict_strtoul(data, 16, &value);				\
--	if (ret < 0)							\
--		printk(KERN_ERR "Error writing MCE " #reg " field.\n");	\
-+	if (ret < 0) {							\
-+		printk(KERN_ERR "%s: Error parsing MCE " #reg " field.\n",\
-+				__func__);				\
-+		return ret;						\
-+	}								\
- 									\
- 	i_mce.reg = value;						\
- 									\
-@@ -96,6 +99,68 @@ EDAC_MCE_ATTR(misc, 0644, edac_inject_misc_show, edac_inject_misc_store);
- EDAC_MCE_ATTR(addr, 0644, edac_inject_addr_show, edac_inject_addr_store);
+@@ -160,6 +160,53 @@ static ssize_t edac_cpu_store(struct kobject *kobj, struct edac_mce_attr *attr,
  
+ EDAC_MCE_ATTR(cpu, 0644, edac_cpu_show, edac_cpu_store);
+ 
++static void trigger_mce(void *info)
++{
++	asm volatile("int $18");
++}
++
++static void do_inject(void)
++{
++	u64 mcg_status = 0;
++	unsigned int cpu = i_mce.extcpu;
++	int this_cpu;
++	u8 b = i_mce.bank;
++
++	if (!(i_mce.inject_flags & MCJ_HW_INJECT)) {
++		amd_decode_mce(NULL, 0, &i_mce);
++		return;
++	}
++
++	/* prep MCE global settings for the injection */
++	mcg_status = MCG_STATUS_MCIP | MCG_STATUS_EIPV;
++
++	if (!(i_mce.status & MCI_STATUS_PCC))
++		mcg_status |= MCG_STATUS_RIPV;
++
++	this_cpu = get_cpu();
++
++	toggle_hw_mce_inject(cpu, true);
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCG_STATUS,
++		     (u32)mcg_status, (u32)(mcg_status >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_STATUS(b),
++		     (u32)i_mce.status, (u32)(i_mce.status >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_ADDR(b),
++		     (u32)i_mce.addr, (u32)(i_mce.addr >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_MISC(b),
++		     (u32)i_mce.misc, (u32)(i_mce.misc >> 32));
++
++	toggle_hw_mce_inject(cpu, false);
++
++	smp_call_function_single(cpu, trigger_mce, NULL, 0);
++
++	put_cpu();
++
++}
++
  /*
-+ * HW or SW injection
-+ */
-+static ssize_t edac_hw_inject_show(struct kobject *kobj,
-+				   struct edac_mce_attr *attr, char *buf)
-+{
-+	return sprintf(buf, "%d\n", !!(i_mce.inject_flags & MCJ_HW_INJECT));
-+}
-+
-+static ssize_t edac_hw_inject_store(struct kobject *kobj,
-+				    struct edac_mce_attr *attr,
-+				    const char *data, size_t count)
-+{
-+	switch (data[0]) {
-+	case '0':
-+		i_mce.inject_flags &= (u8)~MCJ_HW_INJECT;
-+		break;
-+	case '1':
-+		i_mce.inject_flags |= MCJ_HW_INJECT;
-+		break;
-+	default:
-+		printk(KERN_ERR "%s: Only 0 or 1 allowed!\n", __func__);
-+		return -EINVAL;
-+	}
-+	return count;
-+}
-+
-+EDAC_MCE_ATTR(hw_inject, 0644, edac_hw_inject_show, edac_hw_inject_store);
-+
-+/*
-+ * On which CPU to inject?
-+ */
-+static ssize_t edac_cpu_show(struct kobject *kobj, struct edac_mce_attr *attr,
-+			     char *buf)
-+{
-+	return sprintf(buf, "%d\n", i_mce.extcpu);
-+}
-+
-+static ssize_t edac_cpu_store(struct kobject *kobj, struct edac_mce_attr *attr,
-+			      const char *data, size_t count)
-+{
-+	int ret = 0;
-+	unsigned long value;
-+
-+	ret = strict_strtoul(data, 10, &value);
-+	if (ret < 0) {
-+		printk(KERN_ERR "%s: Unable to parse CPU value!\n", __func__);
-+		return ret;
-+	}
-+
-+	if (value > num_online_cpus()) {
-+		printk(KERN_ERR "%s: Non-existant CPU: %lu\n", __func__, value);
-+		return -EINVAL;
-+	}
-+
-+	i_mce.extcpu = value;
-+
-+	return count;
-+}
-+
-+EDAC_MCE_ATTR(cpu, 0644, edac_cpu_show, edac_cpu_store);
-+
-+/*
   * This denotes into which bank we're injecting and triggers
   * the injection, at the same time.
-  */
-@@ -133,8 +198,13 @@ static ssize_t edac_inject_bank_show(struct kobject *kobj,
+@@ -185,7 +232,7 @@ static ssize_t edac_inject_bank_store(struct kobject *kobj,
  
- EDAC_MCE_ATTR(bank, 0644, edac_inject_bank_show, edac_inject_bank_store);
+ 	i_mce.bank = value;
  
--static struct edac_mce_attr *sysfs_attrs[] = { &mce_attr_status, &mce_attr_misc,
--					       &mce_attr_addr, &mce_attr_bank
-+static struct edac_mce_attr *sysfs_attrs[] = {
-+	&mce_attr_status,
-+	&mce_attr_misc,
-+	&mce_attr_addr,
-+	&mce_attr_bank,
-+	&mce_attr_hw_inject,
-+	&mce_attr_cpu,
- };
+-	amd_decode_mce(NULL, 0, &i_mce);
++	do_inject();
  
- static int __init edac_init_mce_inject(void)
+ 	return count;
+ }
 -- 
 1.7.4.rc2
 
