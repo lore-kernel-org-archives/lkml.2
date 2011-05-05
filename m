@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab1EEOBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 10:01:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34874 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab1EEOBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:01:37 -0400
-Date: Thu, 5 May 2011 16:01:34 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] writeback: avoid extra sync work at enqueue time
-Message-ID: <20110505140134.GF5323@quack.suse.cz>
-References: <20110502031750.135798606@intel.com>
- <20110502033035.789279347@intel.com>
- <20110504212427.GI6968@quack.suse.cz>
- <20110505122732.GC1294@localhost>
+	id S1754378Ab1EEOCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:02:48 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37420 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab1EEOCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:02:47 -0400
+Date: Thu, 5 May 2011 15:02:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ashish Jangam <Ashish.Jangam@kpitcummins.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Subject: Re: [PATCHv1 -next] LEDS: LED module of DA9052 PMIC driver
+Message-ID: <20110505140238.GB26651@sirena.org.uk>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5B8D9@KCINPUNHJCMS01.kpit.com> <20110504135833.c44c372d.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110505122732.GC1294@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110504135833.c44c372d.akpm@linux-foundation.org>
+X-Cookie: <Omnic> another .sig addition
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-05-11 20:27:32, Wu Fengguang wrote:
-> On Thu, May 05, 2011 at 05:24:27AM +0800, Jan Kara wrote:
-> > On Mon 02-05-11 11:17:53, Wu Fengguang wrote:
-> > > This removes writeback_control.wb_start and does more straightforward
-> > > sync livelock prevention by setting .older_than_this to prevent extra
-> > > inodes from being enqueued in the first place.
-> > > 
-> > > --- linux-next.orig/fs/fs-writeback.c	2011-05-02 11:17:24.000000000 +0800
-> > > +++ linux-next/fs/fs-writeback.c	2011-05-02 11:17:27.000000000 +0800
-> > > @@ -683,10 +672,12 @@ static long wb_writeback(struct bdi_writ
-> > >  	 *                   (quickly) tag currently dirty pages
-> > >  	 *                   (maybe slowly) sync all tagged pages
-> > >  	 */
-> > > -	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
-> > > +	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync) {
-> > >  		write_chunk = LONG_MAX;
-> > > +		oldest_jif = jiffies;
-> > > +		wbc.older_than_this = &oldest_jif;
-> > > +	}
-> >   What are the implications of not doing dirty-time livelock avoidance for
-> > other types of writeback? Is that a mistake? I'd prefer to have in
-> > wb_writeback():
-> > if (wbc.for_kupdate)
-> > 	oldest_jif = jiffies - msecs_to_jiffies(dirty_expire_interval * 10);
-> > else
-> > 	oldest_jif = jiffies;
-> > wbc.older_than_this = &oldest_jif;
-> > 
-> > And when you have this, you can make wbc.older_than_this just a plain
-> > number and remove all those checks for wbc.older_than_this == NULL.
-> 
-> Good point. Here is the fixed patch. Will you send the patch to change
-> the type when the current patches are settled down?
-  OK, I will do that.
+On Wed, May 04, 2011 at 01:58:33PM -0700, Andrew Morton wrote:
+> Ashish Jangam <Ashish.Jangam@kpitcummins.com> wrote:
 
-> @@ -686,7 +674,9 @@ static long wb_writeback(struct bdi_writ
->  	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
->  		write_chunk = LONG_MAX;
->  
-> -	wbc.wb_start = jiffies; /* livelock avoidance */
-> +	oldest_jif = jiffies;
-> +	wbc.older_than_this = &oldest_jif;
-> +
-  I might be already confused with all the code moving around but won't
-this overwrite the value set for the for_kupdate case?
+> > LED Driver for Dialog Semiconductor DA9052 PMICs.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> I don't know what to do with this patch.
+
+> > +	depends on PMIC_DA9052
+
+> Because it is unusable as a standalone patch.
+
+> What is your merge plan for PMIC_DA9052 support?  Please work one out,
+> and tell us about it in each and every patch so that the people who are
+> receiving these emails can work out what to do with them.
+
+Ideally you should do this by submitting all your patches in a single
+patch series.
