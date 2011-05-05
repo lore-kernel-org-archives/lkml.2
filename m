@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab1EEMCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:02:05 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:59109 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751625Ab1EEMBL (ORCPT
+	id S1753881Ab1EEMBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:01:14 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:60751 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751947Ab1EEMBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:01:11 -0400
+	Thu, 5 May 2011 08:01:12 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
         <viresh.linux@gmail.com>, <linux@arm.linux.org.uk>,
         Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V4 0/5] dmaengine/dw_dmac updates
-Date: Thu, 5 May 2011 17:30:28 +0530
-Message-ID: <cover.1304596524.git.viresh.kumar@st.com>
+Subject: [PATCH V4 1/5] dmaengine/dw_dmac: don't call callback routine in case dmaengine_terminate_all() is called
+Date: Thu, 5 May 2011 17:30:29 +0530
+Message-ID: <8d1b15be425a70cdbd30725b88bd303cc74e706d.1304596524.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1304596524.git.viresh.kumar@st.com>
+References: <cover.1304596524.git.viresh.kumar@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset fixes few issues and extends its support.
+If dmaengine_terminate_all() is called for dma channel, then it doesn't make
+much sense to call registered callback routine. While in case of success or
+failure it must be called.
 
-Changes in V4:
- - spin_locks are not taken anymore from parent routines. Now every routine
-   takes locks whenever required.
- - 1 and 0 are replaced with true and false for bool parameters to routines.
- - flags are not used uninitialized for spin_lock_irqsave
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/dw_dmac.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
-Changes in V3:
- - lflags is removed from dw_dma_chan and local flag variables are created.
- - An extra argument is added to routines calling dwc_descriptor_complete()
-   directly or indirectly
- - spin_lock() in tasklet is also changed to irqsave variants.
-
-Changes in V2:
- - lflags added in dw_dma_chan instead of dw_dma
- - Patch from Linus Walleij added for pause and resume functionality.
-
-Linus Walleij (1):
-  dmaengine/dw_dmac: implement pause and resume in dwc_control
-
-Viresh Kumar (4):
-  dmaengine/dw_dmac: don't call callback routine in case
-    dmaengine_terminate_all() is called
-  dmaengine/dw_dmac: set residue as total len in dwc_tx_status if
-    status is !DMA_SUCCESS
-  dmaengine/dw_dmac: Divide one sg to many desc, if sg len is greater
-    than DWC_MAX_COUNT
-  dmaengine/dw_dmac: Replace spin_lock* with irqsave variants and
-    enable submission from callback
-
- drivers/dma/dw_dmac.c      |  271 +++++++++++++++++++++++++++++---------------
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 179 insertions(+), 93 deletions(-)
-
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 1bd4803..d28cd84 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -195,18 +195,21 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
+ /*----------------------------------------------------------------------*/
+ 
+ static void
+-dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
++dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
++		bool callback_required)
+ {
+-	dma_async_tx_callback		callback;
+-	void				*param;
++	dma_async_tx_callback		callback = NULL;
++	void				*param = NULL;
+ 	struct dma_async_tx_descriptor	*txd = &desc->txd;
+ 	struct dw_desc			*child;
+ 
+ 	dev_vdbg(chan2dev(&dwc->chan), "descriptor %u complete\n", txd->cookie);
+ 
+ 	dwc->completed = txd->cookie;
+-	callback = txd->callback;
+-	param = txd->callback_param;
++	if (callback_required) {
++		callback = txd->callback;
++		param = txd->callback_param;
++	}
+ 
+ 	dwc_sync_desc_for_cpu(dwc, desc);
+ 
+@@ -238,12 +241,10 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
+ 		}
+ 	}
+ 
+-	/*
+-	 * The API requires that no submissions are done from a
+-	 * callback, so we don't need to drop the lock here
+-	 */
+-	if (callback)
+-		callback(param);
++	if (callback_required) {
++		if (callback)
++			callback(param);
++	}
+ }
+ 
+ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
+@@ -272,7 +273,7 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 	}
+ 
+ 	list_for_each_entry_safe(desc, _desc, &list, desc_node)
+-		dwc_descriptor_complete(dwc, desc);
++		dwc_descriptor_complete(dwc, desc, true);
+ }
+ 
+ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+@@ -322,7 +323,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 		 * No descriptors so far seem to be in progress, i.e.
+ 		 * this one must be done.
+ 		 */
+-		dwc_descriptor_complete(dwc, desc);
++		dwc_descriptor_complete(dwc, desc, true);
+ 	}
+ 
+ 	dev_dbg(chan2dev(&dwc->chan),
+@@ -384,7 +385,7 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 		dwc_dump_lli(dwc, &child->lli);
+ 
+ 	/* Pretend the descriptor completed successfully */
+-	dwc_descriptor_complete(dwc, bad_desc);
++	dwc_descriptor_complete(dwc, bad_desc, true);
+ }
+ 
+ /* --------------------- Cyclic DMA API extensions -------------------- */
+@@ -831,7 +832,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 
+ 	/* Flush all pending and queued descriptors */
+ 	list_for_each_entry_safe(desc, _desc, &list, desc_node)
+-		dwc_descriptor_complete(dwc, desc);
++		dwc_descriptor_complete(dwc, desc, false);
+ 
+ 	return 0;
+ }
 -- 
 1.7.2.2
 
