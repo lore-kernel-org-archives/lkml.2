@@ -1,125 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1EEONa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 10:13:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42451 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405Ab1EEON3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:13:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
-   d="scan'208";a="688619323"
-Date: Thu, 5 May 2011 22:13:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] writeback: avoid extra sync work at enqueue time
-Message-ID: <20110505141325.GA10417@localhost>
-References: <20110502031750.135798606@intel.com>
- <20110502033035.789279347@intel.com>
- <20110504212427.GI6968@quack.suse.cz>
- <20110505122732.GC1294@localhost>
- <20110505140134.GF5323@quack.suse.cz>
- <20110505141039.GC9409@localhost>
+	id S1755090Ab1EEOOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:14:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37006 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab1EEOOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:14:41 -0400
+Message-ID: <4DC2B0C8.6010306@linutronix.de>
+Date: Thu, 05 May 2011 16:14:32 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505141039.GC9409@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, hpa@zytor.com,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 0/6] General device tree irq domain infrastructure
+References: <20110428192227.8979.49181.stgit@ponder> <1304386999.2513.293.camel@pasglop> <20110504155227.GA3317@ponder.secretlab.ca> <1304555953.2513.390.camel@pasglop> <alpine.LFD.2.02.1105051026370.3005@ionos> <BANLkTimQ7GsUton3nvJof8YB8k6cnx4rFQ@mail.gmail.com>
+In-Reply-To: <BANLkTimQ7GsUton3nvJof8YB8k6cnx4rFQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 10:10:39PM +0800, Wu Fengguang wrote:
-> On Thu, May 05, 2011 at 10:01:34PM +0800, Jan Kara wrote:
-> > On Thu 05-05-11 20:27:32, Wu Fengguang wrote:
-> > > On Thu, May 05, 2011 at 05:24:27AM +0800, Jan Kara wrote:
-> > > > On Mon 02-05-11 11:17:53, Wu Fengguang wrote:
-> > > > > This removes writeback_control.wb_start and does more straightforward
-> > > > > sync livelock prevention by setting .older_than_this to prevent extra
-> > > > > inodes from being enqueued in the first place.
-> > > > > 
-> > > > > --- linux-next.orig/fs/fs-writeback.c	2011-05-02 11:17:24.000000000 +0800
-> > > > > +++ linux-next/fs/fs-writeback.c	2011-05-02 11:17:27.000000000 +0800
-> > > > > @@ -683,10 +672,12 @@ static long wb_writeback(struct bdi_writ
-> > > > >  	 *                   (quickly) tag currently dirty pages
-> > > > >  	 *                   (maybe slowly) sync all tagged pages
-> > > > >  	 */
-> > > > > -	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
-> > > > > +	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync) {
-> > > > >  		write_chunk = LONG_MAX;
-> > > > > +		oldest_jif = jiffies;
-> > > > > +		wbc.older_than_this = &oldest_jif;
-> > > > > +	}
-> > > >   What are the implications of not doing dirty-time livelock avoidance for
-> > > > other types of writeback? Is that a mistake? I'd prefer to have in
-> > > > wb_writeback():
-> > > > if (wbc.for_kupdate)
-> > > > 	oldest_jif = jiffies - msecs_to_jiffies(dirty_expire_interval * 10);
-> > > > else
-> > > > 	oldest_jif = jiffies;
-> > > > wbc.older_than_this = &oldest_jif;
-> > > > 
-> > > > And when you have this, you can make wbc.older_than_this just a plain
-> > > > number and remove all those checks for wbc.older_than_this == NULL.
-> > > 
-> > > Good point. Here is the fixed patch. Will you send the patch to change
-> > > the type when the current patches are settled down?
-> >   OK, I will do that.
+Grant Likely wrote:
+> Okay, I'll take another hack at it.  Unfortunately I've got a great
+> big unmaskable interrupt in the form of UDS next week, but I'll be
+> back on it the week after.
+
+And I thought you were a NMI.
+
 > 
-> Thank you.
-> 
-> > > @@ -686,7 +674,9 @@ static long wb_writeback(struct bdi_writ
-> > >  	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
-> > >  		write_chunk = LONG_MAX;
-> > >  
-> > > -	wbc.wb_start = jiffies; /* livelock avoidance */
-> > > +	oldest_jif = jiffies;
-> > > +	wbc.older_than_this = &oldest_jif;
-> > > +
-> >   I might be already confused with all the code moving around but won't
-> > this overwrite the value set for the for_kupdate case?
-> 
-> It's the opposite -- it will be overwritten inside the loop by
-> for_kupdate, which may run for long time and hence need to update
-> oldest_jif from time to time.
+> g.
 
-The code is now:
-
-        oldest_jif = jiffies;
-        work->older_than_this = &oldest_jif;
-
-        for (;;) {
-                // ...
-               
-                if (work->for_kupdate || work->for_background) {
-                        oldest_jif = jiffies -
-                                msecs_to_jiffies(dirty_expire_interval * 10);
-                        work->older_than_this = &oldest_jif;
-                }
-
-retry:         
-                // ...
-               
-                /*
-                 * background writeback will start with expired inodes, and
-                 * if none is found, fallback to all inodes. This order helps
-                 * reduce the number of dirty pages reaching the end of LRU
-                 * lists and cause trouble to the page reclaim.
-                 */
-                if (work->for_background &&
-                    work->older_than_this &&
-                    list_empty(&wb->b_io) &&
-                    list_empty(&wb->b_more_io)) {
-                        work->older_than_this = NULL;
-                        goto retry;
-                }
-
-                // ...
-        }
-
-Thanks,
-Fengguang
+Sebastian
