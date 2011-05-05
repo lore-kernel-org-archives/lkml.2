@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab1EEUol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 16:44:41 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14240 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab1EEUok (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 16:44:40 -0400
-Date: Thu, 5 May 2011 22:37:53 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: J Freyensee <james_p_freyensee@linux.intel.com>
-cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
-In-Reply-To: <1304615163.8860.58.camel@localhost>
-Message-ID: <alpine.LNX.2.00.1105052236360.894@swampdragon.chaosbits.net>
-References: <james_p_freyensee@linux.intel.com>  <1303515150-1718-4-git-send-email-james_p_freyensee@linux.intel.com>  <alpine.LNX.2.00.1104240212390.28014@swampdragon.chaosbits.net>  <alpine.LNX.2.00.1104240306570.28014@swampdragon.chaosbits.net>
- <1304615163.8860.58.camel@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753163Ab1EEUjU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 16:39:20 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:59936 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab1EEUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 16:39:19 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19907.2804.330120.193924@pilspetsen.it.uu.se>
+Date: Thu, 5 May 2011 22:39:16 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linux/m68k <linux-m68k@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>
+Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
+In-Reply-To: <alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
+References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
+	<201105050824.34056.arnd@arndb.de>
+	<alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, J Freyensee wrote:
+Geert Uytterhoeven writes:
+ > On Thu, 5 May 2011, Arnd Bergmann wrote:
+ > > Did you check the macros in unistd to see if they match the
+ > > actual table? I guess it would be a good time to comment out
+ > > the ones that are not implemented in either of the two ABIs.
+ > 
+ > Like this?
+ > 
+ > warning: #warning syscall pselect6 not implemented
+ > warning: #warning syscall ppoll not implemented
+ > warning: #warning syscall recvmmsg not implemented
+ > 
+ > Do we need pselect6 and ppoll? I have vague memories not requiring it.
 
-[...]
-> 
-> I'm no means an expert in the kernel, but I assume kfree() is like C
-> free(), that it's a nop if it receives a NULL value?
-> 
-
-Yes. kfree(NULL) is a nop, so you can avoid the conditional branch.
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+They close user-space race conditions, so you want them.
