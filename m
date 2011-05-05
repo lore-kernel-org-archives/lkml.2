@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1EEPCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:02:12 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:24971 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab1EEPCL convert rfc822-to-8bit (ORCPT
+	id S1754264Ab1EEPHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:07:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42270 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab1EEPHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:02:11 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Hank Janssen <hjanssen@microsoft.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "gregkh@suse.de" <gregkh@suse.de>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
-Thread-Topic: linux-next: Tree for May 4 (hyperv / vmbus)
-Thread-Index: AQHMCntOk+LR4a+Ld0eJSEbT0o5RQpR+ypMA//+K/SA=
-Date: Thu, 5 May 2011 15:02:10 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481E039F@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <20110504144759.802483cc.sfr@canb.auug.org.au>
-	<20110504094908.b8295d22.randy.dunlap@oracle.com>
- <8AFC7968D54FB448A30D8F38F259C562498A5852@TK5EX14MBXC114.redmond.corp.microsoft.com>
-In-Reply-To: <8AFC7968D54FB448A30D8F38F259C562498A5852@TK5EX14MBXC114.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.33]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 5 May 2011 11:07:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=XRPK+rcNoXkktHFwKJfrI0tYz+mfSTiOTgENRh+WUAeLKW1dam4KZC7Qeew36ive5E
+         jUmznvKdz1ZqiuCEzh2Wiq3PTF4nYyfOhjSIFscPI7rEdLdFpwJFpoAq1R18fuItyutl
+         bblHVnXMRJkbXcmNqTEdggGCr8WMiNkWjpZ+g=
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: giometti@linux.it, akpm@linux-foundation.org,
+        Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] C2port:remove the wrong and never used macros in c2port.h
+Date: Thu,  5 May 2011 23:07:13 +0800
+Message-Id: <1304608033-5035-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wanlong Gao <wanlong.gao@gmail.com>
 
+The macro to_class_dev used the deprecated structure class_device,
+and the c2port_device has no member named class in the definition
+of the macro to_c2port_device.
 
-> -----Original Message-----
-> From: devel-bounces@linuxdriverproject.org [mailto:devel-
-> bounces@linuxdriverproject.org] On Behalf Of Hank Janssen
-> Sent: Thursday, May 05, 2011 11:00 AM
-> To: Randy Dunlap; Stephen Rothwell; driverdevel; gregkh@suse.de
-> Cc: Haiyang Zhang; linux-next@vger.kernel.org; LKML
-> Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> > owner@vger.kernel.org] On Behalf Of Randy Dunlap
-> > Sent: Wednesday, May 04, 2011 9:49 AM
-> > To: Stephen Rothwell; driverdevel; gregkh@suse.de
-> > Cc: linux-next@vger.kernel.org; LKML; Hank Janssen; Haiyang Zhang
-> > Subject: Re: linux-next: Tree for May 4 (hyperv / vmbus)
-> >
-> > On Wed, 4 May 2011 14:47:59 +1000 Stephen Rothwell wrote:
-> >
-> > > Hi all,
-> > >
-> > > Changes since 20110503:
-> >
-> >
-> > when CONFIG_ACPI is not enabled:
-> >
-> >
-> >
-> > vmbus_drv.c sure looks like it requires (depends on) both ACPI and PCI.
-> > That should be expressed somewhere in its Kconfig file.
-> >
-> 
-> Randy,
-> 
-> Oops, I will submit a patch today to correct it. Thanks for catching it.
-> 
-> Hank.
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+---
+ include/linux/c2port.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Hank,
-
-This patch was submitted yesterday.
-
-K. Y
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+diff --git a/include/linux/c2port.h b/include/linux/c2port.h
+index 2a5cd86..a2f7d74 100644
+--- a/include/linux/c2port.h
++++ b/include/linux/c2port.h
+@@ -60,9 +60,6 @@ struct c2port_ops {
+  * Exported functions
+  */
+ 
+-#define to_class_dev(obj) container_of((obj), struct class_device, kobj)
+-#define to_c2port_device(obj) container_of((obj), struct c2port_device, class)
+-
+ extern struct c2port_device *c2port_device_register(char *name,
+ 					struct c2port_ops *ops, void *devdata);
+ extern void c2port_device_unregister(struct c2port_device *dev);
+-- 
+1.7.4.1
 
