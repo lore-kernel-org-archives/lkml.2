@@ -1,131 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab1EEAHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 20:07:21 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:50413 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab1EEAHV (ORCPT
+	id S1756307Ab1EEAJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 20:09:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32455 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756266Ab1EEAJn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 20:07:21 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-209.messagelabs.com!1304554012!4201867!8
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.31]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/3] basic_mmio_gpio: split into a gpio library and platform device
-Date: Wed, 4 May 2011 17:06:40 -0700
-User-Agent: KMail/1.9.9
-CC: <jamie@jamieiles.com>
+	Wed, 4 May 2011 20:09:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bE7+MT0FVEB00EpBMAH2ANBUugF/rs95tpdDsiEU+hqSlJpT9KCYsVBl+puWNVL2bS
+         FuxvIeeIbooW7n4mqNjQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201105041706.40899.hartleys@visionengravers.com>
+In-Reply-To: <BANLkTingV3eiHEco+36YyM4YTDHFHc9_jA@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
+	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+	<BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com>
+	<BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
+	<BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com>
+	<BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
+	<BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com>
+	<BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
+	<BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com>
+	<alpine.LSU.2.00.1104060837590.4909@sister.anvils>
+	<BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
+	<BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
+	<BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com>
+	<alpine.LSU.2.00.1104070718120.28555@sister.anvils>
+	<BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com>
+	<BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
+	<BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com>
+	<BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
+	<BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com>
+	<BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
+	<BANLkTikZ1szdH5HZdjKEEzG2+1VPusWEeg@mail.gmail.com>
+	<BANLkTingV3eiHEco+36YyM4YTDHFHc9_jA@mail.gmail.com>
+Date: Wed, 4 May 2011 17:09:40 -0700
+Message-ID: <BANLkTi=D+oe_zyxA1Oj5S36F6Tk0J+26iQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry if this is a re-post. I think my previous post got botched...
+FYI, the attached code causes an infinite loop in kernels that have
+the 95042f9eb7 commit:
 
-On Wed, 4 May 2011 16:07:35 +0100, Jamie Iles wrote,
->
-> Allow GPIO_BASIC_MMIO_CORE to be used to provide an accessor library
-> for implementing GPIO drivers whilst abstracting the register access
-> detail.  Based on a patch from Anton Vorontsov[1] and adapted to allow
-> bgpio_chip to be embedded in another structure.
+#include <stdio.h>
+#include <string.h>
 
-[snip]
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <linux/futex.h>
 
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index cfbdef1..91a295d 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -6,6 +6,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
-> 
->  obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
->  obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
-> +obj-$(CONFIG_GPIO_BASIC_MMIO_CORE)	+= basic_mmio_gpio.o
->  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
+int *get_stack_guard(void)
+{
+  FILE *map;
+  char buf[1000];
 
-The line above can be removed.  GPIO_BASIC_MMIO selects GPIO_BASIC_MMIO_CORE.
+  map = fopen("/proc/self/maps", "r");
+  if (!map)
+    return NULL;
+  while(fgets(buf, 1000, map)) {
+    long a, b;
+    char c[1000], d[1000], e[1000], f[1000], g[1000];
+    if (sscanf(buf, "%lx-%lx %s %s %s %s %s", &a, &b, c, d, e, f, g) == 7 &&
+        !strcmp(g, "[stack]")) {
+      fclose(map);
+      return (int *)(a - 4096);
+    }
+  }
+  fclose(map);
+  return NULL;
+}
 
->  obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
->  obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
-> diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-> index b2ec45f..6b1c6e5 100644
-> --- a/drivers/gpio/basic_mmio_gpio.c
-> +++ b/drivers/gpio/basic_mmio_gpio.c
+int main(void)
+{
+  int *uaddr = get_stack_guard();
+  syscall(SYS_futex, uaddr, FUTEX_LOCK_PI_PRIVATE, 0, NULL, NULL, 0);
+  return 0;
+}
 
-[snip]
+Linus, I am not sure as to what would be the preferred way to fix
+this. One option could be to modify fault_in_user_writeable so that it
+passes a non-NULL page pointer, and just does a put_page on it
+afterwards. While this would work, this is kinda ugly and would slow
+down futex operations somewhat. A more conservative alternative could
+be to enable the guard page special case under an new GUP flag, but
+this loses much of the elegance of your original proposal...
 
-> +static int __devinit bgpio_pdev_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct resource *r;
-> +	void __iomem *dat;
-> +	void __iomem *set;
-> +	void __iomem *clr;
-> +	void __iomem *dirout;
-> +	void __iomem *dirin;
-> +	unsigned long sz;
-> +	bool be;
-> +	int err;
-> +	struct bgpio_chip *bgc;
-> +	struct bgpio_pdata *pdata = dev_get_platdata(dev);
-> +
-> +	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dat");
-> +	if (!r)
-> +		return -EINVAL;
-> +
-> +	sz = resource_size(r);
-> +
-> +	dat = bgpio_map(pdev, "dat", sz, &err);
-> +	if (!dat)
-> +		return err ? err : -EINVAL;
-> +
-> +	set = bgpio_map(pdev, "set", sz, &err);
-> +	if (err)
-> +		return err;
-> +
-> +	clr = bgpio_map(pdev, "clr", sz, &err);
-> +	if (err)
-> +		return err;
-> +
-> +	dirout = bgpio_map(pdev, "dirout", sz, &err);
-> +	if (err)
-> +		return err;
-> +
-> +	dirin = bgpio_map(pdev, "dirin", sz, &err);
-> +	if (err)
-> +		return err;
-> +
-> +	be = !strcmp(platform_get_device_id(pdev)->name, "basic-mmio-gpio-be");
-> +
-> +	bgc = devm_kzalloc(&pdev->dev, sizeof(*bgc), GFP_KERNEL);
-> +	if (!bgc)
-> +		return -ENOMEM;
-> +
-> +	err = bgpio_init(bgc, dev, sz, dat, set, clr, dirout, dirin, be);
-> +	if (err)
-> +		return err;
-> +
-> +	if (pdata) {
-> +		bgc->gc.base = pdata->base;
-> +		if (pdata->ngpio > 0)
-> +			bgc->gc.ngpio = pdata->ngpio;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, bgc);
-> +
-> +	return 0;
-> +}
+On Mon, Apr 18, 2011 at 2:15 PM, Michel Lespinasse <walken@google.com> wrote:
+> This second patch looks more attractive than the first, but is also
+> harder to prove correct. Hugh looked at all gup call sites and
+> convinced himself that the change was safe, except for the
+> fault_in_user_writeable() site in futex.c which he asked me to look
+> at. I am worried that we would have an issue there, as places like
+> futex_wake_op() or fixup_pi_state_owner() operate on user memory with
+> page faults disabled, and expect fault_in_user_writeable() to set up
+> the user page so that they can retry if the initial access failed.
+> With this proposal, fault_in_user_writeable() would become inoperative
+> when the  address is within the guard page; this could cause some
+> malicious futex operation to create an infinite loop.
 
-Unless I missed it, the probe should end by actually adding the gpiochip:
-
--	return 0;
-+	return gpiochip_add(&bgc->gc);
-
-Regards,
-Hartley
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
