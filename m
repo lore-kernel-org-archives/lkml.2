@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1EEGYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 02:24:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52511 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab1EEGYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 02:24:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
-Date: Thu, 5 May 2011 08:24:33 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        uClinux list <uclinux-dev@uclinux.org>
-References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
-In-Reply-To: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
+	id S1751165Ab1EEGaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 02:30:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35647 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab1EEGaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 02:30:15 -0400
+Date: Thu, 5 May 2011 08:30:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
+Message-ID: <20110505063012.GA11529@tiehlicka.suse.cz>
+References: <20110503141044.GA25351@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1105031142260.7349@sister.anvils>
+ <20110504083005.GA1375@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1105041016110.23159@sister.anvils>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105050824.34056.arnd@arndb.de>
-X-Provags-ID: V02:K0:KgIarJhf0YApytWUeXelEM90TBdFzfemYFhccXuhBxz
- sjsE725cr3PCQd7+ooIyBozMF7cg6gzkObiBLSQT9tl7jfMBGn
- H7Ty41r4P9L7y6zvb6yDT8hSqvsSjYNOAiXJADnEqJLC/c/KEk
- q9L+Cd7T0vLOL9Wi4PwuwejpvYtIrj1g65Mp5EL6uCpRtm3PlH
- 7UwNQH0KHsZGxqyhZz2fA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1105041016110.23159@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 May 2011, Geert Uytterhoeven wrote:
-> Impact for nommu:
->   - Store table in .rodata instead of .text,
->   - Let kernel/sys_ni.c handle the stubbing of MMU-only syscalls,
->   - Implement sys_mremap and sys_nfsservct,
->   - Remove unused padding at the end of the table.
+On Wed 04-05-11 10:28:36, Hugh Dickins wrote:
+> On Wed, 4 May 2011, Michal Hocko wrote:
+> > 
+> > This case is obscure enough already because we are using VM_GROWSUP to
+> > declare expand_stack_upwards in include/linux/mm.h
 > 
-> Impact for mmu:
->   - Store table in .rodata instead of .data.
+> Ah yes, I didn't notice that it was already done that way there
+> (closer to the definitions of VM_GROWSUP so not as bad).
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> > while definition is guarded by CONFIG_STACK_GROWSUP||CONFIG_IA64. 
+> > What the patch does is just "make it consistent" thing. I think we
+> > should at least use CONFIG_STACK_GROWSUP||CONFIG_IA64 at both places if
+> > you do not like VM_GROWSUP misuse.
+> 
+> If it's worth changing anything, yes, that would be better.
 
-What happened to the mmap syscall? IIRC, nommu is pointing to
-a different symbol (sys_mmap_pgoff/sys_mmap2).
+I have looked into the history again and the current VM_GROWSUP usage
+for the CONFIG_STACK_GROWSUP||CONFIG_IA64 has been introduced by
+commit 8ca3eb08097f6839b2206e2242db4179aee3cfb3
+Author: Luck, Tony <tony.luck@intel.com>
+Date:   Tue Aug 24 11:44:18 2010 -0700
 
-Did you check the macros in unistd to see if they match the
-actual table? I guess it would be a good time to comment out
-the ones that are not implemented in either of the two ABIs.
+    guard page for stacks that grow upwards
+    
+    pa-risc and ia64 have stacks that grow upwards. Check that
+    they do not run into other mappings. By making VM_GROWSUP
+    0x0 on architectures that do not ever use it, we can avoid
+    some unpleasant #ifdefs in check_stack_guard_page().
+    
+    Signed-off-by: Tony Luck <tony.luck@intel.com>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-Otherwise, this patch looks good to me.
+So I think the flag should be used that way. If we ever going to add a
+new architecture like IA64 which uses both ways of expanding we should
+make it easier by minimizing the places which have to be examined.
 
-	Arnd
+> > > Not a nack: others may well disagree with me.
+> > > 
+> > > And, though I didn't find time to comment on your later "symmetrical"
+> > > patch before it went into mmotm, I didn't see how renaming expand_downwards
+> > > and expand_upwards to expand_stack_downwards and expand_stack_upwards was
+> > > helpful either - needless change, and you end up using expand_stack_upwards
+> > > on something which is not (what we usually call) the stack.
+> > 
+> > OK, I see your point. expand_stack_upwards in ia64_do_page_fault can be
+> > confusing as well. Maybe if we stick with the original expand_upwards
+> > and just make expand_downwards symmetrical without renameing to
+> > "_stack_" like the patch does? I can rework that patch if there is an
+> > interest. I would like to have it symmetrical, though, because the
+> > original code was rather confusing.
+> 
+> Yes, what I suggested before was an expand_upwards, an expand_downwards
+> and an expand_stack (with mod to fs/exec.c to replace its call to
+> expand_stack_downwards by direct call to expand_downwards).
+
+OK, now, with the cleanup patch, we have expand_stack and
+expand_stack_{downwards,upwards}. I will repost the patch to Andrew with
+up and down cases renamed. Does it work for you?
+
+> But it's always going to be somewhat confusing and asymmetrical
+> because of the ia64 register backing store case.
+
+How come? We would have expand_stack which is pretty much clear that it
+is expanding stack in the architecture specific way. And then we would
+have expand_{upwards,downward} which are clear about way how we expand
+whatever VMA, right?
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
