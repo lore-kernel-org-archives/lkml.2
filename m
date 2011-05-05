@@ -1,50 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab1EEQ7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 12:59:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24504 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab1EEQ7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 12:59:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,321,1301900400"; 
-   d="scan'208";a="638567173"
-Subject: Re: [PATCH 1/4] export kernel call get_task_comm().
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: David Rientjes <rientjes@google.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-In-Reply-To: <alpine.DEB.2.00.1104251357260.31884@chino.kir.corp.google.com>
-References: <james_p_freyensee@linux.intel.com>
-	 <1303515150-1718-2-git-send-email-james_p_freyensee@linux.intel.com>
-	 <alpine.DEB.2.00.1104251357260.31884@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 05 May 2011 09:59:36 -0700
-Message-ID: <1304614776.8860.51.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755527Ab1EERCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 13:02:43 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:14429 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab1EERCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 13:02:42 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Cc: David Daney <ddaney@caviumnetworks.com>
+Subject: [RFC PATCH v3 0/6] MIPS: Octeon: Use Device Tree.
+Date: Thu,  5 May 2011 10:02:23 -0700
+Message-Id: <1304614949-30460-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 05 May 2011 17:02:41.0976 (UTC) FILETIME=[3F043B80:01CC0B46]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-04-25 at 13:57 -0700, David Rientjes wrote:
-> On Fri, 22 Apr 2011, james_p_freyensee@linux.intel.com wrote:
-> 
-> > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > 
-> > This allows drivers who call this function to be compiled modularly.
-> > Otherwise, a driver who is interested in this type of functionality
-> > has to implement their own get_task_comm() call, causing code
-> > duplication in the Linux source tree.
-> > 
-> > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> 
-> Third time:
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
+After several weeks of fire fighting, I am back to my Octeon device
+tree patches.  
 
-Okay, so you want me to add an 'acked-by' next time on this patch in my
-patch-set series?
+New in v3:
+
+More updates to device tree bindings, and perhaps more importantly
+descriptions/definitions of the bindings
+
+libfdt building moved to devices/of/libfdt.
+
+Cleanup and style improvements as suggested by Grant Likley.
+
+Omitted all the driver changes, as they are unchanged from the last
+set, and at this stage the patches are just an RFC.
+
+New in v2:
+
+Changed many device tree bindings.  They should be closer to the
+standard naming scheme now.
+
+Editing of the template device tree is done in the flattened form
+using libfdt.
+
+Standard platform driver functions used in preference to the
+of_platform variety.
+
+v1:
+
+Background: The Octeon family of SOCs has a variety of on-chip
+controllers for Ethernet, MDIO, I2C, and several other I/O devices.
+These chips are used on boards with a great variety of different
+configurations.  To date, the configuration and bus topology
+information has been hard coded in the drivers and support code.
+
+To facilitate supporting new chips and boards, we would like to make
+use use the Device Tree to encode the configuration information.
+
+I would like to get some feedback on the current code I am working
+with.  The migration approach is as follows:
+
+o Several device tree templates are statically linked into the kernel
+  image.  Based on SOC type and board type one of these is selected in
+  early boot.  Legacy configuration probing code is used to prune and
+  patch the device tree template.
+
+o New SOCs and boards will directly use a device tree passed by the
+  bootloader (This patch set doesn't actually implement this, but it
+  is trivial to add).
+
+
+
+1/6 -  Infrastructure to allow scripts/dtc/libfdt to be used in the
+       kernel.
+
+2/6 - OF patch to simplify of_find_node_by_path().
+
+3/6 - Add the statically linked Device Tree templates and bindings
+      descriptions.
+
+4/6 - Remove unused arch/mips/prom.c code that conflicts with
+      following patches.
+
+5/6 - irq_create_of_mapping() function.
+
+6/6 - Fix up Device Tree template for current environment.
+
+
+David Daney (6):
+  of: Allow scripts/dtc/libfdt to be used from kernel code
+  of: Make of_find_node_by_path() traverse /aliases for relative paths.
+  MIPS: Octeon: Add device tree source files.
+  MIPS: Prune some target specific code out of prom.c
+  MIPS: Octeon: Add irq_create_of_mapping() and GPIO interrupts.
+  MIPS: Octeon: Initialize and fixup device tree.
+
+ .../devicetree/bindings/mips/cavium/bootbus.txt    |   37 ++
+ .../devicetree/bindings/mips/cavium/ciu.txt        |   26 ++
+ .../devicetree/bindings/mips/cavium/gpio.txt       |   48 +++
+ .../devicetree/bindings/mips/cavium/mdio.txt       |   27 ++
+ .../devicetree/bindings/mips/cavium/mix.txt        |   40 ++
+ .../devicetree/bindings/mips/cavium/pip.txt        |   98 +++++
+ .../devicetree/bindings/mips/cavium/twsi.txt       |   34 ++
+ .../devicetree/bindings/mips/cavium/uart.txt       |   19 +
+ .../devicetree/bindings/mips/cavium/uctl.txt       |   47 +++
+ arch/mips/Kconfig                                  |    1 +
+ arch/mips/cavium-octeon/.gitignore                 |    2 +
+ arch/mips/cavium-octeon/Makefile                   |   15 +
+ arch/mips/cavium-octeon/octeon-irq.c               |  183 ++++++++-
+ arch/mips/cavium-octeon/octeon-platform.c          |  295 +++++++++++++
+ arch/mips/cavium-octeon/octeon_3xxx.dts            |  431 ++++++++++++++++++++
+ arch/mips/cavium-octeon/setup.c                    |   17 +
+ arch/mips/kernel/prom.c                            |   49 ---
+ drivers/of/Kconfig                                 |    3 +
+ drivers/of/Makefile                                |    2 +
+ drivers/of/base.c                                  |   41 ++-
+ drivers/of/libfdt/Makefile                         |    8 +
+ include/linux/libfdt.h                             |    8 +
+ include/linux/libfdt_env.h                         |   13 +
+ 23 files changed, 1393 insertions(+), 51 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/gpio.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/mdio.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/mix.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/pip.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/twsi.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/uart.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
+ create mode 100644 arch/mips/cavium-octeon/.gitignore
+ create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
+ create mode 100644 drivers/of/libfdt/Makefile
+ create mode 100644 include/linux/libfdt.h
+ create mode 100644 include/linux/libfdt_env.h
+
+-- 
+1.7.2.3
 
