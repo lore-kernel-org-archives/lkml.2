@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab1EERGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 13:06:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4490 "EHLO mga01.intel.com"
+	id S1754686Ab1EERI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 13:08:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23989 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752942Ab1EERGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 13:06:18 -0400
+	id S1752197Ab1EERI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 13:08:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,321,1301900400"; 
-   d="scan'208";a="688696305"
-Subject: Re: [PATCH 3/4] Intel PTI implementaiton of MIPI 1149.7.
+   d="scan'208";a="742850510"
+Subject: Re: [PATCH 4/4] n_tracerouter and n_tracesink ldisc additions.
 From: J Freyensee <james_p_freyensee@linux.intel.com>
 Reply-To: james_p_freyensee@linux.intel.com
 To: Jesper Juhl <jj@chaosbits.net>
 Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         christophe.guerard@intel.com
-In-Reply-To: <alpine.LNX.2.00.1104240306570.28014@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1104240256160.28014@swampdragon.chaosbits.net>
 References: <james_p_freyensee@linux.intel.com>
-	 <1303515150-1718-4-git-send-email-james_p_freyensee@linux.intel.com>
-	 <alpine.LNX.2.00.1104240212390.28014@swampdragon.chaosbits.net>
-	 <alpine.LNX.2.00.1104240306570.28014@swampdragon.chaosbits.net>
+	 <1303515150-1718-5-git-send-email-james_p_freyensee@linux.intel.com>
+	 <alpine.LNX.2.00.1104240256160.28014@swampdragon.chaosbits.net>
 Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 05 May 2011 10:06:03 -0700
-Message-ID: <1304615163.8860.58.camel@localhost>
+Date: Thu, 05 May 2011 10:08:44 -0700
+Message-ID: <1304615324.8860.61.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -30,58 +29,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-04-24 at 03:08 +0200, Jesper Juhl wrote:
-> On Sun, 24 Apr 2011, Jesper Juhl wrote:
+On Sun, 2011-04-24 at 03:04 +0200, Jesper Juhl wrote:
+> On Fri, 22 Apr 2011, james_p_freyensee@linux.intel.com wrote:
 > 
-> > On Fri, 22 Apr 2011, james_p_freyensee@linux.intel.com wrote:
+> > From: J Freyensee <james_p_freyensee@linux.intel.com>
 > > 
+> > The n_tracerouter and n_tracesink line discpline drivers use the
+> > Linux tty line discpline framework to route trace data coming
+> > from a tty port (say UART for example) to the trace sink line
+> > discipline driver and to another tty port(say USB).  Those
+> > these two line discipline drivers can be used together,
+> > independently from pti.c, they are part of the original
+> > implementation solution of the MIPI P1149.7, compact JTAG, PTI
+> > solution for Intel mobile platforms starting with the
+> > Medfield platform.
+> > 
+> > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> 
+> A few minor comments can be found below.
+> 
+> 
 > ...
-> > > +static void pti_tty_cleanup(struct tty_struct *tty)
-> > > +{
-> > > +	struct pti_tty *pti_tty_data;
-> > > +	struct pti_masterchannel *mc;
-> > > +
-> > > +	pti_tty_data = tty->driver_data;
-> > > +
-> > > +	if (pti_tty_data != NULL) {
-> > > +		mc = pti_tty_data->mc;
-> > > +		pti_release_masterchannel(mc);
-> > > +		pti_tty_data->mc = NULL;
-> > > +	}
-> > > +
-> > > +	if (pti_tty_data != NULL)
-> > > +		kfree(pti_tty_data);
-> > > +
-> > > +	tty->driver_data = NULL;
-> > > +}
-> > 
-> > How about this instead?
-> > 
-> > static void pti_tty_cleanup(struct tty_struct *tty)
-> > {
-> >      if (!tty->driver_data)
-> >              return;
-> >      pti_release_masterchannel(tty->driver_data->mc);
-
-I like this suggestion.  I'll incorporate this.  
-
-> >      kfree(tty->driver_data);
-
-I'm no means an expert in the kernel, but I assume kfree() is like C
-free(), that it's a nop if it receives a NULL value?
-
-> > }
-> > 
-> I meant to say :
+> > +static int n_tracesink_open(struct tty_struct *tty)
+> > +{
+> > +	int retval = -EEXIST;
+> > +
+> > +	mutex_lock(&writelock);
+> > +	if (this_tty == NULL) {
+> > +
+> > +		this_tty = tty_kref_get(tty);
+> > +
 > 
-> static void pti_tty_cleanup(struct tty_struct *tty)
+> pointless blank line. I'd suggest removing it.
+> 
+> 
+> ...
+> > +		if (this_tty == NULL)
+> > +			retval = -EFAULT;
+> > +		else {
+> 
+> If one branch requires braces, both should have them
+> 
+>         } else {
+> 
+
+It's not this way because it passed checkpatch.pl.  In fact, I believe
+checkpatch.pl will complain if I add {} to a single if() line.
+
+> 
+> ...
+> > +static void n_tracesink_close(struct tty_struct *tty)
+> > +{
+> > +
+> > +	mutex_lock(&writelock);
+> > +	tty_driver_flush_buffer(tty);
+> > +	tty_kref_put(this_tty);
+> > +	this_tty = NULL;
+> > +	tty->disc_data = NULL;
+> > +	mutex_unlock(&writelock);
+> > +
+> > +}
+> 
+> pointless blank line at end of function. Remove it.
+> 
+> 
+> > +static int __init n_tracesink_init(void)
+> > +{
+> > +	int retval;
+> > +
+> > +	/* Note N_TRACESINK is defined in linux/tty.h */
+> > +	retval = tty_register_ldisc(N_TRACESINK, &tty_n_tracesink);
+> > +
+> > +	if (retval < 0)
+> > +		pr_err("%s: Registration failed: %d\n", __func__, retval);
+> > +
+> > +	return retval;
+> > +}
+> 
+> How about shortening is a bit - like this?
+> 
+> static int __init n_tracesink_init(void)
 > {
->      if (!tty->driver_data)
->              return;
->      pti_release_masterchannel(tty->driver_data->mc);
->      kfree(tty->driver_data);
->      tty->driver_data = NULL
-> }   
+>      /* Note N_TRACESINK is defined in linux/tty.h */
+>      int retval = tty_register_ldisc(N_TRACESINK, &tty_n_tracesink);
+>      
+>      if (retval < 0)
+>              pr_err("%s: Registration failed: %d\n", __func__, retval);
+>              
+>      return retval;
+> }
+
+I can make the minor modification.
+
+> 
+> ...
+> > +static void __exit n_tracesink_exit(void)
+> > +{
+> > +	int retval;
+> > +
+> > +	retval = tty_unregister_ldisc(N_TRACESINK);
+> > +
+> > +	if (retval < 0)
+> > +		pr_err("%s: Unregistration failed: %d\n", __func__,  retval);
+> > +}
+> 
+> How about:
+> 
+> static void __exit n_tracesink_exit(void)
+> {
+>      int retval = tty_unregister_ldisc(N_TRACESINK);
+>      
+>      if (retval < 0)
+>              pr_err("%s: Unregistration failed: %d\n", __func__,  retval);
+> }
+> 
+> 
+Dido here.
+
+> ...
+> > --- a/include/linux/tty.h
+> > +++ b/include/linux/tty.h
+> > @@ -50,6 +50,8 @@
+> >  #define N_CAIF		20      /* CAIF protocol for talking to modems */
+> >  #define N_GSM0710	21	/* GSM 0710 Mux */
+> >  #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+> > +#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+> > +#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
+> >  
+> 
+> Lining up those defines would be nice :)
 > 
 > 
 
