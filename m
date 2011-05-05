@@ -1,417 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1EEWAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 18:00:22 -0400
-Received: from the.earth.li ([46.43.34.31]:44259 "EHLO the.earth.li"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab1EEWAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 18:00:20 -0400
-Date: Thu, 5 May 2011 15:00:18 -0700
-From: Jonathan McDowell <noodles@earth.li>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add support for VSC055 Enhanced Two-Wire Serial
- Backplane controller
-Message-ID: <20110505220018.GF28362@earth.li>
-References: <20110505041205.GY4835@earth.li>
- <4DC267E3.6080206@cam.ac.uk>
+	id S1753533Ab1EEWET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 18:04:19 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:35392 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750853Ab1EEWES (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 18:04:18 -0400
+X-Authenticated: #1474915
+X-Provags-ID: V01U2FsdGVkX18F2MwLP3wFAMf7R6n/8cE48+NkcfSEwQrTKYyXIp
+	eU62UdLD21O9xo
+Message-ID: <4DC31EDE.2020503@gmx.de>
+Date: Fri, 06 May 2011 00:04:14 +0200
+From: Thomas Sattler <tsattler@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC267E3.6080206@cam.ac.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: iotop: khugepaged at 99.99% (2.6.38.X)
+References: <4DAF6C0B.3070009@gmx.de> <20110427134613.GI32590@random.random> <4DC14474.9040001@gmx.de> <20110504143842.GK7838@random.random>
+In-Reply-To: <20110504143842.GK7838@random.random>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 10:03:31AM +0100, Jonathan Cameron wrote:
-> Sorry Jonathan and Grant. I accidentally sent this only to you and
-> not to lkml, hence the resend.
+It happened again: This time with 2.6.38.4 after 13 days uptime.
+In fact it was "13 days after last boot", since this machine is
+hibernated quite often. I waited only two minutes before I run
+'reboot' as root.
 
-That's my fault; I sent the initial revision to Grant and missed the
-lkml CC, then just bounced it to lkml.
+> Please next time can you run SYSRQ+t too in addition of SYSRQ+l?
 
-> Couple of suggestions for minor tidying up inline.
+See http://pastebin.com/raw.php?i=XnXXfC40 (It seems to me SYSRQ+l
+did not work at all? And does also not work on 2.6.38.5?)
 
-Thanks. Things I've taken on board and updated:
+see http://pastebin.com/raw.php?i=Zuv0VnUP for 'top/iotop'
 
- * Use u8, not uint8_t for 8 bit types.
- * Remove read_reg/write_reg wrappers and use i2c_smbus functions
-   directly.
- * Fold container_of usage into struct vsc055_chip variable definition.
- * Use !! instead of ? 1 : 0.
- * Rename i2c_lock to reg_lock.
- * Move comment about cached status to correct location.
+> You can run also a "ps xal" to see the actual scheduler task
+> state.
 
-Things I left:
+I had no access to my mails and forgot to run 'ps xal'. :-(
 
- * pin/block - when they're used multiple times I think this is clearer
-   and reflects how the data sheet talks about the GPIO lines.
- * Display version number - I think this is useful to indicate the
-   device has been correctly found (I'd prefer it if there was a
-   certain way to ID I2C devices).
+> If we understand what it is, it'll be easy to tell if it was already
+> fixed in 2.6.38.4 but I doubt unless it's not related to MM.
 
------
+Definitely not fixed in 2.6.38.4.
 
-Add support for the GPIOs on Maxim VSC055 I2C Enhanced Two-Wire Serial
-Backplane controller.
+Thomas
 
-This chip features 64 bits of user-definable, bidirectional GPIOs. It also
-has the ability to do PWM fan control output and LED flashing, but support
-for that functionality is not included at present.
-
-Signed-off-by: Jonathan McDowell <noodles@earth.li>
-
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index cc150db..4c5de65 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -255,6 +255,13 @@ config GPIO_TWL4030
- 	  Say yes here to access the GPIO signals of various multi-function
- 	  power management chips from Texas Instruments.
- 
-+config GPIO_VSC055
-+	tristate "VSC055 GPIOs"
-+	depends on I2C
-+	help
-+	  Say yes here to access the GPIOs found on the Maxim VSC055 Enhanced
-+	  Two-Wire Serial Backplane controller.
-+
- config GPIO_WM831X
- 	tristate "WM831x GPIOs"
- 	depends on MFD_WM831X
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index d2752b2..f82491d 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -42,4 +42,5 @@ obj-$(CONFIG_GPIO_RDC321X)	+= rdc321x-gpio.o
- obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
- obj-$(CONFIG_GPIO_SX150X)	+= sx150x.o
- obj-$(CONFIG_GPIO_VX855)	+= vx855_gpio.o
-+obj-$(CONFIG_GPIO_VSC055)	+= vsc055.o
- obj-$(CONFIG_GPIO_ML_IOH)	+= ml_ioh_gpio.o
-diff --git a/drivers/gpio/vsc055.c b/drivers/gpio/vsc055.c
-new file mode 100644
-index 0000000..1ca6ae0
---- /dev/null
-+++ b/drivers/gpio/vsc055.c
-@@ -0,0 +1,283 @@
-+/*
-+ *  vsc055.c - Enhanced Two-Wire Serial Backplane Control with 64 I/O lines.
-+ *
-+ *  Copyright (C) 2011 Jonathan McDowell <noodles@earth.li>
-+ *
-+ *  Derived from drivers/gpio/pca953x.c
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; version 2 of the License.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/i2c/vsc055.h>
-+#include <linux/slab.h>
-+
-+#define VSC055_GPD0		0x00
-+#define VSC055_DDP0		0x10
-+#define VSC055_BCIS		0xF8
-+#define VSC055_BCT		0xFC
-+#define VSC055_VER		0xFF
-+
-+static const struct i2c_device_id vsc055_id[] = {
-+	{ "vsc055" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, vsc055_id);
-+
-+struct vsc055_chip {
-+	unsigned gpio_start;
-+	u8 reg_output[8];
-+	u8 reg_direction[8];
-+	struct mutex reg_lock;
-+
-+	struct i2c_client *client;
-+	struct gpio_chip gpio_chip;
-+	const char *const *names;
-+};
-+
-+static int vsc055_gpio_direction_input(struct gpio_chip *gc, unsigned off)
-+{
-+	struct vsc055_chip *chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+	u8 reg_val;
-+	int ret;
-+	int block, pin;
-+
-+	block = off >> 3;
-+	pin = off & 7;
-+
-+	mutex_lock(&chip->reg_lock);
-+	reg_val = chip->reg_direction[block] | (1u << pin);
-+	ret = i2c_smbus_write_byte_data(chip->client, VSC055_DDP0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_direction[block] = reg_val;
-+exit:
-+	mutex_unlock(&chip->reg_lock);
-+	return ret;
-+}
-+
-+static int vsc055_gpio_direction_output(struct gpio_chip *gc,
-+		unsigned off, int val)
-+{
-+	struct vsc055_chip *chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+	u8 reg_val;
-+	int ret;
-+	int block, pin;
-+
-+	block = off >> 3;
-+	pin = off & 7;
-+
-+	mutex_lock(&chip->reg_lock);
-+	/* set output level */
-+	if (val)
-+		reg_val = chip->reg_output[block] | (1u << pin);
-+	else
-+		reg_val = chip->reg_output[block] & ~(1u << pin);
-+
-+	ret = i2c_smbus_write_byte_data(chip->client, VSC055_GPD0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_output[block] = reg_val;
-+
-+	/* then direction */
-+	reg_val = chip->reg_direction[block] & ~(1u << off);
-+	ret = i2c_smbus_write_byte_data(chip->client, VSC055_DDP0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_direction[block] = reg_val;
-+	ret = 0;
-+exit:
-+	mutex_unlock(&chip->reg_lock);
-+	return ret;
-+}
-+
-+static int vsc055_gpio_get_value(struct gpio_chip *gc, unsigned off)
-+{
-+	struct vsc055_chip *chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+	u8 reg_val;
-+
-+	mutex_lock(&chip->reg_lock);
-+	reg_val = i2c_smbus_read_byte_data(chip->client, VSC055_GPD0 + (off >> 3));
-+	mutex_unlock(&chip->reg_lock);
-+	if (reg_val < 0) {
-+		dev_err(&chip->client->dev, "failed to read GPIO value.\n");
-+		return 0;
-+	}
-+
-+	return !!(reg_val & (1u << (off & 7)));
-+}
-+
-+static void vsc055_gpio_set_value(struct gpio_chip *gc, unsigned off, int val)
-+{
-+	struct vsc055_chip *chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+	u8 reg_val;
-+	int ret;
-+	int block, pin;
-+
-+	block = off >> 3;
-+	pin = off & 7;
-+
-+	mutex_lock(&chip->reg_lock);
-+	if (val)
-+		reg_val = chip->reg_output[block] | (1u << pin);
-+	else
-+		reg_val = chip->reg_output[block] & ~(1u << pin);
-+
-+	ret = i2c_smbus_write_byte_data(chip->client, VSC055_GPD0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_output[block] = reg_val;
-+exit:
-+	mutex_unlock(&chip->reg_lock);
-+}
-+
-+static void vsc055_setup_gpio(struct vsc055_chip *chip)
-+{
-+	struct gpio_chip *gc = &chip->gpio_chip;;
-+
-+	gc->direction_input  = vsc055_gpio_direction_input;
-+	gc->direction_output = vsc055_gpio_direction_output;
-+	gc->get = vsc055_gpio_get_value;
-+	gc->set = vsc055_gpio_set_value;
-+	gc->can_sleep = 1;
-+
-+	gc->base = chip->gpio_start;
-+	gc->ngpio = 64;
-+	gc->label = chip->client->name;
-+	gc->dev = &chip->client->dev;
-+	gc->owner = THIS_MODULE;
-+	gc->names = chip->names;
-+}
-+
-+static int __devinit vsc055_probe(struct i2c_client *client,
-+				   const struct i2c_device_id *id)
-+{
-+	struct vsc055_platform_data *pdata;
-+	struct vsc055_chip *chip;
-+	int ret;
-+	int i;
-+
-+	chip = kzalloc(sizeof(struct vsc055_chip), GFP_KERNEL);
-+	if (chip == NULL)
-+		return -ENOMEM;
-+
-+	pdata = client->dev.platform_data;
-+	if (pdata == NULL) {
-+		dev_dbg(&client->dev, "no platform data\n");
-+		ret = -EINVAL;
-+		goto out_failed;
-+	}
-+
-+	chip->client = client;
-+
-+	chip->gpio_start = pdata->gpio_base;
-+
-+	chip->names = pdata->names;
-+
-+	mutex_init(&chip->reg_lock);
-+
-+	vsc055_setup_gpio(chip);
-+
-+	/*
-+	 * Initialize cached registers from their original values.
-+	 * We can't share this chip with another i2c master.
-+	 */
-+	for (i = 0; i < 8; i++) {
-+		ret = i2c_smbus_read_byte_data(chip->client, VSC055_GPD0 + i);
-+		if (ret < 0)
-+			goto out_failed;
-+		chip->reg_output[i] = ret;
-+
-+		ret = i2c_smbus_read_byte_data(chip->client, VSC055_DDP0 + i);
-+		if (ret < 0)
-+			goto out_failed;
-+		chip->reg_direction[i] = ret;
-+	}
-+
-+	ret = i2c_smbus_read_byte_data(chip->client, VSC055_VER);
-+	if (ret < 0)
-+		goto out_failed;
-+	dev_info(&client->dev, "Found VSC055 revision %d.%d\n", ret >> 4, ret & 0xF);
-+
-+	ret = gpiochip_add(&chip->gpio_chip);
-+	if (ret)
-+		goto out_failed;
-+
-+	if (pdata->setup) {
-+		ret = pdata->setup(client, chip->gpio_chip.base,
-+				chip->gpio_chip.ngpio, pdata->context);
-+		if (ret < 0)
-+			dev_warn(&client->dev, "setup failed, %d\n", ret);
-+	}
-+
-+	i2c_set_clientdata(client, chip);
-+	return 0;
-+
-+out_failed:
-+	kfree(chip);
-+	return ret;
-+}
-+
-+static int vsc055_remove(struct i2c_client *client)
-+{
-+	struct vsc055_platform_data *pdata = client->dev.platform_data;
-+	struct vsc055_chip *chip = i2c_get_clientdata(client);
-+	int ret = 0;
-+
-+	if (pdata->teardown) {
-+		ret = pdata->teardown(client, chip->gpio_chip.base,
-+				chip->gpio_chip.ngpio, pdata->context);
-+		if (ret < 0) {
-+			dev_err(&client->dev, "%s failed, %d\n",
-+					"teardown", ret);
-+			return ret;
-+		}
-+	}
-+
-+	ret = gpiochip_remove(&chip->gpio_chip);
-+	if (ret) {
-+		dev_err(&client->dev, "%s failed, %d\n",
-+				"gpiochip_remove()", ret);
-+		return ret;
-+	}
-+
-+	kfree(chip);
-+	return 0;
-+}
-+
-+static struct i2c_driver vsc055_driver = {
-+	.driver = {
-+		.name	= "vsc055",
-+	},
-+	.probe		= vsc055_probe,
-+	.remove		= vsc055_remove,
-+	.id_table	= vsc055_id,
-+};
-+
-+static int __init vsc055_init(void)
-+{
-+	return i2c_add_driver(&vsc055_driver);
-+}
-+/* register after i2c postcore initcall and before
-+ * subsys initcalls that may rely on these GPIOs
-+ */
-+subsys_initcall(vsc055_init);
-+
-+static void __exit vsc055_exit(void)
-+{
-+	i2c_del_driver(&vsc055_driver);
-+}
-+module_exit(vsc055_exit);
-+
-+MODULE_AUTHOR("Jonathan McDowell <noodles@earth.li>");
-+MODULE_DESCRIPTION("GPIO driver for VSC055");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/i2c/vsc055.h b/include/linux/i2c/vsc055.h
-new file mode 100644
-index 0000000..dc1462b
---- /dev/null
-+++ b/include/linux/i2c/vsc055.h
-@@ -0,0 +1,22 @@
-+#ifndef _LINUX_VSC055_H
-+#define _LINUX_VSC055_H
-+
-+#include <linux/types.h>
-+#include <linux/i2c.h>
-+
-+/* Platform data for the VSC055 64-bit I/O expander driver */
-+
-+struct vsc055_platform_data {
-+	unsigned	gpio_base;	/* number of the first GPIO */
-+	void		*context;	/* param to setup/teardown */
-+
-+	int		(*setup)(struct i2c_client *client,
-+				unsigned gpio, unsigned ngpio,
-+				void *context);
-+	int		(*teardown)(struct i2c_client *client,
-+				unsigned gpio, unsigned ngpio,
-+				void *context);
-+	const char	*const *names;
-+};
-+
-+#endif /* _LINUX_VSC055_H */
------
-J.
-
--- 
-/-\                             |     What's the worse that could
-|@/  Debian GNU/Linux Developer |     happen?  Smoke. - Anonymous
-\-                              |              HWHacker
