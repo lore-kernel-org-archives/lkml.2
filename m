@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab1EESUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 14:20:23 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:33504 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755696Ab1EESUW (ORCPT
+	id S1755770Ab1EESa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 14:30:28 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:47354 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab1EESa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 14:20:22 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 10nIlsoVM1k6PivL.CslAk_aFsfVkOvPXsWUeK8UK8JIz0B
- DVDui.ZkbNwL3peYwej5yDJTKBke2wHJfGUJW5hyqQ.F2iMLI.84osVbFEAP
- AFz57I57voab0Gpl67O8j0aTtnlY__sT__fW0OvcQ5e0HBLaFkCNYs4Is9AO
- h2ZXip6k5rtbklo5PdRiwYvNE0pq25Wu8r2LGIkwRzKyeniJjt1I7WNd.H3x
- EjlxiavMlE6YRgVbZZh13Y7jvZR3sRejKFVXA.MftXIwEV3QBmWRPapGzPyO
- rRbiYljQXKLwYsS2_zbeit6x3fooVcPjQasW5YRN0jL31kKYgEHiHelQbXle
- NbUSrhxz.8di_F5q6XeF2EQ--
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 5 May 2011 13:20:16 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-In-Reply-To: <20110505095421.GD30950@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1105051319230.6821@router.home>
-References: <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com> <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com> <alpine.DEB.2.00.1105041341550.5495@router.home> <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com> <alpine.DEB.2.00.1105041421280.5495@router.home>
- <BANLkTi=efcVkGb+DReZ+i1p5j4QXJYjKjQ@mail.gmail.com> <alpine.DEB.2.00.1105041454190.5495@router.home> <BANLkTik7AHGr7+BG8nE16j-ayctD0LOH=w@mail.gmail.com> <BANLkTimvxOMuPJ0W0npo5i3gwFqdRw74Pw@mail.gmail.com> <alpine.LFD.2.02.1105042325500.3005@ionos>
- <20110505095421.GD30950@htj.dyndns.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 5 May 2011 14:30:26 -0400
+Date: Thu, 5 May 2011 20:30:12 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: tim.gardner@canonical.com
+Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>
+Subject: Re: [PATCH] fbcon -- fix race between open and removal of
+ framebuffers
+Message-ID: <20110505203012.7bc8127f@neptune.home>
+In-Reply-To: <1304617307-7389-2-git-send-email-tim.gardner@canonical.com>
+References: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com>
+	<1304617307-7389-2-git-send-email-tim.gardner@canonical.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, Tejun Heo wrote:
+On Thu, 05 May 2011 tim.gardner@canonical.com wrote:
+> From: Andy Whitcroft <apw@canonical.com>
+> 
+> Currently there is no locking for updates to the registered_fb list.
+> This allows an open through /dev/fbN to pick up a registered framebuffer
+> pointer in parallel with it being released, as happens when a conflicting
+> framebuffer is ejected or on module unload.  There is also no reference
+> counting on the framebuffer descriptor which is referenced from all open
+> files, leading to references to released or reused memory to persist on
+> these open files.
+> 
+> This patch adds a reference count to the framebuffer descriptor to prevent
+> it from being released until after all pending opens are closed.  This
+> allows the pending opens to detect the closed status and unmap themselves.
+> It also adds locking to the framebuffer lookup path, locking it against
+> the removal path such that it is possible to atomically lookup and take a
+> reference to the descriptor.  It also adds locking to the read and write
+> paths which currently could access the framebuffer descriptor after it
+> has been freed.  Finally it moves the device to FBINFO_STATE_REMOVED to
+> indicate that all access should be errored for this device.
 
-> Anyways, that's what I've been thinking.  I'll get to it in the next
-> devel cycle or the one after that.  What do you guys think about soft
-> irq masking idea?
+Is there a good reason to not use kref for the refcounting? Except for
+(un)registering framebuffers this would avoid the need for taking
+registered_lock.
 
-Great idea. Would make the whole irq on/off business much cheaper.
+Unfortunately fbcon also accesses registered_fb (quite a lot!) but it
+probably is save enough through use of the notifiers.
 
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> Acked-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Leann Ogasawara <leann.ogasawara@canonical.com>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/video/fbmem.c |  132 ++++++++++++++++++++++++++++++++++++++-----------
+>  include/linux/fb.h    |    2 +
+>  2 files changed, 105 insertions(+), 29 deletions(-)
+> 
+
+...
+
+> diff --git a/include/linux/fb.h b/include/linux/fb.h
+> index df728c1..60de3fa 100644
+> --- a/include/linux/fb.h
+> +++ b/include/linux/fb.h
+> @@ -834,6 +834,7 @@ struct fb_tile_ops {
+>  struct fb_info {
+>  	int node;
+>  	int flags;
+> +	int ref_count;
+>  	struct mutex lock;		/* Lock for open/release/ioctl funcs */
+>  	struct mutex mm_lock;		/* Lock for fb_mmap and smem_* fields */
+>  	struct fb_var_screeninfo var;	/* Current var */
+> @@ -873,6 +874,7 @@ struct fb_info {
+>  	void *pseudo_palette;		/* Fake palette of 16 colors */ 
+>  #define FBINFO_STATE_RUNNING	0
+>  #define FBINFO_STATE_SUSPENDED	1
+> +#define FBINFO_STATE_REMOVED	2
+>  	u32 state;			/* Hardware state i.e suspend */
+>  	void *fbcon_par;                /* fbcon use-only private area */
+>  	/* From here on everything is device dependent */
