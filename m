@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab1EEGGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 02:06:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50766 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab1EEGGQ convert rfc822-to-8bit (ORCPT
+	id S1751655Ab1EEGSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 02:18:22 -0400
+Received: from mx1.alphion.com ([75.147.97.34]:43937 "EHLO mx1.alphion.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384Ab1EEGSV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 02:06:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Tc4fBfFOdmU3lyYR2YhP1nr1G5UXVzyWT4FTdnIipRNw9KyfGHKcV6TCtrcx923GJb
-         2DOAVHCYAGsWO5lltm3A==
+	Thu, 5 May 2011 02:18:21 -0400
+X-CTCH-RefID: str=0001.0A02020A.4DC24124.0062,ss=1,fgs=0
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimMvEyzG-S=S6R4fVsui-9ok63jwg@mail.gmail.com>
-References: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
- <BANLkTimorXOLcvB2dwXMAH8n2UU-C2ntcA@mail.gmail.com> <20110504212635.GE1804@nowhere>
- <BANLkTimMvEyzG-S=S6R4fVsui-9ok63jwg@mail.gmail.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 4 May 2011 23:05:41 -0700
-Message-ID: <BANLkTi=Y9zRnzouBKq9NnXZE5+FmXAWyfg@mail.gmail.com>
-Subject: Re: [PATCH] trace: Check for waiting readers before calling wakeup()
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Subject: Network packet processing related Query
+Date: Thu, 5 May 2011 02:18:09 -0400
+Message-ID: <846629303ABF174A9EA5BB26D6965A5901E8B77C@MX2.AlphionCorp.local>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Network packet processing related Query
+Thread-Index: AcwK7DRnlVJMJbuvQKij6WmvQJIymQ==
+From: "Sachin Rane" <SRane@alphion.com>
+To: <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 8:53 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, May 4, 2011 at 2:26 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> On Wed, May 04, 2011 at 02:21:28PM -0700, Vaibhav Nagarnaik wrote:
->>> Steven, Frederic
->>>
->>> Does this patch look ok?
->>>
->>> Vaibhav Nagarnaik
->>>
->>
->> No problem for me. I'll let Steve give the last word.
->
-> Almost every time somebody does this optimization, there's a race.
->
-> The thing is, because waitqueue_active() implies no barriers, if there
-> is somebody adding itself to the waitqueue just at the same time as
-> somebody is waking things up, the waiter may lose wakeup events -
-> there is no memory barriers to guarantee that the waker will see
-> either the waiter, or the waiter will see the event that it waited
-> for.
->
-> I dunno. It's sometimes safe, but it's equally often not safe unless
-> there is some other locking around the thing. So I'd be a bit nervous.
-> The tracer people would need to do some serious thinking about it.
->
->                   Linus
->
+Hi,
 
-Thanks for looking at the patch and weighing in.
+I want to improve my understanding about the logic of the code written
+for 'process_backlog ()' .
 
-The problem I was trying to solve here is the contention when trying
-to wake up a process. The process calling wakeup() has to take a
-spinlock. When concurrent processes are getting traced, they contend
-on locking the spinlock and cause large tracing latency. Having safe
-locking around this code would defeat the purpose of this patch.
+File Source: net/core/dev.c,  linux-2.6.16
 
-One could argue that if the trace reader does not get a wakeup() event
-due to race, it will get it when the tracepoint is hit the next time.
+I am considering only Non-NAPI network devices ( > 1) in this
+discussion.
 
-Also, it seems the current tracers cannot rely on polling on the trace
-file. The wakeup() is called only when the syscalls get traced. If any
-other events are traced, the trace logging function (in
-include/linux/syscalls.h) does not call wakeup(). This was done due to
-hard lockup in the kernel if sched events were being traced.
+The 'net_rx_action' function invokes 'dev->poll(dev, &budget)' for each
+network device present in 'poll_list'. '
+The default handler for Non-NAPI network devices is 'process_backlog
+()'.
 
-I am new to this area, so Frederic and/or Steven could address your
-concerns better.
+The signature of the function is:
+static int process_backlog (struct net_device *backlog_dev, int *budget)
 
+'backlog_dev' represents the device for which the 'poll' function is
+invoked.
 
+In the code body the function acts on CPU specific 'input_pkt_queue'.
+This queue holds all the incoming packets from the network devices and
+'poll_list' has reference for these network devices.
 
-Vaibhav Nagarnaik
+The function takes out one element (packet) from the 'input_pkt_queue'
+and process the packet.
+
+As the 'input_pkt_queue' is shared by all the network devices,
+the 'packet' which is popped-out from the list can
+be from any network device not required to be from 'backlog_dev' (the
+device
+for which 'process_backlog' has been called).
+
+I have confusion here.
+The code doesn't operate only on the packets queued-in by 'backlog_dev'
+to
+'input_pkt_queue'. It pops-out the node from the queue and process it.
+But it updates the 'quota' which is specific for the device
+'backlog_dev' for which the function have got called.
+
+Why it is so? Am I missing out something here?
+
+Thanks for reading my mail patiently.
+
+Regards,
+Sachin Rane
