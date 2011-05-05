@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1EEIwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 04:52:24 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:63817 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab1EEIwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 04:52:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PLbCN8C5v82MZOIa0bTJN/x58PClo6qsNK+FWMgrmH6jtb1c4pqIr6y/RF2EM3wk2c
-         AmGfjfied+0Q6Hhp+itbGYeKOzp13RNj6qlpbfzDE+5L6EFvOohv1mfB/Nwi/X+QrPyc
-         gap3IXryezmEYip+YNhmCi3L7QfziJ0B/90a4=
-From: Robin Dong <hao.bigrat@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Robin Dong <sanbai@taobao.com>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/3] mm: change incorrect 'extern' keyword to 'static'
-Date: Thu,  5 May 2011 16:51:58 +0800
-Message-Id: <1304585518-9665-3-git-send-email-sanbai@taobao.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1304585518-9665-1-git-send-email-sanbai@taobao.com>
-References: <1304585518-9665-1-git-send-email-sanbai@taobao.com>
+	id S1753370Ab1EEI5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 04:57:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751744Ab1EEI5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 04:57:35 -0400
+Date: Thu, 5 May 2011 11:56:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Krishna Kumar <krkumar2@in.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, lguest@lists.ozlabs.org,
+        Shirley Ma <xma@us.ibm.com>, kvm@vger.kernel.org,
+        linux-s390@vger.kernel.org, netdev@vger.kernel.org,
+        habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        virtualization@lists.linux-foundation.org, steved@us.ibm.com,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com
+Subject: Re: [PATCH 07/18] virtio ring: inline function to check for events
+Message-ID: <20110505085656.GC17647@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+ <cc4596a5ecdbf8dd37b5567a36667e3841f18ca3.1304541919.git.mst@redhat.com>
+ <BANLkTi=eH-iK7L2LBAm0eqidapqXqhSqxw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=eH-iK7L2LBAm0eqidapqXqhSqxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change function memblock_memory_can_coalesce from 'extern' to 'static' to
-match the memblock_* series function.
+On Thu, May 05, 2011 at 09:34:46AM +0100, Stefan Hajnoczi wrote:
+> On Wed, May 4, 2011 at 9:51 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > With the new used_event and avail_event and features, both
+> > host and guest need similar logic to check whether events are
+> > enabled, so it helps to put the common code in the header.
+> >
+> > Note that Xen has similar logic for notification hold-off
+> > in include/xen/interface/io/ring.h with req_event and req_prod
+> > corresponding to event_idx + 1 and new_idx respectively.
+> > +1 comes from the fact that req_event and req_prod in Xen start at 1,
+> > while event index in virtio starts at 0.
+> >
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/virtio_ring.h |   14 ++++++++++++++
+> >  1 files changed, 14 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> > index f791772..2a3b0ea 100644
+> > --- a/include/linux/virtio_ring.h
+> > +++ b/include/linux/virtio_ring.h
+> > @@ -124,6 +124,20 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
+> >                + sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+> >  }
+> >
+> > +/* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+> > +/* Assuming a given event_idx value from the other size, if
+> 
+> s/other size/other side/ ?
+> 
+> Stefan
 
-Signed-off-by: Robin Dong <sanbai@taobao.com>
----
- mm/memblock.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Exactly. Good catch, thanks.
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 400dc62..9570c43 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -292,7 +292,7 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 	return 0;
- }
- 
--extern int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
-+static int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
- 					  phys_addr_t addr2, phys_addr_t size2)
- {
- 	return 1;
 -- 
-1.7.1
-
+MST
