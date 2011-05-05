@@ -1,430 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750949Ab1EEEMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 00:12:21 -0400
-Received: from the.earth.li ([46.43.34.31]:37008 "EHLO the.earth.li"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733Ab1EEEMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 00:12:20 -0400
-Date: Wed, 4 May 2011 21:12:05 -0700
-From: Jonathan McDowell <noodles@earth.li>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] Add support for VSC055 Enhanced Two-Wire Serial Backplane
- controller
-Message-ID: <20110505041205.GY4835@earth.li>
+	id S1751261Ab1EEE0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 00:26:19 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31930 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab1EEE0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 00:26:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Xii7515xmWnznAPd930TzDLthDRhCxp2CaIaoBjqTv3onCO26e8+ZRQjDmu5kKV2K4
+         FXI3s+suJb2HpVr2/bJw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTi=0NMdnaxBigtcW3vx1VpRQQrYcpA@mail.gmail.com>
+References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+	<AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
+	<AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
+	<alpine.LSU.2.00.1103182158200.18771@sister.anvils>
+	<BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
+	<AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
+	<BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com>
+	<BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
+	<BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com>
+	<BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
+	<BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com>
+	<BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
+	<BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com>
+	<alpine.LSU.2.00.1104060837590.4909@sister.anvils>
+	<BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com>
+	<BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
+	<BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com>
+	<alpine.LSU.2.00.1104070718120.28555@sister.anvils>
+	<BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com>
+	<BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
+	<BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com>
+	<BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
+	<BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com>
+	<BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
+	<BANLkTikZ1szdH5HZdjKEEzG2+1VPusWEeg@mail.gmail.com>
+	<BANLkTingV3eiHEco+36YyM4YTDHFHc9_jA@mail.gmail.com>
+	<BANLkTi=D+oe_zyxA1Oj5S36F6Tk0J+26iQ@mail.gmail.com>
+	<BANLkTim_QtaQLa9GV5hMZyCmW_WAz_Ucvg@mail.gmail.com>
+	<BANLkTik-s3Gr6GDMN4L24wX2BK9n3okzQA@mail.gmail.com>
+	<BANLkTi=gtiZU3W+UfkgaygURtVWNE6qyEw@mail.gmail.com>
+	<BANLkTi=0NMdnaxBigtcW3vx1VpRQQrYcpA@mail.gmail.com>
+Date: Wed, 4 May 2011 21:26:14 -0700
+Message-ID: <BANLkTi=wfr1O0c5CjLfjJastN-RKup0zBQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd been holding off on sending this until I got some feedback about the
-PC8741x driver I sent a couple of weeks ago, but seeing as I have it
-sitting around I figured I may as well send it anyway.
+On Wed, May 4, 2011 at 8:37 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> I seriously considered making that "skip stack guard page" and the
+> "mlock lookup" be two separate bits, because conceptually they are
+> really pretty independent, but right now the only _users_ seem to be
+> tied together, so I kept it as one single bit (FOLL_MLOCK).
 
------
-Add support for the GPIOs on Maxim VSC055 I2C Enhanced Two-Wire Serial
-Backplane controller.
+Yes, this seems best for now.
 
-This chip features 64 bits of user-definable, bidirectional GPIOs. It also
-has the ability to do PWM fan control output and LED flashing, but support
-for that functionality is not included at present.
+> But as far as I can tell, the attached patch is 100% equivalent to
+> what we do now, except for that "skip stack guard pages only for
+> mlock" change.
+>
+> Comments? I like this patch because it seems to make the logic more
+> straightforward.
+>
+> But somebody else should double-check my logic.
 
-Signed-off-by: Jonathan McDowell <noodles@earth.li>
+It makes perfect sense.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index cc150db..4c5de65 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -255,6 +255,13 @@ config GPIO_TWL4030
- 	  Say yes here to access the GPIO signals of various multi-function
- 	  power management chips from Texas Instruments.
- 
-+config GPIO_VSC055
-+	tristate "VSC055 GPIOs"
-+	depends on I2C
-+	help
-+	  Say yes here to access the GPIOs found on the Maxim VSC055 Enhanced
-+	  Two-Wire Serial Backplane controller.
-+
- config GPIO_WM831X
- 	tristate "WM831x GPIOs"
- 	depends on MFD_WM831X
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index d2752b2..f82491d 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -42,4 +42,5 @@ obj-$(CONFIG_GPIO_RDC321X)	+= rdc321x-gpio.o
- obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
- obj-$(CONFIG_GPIO_SX150X)	+= sx150x.o
- obj-$(CONFIG_GPIO_VX855)	+= vx855_gpio.o
-+obj-$(CONFIG_GPIO_VSC055)	+= vsc055.o
- obj-$(CONFIG_GPIO_ML_IOH)	+= ml_ioh_gpio.o
-diff --git a/drivers/gpio/vsc055.c b/drivers/gpio/vsc055.c
-new file mode 100644
-index 0000000..c218dac
---- /dev/null
-+++ b/drivers/gpio/vsc055.c
-@@ -0,0 +1,326 @@
-+/*
-+ *  vsc055.c - Enhanced Two-Wire Serial Backplane Control with 64 I/O lines.
-+ *
-+ *  Copyright (C) 2011 Jonathan McDowell <noodles@earth.li>
-+ *
-+ *  Derived from drivers/gpio/pca953x.c
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; version 2 of the License.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/i2c/vsc055.h>
-+#include <linux/slab.h>
-+
-+#define VSC055_GPD0		0x00
-+#define VSC055_DDP0		0x10
-+#define VSC055_BCIS		0xF8
-+#define VSC055_BCT		0xFC
-+#define VSC055_VER		0xFF
-+
-+static const struct i2c_device_id vsc055_id[] = {
-+	{ "vsc055" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, vsc055_id);
-+
-+struct vsc055_chip {
-+	unsigned gpio_start;
-+	uint8_t reg_output[8];
-+	uint8_t reg_direction[8];
-+	struct mutex i2c_lock;
-+
-+	struct i2c_client *client;
-+	struct gpio_chip gpio_chip;
-+	const char *const *names;
-+};
-+
-+static int vsc055_write_reg(struct vsc055_chip *chip, int reg, uint8_t val)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_write_byte_data(chip->client, reg, val);
-+
-+	if (ret < 0) {
-+		dev_err(&chip->client->dev, "failed writing register\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int vsc055_read_reg(struct vsc055_chip *chip, int reg, uint8_t *val)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_read_byte_data(chip->client, reg);
-+
-+	if (ret < 0) {
-+		dev_err(&chip->client->dev, "failed reading register\n");
-+		return ret;
-+	}
-+
-+	*val = (uint8_t)ret;
-+	return 0;
-+}
-+
-+static int vsc055_gpio_direction_input(struct gpio_chip *gc, unsigned off)
-+{
-+	struct vsc055_chip *chip;
-+	uint8_t reg_val;
-+	int ret;
-+	int block, pin;
-+
-+	chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+
-+	block = off >> 3;
-+	pin = off & 7;
-+
-+	mutex_lock(&chip->i2c_lock);
-+	reg_val = chip->reg_direction[block] | (1u << pin);
-+	ret = vsc055_write_reg(chip, VSC055_DDP0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_direction[block] = reg_val;
-+	ret = 0;
-+exit:
-+	mutex_unlock(&chip->i2c_lock);
-+	return ret;
-+}
-+
-+static int vsc055_gpio_direction_output(struct gpio_chip *gc,
-+		unsigned off, int val)
-+{
-+	struct vsc055_chip *chip;
-+	uint8_t reg_val;
-+	int ret;
-+	int block, pin;
-+
-+	chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+
-+	block = off >> 3;
-+	pin = off & 7;
-+
-+	mutex_lock(&chip->i2c_lock);
-+	/* set output level */
-+	if (val)
-+		reg_val = chip->reg_output[block] | (1u << pin);
-+	else
-+		reg_val = chip->reg_output[block] & ~(1u << pin);
-+
-+	ret = vsc055_write_reg(chip, VSC055_GPD0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_output[block] = reg_val;
-+
-+	/* then direction */
-+	reg_val = chip->reg_direction[block] & ~(1u << off);
-+	ret = vsc055_write_reg(chip, VSC055_DDP0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_direction[block] = reg_val;
-+	ret = 0;
-+exit:
-+	mutex_unlock(&chip->i2c_lock);
-+	return ret;
-+}
-+
-+static int vsc055_gpio_get_value(struct gpio_chip *gc, unsigned off)
-+{
-+	struct vsc055_chip *chip;
-+	uint8_t reg_val;
-+	int ret;
-+
-+	chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+
-+	mutex_lock(&chip->i2c_lock);
-+	ret = vsc055_read_reg(chip, VSC055_GPD0 + (off >> 3), &reg_val);
-+	mutex_unlock(&chip->i2c_lock);
-+	if (ret < 0) {
-+		/* NOTE:  diagnostic already emitted; that's all we should
-+		 * do unless gpio_*_value_cansleep() calls become different
-+		 * from their nonsleeping siblings (and report faults).
-+		 */
-+		return 0;
-+	}
-+
-+	return (reg_val & (1u << (off & 7))) ? 1 : 0;
-+}
-+
-+static void vsc055_gpio_set_value(struct gpio_chip *gc, unsigned off, int val)
-+{
-+	struct vsc055_chip *chip;
-+	uint8_t reg_val;
-+	int ret;
-+	int block, pin;
-+
-+	chip = container_of(gc, struct vsc055_chip, gpio_chip);
-+
-+	block = off >> 3;
-+	pin = off & 7;
-+
-+	mutex_lock(&chip->i2c_lock);
-+	if (val)
-+		reg_val = chip->reg_output[block] | (1u << pin);
-+	else
-+		reg_val = chip->reg_output[block] & ~(1u << pin);
-+
-+	ret = vsc055_write_reg(chip, VSC055_GPD0 + block, reg_val);
-+	if (ret)
-+		goto exit;
-+
-+	chip->reg_output[block] = reg_val;
-+exit:
-+	mutex_unlock(&chip->i2c_lock);
-+}
-+
-+static void vsc055_setup_gpio(struct vsc055_chip *chip)
-+{
-+	struct gpio_chip *gc;
-+
-+	gc = &chip->gpio_chip;
-+
-+	gc->direction_input  = vsc055_gpio_direction_input;
-+	gc->direction_output = vsc055_gpio_direction_output;
-+	gc->get = vsc055_gpio_get_value;
-+	gc->set = vsc055_gpio_set_value;
-+	gc->can_sleep = 1;
-+
-+	gc->base = chip->gpio_start;
-+	gc->ngpio = 64;
-+	gc->label = chip->client->name;
-+	gc->dev = &chip->client->dev;
-+	gc->owner = THIS_MODULE;
-+	gc->names = chip->names;
-+}
-+
-+static int __devinit vsc055_probe(struct i2c_client *client,
-+				   const struct i2c_device_id *id)
-+{
-+	struct vsc055_platform_data *pdata;
-+	struct vsc055_chip *chip;
-+	int ret;
-+	int i;
-+	uint8_t ver;
-+
-+	chip = kzalloc(sizeof(struct vsc055_chip), GFP_KERNEL);
-+	if (chip == NULL)
-+		return -ENOMEM;
-+
-+	pdata = client->dev.platform_data;
-+	if (pdata == NULL) {
-+		dev_dbg(&client->dev, "no platform data\n");
-+		ret = -EINVAL;
-+		goto out_failed;
-+	}
-+
-+	chip->client = client;
-+
-+	chip->gpio_start = pdata->gpio_base;
-+
-+	chip->names = pdata->names;
-+
-+	mutex_init(&chip->i2c_lock);
-+
-+	/* initialize cached registers from their original values.
-+	 * we can't share this chip with another i2c master.
-+	 */
-+	vsc055_setup_gpio(chip);
-+
-+	for (i = 0; i < 8; i++) {
-+		ret = vsc055_read_reg(chip, VSC055_GPD0 + i,
-+			&chip->reg_output[i]);
-+		if (ret)
-+			goto out_failed;
-+		ret = vsc055_read_reg(chip, VSC055_DDP0 + i,
-+			&chip->reg_direction[i]);
-+		if (ret)
-+			goto out_failed;
-+	}
-+
-+	ret = vsc055_read_reg(chip, VSC055_VER, &ver);
-+	if (ret)
-+		goto out_failed;
-+	dev_info(&client->dev, "Found VSC055 revision %d.%d\n", ver >> 4, ver & 0xF);
-+
-+	ret = gpiochip_add(&chip->gpio_chip);
-+	if (ret)
-+		goto out_failed;
-+
-+	if (pdata->setup) {
-+		ret = pdata->setup(client, chip->gpio_chip.base,
-+				chip->gpio_chip.ngpio, pdata->context);
-+		if (ret < 0)
-+			dev_warn(&client->dev, "setup failed, %d\n", ret);
-+	}
-+
-+	i2c_set_clientdata(client, chip);
-+	return 0;
-+
-+out_failed:
-+	kfree(chip);
-+	return ret;
-+}
-+
-+static int vsc055_remove(struct i2c_client *client)
-+{
-+	struct vsc055_platform_data *pdata = client->dev.platform_data;
-+	struct vsc055_chip *chip = i2c_get_clientdata(client);
-+	int ret = 0;
-+
-+	if (pdata->teardown) {
-+		ret = pdata->teardown(client, chip->gpio_chip.base,
-+				chip->gpio_chip.ngpio, pdata->context);
-+		if (ret < 0) {
-+			dev_err(&client->dev, "%s failed, %d\n",
-+					"teardown", ret);
-+			return ret;
-+		}
-+	}
-+
-+	ret = gpiochip_remove(&chip->gpio_chip);
-+	if (ret) {
-+		dev_err(&client->dev, "%s failed, %d\n",
-+				"gpiochip_remove()", ret);
-+		return ret;
-+	}
-+
-+	kfree(chip);
-+	return 0;
-+}
-+
-+static struct i2c_driver vsc055_driver = {
-+	.driver = {
-+		.name	= "vsc055",
-+	},
-+	.probe		= vsc055_probe,
-+	.remove		= vsc055_remove,
-+	.id_table	= vsc055_id,
-+};
-+
-+static int __init vsc055_init(void)
-+{
-+	return i2c_add_driver(&vsc055_driver);
-+}
-+/* register after i2c postcore initcall and before
-+ * subsys initcalls that may rely on these GPIOs
-+ */
-+subsys_initcall(vsc055_init);
-+
-+static void __exit vsc055_exit(void)
-+{
-+	i2c_del_driver(&vsc055_driver);
-+}
-+module_exit(vsc055_exit);
-+
-+MODULE_AUTHOR("Jonathan McDowell <noodles@earth.li>");
-+MODULE_DESCRIPTION("GPIO driver for VSC055");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/i2c/vsc055.h b/include/linux/i2c/vsc055.h
-new file mode 100644
-index 0000000..dc1462b
---- /dev/null
-+++ b/include/linux/i2c/vsc055.h
-@@ -0,0 +1,22 @@
-+#ifndef _LINUX_VSC055_H
-+#define _LINUX_VSC055_H
-+
-+#include <linux/types.h>
-+#include <linux/i2c.h>
-+
-+/* Platform data for the VSC055 64-bit I/O expander driver */
-+
-+struct vsc055_platform_data {
-+	unsigned	gpio_base;	/* number of the first GPIO */
-+	void		*context;	/* param to setup/teardown */
-+
-+	int		(*setup)(struct i2c_client *client,
-+				unsigned gpio, unsigned ngpio,
-+				void *context);
-+	int		(*teardown)(struct i2c_client *client,
-+				unsigned gpio, unsigned ngpio,
-+				void *context);
-+	const char	*const *names;
-+};
-+
-+#endif /* _LINUX_VSC055_H */
------
+Reviewed-by: Michel Lespinasse <walken@google.com>
 
-J.
+(I would argue for it to go to stable trees as well)
 
 -- 
-101 things you can't have too much of : 2 - Gaffa tape.
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
