@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab1EESl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 14:41:29 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:24669 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab1EESl1 (ORCPT
+	id S932119Ab1EESlW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 14:41:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43284 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab1EESlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 14:41:27 -0400
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 May 2011 14:41:27 EDT
-Date: Thu, 5 May 2011 13:35:15 -0500
-From: Mike Miller <mike.miller@hp.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Valdis.Kletnieks@vt.edu, scameron@beardog.cce.hp.com, thenzl@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 01/16] hpsa: do readl after writel in main i/o path to ensure commands don't get lost.
-Message-ID: <20110505183515.GA14193@beardog.cce.hp.com>
-References: <20110503195750.5478.54853.stgit@beardog.cce.hp.com> <20110503195849.5478.13229.stgit@beardog.cce.hp.com> <4DC13566.5070203@redhat.com> <20110504125212.GC5997@beardog.cce.hp.com> <10639.1304530101@localhost> <20110504173735.GB22953@parisc-linux.org> <11821.1304531662@localhost>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <11821.1304531662@localhost>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 5 May 2011 14:41:21 -0400
+Date: Thu, 5 May 2011 20:41:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christian Hoffmann <email@christianhoffmann.info>
+cc: john stultz <johnstul@us.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Long timeout when booting >= 2.6.38
+In-Reply-To: <4DC2E298.4090603@christianhoffmann.info>
+Message-ID: <alpine.LFD.2.02.1105052040280.3005@ionos>
+References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info>  <1304470839.3037.12.camel@work-vm> 
+ <4DC100D0.1030302@christianhoffmann.info> <1304558210.2943.24.camel@work-vm> <alpine.LFD.2.02.1105051025290.3005@ionos> <4DC2E298.4090603@christianhoffmann.info>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 01:54:22PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 04 May 2011 11:37:35 MDT, Matthew Wilcox said:
-> > > This probably needs a comment like
-> > > 	/* don't care - dummy read just to force write posting to chipset */
-> > > or similar.  I'm assuming it's just functioning as a barrier-type flush of some sort?
-> > 
-> > It's a PCI write flush.  It's not clear to me why it's needed here,
-> > though.  The write will eventually get to the device; why we need to
-> > make the CPU wait around for it to actually get there doesn't make sense.
+On Thu, 5 May 2011, Christian Hoffmann wrote:
+> On 05/05/2011 10:25 AM, Thomas Gleixner wrote:
+> I can now select clocksource=acpi_pm as kernel parameter. The boot still hangs
+> after "MSI quirk detected...", but the timestamps in dmesg don't show the jump
+> anymore.
 > 
-> Exactly why I think it needs a one-liner comment. :)
-> 
-So we're not exactly sure why it's needed either. We've had reports of
-commands getting "lost" or "stuck" under some workloads. The extra readl
-works around the issue but certainly may have negative side effects.
+> [    1.426107] NET: Registered protocol family 1
+> [    1.426162] pci 0000:00:01.0: MSI quirk detected; subordinate MSI disabled
+> [    2.300212] pci 0000:01:05.0: Boot video device
+> [    2.300226] PCI: CLS 64 bytes, default 64
 
-I'm not sure I understand how writel works.
+That's because pmtimer wraps around several times in 140 seconds :)
 
->From linux-2.6/arch/x86/include/asm/io.h:
+Thanks,
 
-#define build_mmio_write(name, size, type, reg, barrier) \
-static inline void name(type val, volatile void __iomem *addr) \
-{ asm volatile("mov" size " %0,%1": :reg (val), \
-"m" (*(volatile type __force *)addr) barrier); }
-
-This implies (at least to me) that a barrier is part of writel. I don't know
-why a write operation needs a barrier but thats essentially what we've done
-by adding the extra readl. Can someone confirm or deny that a barrier is
-actually built into writel? Or used by writel? If so, does this indicate
-that barrier is broken?
-
-At this point we (the software guys) are pretty much at a loss as to how to
-continue debugging. We don't know what to trigger on for the PCIe analyzer.
-If we track outstanding commands then trigger on one that doesn't complete in
-some amount of time the problem could conceivably be far in the past and
-difficult to correlate to the data in the trace.
-
-If anyone has any thoughts, suggestions, or flames they would be greatly
-appreciated.
-
--- mikem
+	tglx
