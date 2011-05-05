@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab1EEMdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:33:53 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4864 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab1EEMdw convert rfc822-to-8bit (ORCPT
+	id S1754109Ab1EEMeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:34:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63104 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060Ab1EEMeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:33:52 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4DC2991F.6030703@broadcom.com>
-Date: Thu, 5 May 2011 14:33:35 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
+	Thu, 5 May 2011 08:34:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=A3dgpuEQP++HOeWn6C38HwL9YEi0MxtG/2h/f/GDNujyOTiE/Yo3wXG1dJ8BngO//L
+         paYR03xUGZePRDmQP/7Dy7YRLmxoEOMaWmO99BJjP61lI+I3ubNqpxm64HX9/1C8gCEg
+         nWDbkjtiPXaG2FMnMciVUa52Mp8YlZEHkxVoA=
+Message-ID: <4DC29922.6050406@pobox.com>
+Date: Thu, 05 May 2011 08:33:38 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-cc: "Arnd Bergmann" <arnd@arndb.de>, "George Kashperko" <george@znau.edu.ua>,
-        "Hauke Mehrtens" <hauke@hauke-m.de>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Jonas Gorski" <jonas.gorski@gmail.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "Greg KH" <greg@kroah.com>, "Andy Botting" <andy@andybotting.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
-Subject: AXI driver status => previously: Re: Could I (ab)use bus
- (struct bus_type) for virtual Broadcom bus?
-References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
- <201104171938.12834.arnd@arndb.de> <op.vt6ufu1n3ri7v4@arend-laptop>
- <201104191635.40351.arnd@arndb.de> <op.vt76hofg3ri7v4@arend-laptop>
- <BANLkTinMe-KedeOAiQYES-LCC2O4BoE28w@mail.gmail.com>
-In-Reply-To: <BANLkTinMe-KedeOAiQYES-LCC2O4BoE28w@mail.gmail.com>
-X-WSS-ID: 61DC46674NS1013087-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 8BIT
+To: shaohua.li@intel.com
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        jaxboe@fusionio.com, htejun@gmail.com, hch@infradead.org,
+        djwong@us.ibm.com, sshtylyov@mvista.com
+Subject: Re: [patch v3 3/3] SATA: enable non-queueable flush flag
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com> <20110505020417.986492128@sli10-conroe.sh.intel.com>
+In-Reply-To: <20110505020417.986492128@sli10-conroe.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2011 09:29 AM, Rafał Miłecki wrote:
-> I do not register that exceptional devices in my code.
+On 05/04/2011 09:59 PM, shaohua.li@intel.com wrote:
+> Enable non-queueable flush flag for SATA.
+>
+> Signed-off-by: Shaohua Li<shaohua.li@intel.com>
 
-Hi Rafał,
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
 
-There has been some radio silence on the subject of the (bcm)axi driver. 
-I was getting a feeling that my concerns were almost all out of the way 
-in latest emails I got from Arnd and/or Jonas. Do you have an update of 
-what plans you have with this module.
-
-Gr. AvS
+This SATA patch should go into the block tree alongside patches 1 & 2.
 
 
