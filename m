@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab1EETfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 15:35:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab1EETfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 15:35:03 -0400
-Message-ID: <4DC2FBE4.9060608@redhat.com>
-Date: Thu, 05 May 2011 15:35:00 -0400
-From: Josef Bacik <josef@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1304531920-2890-1-git-send-email-josef@redhat.com> <4DC2F84F.8030107@gmail.com>
-In-Reply-To: <4DC2F84F.8030107@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1751967Ab1EETqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 15:46:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42690 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751028Ab1EETqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 15:46:00 -0400
+Date: Thu, 5 May 2011 12:45:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] cpumask: alloc_cpumask_var() use NUMA_NO_NODE
+Message-Id: <20110505124556.3c8a7e5b.akpm@linux-foundation.org>
+In-Reply-To: <20110428231856.3D54.A69D9226@jp.fujitsu.com>
+References: <20110428231856.3D54.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2011 03:19 PM, Marco Stornelli wrote:
-> Il 04/05/2011 19:58, Josef Bacik ha scritto:
->> + if (offset>= i_size_read(inode)) {
->> + mutex_unlock(&inode->i_mutex);
->> + return -ENXIO;
->> + }
->> + offset = i_size_read(inode);
->> + break;
->
-> I can add that generic_file_llseek_unlocked means *unlocked* so you
-> shouldn't unlock any mutex but only return a value. The current version,
-> in case of SEEK_END uses directly i_size indeed, so maybe I'm missing
-> something.
+On Thu, 28 Apr 2011 23:17:15 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Yeah this was a copy+paste mistake, ext4 has it's own llseek that I 
-modified to run my tests against and then I just copied and pasted it 
-over to the generic things.  I've fixed this earlier, I'll be sending a 
-refreshed set out soon.  Thanks,
+> NUMA_NO_NODE and numa_node_id() are different meanings. NUMA_NO_NODE 
+> is obviously recomended fallback.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  lib/cpumask.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/cpumask.c b/lib/cpumask.c
+> index 4f6425d..af3e581 100644
+> --- a/lib/cpumask.c
+> +++ b/lib/cpumask.c
+> @@ -131,7 +131,7 @@ EXPORT_SYMBOL(zalloc_cpumask_var_node);
+>   */
+>  bool alloc_cpumask_var(cpumask_var_t *mask, gfp_t flags)
+>  {
+> -	return alloc_cpumask_var_node(mask, flags, numa_node_id());
+> +	return alloc_cpumask_var_node(mask, flags, NUMA_NO_NODE);
+>  }
+>  EXPORT_SYMBOL(alloc_cpumask_var);
+>  
 
-Josef
+So effectively this will replace numa_node_id() with numa_mem_id(),
+yes?  What runtime effects might this have?  
