@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab1EETBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 15:01:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37524 "EHLO
+	id S1752484Ab1EESzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 14:55:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41693 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab1EETBc (ORCPT
+	with ESMTP id S1751545Ab1EESzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 15:01:32 -0400
+	Thu, 5 May 2011 14:55:41 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
         xen-devel@lists.xensource.com
 Cc: daniel.stodden@citrix.com, stefano.stabellini@eu.citrix.com,
-        Ian.Campbell@citrix.com, Marek Marczykowski <marmarek@mimuw.edu.pl>,
+        Ian.Campbell@citrix.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/3] xen-blkfront: fix data size for xenbus_gather in blkfront_connect
-Date: Thu,  5 May 2011 14:55:19 -0400
-Message-Id: <1304621721-22608-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] xen-blkfront: Provide for 'feature-flush-cache' the BLKIF_OP_WRITE_FLUSH_CACHE operation.
+Date: Thu,  5 May 2011 14:55:20 -0400
+Message-Id: <1304621721-22608-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304621721-22608-1-git-send-email-konrad.wilk@oracle.com>
 References: <1304621721-22608-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4DC2F2A7.007D:SCFSTAT5015188,ss=1,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DC2F2A7.00CA:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Marczykowski <marmarek@mimuw.edu.pl>
+The operation BLKIF_OP_WRITE_FLUSH_CACHE has existed in the Xen
+tree header file for years but it was never present in the Linux tree
+because the frontend (nor the backend) supported this interface.
 
-barrier variable is int, not long. This overflow caused another variable
-override: "err" (in PV code) and "binfo" (in xenlinux code -
-drivers/xen/blkfront/blkfront.c). The later caused incorrect device
-flags (RO/removable etc).
-
-Signed-off-by: Marek Marczykowski <marmarek@mimuw.edu.pl>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Changed title]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/block/xen-blkfront.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/xen/interface/io/blkif.h |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 9cb8668..2075981 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1141,7 +1141,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	}
+diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+index 61e523a..3d5d6db 100644
+--- a/include/xen/interface/io/blkif.h
++++ b/include/xen/interface/io/blkif.h
+@@ -45,6 +45,19 @@ typedef uint64_t blkif_sector_t;
+ #define BLKIF_OP_WRITE_BARRIER     2
  
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
--			    "feature-barrier", "%lu", &barrier,
-+			    "feature-barrier", "%d", &barrier,
- 			    NULL);
- 
- 	/*
+ /*
++ * Recognised if "feature-flush-cache" is present in backend xenbus
++ * info.  A flush will ask the underlying storage hardware to flush its
++ * non-volatile caches as appropriate.  The "feature-flush-cache" node
++ * contains a boolean indicating whether flush requests are likely to
++ * succeed or fail. Either way, a flush request may fail at any time
++ * with BLKIF_RSP_EOPNOTSUPP if it is unsupported by the underlying
++ * block-device hardware. The boolean simply indicates whether or not it
++ * is worthwhile for the frontend to attempt flushes.  If a backend does
++ * not recognise BLKIF_OP_WRITE_FLUSH_CACHE, it should *not* create the
++ * "feature-flush-cache" node!
++ */
++#define BLKIF_OP_FLUSH_DISKCACHE   3
++/*
+  * Maximum scatter/gather segments per request.
+  * This is carefully chosen so that sizeof(struct blkif_ring) <= PAGE_SIZE.
+  * NB. This could be 12 if the ring indexes weren't stored in the same page.
 -- 
 1.7.4.1
 
