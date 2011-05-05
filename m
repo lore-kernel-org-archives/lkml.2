@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab1EEMeB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:34:01 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33901 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab1EEMd7 (ORCPT
+	id S1754048Ab1EEMjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:39:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43483 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab1EEMjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:33:59 -0400
-From: Frank Arnold <farnold@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, amd-nb: Convert spaces to tabs in amd_nb.c
-Date: Thu,  5 May 2011 14:33:52 +0200
-Message-Id: <1304598832-30704-1-git-send-email-farnold@amd64.org>
-X-Mailer: git-send-email 1.7.3.4
+	Thu, 5 May 2011 08:39:10 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=ctMo2oRLta0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=a4yXl0JuvHy9lFArwU0A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] trace: Check for waiting readers before calling
+ wakeup()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Ingo Molnar <mingo@redhat.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTimMvEyzG-S=S6R4fVsui-9ok63jwg@mail.gmail.com>
+References: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
+	 <BANLkTimorXOLcvB2dwXMAH8n2UU-C2ntcA@mail.gmail.com>
+	 <20110504212635.GE1804@nowhere>
+	 <BANLkTimMvEyzG-S=S6R4fVsui-9ok63jwg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 05 May 2011 08:39:06 -0400
+Message-ID: <1304599146.25414.2484.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Arnold <frank.arnold@amd.com>
+On Wed, 2011-05-04 at 20:53 -0700, Linus Torvalds wrote:
 
-Commit 9653a5c76c8677b05b45b3b999d3b39988d2a064 introduced some
-changes using spaces instead of tabs for indention. Clean this up.
+> I dunno. It's sometimes safe, but it's equally often not safe unless
+> there is some other locking around the thing. So I'd be a bit nervous.
+> The tracer people would need to do some serious thinking about it.
 
-Signed-off-by: Frank Arnold <frank.arnold@amd.com>
----
- arch/x86/kernel/amd_nb.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+The problem with tracing is that it can be very intrusive. We want the
+data but we also do not want to affect the system either. We are
+constantly fighting with Heissenberg on this.
 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index 4c39baa..993e185 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -75,7 +75,7 @@ int amd_cache_northbridges(void)
- 			next_northbridge(misc, amd_nb_misc_ids);
- 		node_to_amd_nb(i)->link = link =
- 			next_northbridge(link, amd_nb_link_ids);
--        }
-+	}
- 
- 	/* some CPU families (e.g. family 0x11) do not support GART */
- 	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
-@@ -182,20 +182,20 @@ static int amd_cache_gart(void)
- {
- 	u16 i;
- 
--       if (!amd_nb_has_feature(AMD_NB_GART))
--               return 0;
-+	if (!amd_nb_has_feature(AMD_NB_GART))
-+		return 0;
- 
--       flush_words = kmalloc(amd_nb_num() * sizeof(u32), GFP_KERNEL);
--       if (!flush_words) {
--               amd_northbridges.flags &= ~AMD_NB_GART;
--               return -ENOMEM;
--       }
-+	flush_words = kmalloc(amd_nb_num() * sizeof(u32), GFP_KERNEL);
-+	if (!flush_words) {
-+		amd_northbridges.flags &= ~AMD_NB_GART;
-+		return -ENOMEM;
-+	}
- 
--       for (i = 0; i != amd_nb_num(); i++)
--               pci_read_config_dword(node_to_amd_nb(i)->misc, 0x9c,
--                                     &flush_words[i]);
-+	for (i = 0; i != amd_nb_num(); i++)
-+		pci_read_config_dword(node_to_amd_nb(i)->misc, 0x9c,
-+				      &flush_words[i]);
- 
--       return 0;
-+	return 0;
- }
- 
- void amd_flush_garts(void)
--- 
-1.7.3.4
+Perhaps we could do what perf currently does and use irq_work() instead.
+This should be lighter weight. The wakeup should not be at the tracing
+event itself as the wakeup is too invasive.
+
+Maybe we could use bitmasks in this case, but I would also hate to use
+memory barriers here, although a memory barrier might be much lighter
+weight than spinlocks that we currently are fighting with.
+
+If irq_work() doesn't work, perhaps just have something like:
+
+event() {
+	write_data();
+	smp_mb();
+	if (test_and_clear_bit())
+		wakeup();
+}
+
+reader() {
+	set_bit();	
+	smp_mb();
+	if (data_empty())
+		schedule();
+	clear_bit();
+	smp_mb();
+	wake_up_other_readers_if_needed()
+}
+
+This is probably better than a spinlock.
+
+-- Steve
+
 
