@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1EEOKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 10:10:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5393 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755236Ab1EEOKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:10:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
-   d="scan'208";a="638485495"
-Date: Thu, 5 May 2011 22:10:39 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] writeback: avoid extra sync work at enqueue time
-Message-ID: <20110505141039.GC9409@localhost>
-References: <20110502031750.135798606@intel.com>
- <20110502033035.789279347@intel.com>
- <20110504212427.GI6968@quack.suse.cz>
- <20110505122732.GC1294@localhost>
- <20110505140134.GF5323@quack.suse.cz>
+	id S1755298Ab1EEOLk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:11:40 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:25247 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab1EEOLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:11:37 -0400
+From: Paul Moore <paul.moore@hp.com>
+Organization: Hewlett-Packard
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [RFC v3 02/10] Revert "lsm: Remove the socket_post_accept() hook"
+Date: Thu, 5 May 2011 10:11:32 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r2; KDE/4.6.2; x86_64; ; )
+Cc: sam@synack.fr, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, hadi@cyberus.ca, kaber@trash.net,
+        zbr@ioremap.net, root@localdomain.pl
+References: <1304432663-1575-1-git-send-email-sam@synack.fr> <201105031802.34724.paul.moore@hp.com> <201105041128.BAB13061.LMHVtOSOQOFFJF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201105041128.BAB13061.LMHVtOSOQOFFJF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505140134.GF5323@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105051011.32845.paul.moore@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 10:01:34PM +0800, Jan Kara wrote:
-> On Thu 05-05-11 20:27:32, Wu Fengguang wrote:
-> > On Thu, May 05, 2011 at 05:24:27AM +0800, Jan Kara wrote:
-> > > On Mon 02-05-11 11:17:53, Wu Fengguang wrote:
-> > > > This removes writeback_control.wb_start and does more straightforward
-> > > > sync livelock prevention by setting .older_than_this to prevent extra
-> > > > inodes from being enqueued in the first place.
-> > > > 
-> > > > --- linux-next.orig/fs/fs-writeback.c	2011-05-02 11:17:24.000000000 +0800
-> > > > +++ linux-next/fs/fs-writeback.c	2011-05-02 11:17:27.000000000 +0800
-> > > > @@ -683,10 +672,12 @@ static long wb_writeback(struct bdi_writ
-> > > >  	 *                   (quickly) tag currently dirty pages
-> > > >  	 *                   (maybe slowly) sync all tagged pages
-> > > >  	 */
-> > > > -	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
-> > > > +	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync) {
-> > > >  		write_chunk = LONG_MAX;
-> > > > +		oldest_jif = jiffies;
-> > > > +		wbc.older_than_this = &oldest_jif;
-> > > > +	}
-> > >   What are the implications of not doing dirty-time livelock avoidance for
-> > > other types of writeback? Is that a mistake? I'd prefer to have in
-> > > wb_writeback():
-> > > if (wbc.for_kupdate)
-> > > 	oldest_jif = jiffies - msecs_to_jiffies(dirty_expire_interval * 10);
-> > > else
-> > > 	oldest_jif = jiffies;
-> > > wbc.older_than_this = &oldest_jif;
-> > > 
-> > > And when you have this, you can make wbc.older_than_this just a plain
-> > > number and remove all those checks for wbc.older_than_this == NULL.
+On Tuesday, May 03, 2011 10:28:24 PM Tetsuo Handa wrote:
+> Paul Moore wrote:
+> > On Tuesday, May 03, 2011 10:24:15 AM Samir Bellabes wrote:
+> > > snet needs to reintroduce this hook, as it was designed to be: a hook
+> > > for updating security informations on objects.
 > > 
-> > Good point. Here is the fixed patch. Will you send the patch to change
-> > the type when the current patches are settled down?
->   OK, I will do that.
+> > Looking at this and 5/10 again, it seems that you should be able to do
+> > what you need with the sock_graft() hook.  Am I missing something?
+> > 
+> > My apologies if we've already discussed this approach previously ...
+> 
+> static void snet_socket_post_accept(struct socket *sock, struct socket
+> *newsock) {
+> 	static void snet_do_send_event(struct snet_info *info)
+> 	{
+> 		int snet_nl_send_event(struct snet_info *info)
+> 		{
+> 			skb_rsp = genlmsg_new(size, GFP_KERNEL);
+> 			genlmsg_unicast()
+> 		}
+> 	}
+> }
+> 
+> First problem with using snet_do_send_event() from security_sock_graft() is
+> that we have to use GFP_ATOMIC rather than GFP_KERNEL because we are inside
+> write_lock_bh()/write_unlock_bh().
 
-Thank you.
+I guess I don't see that as being a blocker ...
 
-> > @@ -686,7 +674,9 @@ static long wb_writeback(struct bdi_writ
-> >  	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
-> >  		write_chunk = LONG_MAX;
-> >  
-> > -	wbc.wb_start = jiffies; /* livelock avoidance */
-> > +	oldest_jif = jiffies;
-> > +	wbc.older_than_this = &oldest_jif;
-> > +
->   I might be already confused with all the code moving around but won't
-> this overwrite the value set for the for_kupdate case?
+> static inline int genlmsg_unicast(struct net *net, struct sk_buff *skb, u32
+> pid) {
+> 	static inline int nlmsg_unicast(struct sock *sk, struct sk_buff *skb, u32
+> pid) {
+> 		int netlink_unicast(struct sock *ssk, struct sk_buff *skb,
+> 			u32 pid, MSG_DONTWAIT)
+> 		{
+> 			int netlink_attachskb(struct sock *sk, struct sk_buff *skb,
+> 				      long *timeo, struct sock *ssk)
+> 			{
+> 				if (!*timeo) {
+> 					return -EAGAIN;
+> 			}
+> 		}
+> 	}
+> }
+> 
+> Second problem is that genlmsg_unicast() might return -EAGAIN because we
+> can't sleep inside write_lock_bh()/write_unlock_bh().
 
-It's the opposite -- it will be overwritten inside the loop by
-for_kupdate, which may run for long time and hence need to update
-oldest_jif from time to time.
+Ah yes, the real problem.  I forgot that snet relied on a user space tool.  I 
+tend to agree with others who have suggested this is not the right approach, 
+but I understand why you want the post_accept() hook; thanks for reminding me.
 
-Thanks,
-Fengguang
+--
+paul moore
+linux @ hp
