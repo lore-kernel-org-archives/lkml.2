@@ -1,159 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1EEJy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 05:54:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47691 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1EEJy1 (ORCPT
+	id S1753515Ab1EEKEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 06:04:15 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:53518 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab1EEKEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 05:54:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZdPm1IBfxpTqE4a/kAxRRL2fSEuNbuTS6JJacg92ChkiAIXFg8r93wbsn5X7pWYlmd
-         6p79cmEMV54Zs62/5KQNnhwCHVOA1TU7GHe8gLJTdfVdJZu1AVccHgwQ3PzHjcY7woWE
-         UO9Ol3ydsdJ1AYgC9myEyWzh5ZcBA3uWFQ0is=
-Date: Thu, 5 May 2011 11:54:21 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [block IO crash] Re: 2.6.39-rc5-git2 boot crashs
-Message-ID: <20110505095421.GD30950@htj.dyndns.org>
-References: <BANLkTimdL_tAONUWxZ4sQn1AiPDdbdYqpw@mail.gmail.com>
- <BANLkTinLn-59oisLrvwyCvyUuNyDKVHP0g@mail.gmail.com>
- <alpine.DEB.2.00.1105041341550.5495@router.home>
- <BANLkTikEgDGt+KrBsZcinKVom5E63Ma6gg@mail.gmail.com>
- <alpine.DEB.2.00.1105041421280.5495@router.home>
- <BANLkTi=efcVkGb+DReZ+i1p5j4QXJYjKjQ@mail.gmail.com>
- <alpine.DEB.2.00.1105041454190.5495@router.home>
- <BANLkTik7AHGr7+BG8nE16j-ayctD0LOH=w@mail.gmail.com>
- <BANLkTimvxOMuPJ0W0npo5i3gwFqdRw74Pw@mail.gmail.com>
- <alpine.LFD.2.02.1105042325500.3005@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105042325500.3005@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 5 May 2011 06:04:14 -0400
+Date: Thu, 5 May 2011 12:04:10 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [hid-picolcd] Avoid compile warning/error triggered by
+ copy_from_user()
+Message-ID: <20110505120410.28faceda@pluto.restena.lu>
+In-Reply-To: <alpine.LNX.2.00.1105051126560.28291@pobox.suse.cz>
+References: <20110504210842.50edc842@neptune.home>
+	<alpine.LNX.2.00.1105051126560.28291@pobox.suse.cz>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Hi Jiri,
 
-On Wed, May 04, 2011 at 11:40:33PM +0200, Thomas Gleixner wrote:
-> Yeah, I tripped over that as well. And the new shiny extra
-> CONFIG_CMPXCHG_DOUBLE misfeature Christoph nailed together is just
-> ignoring it as well. It's just more useless #ifdef and CONFIG bloat.
+On Thu, 5 May 2011 11:27:54 wrote:
+> On Wed, 4 May 2011, Bruno Prémont wrote:
 > 
-> That whole this_cpu_* stuff seems to be designed by committee. A quick
-> grep shows that max. 10% of the implemented macro hell is actually
-> used. Can we get rid of all unused ones and bring them back when they
-> are actually required?
+> > With CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y compilation of PicoLCD
+> > driver fails on copy_from_user(), without it a warning is generated:
+> > 
+> >   CC [M]  drivers/hid/hid-picolcd.o
+> > In file included from /usr/src/linux-2.6/arch/x86/include/asm/uaccess.h:571,
+> >                  from /usr/src/linux-2.6/arch/x86/include/asm/sections.h:5,
+> >                  from /usr/src/linux-2.6/arch/x86/include/asm/hw_irq.h:26,
+> >                  from /usr/src/linux-2.6/include/linux/irq.h:359,
+> >                  from /usr/src/linux-2.6/arch/x86/include/asm/hardirq.h:5,
+> >                  from /usr/src/linux-2.6/include/linux/hardirq.h:7,
+> >                  from /usr/src/linux-2.6/include/linux/interrupt.h:12,
+> >                  from /usr/src/linux-2.6/include/linux/usb.h:15,
+> >                  from /usr/src/linux-2.6/drivers/hid/hid-picolcd.c:25:
+> > In function 'copy_from_user',
+> >     inlined from 'picolcd_debug_eeprom_write' at drivers/hid/hid-picolcd.c:1592:
+> > arch/x86/include/asm/uaccess_32.h:212: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
+> > 
+> > gcc-4.4.5 is not able to track size calculation when it is stored into
+> > a variable, thus tell copy_from_user() maximum size via
+> > min(*max-size*, *effective-size*) explicitly and inline how much to copy
+> > at most.
+> > 
+> > Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> > --
+> > 
+> > diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+> > index b2f56a1..9d8710f 100644
+> > --- a/drivers/hid/hid-picolcd.c
+> > +++ b/drivers/hid/hid-picolcd.c
+> > @@ -1585,11 +1585,11 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
+> >  	memset(raw_data, 0, sizeof(raw_data));
+> >  	raw_data[0] = *off & 0xff;
+> >  	raw_data[1] = (*off >> 8) & 0xff;
+> > -	raw_data[2] = s < 20 ? s : 20;
+> > +	raw_data[2] = min((size_t)20, s);
+> >  	if (*off + raw_data[2] > 0xff)
+> >  		raw_data[2] = 0x100 - *off;
+> >  
+> > -	if (copy_from_user(raw_data+3, u, raw_data[2]))
+> > +	if (copy_from_user(raw_data+3, u, min((u8)20, raw_data[2])))
+> 
+> Hmm ... this is quite an obfuscation just for the sake of making gcc 
+> happy.
 
-What happened there was more of lack of design rather than too much
-design.  At first it were a few ops with only two variants -
-preemption protected default one and __ prefixed unprotected one.
-Then came the irqsafe ops and then the whole kinda exploded on itself
-with all the different ops.
+As long as CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set it's just
+making gcc happy, when it is set compilation fails, which is at least
+annoying.
 
-Cleaning up percpu accessors has been on my todo list for some time
-now.  The this_cpu_*() thing is still in its infancy and there aren't
-many users and the existing ones are mostly in the core, so cleaning
-things up should be relatively easy.  Things which I've been
-considering are...
+> Do other versions of gcc get this right? (i.e. is this gcc bug?)
 
-1. Static and dynamic accessors.
+Hm, don't remember exactly but older gcc versions triggered the same
+error. I didn't check with more recent version.
 
-We have two sets of percpu accessors.  Originally, one set was for
-static percpu variables and the other for dynamic ones.  Since the
-percpu allocator reimplementation, there's no distinction between
-static and dynamic and the new this_cpu_*() functions don't
-distinguish them.  We need to unify the duplicate ones.  There's
-nothing much to decide about this.  It just needs to be done.
+I can try with gcc-4.5.1/gcc-4.5.2 or gcc-4.6.0 but it will take
+some time to first compile those versions of gcc and then check how
+they handle this case.
 
-2. this_cpu_*()
+> Don't we have similar problems all over the place in the kernel?
 
-This one is more tricky.  General cleanup aside...
+I have not seen any similar warnings turning up in my compiles so
+probably only a limited amount of places around the kernel are
+affected, if at all (they might have worked around as well).
+As my configs are rather optimized for the target machines I'm not
+compiling most of the drivers.
+Maybe some of Ingo's/Randy's (and whoever else is building them)
+randconfig/allyesconfig/allmodconfig show other affected code (not
+sure where to find their build logs though).
 
-this_cpu_*() ops currently come in three flavors and the naming
-convention is rather confusing.  __this_cpu for no protection,
-this_cpu for preemtion disabled and irqsafe_cpu for irq protected.
-IIUC it was intended to loosely match the naming convention of
-spinlocks but I'm not sure whether that's beneficial in this case.
+I don't think that many users of copy_from_user() have variable counts
+of data to copy (most often a struct the sizeof which is then passed).
 
-The biggest problem, as shown by this bug, is that it's error-prone.
-Percpu ops as they currently stand don't have lockdep protection for
-accessing contexts.  There's nothing protecting percpu vars being
-accessed from wrong contexts.  I think adding lockdep protection
-should be doable and should be done, but it would be much better if
-it's safer by default.
+Bruno
 
-The problem is aggravated by the fact that, on x86 where most of
-developement and testing happens, there's no difference between
-__this_cpu_*(), this_cpu_*() and irqsafe_cpu_*().  They're one and the
-same, so testing coverage suffers.  We can avoid this by adding a
-debug option which forces the generic versions whether the arch ones
-are there or not, but it does raise the question - do we really need
-all these different confusing variants?
 
-For x86, it doesn't matter.  There are some corner cases with
-cmpxchg_[double] but I don't think we would be in any trouble just
-using the generic ones for them.  The problem is with other archs
-where local atomic ops haven't been or, for most load-store
-architectures, can't be implemented.  We might say "eh... screw them"
-and let them use the generic ones but the problem is that this_cpu_*()
-tend to be used in extremely hot paths where extra irq on/off's can
-show up as significant overhead.
-
-The thing that I want gone the most is the irqsafe_ variant.  It would
-be much nicer/safer if this_cpu_*() is atomic against everything.  If
-the caller is gonna take care of exclusion from the enclosing area
-(this is a valid use case when there's a series of operations to be
-done including but not limited to multiple this_cpu ops), it can use
-__this_cpu_*() ones.
-
-The reason to disable preemtion instead of IRQ is two-fold - First,
-preemption can be disabled for longer period than IRQ.  Second,
-depending on CPU, toggling preemption is significantly cheaper than
-toggling preemption.  For this_cpu ops, the first one doesn't apply.
-It's always very short, so the only thing that needs to be considered
-is the overhead of toggling protection.
-
-So, to avoid suffering performance penalty from this_cpu_*()
-conversion, architectures can choose one of the followings.
-
-1. Implement arch specific this_cpu_*() ops.  This would be the better
-   way but unfortunately many architectures simply can't.  :-(
-
-2. Make irq toggling as cheap as preemption toggling.  This can be
-   achieved by implementing IRQ masking in software.  I played with it
-   a bit on x86 last year.  I didn't get to finish it and it would
-   have taken me some time to iron out weird failures but it didn't
-   seem too difficult and as irq on/off is quite expensive on a lot of
-   CPUs, this might bring overall performance benefit.
-
-For many archs, #2 would be the only choice and if we're gonna do that
-I think it would be best to do it on x86 too.  It involves changes to
-common code too and x86 has the highest test/development coverage.
-
-I don't feel brave enough to remove preemption protected ones without
-first somehow taking care of non-x86 archs.  The preemption disabled
-ones are used for statistics in net, block, irq and fs and simply
-switching to irq protected ones is likely to noticeably hurt many
-non-x86 archs.  Maybe the ones which really matter can implement at
-least _add() and we can get away without doing soft irq masking.
-
-Anyways, that's what I've been thinking.  I'll get to it in the next
-devel cycle or the one after that.  What do you guys think about soft
-irq masking idea?
-
-Thanks.
-
---
-tejun
+> >  		return -EFAULT;
+> >  	resp = picolcd_send_and_wait(data->hdev, REPORT_EE_WRITE, raw_data,
+> >  			sizeof(raw_data));
+> > 
+> 
