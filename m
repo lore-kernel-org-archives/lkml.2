@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab1EEMWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:22:36 -0400
-Received: from wolff.to ([65.117.131.163]:44004 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751426Ab1EEMWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:22:35 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 May 2011 08:22:35 EDT
-Date: Thu, 5 May 2011 07:12:27 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: linux-kernel@vger.kernel.org
-Subject: Thank you: Phillip Lougher and Lasse Collin
-Message-ID: <20110505121227.GA13727@wolff.to>
+	id S1753631Ab1EEMOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:14:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62499 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab1EEMOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:14:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
+   d="scan'208";a="638436132"
+Date: Thu, 5 May 2011 20:14:02 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] writeback: introduce wbc.tagged_sync for the
+ WB_SYNC_NONE sync stage
+Message-ID: <20110505121402.GA1294@localhost>
+References: <20110502031750.135798606@intel.com>
+ <20110502033035.537736600@intel.com>
+ <20110504210059.GG6968@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110504210059.GG6968@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to publicly thank Phillip Lougher and Lasse Collin for their
-work developing XZ compression for squashfs and getting it in the upstream
-kernel, allowing its use in Fedora.
+On Thu, May 05, 2011 at 05:00:59AM +0800, Jan Kara wrote:
+> On Mon 02-05-11 11:17:51, Wu Fengguang wrote:
+> > sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
+> > WB_SYNC_ALL sync. Tag the first stage with wbc.tagged_sync and do
+> > livelock prevention for it, too.
+> > 
+> > Note that writeback_inodes_sb() is called by not only sync(), they are
+> > treated the same because the other callers need also need livelock
+> > prevention.
+>   I was thinking about this and could not find any - which other callers
+> of writeback_inodes_sb() need the livelock prevention?
 
-This change has kept us from having to cut packages from the Live Desktop
-(gnome), KDE and Games spins as these spins had been growing in size
-each release and were going to be too big for Fedora 15 without the
-space savings of XZ relative to GZIP. For Fedora 16 we will be also using
-a squashfs image to reduce the memory requirements of anaconda and having
-the ability to use XZ instead of GZIP will provide significant savings
-there as well.
+For example, the writeback_inodes_sb_if_idle() call from ext4.
+In general anyone that pass get_nr_dirty_pages() as work->nr_pages
+may be highly over-estimating the work set.
 
-Thanks for making linux better!
+It won't be directly livelocked since ext4 won't wait for completion,
+however there is possibility the works queued behind are delayed and
+livelocked.
+
+Ideally simple ->nr_pages works should be given lower priority and
+even may be merged with each other, and that would be future work.
+
+Thanks,
+Fengguang
