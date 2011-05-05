@@ -1,39 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab1EEABj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 20:01:39 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:15943 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab1EEABi (ORCPT
+	id S1756295Ab1EEAHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 20:07:21 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:50413 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab1EEAHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 20:01:38 -0400
+	Wed, 4 May 2011 20:07:21 -0400
 X-VirusChecked: Checked
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-132.messagelabs.com!1304553696!24590317!1
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1304554012!4201867!8
 X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
+X-Originating-IP: [216.166.12.31]
 From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jamie Iles <jamie@jamieiles.com>
-Date: Wed, 4 May 2011 19:01:35 -0500
-Subject: Re: [RFC PATCH 1/3] basic_mmio_gpio: split into a gpio library and
- platform device
-Thread-Topic: Re: [RFC PATCH 1/3] basic_mmio_gpio: split into a gpio library
- and platform device
-Thread-Index: AcwKt5mG5ksZRLVQTCSRC/sbWrGFcw==
-Message-ID: <0D753D10438DA54287A00B027084269764D29BEAEE@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/3] basic_mmio_gpio: split into a gpio library and platform device
+Date: Wed, 4 May 2011 17:06:40 -0700
+User-Agent: KMail/1.9.9
+CC: <jamie@jamieiles.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201105041706.40899.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4501h1A003256
+
+Sorry if this is a re-post. I think my previous post got botched...
 
 On Wed, 4 May 2011 16:07:35 +0100, Jamie Iles wrote,
 >
@@ -135,4 +129,3 @@ Unless I missed it, the probe should end by actually adding the gpiochip:
 
 Regards,
 Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
