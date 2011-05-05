@@ -1,131 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1EEJM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 05:12:29 -0400
-Received: from rcsinet14.oracle.com ([148.87.113.126]:50318 "EHLO
-	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1EEJM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 05:12:28 -0400
-X-Greylist: delayed 6467 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 May 2011 05:12:27 EDT
-Message-ID: <4DC250A6.9040802@kernel.org>
-Date: Thu, 05 May 2011 00:24:22 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1752686Ab1EEHZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 03:25:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60994 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752465Ab1EEHZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 03:25:40 -0400
+Date: Thu, 5 May 2011 09:25:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
+Cc: Kernel List <linux-kernel@vger.kernel.org>,
+        linux-ide <linux-ide@vger.kernel.org>
+Subject: Re: Oops with Kernel 2.6.38.5
+Message-ID: <20110505072530.GA27436@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Nathan A. Mourey II" <nmoureyii@ne.rr.com>,
+	Kernel List <linux-kernel@vger.kernel.org>,
+	linux-ide <linux-ide@vger.kernel.org>
+References: <1304555277.2059.2.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: [PATCH] pci: Check bridge resources after resource allocation.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4DC250B7.0029,ss=1,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1304555277.2059.2.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adding linux-ide.
 
-During pci remove/rescan testing found:
+Kernel is tainted by proprietary nvidia.ko but it doesn't look related.
+Nathan, it still could make sense to try to trigger it without the
+nvidia.ko module.
 
-[  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-[  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
-[  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-[  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-[  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-[  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
-[  541.199202] pci 0000:c0:03.0: enabling bus mastering
-[  541.199209] pci 0000:c0:03.0: setting latency timer to 64
-[  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-[  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
+Thanks.
 
-This bug was uncovered by commit
-| commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
-| Author: Ram Pai <linuxram@us.ibm.com>
-| Date:   Mon Feb 14 17:43:20 2011 -0800
-|
-|    PCI: pre-allocate additional resources to devices only after successful allo
-cation of essential resources.
+On Wed, May 04, 2011 at 08:27:57PM -0400, Nathan A. Mourey II wrote:
+> I am resending this to the kernel mailing list.  I sent it before
+> as an attachment.  I have just included the bare essentials this time.
+> Hope it helps.
+> 
+> 
+> Kernel Oops for v 2.6.38.5
+> 
+> 
+> May  2 19:00:11 localhost kernel: [   47.919691] EXT4-fs (sda6): re-mounted. Opts: commit=0
+> May  2 19:00:12 localhost kernel: [   48.451802] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+> May  2 19:00:12 localhost kernel: [   48.451808] IP: [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+> May  2 19:00:12 localhost kernel: [   48.451815] PGD 0
+> May  2 19:00:12 localhost kernel: [   48.451817] Oops: 0000 [#1] SMP
+> May  2 19:00:12 localhost kernel: [   48.451819] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host4/scsi_host/host4/link_power_management_policy
+> May  2 19:00:12 localhost kernel: [   48.451823] CPU 1
+> May  2 19:00:12 localhost kernel: [   48.451824] Modules linked in: binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep nvidia(P) arc4 snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy usblp snd_seq_oss snd_seq_midi iwlagn snd_rawmidi snd_seq_midi_event uvcvideo videodev v4l2_compat_ioctl32 iwlcore snd_seq snd_timer mac80211 snd_seq_device joydev cfg80211 snd psmouse soundcore serio_raw snd_page_alloc jmb38x_ms memstick video lp parport usbhid hid ahci r8169 libahci sdhci_pci sdhci firewire_ohci firewire_core crc_itu_t btrfs zlib_deflate libcrc32c
+> May  2 19:00:12 localhost kernel: [   48.451859]
+> May  2 19:00:12 localhost kernel: [   48.451861] Pid: 295, comm: scsi_eh_4 Tainted: P            2.6.38.5-core2 #1 System76, Inc. Serval Professional/Serval Professional
+> May  2 19:00:12 localhost kernel: [   48.451867] RIP: 0010:[<ffffffff813f98e1>]  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+> May  2 19:00:12 localhost kernel: [   48.451870] RSP: 0018:ffff880132defbf0  EFLAGS: 00010246
+> May  2 19:00:12 localhost kernel: [   48.451872] RAX: 0000000000000000 RBX: ffff880132f40000 RCX: 0000000000000000
+> May  2 19:00:12 localhost kernel: [   48.451874] RDX: ffff88013377c000 RSI: ffff880132f40000 RDI: 0000000000000000
+> May  2 19:00:12 localhost kernel: [   48.451876] RBP: ffff880132defce0 R08: ffff88013377dc58 R09: ffff880132defd98
+> May  2 19:00:12 localhost kernel: [   48.451878] R10: 0000000000000000 R11: 00000000ffffffff R12: 0000000000000000
+> May  2 19:00:12 localhost kernel: [   48.451880] R13: 0000000000000000 R14: ffff88013377c000 R15: 0000000000000000
+> May  2 19:00:12 localhost kernel: [   48.451882] FS:  0000000000000000(0000) GS:ffff8800bf700000(0000) knlGS:0000000000000000
+> May  2 19:00:12 localhost kernel: [   48.451884] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> May  2 19:00:12 localhost kernel: [   48.451886] CR2: 0000000000000018 CR3: 0000000001a03000 CR4: 00000000000406e0
+> May  2 19:00:12 localhost kernel: [   48.451888] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> May  2 19:00:12 localhost kernel: [   48.451890] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> May  2 19:00:12 localhost kernel: [   48.451892] Process scsi_eh_4 (pid: 295, threadinfo ffff880132dee000, task ffff880133b416c0)
+> May  2 19:00:12 localhost kernel: [   48.451894] Stack:
+> May  2 19:00:12 localhost kernel: [   48.451895]  0000000000000000 ffff880132defcc0 0000000000000000 ffff880132f42738
+> May  2 19:00:12 localhost kernel: [   48.451899]  ffffffff813ee8f0 ffffffff813eefe0 ffff880132defd98 ffff88013377f190
+> May  2 19:00:12 localhost kernel: [   48.451903]  ffffffffa00b3e30 ffffffff813ef030 0000000032defc60 ffff880100000000
+> May  2 19:00:12 localhost kernel: [   48.451906] Call Trace:
+> May  2 19:00:12 localhost kernel: [   48.451910]  [<ffffffff813ee8f0>] ? ata_std_postreset+0x0/0x190
+> May  2 19:00:12 localhost kernel: [   48.451913]  [<ffffffff813eefe0>] ? sata_std_hardreset+0x0/0x50
+> May  2 19:00:12 localhost kernel: [   48.451919]  [<ffffffffa00b3e30>] ? ahci_softreset+0x0/0x1d0 [libahci]
+> May  2 19:00:12 localhost kernel: [   48.451922]  [<ffffffff813ef030>] ? ata_std_prereset+0x0/0xd0
+> May  2 19:00:12 localhost kernel: [   48.451925]  [<ffffffff81400867>] sata_pmp_error_handler+0x607/0xc30
+> May  2 19:00:12 localhost kernel: [   48.451928]  [<ffffffff813ef030>] ? ata_std_prereset+0x0/0xd0
+> May  2 19:00:12 localhost kernel: [   48.451931]  [<ffffffffa00b3e30>] ? ahci_softreset+0x0/0x1d0 [libahci]
+> May  2 19:00:12 localhost kernel: [   48.451935]  [<ffffffffa00b3970>] ? ahci_hardreset+0x0/0x110 [libahci]
+> May  2 19:00:12 localhost kernel: [   48.451939]  [<ffffffffa00b2790>] ? ahci_postreset+0x0/0x60 [libahci]
+> May  2 19:00:12 localhost kernel: [   48.451943]  [<ffffffff813e86a9>] ? ata_wait_register+0x49/0xc0
+> May  2 19:00:12 localhost kernel: [   48.451947]  [<ffffffffa00b273f>] ahci_error_handler+0x1f/0x70 [libahci]
+> May  2 19:00:12 localhost kernel: [   48.451950]  [<ffffffff813faade>] ata_scsi_error+0x5be/0x900
+> May  2 19:00:12 localhost kernel: [   48.451953]  [<ffffffff813cf724>] scsi_error_handler+0x124/0x650
+> May  2 19:00:12 localhost kernel: [   48.451956]  [<ffffffff813cf600>] ? scsi_error_handler+0x0/0x650
+> May  2 19:00:12 localhost kernel: [   48.451960]  [<ffffffff810834b6>] kthread+0x96/0xa0
+> May  2 19:00:12 localhost kernel: [   48.451963]  [<ffffffff8100cd64>] kernel_thread_helper+0x4/0x10
+> May  2 19:00:12 localhost kernel: [   48.451966]  [<ffffffff81083420>] ? kthread+0x0/0xa0
+> May  2 19:00:12 localhost kernel: [   48.451968]  [<ffffffff8100cd60>] ? kernel_thread_helper+0x0/0x10
+> May  2 19:00:12 localhost kernel: [   48.451970] Code: 8b 95 70 ff ff ff b8 00 00 00 00 48 3b 9a 10 2e 00 00 48 0f 44 c2 48 89 85 70 ff ff ff 48 8b 8d 70 ff ff ff f6 83 69 02 00 00 01 <48> 8b 41 18 0f 85 48 01 00 00 48 85 c9 74 12 48 8b 51 08 48 83
+> May  2 19:00:12 localhost kernel: [   48.451998] RIP  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+> May  2 19:00:12 localhost kernel: [   48.452001]  RSP <ffff880132defbf0>
+> May  2 19:00:12 localhost kernel: [   48.452002] CR2: 0000000000000018
+> May  2 19:00:12 localhost kernel: [   48.452005] ---[ end trace 87b7b160e066e854 ]---
+> May  2 19:04:10 localhost kernel: imklog 4.6.4, log source = /proc/kmsg started.
+> May  2 19:04:10 localhost kernel: [    0.000000] Initializing cgroup subsys cpuset
+> 
+> 
+> Linux bean 2.6.38.4-core2 #2 SMP Fri Apr 22 02:58:16 EDT 2011 x86_64 x86_64 x86_64 GNU/Linux
+> 
+> Gnu C                  4.5.2
+> Gnu make               3.81
+> binutils               2.21.0.20110327
+> util-linux             2.17.2
+> mount                  support
+> module-init-tools      3.12
+> e2fsprogs              1.41.14
+> pcmciautils            015
+> PPP                    2.4.5
+> Linux C Library        2.13
+> Dynamic linker (ldd)   2.13
+> Procps                 3.2.8
+> Net-tools              1.60
+> Kbd                    1.15
+> Sh-utils               8.5
+> wireless-tools         30
+> Modules Loaded         binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep nvidia snd_pcm arc4 snd_seq_midi snd_rawmidi snd_seq_midi_event uvcvideo videodev v4l2_compat_ioctl32 snd_seq snd_timer snd_seq_device iwlagn iwlcore snd joydev mac80211 soundcore snd_page_alloc jmb38x_ms memstick psmouse serio_raw cfg80211 video lp parport ahci sdhci_pci firewire_ohci firewire_core libahci crc_itu_t sdhci r8169
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size. So it will not get into failed list, and will not be reset there.
-
-The root cause is: pci_bridge_check_ranges will set RESOURCE_IO flag for pci
-bridge, and later if children does not need to IO resource. those bridge
-resources will not need to be allocated. but flags still there.
-
-Add pci_bridge_check_resources() to close the loop.
-
-after patch, will get right result:
-[  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-[  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
-[  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-[  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-[  621.247012] pci 0000:c0:03.0: enabling bus mastering
-[  621.247275] pci 0000:c0:03.0: setting latency timer to 64
-[  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
-[  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
-[  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
-[  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
-[  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
-[  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
-[  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
-
----
- drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
-
-Index: linux-2.6/drivers/pci/setup-bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/setup-bus.c
-+++ linux-2.6/drivers/pci/setup-bus.c
-@@ -811,6 +811,27 @@ void __ref pci_bus_size_bridges(struct p
- }
- EXPORT_SYMBOL(pci_bus_size_bridges);
- 
-+static void __ref pci_bridge_check_resources(struct pci_dev *bridge)
-+{
-+	struct resource *b_res;
-+	int i;
-+
-+	b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
-+
-+	/*
-+	 * We set resource flag in pci_bridge_check_ranges() for further
-+	 *  allocation for children devices.
-+	 * Then if children do not need some kind of resource (like IO), and
-+	 *  bridge resource will not be allocated.
-+	 * At last, those flags could be left set, that will confuse
-+	 *  pci_setup_bridge() and pci_enable_bridge()
-+	 * So use reset_resource to clear them.
-+	 */
-+	for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; i++)
-+		if (!resource_size(&b_res[i]))
-+			reset_resource(&b_res[i]);
-+}
-+
- static void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
- 					 struct resource_list_x *add_head,
- 					 struct resource_list_x *fail_head)
-@@ -820,6 +841,9 @@ static void __ref __pci_bus_assign_resou
- 
- 	pbus_assign_resources_sorted(bus, add_head, fail_head);
- 
-+	if (bus->self)
-+		pci_bridge_check_resources(bus->self);
-+
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		b = dev->subordinate;
- 		if (!b)
-@@ -862,6 +886,8 @@ static void __ref __pci_bridge_assign_re
- 	if (!b)
- 		return;
- 
-+	pci_bridge_check_resources((struct pci_dev *)bridge);
-+
- 	__pci_bus_assign_resources(b, NULL, fail_head);
- 
- 	switch (bridge->class >> 8) {
+-- 
+Regards/Gruss,
+    Boris.
