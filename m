@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab1EEIQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 04:16:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56808 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752353Ab1EEIQz (ORCPT
+	id S1753132Ab1EEI0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 04:26:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40767 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab1EEI0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 04:16:55 -0400
-Date: Thu, 5 May 2011 09:16:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+	Thu, 5 May 2011 04:26:08 -0400
+Date: Thu, 5 May 2011 10:25:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: Christian Hoffmann <email@christianhoffmann.info>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Duplicate regulator sysfs files..
-Message-ID: <20110505081633.GC11744@opensource.wolfsonmicro.com>
-References: <BANLkTimme-B72D=QfsdgAUKP83VoaKrWNw@mail.gmail.com>
+Subject: Re: Long timeout when booting >= 2.6.38
+In-Reply-To: <1304558210.2943.24.camel@work-vm>
+Message-ID: <alpine.LFD.2.02.1105051025290.3005@ionos>
+References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info>  <1304470839.3037.12.camel@work-vm> 
+ <4DC100D0.1030302@christianhoffmann.info> <1304558210.2943.24.camel@work-vm>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimme-B72D=QfsdgAUKP83VoaKrWNw@mail.gmail.com>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 04:39:11PM -0700, Linus Torvalds wrote:
+On Wed, 4 May 2011, john stultz wrote:
 
->  appended is a report from Werner Landgraf <w.landgraf@ru.ru> who
-> builds a kernel with pretty much everything enabled, and forwarded
-> this from one of his testers.
+> On Wed, 2011-05-04 at 09:31 +0200, Christian Hoffmann wrote:
+> > In fact, switching to acpi_pm doesn't seem to work:
+> > 
+> > $ dmesg | grep clock
+> > 
+> > [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ 
+> > root=/dev/mapper/vg-root ro quiet splash vt.handoff=7 clocksource=acpi_pm
+> > [    0.000000] Kernel command line: 
+> > BOOT_IMAGE=/vmlinuz-2.6.39-rc5-ch-broken+ root=/dev/mapper/vg-root ro 
+> > quiet splash vt.handoff=7 clocksource=acpi_pm
+> > [    0.000000] hpet clockevent registered
+> > [    1.413835] Switching to clocksource hpet
+> > [    1.420762] Override clocksource acpi_pm is not HRT compatible. 
+> > Cannot switch while in HRT/NOHZ mode
+> > [  147.940143] Refined TSC clocksource calibration: 2809.409 MHz.
+> > [  147.940147] Switching to clocksource tsc
+> 
+> So I think I've sorted this out.
+> 
+> The watchdog code is what enables CLOCK_SOURCE_VALID_FOR_HRES, but we
+> actually end up selecting the clocksource before we enqueue it into the
+> watchdog list, so that's why we see the warning.
+> 
+> I suspect the following will resolve this detail.
 
-> Comments? Why does that "supply vmmc not found, using dummy regulator"
-> message show up twice? And apparently it tries to register it both
-> times, which on the second try results in a WARN_ON() from sysfs..
+It does. Good catch!
 
-Yes, this is a bug in the consumer driver - it's requesting the same
-supply twice for the same device, causing the regulator API to try to
-set the supply up twice.  It should only be requesting it once.  Ideally
-the API should reject the second get() but the user is buggy anyway.
+> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> 
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index 6519cf6..0e17c10 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -685,8 +685,8 @@ int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
+>  	/* Add clocksource to the clcoksource list */
+>  	mutex_lock(&clocksource_mutex);
+>  	clocksource_enqueue(cs);
+> -	clocksource_select();
+>  	clocksource_enqueue_watchdog(cs);
+> +	clocksource_select();
+>  	mutex_unlock(&clocksource_mutex);
+>  	return 0;
+>  }
+> @@ -706,8 +706,8 @@ int clocksource_register(struct clocksource *cs)
+>  
+>  	mutex_lock(&clocksource_mutex);
+>  	clocksource_enqueue(cs);
+> -	clocksource_select();
+>  	clocksource_enqueue_watchdog(cs);
+> +	clocksource_select();
+>  	mutex_unlock(&clocksource_mutex);
+>  	return 0;
+>  }
+> 
+> 
+> 
