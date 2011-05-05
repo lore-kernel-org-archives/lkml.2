@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab1EEPdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:33:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44239 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab1EEPdH (ORCPT
+	id S1755377Ab1EEQDp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 12:03:45 -0400
+Received: from 75.98.165.80.static.a2webhosting.com ([75.98.165.80]:57413 "EHLO
+	greenroomsoftware.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab1EEQDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:33:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=jtQM1D7T49QzzW9EY53qxWSGLBS8wipyCPs5xvghVXQ2L9RTfknzuDqA6Llygk3Y0K
-         groLAnm6sQSOSyVGKxgGMf2V4WzA5nR5lhviVl2Xv2B86/RsAAivdcTfDcK2nPVTzsWp
-         8+xVnngXOJ852s1vaVU6WwC7iU6lSZzw3RMXs=
-Subject: [PATCH] regulator: Move VCOINCELL to be the last element of
- mc13892_regulators array
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yong Shen <yong.shen@linaro.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 May 2011 23:32:58 +0800
-Message-ID: <1304609578.5296.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 5 May 2011 12:03:44 -0400
+X-Greylist: delayed 1259 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 May 2011 12:03:44 EDT
+Message-ID: <4DC2C568.9090803@greenroomsoftware.com>
+Date: Thu, 05 May 2011 08:42:32 -0700
+From: Robert Gordon <robert@greenroomsoftware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: maximilian attems <max@stro.at>
+CC: Michal Marek <mmarek@suse.cz>, Nuno Subtil <subtil@gmail.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] deb-pkg: fix cross-compile build
+References: <1304488750-13606-1-git-send-email-subtil@gmail.com> <20110504204807.GB13293@sepie.suse.cz> <20110505090728.GC30678@vostochny.stro.at>
+In-Reply-To: <20110505090728.GC30678@vostochny.stro.at>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - a2s60.a2hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - greenroomsoftware.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In include/linux/mfd/mc13892.h, we define MC13892_VCOINCELL as 23.
-Thus VCOINCELL should be defined as 23th element in mc13892_regulators array, not the first one.
-This actually fixes an off-by-one bug while accessing mc13892_regulators array.
+On 05/05/2011 02:07 AM, maximilian attems wrote:
+> On Wed, May 04, 2011 at 10:48:07PM +0200, Michal Marek wrote:
+>> Adding Maks to CC.
+> thanks, this one looks, good please disguard the other patch.
+>  
+>> On Tue, May 03, 2011 at 10:59:10PM -0700, Nuno Subtil wrote:
+>>> When generating the header package, scripts/package/builddeb was inferring the
+>>> target architecture by looking at the output of dpkg --print-architecture. This
+>>> allows KBUILD_DEBARCH to override that.
+>>>
+>>> Signed-off-by: Nuno Subtil <subtil@gmail.com>
+> Acked-by: maximilian attems <max@stro.at>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Greetings,
 
-For example,
-In mc13892_regulator_probe, we use MC13892_VCAM as array index of mc13892_regulators array.
-        mc13892_regulators[MC13892_VCAM].desc.ops->set_mode
-                = mc13892_vcam_set_mode;
-Currently, it access mc13892_regulators[12] ,which is VAUDIO not VCAM.
+Compile breaks when using the following command:
+    fakeroot make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- deb-pkg
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I don't have this hardware handy, just found this bug while reading the code.
-I appreciate if someone can test it.
+With 'set -x' in scripts/package/builddeb, the relevant output is:
+    + '[' -n '' ']'
+    ++ dpkg --print-architecture
+    + arch=i386
+This indicates that KBUILD_DEBARCH is not set.
 
-Axel
+The debian/control file is written with the following section:
+    Package: linux-headers-2.6.39-rc5+
+    Provides: linux-headers, linux-headers-2.6
+    Architecture: i386
+    Description: Linux kernel headers for 2.6.39-rc5+ on i386
+     This package provides kernel header files for 2.6.39-rc5+ on i386
 
- drivers/regulator/mc13892-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This produces the following error output:
+    + forcearch=-DArchitecture=armel
+    + dpkg-gencontrol -isp -DArchitecture=armel
+-plinux-headers-2.6.39-rc5+ -P/opt/kernel-linus/linux-2.6/debian/hdrtmp
+    dpkg-gencontrol: error: current host architecture 'armel' does not
+appear in package's architecture list (i386)
 
-diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
-index 1b8f739..ba909cb 100644
---- a/drivers/regulator/mc13892-regulator.c
-+++ b/drivers/regulator/mc13892-regulator.c
-@@ -259,7 +259,6 @@ static struct regulator_ops mc13892_sw_regulator_ops;
- 			mc13xxx_regulator_ops)
- 
- static struct mc13xxx_regulator mc13892_regulators[] = {
--	MC13892_DEFINE_REGU(VCOINCELL, POWERCTL0, POWERCTL0, mc13892_vcoincell),
- 	MC13892_SW_DEFINE(SW1, SWITCHERS0, SWITCHERS0, mc13892_sw1),
- 	MC13892_SW_DEFINE(SW2, SWITCHERS1, SWITCHERS1, mc13892_sw),
- 	MC13892_SW_DEFINE(SW3, SWITCHERS2, SWITCHERS2, mc13892_sw),
-@@ -293,6 +292,7 @@ static struct mc13xxx_regulator mc13892_regulators[] = {
- 	MC13892_GPO_DEFINE(GPO4, POWERMISC, mc13892_gpo),
- 	MC13892_GPO_DEFINE(PWGT1SPI, POWERMISC, mc13892_pwgtdrv),
- 	MC13892_GPO_DEFINE(PWGT2SPI, POWERMISC, mc13892_pwgtdrv),
-+	MC13892_DEFINE_REGU(VCOINCELL, POWERCTL0, POWERCTL0, mc13892_vcoincell),
- };
- 
- static int mc13892_powermisc_rmw(struct mc13xxx_regulator_priv *priv, u32 mask,
--- 
-1.7.1
-
-
+Regards,
+Robert
 
