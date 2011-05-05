@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab1EEBZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 21:25:55 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:63745 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab1EEBZy (ORCPT
+	id S1752398Ab1EEBe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 21:34:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33060 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab1EEBeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 21:25:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=NXVQVuVVgh5ZiVDhFLWnCBdk2OQSnG1VVr2XzrY97qmCZNapisQNseF1IqdvvyVPOx
-         eqBYM379l/8UW4PFqtXqu0U3RKC3bz/J9VJp3q76qvuRqQGMsF9iaeNgI+HYXLHVpVVa
-         1WAhNvOuDvg0OwgsOFXyqEI10c1J0LRadA/6Q=
-Date: Thu, 5 May 2011 09:25:40 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC]Documentation/email-clients.txt
-Message-ID: <20110505012537.GA2335@gmail.com>
-Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
-	linux-kernel@vger.kernel.org
-References: <20110504053005.GA5140@gmail.com>
- <4DC19BD9.7090101@oracle.com>
+	Wed, 4 May 2011 21:34:25 -0400
+Date: Wed, 4 May 2011 22:34:06 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: [PATCH 4/4] x86, mce: Have MCE persistent event off by default
+ for now
+Message-ID: <20110505013406.GB14297@ghostprotocols.net>
+References: <1304357691-14354-1-git-send-email-bp@amd64.org>
+ <1304357691-14354-5-git-send-email-bp@amd64.org>
+ <20110503064505.GF7751@elte.hu>
+ <20110503072302.GC18979@aftab>
+ <987664A83D2D224EAE907B061CE93D5301C53670E0@orsmsx505.amr.corp.intel.com>
+ <20110504065843.GC20828@elte.hu>
+ <987664A83D2D224EAE907B061CE93D5301C53C9B31@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DC19BD9.7090101@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301C53C9B31@orsmsx505.amr.corp.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 11:32:57AM -0700, Randy Dunlap wrote:
-> On 05/03/11 22:30, Harry Wei wrote:
-> > Hi Randy,
-> > 	When i read the Documentation/email-clients.txt, i have got some questions.
-> > I list them in the following.
-> > 
-> > 1, The 155 line writes "(a)ttach works fine without "set paste"". I wonder 
-> > what the '(a)ttach' means? How should we understand '(a)ttach'? Maybe it is
-> > the word 'attach', but i am not sure.
+Em Wed, May 04, 2011 at 02:40:37PM -0700, Luck, Tony escreveu:
+> > Yes, i definitely think a gateway to printk would be useful, so that the system 
+> > can log MCE events the syslog way as well. This probably makes sense for 
+> > persistent events in general, not just MCE events.
 > 
-> I believe that "(a)ttach" means that the 'a' key is used for the Attach command,
-> but I didn't write this section of text for Mutt.
-Hmmm, okay, now i know its useage.
+> s/as well/instead/ ??? If the persistent event mechanism is correctly feeding
+> data to a mart daemon, I don't think we need any printk() chatter. It is only
+> if this is not working that we'd want to see some console logging.
 > 
+> I agree that this isn't just a property of the MCE persistent event - other
+> persistent events would very likely want a way to shout for help if the events
+> are piling up with no listener.
 > 
-> > 2, You have written "###" in the last line, but i don't know how to understand
-> > it.
+> > printk itself could become a persistent event. (Transparently and without 
+> > breaking compatible syslogd/klogd functionality.)
 > 
-> It's just a marker for the end of the file.  You can ignore it.
-*sigh*
-That's unthinkable ;)
+> Someone from Google was very skeptical of printk() remaining stable from
+> release to release ... a big issue when you have some heavy duty infrastructure
+> trying to parse and consume these messages.  We should really consider such
+> stuff a user visible ABI, and thus not subject to random breakage - which
+> is a radical departure from our current attitude to printk().
 
-Thanks
-Harry Wei.
+what is the problem with adding free form additional info to whatever
+turns into heavenly for ever unchanged dogma? :-)
+
+- Arnaldo
