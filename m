@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab1EEO6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 10:58:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52018 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219Ab1EEO6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:58:30 -0400
-Date: Thu, 5 May 2011 16:58:55 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: -longterm kernels (Was: Re: [stable] Patch Upstream: iwlwifi: fix
- skb usage after free)
-Message-ID: <20110505145854.GA4670@redhat.com>
-References: <201105030110.p431A5W0005426@hera.kernel.org>
- <20110504223605.GA5967@kroah.com>
+	id S1754467Ab1EEO76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:59:58 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:22142 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab1EEO75 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:59:57 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
+Thread-Topic: linux-next: Tree for May 4 (hyperv / vmbus)
+Thread-Index: AQHMCntDW7pkpEnFr0aGj9XnC6EQgpR+VQGg
+Date: Thu, 5 May 2011 14:59:56 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A5852@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <20110504144759.802483cc.sfr@canb.auug.org.au>
+ <20110504094908.b8295d22.randy.dunlap@oracle.com>
+In-Reply-To: <20110504094908.b8295d22.randy.dunlap@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504223605.GA5967@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Removing Cc as probably not interested, adding LKML)
 
-On Wed, May 04, 2011 at 03:36:05PM -0700, Greg KH wrote:
-> > Cc: stable@kernel.org # 2.6.32+
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Randy Dunlap
+> Sent: Wednesday, May 04, 2011 9:49 AM
+> To: Stephen Rothwell; driverdevel; gregkh@suse.de
+> Cc: linux-next@vger.kernel.org; LKML; Hank Janssen; Haiyang Zhang
+> Subject: Re: linux-next: Tree for May 4 (hyperv / vmbus)
 > 
-> This doesn't apply to the .32 or .33-stable kernels.  If you wish to see
-> it there, can someone please provide a backport and send it to
-> stable@kernel.org ?
-Done.
+> On Wed, 4 May 2011 14:47:59 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> >
+> > Changes since 20110503:
+> 
+> 
+> when CONFIG_ACPI is not enabled:
+> 
+> 
+> 
+> vmbus_drv.c sure looks like it requires (depends on) both ACPI and PCI.
+> That should be expressed somewhere in its Kconfig file.
+> 
 
-BTW, Greg, perhaps -logterm releasing policy should be revised somehow.
-Currently we have .32, .33, .34, .35 -longterm, what is kind a much. If
-I could suggest something, would be nice to have longterm chosen
-versions predictable and constants i.e. one from every 3 kernel
-releases, like .35, .38, .41 ... . That would make distributions, that
-try to do release every half year very happy, because they will know
-what kernel to choose, which will be widely supported and tested. Also
-developers will have a bit less work with backporting fixes, as having
-same bug in n and n-3 release is less probable, than having the same bug
-in n and n-1.
+Randy,
 
-Stanislaw
+Oops, I will submit a patch today to correct it. Thanks for catching it.
+
+Hank.
+
