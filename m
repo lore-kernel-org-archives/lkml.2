@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab1EEPJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:09:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14807 "EHLO mx1.redhat.com"
+	id S1755118Ab1EEPJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:09:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44237 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab1EEPJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:09:07 -0400
-Date: Thu, 5 May 2011 18:08:04 +0300
+	id S1754130Ab1EEPJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:09:10 -0400
+Date: Thu, 5 May 2011 18:08:10 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
@@ -20,8 +20,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
         Krishna Kumar <krkumar2@in.ibm.com>,
         Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
         habanero@linux.vnet.ibm.com
-Subject: [PATCH 1/3] virtio: fix avail event support
-Message-ID: <1d1d5b1a8d5326dae23685587e6ab84fc6b7177e.1304605816.git.mst@redhat.com>
+Subject: [PATCH 2/3] virtio_ring: check used_event offset
+Message-ID: <09cf2579f7892eed2bf63daad3ee9b79cfd67b68.1304605817.git.mst@redhat.com>
 References: <cover.1304605816.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,27 +33,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make valid flag false, not true, on overrun
+Nothing's wrong with vring_size as is, but it's nice
+to check that the new field in the avail ring
+won't overlow into the used ring.
 
 Reported-by: Tom Lendacky <tahm@linux.vnet.ibm.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/virtio/virtio_ring.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/virtio_ring.h |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 57bf9d5..0ea0781 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -242,7 +242,7 @@ add_head:
- 	 * kicked_avail index we stored. TODO: make sure all drivers
- 	 * kick at least once in 2^16 and remove this. */
- 	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
--		vq->kicked_avail_valid = true;
-+		vq->kicked_avail_valid = false;
+diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+index 2a3b0ea..089cbf2 100644
+--- a/include/linux/virtio_ring.h
++++ b/include/linux/virtio_ring.h
+@@ -119,7 +119,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
  
- 	pr_debug("Added buffer head %i to %p\n", head, vq);
- 	END_USE(vq);
+ static inline unsigned vring_size(unsigned int num, unsigned long align)
+ {
+-	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
++#ifdef __KERNEL__
++	/* Older versions did not have used_event field at the end of the
++	 * avail ring. Used ring offset must be compatible with such devices. */
++	size_t s = sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num);
++	BUG_ON(ALIGN(s, align) != ALIGN(s + sizeof(__u16), align));
++#endif
++	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+ 		 + align - 1) & ~(align - 1))
+ 		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+ }
 -- 
 1.7.5.53.gc233e
 
