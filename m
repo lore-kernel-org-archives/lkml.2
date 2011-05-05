@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab1EEOHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 10:07:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44355 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab1EEOH0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 10:07:26 -0400
+	id S1755347Ab1EEOLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 10:11:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52425 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755304Ab1EEOLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 10:11:43 -0400
+Date: Thu, 5 May 2011 07:10:24 -0700
+From: Greg KH <gregkh@suse.de>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] C2port:Fix deprecated exported interfaces c2port.h
+Message-ID: <20110505141024.GA6461@suse.de>
+References: <1304598549-3561-1-git-send-email-wanlong.gao@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1105051026370.3005@ionos>
-References: <20110428192227.8979.49181.stgit@ponder> <1304386999.2513.293.camel@pasglop>
- <20110504155227.GA3317@ponder.secretlab.ca> <1304555953.2513.390.camel@pasglop>
- <alpine.LFD.2.02.1105051026370.3005@ionos>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 5 May 2011 08:07:05 -0600
-X-Google-Sender-Auth: dPi5KRpRa8Sx-EzrgkhCn7Ic8u4
-Message-ID: <BANLkTimQ7GsUton3nvJof8YB8k6cnx4rFQ@mail.gmail.com>
-Subject: Re: [PATCH 0/6] General device tree irq domain infrastructure
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304598549-3561-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 5, 2011 at 2:37 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 5 May 2011, Benjamin Herrenschmidt wrote:
->> > As for the mapping, I agree that the functionality is generally
->> > useful, I'm just not fond of the current implementation.  I think it
->> > is more complex than it needs to be and I'm not excited about bring it
->> > over to the other architectures as-is.
->>
->> Nobody cares about the current implementation. What is important is
->> indeed the functionality. The basic thing I think everybody agrees is
->> that you need to extend the irq_desc (or data, whatever tglx prefers)
->> with two bits of information: Some identifier of the domain and some
->> identifier of the interrupt number within that domain.
->
-> irq_data because that's what is handed into the callbacks and you
-> probably want to have the HW number there.
+On Thu, May 05, 2011 at 08:29:09PM +0800, Wanlong Gao wrote:
+> From: Wanlong Gao <wanlong.gao@gmail.com>
+> 
+> Change to_class_dev to to_device since the struct class_device had
+> merged to struct device.
+> Fix the to_c2port_device interface since the struct c2port_device
+> has no member named class.
+> 
+> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+> ---
+>  include/linux/c2port.h |    4 ++--
 
-Okay, I'll take another hack at it.  Unfortunately I've got a great
-big unmaskable interrupt in the form of UDS next week, but I'll be
-back on it the week after.
+I don't know why you sent this to me, have you looked at the
+scripts/get_maintainer.pl tool?
 
-g.
+
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/c2port.h b/include/linux/c2port.h
+> index 2a5cd86..7e6bd33 100644
+> --- a/include/linux/c2port.h
+> +++ b/include/linux/c2port.h
+> @@ -60,8 +60,8 @@ struct c2port_ops {
+>   * Exported functions
+>   */
+>  
+> -#define to_class_dev(obj) container_of((obj), struct class_device, kobj)
+> -#define to_c2port_device(obj) container_of((obj), struct c2port_device, class)
+> +#define to_device(obj) container_of(obj, struct device, kobj)
+> +#define to_c2port_device(obj) container_of(obj, struct c2port_device, dev.kobj)
+
+Doesn't this break the build?  If not, something is really wrong here.
+
+confused,
+
+greg k-h
