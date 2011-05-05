@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab1EETeZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 15:34:25 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:53946 "EHLO e1.ny.us.ibm.com"
+	id S1755788Ab1EETfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 15:35:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8814 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754972Ab1EETeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 15:34:24 -0400
-Subject: [GIT pull] rtc fixes for 2.6.39
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Wolfram Sang <w.sang@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 May 2011 12:34:19 -0700
-Message-ID: <1304624059.20980.10.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754402Ab1EETfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 15:35:03 -0400
+Message-ID: <4DC2FBE4.9060608@redhat.com>
+Date: Thu, 05 May 2011 15:35:00 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1304531920-2890-1-git-send-email-josef@redhat.com> <4DC2F84F.8030107@gmail.com>
+In-Reply-To: <4DC2F84F.8030107@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	Here are some urgent 2.6.39 boot fixups from Wolfram for RTC devices
-that register themselves before they are finished initializing.
+On 05/05/2011 03:19 PM, Marco Stornelli wrote:
+> Il 04/05/2011 19:58, Josef Bacik ha scritto:
+>> + if (offset>= i_size_read(inode)) {
+>> + mutex_unlock(&inode->i_mutex);
+>> + return -ENXIO;
+>> + }
+>> + offset = i_size_read(inode);
+>> + break;
+>
+> I can add that generic_file_llseek_unlocked means *unlocked* so you
+> shouldn't unlock any mutex but only return a value. The current version,
+> in case of SEEK_END uses directly i_size indeed, so maybe I'm missing
+> something.
 
-They are available in the git repository at:
+Yeah this was a copy+paste mistake, ext4 has it's own llseek that I 
+modified to run my tests against and then I just copied and pasted it 
+over to the generic things.  I've fixed this earlier, I'll be sending a 
+refreshed set out soon.  Thanks,
 
-  git://git.linaro.org/people/jstultz/linux.git fortglx/39/tip/timers/rtc
-
-Wolfram Sang (3):
-      rtc: mxc: fix crash on boot
-      rtc: davinci: fix crash on boot
-      rtc: ep93xx: fix crash on boot
-
- drivers/rtc/rtc-davinci.c |    5 +++--
- drivers/rtc/rtc-ep93xx.c  |    5 ++---
- drivers/rtc/rtc-mxc.c     |   19 +++++++++++--------
- 3 files changed, 16 insertions(+), 13 deletions(-)
-
-
+Josef
