@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab1EEPJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:09:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754409Ab1EEPJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:09:15 -0400
-Date: Thu, 5 May 2011 18:08:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: [PATCH 3/3] virtio_ring: need_event api comment fix
-Message-ID: <c8b6d8a8df4927826d0024fceeb68726c50d0b1a.1304605817.git.mst@redhat.com>
-References: <cover.1304605816.git.mst@redhat.com>
+	id S1754729Ab1EEPI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:08:26 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:6289 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab1EEPIY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:08:24 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
+Thread-Topic: linux-next: Tree for May 4 (hyperv / vmbus)
+Thread-Index: AQHMCntDW7pkpEnFr0aGj9XnC6EQgpR+VQGggAB2MgD//4xNwA==
+Date: Thu, 5 May 2011 15:08:23 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C562498A58B1@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <20110504144759.802483cc.sfr@canb.auug.org.au>
+	<20110504094908.b8295d22.randy.dunlap@oracle.com>
+ <8AFC7968D54FB448A30D8F38F259C562498A5852@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <6E21E5352C11B742B20C142EB499E0481E039F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481E039F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1304605816.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix typo in a comment: size -> side
 
-Reported-by: Stefan Hajnoczi <stefanha@gmail.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/linux/virtio_ring.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-index 089cbf2..0a45c6e 100644
---- a/include/linux/virtio_ring.h
-+++ b/include/linux/virtio_ring.h
-@@ -131,7 +131,7 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
- }
- 
- /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
--/* Assuming a given event_idx value from the other size, if
-+/* Assuming a given event_idx value from the other side, if
-  * we have just incremented index from old to new_idx,
-  * should we trigger an event? */
- static inline int vring_need_event(__u16 event_idx, __u16 new_idx, __u16 old)
--- 
-1.7.5.53.gc233e
+> -----Original Message-----
+> From: KY Srinivasan
+> Sent: Thursday, May 05, 2011 8:02 AM
+> To: Hank Janssen; Randy Dunlap; Stephen Rothwell; driverdevel;
+> gregkh@suse.de
+> Cc: Haiyang Zhang; linux-next@vger.kernel.org; LKML
+> Subject: RE: linux-next: Tree for May 4 (hyperv / vmbus)
+> > > -----Original Message-----
+> > > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> > > owner@vger.kernel.org] On Behalf Of Randy Dunlap
+> > > Sent: Wednesday, May 04, 2011 9:49 AM
+> > > To: Stephen Rothwell; driverdevel; gregkh@suse.de
+> > > Cc: linux-next@vger.kernel.org; LKML; Hank Janssen; Haiyang Zhang
+> > > Subject: Re: linux-next: Tree for May 4 (hyperv / vmbus)
+> > >
+> > > On Wed, 4 May 2011 14:47:59 +1000 Stephen Rothwell wrote:
+> > >
+> > > > Hi all,
+> > > >
+> > > > Changes since 20110503:
+> > >
+> > >
+> > > when CONFIG_ACPI is not enabled:
+> > >
+> > >
+> > >
+> > > vmbus_drv.c sure looks like it requires (depends on) both ACPI and PCI.
+> > > That should be expressed somewhere in its Kconfig file.
+> > >
+> >
+> > Randy,
+> >
+> > Oops, I will submit a patch today to correct it. Thanks for catching it.
+> >
+> > Hank.
+> 
+> Hank,
+> 
+> This patch was submitted yesterday.
+> 
+> K. Y
+
+Completely missed it :)
+
+Thanks,
+
+Hank.
+
