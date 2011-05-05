@@ -1,76 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab1EEGSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 02:18:22 -0400
-Received: from mx1.alphion.com ([75.147.97.34]:43937 "EHLO mx1.alphion.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab1EEGSV convert rfc822-to-8bit (ORCPT
+	id S1751775Ab1EEGVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 02:21:41 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49631 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1EEGVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 02:18:21 -0400
-X-CTCH-RefID: str=0001.0A02020A.4DC24124.0062,ss=1,fgs=0
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Subject: Network packet processing related Query
-Date: Thu, 5 May 2011 02:18:09 -0400
-Message-ID: <846629303ABF174A9EA5BB26D6965A5901E8B77C@MX2.AlphionCorp.local>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Network packet processing related Query
-Thread-Index: AcwK7DRnlVJMJbuvQKij6WmvQJIymQ==
-From: "Sachin Rane" <SRane@alphion.com>
-To: <linux-kernel@vger.kernel.org>
+	Thu, 5 May 2011 02:21:40 -0400
+Subject: Re: [PATCH] time: Add locking to xtime access in get_seconds()
+From: john stultz <johnstul@us.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1304574244.32152.666.camel@edumazet-laptop>
+References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org>
+	 <m2oc3jxgtt.fsf@firstfloor.org>  <1304564090.2943.36.camel@work-vm>
+	 <1304574244.32152.666.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 May 2011 23:21:35 -0700
+Message-ID: <1304576495.2943.40.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-05-05 at 07:44 +0200, Eric Dumazet wrote:
+> Le mercredi 04 mai 2011 à 19:54 -0700, john stultz a écrit :
+> > On Tue, 2011-05-03 at 20:52 -0700, Andi Kleen wrote:
+> > > John Stultz <john.stultz@linaro.org> writes:
+> > > 
+> > > > From: John Stultz <johnstul@us.ibm.com>
+> > > >
+> > > > So get_seconds() has always been lock free, with the assumption
+> > > > that accessing a long will be atomic.
+> > > >
+> > > > However, recently I came across an odd bug where time() access could
+> > > > occasionally be inconsistent, but only on power7 hardware. The
+> > > 
+> > > Shouldn't a single rmb() be enough to avoid that?
+> > > 
+> > > If not then I suspect there's a lot more code buggy on that CPU than
+> > > just the time.
+> > 
+> > So interestingly, I've found that the issue was not as complex as I
+> > first assumed.  While the rmb() is probably a good idea for
+> > get_seconds(), but it alone does not solve the issue I was seeing,
+> > making it clear my theory wasn't correct.
+> > 
+> > The problem was reported against the 2.6.32-stable kernel, and had not
+> > been seen in later kernels. I had assumed the change to logarithmic time
+> > accumulation basically reduced the window for for the issue to be seen,
+> > but it would likely still show up eventually.
+> > 
+> > When the rmb() alone did not solve this issue, I looked to see why the
+> > locking did resolve it, and then it was clear: The old
+> > update_xtime_cache() function doesn't set the xtime_cache values
+> > atomically.
+> > 
+> > Now, the xtime_cache writing is done under the xtime_lock, so the
+> > get_seconds() locking resolves the issue, but isn't appropriate since
+> > get_seconds() is called from machine check handlers.
+> > 
+> > So the fix here for the 2.6.32-stable tree is to just update xtime_cache
+> > in one go as done with the following patch.
+> > 
+> > I also added the rmb() for good measure, and the rmb() should probably
+> > also go upstream since theoretically there maybe a platform that could
+> > do out of order syscalls.
+> > 
+> > I suspect the reason this hasn't been triggered on x86 or power6 is due
+> > to compiler or processor optimizations reordering the assignment to in
+> > effect make it atomic. Or maybe the timing window to see the issue is
+> > harder to observe?
+> > 
+> > 
+> > Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> > 
+> > Index: linux-2.6.32.y/kernel/time/timekeeping.c
+> > ===================================================================
+> > --- linux-2.6.32.y.orig/kernel/time/timekeeping.c	2011-05-04 19:34:21.604314152 -0700
+> > +++ linux-2.6.32.y/kernel/time/timekeeping.c	2011-05-04 19:39:09.972203989 -0700
+> > @@ -168,8 +168,10 @@ int __read_mostly timekeeping_suspended;
+> >  static struct timespec xtime_cache __attribute__ ((aligned (16)));
+> >  void update_xtime_cache(u64 nsec)
+> >  {
+> > -	xtime_cache = xtime;
+> > -	timespec_add_ns(&xtime_cache, nsec);
+> > +	/* use temporary timespec so xtime_cache is updated atomically */
+> 
+> Atomically is not possible on 32bit platform, so this comment is
+> misleading.
 
-I want to improve my understanding about the logic of the code written
-for 'process_backlog ()' .
+Well, 32bit/64bit, the time_t .tv_sec portion is a long, so it should be
+written atomically. 
 
-File Source: net/core/dev.c,  linux-2.6.16
+> What about a comment saying :
+> 	/*
+> 	 * use temporary variable so get_seconds() cannot catch
+> 	 * intermediate value (one second backward)
+> 	 */
 
-I am considering only Non-NAPI network devices ( > 1) in this
-discussion.
+Fair enough. Such a comment is an improvement.
 
-The 'net_rx_action' function invokes 'dev->poll(dev, &budget)' for each
-network device present in 'poll_list'. '
-The default handler for Non-NAPI network devices is 'process_backlog
-()'.
+> > +	struct timespec ts = xtime;
+> > +	timespec_add_ns(&ts, nsec);
+> > +	xtime_cache = ts;
+> >  }
+> >  
+> >  /* must hold xtime_lock */
+> > @@ -859,6 +861,7 @@ EXPORT_SYMBOL_GPL(monotonic_to_bootbased
+> >  
+> >  unsigned long get_seconds(void)
+> >  {
+> > +	rmb();
+> 
+> Please dont, this makes no sense, and with no comment anyway.
 
-The signature of the function is:
-static int process_backlog (struct net_device *backlog_dev, int *budget)
+Would a comment to the effect of "ensure processors don't re-order calls
+to get_seconds" help, or is it still too opaque (or even still
+nonsense?).
 
-'backlog_dev' represents the device for which the 'poll' function is
-invoked.
 
-In the code body the function acts on CPU specific 'input_pkt_queue'.
-This queue holds all the incoming packets from the network devices and
-'poll_list' has reference for these network devices.
+thanks
+-john
 
-The function takes out one element (packet) from the 'input_pkt_queue'
-and process the packet.
 
-As the 'input_pkt_queue' is shared by all the network devices,
-the 'packet' which is popped-out from the list can
-be from any network device not required to be from 'backlog_dev' (the
-device
-for which 'process_backlog' has been called).
-
-I have confusion here.
-The code doesn't operate only on the packets queued-in by 'backlog_dev'
-to
-'input_pkt_queue'. It pops-out the node from the queue and process it.
-But it updates the 'quota' which is specific for the device
-'backlog_dev' for which the function have got called.
-
-Why it is so? Am I missing out something here?
-
-Thanks for reading my mail patiently.
-
-Regards,
-Sachin Rane
