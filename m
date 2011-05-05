@@ -1,120 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab1EEMSh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:18:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7650 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab1EEMSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:18:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
-   d="scan'208";a="688577483"
-Date: Thu, 5 May 2011 20:18:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] writeback: update dirtied_when for synced inode to
- prevent livelock
-Message-ID: <20110505121832.GB1294@localhost>
-References: <20110502031750.135798606@intel.com>
- <20110502033035.664444896@intel.com>
- <20110504211050.GH6968@quack.suse.cz>
+	id S1753927Ab1EEMVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:21:33 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:19582 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752635Ab1EEMVb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:21:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsQDAO2Uwk15LBzagWdsb2JhbACmNBUBARYmJcYpDoV5BJ4r
+Date: Thu, 5 May 2011 22:21:17 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
+Message-ID: <20110505122117.GB26837@dastard>
+References: <20110423224403.5fd1136a@neptune.home>
+ <20110427050850.GG12436@dastard>
+ <20110427182622.05a068a2@neptune.home>
+ <20110428194528.GA1627@x4.trippels.de>
+ <20110429011929.GA13542@dastard>
+ <20110504005736.GA2958@cucamonga.audible.transient.net>
+ <20110505002126.GA26797@dastard>
+ <20110505022613.GA26837@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110504211050.GH6968@quack.suse.cz>
+In-Reply-To: <20110505022613.GA26837@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 05:10:50AM +0800, Jan Kara wrote:
-> On Mon 02-05-11 11:17:52, Wu Fengguang wrote:
-> > With the more aggressive "keep writeback as long as we wrote something"
-> > logic in wb_writeback(), the "use LONG_MAX .nr_to_write" trick in commit
-> > b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") is
-> > no longer enough to stop sync livelock.
+On Thu, May 05, 2011 at 12:26:13PM +1000, Dave Chinner wrote:
+> On Thu, May 05, 2011 at 10:21:26AM +1000, Dave Chinner wrote:
+> > On Wed, May 04, 2011 at 12:57:36AM +0000, Jamie Heilman wrote:
+> > > Dave Chinner wrote:
+> > > > OK, so the common elements here appears to be root filesystems
+> > > > with small log sizes, which means they are tail pushing all the
+> > > > time metadata operations are in progress. Definitely seems like a
+> > > > race in the AIL workqueue trigger mechanism. I'll see if I can
+> > > > reproduce this and cook up a patch to fix it.
+> > > 
+> > > Is there value in continuing to post sysrq-w, sysrq-l, xfs_info, and
+> > > other assorted feedback wrt this issue?  I've had it happen twice now
+> > > myself in the past week or so, though I have no reliable reproduction
+> > > technique.  Just wondering if more data points will help isolate the
+> > > cause, and if so, how to be prepared to get them.
+> > > 
+> > > For whatever its worth, my last lockup was while running
+> > > 2.6.39-rc5-00127-g1be6a1f with a preempt config without cgroups.
 > > 
-> > The fix is to explicitly update .dirtied_when on synced inodes, so that
-> > they are no longer considered for writeback in the next round.
-> Looks good. But shouldn't you also update i_dirtied_when in the case where
-> !mapping_tagged(mapping, PAGECACHE_TAG_DIRTY) but inode->i_state & I_DIRTY?
-> Mostly for consistency since the chances of livelock because of this are
-> really close to zero. 
+> > Can you all try the patch below? I've managed to trigger a couple of
+> > xlog_wait() lockups in some controlled load tests. The lockups don't
+> > appear to occur with the following patch to he race condition in
+> > the AIL workqueue trigger.
+> 
+> They are still there, just harder to hit.
+> 
+> FWIW, I've also discovered that "echo 2 > /proc/sys/vm/drop_caches"
+> gets the system moving again because that changes the push target.
+> 
+> I've found two more bugs, and now my test case is now reliably
+> reproducably a 5-10s pause at ~1M created 1byte files and then
+> hanging at about 1.25M files. So there's yet another problem lurking
+> that I need to get to the bottom of.
 
-Yes the I_DIRTY_SYNC may well be redirtied by the FS. It's very unlikely
-to cause live locks, so I'm more than glad to kill the optional code :) 
+Which, of course, was the real regression. The patch below has
+survived a couple of hours of testing, which fixes all 4 of the
+problems I found. Please test.
 
-Thanks,
-Fengguang
+Cheers,
 
-> > CC: Jan Kara <jack@suse.cz>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  fs/fs-writeback.c |    9 +++++++++
-> >  1 file changed, 9 insertions(+)
-> > 
-> > ext3/ext4 are working fine now, however tests show that XFS may still
-> > livelock inside the XFS routines:
-> > 
-> > [ 3581.181253] sync            D ffff8800b6ca15d8  4560  4403   4392 0x00000000
-> > [ 3581.181734]  ffff88006f775bc8 0000000000000046 ffff8800b6ca12b8 00000001b6ca1938
-> > [ 3581.182411]  ffff88006f774000 00000000001d2e40 00000000001d2e40 ffff8800b6ca1280
-> > [ 3581.183088]  00000000001d2e40 ffff88006f775fd8 00000340af111ef2 00000000001d2e40
-> > [ 3581.183765] Call Trace:
-> > [ 3581.184008]  [<ffffffff8109be73>] ? lock_release_holdtime+0xa3/0xab
-> > [ 3581.184392]  [<ffffffff8108cc0d>] ? prepare_to_wait+0x6c/0x79
-> > [ 3581.184756]  [<ffffffff8108cc0d>] ? prepare_to_wait+0x6c/0x79
-> > [ 3581.185120]  [<ffffffff812ed520>] xfs_ioend_wait+0x87/0x9f
-> > [ 3581.185474]  [<ffffffff8108c97a>] ? wake_up_bit+0x2a/0x2a
-> > [ 3581.185827]  [<ffffffff812f742a>] xfs_sync_inode_data+0x92/0x9d
-> > [ 3581.186198]  [<ffffffff812f76e2>] xfs_inode_ag_walk+0x1a5/0x287
-> > [ 3581.186569]  [<ffffffff812f779b>] ? xfs_inode_ag_walk+0x25e/0x287
-> > [ 3581.186946]  [<ffffffff812f7398>] ? xfs_sync_worker+0x69/0x69
-> > [ 3581.187311]  [<ffffffff812e2354>] ? xfs_perag_get+0x68/0xd0
-> > [ 3581.187669]  [<ffffffff81092175>] ? local_clock+0x41/0x5a
-> > [ 3581.188020]  [<ffffffff8109be73>] ? lock_release_holdtime+0xa3/0xab
-> > [ 3581.188403]  [<ffffffff812e22ec>] ? xfs_check_sizes+0x160/0x160
-> > [ 3581.188773]  [<ffffffff812e2354>] ? xfs_perag_get+0x68/0xd0
-> > [ 3581.189130]  [<ffffffff812e236c>] ? xfs_perag_get+0x80/0xd0
-> > [ 3581.189488]  [<ffffffff812e22ec>] ? xfs_check_sizes+0x160/0x160
-> > [ 3581.189858]  [<ffffffff812f7831>] ? xfs_inode_ag_iterator+0x6d/0x8f
-> > [ 3581.190241]  [<ffffffff812f7398>] ? xfs_sync_worker+0x69/0x69
-> > [ 3581.190606]  [<ffffffff812f780b>] xfs_inode_ag_iterator+0x47/0x8f
-> > [ 3581.190982]  [<ffffffff811611f5>] ? __sync_filesystem+0x7a/0x7a
-> > [ 3581.191352]  [<ffffffff812f7877>] xfs_sync_data+0x24/0x43
-> > [ 3581.191703]  [<ffffffff812f7911>] xfs_quiesce_data+0x2c/0x88
-> > [ 3581.192065]  [<ffffffff812f5556>] xfs_fs_sync_fs+0x21/0x48
-> > [ 3581.192419]  [<ffffffff811611e1>] __sync_filesystem+0x66/0x7a
-> > [ 3581.192783]  [<ffffffff8116120b>] sync_one_sb+0x16/0x18
-> > [ 3581.193128]  [<ffffffff8113e3e3>] iterate_supers+0x72/0xce
-> > [ 3581.193482]  [<ffffffff81161140>] sync_filesystems+0x20/0x22
-> > [ 3581.193842]  [<ffffffff8116127e>] sys_sync+0x21/0x33
-> > [ 3581.194177]  [<ffffffff819016c2>] system_call_fastpath+0x16/0x1b
-> > 
-> > --- linux-next.orig/fs/fs-writeback.c	2011-05-02 11:16:50.000000000 +0800
-> > +++ linux-next/fs/fs-writeback.c	2011-05-02 11:17:24.000000000 +0800
-> > @@ -431,6 +431,15 @@ writeback_single_inode(struct inode *ino
-> >  				requeue_io(inode, wb);
-> >  			} else {
-> >  				/*
-> > +				 * sync livelock prevention: each inode is
-> > +				 * tagged and synced in one shot. If still
-> > +				 * dirty, move it back to s_dirty with updated
-> > +				 * dirty time to prevent syncing it again.
-> > +				 */
-> > +				if (wbc->sync_mode == WB_SYNC_ALL ||
-> > +				    wbc->tagged_sync)
-> > +					inode->dirtied_when = jiffies;
-> > +				/*
-> >  				 * Writeback blocked by something other than
-> >  				 * congestion. Delay the inode for some time to
-> >  				 * avoid spinning on the CPU (100% iowait)
-> > 
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
+
+xfs: fix race conditions and regressions in AIL pushing
+
+From: Dave Chinner <dchinner@redhat.com>
+
+The recent conversion of the xfsaild functionality to a work queue
+introduced a hard-to-hit log space grant hang. There are four
+problems being hit.
+
+The first problem is that the use of the XFS_AIL_PUSHING_BIT to
+determine whether a push is currently in progress is racy.  When the
+AIL push work completes, it checked whether the target changed and
+cleared the PUSHING bit to allow a new push to be requeued. The race
+condition is as follows:
+
+	Thread 1		push work
+
+	smp_wmb()
+				smp_rmb()
+				check ailp->xa_target unchanged
+	update ailp->xa_target
+	test/set PUSHING bit
+	does not queue
+				clear PUSHING bit
+				does not requeue
+
+Now that the push target is updated, new attempts to push the AIL
+will not trigger as the push target will be the same, and hence
+despite trying to push the AIL we won't ever wake it again.
+
+The fix is to ensure that the AIL push work clears the PUSHING bit
+before it checks if the target is unchanged.
+
+As a result, both push triggers operate on the same test/set bit
+criteria, so even if we race in the push work and miss the target
+update, the thread requesting the push will still set the PUSHING
+bit and queue the push work to occur. For safety sake, the same
+queue check is done if the push work detects the target change,
+though only one of the two will will queue new work due to the use
+of test_and_set_bit() checks.
+
+The second problem is a target mismatch between the item pushing
+loop and the target itself. The push trigger checks for the target
+increasing (i.e. new target > current) while the push loop only
+pushes items that have a LSN < current. As a result, we can get the
+situation where the push target is X, the items at the tail of the
+AIL have LSN X and they don't get pushed. The push work then
+completes thinking it is done, and cannot be restarted until the
+push target increases to >= X + 1. If the push target then never
+increases (because the tail is not moving), then we never run the
+push work again and we stall.
+
+The third problem is that updating the push target is not safe on 32
+bit machines. We cannot copy a 64 bit LSN without the possibility of
+corrupting the result when racing with another updating thread. We
+have function to do this update safely without needing to care about
+32/64 bit issues - xfs_trans_ail_copy_lsn() - so use that when
+updating the AIL push target.
+
+THe final problem, and the ultimate cause of the regression is that
+there are two exit paths from the AIL push work. One does the right
+thing with clearing the PUSH bit and rechecking the target, while
+the other simply returns if the AIL is empty when the push work
+starts. This exit path needs to do the same PUSHING bit clearing and
+target checking as the normal other "no more work to be done" path.
+
+Note: this needs to be split into 4 patches to push into mainline.
+This is an aggregated patch just for testing.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/xfs_trans_ail.c |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
+index acdb92f..ab0d045 100644
+--- a/fs/xfs/xfs_trans_ail.c
++++ b/fs/xfs/xfs_trans_ail.c
+@@ -368,8 +368,7 @@ xfs_ail_worker(
+ 		 */
+ 		xfs_trans_ail_cursor_done(ailp, cur);
+ 		spin_unlock(&ailp->xa_lock);
+-		ailp->xa_last_pushed_lsn = 0;
+-		return;
++		goto out_done;
+ 	}
+ 
+ 	XFS_STATS_INC(xs_push_ail);
+@@ -387,7 +386,7 @@ xfs_ail_worker(
+ 	 */
+ 	lsn = lip->li_lsn;
+ 	flush_log = stuck = count = 0;
+-	while ((XFS_LSN_CMP(lip->li_lsn, target) < 0)) {
++	while ((XFS_LSN_CMP(lip->li_lsn, target) <= 0)) {
+ 		int	lock_result;
+ 		/*
+ 		 * If we can lock the item without sleeping, unlock the AIL
+@@ -482,19 +481,24 @@ xfs_ail_worker(
+ 	/* assume we have more work to do in a short while */
+ 	tout = 10;
+ 	if (!count) {
++out_done:
+ 		/* We're past our target or empty, so idle */
+ 		ailp->xa_last_pushed_lsn = 0;
+ 
+ 		/*
+-		 * Check for an updated push target before clearing the
+-		 * XFS_AIL_PUSHING_BIT. If the target changed, we've got more
+-		 * work to do. Wait a bit longer before starting that work.
++		 * We clear the XFS_AIL_PUSHING_BIT first before checking
++		 * whether the target has changed. If the target has changed,
++		 * this pushes the requeue race directly onto the result of the
++		 * atomic test/set bit, so we are guaranteed that either the
++		 * the pusher that changed the target or ourselves will requeue
++		 * the work (but not both).
+ 		 */
++		clear_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags);
+ 		smp_rmb();
+-		if (ailp->xa_target == target) {
+-			clear_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags);
++		if (ailp->xa_target == target ||
++		    (test_and_set_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags)))
+ 			return;
+-		}
++
+ 		tout = 50;
+ 	} else if (XFS_LSN_CMP(lsn, target) >= 0) {
+ 		/*
+@@ -553,7 +557,7 @@ xfs_ail_push(
+ 	 * the XFS_AIL_PUSHING_BIT.
+ 	 */
+ 	smp_wmb();
+-	ailp->xa_target = threshold_lsn;
++	xfs_trans_ail_copy_lsn(ailp, &ailp->xa_target, &threshold_lsn);
+ 	if (!test_and_set_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags))
+ 		queue_delayed_work(xfs_syncd_wq, &ailp->xa_work, 0);
+ }
