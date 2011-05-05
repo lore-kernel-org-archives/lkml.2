@@ -1,86 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1EEJeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 05:34:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52833 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab1EEJeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 05:34:04 -0400
-Date: Thu, 5 May 2011 11:33:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Tian, Kevin" <kevin.tian@intel.com>
-cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>
-Subject: RE: [PATCH] x86: skip migrating percpu irq in fixup_irqs
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F3A9@shsmsx502.ccr.corp.intel.com>
-Message-ID: <alpine.LFD.2.02.1105051108320.3005@ionos>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F327@shsmsx502.ccr.corp.intel.com> <1304585343.26692.71.camel@zakaz.uk.xensource.com> <625BA99ED14B2D499DC4E29D8138F1505C8ED7F3A9@shsmsx502.ccr.corp.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753331Ab1EEJgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 05:36:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab1EEJgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 05:36:12 -0400
+Date: Thu, 5 May 2011 12:34:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tom Lendacky <tahm@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+Message-ID: <20110505093458.GD28378@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+ <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
+ <201105041658.19917.tahm@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105041658.19917.tahm@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, Tian, Kevin wrote:
-> > From: Ian Campbell [mailto:Ian.Campbell@eu.citrix.com]
-> > Sent: Thursday, May 05, 2011 4:49 PM
-> > 
-> > On Thu, 2011-05-05 at 09:15 +0100, Tian, Kevin wrote:
-> > > x86: skip migrating percpu irq in fixup_irqs
-> > >
-> > > IRQF_PER_CPU is used by Xen for a set of virtual interrupts binding to
-> > > a specific vcpu, but it's not recognized in fixup_irqs which simply
-> > > atempts to migrate it to other vcpus. In most cases this just works,
-> > > because Xen event channel chip silently fails the set_affinity ops for
-> > > irqs marked as IRQF_PER_CPU. But there's a special category (like used
-> > > for pv spinlock) also adds a IRQ_DISABLED flag, used as polled only
-
-I guess you mean IRQF_DISABLED, right?
-
-> > > event channels which don't expect any instance injected. However
-> > > fixup_irqs absolutely masks/unmasks irqs which makes such special type
-> > > irq injected unexpectely while there's no handler for it.
-
-IRQF_DISABLED has absolutely nothing to do with polling and
-mask/unmask. IRQF_DISABLED is actually a NOOP and totally irrelevant.
-
-> > > This error is triggered on some box when doing reboot. The fix is to
-> > > recognize IRQF_PER_CPU flag early before the affinity change, which
-> > > actually matches the rationale of IRQF_PER_CPU.
-> > 
-> > Skipping affinity fixup for PER_CPU IRQs seems logical enough (so I suspect this
-> > patch is good in its own right) but if the real issue you are fixing is that
-> > IRQ_DISABLED IQRs are getting unmasked should that issue be addressed
-> > directly rather than relying on it being a side-effect of PER_CPU-ness?
+On Wed, May 04, 2011 at 04:58:18PM -0500, Tom Lendacky wrote:
 > 
-> actually this is one thing I'm not sure and would like to hear more suggestions.
-> imo affinity and percpu are same type of attributes, which describe the 
-> constraints to host a given irq, while disabled/masked are another type of
+> On Wednesday, May 04, 2011 03:51:47 PM Michael S. Tsirkin wrote:
+> > Use the new avail_event feature to reduce the number
+> > of exits from the guest.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/virtio/virtio_ring.c |   39
+> > ++++++++++++++++++++++++++++++++++++++- 1 files changed, 38 insertions(+),
+> > 1 deletions(-)
+> > 
+> > diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> > index 3a3ed75..262dfe6 100644
+> > --- a/drivers/virtio/virtio_ring.c
+> > +++ b/drivers/virtio/virtio_ring.c
+> > @@ -82,6 +82,15 @@ struct vring_virtqueue
+> >  	/* Host supports indirect buffers */
+> >  	bool indirect;
+> > 
+> > +	/* Host publishes avail event idx */
+> > +	bool event;
+> > +
+> > +	/* Is kicked_avail below valid? */
+> > +	bool kicked_avail_valid;
+> > +
+> > +	/* avail idx value we already kicked. */
+> > +	u16 kicked_avail;
+> > +
+> >  	/* Number of free buffers */
+> >  	unsigned int num_free;
+> >  	/* Head of free buffer list. */
+> > @@ -228,6 +237,12 @@ add_head:
+> >  	 * new available array entries. */
+> >  	virtio_wmb();
+> >  	vq->vring.avail->idx++;
+> > +	/* If the driver never bothers to kick in a very long while,
+> > +	 * avail index might wrap around. If that happens, invalidate
+> > +	 * kicked_avail index we stored. TODO: make sure all drivers
+> > +	 * kick at least once in 2^16 and remove this. */
+> > +	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
+> > +		vq->kicked_avail_valid = true;
+> 
+> vq->kicked_avail_valid should be set to false here.
+> 
+> Tom
 
-They are similar, but percpu says explicitely: This interrupt can
-never be moved away from the cpu it is bound to. Affinity ist just the
-current binding which is allowed to be changed.
+Right, good catch.
 
-> attributes which describe whether to accept an irq instance (mask is for
-> short period). even without the IRQ_DISABLED issue, this patch is also 
-> required though it doesn't expose observable failure. I didn't bake the 2nd
-> patch to avoid unmask for IRQ_DISABLED, because I want to know whether
-> this is desired, e.g. IRQ_DISABLED is set in the fly when there can be still
-> one instance pending?
-
-What you probably mean is the core internal disabled state of the
-interrupt line. Yes, we should not unmask such interrupts in the fixup
-move.
-
-Thanks,
-
-	tglx
-
- 
+> > 
+> >  	pr_debug("Added buffer head %i to %p\n", head, vq);
+> >  	END_USE(vq);
+> > @@ -236,6 +251,23 @@ add_head:
+> >  }
+> >  EXPORT_SYMBOL_GPL(virtqueue_add_buf_gfp);
+> > 
+> > +
+> > +static bool vring_notify(struct vring_virtqueue *vq)
+> > +{
+> > +	u16 old, new;
+> > +	bool v;
+> > +	if (!vq->event)
+> > +		return !(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY);
+> > +
+> > +	v = vq->kicked_avail_valid;
+> > +	old = vq->kicked_avail;
+> > +	new = vq->kicked_avail = vq->vring.avail->idx;
+> > +	vq->kicked_avail_valid = true;
+> > +	if (unlikely(!v))
+> > +		return true;
+> > +	return vring_need_event(vring_avail_event(&vq->vring), new, old);
+> > +}
+> > +
+> >  void virtqueue_kick(struct virtqueue *_vq)
+> >  {
+> >  	struct vring_virtqueue *vq = to_vvq(_vq);
+> > @@ -244,7 +276,7 @@ void virtqueue_kick(struct virtqueue *_vq)
+> >  	/* Need to update avail index before checking if we should notify */
+> >  	virtio_mb();
+> > 
+> > -	if (!(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY))
+> > +	if (vring_notify(vq))
+> >  		/* Prod other side to tell it about changes. */
+> >  		vq->notify(&vq->vq);
+> > 
+> > @@ -437,6 +469,8 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+> >  	vq->vq.name = name;
+> >  	vq->notify = notify;
+> >  	vq->broken = false;
+> > +	vq->kicked_avail_valid = false;
+> > +	vq->kicked_avail = 0;
+> >  	vq->last_used_idx = 0;
+> >  	list_add_tail(&vq->vq.list, &vdev->vqs);
+> >  #ifdef DEBUG
+> > @@ -444,6 +478,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+> >  #endif
+> > 
+> >  	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+> > +	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_AVAIL_EVENT_IDX);
+> > 
+> >  	/* No callback?  Tell other side not to bother us. */
+> >  	if (!callback)
+> > @@ -482,6 +517,8 @@ void vring_transport_features(struct virtio_device
+> > *vdev) break;
+> >  		case VIRTIO_RING_F_USED_EVENT_IDX:
+> >  			break;
+> > +		case VIRTIO_RING_F_AVAIL_EVENT_IDX:
+> > +			break;
+> >  		default:
+> >  			/* We don't understand this bit. */
+> >  			clear_bit(i, vdev->features);
