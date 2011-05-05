@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab1EEPHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:07:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42270 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab1EEPHn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:07:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=XRPK+rcNoXkktHFwKJfrI0tYz+mfSTiOTgENRh+WUAeLKW1dam4KZC7Qeew36ive5E
-         jUmznvKdz1ZqiuCEzh2Wiq3PTF4nYyfOhjSIFscPI7rEdLdFpwJFpoAq1R18fuItyutl
-         bblHVnXMRJkbXcmNqTEdggGCr8WMiNkWjpZ+g=
-From: Wanlong Gao <wanlong.gao@gmail.com>
+	id S1754777Ab1EEPI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:08:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24312 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754130Ab1EEPI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:08:56 -0400
+Date: Thu, 5 May 2011 18:07:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: giometti@linux.it, akpm@linux-foundation.org,
-        Wanlong Gao <wanlong.gao@gmail.com>
-Subject: [PATCH] C2port:remove the wrong and never used macros in c2port.h
-Date: Thu,  5 May 2011 23:07:13 +0800
-Message-Id: <1304608033-5035-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: [PATCH 0/3] virtio and vhost-net performance enhancements
+Message-ID: <cover.1304605816.git.mst@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1304541918.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <wanlong.gao@gmail.com>
+Here are a couple of minor fixes suggested on list.
+Applies on top of the previous patchset.
 
-The macro to_class_dev used the deprecated structure class_device,
-and the c2port_device has no member named class in the definition
-of the macro to_c2port_device.
+As before result pushed here:
+git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next-event-idx-v1
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
----
- include/linux/c2port.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+Michael S. Tsirkin (3):
+  virtio: fix avail event support
+  virtio_ring: check used_event offset
+  virtio_ring: need_event api comment fix
 
-diff --git a/include/linux/c2port.h b/include/linux/c2port.h
-index 2a5cd86..a2f7d74 100644
---- a/include/linux/c2port.h
-+++ b/include/linux/c2port.h
-@@ -60,9 +60,6 @@ struct c2port_ops {
-  * Exported functions
-  */
- 
--#define to_class_dev(obj) container_of((obj), struct class_device, kobj)
--#define to_c2port_device(obj) container_of((obj), struct c2port_device, class)
--
- extern struct c2port_device *c2port_device_register(char *name,
- 					struct c2port_ops *ops, void *devdata);
- extern void c2port_device_unregister(struct c2port_device *dev);
+ drivers/virtio/virtio_ring.c |    2 +-
+ include/linux/virtio_ring.h  |   10 ++++++++--
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
 -- 
-1.7.4.1
-
+1.7.5.53.gc233e
