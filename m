@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab1EESlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 14:41:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43284 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab1EESlV (ORCPT
+	id S1755756Ab1EETBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 15:01:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37366 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab1EETB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 14:41:21 -0400
-Date: Thu, 5 May 2011 20:41:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christian Hoffmann <email@christianhoffmann.info>
-cc: john stultz <johnstul@us.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Long timeout when booting >= 2.6.38
-In-Reply-To: <4DC2E298.4090603@christianhoffmann.info>
-Message-ID: <alpine.LFD.2.02.1105052040280.3005@ionos>
-References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info>  <1304470839.3037.12.camel@work-vm> 
- <4DC100D0.1030302@christianhoffmann.info> <1304558210.2943.24.camel@work-vm> <alpine.LFD.2.02.1105051025290.3005@ionos> <4DC2E298.4090603@christianhoffmann.info>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 5 May 2011 15:01:28 -0400
+Date: Thu, 5 May 2011 14:42:02 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
+        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH V2] xen/balloon: Memory hotplug support for Xen balloon
+ driver
+Message-ID: <20110505184202.GB10142@dumpdata.com>
+References: <20110502220148.GI4623@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502220148.GI4623@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DC2EF8B.0128:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, Christian Hoffmann wrote:
-> On 05/05/2011 10:25 AM, Thomas Gleixner wrote:
-> I can now select clocksource=acpi_pm as kernel parameter. The boot still hangs
-> after "MSI quirk detected...", but the timestamps in dmesg don't show the jump
-> anymore.
+On Tue, May 03, 2011 at 12:01:48AM +0200, Daniel Kiper wrote:
+> Memory hotplug support for Xen balloon driver. It should be
+> mentioned that hotplugged memory is not onlined automatically.
+> It should be onlined by user through standard sysfs interface.
 > 
-> [    1.426107] NET: Registered protocol family 1
-> [    1.426162] pci 0000:00:01.0: MSI quirk detected; subordinate MSI disabled
-> [    2.300212] pci 0000:01:05.0: Boot video device
-> [    2.300226] PCI: CLS 64 bytes, default 64
+> This patch applies to Linus' git tree, v2.6.39-rc5 tag with a few
+> prerequisite patches available at https://lkml.org/lkml/2011/5/2/339
+> and at https://lkml.org/lkml/2011/3/28/98.
 
-That's because pmtimer wraps around several times in 140 seconds :)
-
-Thanks,
-
-	tglx
+The patch looks good. How do I use it? Should the writeup or the
+Kconfig include a little section on how to online the memory?
