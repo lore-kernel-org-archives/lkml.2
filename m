@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1EER2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 13:28:18 -0400
-Received: from christianhoffmann.info ([88.175.101.52]:37712 "EHLO
-	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115Ab1EER2R (ORCPT
+	id S1755465Ab1EERjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 13:39:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25901 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab1EERjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 13:28:17 -0400
-Message-ID: <4DC2DE2C.40108@christianhoffmann.info>
-Date: Thu, 05 May 2011 19:28:12 +0200
-From: Christian Hoffmann <email@christianhoffmann.info>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Lightning/1.0b2 Thunderbird/3.1.9
+	Thu, 5 May 2011 13:39:01 -0400
+Message-ID: <4DC2E097.6040800@kernel.org>
+Date: Thu, 05 May 2011 10:38:31 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: john stultz <johnstul@us.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Long timeout when booting >= 2.6.38
-References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info> <1304470839.3037.12.camel@work-vm> <4DC100D0.1030302@christianhoffmann.info> <alpine.LFD.2.02.1105041015220.3005@ionos> <4DC1832E.5030806@christianhoffmann.info> <alpine.LFD.2.02.1105041931510.3005@ionos> <4DC1AB9B.8080501@christianhoffmann.info> <alpine.LFD.2.02.1105042154410.3005@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105042154410.3005@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jack Steiner <steiner@sgi.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Seiichi Ikarashi <s.ikarashi@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH -v2 RESENDING] x86, acpi: Handle xapic/x2apic entries
+ in MADT at same time
+References: <4DA41476.8040700@jp.fujitsu.com> <1304379923.19493.284.camel@sbsiddha-MOBL3.sc.intel.com> <4DC0514F.9070901@kernel.org> <20110505162136.GA21673@sgi.com>
+In-Reply-To: <20110505162136.GA21673@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DC2E0A3.000C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> So we are back to:
->
-> [    0.644189] Calling fixup hook: quirk_usb_early_handoff+0x0/0x4a6
-> [  145.936254] Calling fixup hook: pci_fixup_video+0x0/0xac
->
-> So we really need to know what's happening there.
->
-> Can you please apply the following patch and enable
-> CONFIG_FUNCTION_TRACER and add "ftrace=function" on the command line?
->
-> When the box is up, mount debugfs (mount -t debugfs debugfs
-> /sys/kernel/debug) and read out /sys/kernel/debug/tracing/trace, bzip2
-> it and provide it somewhere for download. If you have no way to do
-> that, mail it to me offlist.
+On 05/05/2011 09:21 AM, Jack Steiner wrote:
+> FYI
+> 
+> We also hit the same problem. Our BIOS folks tried to make the BIOS
+> ACPI compliant but we hit the same problem & broke cpu numbering.
+> 
+> For now, we've reverted the BIOS change but are concerned that another OS
+> may require the change.
+> 
+> 
+>>From the boot log:
+>      891.184006 (    0.001022)| [    0.000000] Setting APIC routing to UV large system.
+>      891.197920 (    0.013914)| [    0.000000] ACPI: X2APIC (apic_id[0x100] uid[0x20] enabled)
+>      891.218507 (    0.020587)| [    0.000000] ACPI: X2APIC (apic_id[0x102] uid[0x21] enabled)
+>     ...
+>      904.009046 (    0.006237)| [    0.000000] ACPI: X2APIC (apic_id[0x3ff0] uid[0x7fe] enabled)
+>      904.020501 (    0.011455)| [    0.000000] ACPI: X2APIC (apic_id[0x3ff2] uid[0x7ff] enabled)
+>      904.024500 (    0.003999)| [    0.000000] ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
+>      904.024684 (    0.000184)| [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x02] enabled)
+> 
+>     ...
+> 
+>     1089.050351 (    0.008981)| [   30.960025] Booting Node   4, Processors  #1  #2 #3 #4 #5 #6 #7 #8 Ok.
+>     1089.847951 (    0.669131)| [   31.473073] Booting Node   5, Processors  #9 #10 #11 #12 #13 #14 #15 #16 Ok.
+>     ....
+>     1283.195893 (    0.772824)| [  224.864248] Booting Node 255, Processors  #2009 #2010 #2011 #2012 #2013 #2014 #2015 #2016 Ok.
+>     1283.970697 (    0.774804)| [  225.637077] Booting Node   0, Processors  #2017 #2018 #2019 #2020 #2021 #2022 #2023 Ok.
+>     1284.652065 (    0.681368)| [  226.316121] Booting Node   1, Processors  #2024 #2025 #2026 #2027 #2028 #2029 #2030 #2031 Ok.
+>     1285.422635 (    0.770570)| [  227.088808] Booting Node   2, Processors  #2032 #2033 #2034 #2035 #2036 #2037 #2038 #2039 Ok.
+>     1286.205456 (    0.782821)| [  227.864175] Booting Node   3, Processors  #2040 #2041 #2042 #2043 #2044 #2045 #2046 #2047 Ok.
+> 
 
-Hi,
+Yes, your new BIOS need this patch to make cpu number not out of order.
 
-trace can be found here:
+Thanks
 
-http://dl.dropbox.com/u/21820416/hanging_2.6.39-rc6.trace.bz2
-
-Rgds,
-Chris
+Yinghai
