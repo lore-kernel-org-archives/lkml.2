@@ -1,137 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab1EEIOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 04:14:39 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:33613 "EHLO e1.ny.us.ibm.com"
+	id S1753042Ab1EEIPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 04:15:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25556 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752333Ab1EEIOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 04:14:35 -0400
-Date: Thu, 5 May 2011 01:14:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] time: Add locking to xtime access in get_seconds()
-Message-ID: <20110505081432.GD2641@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org>
- <m2oc3jxgtt.fsf@firstfloor.org>
- <1304564090.2943.36.camel@work-vm>
- <1304574244.32152.666.camel@edumazet-laptop>
- <1304576495.2943.40.camel@work-vm>
+	id S1751051Ab1EEIPp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 04:15:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,318,1301900400"; 
+   d="scan'208";a="688488838"
+From: "Tian, Kevin" <kevin.tian@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>
+Date: Thu, 5 May 2011 16:15:39 +0800
+Subject: [PATCH] x86: skip migrating percpu irq in fixup_irqs
+Thread-Topic: [PATCH] x86: skip migrating percpu irq in fixup_irqs
+Thread-Index: AcwK/FZdhy3fbjQSQb2hVXQj97IFXA==
+Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F327@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1304576495.2943.40.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 11:21:35PM -0700, john stultz wrote:
-> On Thu, 2011-05-05 at 07:44 +0200, Eric Dumazet wrote:
-> > Le mercredi 04 mai 2011 à 19:54 -0700, john stultz a écrit :
-> > > On Tue, 2011-05-03 at 20:52 -0700, Andi Kleen wrote:
-> > > > John Stultz <john.stultz@linaro.org> writes:
-> > > > 
-> > > > > From: John Stultz <johnstul@us.ibm.com>
-> > > > >
-> > > > > So get_seconds() has always been lock free, with the assumption
-> > > > > that accessing a long will be atomic.
-> > > > >
-> > > > > However, recently I came across an odd bug where time() access could
-> > > > > occasionally be inconsistent, but only on power7 hardware. The
-> > > > 
-> > > > Shouldn't a single rmb() be enough to avoid that?
-> > > > 
-> > > > If not then I suspect there's a lot more code buggy on that CPU than
-> > > > just the time.
-> > > 
-> > > So interestingly, I've found that the issue was not as complex as I
-> > > first assumed.  While the rmb() is probably a good idea for
-> > > get_seconds(), but it alone does not solve the issue I was seeing,
-> > > making it clear my theory wasn't correct.
-> > > 
-> > > The problem was reported against the 2.6.32-stable kernel, and had not
-> > > been seen in later kernels. I had assumed the change to logarithmic time
-> > > accumulation basically reduced the window for for the issue to be seen,
-> > > but it would likely still show up eventually.
-> > > 
-> > > When the rmb() alone did not solve this issue, I looked to see why the
-> > > locking did resolve it, and then it was clear: The old
-> > > update_xtime_cache() function doesn't set the xtime_cache values
-> > > atomically.
-> > > 
-> > > Now, the xtime_cache writing is done under the xtime_lock, so the
-> > > get_seconds() locking resolves the issue, but isn't appropriate since
-> > > get_seconds() is called from machine check handlers.
-> > > 
-> > > So the fix here for the 2.6.32-stable tree is to just update xtime_cache
-> > > in one go as done with the following patch.
-> > > 
-> > > I also added the rmb() for good measure, and the rmb() should probably
-> > > also go upstream since theoretically there maybe a platform that could
-> > > do out of order syscalls.
-> > > 
-> > > I suspect the reason this hasn't been triggered on x86 or power6 is due
-> > > to compiler or processor optimizations reordering the assignment to in
-> > > effect make it atomic. Or maybe the timing window to see the issue is
-> > > harder to observe?
-> > > 
-> > > 
-> > > Signed-off-by: John Stultz <johnstul@us.ibm.com>
-> > > 
-> > > Index: linux-2.6.32.y/kernel/time/timekeeping.c
-> > > ===================================================================
-> > > --- linux-2.6.32.y.orig/kernel/time/timekeeping.c	2011-05-04 19:34:21.604314152 -0700
-> > > +++ linux-2.6.32.y/kernel/time/timekeeping.c	2011-05-04 19:39:09.972203989 -0700
-> > > @@ -168,8 +168,10 @@ int __read_mostly timekeeping_suspended;
-> > >  static struct timespec xtime_cache __attribute__ ((aligned (16)));
-> > >  void update_xtime_cache(u64 nsec)
-> > >  {
-> > > -	xtime_cache = xtime;
-> > > -	timespec_add_ns(&xtime_cache, nsec);
-> > > +	/* use temporary timespec so xtime_cache is updated atomically */
-> > 
-> > Atomically is not possible on 32bit platform, so this comment is
-> > misleading.
-> 
-> Well, 32bit/64bit, the time_t .tv_sec portion is a long, so it should be
-> written atomically. 
-> 
-> > What about a comment saying :
-> > 	/*
-> > 	 * use temporary variable so get_seconds() cannot catch
-> > 	 * intermediate value (one second backward)
-> > 	 */
-> 
-> Fair enough. Such a comment is an improvement.
-> 
-> > > +	struct timespec ts = xtime;
-> > > +	timespec_add_ns(&ts, nsec);
-> > > +	xtime_cache = ts;
-> > >  }
-> > >  
-> > >  /* must hold xtime_lock */
-> > > @@ -859,6 +861,7 @@ EXPORT_SYMBOL_GPL(monotonic_to_bootbased
-> > >  
-> > >  unsigned long get_seconds(void)
-> > >  {
-> > > +	rmb();
-> > 
-> > Please dont, this makes no sense, and with no comment anyway.
-> 
-> Would a comment to the effect of "ensure processors don't re-order calls
-> to get_seconds" help, or is it still too opaque (or even still
-> nonsense?).
+x86: skip migrating percpu irq in fixup_irqs
 
-A CPU that reordered syscalls reading from or writing to a given memory
-location is broken.  At least if the CPU does such reordering in a way
-that lets the software detect it.  There is quite a bit of code out there
-that assumes cache coherence, so I sure hope that CPUs don't require
-the above memory barrier...
+IRQF_PER_CPU is used by Xen for a set of virtual interrupts binding to
+a specific vcpu, but it's not recognized in fixup_irqs which simply
+atempts to migrate it to other vcpus. In most cases this just works,
+because Xen event channel chip silently fails the set_affinity ops for
+irqs marked as IRQF_PER_CPU. But there's a special category (like used
+for pv spinlock) also adds a IRQ_DISABLED flag, used as polled only event
+channels which don't expect any instance injected. However fixup_irqs
+absolutely masks/unmasks irqs which makes such special type irq injected
+unexpectely while there's no handler for it.
 
-							Thanx, Paul
+This error is triggered on some box when doing reboot. The fix is to
+recognize IRQF_PER_CPU flag early before the affinity change, which
+actually matches the rationale of IRQF_PER_CPU.
+
+Signed-off-by: Fengzhe Zhang <fengzhe.zhang@intel.com>
+Signed-off-by: Kevin Tian <kevin.tian@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Jan Beulich <JBeulich@novell.com>
+
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 1cb0b9f..544efe2 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -249,7 +249,7 @@ void fixup_irqs(void)
+
+                data = irq_desc_get_irq_data(desc);
+                affinity = data->affinity;
+-               if (!irq_has_action(irq) ||
++               if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
+                    cpumask_subset(affinity, cpu_online_mask)) {
+                        raw_spin_unlock(&desc->lock);
+                        continue;
