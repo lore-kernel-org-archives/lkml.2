@@ -1,230 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab1EENZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 09:25:31 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:62914 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073Ab1EENZa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 09:25:30 -0400
-Message-ID: <613E2AF627DE4ABE92AD42D5D9E1BFE5@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>, "Arnd Bergmann" <arnd@arndb.de>
-Cc: <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201104271605.09537.arnd@arndb.de> <CF1FC9DE1796407FB4D636189646927F@subhasishg> <201104280935.38787.arnd@arndb.de> <2543A75FDDB244D2A148C14BCAA5FD88@subhasishg> <B85A65D85D7EB246BE421B3FB0FBB593024CD0B8CC@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024CD0B8CC@dbde02.ent.ti.com>
-Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
-Date: Thu, 5 May 2011 18:55:27 +0530
-Organization: Mistral Solutions
+	id S1754036Ab1EENaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 09:30:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43054 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752553Ab1EENaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 09:30:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,319,1301900400"; 
+   d="scan'208";a="688600327"
+Date: Thu, 5 May 2011 21:30:02 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] writeback: remove .nonblocking and .encountered_congestion
+Message-ID: <20110505133002.GA7724@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am a bit lost,
+[allyesconfig compile tested]
+[it modifies 3 filesystems all at once, is it OK?]
 
-If I understand correctly, there are two problems
+Remove two unused struct writeback_control fields:
 
-1. In case of udev based driver loading, we will end up
-loading both the drivers and the associated firmware.
-This is not acceptable because both UART & CAN
-use PRU0 & PRU1.
+	.encountered_congestion	(completley unused)
+	.nonblocking		(never set, checked/showed in XFS,NFS/btrfs)
 
-2. How do we switch between devices at run time.
-This is required because MFD devices should be
-capable of doing that.
+Proposed-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/nfs/write.c               |    3 +--
+ fs/xfs/linux-2.6/xfs_aops.c  |    2 +-
+ include/linux/writeback.h    |    2 --
+ include/trace/events/btrfs.h |    6 ++----
+ 4 files changed, 4 insertions(+), 9 deletions(-)
 
-
-Ok, if that understanding is somewhat correct, then, what we are
-trying to do is load the firmware from the MFD driver itself.
-
-So, in case of a switch between device, say from UART to CAN,
-all the user has to do is copy a new firmware.
-
-This firmware should contain some info regarding the device, like
-say, device name & prunum.
-
-So, in case a device requires both PRUs, then the firmware would
-download for both PRUs.
-
-In case a device requires only one PRU, then it can be downloaded
-only into the requested PRU. So, the other PRU remains open for
-any other firmware/device.
-
-After loading the firmware, the MFD device should create the
-platform devices based upon the firmware.
-
-So, if only one PRU is used for UART, then the other PRU can be
-used for CAN and the MFD should create two platform_devices.
-
-If the UART uses both the PRUs, then the MFD should download
-the firmware into both the PRUs but create only one platform_device.
-
-But, in this case how do we download two different firmware
-on two different PRUs. One way is to keep the firmware files
-as its now, but add another file say firmware-config.txt,
-consisting a list of parameters like,
-
-START
-MFD_ID0#0
-MFD_ID0_PRU_NUM#PRU0
-MFD_ID1#1
-MFD_ID1_PRU_NUM#PRU1
-END
-
-OR
-
-START
-MFD_ID0#0
-MFD_ID0_PRU_NUM#PRU0:PRU1
-END
-
-So, the MFD driver can do a request_firmware on this file first,
-parse the device info and decide to request the main firmware.
-This becomes something like the devices table that we have on
-PPC.
-
-Also, if PRU0 is loaded, we need some way of maintaining the
-usage_count, So that the PRU0 is not loaded again accidently.
-We can increase the usage_count from the MFD driver.
-But, to decrement the usage_count, we can add an API
-which will be called when the CAN or UART driver is rmmod.
-
-
-Now how do we handle switch between devices.
-
-We can either do a rmmod of the MFD driver, then again modprobe it.
-So, the request_firmware is run again and the appropriate device is
-loaded based upon the changed firmware-config.txt.
-
-But, this does not look good, say what if the MFD driver is in-build.
-Another way is that we can add a sysfs entry, which when written
-with anything can re-evaluate the firmware_config.
-
-What the hell, does anything make any sense ?
-
-
-> Hi Subhasish,
->
-> On Wed, May 04, 2011 at 12:48:43, Subhasish Ghosh wrote:
->> Hi Arnd,
->>
->> How about just doing something like:
->>
->> #> echo da8xx_pruss_uart >> firmware.bin
->>
->> i.e  just append the device name (from the board file) into the firmware
->> file.
->>
->> In the driver probe, we can parse from the bottom, when it reaches
->> "da8xx_pruss", the rest of the upper data is the firmware and from
->> the full name, we can determine if it's a CAN, UART or any other
->> peripheral.
->>
->> So, based on the platform_data, which the MFD driver received,
->> it can find out which device to initialize.
->
-> If you are defining a firmware header, it may be
-> worthwhile making sure you include information
-> on features of the device being supported (I
-> assume there will be differences in CAN features if
-> the firmware uses both PRUs to support CAN versus
-> UART on one PRU and CAN on another PRU).
->
-> The MFD driver can parse this information and
-> pass this on to the UART or CAN drivers.
->
-> Thanks,
-> Sekhar
->
->>
->> Also, does the line wrapping look any better ?
->>
->>
->> > On Thursday 28 April 2011 09:17:21 Subhasish Ghosh wrote:
->> >> >
->> >> > You can easily do that by adding a small header to the firmware
->> >> > format and interpret that header by the MFD driver. When the name
->> >> > of the subdevice is part of that header, the MFD driver does not
->> >> > need to understand the difference, it can simply pass that on
->> >> > when creating its child devices.
->> >>
->> >> I don't understand why loading the firmware should be done at the MFD
->> >> driver.
->> >> The user already specifies the device he/she wants to start on the PRU
->> >> via
->> >> modprobe.
->> >> A driver can be inserted, which can download a printer firmware on one
->> >> PRU
->> >> and a
->> >> scanner firmware on the other. This way both cores can be used for
->> >> separate
->> >> purposes.
->> >> I mean, say in a real MFD controller, that will also have two separate
->> >> cores
->> >> running on it,
->> >> just that, the firmware on it would not be downloaded runtime but 
->> >> fused
->> >> in
->> >> some non volatile memory.
->> >
->> > Then I must be misreading what your code currently does, because it 
->> > does
->> > not
->> > match your explanations. What I see in the platform code is that you
->> > create
->> > MFD cells for specific devices that get automatically created by the 
->> > MFD
->> > driver. This will cause udev to load the drivers for these devices, 
->> > which
->> > then load the firmware they need.
->> >
->> > Also, I cannot see how the method you describe would make it possible 
->> > to
->> > the same driver into both units, e.g. when you want to have two serial
->> > ports. The reason is that you currently hardcode the PRU number in the
->> > driver and that you cannot load a single driver twice.
->> >
->> > Finally, I'm trying to make sure that whatever solution you come up 
->> > with
->> > will still work when we migrate the code to using a flattened device 
->> > tree.
->> > In that case, you would ideally put the device firmware into the device
->> > tree as a property that matches whatever you have connected on the
->> > specific
->> > board (at least as an option, you can still fall back to
->> > request_firmware).
->> > You definitely want automatic module loading in that case.
->> >
->> > Note that using module loading with specific parameters in order to
->> > match the hardware is not a recommended procedure any more. The code
->> > really needs to work the same way when all drivers are built into the
->> > kernel. It should not be hard to use the firmware loading mechanism
->> > in the MFD driver to both load the firmware and configure the devices
->> > appropriately so we always use the right driver for the currently
->> > active devices.
->> >
->> > Arnd
->> >
->> > BTW, something is wrong with your email client line wrapping. I've 
->> > fixed
->> > this up manually before when replying, but please find a way to get 
->> > this
->> > right in the future.
->>
->>
-> 
+--- linux-next.orig/fs/xfs/linux-2.6/xfs_aops.c	2011-05-05 21:10:01.000000000 +0800
++++ linux-next/fs/xfs/linux-2.6/xfs_aops.c	2011-05-05 21:10:37.000000000 +0800
+@@ -970,7 +970,7 @@ xfs_vm_writepage(
+ 	offset = page_offset(page);
+ 	type = IO_OVERWRITE;
+ 
+-	if (wbc->sync_mode == WB_SYNC_NONE && wbc->nonblocking)
++	if (wbc->sync_mode == WB_SYNC_NONE)
+ 		nonblocking = 1;
+ 
+ 	do {
+--- linux-next.orig/include/trace/events/btrfs.h	2011-05-05 21:07:31.000000000 +0800
++++ linux-next/include/trace/events/btrfs.h	2011-05-05 21:09:47.000000000 +0800
+@@ -284,7 +284,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
+ 		__field(	long,   pages_skipped		)
+ 		__field(	loff_t, range_start		)
+ 		__field(	loff_t, range_end		)
+-		__field(	char,   nonblocking		)
+ 		__field(	char,   for_kupdate		)
+ 		__field(	char,   for_reclaim		)
+ 		__field(	char,   range_cyclic		)
+@@ -299,7 +298,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
+ 		__entry->pages_skipped	= wbc->pages_skipped;
+ 		__entry->range_start	= wbc->range_start;
+ 		__entry->range_end	= wbc->range_end;
+-		__entry->nonblocking	= wbc->nonblocking;
+ 		__entry->for_kupdate	= wbc->for_kupdate;
+ 		__entry->for_reclaim	= wbc->for_reclaim;
+ 		__entry->range_cyclic	= wbc->range_cyclic;
+@@ -310,13 +308,13 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
+ 
+ 	TP_printk("root = %llu(%s), ino = %lu, page_index = %lu, "
+ 		  "nr_to_write = %ld, pages_skipped = %ld, range_start = %llu, "
+-		  "range_end = %llu, nonblocking = %d, for_kupdate = %d, "
++		  "range_end = %llu, for_kupdate = %d, "
+ 		  "for_reclaim = %d, range_cyclic = %d, writeback_index = %lu",
+ 		  show_root_type(__entry->root_objectid),
+ 		  (unsigned long)__entry->ino, __entry->index,
+ 		  __entry->nr_to_write, __entry->pages_skipped,
+ 		  __entry->range_start, __entry->range_end,
+-		  __entry->nonblocking, __entry->for_kupdate,
++		  __entry->for_kupdate,
+ 		  __entry->for_reclaim, __entry->range_cyclic,
+ 		  (unsigned long)__entry->writeback_index)
+ );
+--- linux-next.orig/fs/nfs/write.c	2011-05-05 21:10:52.000000000 +0800
++++ linux-next/fs/nfs/write.c	2011-05-05 21:11:19.000000000 +0800
+@@ -1564,8 +1564,7 @@ int nfs_write_inode(struct inode *inode,
+ 		int status;
+ 		bool sync = true;
+ 
+-		if (wbc->sync_mode == WB_SYNC_NONE || wbc->nonblocking ||
+-		    wbc->for_background)
++		if (wbc->sync_mode == WB_SYNC_NONE)
+ 			sync = false;
+ 
+ 		status = pnfs_layoutcommit_inode(inode, sync);
+--- linux-next.orig/include/linux/writeback.h	2011-05-05 21:07:16.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-05-05 21:13:20.000000000 +0800
+@@ -36,8 +36,6 @@ struct writeback_control {
+ 	loff_t range_start;
+ 	loff_t range_end;
+ 
+-	unsigned nonblocking:1;		/* Don't get stuck on request queues */
+-	unsigned encountered_congestion:1; /* An output: a queue is full */
+ 	unsigned for_kupdate:1;		/* A kupdate writeback */
+ 	unsigned for_background:1;	/* A background writeback */
+ 	unsigned tagged_sync:1;		/* do livelock prevention for sync */
