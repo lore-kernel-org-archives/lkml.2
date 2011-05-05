@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab1EEDDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 23:03:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44110 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741Ab1EEDDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 23:03:15 -0400
-Date: Wed, 4 May 2011 23:02:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
+	id S1752755Ab1EEDia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 23:38:30 -0400
+Received: from usindmx01.hds.com ([207.126.252.12]:48038 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab1EEDi3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 23:38:29 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>, kexec@lists.infradead.org,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [RFC] Kdump and memory error handling
-Message-ID: <20110505030256.GA11823@redhat.com>
-References: <20110504193509.GA5342@in.ibm.com>
- <20110504203914.GC1737@one.firstfloor.org>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
+        David Rientjes <rientjes@google.com>
+Date: Wed, 4 May 2011 23:37:46 -0400
+Subject: RE: [PATCH] getdelays: show average CPU/IO/SWAP/RECLAIM delays
+Thread-Topic: [PATCH] getdelays: show average CPU/IO/SWAP/RECLAIM delays
+Thread-Index: AcwI0bvVNHwtAatPTWm+QbINBZYiHgCAiOrw
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9C3DF8133D@USINDEVS02.corp.hds.com>
+References: <20110502140257.GA12780@localhost>
+In-Reply-To: <20110502140257.GA12780@localhost>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504203914.GC1737@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 10:39:14PM +0200, Andi Kleen wrote:
-> > Any thoughts/suggestions?
+On 05/02/2011 10:02 AM, Wu Fengguang wrote: 
+> I find it very handy to show the average delays in milliseconds.
 > 
-> My old attempts to solve this are
+> Example output (on 100 concurrent dd reading sparse files):
 > 
-> Don't dump on MCE:
+> CPU             count     real total  virtual total    delay total  delay average
+>                   986     3223509952     3207643301    38863410579         39.415ms
+> IO              count    delay total  delay average
+>                     0              0              0ms
+> SWAP            count    delay total  delay average
+>                     0              0              0ms
+> RECLAIM         count    delay total  delay average
+>                  1059     5131834899              4ms
+> dd: read=0, write=0, cancelled_write=0
 > 
-> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/xpanic
-> 
-> Handle dumps of corrupted memory regresions:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/crashdump
-> 
+> CC: Mel Gorman <mel@linux.vnet.ibm.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 
-This idea of disabling mce temporarily sounds interesting. 
+This is useful for me.
 
-The slim dump giving access to log buffers makes most sense to me. Why
-not leave it to user space to filter out only log buffers. So if a 
-crash happens due to MCE, we can probably append an ELF note section
-to vmcore and may be user space filtering utitliy (makedumpfile) can
-extract and save only log portion of dump if it is an MCE triggered crash.
+Reviewed-by: Satoru Moriya <satoru.moriya@hds.com>
 
-Of course this needs to be coupled with Andi's patch of disabling mce
-temporarily so that makedumpfile does not induce another crash.
-
-On a side note, can we just save log buf in NVRAM area and access later
-using pstore (by tony luck) and if we can detect that system has that
-NVRAM capability then skip kdump or something like that.
-
-Thanks
-Vivek
