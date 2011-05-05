@@ -1,122 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1EEAjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 20:39:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41145 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752465Ab1EEAjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 20:39:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=D+oe_zyxA1Oj5S36F6Tk0J+26iQ@mail.gmail.com>
-References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
- <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com>
- <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
- <alpine.LSU.2.00.1103182158200.18771@sister.anvils> <BANLkTinoNMudwkcOOgU5d+imPUfZhDbWWQ@mail.gmail.com>
- <AANLkTimfArmB7judMW7Qd4ATtVaR=yTf_-0DBRAfCJ7w@mail.gmail.com>
- <BANLkTi=Limr3NUaG7RLoQLv5TuEDmm7Rqg@mail.gmail.com> <BANLkTi=UZcocVk_16MbbV432g9a3nDFauA@mail.gmail.com>
- <BANLkTi=KTdLRC_hRvxfpFoMSbz=vOjpObw@mail.gmail.com> <BANLkTindeX9-ECPjgd_V62ZbXCd7iEG9_w@mail.gmail.com>
- <BANLkTikcZK+AQvwe2ED=b0dLZ0hqg0B95w@mail.gmail.com> <BANLkTimV1f1YDTWZUU9uvAtCO_fp6EKH9Q@mail.gmail.com>
- <BANLkTi=tavhpytcSV+nKaXJzw19Bo3W9XQ@mail.gmail.com> <alpine.LSU.2.00.1104060837590.4909@sister.anvils>
- <BANLkTi=-Zb+vrQuY6J+dAMsmz+cQDD-KUw@mail.gmail.com> <BANLkTim0MZfa8vFgHB3W6NsoPHp2jfirrA@mail.gmail.com>
- <BANLkTim-hyXpLj537asC__8exMo3o-WCLA@mail.gmail.com> <alpine.LSU.2.00.1104070718120.28555@sister.anvils>
- <BANLkTik_9YW5+64FHrzNy7kPz1FUWrw-rw@mail.gmail.com> <BANLkTiniyAN40p0q+2wxWsRZ5PJFn9zE0Q@mail.gmail.com>
- <BANLkTik6U21r91DYiUsz9A0P--=5QcsBrA@mail.gmail.com> <BANLkTim6ATGxTiMcfK5-03azgcWuT4wtJA@mail.gmail.com>
- <BANLkTiktvcBWsLKEk5iBYVEbPJS3i+U+hA@mail.gmail.com> <BANLkTikdM2kF=qOy4d4bZ_wfb5ykEdkZPQ@mail.gmail.com>
- <BANLkTikZ1szdH5HZdjKEEzG2+1VPusWEeg@mail.gmail.com> <BANLkTingV3eiHEco+36YyM4YTDHFHc9_jA@mail.gmail.com>
- <BANLkTi=D+oe_zyxA1Oj5S36F6Tk0J+26iQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 May 2011 17:38:40 -0700
-Message-ID: <BANLkTim_QtaQLa9GV5hMZyCmW_WAz_Ucvg@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
-To: Michel Lespinasse <walken@google.com>
-Cc: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: multipart/mixed; boundary=0016e65b54cc6a992604a27c99d1
+	id S1752946Ab1EEAj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 20:39:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48312 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752465Ab1EEAjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 20:39:55 -0400
+Subject: Re: [PATCH 0/6] General device tree irq domain infrastructure
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Michal Simek <monstr@monstr.eu>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        hpa@zytor.com, Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20110504155227.GA3317@ponder.secretlab.ca>
+References: <20110428192227.8979.49181.stgit@ponder>
+	 <1304386999.2513.293.camel@pasglop>
+	 <20110504155227.GA3317@ponder.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 May 2011 10:39:13 +1000
+Message-ID: <1304555953.2513.390.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e65b54cc6a992604a27c99d1
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Wed, May 4, 2011 at 5:09 PM, Michel Lespinasse <walken@google.com> wrote:
->
-> FYI, the attached code causes an infinite loop in kernels that have
-> the 95042f9eb7 commit:
+> I completely agree that irq domains are a generically useful feature
+> for architectures, and it should be made available.  I also completely
+> agree that it is orthogonal to device tree translations, which in a
+> large part is why I've structured this series and the new code the
+> way I have.
+> 
+> In this series I'm specifically addressing device tree translation,
+> which is the one bit that is DT specific, and is important regardless
+> of the backend translation mechanism.  In fact, the more I looked at
+> it, the more it seems that the DT api really is orthogonal to the
+> backend irq mapping and I don't think that the way irq_host ties them
+> together is necessarily the best way to do it.  Many of the interrupt
+> controllers which need to gain dt irq parsing have already been
+> converted to using the irq_alloc_desc*() apis and have all the mapping
+> mechanism they need, but lack a method of exposing it for DT
+> translation.
 
-Mmm.
+But irq_alloc_desc() is purely about allocating the linux side irq
+descriptors. Nothing to do with HW numbers here.
 
-Yes. The atomic fault will never work, and the get_user_pages() thing
-won't either, so things will just loop forever.
+You still need a mapping mechanism, regardless of the device-tree, to
+map those linux number to your HW numbers.
 
-> Linus, I am not sure as to what would be the preferred way to fix
-> this. One option could be to modify fault_in_user_writeable so that it
-> passes a non-NULL page pointer, and just does a put_page on it
-> afterwards. While this would work, this is kinda ugly and would slow
-> down futex operations somewhat.
+This is simple and eventually even 1:1 on things like x86, but the
+minute you start having cascaded IRQ controllers, multiple IRQ domains,
+and/or very large HW numbers that encode node IDs etc... this falls
+appart.
 
-No, that's just ugly as hell.
+And this is still completely orthogonal to the device-tree. 
 
-> A more conservative alternative could
-> be to enable the guard page special case under an new GUP flag, but
-> this loses much of the elegance of your original proposal...
+Mapping is the important functionality. Whatever the actual allocator is
+is indeed irrelevant.
 
-How about only doing that only for FOLL_MLOCK?
+> As for the mapping, I agree that the functionality is generally
+> useful, I'm just not fond of the current implementation.  I think it
+> is more complex than it needs to be and I'm not excited about bring it
+> over to the other architectures as-is.
 
-Also, looking at mm/mlock.c, why _do_ we call get_user_pages() even if
-the vma isn't mlocked? That looks bogus. Since we have dropped the
-mm_semaphore, an unlock may have happened, and afaik we should *not*
-try to bring those pages back in at all. There's this whole comment
-about that in the caller ("__mlock_vma_pages_range() double checks the
-vma flags, so that it won't mlock pages if the vma was already
-munlocked."), but despite that it would actually call
-__get_user_pages() even if the VM_LOCKED bit had been cleared (it just
-wouldn't call it with the FOLL_MLOCK flag).
+Nobody cares about the current implementation. What is important is
+indeed the functionality. The basic thing I think everybody agrees is
+that you need to extend the irq_desc (or data, whatever tglx prefers)
+with two bits of information: Some identifier of the domain and some
+identifier of the interrupt number within that domain.
 
-So maybe something like the attached?
+In addition, PIC code will need a way to perform efficient reverse
+mapping. You may decide that for simple IRQ controllers that handle a
+small linear range of interrupts, it's kosher to simply reserve a linear
+range of descriptors and use a simple offset, I'm find with that now
+that we no longer live in a world constrained by NR_IRQ.
 
-UNTESTED! And maybe there was some really subtle reason to still call
-__get_user_pages() without that FOLL_MLOCK thing that I'm missing.
+But the need for the radix tree remains for things that have massively
+large potential HW numbers such as we have on powerpc.
 
-                           Linus
+> For the majority of fixed hw interrupt controllers it is overkill.
+> There is no need for a map table when all the irq descs (<=32 of them)
+> get allocated when the irq controller is instantiated and the mapping
+> consists of 'virq = hw_irq + virq_base'.  For instance, with the arm
+> irq controllers, it's be more than sufficient to use irq_alloc_descs
+> to obtain a range of irq numbers and then a simple of_irq_domain
+> registration to handle the parsing.
 
---0016e65b54cc6a992604a27c99d1
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gnayw6oc0
+That's true if and only if you make NR_IRQ a non issue and if you accept
+the general wastage due to unused interrupts.
 
-IG1tL21lbW9yeS5jIHwgICAgMiArLQogbW0vbWxvY2suYyAgfCAgICA4ICsrKystLS0tCiAyIGZp
-bGVzIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygrKSwgNSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQg
-YS9tbS9tZW1vcnkuYyBiL21tL21lbW9yeS5jCmluZGV4IDYwNzA5OGQ0N2U3NC4uZjdhNDg3Yzkw
-OGE1IDEwMDY0NAotLS0gYS9tbS9tZW1vcnkuYworKysgYi9tbS9tZW1vcnkuYwpAQCAtMTU1NSw3
-ICsxNTU1LDcgQEAgaW50IF9fZ2V0X3VzZXJfcGFnZXMoc3RydWN0IHRhc2tfc3RydWN0ICp0c2ss
-IHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLAogCQkgKiBJZiB3ZSBkb24ndCBhY3R1YWxseSB3YW50IHRo
-ZSBwYWdlIGl0c2VsZiwKIAkJICogYW5kIGl0J3MgdGhlIHN0YWNrIGd1YXJkIHBhZ2UsIGp1c3Qg
-c2tpcCBpdC4KIAkJICovCi0JCWlmICghcGFnZXMgJiYgc3RhY2tfZ3VhcmRfcGFnZSh2bWEsIHN0
-YXJ0KSkKKwkJaWYgKCFwYWdlcyAmJiAoZ3VwX2ZsYWdzICYgRk9MTF9NTE9DSykgJiYgc3RhY2tf
-Z3VhcmRfcGFnZSh2bWEsIHN0YXJ0KSkKIAkJCWdvdG8gbmV4dF9wYWdlOwogCiAJCWRvIHsKZGlm
-ZiAtLWdpdCBhL21tL21sb2NrLmMgYi9tbS9tbG9jay5jCmluZGV4IDZiNTVlM2VmZTBkZi4uOGVk
-N2ZkMDlmODFjIDEwMDY0NAotLS0gYS9tbS9tbG9jay5jCisrKyBiL21tL21sb2NrLmMKQEAgLTE2
-Miw3ICsxNjIsMTAgQEAgc3RhdGljIGxvbmcgX19tbG9ja192bWFfcGFnZXNfcmFuZ2Uoc3RydWN0
-IHZtX2FyZWFfc3RydWN0ICp2bWEsCiAJVk1fQlVHX09OKGVuZCAgID4gdm1hLT52bV9lbmQpOwog
-CVZNX0JVR19PTighcndzZW1faXNfbG9ja2VkKCZtbS0+bW1hcF9zZW0pKTsKIAotCWd1cF9mbGFn
-cyA9IEZPTExfVE9VQ0g7CisJaWYgKCEodm1hLT52bV9mbGFncyAmIFZNX0xPQ0tFRCkpCisJCXJl
-dHVybiBucl9wYWdlczsKKworCWd1cF9mbGFncyA9IEZPTExfVE9VQ0ggfCBGT0xMX01MT0NLOwog
-CS8qCiAJICogV2Ugd2FudCB0byB0b3VjaCB3cml0YWJsZSBtYXBwaW5ncyB3aXRoIGEgd3JpdGUg
-ZmF1bHQgaW4gb3JkZXIKIAkgKiB0byBicmVhayBDT1csIGV4Y2VwdCBmb3Igc2hhcmVkIG1hcHBp
-bmdzIGJlY2F1c2UgdGhlc2UgZG9uJ3QgQ09XCkBAIC0xNzgsOSArMTgxLDYgQEAgc3RhdGljIGxv
-bmcgX19tbG9ja192bWFfcGFnZXNfcmFuZ2Uoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsCiAJ
-aWYgKHZtYS0+dm1fZmxhZ3MgJiAoVk1fUkVBRCB8IFZNX1dSSVRFIHwgVk1fRVhFQykpCiAJCWd1
-cF9mbGFncyB8PSBGT0xMX0ZPUkNFOwogCi0JaWYgKHZtYS0+dm1fZmxhZ3MgJiBWTV9MT0NLRUQp
-Ci0JCWd1cF9mbGFncyB8PSBGT0xMX01MT0NLOwotCiAJcmV0dXJuIF9fZ2V0X3VzZXJfcGFnZXMo
-Y3VycmVudCwgbW0sIGFkZHIsIG5yX3BhZ2VzLCBndXBfZmxhZ3MsCiAJCQkJTlVMTCwgTlVMTCwg
-bm9uYmxvY2tpbmcpOwogfQo=
---0016e65b54cc6a992604a27c99d1--
+The main problem has always been that hard limit which made me chose a
+more efficient mechanisms. Take a mac with 2 cascaded MPICs with 256
+sources each which are mostly never used. I would need an NR_IRQs of 512
+with your scheme (plus 16 because I do want to continue avoiding the
+"ISA" numbers), which is a waste of space, even with SPARSE_IRQ.
+
+Now I hope eventually NR_IRQ will go away and we'll have a more
+efficient mechanism to allocate descriptors and so it will become less
+of an issue.
+
+> For the cases where an interrupt controller isn't able to alloc all
+> the irq descs at once, like for MSI, then yes the LINEAR and RADIX
+> mappings are important.  What bothers me though is the way irq_host
+> needs to use unions and the ->revmap_type value to implement multiple
+> behaviours into a single type.  That's the sort of thing that can be
+> broken out into a library and instantiated only by the interrupt
+> controllers that actually need it.
+
+But that's what it is really. You'll notice that on the fast path the
+interrupt controller code calls directly into the "right" type of revmap
+routine. You may want to refactor things a bit if you want, but the
+union served me well simply because I didnt have to bother doing lots of
+different alloc_bootmem back then. Nowadays, kmalloc is available much
+earlier so it might have become a non issue too.
+
+>   Similarly, it bothers me that that
+> radix mapping makes up a significant portion of the code, yet it has
+> only one user. 
+
+"significant" ? Seriously ? Like 3 function calls ? It's nothing. We use
+an existing radix tree facility, and the amount of code in our irq.c is
+actually very small.
+
+Originally it was living in xics in fact, but I moved it out
+specifically because I wanted a common interface to remapping, so for
+example, I can expose the linux -> hw mapping in debugfs generically,
+among others.
+
+>  I'd be happier if each kind of mapping had its own
+> structure that embedded a generic irq_host/irq_domain with mapping
+> specific ops populated to manipulate it.
+
+Whatever, that's just plumbing, I don't care either way, that doesn't
+change the fact that the concept of domain doesn't have much to do with
+OF :-)
+
+> Regardless, the immediate priority is to implement a mapper that will
+> work for all architectures (or at least everything but powerpc and
+> sparc).
+
+I oppose the implementation of a new mapper that doesn't include
+powerpc, that would be stupid. Either re-use ours or implement a new one
+that encompass our needs. I can't talk for sparc but I wouldn't be
+surprised if David thought about the same lines.
+
+>   x86 has already implemented a skeleton irq_domain because
+> there wasn't any common code for it to use.  ARM also needs the
+> functionality immediately, and I don't want to see yet another
+> arch-specific implementation.  I'd like to get the framework in place
+> now, and grafting in mapping features as follow on patches.  That way
+> the new DT users aren't blocked while waiting for us to hammer down
+> the features that the other architectures don't need yet.
+
+But the mapping code exist already. It returns a device-node as the
+interrupt controller. What you then need is to establish the
+relationship between that device-node and a domain in linux, and have
+code to decode the content of the interrupts property.
+
+So you need the concept of domain first, generic, and -then- you can
+start adding a way to bind it to OF.
+
+> What I /could/ have done I suppose was called it 'struct irq_domain'
+> as you suggest, and allowed each translation mechanism to define its
+> own match/map pair of routines, with device tree being the only one
+> actually implemented at this point.  Yes, I understand that the
+> core code treats the controller pointer as an anonymous cookie, but
+> the api is still very device tree centric, and I'm not convinced that
+> the assumption that all firmware irq representations will be an array
+> of u32 values is going to hold up.
+
+How so ?
+
+>   I'd rather state upfront that the
+> device tree translation really is device tree and let translations for
+> other representation have the option of defining their own API.
+> 
+> However, that is not a strong objection, and if Thomas agrees with you
+> then I'm okay with renaming of_irq_domain to irq_domain and moving it
+> to kernel/irq/irqdomain.c.  The mapping functionality I think should
+> stay out for now until we come to agreement on how it should look, and
+> I'll fix up any users if the API needs to change at a later date.
+
+But I think the mapping functionality is what needs to be sorted first.
+
+Cheers
+Ben.
+
+> g.
+> 
+> 
+> 
+> > 
+> > > PowerPC and x86 have been converted to use of_irq_domain.  MIPS and
+> > > Microblaze have it enabled, but nothing actually registers domains
+> > > yet, so a workaround is in place to preserve the current behaviour
+> > > until it is fixed.
+> > > 
+> > > I'd really like to get patches 1-4 merged into 2.6.40.  Please test.
+> > > I'm also running through build testing here, and when it's complete
+> > > I'll push it out to a 'devicetree/irq-domain' branch on
+> > > git://git.secretlab.ca/git/linux-2.6
+> > > 
+> > > It needs testing.  I've booted it on a powerpc board here without any
+> > > apparent regressions, but that isn't a very big sample.  I've also
+> > > build tested on everything I think is affected.
+> > > 
+> > > I'd also like to get it into linux-next.  Ben, if things checkout okay
+> > > over the next few days, would you be okay with me adding it to
+> > > linux-next, say around Wednesday next week?  As for merging, I think
+> > > this should probably go via your powerpc tree since the that's where
+> > > the bulk of the changes are, but I'm open to other suggestions).
+> > > 
+> > > Patches 5 & 6 are follow-on cleanup work to powerpc, but patch 6 is
+> > > RFC only since there is a locking problem that I haven't fixed yet.
+> > > 
+> > > Cheers,
+> > > g.
+> > > 
+> > > ---
+> > > 
+> > > Grant Likely (6):
+> > >       powerpc: stop exporting irq_map
+> > >       powerpc: make irq_{alloc,free}_virt private and remove count argument
+> > >       powerpc: Make struct irq_host semi-private by moving into irqhost.h
+> > >       dt: generalize of_irq_parse_and_map()
+> > >       powerpc: move irq_alloc_descs_at() call into irq_alloc_virt()
+> > >       powerpc: use irq_alloc_desc() to manage irq allocations
+> > > 
+> > > 
+> > >  arch/microblaze/kernel/irq.c                     |    7 -
+> > >  arch/microblaze/kernel/setup.c                   |    2 
+> > >  arch/mips/kernel/prom.c                          |   14 -
+> > >  arch/powerpc/include/asm/irq.h                   |   88 +------
+> > >  arch/powerpc/include/asm/irqhost.h               |   27 ++
+> > >  arch/powerpc/kernel/irq.c                        |  260 ++++++++++++----------
+> > >  arch/powerpc/platforms/512x/mpc5121_ads_cpld.c   |    5 
+> > >  arch/powerpc/platforms/52xx/media5200.c          |    5 
+> > >  arch/powerpc/platforms/52xx/mpc52xx_gpt.c        |    1 
+> > >  arch/powerpc/platforms/52xx/mpc52xx_pic.c        |   80 +------
+> > >  arch/powerpc/platforms/82xx/pq2ads-pci-pic.c     |    5 
+> > >  arch/powerpc/platforms/85xx/socrates_fpga_pic.c  |   26 +-
+> > >  arch/powerpc/platforms/86xx/gef_pic.c            |   10 -
+> > >  arch/powerpc/platforms/8xx/m8xx_setup.c          |    2 
+> > >  arch/powerpc/platforms/cell/axon_msi.c           |   15 +
+> > >  arch/powerpc/platforms/cell/spider-pic.c         |   19 +-
+> > >  arch/powerpc/platforms/embedded6xx/flipper-pic.c |    9 -
+> > >  arch/powerpc/platforms/embedded6xx/hlwd-pic.c    |    9 -
+> > >  arch/powerpc/platforms/embedded6xx/wii.c         |    6 -
+> > >  arch/powerpc/platforms/iseries/irq.c             |   10 -
+> > >  arch/powerpc/platforms/powermac/pic.c            |   12 +
+> > >  arch/powerpc/platforms/pseries/ras.c             |    4 
+> > >  arch/powerpc/platforms/pseries/xics.c            |   14 +
+> > >  arch/powerpc/sysdev/cpm1.c                       |    8 -
+> > >  arch/powerpc/sysdev/cpm2_pic.c                   |   10 -
+> > >  arch/powerpc/sysdev/fsl_msi.c                    |    3 
+> > >  arch/powerpc/sysdev/i8259.c                      |    3 
+> > >  arch/powerpc/sysdev/ipic.c                       |   19 +-
+> > >  arch/powerpc/sysdev/mpc8xx_pic.c                 |   10 -
+> > >  arch/powerpc/sysdev/mpc8xxx_gpio.c               |   13 +
+> > >  arch/powerpc/sysdev/mpic.c                       |   33 +--
+> > >  arch/powerpc/sysdev/mpic_msi.c                   |    3 
+> > >  arch/powerpc/sysdev/mpic_pasemi_msi.c            |    5 
+> > >  arch/powerpc/sysdev/mv64x60_pic.c                |   14 +
+> > >  arch/powerpc/sysdev/qe_lib/qe_ic.c               |    9 -
+> > >  arch/powerpc/sysdev/uic.c                        |   13 +
+> > >  arch/powerpc/sysdev/xilinx_intc.c                |    9 -
+> > >  arch/x86/include/asm/irq_controller.h            |   12 -
+> > >  arch/x86/include/asm/prom.h                      |    1 
+> > >  arch/x86/kernel/devicetree.c                     |   77 +------
+> > >  drivers/of/irq.c                                 |  118 ++++++++++
+> > >  include/linux/of_irq.h                           |   31 +++
+> > >  42 files changed, 504 insertions(+), 517 deletions(-)
+> > >  create mode 100644 arch/powerpc/include/asm/irqhost.h
+> > >  delete mode 100644 arch/x86/include/asm/irq_controller.h
+> > 
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
