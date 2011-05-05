@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab1EEXx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 19:53:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42171 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab1EEXx0 (ORCPT
+	id S1754366Ab1EEX4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 19:56:06 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:58048 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab1EEX4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 19:53:26 -0400
+	Thu, 5 May 2011 19:56:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=wPX2Jd7ZTAdA4wTwe8n97yr6rfHN9aY/AHvsoEg6RFwpmJcEp639dxqLMmfpOMduGZ
-         Y6OfapgajreCPbXXW2DECbHX2VPB3kbYptCJ/vVEBALDt+ZVX5YxuEMSINlkUbqYKg05
-         zMJKXNpP2iG9f3tFvqPqM10tJW3D55GrOgaIA=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LPPC <linuxppc-dev@lists.ozlabs.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, "v2.6.33.." <stable@kernel.org>
-Subject: [PATCH] powerpc, hw_breakpoints: Fix CONFIG_HAVE_HW_BREAKPOINT off-case in ptrace_set_debugreg
-Date: Fri,  6 May 2011 01:53:18 +0200
-Message-Id: <1304639598-4707-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=mUrQlDcSMwyvgJXpCyZvw6lySiNVdlOtquwfPJGcgFmLSb1rSvCfvycSf3wPZz2hOp
+         jScNbS0t6uTDTwQKb6lV0a5pXATBS9q6HTjyqA09Nm362yAisgLr3Ss7LialXPjm+lSX
+         ykTI++nBVAct96puNujTF2FwFCK1xt6TR25V8=
+Date: Fri, 6 May 2011 07:55:51 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
+Subject: Re: [PATCH] Fixes a small error in Documentation/HOWTO
+Message-ID: <20110505235548.GA2075@gmail.com>
+Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
+	linux-kernel@vger.kernel.org, greg@kroah.com,
+	akpm@linux-foundation.org
+References: <AANLkTinHAfGi84LWzP2rCqpzB6nmj-B2jU_pEPf89Lcz@mail.gmail.com>
+ <20110403045201.GA2598@gmail.com>
+ <4D99230C.6040403@cn.fujitsu.com>
+ <20110404111829.af8bc108.rdunlap@xenotime.net>
+ <BANLkTinSC1UTEQxS0iCKu4tMX-9CUY3rJg@mail.gmail.com>
+ <20110405020717.GA2506@gmail.com>
+ <20110505150719.f4d480ad.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+In-Reply-To: <20110505150719.f4d480ad.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We make use of ptrace_get_breakpoints() / ptrace_put_breakpoints()
-to protect ptrace_set_debugreg() even if CONFIG_HAVE_HW_BREAKPOINT
-if off. However in this case, these APIs are not implemented.
+On Thu, May 05, 2011 at 03:07:19PM -0700, Randy Dunlap wrote:
+> 
+> Linus tells me that we don't want fake names or email addresses in
+> the development tree, so this won't do.
+> 
+> Harry, can you just send me a patch from you, with your Signed-off-by:
+> so that I can apply it, please?
+Hi Randy,
+	My pleasure, the patch is below. If you have any other questions,
+please let me know.
 
-To fix this, push the protection down inside the relevant ifdef.
-Best would be to export the code inside CONFIG_HAVE_HW_BREAKPOINT
-into a standalone function to cleanup the ifdefury there and call
-the breakpoint ref API inside. But as it is more invasive, this
-should be rather made in an -rc1.
+Thanks.
+Harry Wei.
 
-Fixes:
-
-arch/powerpc/kernel/ptrace.c:1594: error: implicit declaration of function 'ptrace_get_breakpoints'
-make[2]: *** [arch/powerpc/kernel/ptrace.o] Error 1
-make[1]: *** [arch/powerpc/kernel] Error 2
-make: *** [sub-make] Error 2
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Prasad <prasad@linux.vnet.ibm.com>
-Cc: v2.6.33.. <stable@kernel.org>
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
- arch/powerpc/kernel/ptrace.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ Documentation/HOWTO |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 4edeeb3..a6ae1cf 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -933,12 +933,16 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
- 	if (data && !(data & DABR_TRANSLATION))
- 		return -EIO;
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
-+	if (ptrace_get_breakpoints(task) < 0)
-+		return -ESRCH;
-+
- 	bp = thread->ptrace_bps[0];
- 	if ((!data) || !(data & (DABR_DATA_WRITE | DABR_DATA_READ))) {
- 		if (bp) {
- 			unregister_hw_breakpoint(bp);
- 			thread->ptrace_bps[0] = NULL;
- 		}
-+		ptrace_put_breakpoints(task);
- 		return 0;
- 	}
- 	if (bp) {
-@@ -948,9 +952,12 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
- 					(DABR_DATA_WRITE | DABR_DATA_READ),
- 							&attr.bp_type);
- 		ret =  modify_user_hw_breakpoint(bp, &attr);
--		if (ret)
-+		if (ret) {
-+			ptrace_put_breakpoints(task);
- 			return ret;
-+		}
- 		thread->ptrace_bps[0] = bp;
-+		ptrace_put_breakpoints(task);
- 		thread->dabr = data;
- 		return 0;
- 	}
-@@ -965,9 +972,12 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
- 							ptrace_triggered, task);
- 	if (IS_ERR(bp)) {
- 		thread->ptrace_bps[0] = NULL;
-+		ptrace_put_breakpoints(task);
- 		return PTR_ERR(bp);
- 	}
+diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+index 365bda9..81bc1a9 100644
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -209,7 +209,7 @@ tools.  One such tool that is particularly recommended is the Linux
+ Cross-Reference project, which is able to present source code in a
+ self-referential, indexed webpage format. An excellent up-to-date
+ repository of the kernel code may be found at:
+-	http://users.sosdg.org/~qiyong/lxr/
++	http://lxr.linux.no/+trees
  
-+	ptrace_put_breakpoints(task);
-+
- #endif /* CONFIG_HAVE_HW_BREAKPOINT */
  
- 	/* Move contents to the DABR register */
-@@ -1591,10 +1601,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 	}
- 
- 	case PTRACE_SET_DEBUGREG:
--		if (ptrace_get_breakpoints(child) < 0)
--			return -ESRCH;
- 		ret = ptrace_set_debugreg(child, addr, data);
--		ptrace_put_breakpoints(child);
- 		break;
- 
- #ifdef CONFIG_PPC64
+ The development process
 -- 
-1.7.3.2
+1.7.0.4
 
