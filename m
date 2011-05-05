@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1EEWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 18:46:09 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62867 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab1EEWqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 18:46:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=the2masters.de; s=mail;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nL7IPrwH2NQS8OOJuo565cy8cGC0ztupfOqOxalYbOUjowdfY3XlAZwqjBMJ5n61Yj
-         lfWoUa5CKroSpxPfWjgy5LVafOB9U9C+S6qYST84lnq3kIHuAg+qQK/ZeHVcAHTSBU4q
-         l91xVp9PI/msDWRiir3i2vWb6YIV7sX2XGMlA=
-Message-ID: <4DC328AC.1060906@the2masters.de>
-Date: Fri, 06 May 2011 00:46:04 +0200
-From: Stefan Hellermann <stefan@the2masters.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754176Ab1EEXBl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 19:01:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40241 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab1EEXBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 19:01:40 -0400
+Date: Thu, 5 May 2011 15:53:02 -0700
+From: Greg KH <gregkh@suse.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
+ workaround
+Message-ID: <20110505225302.GC12316@suse.de>
+References: <20110419204117.979118654@clark.kroah.org>
+ <1303263653.3464.65.camel@localhost>
+ <20110420020128.GA27631@suse.de>
+ <1303265862.3464.77.camel@localhost>
+ <20110420031105.GA11945@suse.de>
+ <1303274910.3464.95.camel@localhost>
+ <20110420050617.GA16756@suse.de>
+ <1303356555.3464.128.camel@localhost>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: early crash on ancient tablet related to no-bootmem
-References: <4DC30251.9040902@the2masters.de> <4DC31D5F.8070209@the2masters.de> <4DC31F72.5050206@kernel.org>
-In-Reply-To: <4DC31F72.5050206@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1303356555.3464.128.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.05.2011 00:06, schrieb Yinghai Lu:
+On Thu, Apr 21, 2011 at 04:29:15AM +0100, Ben Hutchings wrote:
+> > We got a few new quirks added for AMD hardware platforms that fix
+> > problems.
 > 
-> can you please boot with "ignore_loglevel debug memblock=debug"?
+> Maybe, but I still haven't seen anyone explain what those problems are!
+
+I'll let the AMD people answer this.
+
+> > It took 3 patches to get there, yes, but now, as time goes
+> > on, adding new ones is even easier as the .32 code matches the .39 code
+> > in this area due to these patches being added.
+> > 
+> > Now if you find problems in these, great, let me know and I will work to
+> > resolve them.
+> > 
+> > As for regressions, what are you referring to?
 > 
+> These are the regressions I'm aware of in the last few updates:
+> 
+> 2.6.32.36: 'x86: Cleanup highmap after brk is concluded' broke
+> hibernation on x86-64 and some x86-32 machines (reverted in .37)
+> 2.6.32.36: 'signal: Prevent rt_sigqueueinfo and rt_tgsigqueueinfo from
+> spoofing the signal code' broke glibc aio (fixed in .37)
+> 2.6.32.34: powerpc kdump/kexec changes didn't compile on UP or 32-bit
+> (fixed in .37)
+> 2.6.32.30: 'x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
+> systems' broke the revision check for other quirks (fixed in .34)
 
-Here we are:
+Bugs are always a part of life, the fact that we fix them is what is
+important.
 
-early console in setup code
-early console in decompress_kernel
+> 2.6.32.29: 'USB: Prevent buggy hubs from crashing the USB stack' broke
+> MUSB on BeagleBoards (still unfixed?)
 
-Decompressing Linux... Parsing ELF... done.
-Booting the kernel.
-Linux version 2.6.39-rc6+ (stefan@hel-stefan.lan) (gcc version 4.6.0
-20110428 (Red Hat 4.6.0-6) (GCC) ) #1 Thu May 5 19:21:50 CEST 2011
-BIOS-provided physical RAM map:
- BIOS-88: 0000000000000000 - 000000000009f000 (usable)
- BIOS-88: 0000000000100000 - 0000000000840000 (usable)
-bootconsole [earlyser0] enabled
-debug: ignoring loglevel setting.
-Notice: NX (Execute Disable) protection missing in CPU!
-DMI not present or invalid.
-e820 update range: 0000000000000000 - 0000000000010000 (usable) ==>
-(reserved)
-e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
-last_pfn = 0x840 max_arch_pfn = 0x100000
-    memblock_x86_reserve_range: [0x003a5000-0x003a6fff]              BRK
-MEMBLOCK configuration:
- memory size = 0x7cf000
- memory.cnt  = 0x2
- memory[0x0]	[0x00000000010000-0x0000000009efff], 0x8f000 bytes
- memory[0x1]	[0x00000000100000-0x0000000083ffff], 0x740000 bytes
- reserved.cnt  = 0x1
- reserved[0x0]	[0x0000000009f000-0x000000003a6fff], 0x308000 bytes
-initial memory mapped : 0 - 00800000
-    memblock_x86_reserve_range: [0x0009e000-0x0009efff]       TRAMPOLINE
-Base memory trampoline at [c009e000] 9e000 size 4096
-init_memory_mapping: 0000000000000000-0000000000840000
- 0000000000 - 0000840000 page 4k
-kernel direct mapping tables up to 840000 @ 7fa000-800000
-    memblock_x86_reserve_range: [0x007fa000-0x007fafff]          PGTABLE
-8MB LOWMEM available.
-  mapped low ram: 0 - 00840000
-  low ram: 0 - 00840000
-Zone PFN ranges:
-  DMA      0x00000010 -> 0x00001000
-  Normal   empty
-Movable zone start PFN for each node
-early_node_map[2] active PFN ranges
-    0: 0x00000010 -> 0x0000009f
-    0: 0x00000100 -> 0x00000840
-On node 0 totalpages: 1999
-free_area_init_node: node 0, pgdat c03555a0, node_mem_map 00000200
-  DMA zone: 17 pages used for memmap
-  DMA zone: 0 pages reserved
-  DMA zone: 1982 pages, LIFO batch:0
-BUG: Int 6: CR2   (null)
-     EDI c0355868  ESI   (null)  EBP 00000830  ESP c0339f10
-     EBX c03555a0  EDX 00000006  ECX 01000000  EAX fffffff4
-     err   (null)  EIP c0361b85   CS 00000060  flg 00010082
-Stack:   (null) c031d2f2 000007be   (null) c031d2f2 00000003   (null)
-(null)
-       00000010 00000018 00000002   (null) 00000002 c0361ea8   (null)
-(null)
-       00000100 00000840 00000001   (null)   (null) c0339f8c c0339fb8
-c035e41b
-Pid: 0, comm: swapper Not tainted 2.6.39-rc6+ #1
-Call Trace:
- [<c036edb5>] ? 0xc036edb5
- [<c0361b85>] ? 0xc0361b85
- [<c0361ea8>] ? 0xc0361ea8
- [<c035e41b>] ? 0xc035e41b
- [<c035986d>] ? 0xc035986d
- [<c0358401>] ? 0xc0358401
+This woried me, as I don't recall anyone notifying me of it.  Then I saw
+your revert, and I noticed that all you really need to resolve this is
+commit id ec95d35a6bd0047f05fe8a21e6c52f8bb418da55 to be added to the
+tree.  I'll go queue that one up for the next .32-stable tree.
+
+So all should be resolved now, right?
+
+thanks,
+
+greg k-h
