@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1EENzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 09:55:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34621 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753911Ab1EENzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 09:55:11 -0400
-Date: Thu, 5 May 2011 15:55:08 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] writeback: introduce wbc.tagged_sync for the
- WB_SYNC_NONE sync stage
-Message-ID: <20110505135508.GE5323@quack.suse.cz>
-References: <20110502031750.135798606@intel.com>
- <20110502033035.537736600@intel.com>
- <20110504210059.GG6968@quack.suse.cz>
- <20110505121402.GA1294@localhost>
+	id S1754246Ab1EEN53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 09:57:29 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60369 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754160Ab1EEN51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 09:57:27 -0400
+Date: Thu, 5 May 2011 09:57:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tony Vroon <tony@linx.net>
+cc: linux-usb@vger.kernel.org, <usb-storage@lists.one-eyed-alien.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: ums-realtek: Unneeded SubClass & Protocol entries (Fujitsu S760
+ laptop)
+In-Reply-To: <4DC26B50.7070604@linx.net>
+Message-ID: <Pine.LNX.4.44L0.1105050955270.1893-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505121402.GA1294@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-05-11 20:14:02, Wu Fengguang wrote:
-> On Thu, May 05, 2011 at 05:00:59AM +0800, Jan Kara wrote:
-> > On Mon 02-05-11 11:17:51, Wu Fengguang wrote:
-> > > sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
-> > > WB_SYNC_ALL sync. Tag the first stage with wbc.tagged_sync and do
-> > > livelock prevention for it, too.
-> > > 
-> > > Note that writeback_inodes_sb() is called by not only sync(), they are
-> > > treated the same because the other callers need also need livelock
-> > > prevention.
-> >   I was thinking about this and could not find any - which other callers
-> > of writeback_inodes_sb() need the livelock prevention?
+On Thu, 5 May 2011, Tony Vroon wrote:
+
+> On 05/04/11 17:35, Alan Stern wrote:
+> > Does the patch below cause the message to 
+> > go away?
 > 
-> For example, the writeback_inodes_sb_if_idle() call from ext4.
-> In general anyone that pass get_nr_dirty_pages() as work->nr_pages
-> may be highly over-estimating the work set.
-  OK, I see what you mean. I agree using tagging in these cases probably
-makes sense.
+> Tested-By: Tony Vroon <tony@linx.net>
+> 
+> - -ums-realtek 1-1.6:1.0: This device (0bda,0138,3882 S 06 P 50) has
+> unneeded SubClass and Protocol entries in unusual_devs.h (kernel
+> 2.6.39-rc5-00274-g609cfda)
+> - -   Please send a copy of this message to <linux-usb@vger.kernel.org>
+> and <usb-storage@lists.one-eyed-alien.net>
+> 
+> That is with your patch applied to 2.6.39-rc6-00041-g5895198. Many thanks.
 
-> It won't be directly livelocked since ext4 won't wait for completion,
-> however there is possibility the works queued behind are delayed and
-> livelocked.
-  Actually it will, writeback_inodes_sb() waits for completion (because of
-s_umount locking). ext4 should use writeback_inodes_sb_if_idle_nr() (with
-some relatively small number) anyway to avoid the pauses.
+Sorry, I don't quite understand what you mean.  Do those "- -" strings 
+indicate that the message is not present when the patch is applied?
 
-> Ideally simple ->nr_pages works should be given lower priority and
-> even may be merged with each other, and that would be future work.
-  Merging works wanting to do the same thing would be nice. I though about
-it some time ago for a while but getting all the combinations right and
-making the merging code resonably simple was hard so I postponed it for
-later because it was not urgent.
+Alan Stern
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
