@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab1EELoE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 07:44:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46116 "EHLO mx1.suse.de"
+	id S1753035Ab1EEL5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 07:57:24 -0400
+Received: from csamuel.org ([74.50.50.137]:50644 "EHLO csamuel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab1EELoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 07:44:02 -0400
-Date: Thu, 5 May 2011 13:44:00 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [hid-picolcd] Avoid compile warning/error triggered by
- copy_from_user()
-In-Reply-To: <20110505120410.28faceda@pluto.restena.lu>
-Message-ID: <alpine.LNX.2.00.1105051343240.28291@pobox.suse.cz>
-References: <20110504210842.50edc842@neptune.home> <alpine.LNX.2.00.1105051126560.28291@pobox.suse.cz> <20110505120410.28faceda@pluto.restena.lu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751159Ab1EEL5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 07:57:23 -0400
+From: Chris Samuel <chris@csamuel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use ax/bx as a pair
+Date: Thu, 5 May 2011 21:57:01 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+References: <1303566747.12067.10.camel@localhost.localdomain> <201104261450.15786.chris@csamuel.org> <20110426081237.GD806@elte.hu>
+In-Reply-To: <20110426081237.GD806@elte.hu>
+X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@
+ =?iso-8859-1?q?=5ESdaXtmdYGRq=0A=09=5B?=>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<
+ =?iso-8859-1?q?=7Bn8m=3BX=5F=0A=09g=5CY9LQ=3Dv/b5=60?=)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)
+ =?iso-8859-1?q?F!1M3=3Dw=3Ai9MsWp=26v=3B=25usOXL=3Bw=0A=096kF=3FwAZjss=2E?=
+ =?iso-8859-1?q?+y?=(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed;
+  boundary="nextPart2701044.AeJQhIph01";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105052157.06317.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 May 2011, Bruno Prémont wrote:
+--nextPart2701044.AeJQhIph01
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-> > > With CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y compilation of PicoLCD
-> > > driver fails on copy_from_user(), without it a warning is generated:
-> > > 
-> > >   CC [M]  drivers/hid/hid-picolcd.o
-> > > In file included from /usr/src/linux-2.6/arch/x86/include/asm/uaccess.h:571,
-> > >                  from /usr/src/linux-2.6/arch/x86/include/asm/sections.h:5,
-> > >                  from /usr/src/linux-2.6/arch/x86/include/asm/hw_irq.h:26,
-> > >                  from /usr/src/linux-2.6/include/linux/irq.h:359,
-> > >                  from /usr/src/linux-2.6/arch/x86/include/asm/hardirq.h:5,
-> > >                  from /usr/src/linux-2.6/include/linux/hardirq.h:7,
-> > >                  from /usr/src/linux-2.6/include/linux/interrupt.h:12,
-> > >                  from /usr/src/linux-2.6/include/linux/usb.h:15,
-> > >                  from /usr/src/linux-2.6/drivers/hid/hid-picolcd.c:25:
-> > > In function 'copy_from_user',
-> > >     inlined from 'picolcd_debug_eeprom_write' at drivers/hid/hid-picolcd.c:1592:
-> > > arch/x86/include/asm/uaccess_32.h:212: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
-> > > 
-> > > gcc-4.4.5 is not able to track size calculation when it is stored into
-> > > a variable, thus tell copy_from_user() maximum size via
-> > > min(*max-size*, *effective-size*) explicitly and inline how much to copy
-> > > at most.
-> > > 
-> > > Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> > > --
-> > > 
-> > > diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-> > > index b2f56a1..9d8710f 100644
-> > > --- a/drivers/hid/hid-picolcd.c
-> > > +++ b/drivers/hid/hid-picolcd.c
-> > > @@ -1585,11 +1585,11 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
-> > >  	memset(raw_data, 0, sizeof(raw_data));
-> > >  	raw_data[0] = *off & 0xff;
-> > >  	raw_data[1] = (*off >> 8) & 0xff;
-> > > -	raw_data[2] = s < 20 ? s : 20;
-> > > +	raw_data[2] = min((size_t)20, s);
-> > >  	if (*off + raw_data[2] > 0xff)
-> > >  		raw_data[2] = 0x100 - *off;
-> > >  
-> > > -	if (copy_from_user(raw_data+3, u, raw_data[2]))
-> > > +	if (copy_from_user(raw_data+3, u, min((u8)20, raw_data[2])))
-> > 
-> > Hmm ... this is quite an obfuscation just for the sake of making gcc 
-> > happy.
-> 
-> As long as CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set it's just
-> making gcc happy, when it is set compilation fails, which is at least
-> annoying.
-> 
-> > Do other versions of gcc get this right? (i.e. is this gcc bug?)
-> 
-> Hm, don't remember exactly but older gcc versions triggered the same
-> error. I didn't check with more recent version.
-> 
-> I can try with gcc-4.5.1/gcc-4.5.2 or gcc-4.6.0 but it will take
-> some time to first compile those versions of gcc and then check how
-> they handle this case.
-> 
-> > Don't we have similar problems all over the place in the kernel?
-> 
-> I have not seen any similar warnings turning up in my compiles so
-> probably only a limited amount of places around the kernel are
-> affected, if at all (they might have worked around as well).
-> As my configs are rather optimized for the target machines I'm not
-> compiling most of the drivers.
-> Maybe some of Ingo's/Randy's (and whoever else is building them)
-> randconfig/allyesconfig/allmodconfig show other affected code (not
-> sure where to find their build logs though).
-> 
-> I don't think that many users of copy_from_user() have variable counts
-> of data to copy (most often a struct the sizeof which is then passed).
+On Tue, 26 Apr 2011 06:12:37 PM Ingo Molnar wrote:
 
-Hmm. Not really happy that we have to do such ritual dancing just to 
-satisfy gcc, but whatever.
+> Just asking, does the box now boot to user-space, or are there
+> other  regressions left?
 
-Applied, thanks.
+=46inal update on this - I can now boot all the way to userspace
+successfully using an unpatched 2.6.39-rc6 with the parameters:
 
--- 
-Jiri Kosina
-SUSE Labs
+noapic scsi_mod.scan=3Dsync
+
+So I'm really happy, thanks so much to everyone for their help!
+
+All the best,
+Chris
+=2D-=20
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+
+This email may come with a PGP signature as a file. Do not panic.
+=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+
+--nextPart2701044.AeJQhIph01
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUATcKQjY1yjaOTJg85AQJu7Af+Pn0n4+cgmKeDifJa6Bq1rvpTGa+3tXPk
+jfTnr0EBhivgkzqp+7EnPKzcF074S/JiAkIITMIZ7onNpZuy+2W1CtpIC5AO6+SG
+psXtiWPlHfoOvBqCWcU1r0wpQIK7VSMZfUufyKJhk/i+B9+A6QAEtf2rOzo3aIRL
+AaONCV9/YFEjPfy/I/smZvQlRcfVgDWSCHkznVZpKQwJ5ENhQc+Hfi57k0CLfqGH
+/4YAnAR+F82jNThCUy7GpNK/CNmcAPr4EWUgfi7iF4YvmrhP59KBxtZZAOv05p7W
+hGTwBDvRuEuit2erShrL7p7S8RulPk78PzEXvibztRnfLPT08lSSBA==
+=s4IM
+-----END PGP SIGNATURE-----
+
+--nextPart2701044.AeJQhIph01--
