@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab1EEPRV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 11:17:21 -0400
-Received: from 1wt.eu ([62.212.114.60]:36025 "EHLO 1wt.eu"
+	id S1755145Ab1EEPUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 11:20:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab1EEPRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 11:17:19 -0400
-Date: Thu, 5 May 2011 17:17:02 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Greg KH <greg@kroah.com>, stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [stable] -longterm kernels (Was: Re: Patch Upstream: iwlwifi: fix skb usage after free)
-Message-ID: <20110505151702.GG2090@1wt.eu>
-References: <201105030110.p431A5W0005426@hera.kernel.org> <20110504223605.GA5967@kroah.com> <20110505145854.GA4670@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505145854.GA4670@redhat.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1754067Ab1EEPUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 11:20:50 -0400
+Date: Thu, 5 May 2011 17:20:40 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Jens Axboe <jaxboe@fusionio.com>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Monakhov <dmonakhov@openvz.org>, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in 
+ blkdev_issue_discard()
+In-Reply-To: <4DBEDA78.7020502@fusionio.com>
+Message-ID: <alpine.LFD.2.00.1105051717050.3760@dhcp-27-109.brq.redhat.com>
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com> <4DBEDA78.7020502@fusionio.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2 May 2011, Jens Axboe wrote:
 
-On Thu, May 05, 2011 at 04:58:55PM +0200, Stanislaw Gruszka wrote:
-> BTW, Greg, perhaps -logterm releasing policy should be revised somehow.
-> Currently we have .32, .33, .34, .35 -longterm, what is kind a much. If
-> I could suggest something, would be nice to have longterm chosen
-> versions predictable and constants i.e. one from every 3 kernel
-> releases, like .35, .38, .41 ... . That would make distributions, that
-> try to do release every half year very happy, because they will know
-> what kernel to choose, which will be widely supported and tested.
+> On 2011-05-02 08:17, Lukas Czerner wrote:
+> > Currently we are waiting for every submitted REQ_DISCARD bio separately,
+> > but it can have unwanted consequences of repeatedly flushing the queue,
+> > so we rather submit bios in batches and wait for the entire batch, hence
+> > narrowing the window of other ios going in.
+> > 
+> > Use bio_batch_end_io() and struct bio_batch for that purpose, the same
+> > is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
+> > always set !BIO_UPTODATE in the case of error and remove the check for
+> > bb, since we are the only user of this function and we always set this.
+> > 
+> > Remove bio_get()/bio_put() from the blkdev_issue_discard() since
+> > bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
+> > not needed anymore.
+> > 
+> > I have done simple dd testing with surprising results. The script I have
+> > used is:
+> > 
+> > for i in $(seq 10); do
+> >         echo $i
+> >         dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
+> >         sleep 5
+> > done
+> > /usr/bin/time -f %e ./blkdiscard /dev/sdc1
+> > 
+> > Running time of BLKDISCARD on the whole device:
+> > with patch              without patch
+> > 0.95                    15.58
+> > 
+> > So we can see that in this artificial test the kernel with the patch
+> > applied is approx 16x faster in discarding the device.
+> 
+> Good results. It'd be more efficient to add the vectored discard support
+> and use it for this too though, and it would get rid of the need to wait
+> on the batches since there'd be just one discard bio for the ranges.
+> 
 
-Longterm kernels are maintained on a voluntary basis, which explains
-there is no rule. We had 2.6.16, 2.6.27 and now 2.6.32 which were
-initially announced as longterm supported. When Greg announced dropping
-2.6.27, I proposed to take it over because I have some uses for it and
-I know other people who rely on it. Most likely for very similar reasons
-Paul and Andi volunteered to maintain 2.6.34 and 2.6.35 alive.
+Since we do not have vectored discard yet, can this change go in as it
+is ? Also, Christoph thinks that it would not help anyway since the we do
+batch the discard requests only when it exceeds the max range.
 
-I agree it would be much easier for everyone if all longterm kernels were
-announced early. Still there are a lot of users who can't easily upgrade
-for whatever reason and who are happy with someone keeping their kernel
-updated. I tend to consider that Greg's kernels are more "official" than
-other ones, and if some backporting must be done by patch authors, I think
-it should be for these kernels first. Also, .32 is not that far away from
-the 3 other longterm kernels, so when a developer writes a .32 backport,
-chances are that adaptations will not be too hard for the 3 other ones.
-
-> Also
-> developers will have a bit less work with backporting fixes, as having
-> same bug in n and n-3 release is less probable, than having the same bug
-> in n and n-1.
-
-While less probable, I'm still amazed by the number of fixes from -master
-that still apply to 2.6.27, and sometimes (but to a less extent) even to
-2.4.37 ! The fact that fixes and regressions span that many kernel versions
-probably is one of the reasons there is demand for longterm kernels.
-
-Just my 2 cents,
-Willy
-
+Thanks!
+-Lukas
