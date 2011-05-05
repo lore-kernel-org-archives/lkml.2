@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab1EEMxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:53:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47031 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab1EEMxW (ORCPT
+	id S1753934Ab1EEMzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:55:04 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1055 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617Ab1EEMzC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:53:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=eisEbuWHU4C8AnfwhuJFWLdlx7mDaFxbDrPEIoQ/vuLqRs6SsTQXdypeRtadZgCpSH
-         DWa7PR7BZ8ZT4FXesqQNytbXyZuooU1Kfhu4zM+/eOIl3wsnbojdpRw0Gj6EcMM3BqWP
-         k52bttQ8mipJqlW/LpZT3WmsjVyjlRGbwtyqg=
+	Thu, 5 May 2011 08:55:02 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4DC29E18.8070905@broadcom.com>
+Date: Thu, 5 May 2011 14:54:48 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Date: Thu, 5 May 2011 20:53:20 +0800
-Message-ID: <BANLkTi=qPWxRAa6+dT3ohEP6Z=0v+e4EXA@mail.gmail.com>
-Subject: [PATCH] sched: fix constructing the span cpu mask of sched domain
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+cc: "Arnd Bergmann" <arnd@arndb.de>, "George Kashperko" <george@znau.edu.ua>,
+        "Hauke Mehrtens" <hauke@hauke-m.de>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Jonas Gorski" <jonas.gorski@gmail.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "Greg KH" <greg@kroah.com>, "Andy Botting" <andy@andybotting.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
+Subject: Re: AXI driver status => previously: Re: Could I (ab)use bus
+ (struct bus_type) for virtual Broadcom bus?
+References: <BANLkTim7Uj2tsgFngWhUqFK_hk3Leg+sQA@mail.gmail.com>
+ <201104171938.12834.arnd@arndb.de> <op.vt6ufu1n3ri7v4@arend-laptop>
+ <201104191635.40351.arnd@arndb.de> <op.vt76hofg3ri7v4@arend-laptop>
+ <BANLkTinMe-KedeOAiQYES-LCC2O4BoE28w@mail.gmail.com>
+ <4DC2991F.6030703@broadcom.com>
+ <BANLkTi=4zxFWKymsnZuycMowXJz_ciHuVQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=4zxFWKymsnZuycMowXJz_ciHuVQ@mail.gmail.com>
+X-WSS-ID: 61DC41701IC745851-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For a given node, when constructing the cpumask for its sched_domain
-to span, if there is no best node available after searching, further
-efforts could be saved, based on small change in the return value of
-find_next_best_node().
+On 05/05/2011 02:48 PM, Rafał Miłecki wrote:
+>
+> Hey,
+>
+> I got some unique possibility to work on machine affected by DMA
+> errors and I spent last 2 weeks only on solving this issue. I'm going
+> to go back to AMBA topic again soo.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+Great,
 
---- a/kernel/sched.c	2011-04-27 11:48:50.000000000 +0800
-+++ b/kernel/sched.c	2011-05-05 20:44:52.000000000 +0800
-@@ -6787,7 +6787,7 @@ init_sched_build_groups(const struct cpu
-  */
- static int find_next_best_node(int node, nodemask_t *used_nodes)
- {
--	int i, n, val, min_val, best_node = 0;
-+	int i, n, val, min_val, best_node = -1;
+I was spending some time on other stuff as well. I will be picking up 
+integrating the module in our brcm80211 driver to get a feel how it fits.
 
- 	min_val = INT_MAX;
+Gr. AvS
 
-@@ -6811,7 +6811,8 @@ static int find_next_best_node(int node,
- 		}
- 	}
 
--	node_set(best_node, *used_nodes);
-+	if (best_node != -1)
-+		node_set(best_node, *used_nodes);
- 	return best_node;
- }
-
-@@ -6837,7 +6838,8 @@ static void sched_domain_node_span(int n
-
- 	for (i = 1; i < SD_NODES_PER_DOMAIN; i++) {
- 		int next_node = find_next_best_node(node, &used_nodes);
--
-+		if (next_node < 0)
-+			break;
- 		cpumask_or(span, span, cpumask_of_node(next_node));
- 	}
- }
