@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab1EECLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 May 2011 22:11:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58112 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab1EECL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 May 2011 22:11:28 -0400
-Date: Thu, 5 May 2011 12:11:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Subject: linux-next: build failure after merge of the suspend tree
-Message-Id: <20110505121117.3b9b3fb3.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__5_May_2011_12_11_17_+1000_IlRih7mJ_TL5L/9U"
+	id S1752769Ab1EECRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 May 2011 22:17:45 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:56910 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab1EECRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 May 2011 22:17:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YlozK4B77HzLp7FtjR2vzUEIbtUr07KpuW00RSQYB03aD6Y+e3V6bNhxt5ywiVWp+Y
+         AnpxTHxlpDxVcmv7OJ4Riw3TbmQ7Lg6JFlMGo9UHmt2SwRwOWHV7K6vPoRNkh0LFYjGA
+         haTxFKF4DRf5lX9UC2zbDoR619gY87rYU6TLE=
+Message-ID: <4DC208C3.7070902@pobox.com>
+Date: Wed, 04 May 2011 22:17:39 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: shaohua.li@intel.com
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        jaxboe@fusionio.com, htejun@gmail.com, hch@infradead.org,
+        djwong@us.ibm.com, sshtylyov@mvista.com
+Subject: Re: [patch v3 1/3] block: add a non-queueable flush flag
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com> <20110505020417.586891398@sli10-conroe.sh.intel.com>
+In-Reply-To: <20110505020417.586891398@sli10-conroe.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_May_2011_12_11_17_+1000_IlRih7mJ_TL5L/9U
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/04/2011 09:59 PM, shaohua.li@intel.com wrote:
+> flush request isn't queueable in some drives. Add a flag to let driver
+> notify block layer about this. We can optimize flush performance with the
+> knowledge.
+>
+> Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+> ---
+>   block/blk-settings.c   |    6 ++++++
+>   include/linux/blkdev.h |    7 +++++++
+>   2 files changed, 13 insertions(+)
 
-Hi Rafael,
+hmmm.
 
-After merging the suspend tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+This assumes that flush on new hardware, by default, is queueable.
 
-ERROR: "usermodehelper_is_disabled" [drivers/base/firmware_class.ko] undefi=
-ned!
+I think the sense should be reversed:  don't enable the optimization, 
+unless we know the optimization works.
 
-Caused by commit d5fef1145404 ("PM: Print a warning if firmware is
-requested when tasks are frozen").
+That seems safer than always enabling the optimization, unless we know 
+it does not work.  That is not a fail-safe mode of operation.
 
-I have used the suspend tree from next-20110504 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+	Jeff
 
---Signature=_Thu__5_May_2011_12_11_17_+1000_IlRih7mJ_TL5L/9U
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJNwgdFAAoJEDMEi1NhKgbsDfsH/37Xx4XLzJyPNs9zYbH2u8qO
-Wzz5b3REsNxOSWmg4Y9mk55xIggzd3n/klxmQGbpx3RKKI2Ybc6pLnSAYSlFbXNl
-vtsBwwjQPD0O7ZMPywCW3lMnMtD92+u71P4g00BLUqTEO6ubGk5dw5mx+0lHALmv
-cg57FpjyKWcoI9DnNslfREF3AKeLQJc7hZPwWW6ikvkT2iUsayWtrjXLMybOuYWE
-N83znUz0TWXklx4UhPS7FzqWadvLodwZ89YXG00IldYVoNEIrmxXg6JR4KDUOTaW
-MNC9jTlWzwwo2HNkiW8UkeIdCPZbjFYU6Qn1vgMNnerML3huv79LuIExmqOzwUk=
-=gPh0
------END PGP SIGNATURE-----
 
---Signature=_Thu__5_May_2011_12_11_17_+1000_IlRih7mJ_TL5L/9U--
