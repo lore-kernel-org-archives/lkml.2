@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1EEJ15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 05:27:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361Ab1EEJ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 05:27:56 -0400
-Date: Thu, 5 May 2011 11:27:54 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [hid-picolcd] Avoid compile warning/error triggered by
- copy_from_user()
-In-Reply-To: <20110504210842.50edc842@neptune.home>
-Message-ID: <alpine.LNX.2.00.1105051126560.28291@pobox.suse.cz>
-References: <20110504210842.50edc842@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752756Ab1EEJba (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 05:31:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33621 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab1EEJb2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 05:31:28 -0400
+Date: Thu, 5 May 2011 11:31:23 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, john stultz <johnstul@us.ibm.com>
+Subject: Re: [rtc-linux] Re: [PATCH 0/3] repair RTC subsys (for i.MX)
+Message-ID: <20110505093123.GA2653@pengutronix.de>
+References: <1304523088-17039-1-git-send-email-w.sang@pengutronix.de>
+ <1304548259.2943.5.camel@work-vm>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Disposition: inline
+In-Reply-To: <1304548259.2943.5.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011, Bruno Prémont wrote:
 
-> With CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y compilation of PicoLCD
-> driver fails on copy_from_user(), without it a warning is generated:
-> 
->   CC [M]  drivers/hid/hid-picolcd.o
-> In file included from /usr/src/linux-2.6/arch/x86/include/asm/uaccess.h:571,
->                  from /usr/src/linux-2.6/arch/x86/include/asm/sections.h:5,
->                  from /usr/src/linux-2.6/arch/x86/include/asm/hw_irq.h:26,
->                  from /usr/src/linux-2.6/include/linux/irq.h:359,
->                  from /usr/src/linux-2.6/arch/x86/include/asm/hardirq.h:5,
->                  from /usr/src/linux-2.6/include/linux/hardirq.h:7,
->                  from /usr/src/linux-2.6/include/linux/interrupt.h:12,
->                  from /usr/src/linux-2.6/include/linux/usb.h:15,
->                  from /usr/src/linux-2.6/drivers/hid/hid-picolcd.c:25:
-> In function 'copy_from_user',
->     inlined from 'picolcd_debug_eeprom_write' at drivers/hid/hid-picolcd.c:1592:
-> arch/x86/include/asm/uaccess_32.h:212: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
-> 
-> gcc-4.4.5 is not able to track size calculation when it is stored into
-> a variable, thus tell copy_from_user() maximum size via
-> min(*max-size*, *effective-size*) explicitly and inline how much to copy
-> at most.
-> 
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> --
-> 
-> diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-> index b2f56a1..9d8710f 100644
-> --- a/drivers/hid/hid-picolcd.c
-> +++ b/drivers/hid/hid-picolcd.c
-> @@ -1585,11 +1585,11 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
->  	memset(raw_data, 0, sizeof(raw_data));
->  	raw_data[0] = *off & 0xff;
->  	raw_data[1] = (*off >> 8) & 0xff;
-> -	raw_data[2] = s < 20 ? s : 20;
-> +	raw_data[2] = min((size_t)20, s);
->  	if (*off + raw_data[2] > 0xff)
->  		raw_data[2] = 0x100 - *off;
->  
-> -	if (copy_from_user(raw_data+3, u, raw_data[2]))
-> +	if (copy_from_user(raw_data+3, u, min((u8)20, raw_data[2])))
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm ... this is quite an obfuscation just for the sake of making gcc 
-happy.
+On Wed, May 04, 2011 at 03:30:59PM -0700, john stultz wrote:
+> On Wed, 2011-05-04 at 17:31 +0200, Wolfram Sang wrote:
+> > The recent updates to the RTC subsystem (removing UIE interrupts and use
+> > alarms instead) introduced two problems for i.MX (and the subsys in
+> > general, I'd think):
+> >=20
+> > a) because registering the rtc now calls get_alarm(), the requirement
+> > has been added for a lot of drivers that drvdata is properly set up
+> > _before_ registering. rtc-mxc did not do that (probably bad; but as said
+> > like a lot of other rtc-drivers currently) and oopsed.
+> >=20
+> > b) the callbacks to the rtc-core for update_irqs have been removed, but
+> > irq-handlers are still there, now being unused cruft. In case of
+> > rtc-mxc, this is only one if-block, but for rtc-mc13xxx.c this is a
+> > seperate handler.
+> >=20
+> > From a glimpse, most platform drivers seem to have at least one of these
+> > problems now :( John, am I correct or am I missing something?
+>=20
+> I've tried to go through and clean up most of the b) issues, although
+> some have apparently slipped by. Please let me know of any others you
+> ran across.
 
-Do other versions of gcc get this right? (i.e. is this gcc bug?)
+I discovered it when working on the rtc-stmp3xxx driver. For this, I
+will send a patch series in a few minutes, because there are more things
+to be done there. Grepping for 'RTC_UF' should point to other areas of
+interest.
 
-Don't we have similar problems all over the place in the kernel?
+> And indeed we've hit a few of issue a) already, so I should probably run
+> through and do a full audit.
 
->  		return -EFAULT;
->  	resp = picolcd_send_and_wait(data->hdev, REPORT_EE_WRITE, raw_data,
->  			sizeof(raw_data));
-> 
+I hacked a q'n'd coccinelle-script pointing out potential candidates. It
+found two more for which I will send patches, too. But I think a
+seperate audit would be a good idea, just to be sure.
 
--- 
-Jiri Kosina
-SUSE Labs
+> Your patches look fine to me. Do you intend to push them or should I
+> queue them up?
+
+I'd say they should go via your tree.
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEUEARECAAYFAk3CbmsACgkQD27XaX1/VRsEtwCgr9OhyTPBByt2AbM7YYE8tIF4
+7FsAl3fxN/Ydg6GPErq7zQRwvMX4cao=
+=oYnH
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
