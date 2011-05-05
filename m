@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab1EEL5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 07:57:24 -0400
-Received: from csamuel.org ([74.50.50.137]:50644 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159Ab1EEL5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 07:57:23 -0400
-From: Chris Samuel <chris@csamuel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use ax/bx as a pair
-Date: Thu, 5 May 2011 21:57:01 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-References: <1303566747.12067.10.camel@localhost.localdomain> <201104261450.15786.chris@csamuel.org> <20110426081237.GD806@elte.hu>
-In-Reply-To: <20110426081237.GD806@elte.hu>
-X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@
- =?iso-8859-1?q?=5ESdaXtmdYGRq=0A=09=5B?=>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<
- =?iso-8859-1?q?=7Bn8m=3BX=5F=0A=09g=5CY9LQ=3Dv/b5=60?=)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)
- =?iso-8859-1?q?F!1M3=3Dw=3Ai9MsWp=26v=3B=25usOXL=3Bw=0A=096kF=3FwAZjss=2E?=
- =?iso-8859-1?q?+y?=(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
+	id S1754023Ab1EEMCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:02:05 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:59109 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751625Ab1EEMBL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:01:11 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
+        <viresh.linux@gmail.com>, <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH V4 0/5] dmaengine/dw_dmac updates
+Date: Thu, 5 May 2011 17:30:28 +0530
+Message-ID: <cover.1304596524.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2701044.AeJQhIph01";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105052157.06317.chris@csamuel.org>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2701044.AeJQhIph01
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+This patchset fixes few issues and extends its support.
 
-On Tue, 26 Apr 2011 06:12:37 PM Ingo Molnar wrote:
+Changes in V4:
+ - spin_locks are not taken anymore from parent routines. Now every routine
+   takes locks whenever required.
+ - 1 and 0 are replaced with true and false for bool parameters to routines.
+ - flags are not used uninitialized for spin_lock_irqsave
 
-> Just asking, does the box now boot to user-space, or are there
-> other  regressions left?
+Changes in V3:
+ - lflags is removed from dw_dma_chan and local flag variables are created.
+ - An extra argument is added to routines calling dwc_descriptor_complete()
+   directly or indirectly
+ - spin_lock() in tasklet is also changed to irqsave variants.
 
-=46inal update on this - I can now boot all the way to userspace
-successfully using an unpatched 2.6.39-rc6 with the parameters:
+Changes in V2:
+ - lflags added in dw_dma_chan instead of dw_dma
+ - Patch from Linus Walleij added for pause and resume functionality.
 
-noapic scsi_mod.scan=3Dsync
+Linus Walleij (1):
+  dmaengine/dw_dmac: implement pause and resume in dwc_control
 
-So I'm really happy, thanks so much to everyone for their help!
+Viresh Kumar (4):
+  dmaengine/dw_dmac: don't call callback routine in case
+    dmaengine_terminate_all() is called
+  dmaengine/dw_dmac: set residue as total len in dwc_tx_status if
+    status is !DMA_SUCCESS
+  dmaengine/dw_dmac: Divide one sg to many desc, if sg len is greater
+    than DWC_MAX_COUNT
+  dmaengine/dw_dmac: Replace spin_lock* with irqsave variants and
+    enable submission from callback
 
-All the best,
-Chris
-=2D-=20
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+ drivers/dma/dw_dmac.c      |  271 +++++++++++++++++++++++++++++---------------
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 179 insertions(+), 93 deletions(-)
 
-This email may come with a PGP signature as a file. Do not panic.
-=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+-- 
+1.7.2.2
 
---nextPart2701044.AeJQhIph01
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEVAwUATcKQjY1yjaOTJg85AQJu7Af+Pn0n4+cgmKeDifJa6Bq1rvpTGa+3tXPk
-jfTnr0EBhivgkzqp+7EnPKzcF074S/JiAkIITMIZ7onNpZuy+2W1CtpIC5AO6+SG
-psXtiWPlHfoOvBqCWcU1r0wpQIK7VSMZfUufyKJhk/i+B9+A6QAEtf2rOzo3aIRL
-AaONCV9/YFEjPfy/I/smZvQlRcfVgDWSCHkznVZpKQwJ5ENhQc+Hfi57k0CLfqGH
-/4YAnAR+F82jNThCUy7GpNK/CNmcAPr4EWUgfi7iF4YvmrhP59KBxtZZAOv05p7W
-hGTwBDvRuEuit2erShrL7p7S8RulPk78PzEXvibztRnfLPT08lSSBA==
-=s4IM
------END PGP SIGNATURE-----
-
---nextPart2701044.AeJQhIph01--
