@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab1EEVBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 17:01:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42534 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab1EEVBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 17:01:19 -0400
-Date: Thu, 5 May 2011 23:01:18 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, john stultz <johnstul@us.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC] time: xtime_lock is held too long
-Message-ID: <20110505210118.GI2925@one.firstfloor.org>
-References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org> <m2oc3jxgtt.fsf@firstfloor.org> <1304564090.2943.36.camel@work-vm> <1304574244.32152.666.camel@edumazet-laptop> <1304576495.2943.40.camel@work-vm> <1304604284.3032.78.camel@edumazet-laptop> <alpine.LFD.2.02.1105051630390.3005@ionos> <1304608095.3032.95.camel@edumazet-laptop> <alpine.LFD.2.02.1105051750540.3005@ionos>
+	id S1753669Ab1EEVC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 17:02:28 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55089 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751714Ab1EEVC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 17:02:27 -0400
+Subject: Re: [PATCH V4 2/8] netdevice.h: Add a new zerocopy device flag
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4DC1DD9D.6070708@us.ibm.com>
+References: <1304495717.20660.67.camel@localhost.localdomain>
+	 <4DC1DD9D.6070708@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 May 2011 14:02:17 -0700
+Message-ID: <1304629337.7076.62.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105051750540.3005@ionos>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Another idea would be to prime cache lines to be dirtied in cpu cache
-> > before taking locks, and better pack variables to reduce number of cache
-> > lines.
+On Wed, 2011-05-04 at 16:13 -0700, Sridhar Samudrala wrote:
+> On Wed, 2011-05-04 at 00:55 -0700, Shirley Ma wrote: 
+> > Signed-off-by: Shirley Ma <xma@us.ibm.com>
+> > ---
+> > 
+> >  include/linux/netdevice.h |   10 ++++++++++
+> >  1 files changed, 10 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> > index 0249fe7..0808f1e 100644
+> > --- a/include/linux/netdevice.h
+> > +++ b/include/linux/netdevice.h
+> > @@ -1067,6 +1067,16 @@ struct net_device {
+> >  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
+> >  #define NETIF_F_RXCSUM		(1 << 29) /* Receive checksumming offload */
+> > 
+> > +/*
+> > + * Bit 31 is for device to map userspace buffers -- zerocopy
+> > + * Device can set this flag when it supports HIGHDMA.
+> > + * Device can't recycle this kind of skb buffers.
+> > + * There are 256 bytes copied, the rest of buffers are mapped.
+> > + * The userspace callback should only be called when last reference to this skb
+> > + * is gone.
+> > + */
+> > +#define NETIF_F_ZEROCOPY	(1 << 31)
+> > +
+> Should we make this TX_ZEROCOPY as we may need a seperate flag for
+> RX_ZEROCOPY in future?
 > 
-> Most variables are packed already in struct timekeeper, which should
-> be pretty cache hot anyway, so I don't know whether we gain much.
+> Same with socket flag.
 
-There's actually some potential here. I got a moderate speedup in a
-database benchmark with this patch recently. The biggest win
-was in the timer interrupt.
+We might be able to use the same flag for both TX and RX. If RX
+zero-copy requires only HIGHDMA feature only. If not, then we might need
+different feature bit. Same for sock flag.
 
-All those variables are on separate cache lines.
-
-(needs some cleanups, just for illustration)
-
--Andi
-
-From: Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] do prefetches for timer state in timer interrupt
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 76b96d7..2704267 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -856,6 +856,17 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-+	extern struct timespec xtime;
-+	extern struct timespec wall_to_monotonic;
-+
-+
-+	/* Prefetch here to make the ktime_get later faster.
-+ 	 * XXX move them all on the same cache line.
-+ 	 */
-+	prefetch(&xtime_lock);
-+	prefetch(&xtime);
-+	prefetch(&wall_to_monotonic);
-+
- 	/*
- 	 * NOTE! We'd better ACK the irq immediately,
- 	 * because timer handling can be slow.
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index d27c756..0002e9e 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -157,8 +157,8 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
-  * - wall_to_monotonic is no longer the boot time, getboottime must be
-  * used instead.
-  */
--static struct timespec xtime __attribute__ ((aligned (16)));
--static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
-+struct timespec xtime __attribute__ ((aligned (16)));
-+struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
- /*
+> Thanks
+> Sridhar
+> 
+> 
 
