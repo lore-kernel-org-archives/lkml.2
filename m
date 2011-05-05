@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab1EEXBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 19:01:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43257 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab1EEXBt convert rfc822-to-8bit (ORCPT
+	id S1754133Ab1EEXGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 19:06:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60195 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab1EEXGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 19:01:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ttexDhwNrJ4i67y/PRQAtM6PnNU7YCP72Gy/v3hiTyQomyDCVOcrjL24Exd7muoTHI
-         yK6H6EmaH57+hvbNAkRoAUXl8CBORCgfRdZX9rAPmpN0jZvmVaCWBfKBMwZFVvdoaZPc
-         DQW1pV8PltT0612f5kFhFg0h2Qq6mxsTQFPAA=
+	Thu, 5 May 2011 19:06:31 -0400
+Date: Fri, 6 May 2011 01:06:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH] x86: Change trap definitions to enumerated values
+In-Reply-To: <BANLkTin3_xWVZVcvz81+t=A+hjjf+7KfCw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1105060053320.3005@ionos>
+References: <1304462995-1825-1-git-send-email-vnagarnaik@google.com> <BANLkTin3_xWVZVcvz81+t=A+hjjf+7KfCw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=epFN2EZBj9n8pac6h7F4RWmyk+Q@mail.gmail.com>
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
-	<BANLkTi=epFN2EZBj9n8pac6h7F4RWmyk+Q@mail.gmail.com>
-Date: Fri, 6 May 2011 01:01:48 +0200
-Message-ID: <BANLkTi=fmTBs=kOwRQWROHWzAG7h_0T80w@mail.gmail.com>
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Julian Calaby <julian.calaby@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 6 maja 2011 00:59 użytkownik Julian Calaby
-<julian.calaby@gmail.com> napisał:
-> Rafał,
->
-> A minor nit:
->
-> On Fri, May 6, 2011 at 07:59, Rafał Miłecki <zajec5@gmail.com> wrote:
->> diff --git a/Documentation/ABI/testing/sysfs-bus-bcma b/Documentation/ABI/testing/sysfs-bus-bcma
->> new file mode 100644
->> index 0000000..ad3cd69
->> --- /dev/null
->> +++ b/Documentation/ABI/testing/sysfs-bus-bcma
->> @@ -0,0 +1,31 @@
->> +What:          /sys/bus/bcma/devices/.../class
->> +Date:          May 2011
->> +KernelVersion: 2.6.40
->> +Contact:       Rafał Miłecki <zajec5@gmail.com>
->> +Description:
->> +               Each AXI core is identified by few fields, including class it
->> +               belongs to. See include/linux/bcma/bcma.h for possible values.
->
-> Should this not read BCMA or something similar, not AXI?
->
-> Ditto for the rest of the changes to this file.
+On Thu, 5 May 2011, Vaibhav Nagarnaik wrote:
+> Steven
+> 
+> This patch has the formatting as you suggested. Does this work for you?
+> 
+> Thomas
+> 
+> Can you please take a look at the patches and provide your comments?
 
-Ups, I left old name in this single place. Thx.
+Can you please stop that nonsense ?
 
--- 
-Rafał
+You posted the patch on Tuesday, sent a reminder on Wednesday and
+another one on Thursday.
+
+Do you really think that I'm a robot waiting for your patches to
+magically surface on LKML and then dropping any other activity to take
+care of them ?
+
+I have seen that patch and it's in my list to take care of, just not a
+top priority level issue. It's neither a bug fix nor anything which
+radically improves the kernel. So what?
+
+I don't mind a polite reminder after a week or two in case I actually
+missed a patch, but that daily reminder is just a PITA.
+
+Thanks,
+
+	tglx
