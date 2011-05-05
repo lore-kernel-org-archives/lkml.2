@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab1EEJba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 05:31:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33621 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1EEJb2 (ORCPT
+	id S1753142Ab1EEJbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 05:31:39 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52934 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab1EEJbg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 05:31:28 -0400
-Date: Thu, 5 May 2011 11:31:23 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, john stultz <johnstul@us.ibm.com>
-Subject: Re: [rtc-linux] Re: [PATCH 0/3] repair RTC subsys (for i.MX)
-Message-ID: <20110505093123.GA2653@pengutronix.de>
-References: <1304523088-17039-1-git-send-email-w.sang@pengutronix.de>
- <1304548259.2943.5.camel@work-vm>
+	Thu, 5 May 2011 05:31:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Qm+fa4YxIYhnwKMIZZXwyJCrZ+ri/2AhaRruSkRLOtZ3a6yPnbHtGWCf6r+zVaICf1
+         a0zmUS6l6Mqf2iQDRxUSN70X7EfFcDTIDsRQ2cKxauKZYKE/iMIQeAKumWEHyiSzo35J
+         QP1sNnWByN2aoPRRXANxT61YzvzYNdXPrJsNs=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <1304548259.2943.5.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1304256126-26015-5-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20110501132142.GA25494@linux.vnet.ibm.com>
+	<1304256126-26015-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Date: Thu, 5 May 2011 17:31:35 +0800
+Message-ID: <BANLkTindSvefZFoM6uPx+UyHOsFSmYnfhQ@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 05/86] rcu: move TREE_RCU from softirq to kthread
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, May 1, 2011 at 9:20 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> From: Paul E. McKenney <paul.mckenney@linaro.org>
+>
+> If RCU priority boosting is to be meaningful, callback invocation must
+> be boosted in addition to preempted RCU readers.  Otherwise, in presence
+> of CPU real-time threads, the grace period ends, but the callbacks don't
+> get invoked.  If the callbacks don't get invoked, the associated memory
+> doesn't get freed, so the system is still subject to OOM.
+>
+> But it is not reasonable to priority-boost RCU_SOFTIRQ, so this commit
+> moves the callback invocations to a kthread, which can be boosted easily.
+>
+> Also add comments and properly synchronized all accesses to
+> rcu_cpu_kthread_task, as suggested by Lai Jiangshan.
+>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+[snip]
+> + * Drop to non-real-time priority and yield, but only after posting a
+> + * timer that will cause us to regain our real-time priority if we
+> + * remain preempted.  Either way, we restore our real-time priority
+> + * before returning.
+> + */
+> +static void rcu_yield(int cpu)
+> +{
+> +       struct rcu_data *rdp = per_cpu_ptr(rcu_sched_state.rda, cpu);
+> +       struct sched_param sp;
+> +       struct timer_list yield_timer;
+> +
+> +       setup_timer(&yield_timer, rcu_cpu_kthread_timer, (unsigned long)rdp);
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, May 04, 2011 at 03:30:59PM -0700, john stultz wrote:
-> On Wed, 2011-05-04 at 17:31 +0200, Wolfram Sang wrote:
-> > The recent updates to the RTC subsystem (removing UIE interrupts and use
-> > alarms instead) introduced two problems for i.MX (and the subsys in
-> > general, I'd think):
-> >=20
-> > a) because registering the rtc now calls get_alarm(), the requirement
-> > has been added for a lot of drivers that drvdata is properly set up
-> > _before_ registering. rtc-mxc did not do that (probably bad; but as said
-> > like a lot of other rtc-drivers currently) and oopsed.
-> >=20
-> > b) the callbacks to the rtc-core for update_irqs have been removed, but
-> > irq-handlers are still there, now being unused cruft. In case of
-> > rtc-mxc, this is only one if-block, but for rtc-mc13xxx.c this is a
-> > seperate handler.
-> >=20
-> > From a glimpse, most platform drivers seem to have at least one of these
-> > problems now :( John, am I correct or am I missing something?
->=20
-> I've tried to go through and clean up most of the b) issues, although
-> some have apparently slipped by. Please let me know of any others you
-> ran across.
-
-I discovered it when working on the rtc-stmp3xxx driver. For this, I
-will send a patch series in a few minutes, because there are more things
-to be done there. Grepping for 'RTC_UF' should point to other areas of
-interest.
-
-> And indeed we've hit a few of issue a) already, so I should probably run
-> through and do a full audit.
-
-I hacked a q'n'd coccinelle-script pointing out potential candidates. It
-found two more for which I will send patches, too. But I think a
-seperate audit would be a good idea, just to be sure.
-
-> Your patches look fine to me. Do you intend to push them or should I
-> queue them up?
-
-I'd say they should go via your tree.
+setup_timer_on_stack() should be used here :)
 
 Thanks,
+Yong
 
-   Wolfram
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEUEARECAAYFAk3CbmsACgkQD27XaX1/VRsEtwCgr9OhyTPBByt2AbM7YYE8tIF4
-7FsAl3fxN/Ydg6GPErq7zQRwvMX4cao=
-=oYnH
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
+-- 
+Only stand for myself
