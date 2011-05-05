@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab1EESFO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 14:05:14 -0400
-Received: from filoni2.nine.ch ([94.230.212.32]:51501 "EHLO mail.lenux.mine.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755152Ab1EESFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 14:05:12 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 05 May 2011 20:05:11 +0200
-From: jdossantos@docs.homelinux.org
-To: Hank Janssen <hjanssen@microsoft.com>
-Cc: KY Srinivasan <kys@microsoft.com>, <linux-kernel@vger.kernel.org>
-Subject: RE: Error in Hyper-V modules =?UTF-8?Q?hv=5Fvmbus?=
-In-Reply-To: <42a623fd771f05f5bcabec8d632673e3@docs.homelinux.org>
-References: <0e67fbb5ce27bd8d1210f0b7b8d5069c@docs.homelinux.org>
- <8AFC7968D54FB448A30D8F38F259C562498A3FF3@TK5EX14MBXC114.redmond.corp.microsoft.com>
- <42a623fd771f05f5bcabec8d632673e3@docs.homelinux.org>
-Message-ID: <f814458e9b05dd1d3f22c5bffa3ea18a@docs.homelinux.org>
-User-Agent: Roundcube Webmail/0.5
+	id S1755811Ab1EESa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 14:30:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31204 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755670Ab1EESa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 14:30:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Cc: xen-devel@lists.xensource.com, hch@infradead.org,
+        stefano.stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
+        pasik@iki.fi
+Subject: [PATCH v3.1] xen block backend.
+Date: Thu,  5 May 2011 14:11:32 -0400
+Message-Id: <1304619093-22354-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090208.4DC2EB8C.001A:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Thu, 05 May 2011 14:05:11 +0200, jdossantos@docs.homelinux.org 
- wrote:
-> On Wed, 4 May 2011 16:00:52 +0000, Hank Janssen wrote:
->>> -----Original Message-----
->>> From: jdossantos@docs.homelinux.org
->>> [mailto:jdossantos@docs.homelinux.org]
->>> Sent: Wednesday, May 04, 2011 2:48 AM
->>> To: Hank Janssen
->>> Cc: KY Srinivasan; linux-kernel@vger.kernel.org
->>> Subject: Re: Error in Hyper-V modules hv_vmbus
->>> > Hank.
->>>
->>>  Here is my step by step protocol:
->>
->> Thanks for the detailed setup. I will be trying it with this.
->>
->>>  lsmod | grep hv_
->>>  hv_timesource           1055  0 [permanent]
->>>  hv_vmbus               48554  1
->>>
->>>  In the logs and with lsmod i see the timesource module running, 
->>> but
->>> the
->>>  time is not in sync with the windows host.
->>>  Shutdown function also dosn't work, seems that nothing of the
->>>  integrated components are working..hv_netvsc,hv_blkvsc,hv_storvsc 
->>> are
->>>  not
->>>  loaded?! But modinfo provides information:
->>
->> Timesource makes sure that the clock does not drift and uses Hyper-V 
->> for
->> Its stable time source.
->>
->> The setting of the clock equal to the host is provided by the 
->> hv_utils.ko
->> Module. This module also provides heartbeat, shutdown and KVP 
->> functionality.
->>
->>
->>>  After that I enabled the synthetic network card, but also here..it
->>>  doesn't work and I don't see any hv_netvsc
->>>  module loaded, so I tried to load it "by hand" with modprobe
->>>  hv_netvsc..but I get a modprobe timeout and nothing happens..
->>
->> I should know more in the next day or so when I get a VM up and 
->> running.
->>
->> It works fine on Ubuntu, I submitted a few patches to them a few 
->> weeks ago
->> To fix some other problems (these patches are already in mainline)
->>
->> Hank.
-> Hi Hank
->
-> Yes in ubuntu server (i tested the newest version 11.04) there is no
-> problem, the hyper-v modules are compiled and activated
-> as default in the released kernel (2.6.38-8), network, timesync and
-> all others integrated components are working fine. This is the lsmod
-> output:
-> lsmod | grep hv_
-> hv_utils               12850  0
-> hv_netvsc              36467  0
-> hv_timesource          12423  0 [permanent]
-> hv_vmbus               50431  2 hv_utils,hv_netvsc
->
-> Now I have downloaded the newest rc kernel and done the same steps
-> like in the debian installation, after a reboot I get same errors and
-> integrated components failed to works...Now I check the hyper-v
-> modules source from 2.6.38-8 ubuntu kernel and the new one
->
-> Regards
-> Juan Dos Santos
+The following patch implements the Xen block backend driver for
+upstream Linux. This is the host side counterpart to the frontend driver
+in drivers/block/xen-blkfront.c. The PV protocol is also implemented by
+frontend drivers in other OSes too, such as the BSDs and even Windows.
 
- Ok, now I have setup again debian 6.0.1a and compiled the 2.6.39-rc6 
- kernel but with the hyper-v staging drivers from ubuntu kernel 2.6.38-8 
- source (just replaced the hv directory, I know maybe it's dirty :) ). 
- But now all is working fine! I have now a debian system with kernel 
- 2.6.39-rc6 with all integrated components running..looks that the 
- hyper-v modules in the ubuntu kernel are more stable that in the newest 
- official rc kernel?!
+There is a QEMU version of this PV protocol called 'qdisk'. The performance
+of it (after tweaking it to use AIO [1]) is inferior compared to the one
+I am posting here: http://thread.gmane.org/gmane.linux.kernel/1129246
 
- Regards
- Juan
+Changelog since posting:
+[v3: https://lkml.org/lkml/2011/4/20/403]
+ - dropped 'feature-barrier' support
+ - added 'feature-flush-cache' support
+ - tested w/ NetBSD unstable, SLES11, RHEL5, 2.6.36, 2.6.39-rc6 guests to check
+   for barrier/flush issues.
+ - fixed write performance issues
 
+This driver has a long history as an out of tree driver but I am
+submitting it here as a single monolithic patch to aid review. Once it
+has been reviewed and is considered suitable for merging can we perhaps
+consider merging the equivalent git branch which maintains much of
+history?
 
+The patch is based on the driver from the xen.git pvops kernel tree but
+has been put through the checkpatch.pl wringer plus several manual
+cleanup passes. It has also been moved from drivers/xen/blkback to
+drivers/block/xen-blback.
 
+The git tree of the broken out driver is available at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/xen-blkback-v3.1
+
+Note that this driver depends on couple of fixes to the Xen backend
+subsystem. Those are available in devel/backend.base.v3 branch and are
+intended for the 2.6.40 merge window.
+
+ drivers/block/Kconfig               |    8 +
+ drivers/block/Makefile              |    1 +
+ drivers/block/xen-blkback/Makefile  |    3 +
+ drivers/block/xen-blkback/blkback.c |  812 +++++++++++++++++++++++++++++++++++
+ drivers/block/xen-blkback/common.h  |  129 ++++++
+ drivers/block/xen-blkback/xenbus.c  |  769 +++++++++++++++++++++++++++++++++
+ include/xen/blkif.h                 |  122 ++++++
+ include/xen/interface/io/blkif.h    |   13 +
+ 8 files changed, 1857 insertions(+), 0 deletions(-)
+
+[1]: http://darnok.org/xen/qdisk_vs_blkback_v3.1/qemu-enable-aio.patch
