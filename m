@@ -1,141 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab1EEMBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 08:01:12 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:35767 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751159Ab1EEMBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 08:01:10 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
-        <viresh.linux@gmail.com>, <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V4 5/5] dmaengine/dw_dmac: implement pause and resume in dwc_control
-Date: Thu, 5 May 2011 17:30:33 +0530
-Message-ID: <c79848d08fae2b089b4e0efe167458fe4eb499c4.1304596524.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1304596524.git.viresh.kumar@st.com>
-References: <cover.1304596524.git.viresh.kumar@st.com>
+	id S1753377Ab1EEMFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 08:05:14 -0400
+Received: from filoni2.nine.ch ([94.230.212.32]:53777 "EHLO mail.lenux.mine.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752635Ab1EEMFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 08:05:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 05 May 2011 14:05:11 +0200
+From: jdossantos@docs.homelinux.org
+To: Hank Janssen <hjanssen@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>, <linux-kernel@vger.kernel.org>
+Subject: RE: Error in Hyper-V modules =?UTF-8?Q?hv=5Fvmbus?=
+In-Reply-To: <8AFC7968D54FB448A30D8F38F259C562498A3FF3@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <0e67fbb5ce27bd8d1210f0b7b8d5069c@docs.homelinux.org>
+ <8AFC7968D54FB448A30D8F38F259C562498A3FF3@TK5EX14MBXC114.redmond.corp.microsoft.com>
+Message-ID: <42a623fd771f05f5bcabec8d632673e3@docs.homelinux.org>
+User-Agent: Roundcube Webmail/0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+ On Wed, 4 May 2011 16:00:52 +0000, Hank Janssen wrote:
+>> -----Original Message-----
+>> From: jdossantos@docs.homelinux.org
+>> [mailto:jdossantos@docs.homelinux.org]
+>> Sent: Wednesday, May 04, 2011 2:48 AM
+>> To: Hank Janssen
+>> Cc: KY Srinivasan; linux-kernel@vger.kernel.org
+>> Subject: Re: Error in Hyper-V modules hv_vmbus
+>> > Hank.
+>>
+>>  Here is my step by step protocol:
+>
+> Thanks for the detailed setup. I will be trying it with this.
+>
+>>  lsmod | grep hv_
+>>  hv_timesource           1055  0 [permanent]
+>>  hv_vmbus               48554  1
+>>
+>>  In the logs and with lsmod i see the timesource module running, but
+>> the
+>>  time is not in sync with the windows host.
+>>  Shutdown function also dosn't work, seems that nothing of the
+>>  integrated components are working..hv_netvsc,hv_blkvsc,hv_storvsc 
+>> are
+>>  not
+>>  loaded?! But modinfo provides information:
+>
+> Timesource makes sure that the clock does not drift and uses Hyper-V 
+> for
+> Its stable time source.
+>
+> The setting of the clock equal to the host is provided by the 
+> hv_utils.ko
+> Module. This module also provides heartbeat, shutdown and KVP 
+> functionality.
+>
+>
+>>  After that I enabled the synthetic network card, but also here..it
+>>  doesn't work and I don't see any hv_netvsc
+>>  module loaded, so I tried to load it "by hand" with modprobe
+>>  hv_netvsc..but I get a modprobe timeout and nothing happens..
+>
+> I should know more in the next day or so when I get a VM up and 
+> running.
+>
+> It works fine on Ubuntu, I submitted a few patches to them a few 
+> weeks ago
+> To fix some other problems (these patches are already in mainline)
+>
+> Hank.
+ Hi Hank
 
-Some peripherals like amba-pl011 needs pause to be implemented in DMA controller
-drivers. This also returns correct status from dwc_tx_status() in case chan is
-paused.
+ Yes in ubuntu server (i tested the newest version 11.04) there is no 
+ problem, the hyper-v modules are compiled and activated
+ as default in the released kernel (2.6.38-8), network, timesync and all 
+ others integrated components are working fine. This is the lsmod
+ output:
+ lsmod | grep hv_
+ hv_utils               12850  0
+ hv_netvsc              36467  0
+ hv_timesource          12423  0 [permanent]
+ hv_vmbus               50431  2 hv_utils,hv_netvsc
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/dw_dmac.c      |   59 +++++++++++++++++++++++++++++---------------
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 40 insertions(+), 20 deletions(-)
+ Now I have downloaded the newest rc kernel and done the same steps like 
+ in the debian installation, after a reboot I get same errors and 
+ integrated components failed to works...Now I check the hyper-v modules 
+ source from 2.6.38-8 ubuntu kernel and the new one
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index cc39090..54d72a8 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -864,34 +864,50 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	struct dw_dma		*dw = to_dw_dma(chan->device);
- 	struct dw_desc		*desc, *_desc;
- 	unsigned long		flags;
-+	u32			cfglo;
- 	LIST_HEAD(list);
- 
--	/* Only supports DMA_TERMINATE_ALL */
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
-+	if (cmd == DMA_PAUSE) {
-+		spin_lock_irqsave(&dwc->lock, flags);
- 
--	/*
--	 * This is only called when something went wrong elsewhere, so
--	 * we don't really care about the data. Just disable the
--	 * channel. We still have to poll the channel enable bit due
--	 * to AHB/HSB limitations.
--	 */
--	spin_lock_irqsave(&dwc->lock, flags);
-+		cfglo = channel_readl(dwc, CFG_LO);
-+		channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
-+		while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY))
-+			cpu_relax();
- 
--	channel_clear_bit(dw, CH_EN, dwc->mask);
-+		dwc->paused = true;
-+		spin_unlock_irqrestore(&dwc->lock, flags);
-+	} else if (cmd == DMA_RESUME) {
-+		if (!dwc->paused)
-+			return 0;
- 
--	while (dma_readl(dw, CH_EN) & dwc->mask)
--		cpu_relax();
-+		spin_lock_irqsave(&dwc->lock, flags);
- 
--	/* active_list entries will end up before queued entries */
--	list_splice_init(&dwc->queue, &list);
--	list_splice_init(&dwc->active_list, &list);
-+		cfglo = channel_readl(dwc, CFG_LO);
-+		channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
-+		dwc->paused = false;
- 
--	spin_unlock_irqrestore(&dwc->lock, flags);
-+		spin_unlock_irqrestore(&dwc->lock, flags);
-+	} else if (cmd == DMA_TERMINATE_ALL) {
-+		spin_lock_irqsave(&dwc->lock, flags);
- 
--	/* Flush all pending and queued descriptors */
--	list_for_each_entry_safe(desc, _desc, &list, desc_node)
--		dwc_descriptor_complete(dwc, desc, false);
-+		channel_clear_bit(dw, CH_EN, dwc->mask);
-+		while (dma_readl(dw, CH_EN) & dwc->mask)
-+			cpu_relax();
-+
-+		dwc->paused = false;
-+
-+		/* active_list entries will end up before queued entries */
-+		list_splice_init(&dwc->queue, &list);
-+		list_splice_init(&dwc->active_list, &list);
-+
-+		spin_unlock_irqrestore(&dwc->lock, flags);
-+
-+		/* Flush all pending and queued descriptors */
-+		list_for_each_entry_safe(desc, _desc, &list, desc_node)
-+			dwc_descriptor_complete(dwc, desc, false);
-+	} else
-+		return -ENXIO;
- 
- 	return 0;
- }
-@@ -925,6 +941,9 @@ dwc_tx_status(struct dma_chan *chan,
- 	else
- 		dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
-+	if (dwc->paused)
-+		return DMA_PAUSED;
-+
- 	return ret;
- }
- 
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 720f821..c968597 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -138,6 +138,7 @@ struct dw_dma_chan {
- 	void __iomem		*ch_regs;
- 	u8			mask;
- 	u8			priority;
-+	bool			paused;
- 
- 	spinlock_t		lock;
- 
--- 
-1.7.2.2
+ Regards
+ Juan Dos Santos
 
