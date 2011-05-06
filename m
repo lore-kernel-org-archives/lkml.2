@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab1EFTOo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 15:14:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43587 "EHLO mx1.suse.de"
+	id S932547Ab1EFTSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 15:18:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53912 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab1EFTOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 15:14:43 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
-        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <20110506154444.GG6591@suse.de>
-References: <20110428171826.GZ4658@suse.de>
-	 <1304015436.2598.19.camel@mulgrave.site> <20110428192104.GA4658@suse.de>
-	 <1304020767.2598.21.camel@mulgrave.site>
-	 <1304025145.2598.24.camel@mulgrave.site>
-	 <1304030629.2598.42.camel@mulgrave.site> <20110503091320.GA4542@novell.com>
-	 <1304431982.2576.5.camel@mulgrave.site>
-	 <1304432553.2576.10.camel@mulgrave.site> <20110506074224.GB6591@suse.de>
-	 <20110506154444.GG6591@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 May 2011 14:14:37 -0500
-Message-ID: <1304709277.12427.29.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S932202Ab1EFTS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 15:18:29 -0400
+Date: Fri, 6 May 2011 21:18:14 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@google.com>
+Subject: Re: [PATCH] softlockup: re-increase hung tasks check from 2 minutes
+ to 8 minutes
+Message-ID: <20110506191814.GE7151@elte.hu>
+References: <4DC4153E.5020304@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DC4153E.5020304@suse.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 16:44 +0100, Mel Gorman wrote:
-> Colin and James: Did you happen to switch from SLAB to SLUB between
-> 2.6.37 and 2.6.38? My own tests were against SLAB which might be why I
-> didn't see the problem. Am restarting the tests with SLUB.
 
-Aargh ... I'm an idiot.  I should have thought of SLUB immediately ...
-it's been causing oopses since debian switched to it.
+* Jeff Mahoney <jeffm@suse.com> wrote:
 
-So I recompiled the 2.6.38.4 stable kernel with SLAB instead of SLUB and
-the problem goes away ... at least from three untar runs on a loaded
-box ... of course it could manifest a few ms after I send this email ...
+>  Commit e162b39a, which moved the soft lockup code around a bit,
+>  accidentally reverted commit fb822db4, which extended the soft lockup
+>  timeout from 2 minutes to 8 minutes.
+> 
+>  This patch restores it to 8 minutes.
 
-There are material differences, as well: SLAB isn't taking my system
-down to very low memory on the untar ... it's keeping about 0.5Gb listed
-as free.  SLUB took that to under 100kb, so it could just be that SLAB
-isn't wandering as close to the cliff edge?
+This patch wont apply, because i already have your other patch committed. Could 
+you do it against latest -tip:
 
-James
+  http://people.redhat.com/mingo/tip.git/README
 
+Thanks,
 
+	Ingo
