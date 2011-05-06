@@ -1,95 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab1EFRUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 13:20:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752345Ab1EFRUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 13:20:47 -0400
-Date: Fri, 6 May 2011 19:20:19 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Thomas Sattler <tsattler@gmx.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.X)
-Message-ID: <20110506172019.GB6330@random.random>
-References: <4DAF6C0B.3070009@gmx.de>
- <20110427134613.GI32590@random.random>
- <4DC14474.9040001@gmx.de>
- <20110504143842.GK7838@random.random>
- <4DC31EDE.2020503@gmx.de>
- <20110506011319.GH7838@random.random>
- <4DC3B629.7010409@gmx.de>
- <4DC3B72A.302@gmx.de>
- <4DC40484.3050205@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC40484.3050205@gmx.de>
+	id S1756329Ab1EFRZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 13:25:01 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:60350 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab1EFRY7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 13:24:59 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApsEAJQtxE1bdWOb/2dsb2JhbACnQ8QghgkEj1iIOoYc
+X-IronPort-AV: E=Sophos;i="4.64,327,1301868000"; 
+   d="scan'208";a="361259265"
+From: "Javier M. Mellid" <jmunhoz@igalia.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        "Javier M. Mellid" <jmunhoz@igalia.com>
+Subject: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
+Date: Fri,  6 May 2011 19:24:56 +0200
+Message-Id: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 04:24:04PM +0200, Thomas Sattler wrote:
-> > Aaarg, wrong kernel tree. I patched and compiled 2.6.38.5.
-> > Do you think it is important to stay with 2.6.38.2, after
-> > we know 2.6.38.4 is also affected?
-> 
-> I bootet 2.6.38.5.aa1 ("aa1" for the "make-it-worse-patch")
+This patch implements dynamic framebuffer mode setting.
 
-Sorry, unfortunately the make-it-worse-patch had a misplaced #if 0
-which resulted in the VM not being able to reclaim, it should have
-been around __alloc_pages_direct_compact and instead it was around
-__alloc_pages_direct_reclaim (I noticed the hard way too).
+Previous code works with mode setting in a hard code way. Previous hard
+code configuration is used as default configuration if dynamic mode
+setting or boot mode setting (via sm712vga_setup) is not used.
 
-The second patch (hotfix, not the make-it-worse) I sent should work
-just fine instead.
+Tested with SM712 supporting 1024x600x16 as default hardware resolution.
 
-Other ways we could fix it (if my vmstat per-cpu theory is right)
-would be to call the equivalent of start_cpu_timer() to
-schedule_delayed_work_on every CPU after congestion_wait returns
-before re-evaluating too_many_isolated (however that would still add a
-100msec latency here and there plus doing some overscheduling in
-possibly no VM-congested situations where just one task quit releasing
-all anon memory in the inactive list), or probably to always return
-false from too_many_isolated if nr_isolated_anon <
-threshold*CONFIG_NR_CPUS would be enough to sort the per-cpu
-accounting error.. but personally I prefer to nuke the function for
-all reasons mentioned in the prev email and go ahead and drop the
-isolated counter too. However a more strict fix would give more
-confirmation that we're not hiding a stat accounting error and confirm
-my theory, but for the long run (after having spent a day reading that
-function) I don't really like to keep it.
+Changes:
 
-The correct make-it-worse patch would be this (and this time I tested
-it before sending ;). This should speedup the time it takes to
-reproduce as it'll always enter reclaim with __GFP_NO_KSWAPD
-allocations (while previously it'd enter reclaim only if compaction
-failed). And entering reclaim without kswapd running and churning over
-the per-cpu stats and adding stuff from active to the inactive list
-even when the inactive list gets trimmed to zero by an exit(), would
-screw things up.
+- Implement fb_check_var and fb_set_par callbacks
+- Remove __maybe_unused decorator in function being used (sm712vga_setup)
+- Minor cleanup on initialization structs related with mode settings
+- Updated author copyright
+- Updated TODO file
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9f8a97b..3dcd442 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2093,6 +2093,7 @@ rebalance:
- 	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
- 		goto nopage;
+Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
+---
+ drivers/staging/sm7xx/TODO     |    1 -
+ drivers/staging/sm7xx/smtcfb.c |  112 +++++++++++++++++++++++++---------------
+ 2 files changed, 71 insertions(+), 42 deletions(-)
+
+diff --git a/drivers/staging/sm7xx/TODO b/drivers/staging/sm7xx/TODO
+index a66d9e4..9750516 100644
+--- a/drivers/staging/sm7xx/TODO
++++ b/drivers/staging/sm7xx/TODO
+@@ -4,7 +4,6 @@ TODO:
+ - use kernel coding style
+ - checkpatch.pl clean
+ - refine the code and remove unused code
+-- use kernel framebuffer mode setting instead of hard code
+ - move it to drivers/video/sm7xx/ or make it be drivers/video/sm7xxfb.c
  
-+#if 0
- 	/*
- 	 * Try direct compaction. The first pass is asynchronous. Subsequent
- 	 * attempts after direct reclaim are synchronous
-@@ -2105,7 +2106,8 @@ rebalance:
- 					sync_migration);
- 	if (page)
- 		goto got_pg;
--	sync_migration = !(gfp_mask & __GFP_NO_KSWAPD);
+ Please send any patches to Greg Kroah-Hartman <greg@kroah.com> and
+diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
+index 3e2230f..140c148 100644
+--- a/drivers/staging/sm7xx/smtcfb.c
++++ b/drivers/staging/sm7xx/smtcfb.c
+@@ -8,6 +8,9 @@
+  * Copyright (C) 2009 Lemote, Inc.
+  * Author: Wu Zhangjin, wuzhangjin@gmail.com
+  *
++ * Copyright (C) 2011 Igalia, S.L.
++ * Author: Javier M. Mellid <jmunhoz@igalia.com>
++ *
+  *  This file is subject to the terms and conditions of the GNU General Public
+  *  License. See the file COPYING in the main directory of this archive for
+  *  more details.
+@@ -39,16 +42,16 @@
+ #include <linux/pm.h>
+ #endif
+ 
+-struct screen_info smtc_screen_info;
+-
+ #include "smtcfb.h"
+ 
+ #ifdef DEBUG
+-#define smdbg(format, arg...)	printk(KERN_DEBUG format , ## arg)
++#define smdbg(format, arg...) printk(KERN_DEBUG format , ## arg)
+ #else
+ #define smdbg(format, arg...)
+ #endif
+ 
++struct screen_info smtc_screen_info;
++
+ /*
+ * Private structure
+ */
+@@ -127,6 +130,29 @@ u16 smtc_ChipIDs[] = {
+ 
+ #define numSMTCchipIDs (sizeof(smtc_ChipIDs) / sizeof(u16))
+ 
++static struct fb_var_screeninfo smtcfb_var = {
++	.xres           = 1024,
++	.yres           = 600,
++	.xres_virtual   = 1024,
++	.yres_virtual   = 600,
++	.bits_per_pixel = 16,
++	.red            = {16, 8, 0},
++	.green          = {8, 8, 0},
++	.blue           = {0, 8, 0},
++	.activate       = FB_ACTIVATE_NOW,
++	.height         = -1,
++	.width          = -1,
++	.vmode          = FB_VMODE_NONINTERLACED,
++};
++
++static struct fb_fix_screeninfo smtcfb_fix = {
++	.id             = "sm712fb",
++	.type           = FB_TYPE_PACKED_PIXELS,
++	.visual         = FB_VISUAL_TRUECOLOR,
++	.line_length    = 800 * 3,
++	.accel          = FB_ACCEL_SMI_LYNX,
++};
++
+ static void sm712_set_timing(struct smtcfb_info *sfb,
+ 			     struct par_info *ppar_info)
+ {
+@@ -268,29 +294,6 @@ static void smtc_set_timing(struct smtcfb_info *sfb, struct par_info
+ 	}
+ }
+ 
+-static struct fb_var_screeninfo smtcfb_var = {
+-	.xres = 1024,
+-	.yres = 600,
+-	.xres_virtual = 1024,
+-	.yres_virtual = 600,
+-	.bits_per_pixel = 16,
+-	.red = {16, 8, 0},
+-	.green = {8, 8, 0},
+-	.blue = {0, 8, 0},
+-	.activate = FB_ACTIVATE_NOW,
+-	.height = -1,
+-	.width = -1,
+-	.vmode = FB_VMODE_NONINTERLACED,
+-};
+-
+-static struct fb_fix_screeninfo smtcfb_fix = {
+-	.id = "sm712fb",
+-	.type = FB_TYPE_PACKED_PIXELS,
+-	.visual = FB_VISUAL_TRUECOLOR,
+-	.line_length = 800 * 3,
+-	.accel = FB_ACCEL_SMI_LYNX,
+-};
+-
+ /* chan_to_field
+  *
+  * convert a colour value into a field position
+@@ -604,20 +607,6 @@ smtcfb_write(struct fb_info *info, const char __user *buf, size_t count,
+ }
+ #endif	/* ! __BIG_ENDIAN */
+ 
+-static struct fb_ops smtcfb_ops = {
+-	.owner = THIS_MODULE,
+-	.fb_setcolreg = smtc_setcolreg,
+-	.fb_blank = cfb_blank,
+-	.fb_fillrect = cfb_fillrect,
+-	.fb_imageblit = cfb_imageblit,
+-	.fb_copyarea = cfb_copyarea,
+-#ifdef __BIG_ENDIAN
+-	.fb_read = smtcfb_read,
+-	.fb_write = smtcfb_write,
+-#endif
+-
+-};
+-
+ void smtcfb_setmode(struct smtcfb_info *sfb)
+ {
+ 	switch (sfb->fb.var.bits_per_pixel) {
+@@ -676,6 +665,47 @@ void smtcfb_setmode(struct smtcfb_info *sfb)
+ 	smtc_set_timing(sfb, &hw);
+ }
+ 
++static int smtc_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
++{
++	/* sanity checks */
++	if (var->xres_virtual < var->xres)
++		var->xres_virtual = var->xres;
++
++	if (var->yres_virtual < var->yres)
++		var->yres_virtual = var->yres;
++
++	/* set valid default bpp */
++	if ((var->bits_per_pixel != 8)  && (var->bits_per_pixel != 16) &&
++	    (var->bits_per_pixel != 24) && (var->bits_per_pixel != 32))
++		var->bits_per_pixel = 16;
++
++	return 0;
++}
++
++static int smtc_set_par(struct fb_info *info)
++{
++	struct smtcfb_info *sfb = (struct smtcfb_info *)info;
++
++	smtcfb_setmode(sfb);
++
++	return 0;
++}
++
++static struct fb_ops smtcfb_ops = {
++	.owner        = THIS_MODULE,
++	.fb_check_var = smtc_check_var,
++	.fb_set_par   = smtc_set_par,
++	.fb_setcolreg = smtc_setcolreg,
++	.fb_blank     = cfb_blank,
++	.fb_fillrect  = cfb_fillrect,
++	.fb_imageblit = cfb_imageblit,
++	.fb_copyarea  = cfb_copyarea,
++#ifdef __BIG_ENDIAN
++	.fb_read      = smtcfb_read,
++	.fb_write     = smtcfb_write,
 +#endif
-+	sync_migration = true;
++};
++
+ /*
+  * Alloc struct smtcfb_info and assign the default value
+  */
+@@ -796,7 +826,7 @@ static void smtc_free_fb_info(struct smtcfb_info *sfb)
+  *	Returns zero.
+  *
+  */
+-static int __init __maybe_unused sm712vga_setup(char *options)
++static int __init sm712vga_setup(char *options)
+ {
+ 	int index;
  
- 	/* Try direct reclaim and then allocating */
- 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
+-- 
+1.7.4.1
 
