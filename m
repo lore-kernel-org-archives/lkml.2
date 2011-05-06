@@ -1,99 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab1EFUAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:00:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:54739 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab1EFUAl convert rfc822-to-8bit (ORCPT
+	id S1755538Ab1EFUEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:04:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61669 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab1EFUEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:00:41 -0400
+	Fri, 6 May 2011 16:04:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZLxfbZCYWhhCNwUaNqtt77tAMljrRvDW8oOOE/k4vjyZUORU0MicdTW1xVUXnD8y+e
-         +MQwE2M8h4HEh48mBimw==
-MIME-Version: 1.0
-In-Reply-To: <1304709200.31666.498.camel@groeck-laptop>
-References: <1304707960-10178-1-git-send-email-natg@google.com>
-	<1304709200.31666.498.camel@groeck-laptop>
-Date: Fri, 6 May 2011 13:00:20 -0700
-Message-ID: <BANLkTikL+HSnR2L6WKZ-QH5RieMMAdbpNA@mail.gmail.com>
-Subject: Re:
-From: Natarajan Gurumoorthy <natg@google.com>
-To: guenter.roeck@ericsson.com
-Cc: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hpYzGa7X8pa1XiSozhXA5uuFSLrtdmLujcCjRSiDlFleWU6JX6nQUgtbZt3mySq8hH
+         w3ILbMUo/ELF4lgL8HxI82Fx6d7UhSaFMwCyS8uh7IhJkbZfocD+fxGQQb5vTsRUfNuV
+         84N0titAfPbrndp51799Hk30+JxyeA1Wj213M=
+Subject: Re: [RFC] time: xtime_lock is held too long
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, john stultz <johnstul@us.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1304710003.2821.0.camel@edumazet-laptop>
+References: <1304574244.32152.666.camel@edumazet-laptop>
+	 <1304576495.2943.40.camel@work-vm>
+	 <1304604284.3032.78.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051630390.3005@ionos>
+	 <1304608095.3032.95.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051750540.3005@ionos>
+	 <20110505210118.GI2925@one.firstfloor.org>
+	 <alpine.LFD.2.02.1105061117220.3005@ionos>
+	 <20110506165913.GF11636@one.firstfloor.org>
+	 <1304703767.3066.211.camel@edumazet-laptop>
+	 <20110506175051.GL11636@one.firstfloor.org>
+	 <1304710003.2821.0.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 22:04:27 +0200
+Message-ID: <1304712267.2821.29.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter,
-    Good catch. Forgot to checkin drivers/hwmon/it87.c. Also found a
-couple of places I missed in driver/watch/it8712_wdt.c. Patch #9 will
-be shipped later tonight. Got pulled off to do something else. Expect
-patch late tonight.
+Le vendredi 06 mai 2011 Ã  21:26 +0200, Eric Dumazet a Ã©crit :
+> Le vendredi 06 mai 2011 Ã  19:50 +0200, Andi Kleen a Ã©crit :
+> > On Fri, May 06, 2011 at 07:42:47PM +0200, Eric Dumazet wrote:
+> > > Le vendredi 06 mai 2011 Ã  18:59 +0200, Andi Kleen a Ã©crit :
+> > > 
+> > > > If you have a better way to make it faster please share it.
+> > > 
+> > > Ideally we could use RCU :)
+> > 
+> > Hmm, I didn't think my case had a lot of loops in the seqlock -- just
+> > expensive cache misses -- but I should double check.
+> > 
+> > For the lots of loop case we probably need to understand first why you
+> > iterate that often.
+> 
+> Yep, I'll try to investigate on this
+> 
 
-Regards
-Nat
+So apparently some calls to tick_do_update_jiffies64() are pretty
+expensive :
 
-
-On Fri, May 6, 2011 at 12:13 PM, Guenter Roeck
-<guenter.roeck@ericsson.com> wrote:
-> On Fri, 2011-05-06 at 14:52 -0400, Nat Gurumoorthy wrote:
->> There are 3 different drivers that touch the it87 hardware registers.
->> The 3 drivers have been written independently and access the it87 hardware
->> registers assuming they are the only driver accessing it. This change
->> attempts to serialize access to the hardware by using
->> "request_muxed_region" macro defined by Alan Cox. Call to this macro
->> will hold off the requestor if the resource is currently busy.
->> The use of the above macro makes it possible to get rid of
->> spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
->> This also greatly simplifies the implementation of it87_wdt.c driver.
->>
->> 01 - Changes to it87 watchdog driver to use "request_muxed_region"
->>  drivers/watchdog/it8712f_wdt.c
->>  drivers/watchdog/it87_wdt.c
->>
->> 02 - Chages to hwmon it87 driver to use "request_muxed_region"
->>  drivers/hwmon/it87.c
->>
->>  drivers/hwmon/it87.c           |   14 +++-
->>  drivers/watchdog/it8712f_wdt.c |   60 ++++++++++----
->>  drivers/watchdog/it87_wdt.c    |  165 +++++++++++++++++++++++----------------
->>  3 files changed, 152 insertions(+), 87 deletions(-)
->> diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
->>
->> Signed-off-by: Nat Gurumoorthy <natg@google.com>
->>
->> Patch History:
->> v8:
->> - Return the error actually returned by superio_enter and not -EBUSY.
->
-> Hi Nat,
->
-> Your use of -EBUSY vs. the returned error code is still inconsistent,
-> for superio_enter() as well as for other functions returning an error
-> code.
->
-> Also, the following line split is really unnecessary.
->
-> -static inline void superio_enter(void)
-> +static inline int
-> +superio_enter(void)
->
-> Guenter
->
->
->
+[  369.334399] maxhold=1191627
+[  369.334450] ------------[ cut here ]------------
+[  369.334505] WARNING: at include/linux/seqlock.h:81 tick_do_update_jiffies64+0x169/0x1c0()
+[  369.334579] Hardware name: ProLiant BL460c G1
+[  369.334631] Modules linked in: xt_hashlimit ipmi_devintf af_packet ipmi_si ipmi_msghandler hpilo tg3 bonding
+[  369.334989] Pid: 0, comm: swapper Tainted: G        W   2.6.39-rc6-00097-g6ac1576-dirty #547
+[  369.335000] Call Trace:
+[  369.335000]  [<c05b395f>] ? printk+0x18/0x21
+[  369.335000]  [<c023b90d>] warn_slowpath_common+0x6d/0xa0
+[  369.335000]  [<c02661f9>] ? tick_do_update_jiffies64+0x169/0x1c0
+[  369.335000]  [<c02661f9>] ? tick_do_update_jiffies64+0x169/0x1c0
+[  369.335000]  [<c023b95d>] warn_slowpath_null+0x1d/0x20
+[  369.335000]  [<c02661f9>] tick_do_update_jiffies64+0x169/0x1c0
+[  369.335000]  [<c0266c18>] tick_check_idle+0x78/0xa0
+[  369.335000]  [<c0241734>] irq_enter+0x54/0x60
+[  369.335000]  [<c021ac3c>] smp_apic_timer_interrupt+0x2c/0x90
+[  369.335000]  [<c025b452>] ? hrtimer_start+0x22/0x30
+[  369.335000]  [<c05b6d2a>] apic_timer_interrupt+0x2a/0x30
+[  369.335000]  [<c02098e4>] ? mwait_idle+0x84/0x180
+[  369.335000]  [<c02015f6>] cpu_idle+0x46/0x80
+[  369.335000]  [<c059f41d>] rest_init+0x5d/0x70
+[  369.335000]  [<c07c8710>] start_kernel+0x2d6/0x2dc
+[  369.335000]  [<c07c81c2>] ? loglevel+0x1a/0x1a
+[  369.335000]  [<c07c80bd>] i386_start_kernel+0xbd/0xc5
+[  369.335000] ---[ end trace 4eaa2a86a8e2da80 ]---
 
 
+I used following hack/patch :
 
--- 
-Regards
-Nat Gurumoorthy AB6SJ
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index e98cd2e..1e3ba24 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -32,6 +32,8 @@
+ typedef struct {
+ 	unsigned sequence;
+ 	spinlock_t lock;
++	unsigned long long maxhold;
++	unsigned long long t0;
+ } seqlock_t;
+ 
+ /*
+@@ -48,6 +50,7 @@ typedef struct {
+ 	do {						\
+ 		(x)->sequence = 0;			\
+ 		spin_lock_init(&(x)->lock);		\
++		(x)->maxhold = 0;			\
+ 	} while (0)
+ 
+ #define DEFINE_SEQLOCK(x) \
+@@ -61,13 +64,22 @@ static inline void write_seqlock(seqlock_t *sl)
+ {
+ 	spin_lock(&sl->lock);
+ 	++sl->sequence;
++	sl->t0 = __native_read_tsc();
+ 	smp_wmb();
+ }
+ 
+ static inline void write_sequnlock(seqlock_t *sl)
+ {
++	unsigned long long t1;
+ 	smp_wmb();
+ 	sl->sequence++;
++	t1 = __native_read_tsc();
++	t1 -= sl->t0;
++	if (unlikely(t1 > sl->maxhold)) {
++		sl->maxhold = t1;
++		pr_err("maxhold=%llu\n", t1);
++		WARN_ON(1);
++	}
+ 	spin_unlock(&sl->lock);
+ }
+ 
+@@ -77,13 +89,14 @@ static inline int write_tryseqlock(seqlock_t *sl)
+ 
+ 	if (ret) {
+ 		++sl->sequence;
++		sl->t0 = __native_read_tsc();
+ 		smp_wmb();
+ 	}
+ 	return ret;
+ }
+ 
+ /* Start of read calculation -- fetch last complete writer token */
+-static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
++static __always_inline unsigned __read_seqbegin(const seqlock_t *sl, unsigned long *loop)
+ {
+ 	unsigned ret;
+ 
+@@ -91,6 +104,8 @@ repeat:
+ 	ret = sl->sequence;
+ 	smp_rmb();
+ 	if (unlikely(ret & 1)) {
++		if (loop)
++			(*loop)++;
+ 		cpu_relax();
+ 		goto repeat;
+ 	}
+@@ -98,6 +113,11 @@ repeat:
+ 	return ret;
+ }
+ 
++static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
++{
++	return __read_seqbegin(sl, NULL);
++}
++
+ /*
+  * Test if reader processed invalid data.
+  *
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 8ad5d57..db84027 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -237,20 +237,28 @@ void getnstimeofday(struct timespec *ts)
+ 
+ EXPORT_SYMBOL(getnstimeofday);
+ 
++static DEFINE_PER_CPU(unsigned long, loopmax);
+ ktime_t ktime_get(void)
+ {
+ 	unsigned int seq;
+ 	s64 secs, nsecs;
++	unsigned long flags, loop = 0;
+ 
+ 	WARN_ON(timekeeping_suspended);
+ 
++	local_irq_save(flags);
+ 	do {
+-		seq = read_seqbegin(&xtime_lock);
++		seq = __read_seqbegin(&xtime_lock, &loop);
+ 		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
+ 		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
+ 		nsecs += timekeeping_get_ns();
+ 
+ 	} while (read_seqretry(&xtime_lock, seq));
++	if (unlikely(loop > __this_cpu_read(loopmax))) {
++		this_cpu_write(loopmax, loop);
++		pr_err("cpu%d ktime_get() looped %lu times\n", smp_processor_id(), loop);
++	}
++	local_irq_restore(flags);
+ 	/*
+ 	 * Use ktime_set/ktime_add_ns to create a proper ktime on
+ 	 * 32-bit architectures without CONFIG_KTIME_SCALAR.
+
+
