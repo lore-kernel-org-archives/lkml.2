@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab1EFMwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 08:52:18 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43271 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab1EFMwR (ORCPT
+	id S1755164Ab1EFMtr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:49:47 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38892 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751662Ab1EFMtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 08:52:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=w9slFvbA879BGoTFW5AMYIi5Aj9tFitQMyCLki4kQmbqjmQyvZkFVfNrhhFZDdzQK1
-         s1EZolAlHGBoGSjF5UncFFpQvea3Of7ytuISAYfd6RdBB3eguVUp749H96D5y0iTfHY6
-         zTxYOLMZgp9i4VXFSdA62vAA3RwkzUR93vmi0=
+	Fri, 6 May 2011 08:49:46 -0400
+Message-ID: <4DC3EF5F.1030306@dsn.okisemi.com>
+Date: Fri, 06 May 2011 21:53:51 +0900
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Fri, 6 May 2011 20:52:15 +0800
-Message-ID: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
-Subject: [PATCH] sched: shorten setting the allowed cpu mask of task
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: ML netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Subject: [PATCH 1/2] PCH_GbE : Fixed the issue of collision detection
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting the allowed cpu mask for a given task, if the task is
-already bound to certain cpu, after checking the validity of the new
-mask of allowed cpus, job is done, and no further efforts needed for
-the valid case as well.
+The collision detection setting was invalid.
+When collision occurred, because data was not resenr, 
+there was an issue to which a transmitting throughput falls.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+This patch enables the collision detection.
+
+Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
 ---
+ drivers/net/pch_gbe/pch_gbe_main.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
---- a/kernel/sched.c	2011-04-27 11:48:50.000000000 +0800
-+++ b/kernel/sched.c	2011-05-06 20:39:58.000000000 +0800
-@@ -5899,9 +5899,9 @@ again:
- 		goto out;
- 	}
-
--	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
--		     !cpumask_equal(&p->cpus_allowed, new_mask))) {
--		ret = -EINVAL;
-+	if ((p->flags & PF_THREAD_BOUND) && p != current) {
-+		if (!cpumask_equal(&p->cpus_allowed, new_mask))
-+			ret = -EINVAL;
- 		goto out;
- 	}
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 8300f64..babe663 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -43,8 +43,7 @@ const char pch_driver_version[] = DRV_VERSION;
+ 
+ #define PCH_GBE_MAC_RGMII_CTRL_SETTING ( \
+ 	PCH_GBE_CHIP_TYPE_INTERNAL | \
+-	PCH_GBE_RGMII_MODE_RGMII   | \
+-	PCH_GBE_CRS_SEL              \
++	PCH_GBE_RGMII_MODE_RGMII     \
+ 	)
+ 
+ /* Ethertype field values */
+-- 
+1.6.2.5
