@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab1EFGpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 02:45:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47430 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221Ab1EFGpP convert rfc822-to-8bit (ORCPT
+	id S1753320Ab1EFGxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 02:53:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38429 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab1EFGxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 02:45:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,325,1301900400"; 
-   d="scan'208";a="688991993"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-CC: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Fri, 6 May 2011 14:43:56 +0800
-Subject: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating them
-Thread-Topic: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Index: AcwLuH5jTtgKfhrsS1eB8mp4E9uMGg==
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 May 2011 02:53:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=B0QV++JFckEFqwGMj44I33U5QdOQcSSEfmqMjPGxxJd64eNG13g+2DWnq8HBtGp6Wx
+         NhZ07f/caWKisBwoGZt2DsvUrdd0FEApEOXpyT4jlX0hMlSJY8tokh7qNBsjamv3uhXo
+         XrjmVlXcUkRD1uXqu7PYuJKE67WRmK+ikqjnY=
+Date: Fri, 6 May 2011 08:53:47 +0200
+From: Tejun Heo <htejun@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
+ non-queueable flush drive
+Message-ID: <20110506065347.GA8824@htj.dyndns.org>
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
+ <20110505020417.817084678@sli10-conroe.sh.intel.com>
+ <20110505083853.GC30950@htj.dyndns.org>
+ <1304656325.3828.22.camel@sli10-conroe>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304656325.3828.22.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86: don't unmask disabled irqs when migrating them
+Hello,
 
-it doesn't make sense to mask/unmask a disabled irq when migrating it
-from offlined cpu to another, because it's not expected to handle
-any instance of it. Current mask/set_affinity/unmask steps may trigger
-unexpected instance on disabled irq which then simply bug on when there
-is no handler for it. One failing example is observed in Xen. Xen pvops 
-guest marks a special type of irqs as disabled, which are simply used 
-as a notification mechanism to wake up blocked guest in event polling
-state. Absolutely unmask them may cause the notification instance 
-instead injected into the guest and then cause trouble.
+On Fri, May 06, 2011 at 12:32:05PM +0800, Shaohua Li wrote:
+> > - This is much more minor but if block layer already knows flushes are
+> >   non-queueable, it might be a good idea to hold dispatching of
+> >   flushes if other requests are already in progress.  It will only
+> >   save dispatch/requeue overhead which might not matter at all, so
+> >   this has pretty good chance of not being worth of the added
+> >   complexity tho.
+>
+> I did some experiment to hold flush too, but no obvious performance
+> difference. It doesn't make more flush requests merge. Avoiding
+> unnecessary requeue is a gain for fast devices, but my test doesn't
+> show.
 
-Signed-off-by: Fengzhe Zhang <fengzhe.zhang@intel.com>
-Signed-off-by: Kevin Tian <kevin.tian@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: H. Peter Anvin <hpa@zytor.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Jan Beulich <JBeulich@novell.com>
+I see.  Thanks for testing.
 
---- linux-2.6.39-rc6.orig/arch/x86/kernel/irq.c	2011-05-04 10:59:13.000000000 +0800
-+++ linux-2.6.39-rc6/arch/x86/kernel/irq.c	2011-05-06 09:20:25.563963000 +0800
-@@ -237,6 +237,7 @@ void fixup_irqs(void)
- 	for_each_irq_desc(irq, desc) {
- 		int break_affinity = 0;
- 		int set_affinity = 1;
-+		int do_mask;
- 		const struct cpumask *affinity;
- 
- 		if (!desc)
-@@ -268,7 +269,9 @@ void fixup_irqs(void)
- 		}
- 
- 		chip = irq_data_get_irq_chip(data);
--		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
-+		do_mask = !irqd_irq_disabled(data) &&
-+			!irqd_can_move_in_process_context(data) && chip->irq_mask;
-+		if (do_mask)
- 			chip->irq_mask(data);
- 
- 		if (chip->irq_set_affinity)
-@@ -276,7 +279,7 @@ void fixup_irqs(void)
- 		else if (!(warned++))
- 			set_affinity = 0;
- 
--		if (!irqd_can_move_in_process_context(data) && chip->irq_unmask)
-+		if (do_mask)
- 			chip->irq_unmask(data);
- 
- 		raw_spin_unlock(&desc->lock);
+> Subject: block: hold queue if flush is running for non-queueable flush drive
+> 
+> Commit 53d63e6b0dfb9(block: make the flush insertion use the tail of
+> the dispatch list) causes about 20% regression running a sysbench fileio
+> workload. Let's consider the following scenario:
+> - flush1 is dispatched with write1 in the elevator.
+> - Driver dispatches write1 and requeues it.
+> - flush2 is issued and appended to dispatch queue after the requeued write1. 
+>   As write1 has been requeued flush2 can't be put in front of it.
+> - When flush1 finishes, the driver has to process write1 before flush2 even
+>   though there's no fundamental reason flush2 can't be processed first and,
+>   when two flushes are issued back-to-back without intervening writes, the
+>   second one essentially becomes noop.
+> Without the commit, flush2 is inserted before write1, so the issue is hiden.
+> But the commit itself makes sense, because flush request isn't a preempt
+> request, there is no reason to add it to queue head.
+> 
+> The regression is exposed in a SATA device. In SATA, flush requests are
+> non-queueable. When flush request is running, normal read/write requests
+> can't run. If block layer dispatches such request, driver can't handle it
+> and requeue it. Tejun suggested we can hold the queue when flush is running.
+> This can avoid unnecessary requeue.
+> 
+> And also this can improve performance and solve the regression. In above
+> scenario, when flush1 is running, queue is hold, so write1 isn't dispatched.
+> flush2 will be the only request in the queue. After flush1 is finished, flush2
+> will be dispatched soon. Since there is no write between flush1 and flush2,
+> flush2 essentially becomes noop.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> Acked-by: Tejun Heo <tj@kernel.org>
+
+Jens, can you please queue this for the next merge window?
+
+Thanks.
+
+-- 
+tejun
