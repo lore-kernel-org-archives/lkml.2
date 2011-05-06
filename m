@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab1EFWkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 18:40:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39148 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752666Ab1EFWkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 18:40:07 -0400
-Date: Fri, 6 May 2011 15:39:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefan Hellermann <stefan@the2masters.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PATCH] mm: Use alloc_bootmem_node_nopanic on really needed path
-Message-Id: <20110506153914.b1bceb51.akpm@linux-foundation.org>
-In-Reply-To: <4DC47655.5040201@kernel.org>
-References: <4DC30251.9040902@the2masters.de>
-	<4DC31D5F.8070209@the2masters.de>
-	<4DC31F72.5050206@kernel.org>
-	<4DC328AC.1060906@the2masters.de>
-	<4DC3958F.1090800@kernel.org>
-	<4DC3B6C6.7000704@the2masters.de>
-	<4DC47655.5040201@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754240Ab1EFWqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 18:46:47 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:34428 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab1EFWqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 18:46:46 -0400
+Subject: Re: [RFC] time: xtime_lock is held too long
+From: john stultz <johnstul@us.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1304721004.2821.148.camel@edumazet-laptop>
+References: <1304574244.32152.666.camel@edumazet-laptop>
+	 <1304576495.2943.40.camel@work-vm>
+	 <1304604284.3032.78.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051630390.3005@ionos>
+	 <1304608095.3032.95.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051750540.3005@ionos>
+	 <20110505210118.GI2925@one.firstfloor.org>
+	 <alpine.LFD.2.02.1105061117220.3005@ionos>
+	 <20110506165913.GF11636@one.firstfloor.org>
+	 <1304703767.3066.211.camel@edumazet-laptop>
+	 <20110506175051.GL11636@one.firstfloor.org>
+	 <1304710003.2821.0.camel@edumazet-laptop>
+	 <1304712267.2821.29.camel@edumazet-laptop>
+	 <1304713443.20980.124.camel@work-vm>
+	 <1304721004.2821.148.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 15:46:40 -0700
+Message-ID: <1304722000.20980.130.camel@work-vm>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 May 2011 15:29:41 -0700
-Yinghai Lu <yinghai@kernel.org> wrote:
+On Sat, 2011-05-07 at 00:30 +0200, Eric Dumazet wrote:
+> Le vendredi 06 mai 2011 à 13:24 -0700, john stultz a écrit :
+> 
+> > So would the easier solution be to just break out timekeeper locking
+> > from the xtime_lock?
+> > 
+> > So basically we would just add a timekeeper.lock seqlock and use it to
+> > protect only the timekeeping code? We can still keep xtime_lock around
+> > for the tick/jiffies protection (well, until tglx kills jiffies :), but
+> > gettimeofday and friends wouldn't be blocked for so long.
+> > 
+> > That should be pretty straight forward now that the timekeeper data is
+> > completely static to timkeeeping.c.
+> > 
+> 
+> Yes :)
+> 
+> I can see many cpus entering tick_do_update_jiffies64() and all are
+> calling write_seqlock(&xtime_lock);
+> 
+> Only first one can perform the work, but all others are waiting on the
+> spinlock, get it, change seqcount, and realize they have nothing to
+> do...
 
-> Stefan found nobootmem does not work on his system that only have 8M ram.
+Huh. So who is calling tick_do_update_jiffies64 in your case? I know the
+sched_tick_timer and tick_nohz_handler checks to make sure
+tick_do_timer_cpu == cpu to avoid exactly the thundering heard problem
+on the jiffies update.
 
-What does "does not work" mean?  From the patch, it appears that the
-machine paniced?
+There's other spots that call tick_do_update_jiffies64, but I thought
+those were more rare. So there may be something else wrong going on
+here.
 
-This is important because without a recognisable description of the
-failure it is hard for people to determine whether your patch might fix
-a problem which they are observing.
 
-The patch applies to 2.6.36, 37 and 38 (at least).  Do you think it
-should be backported?  If so, how far back in time is it applicable?
+> Meanwhile, a reader must wait that all writers are finished, because of
+> all seqcount changes storm.
+> 
+> Following patch helps. Of course we might find out why so many cpus (on
+> my 8 cpus machine !) are calling tick_do_update_jiffies64() at the same
+> time...
+> 
+> 
+> This is basically what I said in my first mail : 
+> 
+> Separate logical sections to reduce windows where readers are blocked/spinning.
+>
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index d5097c4..251b2fe 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -56,7 +56,7 @@ static void tick_do_update_jiffies64(ktime_t now)
+>  		return;
+> 
+>  	/* Reevalute with xtime_lock held */
+> -	write_seqlock(&xtime_lock);
+> +	spin_lock(&xtime_lock.lock);
+
+Oof.. No, this is too ugly and really just abuses the seqlock structure.
+
+If you really want to untangle what xtime_lock protects, you need to
+introduce a new lock (I suggest in the timekeeper structure) to protect
+the timekeeping data.
+
+Then we can refine xtime_lock to also just protect the jiffies/tick
+management bits as well if needed.
+
+thanks
+-john
+
 
