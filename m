@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab1EFAo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:44:28 -0400
-Received: from kroah.org ([198.145.64.141]:37162 "EHLO coco.kroah.org"
+	id S932429Ab1EFAoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:44:11 -0400
+Received: from kroah.org ([198.145.64.141]:37166 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932346Ab1EFAZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:38 -0400
+	id S932388Ab1EFAZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:39 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:15 2011
-Message-Id: <20110506002215.460216717@clark.kroah.org>
+Message-Id: <20110506002215.548781294@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:29 -0700
+Date: Thu, 05 May 2011 17:21:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Kyle McMartin <kyle@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [104/143] perf symbols: allow forcing use of cplus_demangle
+        =?ISO-8859-15?q?Michael=20M=C3=BCller?= 
+	<mueller_michael@alice-dsl.net>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Patrick Boettcher <pboettcher@kernellabs.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [105/143] V4L/DVB: Add Elgato EyeTV Diversity to dibcom driver
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kyle McMartin <kyle@mcmartin.ca>
+From: Michael Müller <mueller_michael@alice-dsl.net>
 
-commit d11c7addfe0fa501cb54c824c0fac3481d527433 upstream.
+commit 84e2f037ce9672d0fb118e3e82cecfe6122ace3f upstream.
 
-For Fedora, I want to force perf to link against libiberty.a for
-cplus_demangle, rather than libbfd.a for bfd_demangle due to licensing insanity
-on binutils. (libiberty is LGPL2, libbfd is GPL3.)
+This patch introduces support for DVB-T for the following dibcom
+based card: Elgato EyeTV Diversity (USB-ID: 0fd9:0011)
 
-If we just rely on autodetection, we'll end up with libbfd linked against us,
-since they're both in binutils-static in the buildroot.
+Support for the Elgato silver IR remote is added too (set parameter
+dvb_usb_dib0700_ir_proto=0)
 
-Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <20100510204335.GA7565@bombadil.infradead.org>
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[w.sang@pengutronix.de: rebased to current linuxtv-master]
+Signed-off-by: Michael Müller <mueller_michael@alice-dsl.net>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Patrick Boettcher <pboettcher@kernellabs.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Adjust context and numbering for 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- tools/perf/Makefile |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/dvb/dvb-usb/dib0700_devices.c |   46 ++++++++++++++++++++++++++--
+ drivers/media/dvb/dvb-usb/dvb-usb-ids.h     |    1 
+ 2 files changed, 45 insertions(+), 2 deletions(-)
 
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -450,6 +450,9 @@ endif
+--- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+@@ -874,6 +874,43 @@ static struct dvb_usb_rc_key dib0700_rc_
+ 	{ 0x1d37, KEY_RECORD },
+ 	{ 0x1d3b, KEY_GOTO },
+ 	{ 0x1d3d, KEY_POWER },
++
++	/* Key codes for the Elgato EyeTV Diversity silver remote,
++	   set dvb_usb_dib0700_ir_proto=0 */
++	{ 0x4501, KEY_POWER },
++	{ 0x4502, KEY_MUTE },
++	{ 0x4503, KEY_1 },
++	{ 0x4504, KEY_2 },
++	{ 0x4505, KEY_3 },
++	{ 0x4506, KEY_4 },
++	{ 0x4507, KEY_5 },
++	{ 0x4508, KEY_6 },
++	{ 0x4509, KEY_7 },
++	{ 0x450a, KEY_8 },
++	{ 0x450b, KEY_9 },
++	{ 0x450c, KEY_LAST },
++	{ 0x450d, KEY_0 },
++	{ 0x450e, KEY_ENTER },
++	{ 0x450f, KEY_RED },
++	{ 0x4510, KEY_CHANNELUP },
++	{ 0x4511, KEY_GREEN },
++	{ 0x4512, KEY_VOLUMEDOWN },
++	{ 0x4513, KEY_OK },
++	{ 0x4514, KEY_VOLUMEUP },
++	{ 0x4515, KEY_YELLOW },
++	{ 0x4516, KEY_CHANNELDOWN },
++	{ 0x4517, KEY_BLUE },
++	{ 0x4518, KEY_LEFT }, /* Skip backwards */
++	{ 0x4519, KEY_PLAYPAUSE },
++	{ 0x451a, KEY_RIGHT }, /* Skip forward */
++	{ 0x451b, KEY_REWIND },
++	{ 0x451c, KEY_L }, /* Live */
++	{ 0x451d, KEY_FASTFORWARD },
++	{ 0x451e, KEY_STOP }, /* 'Reveal' for Teletext */
++	{ 0x451f, KEY_MENU }, /* KEY_TEXT for Teletext */
++	{ 0x4540, KEY_RECORD }, /* Font 'Size' for Teletext */
++	{ 0x4541, KEY_SCREEN }, /*  Full screen toggle, 'Hold' for Teletext */
++	{ 0x4542, KEY_SELECT }, /* Select video input, 'Select' for Teletext */
+ };
  
- ifdef NO_DEMANGLE
- 	BASIC_CFLAGS += -DNO_DEMANGLE
-+else ifdef HAVE_CPLUS_DEMANGLE
-+	EXTLIBS += -liberty
-+	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
- else
- 	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
+ /* STK7700P: Hauppauge Nova-T Stick, AVerMedia Volar */
+@@ -1861,6 +1898,7 @@ struct usb_device_id dib0700_usb_id_tabl
+ 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_STK807XPVR) },
+ 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_STK807XP) },
+ 	{ USB_DEVICE(USB_VID_PIXELVIEW, USB_PID_PIXELVIEW_SBTVD) },
++	{ USB_DEVICE(USB_VID_ELGATO,    USB_PID_ELGATO_EYETV_DIVERSITY) },
+ 	{ 0 }		/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, dib0700_usb_id_table);
+@@ -2173,7 +2211,7 @@ struct dvb_usb_device_properties dib0700
+ 			}
+ 		},
  
+-		.num_device_descs = 6,
++		.num_device_descs = 7,
+ 		.devices = {
+ 			{   "DiBcom STK7070PD reference design",
+ 				{ &dib0700_usb_id_table[17], NULL },
+@@ -2199,7 +2237,11 @@ struct dvb_usb_device_properties dib0700
+ 			{  "Sony PlayTV",
+ 				{ &dib0700_usb_id_table[44], NULL },
+ 				{ NULL },
+-			}
++			},
++			{   "Elgato EyeTV Diversity",
++				{ &dib0700_usb_id_table[64], NULL },
++				{ NULL },
++			},
+ 		},
+ 		.rc_interval      = DEFAULT_RC_INTERVAL,
+ 		.rc_key_map       = dib0700_rc_keys,
+--- a/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
++++ b/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
+@@ -271,6 +271,7 @@
+ #define USB_PID_TELESTAR_STARSTICK_2			0x8000
+ #define USB_PID_MSI_DIGI_VOX_MINI_III                   0x8807
+ #define USB_PID_SONY_PLAYTV				0x0003
++#define USB_PID_ELGATO_EYETV_DIVERSITY			0x0011
+ #define USB_PID_ELGATO_EYETV_DTT			0x0021
+ #define USB_PID_ELGATO_EYETV_DTT_Dlx			0x0020
+ #define USB_PID_DVB_T_USB_STICK_HIGH_SPEED_COLD		0x5000
 
 
