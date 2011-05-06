@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab1EFVOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:14:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36928 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab1EFVOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:14:23 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zjkQRuOjSO8sb-cBxSUA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Fix powerTOP regression with 2.6.39-rc5
-From: Steven Rostedt <rostedt@goodmis.org>
+	id S1756766Ab1EFVSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:18:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35564 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755507Ab1EFVSH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 17:18:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
+References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
+	<20110412090207.GE19819@8bytes.org>
+	<BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
+	<20110412184433.GF19819@8bytes.org>
+	<20110413064609.GA18777@elte.hu>
+	<20110413172147.GI19819@8bytes.org>
+	<4DA5F62F.3030504@kernel.org>
+	<20110413193459.GL19819@8bytes.org>
+	<4DA60C30.4060606@kernel.org>
+	<BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
+	<4DA6145D.9070703@kernel.org>
+	<BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
+	<4DA655E7.3000904@zytor.com>
+	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
+Date: Fri, 6 May 2011 14:17:59 -0700
+Message-ID: <BANLkTinw5iuZGjcSeQ2z3sVBpRVG1HWxdQ@mail.gmail.com>
+Subject: Re: Linux 2.6.39-rc3
+From: Linus Torvalds <torvalds@linux-foundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
-References: <4DC45537.6070609@linux.intel.com>
-	 <1304713252.25414.2532.camel@gandalf.stny.rr.com>
-	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 06 May 2011 17:14:21 -0400
-Message-ID: <1304716461.25414.2542.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 13:51 -0700, Linus Torvalds wrote:
+On Wednesday, April 13, 2011, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wednesday, April 13, 2011, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> Yes.  However, even if we *do* revert (and the time is running short on
+>> not reverting) I would like to understand this particular one, simply
+>> because I think it may very well be a problem that is manifesting itself
+>> in other ways on other systems.
 
+ sorry, fingerfart. Anyway, I agree 100%.
 
-> If you made an interface that can be used without parsing the
-> interface description, then we're stuck with the interface. Theory
-> simply doesn't matter.
+ we definitely want to also understand the reason for things not
+working, even if we do revert..
 
-Note, at last Kernel Summit, you pointed at my slide of the trace event
-ASCII format, and stated, "That's the ABI". What happend now?
-
--- Steve
-
-
+        Linus
+>> of complete b*llsh*t magic numbers in this
+>
