@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab1EFAfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:35:45 -0400
-Received: from kroah.org ([198.145.64.141]:37484 "EHLO coco.kroah.org"
+	id S932634Ab1EFA11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:27:27 -0400
+Received: from kroah.org ([198.145.64.141]:37492 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932596Ab1EFA1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:27:21 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:07 2011
-Message-Id: <20110506002607.890166758@clark.kroah.org>
+	id S932604Ab1EFA1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:27:22 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:08 2011
+Message-Id: <20110506002607.987112115@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:25:27 -0700
+Date: Thu, 05 May 2011 17:25:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Donald Dutile <ddutile@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [06/43] intel-iommu: Fix get_domain_for_dev() error path
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [07/43] drm/radeon/kms: fix bad shift in atom iio table parser
 In-Reply-To: <20110506002625.GA20426@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 2fe9723df8e45fd247782adea244a5e653c30bf4 upstream.
+commit 8e461123f28e6b17456225e70eb834b3b30d28bb upstream.
 
-If we run out of domain_ids and fail iommu_attach_domain(), we
-fall into domain_exit() without having setup enough of the
-domain structure for this to do anything useful.  In fact, it
-typically runs off into the weeds walking the bogus domain->devices
-list.  Just free the domain.
+Noticed by Patrick Lowry.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atom.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -1852,7 +1852,7 @@ static struct dmar_domain *get_domain_fo
- 
- 	ret = iommu_attach_domain(domain, iommu);
- 	if (ret) {
--		domain_exit(domain);
-+		free_domain_mem(domain);
- 		goto error;
- 	}
- 
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -128,7 +128,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_INDEX:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((index >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -138,7 +138,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_DATA:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((data >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -148,7 +148,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_ATTR:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((ctx->
+ 			      io_attr >> CU8(base + 2)) & (0xFFFFFFFF >> (32 -
 
 
