@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab1EFVGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:06:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33070 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756662Ab1EFVFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:05:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,328,1301900400"; 
-   d="scan'208";a="639164503"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, arnd@arndb.de, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/4] Remove last BKL leftover: lock_depth
-Date: Fri,  6 May 2011 14:05:28 -0700
-Message-Id: <1304715928-19266-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1304715928-19266-1-git-send-email-andi@firstfloor.org>
-References: <1304715928-19266-1-git-send-email-andi@firstfloor.org>
+	id S932690Ab1EFVK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:10:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34550 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932268Ab1EFVK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 17:10:56 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=Ev-mm6w7t5DsACkrcGAA:9 a=lFnyZK4mzMqTg_0429kA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+References: <4DC45537.6070609@linux.intel.com>
+	 <1304713252.25414.2532.camel@gandalf.stny.rr.com>
+	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 06 May 2011 17:10:55 -0400
+Message-ID: <1304716255.25414.2540.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, 2011-05-06 at 13:51 -0700, Linus Torvalds wrote:
+> On Fri, May 6, 2011 at 1:20 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > I strongly NACK this!
+> 
+> Doesn't matter.
+> 
+> Binary compatibility is more important.
+> 
+> And if binaries don't use the interface to parse the format (or just
+> parse it wrongly - see the fairly recent example of adding uuid's to
+> /proc/self/mountinfo), then it's a regression.
+> 
+> And regressions get reverted, unless there are security issues or
+> similar that makes us go "Oh Gods, we really have to break things".
 
-This was the (hopefully) last BKL leftover: the per task lock_depth
-field.
+Um, this is an internal tracepoint. Does this mean that all internal
+data inside the kernel that is exported with trace events are locked
+down?
 
-After all users are gone remove the task_struct lock_depth field.
-Depending on the configuration this will not actually shrink task_struct
-unfortunately due to padding. It helps a bit on 32bit. And on 64bit
-it allows new bloat.
+> 
+> I don't understand why this simple logic is so hard for some kernel
+> developers to understand. Reality matters. Your personal wishes matter
+> NOT AT ALL.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/init_task.h |    1 -
- include/linux/sched.h     |    2 --
- kernel/fork.c             |    1 -
- 3 files changed, 0 insertions(+), 4 deletions(-)
+This isn't a personal wish. This brings every advancement that I was
+planning on making this year to a dead halt. We were really about to
+restructure the events to make them lighter weight and faster.
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index caa151f..689496b 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -134,7 +134,6 @@ extern struct cred init_cred;
- 	.stack		= &init_thread_info,				\
- 	.usage		= ATOMIC_INIT(2),				\
- 	.flags		= PF_KTHREAD,					\
--	.lock_depth	= -1,						\
- 	.prio		= MAX_PRIO-20,					\
- 	.static_prio	= MAX_PRIO-20,					\
- 	.normal_prio	= MAX_PRIO-20,					\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 53373bc..006c31f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1193,8 +1193,6 @@ struct task_struct {
- 	unsigned int flags;	/* per process flags, defined below */
- 	unsigned int ptrace;
- 
--	int lock_depth;		/* BKL lock depth */
--
- #ifdef CONFIG_SMP
- #ifdef __ARCH_WANT_UNLOCKED_CTXSW
- 	int oncpu;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index e7548de..aca6287 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1103,7 +1103,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	posix_cpu_timers_init(p);
- 
--	p->lock_depth = -1;		/* -1 = no lock */
- 	do_posix_clock_monotonic_gettime(&p->start_time);
- 	p->real_start_time = p->start_time;
- 	monotonic_to_bootbased(&p->real_start_time);
--- 
-1.7.4.4
+Also, this isn't the first time this structure has changed. It just
+happens that something started using it. This field did not even exist
+until recently.
+
+
+> 
+> If you made an interface that can be used without parsing the
+> interface description, then we're stuck with the interface. Theory
+> simply doesn't matter.
+
+I never had an interface used this way. It was just by luck. Damn, I
+should have listened to Peter Zijlstra when he recommended that every
+boot restructures the data in the format differently. Then this would
+never have happened. But doing that would have slowed things down
+tremendously (or remove the ease of TRACE_EVENT).
+
+> 
+> You could help fix the tools, and try to avoid the compatibility
+> issues that way. There aren't that many of them.
+
+As I said, I have a library (.so even) that does the parsing for you. If
+I get powertop to use it, can we hold off on this patch?
+
+Note, I'm about to leave to Budapest. I could try to get this done on
+the trip.
+
+-- Steve
+
 
