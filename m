@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab1EFBDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 21:03:35 -0400
-Received: from kroah.org ([198.145.64.141]:36568 "EHLO coco.kroah.org"
+	id S1755365Ab1EFAYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:24:19 -0400
+Received: from kroah.org ([198.145.64.141]:36573 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755282Ab1EFAYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:16 -0400
+	id S1754729Ab1EFAYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:06 2011
-Message-Id: <20110506002206.428173678@clark.kroah.org>
+Message-Id: <20110506002206.534094064@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:19:59 -0700
+Date: Thu, 05 May 2011 17:20:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Don Fry <donald.h.fry@intel.com>, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [014/143] iwlagn: Support new 5000 microcode.
+        Jie Yang <jie.yang@atheros.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [015/143] atl1c: duplicate atl1c_get_tpd
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fry, Donald H <donald.h.fry@intel.com>
+From: Jie Yang <jie.yang@atheros.com>
 
-commit 41504cce240f791f1e16561db95728c5537fbad9 upstream.
+commit 678b77e265f6d66f1e68f3d095841c44ba5ab112 upstream.
 
-New iwlwifi-5000 microcode requires driver support for API version 5.
+remove duplicate atl1c_get_tpd, it may cause hardware to send wrong packets.
 
-Signed-off-by: Don Fry <donald.h.fry@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Jie Yang <jie.yang@atheros.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-5000.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/atl1c/atl1c_main.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-5000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
-@@ -47,7 +47,7 @@
- #include "iwl-6000-hw.h"
- 
- /* Highest firmware API version supported */
--#define IWL5000_UCODE_API_MAX 2
-+#define IWL5000_UCODE_API_MAX 5
- #define IWL5150_UCODE_API_MAX 2
- 
- /* Lowest firmware API version supported */
+--- a/drivers/net/atl1c/atl1c_main.c
++++ b/drivers/net/atl1c/atl1c_main.c
+@@ -1976,8 +1976,6 @@ static void atl1c_tx_map(struct atl1c_ad
+ 		else {
+ 			use_tpd = atl1c_get_tpd(adapter, type);
+ 			memcpy(use_tpd, tpd, sizeof(struct atl1c_tpd_desc));
+-			use_tpd = atl1c_get_tpd(adapter, type);
+-			memcpy(use_tpd, tpd, sizeof(struct atl1c_tpd_desc));
+ 		}
+ 		buffer_info = atl1c_get_tx_buffer(adapter, use_tpd);
+ 		buffer_info->length = buf_len - mapped_len;
 
 
