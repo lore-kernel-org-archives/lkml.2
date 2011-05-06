@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab1EFVnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:43:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10376 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab1EFVnR convert rfc822-to-8bit (ORCPT
+	id S1753326Ab1EFVna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:43:30 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:59302 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751922Ab1EFVn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:43:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,328,1301900400"; 
-   d="scan'208";a="689287428"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Sat, 7 May 2011 05:43:12 +0800
-Subject: RE: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Topic: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Index: AcwL+bTQLIdKuFPJQSKYXmpwNiVr0QAPNbiw
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F99D@shsmsx502.ccr.corp.intel.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <alpine.LFD.2.02.1105061149330.3005@ionos>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
- <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 6 May 2011 17:43:28 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=XSH0wlb6FIslcC2Dem7ywJUB+t2tVXlxuqKmOakRBq/gFE0KPGFEZWW8HDTFo/z6qZ43frcUQjbHFwiOnpC7LN+SzBPkn7/whQDnnDralejmjIGY2LmFJXIm15HQHmG4;
+Date: Fri, 6 May 2011 14:43:24 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
+Subject: Re: [PATCH] Fixes a small error in Documentation/HOWTO
+Message-Id: <20110506144324.e397d0d8.rdunlap@xenotime.net>
+In-Reply-To: <20110505235548.GA2075@gmail.com>
+References: <AANLkTinHAfGi84LWzP2rCqpzB6nmj-B2jU_pEPf89Lcz@mail.gmail.com>
+	<20110403045201.GA2598@gmail.com>
+	<4D99230C.6040403@cn.fujitsu.com>
+	<20110404111829.af8bc108.rdunlap@xenotime.net>
+	<BANLkTinSC1UTEQxS0iCKu4tMX-9CUY3rJg@mail.gmail.com>
+	<20110405020717.GA2506@gmail.com>
+	<20110505150719.f4d480ad.rdunlap@xenotime.net>
+	<20110505235548.GA2075@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Stefano Stabellini [mailto:stefano.stabellini@eu.citrix.com]
-> Sent: Friday, May 06, 2011 10:29 PM
-> 
-> On Fri, 6 May 2011, Tian, Kevin wrote:
-> > > From: Thomas Gleixner
-> > > Sent: Friday, May 06, 2011 6:00 PM
-> > >
-> > > On Fri, 6 May 2011, Tian, Kevin wrote:
-> > > > x86: don't unmask disabled irqs when migrating them
-> > > >
-> > > > it doesn't make sense to mask/unmask a disabled irq when migrating
-> > > > it from offlined cpu to another, because it's not expected to
-> > > > handle any instance of it. Current mask/set_affinity/unmask steps
-> > > > may trigger unexpected instance on disabled irq which then simply
-> > > > bug on when there is no handler for it. One failing example is observed in
-> Xen.
-> > > > Xen pvops
-> > >
-> > > So there is no handler, why the heck is there an irq action?
-> > >
-> > > 	  if (!irq_has_action(irq) ....
-> > > 	     	continue;
-> > >
-> > > Should have caught an uninitialized interrupt. If Xen abuses
-> > > interrupts that way, then it rightfully explodes. And we do not fix it by magic
-> somewhere else.
-> >
-> > sorry that my bad description here. there does be a dummy handler
-> > registered on such irqs which simply throws out a BUG_ON when hit. I
-> > should just say such injection is not expected instead of no handler.
-> > :-)
-> 
-> I don't think this patch is necessary anymore after the event channel handling
-> cleanup patches I have just sent to the list.
-> Could you please try the following two patches:
-> 
-> http://marc.info/?l=linux-kernel&m=130468120032172&w=2
-> http://marc.info/?l=linux-kernel&m=130468178200468&w=2
-> 
-> and let me know if you still need this patch?
+On Fri, 6 May 2011 07:55:51 +0800 Harry Wei wrote:
 
-thanks, and I'll take a look at them.
+> On Thu, May 05, 2011 at 03:07:19PM -0700, Randy Dunlap wrote:
+> > 
+> > Linus tells me that we don't want fake names or email addresses in
+> > the development tree, so this won't do.
+> > 
+> > Harry, can you just send me a patch from you, with your Signed-off-by:
+> > so that I can apply it, please?
+> Hi Randy,
+> 	My pleasure, the patch is below. If you have any other questions,
+> please let me know.
 
-Thanks
-Kevin
+
+Applied..  thanks, Harry.
+
+> Thanks.
+> Harry Wei.
+> 
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> ---
+>  Documentation/HOWTO |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+> index 365bda9..81bc1a9 100644
+> --- a/Documentation/HOWTO
+> +++ b/Documentation/HOWTO
+> @@ -209,7 +209,7 @@ tools.  One such tool that is particularly recommended is the Linux
+>  Cross-Reference project, which is able to present source code in a
+>  self-referential, indexed webpage format. An excellent up-to-date
+>  repository of the kernel code may be found at:
+> -	http://users.sosdg.org/~qiyong/lxr/
+> +	http://lxr.linux.no/+trees
+>  
+>  
+>  The development process
+> -- 
+> 1.7.0.4
+> 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
