@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1EFAY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:24:28 -0400
-Received: from kroah.org ([198.145.64.141]:36611 "EHLO coco.kroah.org"
+	id S932893Ab1EFBBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 21:01:19 -0400
+Received: from kroah.org ([198.145.64.141]:36618 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754232Ab1EFAYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:25 -0400
+	id S1755356Ab1EFAY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:26 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:07 2011
-Message-Id: <20110506002207.483960396@clark.kroah.org>
+Message-Id: <20110506002207.584143956@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:09 -0700
+Date: Thu, 05 May 2011 17:20:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [024/143] agp: fix OOM and buffer overflow
+        Olaf Hering <olaf@aepfle.de>, Igor Mammedov <imammedo@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [025/143] Input: xen-kbdfront - fix mouse getting stuck after save/restore
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Igor Mammedov <imammedo@redhat.com>
 
-commit b522f02184b413955f3bc952e3776ce41edc6355 upstream.
+commit c36b58e8a9112017c2bcc322cc98e71241814303 upstream.
 
-page_count is copied from userspace.  agp_allocate_memory() tries to
-check whether this number is too big, but doesn't take into account the
-wrap case.  Also agp_create_user_memory() doesn't check whether
-alloc_size is calculated from num_agp_pages variable without overflow.
-This may lead to allocation of too small buffer with following buffer
-overflow.
+Mouse gets "stuck" after restore of PV guest but buttons are in working
+condition.
 
-Another problem in agp code is not addressed in the patch - kernel memory
-exhaustion (AGPIOC_RESERVE and AGPIOC_ALLOCATE ioctls).  It is not checked
-whether requested pid is a pid of the caller (no check in agpioc_reserve_wrap()).
-Each allocation is limited to 16KB, though, there is no per-process limit.
-This might lead to OOM situation, which is not even solved in case of the
-caller death by OOM killer - the memory is allocated for another (faked) process.
+If driver has been configured for ABS coordinates at start it will get
+XENKBD_TYPE_POS events and then suddenly after restore it'll start getting
+XENKBD_TYPE_MOTION events, that will be dropped later and they won't get
+into user-space.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Regression was introduced by hunk 5 and 6 of
+5ea5254aa0ad269cfbd2875c973ef25ab5b5e9db
+("Input: xen-kbdfront - advertise either absolute or relative
+coordinates").
+
+Driver on restore should ask xen for request-abs-pointer again if it is
+available. So restore parts that did it before 5ea5254.
+
+Acked-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+[v1: Expanded the commit description]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 
 ---
- drivers/char/agp/generic.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/input/xen-kbdfront.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/char/agp/generic.c
-+++ b/drivers/char/agp/generic.c
-@@ -123,6 +123,9 @@ static struct agp_memory *agp_create_use
- 	struct agp_memory *new;
- 	unsigned long alloc_size = num_agp_pages*sizeof(struct page *);
+--- a/drivers/input/xen-kbdfront.c
++++ b/drivers/input/xen-kbdfront.c
+@@ -281,7 +281,7 @@ static void xenkbd_backend_changed(struc
+ 				   enum xenbus_state backend_state)
+ {
+ 	struct xenkbd_info *info = dev_get_drvdata(&dev->dev);
+-	int val;
++	int ret, val;
  
-+	if (INT_MAX/sizeof(struct page *) < num_agp_pages)
-+		return NULL;
-+
- 	new = kzalloc(sizeof(struct agp_memory), GFP_KERNEL);
- 	if (new == NULL)
- 		return NULL;
-@@ -242,11 +245,14 @@ struct agp_memory *agp_allocate_memory(s
- 	int scratch_pages;
- 	struct agp_memory *new;
- 	size_t i;
-+	int cur_memory;
+ 	switch (backend_state) {
+ 	case XenbusStateInitialising:
+@@ -292,6 +292,16 @@ static void xenkbd_backend_changed(struc
  
- 	if (!bridge)
- 		return NULL;
+ 	case XenbusStateInitWait:
+ InitWait:
++		ret = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
++				   "feature-abs-pointer", "%d", &val);
++		if (ret < 0)
++			val = 0;
++		if (val) {
++			ret = xenbus_printf(XBT_NIL, info->xbdev->nodename,
++					    "request-abs-pointer", "1");
++			if (ret)
++				pr_warning("can't request abs-pointer\n");
++		}
+ 		xenbus_switch_state(dev, XenbusStateConnected);
+ 		break;
  
--	if ((atomic_read(&bridge->current_memory_agp) + page_count) > bridge->max_memory_agp)
-+	cur_memory = atomic_read(&bridge->current_memory_agp);
-+	if ((cur_memory + page_count > bridge->max_memory_agp) ||
-+	    (cur_memory + page_count < page_count))
- 		return NULL;
- 
- 	if (type >= AGP_USER_TYPES) {
 
 
