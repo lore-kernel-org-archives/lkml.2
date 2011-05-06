@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab1EFAwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:52:55 -0400
-Received: from kroah.org ([198.145.64.141]:36825 "EHLO coco.kroah.org"
+	id S1755907Ab1EFAZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:25:06 -0400
+Received: from kroah.org ([198.145.64.141]:36832 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932278Ab1EFAZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:01 -0400
+	id S932285Ab1EFAZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:02 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:11 2011
-Message-Id: <20110506002211.413187950@clark.kroah.org>
+Message-Id: <20110506002211.514599046@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:48 -0700
+Date: Thu, 05 May 2011 17:20:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [063/143] USB: dont enable remote wakeup by default
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Vrabel <david.vrabel@csr.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [064/143] USB: teach "devices" file about Wireless and SuperSpeed USB
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +29,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 7aba8d014341341590ecb64050b7a026642a62eb upstream.
+commit 834e2312e7a384877a876b0d34dffc3046c96bcb upstream.
 
-This patch (as1364) avoids enabling remote wakeup by default on all
-non-root-hub USB devices.  Individual drivers or userspace will have
-to enable it wherever it is needed, such as for keyboards or network
-interfaces.  Note: This affects only system sleep, not autosuspend.
+USB: teach "devices" file about Wireless and SuperSpeed USB
 
-External hubs will continue to relay wakeup requests received from
-downstream through their upstream port, even when remote wakeup is not
-enabled for the hub itself.  Disabling remote wakeup on a hub merely
-prevents it from generating wakeup requests in response to connect,
-disconnect, and overcurrent events.
+The /sys/kernel/debug/usb/devices file doesn't know about Wireless or
+SuperSpeed USB.  This patch (as1416b) teaches it, and updates the
+Documentation/usb/proc_sub_info.txt file accordingly.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: David Vrabel <david.vrabel@csr.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+[Julien Blache: The original commit also added the correct speed for
+ USB_SPEED_WIRELESS, I removed it as it's not supported in 2.6.32.]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/usb/core/hub.c |    1 -
- 1 file changed, 1 deletion(-)
+ Documentation/usb/proc_usb_info.txt |   36 +++++++++++++++++++++++-------------
+ drivers/usb/core/devices.c          |   10 ++++++----
+ 2 files changed, 29 insertions(+), 17 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1795,7 +1795,6 @@ int usb_new_device(struct usb_device *ud
- 		 * sysfs power/wakeup controls wakeup enabled/disabled
- 		 */
- 		device_init_wakeup(&udev->dev, 0);
--		device_set_wakeup_enable(&udev->dev, 1);
- 	}
+--- a/Documentation/usb/proc_usb_info.txt
++++ b/Documentation/usb/proc_usb_info.txt
+@@ -1,12 +1,17 @@
+ /proc/bus/usb filesystem output
+ ===============================
+-(version 2003.05.30)
++(version 2010.09.13)
  
- 	err = usb_enumerate_device(udev);	/* Read descriptors */
+ 
+ The usbfs filesystem for USB devices is traditionally mounted at
+ /proc/bus/usb.  It provides the /proc/bus/usb/devices file, as well as
+ the /proc/bus/usb/BBB/DDD files.
+ 
++In many modern systems the usbfs filsystem isn't used at all.  Instead
++USB device nodes are created under /dev/usb/ or someplace similar.  The
++"devices" file is available in debugfs, typically as
++/sys/kernel/debug/usb/devices.
++
+ 
+ **NOTE**: If /proc/bus/usb appears empty, and a host controller
+ 	  driver has been linked, then you need to mount the
+@@ -106,8 +111,8 @@ Legend:
+ 
+ Topology info:
+ 
+-T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd Dev#=ddd Spd=ddd MxCh=dd
+-|   |      |      |       |       |      |        |       |__MaxChildren
++T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd Dev#=ddd Spd=dddd MxCh=dd
++|   |      |      |       |       |      |        |        |__MaxChildren
+ |   |      |      |       |       |      |        |__Device Speed in Mbps
+ |   |      |      |       |       |      |__DeviceNumber
+ |   |      |      |       |       |__Count of devices at this level
+@@ -120,8 +125,13 @@ T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd
+     Speed may be:
+     	1.5	Mbit/s for low speed USB
+ 	12	Mbit/s for full speed USB
+-	480	Mbit/s for high speed USB (added for USB 2.0)
+-
++	480	Mbit/s for high speed USB (added for USB 2.0);
++		  also used for Wireless USB, which has no fixed speed
++	5000	Mbit/s for SuperSpeed USB (added for USB 3.0)
++
++    For reasons lost in the mists of time, the Port number is always
++    too low by 1.  For example, a device plugged into port 4 will
++    show up with "Port=03".
+ 
+ Bandwidth info:
+ B:  Alloc=ddd/ddd us (xx%), #Int=ddd, #Iso=ddd
+@@ -291,7 +301,7 @@ Here's an example, from a system which h
+ an external hub connected to the root hub, and a mouse and
+ a serial converter connected to the external hub.
+ 
+-T:  Bus=00 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
++T:  Bus=00 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12   MxCh= 2
+ B:  Alloc= 28/900 us ( 3%), #Int=  2, #Iso=  0
+ D:  Ver= 1.00 Cls=09(hub  ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+ P:  Vendor=0000 ProdID=0000 Rev= 0.00
+@@ -301,21 +311,21 @@ C:* #Ifs= 1 Cfg#= 1 Atr=40 MxPwr=  0mA
+ I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+ E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=255ms
+ 
+-T:  Bus=00 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12  MxCh= 4
++T:  Bus=00 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12   MxCh= 4
+ D:  Ver= 1.00 Cls=09(hub  ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+ P:  Vendor=0451 ProdID=1446 Rev= 1.00
+ C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=100mA
+ I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+ E:  Ad=81(I) Atr=03(Int.) MxPS=   1 Ivl=255ms
+ 
+-T:  Bus=00 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=1.5 MxCh= 0
++T:  Bus=00 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=1.5  MxCh= 0
+ D:  Ver= 1.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+ P:  Vendor=04b4 ProdID=0001 Rev= 0.00
+ C:* #Ifs= 1 Cfg#= 1 Atr=80 MxPwr=100mA
+ I:  If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=mouse
+ E:  Ad=81(I) Atr=03(Int.) MxPS=   3 Ivl= 10ms
+ 
+-T:  Bus=00 Lev=02 Prnt=02 Port=02 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
++T:  Bus=00 Lev=02 Prnt=02 Port=02 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+ D:  Ver= 1.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+ P:  Vendor=0565 ProdID=0001 Rev= 1.08
+ S:  Manufacturer=Peracom Networks, Inc.
+@@ -330,12 +340,12 @@ E:  Ad=82(I) Atr=03(Int.) MxPS=   8 Ivl=
+ Selecting only the "T:" and "I:" lines from this (for example, by using
+ "procusb ti"), we have:
+ 
+-T:  Bus=00 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 2
+-T:  Bus=00 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12  MxCh= 4
++T:  Bus=00 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12   MxCh= 2
++T:  Bus=00 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12   MxCh= 4
+ I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+-T:  Bus=00 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=1.5 MxCh= 0
++T:  Bus=00 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=1.5  MxCh= 0
+ I:  If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=mouse
+-T:  Bus=00 Lev=02 Prnt=02 Port=02 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
++T:  Bus=00 Lev=02 Prnt=02 Port=02 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+ I:  If#= 0 Alt= 0 #EPs= 3 Cls=00(>ifc ) Sub=00 Prot=00 Driver=serial
+ 
+ 
+--- a/drivers/usb/core/devices.c
++++ b/drivers/usb/core/devices.c
+@@ -65,8 +65,8 @@
+ #define ALLOW_SERIAL_NUMBER
+ 
+ static const char *format_topo =
+-/* T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd Dev#=ddd Spd=ddd MxCh=dd */
+-"\nT:  Bus=%2.2d Lev=%2.2d Prnt=%2.2d Port=%2.2d Cnt=%2.2d Dev#=%3d Spd=%3s MxCh=%2d\n";
++/* T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd Dev#=ddd Spd=dddd MxCh=dd */
++"\nT:  Bus=%2.2d Lev=%2.2d Prnt=%2.2d Port=%2.2d Cnt=%2.2d Dev#=%3d Spd=%-4s MxCh=%2d\n";
+ 
+ static const char *format_string_manufacturer =
+ /* S:  Manufacturer=xxxx */
+@@ -510,11 +510,13 @@ static ssize_t usb_device_dump(char __us
+ 		speed = "1.5"; break;
+ 	case USB_SPEED_UNKNOWN:		/* usb 1.1 root hub code */
+ 	case USB_SPEED_FULL:
+-		speed = "12 "; break;
++		speed = "12"; break;
+ 	case USB_SPEED_HIGH:
+ 		speed = "480"; break;
++	case USB_SPEED_SUPER:
++		speed = "5000"; break;
+ 	default:
+-		speed = "?? ";
++		speed = "??";
+ 	}
+ 	data_end = pages_start + sprintf(pages_start, format_topo,
+ 			bus->busnum, level, parent_devnum,
 
 
