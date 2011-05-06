@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab1EFANN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:13 -0400
-Received: from kroah.org ([198.145.64.141]:32770 "EHLO coco.kroah.org"
+	id S1754961Ab1EFAVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:21:11 -0400
+Received: from kroah.org ([198.145.64.141]:32777 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753150Ab1EFANK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:10 -0400
+	id S1752667Ab1EFANL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:11 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:07 2011
-Message-Id: <20110506001207.447041139@clark.kroah.org>
+Message-Id: <20110506001207.541488993@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:34 -0700
+Date: Thu, 05 May 2011 17:10:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Eric Moore <eric.moore@lsi.com>,
+        Mike Snitzer <snitzer@redhat.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [patch 02/38] [SCSI] mpt2sas: prevent heap overflows and unchecked reads
+Subject: [patch 03/38] [SCSI] scsi_dh: fix reference counting in scsi_dh_activate error path
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,86 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit a1f74ae82d133ebb2aabb19d181944b4e83e9960 upstream.
+commit 0b8393578c70bc1f09790eeae7d918f38da2e010 upstream.
 
-At two points in handling device ioctls via /dev/mpt2ctl, user-supplied
-length values are used to copy data from userspace into heap buffers
-without bounds checking, allowing controllable heap corruption and
-subsequently privilege escalation.
+Commit db422318cbca55168cf965f655471dbf8be82433 ([SCSI] scsi_dh:
+propagate SCSI device deletion) introduced a regression where the device
+reference is not dropped prior to scsi_dh_activate's early return from
+the error path.
 
-Additionally, user-supplied values are used to determine the size of a
-copy_to_user() as well as the offset into the buffer to be read, with no
-bounds checking, allowing users to read arbitrary kernel memory.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Eric Moore <eric.moore@lsi.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_ctl.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/scsi/device_handler/scsi_dh.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -688,6 +688,13 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPT
- 		goto out;
- 	}
+--- a/drivers/scsi/device_handler/scsi_dh.c
++++ b/drivers/scsi/device_handler/scsi_dh.c
+@@ -437,12 +437,14 @@ int scsi_dh_activate(struct request_queu
+ 	unsigned long flags;
+ 	struct scsi_device *sdev;
+ 	struct scsi_device_handler *scsi_dh = NULL;
++	struct device *dev = NULL;
  
-+	/* Check for overflow and wraparound */
-+	if (karg.data_sge_offset * 4 > ioc->request_sz ||
-+	    karg.data_sge_offset > (UINT_MAX / 4)) {
-+		ret = -EINVAL;
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	sdev = q->queuedata;
+ 	if (sdev && sdev->scsi_dh_data)
+ 		scsi_dh = sdev->scsi_dh_data->scsi_dh;
+-	if (!scsi_dh || !get_device(&sdev->sdev_gendev) ||
++	dev = get_device(&sdev->sdev_gendev);
++	if (!scsi_dh || !dev ||
+ 	    sdev->sdev_state == SDEV_CANCEL ||
+ 	    sdev->sdev_state == SDEV_DEL)
+ 		err = SCSI_DH_NOSYS;
+@@ -453,12 +455,13 @@ int scsi_dh_activate(struct request_queu
+ 	if (err) {
+ 		if (fn)
+ 			fn(data, err);
+-		return err;
 +		goto out;
-+	}
-+
- 	/* copy in request message frame from user */
- 	if (copy_from_user(mpi_request, mf, karg.data_sge_offset*4)) {
- 		printk(KERN_ERR "failure at %s:%d/%s()!\n", __FILE__, __LINE__,
-@@ -1963,7 +1970,7 @@ _ctl_diag_read_buffer(void __user *arg,
- 	Mpi2DiagBufferPostReply_t *mpi_reply;
- 	int rc, i;
- 	u8 buffer_type;
--	unsigned long timeleft;
-+	unsigned long timeleft, request_size, copy_size;
- 	u16 smid;
- 	u16 ioc_status;
- 	u8 issue_reset = 0;
-@@ -1999,6 +2006,8 @@ _ctl_diag_read_buffer(void __user *arg,
- 		return -ENOMEM;
  	}
  
-+	request_size = ioc->diag_buffer_sz[buffer_type];
-+
- 	if ((karg.starting_offset % 4) || (karg.bytes_to_read % 4)) {
- 		printk(MPT2SAS_ERR_FMT "%s: either the starting_offset "
- 		    "or bytes_to_read are not 4 byte aligned\n", ioc->name,
-@@ -2006,13 +2015,23 @@ _ctl_diag_read_buffer(void __user *arg,
- 		return -EINVAL;
- 	}
- 
-+	if (karg.starting_offset > request_size)
-+		return -EINVAL;
-+
- 	diag_data = (void *)(request_data + karg.starting_offset);
- 	dctlprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: diag_buffer(%p), "
- 	    "offset(%d), sz(%d)\n", ioc->name, __func__,
- 	    diag_data, karg.starting_offset, karg.bytes_to_read));
- 
-+	/* Truncate data on requests that are too large */
-+	if ((diag_data + karg.bytes_to_read < diag_data) ||
-+	    (diag_data + karg.bytes_to_read > request_data + request_size))
-+		copy_size = request_size - karg.starting_offset;
-+	else
-+		copy_size = karg.bytes_to_read;
-+
- 	if (copy_to_user((void __user *)uarg->diagnostic_data,
--	    diag_data, karg.bytes_to_read)) {
-+	    diag_data, copy_size)) {
- 		printk(MPT2SAS_ERR_FMT "%s: Unable to write "
- 		    "mpt_diag_read_buffer_t data @ %p\n", ioc->name,
- 		    __func__, diag_data);
+ 	if (scsi_dh->activate)
+ 		err = scsi_dh->activate(sdev, fn, data);
+-	put_device(&sdev->sdev_gendev);
++out:
++	put_device(dev);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(scsi_dh_activate);
 
 
