@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab1EFLgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 07:36:05 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:2780 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755290Ab1EFLgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 07:36:04 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 07:36:04 EDT
-X-IronPort-AV: E=Sophos;i="4.64,325,1301889600"; 
-   d="scan'208";a="13975709"
-From: <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: Stefano.Stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 2/2] xen: do not implement irq_mask and irq_unmask in xen_percpu_chip
-Date: Fri, 6 May 2011 12:27:51 +0100
-Message-ID: <1304681271-3836-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1304681271-3836-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <1304681271-3836-1-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756379Ab1EFLdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 07:33:18 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:33975 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1EFLdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 07:33:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:date:content-type:x-mailer
+         :content-transfer-encoding:message-id:mime-version;
+        b=iM7gFWKFTmkPij/cBV92edwbegbtRTfgF0RsTp+oZzeXTDC8q3v6gGZEGsGUYqVaLr
+         r87J53J37OuHmOI7F0Bqjnuao+nan1XWtidNrbPlQr+0tzedNvdVneG0vcd0KIBHJD2b
+         eSvnY735DKUYE6/PF0Aan7ft06ldFG73lY4ws=
+Subject: [PATCH]mm/compation.c: checking page in lru twice
+From: "Figo.zhang" <figo1802@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>, mel@csn.ul.ie
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, kamezawa.hiroyu@jp.fujisu.com,
+        minchan.kim@gmail.com, Andrew Morton <akpm@osdl.org>,
+        aarcange@redhat.com
+Date: Fri, 06 May 2011 19:32:46 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1304681575.15473.4.camel@figo-desktop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-irq_mask and irq_unmask are not needed by handle_percpu_irq, but
-they are called by fixup_irqs when changing affinity.
-At the moment calling fixup_irqs can result in unmasking an interrupt
-that was previously masked because of the call to irq_unmask.
-However xen_percpu_chip doesn't even support irq_set_affinity, and we
-don't need irq_mask and irq_unmask, so we can just change them to noops,
-following the example of uv_irq_chip.
+in isolate_migratepages() have check page in LRU twice, the next one
+at _isolate_lru_page(). 
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Figo.zhang <figo1802@gmail.com> 
 ---
- drivers/xen/events.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index bb59651..8eb5316 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -120,6 +120,7 @@ static struct irq_chip xen_percpu_chip;
- static struct irq_chip xen_pirq_chip;
- static void enable_dynirq(struct irq_data *data);
- static void disable_dynirq(struct irq_data *data);
-+static void evtchn_noop(struct irq_data *data) { }
+mm/compaction.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 021a296..ac605cb 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -321,9 +321,6 @@ static unsigned long isolate_migratepages(struct zone *zone,
+ 			continue;
+ 		}
  
- /* Get info for IRQ */
- static struct irq_info *info_for_irq(unsigned irq)
-@@ -1595,9 +1596,10 @@ static struct irq_chip xen_pirq_chip __read_mostly = {
- static struct irq_chip xen_percpu_chip __read_mostly = {
- 	.name			= "xen-percpu",
- 
-+	.irq_enable		= enable_dynirq,
- 	.irq_disable		= disable_dynirq,
--	.irq_mask		= disable_dynirq,
--	.irq_unmask		= enable_dynirq,
-+	.irq_mask		= evtchn_noop,
-+	.irq_unmask		= evtchn_noop,
- 
- 	.irq_ack		= ack_dynirq,
- };
--- 
-1.7.2.3
+-		if (!PageLRU(page))
+-			continue;
+-
+ 		/*
+ 		 * PageLRU is set, and lru_lock excludes isolation,
+ 		 * splitting and collapsing (collapsing has already
+
 
