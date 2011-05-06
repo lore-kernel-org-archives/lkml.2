@@ -1,166 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab1EFGa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 02:30:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58883 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1EFGa6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 02:30:58 -0400
-Message-ID: <4DC3958F.1090800@kernel.org>
-Date: Thu, 05 May 2011 23:30:39 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1752721Ab1EFGgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 02:36:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938Ab1EFGgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 02:36:18 -0400
+Date: Fri, 6 May 2011 08:35:50 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Thomas Sattler <tsattler@gmx.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: iotop: khugepaged at 99.99% (2.6.38.X)
+Message-ID: <20110506063550.GA6330@random.random>
+References: <4DAF6C0B.3070009@gmx.de>
+ <20110427134613.GI32590@random.random>
+ <4DC14474.9040001@gmx.de>
+ <20110504143842.GK7838@random.random>
+ <4DC31EDE.2020503@gmx.de>
+ <20110506011319.GH7838@random.random>
 MIME-Version: 1.0
-To: Stefan Hellermann <stefan@the2masters.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: early crash on ancient tablet related to no-bootmem
-References: <4DC30251.9040902@the2masters.de> <4DC31D5F.8070209@the2masters.de> <4DC31F72.5050206@kernel.org> <4DC328AC.1060906@the2masters.de>
-In-Reply-To: <4DC328AC.1060906@the2masters.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DC3959E.0020,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110506011319.GH7838@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2011 03:46 PM, Stefan Hellermann wrote:
-> Am 06.05.2011 00:06, schrieb Yinghai Lu:
->>
->> can you please boot with "ignore_loglevel debug memblock=debug"?
->>
-> 
-> Here we are:
-> 
-> early console in setup code
-> early console in decompress_kernel
-> 
-> Decompressing Linux... Parsing ELF... done.
-> Booting the kernel.
-> Linux version 2.6.39-rc6+ (stefan@hel-stefan.lan) (gcc version 4.6.0
-> 20110428 (Red Hat 4.6.0-6) (GCC) ) #1 Thu May 5 19:21:50 CEST 2011
-> BIOS-provided physical RAM map:
->  BIOS-88: 0000000000000000 - 000000000009f000 (usable)
->  BIOS-88: 0000000000100000 - 0000000000840000 (usable)
-> bootconsole [earlyser0] enabled
-> debug: ignoring loglevel setting.
-> Notice: NX (Execute Disable) protection missing in CPU!
-> DMI not present or invalid.
-> e820 update range: 0000000000000000 - 0000000000010000 (usable) ==>
-> (reserved)
-> e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
-> last_pfn = 0x840 max_arch_pfn = 0x100000
->     memblock_x86_reserve_range: [0x003a5000-0x003a6fff]              BRK
-> MEMBLOCK configuration:
->  memory size = 0x7cf000
->  memory.cnt  = 0x2
->  memory[0x0]	[0x00000000010000-0x0000000009efff], 0x8f000 bytes
->  memory[0x1]	[0x00000000100000-0x0000000083ffff], 0x740000 bytes
->  reserved.cnt  = 0x1
->  reserved[0x0]	[0x0000000009f000-0x000000003a6fff], 0x308000 bytes
-> initial memory mapped : 0 - 00800000
->     memblock_x86_reserve_range: [0x0009e000-0x0009efff]       TRAMPOLINE
-> Base memory trampoline at [c009e000] 9e000 size 4096
-> init_memory_mapping: 0000000000000000-0000000000840000
->  0000000000 - 0000840000 page 4k
-> kernel direct mapping tables up to 840000 @ 7fa000-800000
->     memblock_x86_reserve_range: [0x007fa000-0x007fafff]          PGTABLE
-> 8MB LOWMEM available.
->   mapped low ram: 0 - 00840000
->   low ram: 0 - 00840000
-> Zone PFN ranges:
->   DMA      0x00000010 -> 0x00001000
->   Normal   empty
-> Movable zone start PFN for each node
-> early_node_map[2] active PFN ranges
->     0: 0x00000010 -> 0x0000009f
->     0: 0x00000100 -> 0x00000840
-> On node 0 totalpages: 1999
-> free_area_init_node: node 0, pgdat c03555a0, node_mem_map 00000200
->   DMA zone: 17 pages used for memmap
->   DMA zone: 0 pages reserved
->   DMA zone: 1982 pages, LIFO batch:0
-> BUG: Int 6: CR2   (null)
->      EDI c0355868  ESI   (null)  EBP 00000830  ESP c0339f10
->      EBX c03555a0  EDX 00000006  ECX 01000000  EAX fffffff4
->      err   (null)  EIP c0361b85   CS 00000060  flg 00010082
-> Stack:   (null) c031d2f2 000007be   (null) c031d2f2 00000003   (null)
-> (null)
->        00000010 00000018 00000002   (null) 00000002 c0361ea8   (null)
-> (null)
->        00000100 00000840 00000001   (null)   (null) c0339f8c c0339fb8
-> c035e41b
-> Pid: 0, comm: swapper Not tainted 2.6.39-rc6+ #1
-> Call Trace:
->  [<c036edb5>] ? 0xc036edb5
->  [<c0361b85>] ? 0xc0361b85
->  [<c0361ea8>] ? 0xc0361ea8
->  [<c035e41b>] ? 0xc035e41b
->  [<c035986d>] ? 0xc035986d
->  [<c0358401>] ? 0xc0358401
+On Fri, May 06, 2011 at 03:13:19AM +0200, Andrea Arcangeli wrote:
+> this. For now we'll assume the per-cpu stats aren't the problem.
 
+Well, after more thinking on this I changed my mind about that
+assumption... (the stats looks all good w.r.t. to split_huge_page and
+stuff).
 
-please check
+If two increases of NR_ISOLATED_ANON stats happen on the same CPU but
+the decreases happen on two different CPUs, NR_ISOLATED_ANON may
+remain boosted. If then a process quits releasing all inactive anon
+pages sitting on the inactive list the too_many_isolated may start the
+congestion loop at the first invocation despite NR_ISOLATED_ANON
+should have been zero (but two decrements are pending on two different
+CPUs so the global value isn't zeroed yet).
 
-[PATCH] mm: Use alloc_bootmem_node_nopanic on really needed path
+What made the difference I think is that in normal circumstances
+kswapd would be running too (see the current_is_kswapd()), mangling
+over all the per-cpu lists, and it would avoid an indefinite hang. But
+here there are only 3 tasks entering reclaim running THP allocations
+(with __GFP_NO_KSWAPD), and they all 3 stop in the loop, nothing else
+in the system touching the vmstat, it can take a while for the per-cpu
+info to be flushed global by some other VM activity (and anon page
+allocations will go in the active list, they won't mangle over the
+nr_inactive_anon vmstat). On large systems this will not be easily
+visible because of the inactive list size would rarely be trimmed down
+to a value < vmstat threshold.
 
-Stefan found nobootmem does not work on his system that only have 8M ram.
+To fix this I've been wondering if to use "isolated >
+zone->present_pages/2" or something big (but I don't want to depend on
+threshold vs present_pages value which might again fail with weird
+mem= commands creating the smallest possible highmem zone, max order
+should be good enough but it still feels flakey). I thought of reading
+the threshold and taking it into account in the comparison but the two
+reads are out of order anyway so it could still fail regardless of the
+threshold being taken into account.
 
-It turns out we should ignore the low limit the 16M.
+Plus inactive (or zone->present_pages) can be huge or tiny, regardless
+of the number of CPUs. So too_many_isolated is a bad check and I can't
+craft a better one without adding some other counters in replacement
+of this.
 
-Use alloc_bootmem_node_nopanic in those calling.
+If it's really an issue, we could limit reclaim in function of the
+number of tasks and CPUs, not in function of the inactive list
+size. With huge memory the inactive list may be huge too even when
+there's memory pressure and swapping allowing lots of tasks to enter
+regardless the number of CPUs. And stopping there looks bad because
+it's also preventing any later VM shrinking activity indefinitely,
+including the shrinking activity of all other other zones that may be
+huge. So as a quick hotfix I can't think of anything better than the
+below... this too_many_isolated looks bad from too many standpoints,
+the LRU_ISOLATE_* stats likely can go too with it making the code
+simpler.
 
-Reported-by: Stefan Hellermann <stefan@the2masters.de>
-Signed-off-by: Yinghai LU <yinghai@kernel.org>
+But to verify this theory, please "cat /proc/zoneinfo" (whole file)
+during the hang, so we can verify if the above theory is right or
+not. If it's right you will find nr_isolated_* small (like surely
+<100) but bigger than zero and also bigger than the corresponding
+nr_inactive_* for one of the zones, for the whole duration of the
+hang. After verifying this with /proc/zoneinfo during the hang, I can
+try a more complete patch... but if the theory is correct, the below
+should fix it already and should be safe.
 
----
- include/linux/bootmem.h |    2 ++
- mm/page_alloc.c         |    6 +++---
- 2 files changed, 5 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/include/linux/bootmem.h
-===================================================================
---- linux-2.6.orig/include/linux/bootmem.h
-+++ linux-2.6/include/linux/bootmem.h
-@@ -111,6 +111,8 @@ extern void *__alloc_bootmem_low_node(pg
- 	__alloc_bootmem_nopanic(x, PAGE_SIZE, __pa(MAX_DMA_ADDRESS))
- #define alloc_bootmem_node(pgdat, x) \
- 	__alloc_bootmem_node(pgdat, x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
-+#define alloc_bootmem_node_nopanic(pgdat, x) \
-+	__alloc_bootmem_node_nopanic(pgdat, x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
- #define alloc_bootmem_pages_node(pgdat, x) \
- 	__alloc_bootmem_node(pgdat, x, PAGE_SIZE, __pa(MAX_DMA_ADDRESS))
- #define alloc_bootmem_pages_node_nopanic(pgdat, x) \
-Index: linux-2.6/mm/page_alloc.c
-===================================================================
---- linux-2.6.orig/mm/page_alloc.c
-+++ linux-2.6/mm/page_alloc.c
-@@ -3564,7 +3564,7 @@ int zone_wait_table_init(struct zone *zo
- 
- 	if (!slab_is_available()) {
- 		zone->wait_table = (wait_queue_head_t *)
--			alloc_bootmem_node(pgdat, alloc_size);
-+			alloc_bootmem_node_nopanic(pgdat, alloc_size);
- 	} else {
- 		/*
- 		 * This case means that a zone whose size was 0 gets new memory
-@@ -4141,7 +4141,7 @@ static void __init setup_usemap(struct p
- 	unsigned long usemapsize = usemap_size(zonesize);
- 	zone->pageblock_flags = NULL;
- 	if (usemapsize)
--		zone->pageblock_flags = alloc_bootmem_node(pgdat, usemapsize);
-+		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat, usemapsize);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f6b435c..c69f4fa 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1218,31 +1218,6 @@ int isolate_lru_page(struct page *page)
  }
- #else
- static inline void setup_usemap(struct pglist_data *pgdat,
-@@ -4307,7 +4307,7 @@ static void __init_refok alloc_node_mem_
- 		size =  (end - start) * sizeof(struct page);
- 		map = alloc_remap(pgdat->node_id, size);
- 		if (!map)
--			map = alloc_bootmem_node(pgdat, size);
-+			map = alloc_bootmem_node_nopanic(pgdat, size);
- 		pgdat->node_mem_map = map + (pgdat->node_start_pfn - start);
- 	}
- #ifndef CONFIG_NEED_MULTIPLE_NODES
+ 
+ /*
+- * Are there way too many processes in the direct reclaim path already?
+- */
+-static int too_many_isolated(struct zone *zone, int file,
+-		struct scan_control *sc)
+-{
+-	unsigned long inactive, isolated;
+-
+-	if (current_is_kswapd())
+-		return 0;
+-
+-	if (!scanning_global_lru(sc))
+-		return 0;
+-
+-	if (file) {
+-		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+-		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
+-	} else {
+-		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
+-		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+-	}
+-
+-	return isolated > inactive;
+-}
+-
+-/*
+  * TODO: Try merging with migrations version of putback_lru_pages
+  */
+ static noinline_for_stack void
+@@ -1379,14 +1354,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 	unsigned long nr_anon;
+ 	unsigned long nr_file;
+ 
+-	while (unlikely(too_many_isolated(zone, file, sc))) {
+-		congestion_wait(BLK_RW_ASYNC, HZ/10);
+-
+-		/* We are about to die and free our memory. Return now. */
+-		if (fatal_signal_pending(current))
+-			return SWAP_CLUSTER_MAX;
+-	}
+-
+ 	set_reclaim_mode(priority, sc, false);
+ 	lru_add_drain();
+ 	spin_lock_irq(&zone->lru_lock);
