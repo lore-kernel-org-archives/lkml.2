@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab1EFT5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 15:57:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55884 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab1EFT5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 15:57:21 -0400
-Date: Fri, 6 May 2011 12:57:02 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>, Matt Domsch <Matt_Domsch@dell.com>,
-        Mike Waychison <mikew@google.com>
-Cc: akpm <akpm@linux-foundation.org>, matthew.e.tolentino@intel.com,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] efivars: prevent oops on unload when efi is not enabled
-Message-Id: <20110506125702.2585228b.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4DC4529A.009B:SCFSTAT5015188,ss=1,fgs=0
+	id S932531Ab1EFT5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 15:57:49 -0400
+Received: from dee.erg.abdn.ac.uk ([139.133.204.82]:58845 "EHLO erg.abdn.ac.uk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932160Ab1EFT5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 15:57:47 -0400
+Date: Fri, 6 May 2011 21:57:33 +0200
+From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: davem@davemloft.net, dccp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] dccp: handle invalid feature options length
+Message-ID: <20110506195733.GA3527@gerrit.erg.abdn.ac.uk>
+Mail-Followup-To: Gerrit Renker <gerrit@erg.abdn.ac.uk>,
+	Dan Rosenberg <drosenberg@vsecurity.com>, davem@davemloft.net,
+	dccp@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, security@kernel.org
+References: <1304688438.29544.16.camel@dan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304688438.29544.16.camel@dan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-ERG-MailScanner: Found to be clean
+X-ERG-MailScanner-From: gerrit@erg.abdn.ac.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Quoting Dan Rosenberg:
+| A length of zero (after subtracting two for the type and len fields) for
+| the DCCPO_{CHANGE,CONFIRM}_{L,R} options will cause an underflow due to
+| the subtraction.  The subsequent code may read past the end of the
+| options value buffer when parsing.  I'm unsure of what the consequences
+| of this might be, but it's probably not good.
+| 
+Please disregard my earlier message, I erred.
+Dan is right, his patch is correct and definitively valid.
+A length of 0 would be cast to 0xff and then cause buffer overrun.
 
-unregister_efivars() should check for efi_enabled and not undo
-allocations when efi is not enabled.  Otherwise there is an Oops
-during module unload:
-
-calling  efivars_init+0x0/0x1000 [efivars] @ 2810
-EFI Variables Facility v0.08 2004-May-17
-initcall efivars_init+0x0/0x1000 [efivars] returned 0 after 5120 usecs
-Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-last sysfs file: /sys/module/firmware_class/initstate
-CPU 1 
-Modules linked in: efivars(-) af_packet tun nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep mousedev snd_seq joydev snd_seq_device mac_hid evdev snd_pcm usbkbd usbmouse usbhid snd_timer hid tg3 snd sr_mod pcspkr rtc_cmos soundcore cdrom iTCO_wdt processor sg dcdbas i2c_i801 rtc_core iTCO_vendor_support intel_agp snd_page_alloc thermal_sys rtc_lib intel_gtt 8250_pnp button hwmon unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_class ehci_hcd usbcore [last unloaded: dell_rbu]
-
-Pid: 2812, comm: rmmod Not tainted 2.6.39-rc6 #1 Dell Inc.                 OptiPlex 745                 /0TY565
-RIP: 0010:[<ffffffffa06a17f6>]  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
-RSP: 0018:ffff88005eedde98  EFLAGS: 00010283
-RAX: ffffffffa06a23fc RBX: ffffffffa06a44c0 RCX: ffff88007c227a50
-RDX: 0000000000000000 RSI: 00000055ac13db78 RDI: ffffffffa06a44c0
-RBP: ffff88005eeddec8 R08: 0000000000000000 R09: ffff88005eeddd78
-R10: ffffffffa06a4220 R11: ffff88005eeddd78 R12: fffffffffffff7d0
-R13: 00007fff5a3aaec0 R14: 0000000000000000 R15: ffffffffa06a4508
-FS:  00007fa8dcc4a6f0(0000) GS:ffff88007c200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 000000005d148000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process rmmod (pid: 2812, threadinfo ffff88005eedc000, task ffff88006754b000)
-Stack:
- ffff88005eeddec8 ffffffffa06a4220 0000000000000000 00007fff5a3aaec0
- 0000000000000000 0000000000000001 ffff88005eedded8 ffffffffa06a2418
- ffff88005eeddf78 ffffffff810d3598 ffffffffa06a4220 0000000000000880
-Call Trace:
- [<ffffffffa06a2418>] efivars_exit+0x1c/0xc04 [efivars]
- [<ffffffff810d3598>] sys_delete_module+0x2d6/0x368
- [<ffffffff812d1db9>] ? lockdep_sys_exit_thunk+0x35/0x67
- [<ffffffff810fcba1>] ? audit_syscall_entry+0x172/0x1a5
- [<ffffffff81575082>] system_call_fastpath+0x16/0x1b
-Code: 5c c9 c3 55 48 89 e5 41 57 41 56 41 55 41 54 53 48 83 ec 08 0f 1f 44 00 00 4c 8b 67 48 48 89 fb 4c 8d 7f 48 49 81 ec 30 08 00 00 <4d> 8b ac 24 30 08 00 00 49 81 ed 30 08 00 00 eb 59 48 89 df 48 
-RIP  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
- RSP <ffff88005eedde98>
-CR2: 0000000000000000
----[ end trace aa99b99090f70baa ]---
-
-Matt apparently removed such a check in 2004 (with no reason given):
- *  17 May 2004 - Matt Domsch <Matt_Domsch@dell.com>
- *   remove check for efi_enabled in exit
-but there have been several changes since then.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>
-Cc: <matthew.e.tolentino@intel.com>
-Cc: Mike Waychison <mikew@google.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/firmware/efivars.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- lnx-2639-rc6.orig/drivers/firmware/efivars.c
-+++ lnx-2639-rc6/drivers/firmware/efivars.c
-@@ -688,6 +688,9 @@ void unregister_efivars(struct efivars *
- {
- 	struct efivar_entry *entry, *n;
- 
-+	if (!efi_enabled)
-+		return;
-+
- 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
- 		spin_lock(&efivars->lock);
- 		list_del(&entry->list);
+| Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+| Cc: stable@kernel.org
+Acked-by: Gerrit Renker <gerrit@erg.abdn.ac.uk>
