@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1EFJ37 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 05:29:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35052 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756136Ab1EFJ3o (ORCPT
+	id S1756014Ab1EFJlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 05:41:40 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:57565 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753711Ab1EFJli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 05:29:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=gDHt20SqqE7PIW4V8d/gqBT1sNZsGHdJyIZbtB+KOh0AjnjZLk0DepkQoUAD1FLXyX
-         A84fIjGBMiPhnjXYIPsxoh/70wREy+lmKR+CRaWOCtaots6WCsOdt+HmOZ/EwmnTvs8M
-         C7xUO+lm65yLkc8jobuFNcG+KqnqLr7x/GMPM=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1105051547000.28291@pobox.suse.cz>
-References: <20110429115948.e949234b.sfr@canb.auug.org.au>
-	<BANLkTikJ5CVvS+P17T_Mhtqyb29vpDcmvw@mail.gmail.com>
-	<alpine.LNX.2.00.1105051547000.28291@pobox.suse.cz>
-Date: Fri, 6 May 2011 11:29:43 +0200
-X-Google-Sender-Auth: lmFcEUl84HLcvSSgF2pg02AHkoc
-Message-ID: <BANLkTimHgUorm4HKuX7veUNR6M1o9LiTNA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the trivial tree with the ux500-core tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 May 2011 05:41:38 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 05:41:38 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:X-Identified-User;
+	b=ng2ze0oGky37ejii4adirwBWBOOA3ADsS4HpktUwB6x0cPZynNC+8hBpBABosQZZmSqzc4njNF5Qf2uAWWaCWx2fU3j5fEZ4M6UiIUQT3BVL+uxdEHnPG8YpEeCQ1ona;
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk
+Subject: [PATCH RESEND] block: Remove discard_alignment from hd_struct.
+Date: Fri,  6 May 2011 17:34:33 +0800
+Message-Id: <1304674473-18435-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1303287455-3796-1-git-send-email-tm@tao.ma>
+References: <1303287455-3796-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/5 Jiri Kosina <jkosina@suse.cz>:
-> On Fri, 29 Apr 2011, Linus Walleij wrote:
->>
->> I rewrote the driver completely so likely it will rather be dropped, but
->> please check! I'll be happy to carry any patches.
->
-> Seems to me that all the calls to request_mem_region() and
-> release_mem_region() still need the resource_size() fixup even in the new
-> driver.
+From: Tao Ma <boyu.mt@taobao.com>
 
-OK I went in and tweaked the patch like this:
+Currently, hd_struct.discard_alignment is only used when we
+show /sys/block/sdx/sdx/discard_alignment. So remove it and
+calculate when it shows.
 
-	if (request_mem_region(gpio->memres->start,
-			       resource_size(gpio->memres),
-			       "GPIO Controller")
-	    == NULL) {
-		dev_err(gpio->dev, "could not reserve GPIO memory region\n");
-		err = -ENODEV;
-		goto err_no_ioregion;
-	}
-(...)
-err_no_ioremap:
-	release_mem_region(gpio->memres->start, resource_size(gpio->memres));
-(...)
-	release_mem_region(gpio->memres->start,
-			   resource_size(gpio->memres));
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/partitions/check.c |    9 ++++++---
+ include/linux/genhd.h |    1 -
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-It'll appear in the next tree tomorrow or so. OK?
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index ac54697..ec4f4ae 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -255,7 +255,12 @@ ssize_t part_discard_alignment_show(struct device *dev,
+ 				   struct device_attribute *attr, char *buf)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+-	return sprintf(buf, "%u\n", p->discard_alignment);
++	struct gendisk *disk = dev_to_disk(dev);
++
++	return sprintf(buf, "%u\n",
++		       (unsigned long long)queue_limit_discard_alignment(
++							&disk->queue->limits,
++							p->start_sect));
+ }
+ 
+ ssize_t part_stat_show(struct device *dev,
+@@ -449,8 +454,6 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 	p->start_sect = start;
+ 	p->alignment_offset =
+ 		queue_limit_alignment_offset(&disk->queue->limits, start);
+-	p->discard_alignment =
+-		queue_limit_discard_alignment(&disk->queue->limits, start);
+ 	p->nr_sects = len;
+ 	p->partno = partno;
+ 	p->policy = get_disk_ro(disk);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index d764a42..b4c233f 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -100,7 +100,6 @@ struct hd_struct {
+ 	sector_t start_sect;
+ 	sector_t nr_sects;
+ 	sector_t alignment_offset;
+-	unsigned int discard_alignment;
+ 	struct device __dev;
+ 	struct kobject *holder_dir;
+ 	int policy, partno;
+-- 
+1.7.4
 
-Yours,
-Linus Walleij
