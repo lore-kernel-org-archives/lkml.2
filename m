@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab1EFKyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 06:54:19 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:43094
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754216Ab1EFKyS (ORCPT
+	id S1756252Ab1EFKy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 06:54:27 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:43636 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755254Ab1EFKyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 06:54:18 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 06:54:18 EDT
+	Fri, 6 May 2011 06:54:24 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 01/16] staging: usbip: stub_dev.c: coding style cleanup
-Date: Fri,  6 May 2011 03:47:41 -0700
-Message-Id: <f8dae1ba6dc2fd17652689dc51f4210d803e51c2.1304676742.git.mfm@muteddisk.com>
+Subject: [PATCH 02/16] staging: usbip: stub_main.c: coding style cleanup
+Date: Fri,  6 May 2011 03:47:42 -0700
+Message-Id: <a0714cc3fdbacd7b8234e92d81151c10d373ad56.1304676742.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1304676742.git.mfm@muteddisk.com>
 References: <cover.1304676742.git.mfm@muteddisk.com>
@@ -25,192 +24,102 @@ Fix alignment for consistency and remove extraneous lines.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/staging/usbip/stub_dev.c |   44 ++++++++++---------------------------
- 1 files changed, 12 insertions(+), 32 deletions(-)
+ drivers/staging/usbip/stub_main.c |   19 ++++++-------------
+ 1 files changed, 6 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index bce7d03..8a55068 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -23,13 +23,10 @@
- #include "usbip_common.h"
- #include "stub.h"
+diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
+index 076a7e5..4ba00bb 100644
+--- a/drivers/staging/usbip/stub_main.c
++++ b/drivers/staging/usbip/stub_main.c
+@@ -34,7 +34,6 @@ struct kmem_cache *stub_priv_cache;
  
--
--
- static int stub_probe(struct usb_interface *interface,
--				const struct usb_device_id *id);
-+		      const struct usb_device_id *id);
- static void stub_disconnect(struct usb_interface *interface);
+ /* Define sysfs entries for the usbip driver */
  
 -
  /*
-  * Define device IDs here if you want to explicitly limit exportable devices.
-  * In the most cases, wild card matching will be ok because driver binding can
-@@ -64,7 +61,6 @@ struct usb_driver stub_driver = {
- 	.id_table	= stub_table,
- };
+  * busid_tables defines matching busids that usbip can grab. A user can change
+  * dynamically what device is locally used and what device is exported to a
+@@ -44,7 +43,6 @@ struct kmem_cache *stub_priv_cache;
+ static struct bus_id_priv busid_table[MAX_BUSID];
+ static spinlock_t busid_table_lock;
  
 -
+ int match_busid(const char *busid)
+ {
+ 	int i;
+@@ -148,11 +146,11 @@ int del_match_busid(char *busid)
+ 
+ 	return -1;
+ }
++
+ static void init_busid_table(void)
+ {
+ 	int i;
+ 
+-
+ 	for (i = 0; i < MAX_BUSID; i++) {
+ 		memset(busid_table[i].name, 0, BUSID_SIZE);
+ 		busid_table[i].status = STUB_BUSID_OTHER;
+@@ -160,11 +158,12 @@ static void init_busid_table(void)
+ 		busid_table[i].sdev = NULL;
+ 		busid_table[i].shutdown_busid = 0;
+ 	}
++
+ 	spin_lock_init(&busid_table_lock);
+ }
+ 
+ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
+-		size_t count)
++				 size_t count)
+ {
+ 	int len;
+ 	char busid[BUSID_SIZE];
+@@ -181,7 +180,6 @@ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
+ 
+ 	strncpy(busid, buf + 4, BUSID_SIZE);
+ 
+-
+ 	if (!strncmp(buf, "add ", 4)) {
+ 		if (add_match_busid(busid) < 0)
+ 			return -ENOMEM;
+@@ -199,11 +197,8 @@ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
+ 	} else
+ 		return -EINVAL;
+ }
+-
+ static DRIVER_ATTR(match_busid, S_IRUSR|S_IWUSR, show_match_busid,
+-							store_match_busid);
+-
+-
++		   store_match_busid);
+ 
  /*-------------------------------------------------------------------------*/
  
- /* Define sysfs entries for a usbip-bound device */
-@@ -128,13 +124,11 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
- 			spin_unlock(&sdev->ud.lock);
- 			return -EINVAL;
- 		}
--
- #if 0
- 		setnodelay(socket);
- 		setkeepalive(socket);
- 		setreuse(socket);
- #endif
--
- 		sdev->ud.tcp_socket = socket;
+@@ -265,14 +260,12 @@ void stub_device_cleanup_urbs(struct stub_device *sdev)
+ 		kmem_cache_free(stub_priv_cache, priv);
  
- 		spin_unlock(&sdev->ud.lock);
-@@ -183,10 +177,8 @@ static int stub_add_files(struct device *dev)
+ 		kfree(urb->transfer_buffer);
+-
+ 		kfree(urb->setup_packet);
  
- err_debug:
- 	device_remove_file(dev, &dev_attr_usbip_sockfd);
--
- err_sockfd:
- 	device_remove_file(dev, &dev_attr_usbip_status);
--
- err_status:
- 	return err;
- }
-@@ -198,8 +190,6 @@ static void stub_remove_files(struct device *dev)
- 	device_remove_file(dev, &dev_attr_usbip_debug);
- }
- 
--
--
- /*-------------------------------------------------------------------------*/
- 
- /* Event handler functions called by an event handler thread */
-@@ -244,18 +234,15 @@ static void stub_shutdown_connection(struct usbip_device *ud)
- 		struct stub_unlink *unlink, *tmp;
- 
- 		spin_lock_irqsave(&sdev->priv_lock, flags);
--
- 		list_for_each_entry_safe(unlink, tmp, &sdev->unlink_tx, list) {
- 			list_del(&unlink->list);
- 			kfree(unlink);
- 		}
--
- 		list_for_each_entry_safe(unlink, tmp,
- 						 &sdev->unlink_free, list) {
- 			list_del(&unlink->list);
- 			kfree(unlink);
- 		}
--
- 		spin_unlock_irqrestore(&sdev->priv_lock, flags);
+ 		usb_free_urb(urb);
  	}
- }
-@@ -275,7 +262,6 @@ static void stub_device_reset(struct usbip_device *ud)
- 		spin_lock(&ud->lock);
- 		ud->status = SDEV_ST_ERROR;
- 		spin_unlock(&ud->lock);
--
- 		return;
- 	}
- 
-@@ -306,7 +292,6 @@ static void stub_device_unusable(struct usbip_device *ud)
- 	spin_unlock(&ud->lock);
  }
  
 -
  /*-------------------------------------------------------------------------*/
  
- /**
-@@ -339,13 +324,12 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
- 	 * devnum may change later if a device is reset. However, devid never
- 	 * changes during a usbip connection.
- 	 */
--	sdev->devid     = (busnum << 16) | devnum;
--
--	sdev->ud.side = USBIP_STUB;
--	sdev->ud.status = SDEV_ST_AVAILABLE;
-+	sdev->devid		= (busnum << 16) | devnum;
-+	sdev->ud.side		= USBIP_STUB;
-+	sdev->ud.status		= SDEV_ST_AVAILABLE;
- 	/* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
- 	spin_lock_init(&sdev->ud.lock);
--	sdev->ud.tcp_socket = NULL;
-+	sdev->ud.tcp_socket	= NULL;
- 
- 	INIT_LIST_HEAD(&sdev->priv_init);
- 	INIT_LIST_HEAD(&sdev->priv_tx);
-@@ -378,7 +362,6 @@ static int stub_device_free(struct stub_device *sdev)
- 	return 0;
- }
- 
--
- /*-------------------------------------------------------------------------*/
- 
- /*
-@@ -405,7 +388,7 @@ static int stub_probe(struct usb_interface *interface,
- 	/* check we should claim or not by busid_table */
- 	busid_priv = get_busid_priv(udev_busid);
- 	if (!busid_priv  || (busid_priv->status == STUB_BUSID_REMOV) ||
--			     (busid_priv->status == STUB_BUSID_OTHER)) {
-+	    (busid_priv->status == STUB_BUSID_OTHER)) {
- 		dev_info(&interface->dev,
- 			 "this device %s is not in match_busid table. skip!\n",
- 			 udev_busid);
-@@ -420,17 +403,16 @@ static int stub_probe(struct usb_interface *interface,
- 
- 	if (udev->descriptor.bDeviceClass ==  USB_CLASS_HUB) {
- 		usbip_udbg("this device %s is a usb hub device. skip!\n",
--								udev_busid);
-+			   udev_busid);
- 		return -ENODEV;
+ static int __init usb_stub_init(void)
+@@ -296,8 +289,8 @@ static int __init usb_stub_init(void)
+ 		goto error_usb_register;
  	}
  
- 	if (!strcmp(udev->bus->bus_name, "vhci_hcd")) {
- 		usbip_udbg("this device %s is attached on vhci_hcd. skip!\n",
--								udev_busid);
-+			   udev_busid);
- 		return -ENODEV;
- 	}
+-	printk(KERN_INFO KBUILD_MODNAME ":"
+-	       DRIVER_DESC ":" DRIVER_VERSION "\n");
++	printk(KERN_INFO KBUILD_MODNAME ":" DRIVER_DESC ":" DRIVER_VERSION
++	       "\n");
  
--
- 	if (busid_priv->status == STUB_BUSID_ALLOC) {
- 		sdev = busid_priv->sdev;
- 		if (!sdev)
-@@ -438,9 +420,10 @@ static int stub_probe(struct usb_interface *interface,
- 
- 		busid_priv->interf_count++;
- 		dev_info(&interface->dev,
--		 "USB/IP Stub: register a new interface "
--		 "(bus %u dev %u ifn %u)\n", udev->bus->busnum, udev->devnum,
--		 interface->cur_altsetting->desc.bInterfaceNumber);
-+			 "USB/IP Stub: register a new interface "
-+			 "(bus %u dev %u ifn %u)\n",
-+			 udev->bus->busnum, udev->devnum,
-+			 interface->cur_altsetting->desc.bInterfaceNumber);
- 
- 		/* set private data to usb_interface */
- 		usb_set_intfdata(interface, sdev);
-@@ -504,10 +487,8 @@ static void shutdown_busid(struct bus_id_priv *busid_priv)
- 		/* 2. wait for the stop of the event handler */
- 		usbip_stop_eh(&busid_priv->sdev->ud);
- 	}
--
- }
- 
--
- /*
-  * called in usb_disconnect() or usb_deregister()
-  * but only if actconfig(active configuration) exists
-@@ -559,7 +540,6 @@ static void stub_disconnect(struct usb_interface *interface)
- 
- 	busid_priv->interf_count = 0;
- 
--
- 	/* 1. shutdown the current connection */
- 	shutdown_busid(busid_priv);
+ 	init_busid_table();
  
 -- 
 1.7.5.1
