@@ -1,38 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab1EFBJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 21:09:47 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39468 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab1EFBJp (ORCPT
+	id S1754696Ab1EFBMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 21:12:20 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:62414 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab1EFBMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 21:09:45 -0400
+	Thu, 5 May 2011 21:12:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=ScgI7hzeZeWnbIerDeKtYbuOyhKa+hBBd+6s7G/E+pV3eVD5hdCx2Igw+sTH1bMxLW
-         eSY9foX7c3dpUf5wzt0P7UsxWnZxXMhOaA00etdYJGXqWE/PP/q5/iyr9QrKzWJx7iIn
-         Ktc7QO56YD3OyUgx4RhcK+LxVE/ZtryMV+MU8=
+        b=IbX+tVnD2OVMjb8YV+ue2OGOe/vtWZoJIxgLTbr8UF7Z1dNxZCX4FOBg4JXPluEw7X
+         pb/o/loXWhZY7ZDK/lEA==
 MIME-Version: 1.0
-In-Reply-To: <4DC30FFA.9030708@fastmail.fm>
-References: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com>
-	<1304617307-7389-2-git-send-email-tim.gardner@canonical.com>
-	<4DC30FFA.9030708@fastmail.fm>
-Date: Fri, 6 May 2011 04:09:44 +0300
-Message-ID: <BANLkTikG=6xyFg--u=M6HwH8yQExAauA8w@mail.gmail.com>
-Subject: Re: [PATCH] fbcon -- fix race between open and removal of framebuffers
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: tim.gardner@canonical.com, linux-fbdev@vger.kernel.org,
-        lethal@linux-sh.org, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        Greg KH <gregkh@suse.de>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110505063012.GA11529@tiehlicka.suse.cz>
+References: <20110503141044.GA25351@tiehlicka.suse.cz>
+	<alpine.LSU.2.00.1105031142260.7349@sister.anvils>
+	<20110504083005.GA1375@tiehlicka.suse.cz>
+	<alpine.LSU.2.00.1105041016110.23159@sister.anvils>
+	<20110505063012.GA11529@tiehlicka.suse.cz>
+Date: Thu, 5 May 2011 18:12:12 -0700
+Message-ID: <BANLkTikGduoi8DVapz0H-uVPrrXPYF=YGg@mail.gmail.com>
+Subject: Re: [PATCH resend] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
+From: Hugh Dickins <hughd@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@Greg: This is stable material for 2.6.38
-link to the patch: http://is.gd/otIfGc
+On Wed, May 4, 2011 at 11:30 PM, Michal Hocko <mhocko@suse.cz> wrote:
+
+> So I think the flag should be used that way. If we ever going to add a
+> new architecture like IA64 which uses both ways of expanding we should
+> make it easier by minimizing the places which have to be examined.
+
+If, yes.  Let's just agree to disagree.  It looks like I'm preferring
+to think of the ia64 case as exceptional, and I want to be reminded of
+that peculiar case; whereas you are wanting to generalize and make it
+not stand out.  Both valid.
+
+> OK, now, with the cleanup patch, we have expand_stack and
+> expand_stack_{downwards,upwards}. I will repost the patch to Andrew with
+> up and down cases renamed. Does it work for you?
+
+Sounds right.
+
+>
+>> But it's always going to be somewhat confusing and asymmetrical
+>> because of the ia64 register backing store case.
+>
+> How come? We would have expand_stack which is pretty much clear that it
+> is expanding stack in the architecture specific way. And then we would
+> have expand_{upwards,downward} which are clear about way how we expand
+> whatever VMA, right?
+
+Right.  I'm preferring to be reminded of the confusion and asymmetry,
+you're preferring to smooth over it.
+
+Hugh
