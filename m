@@ -1,264 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab1EFNFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:05:43 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:54294 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755473Ab1EFNFk (ORCPT
+	id S1755828Ab1EFNHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:07:48 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39703 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab1EFNFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:05:40 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 03/10] mach-ux500: update SoC and board IRQ handling
-Date: Fri, 6 May 2011 15:05:29 +0200
-Message-ID: <1304687129-23573-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Fri, 6 May 2011 09:05:37 -0400
+Date: Fri, 6 May 2011 18:35:32 +0530
+From: Prem Karat <prem.karat@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] 9p: Clean up get_protocol_version to use strcmp
+Message-ID: <20110506130531.GA9270@d6fc318.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+9p: Clean-up get_protocol_version() to use strcmp
 
-This splits out a per-SoC IRQ range handling, so that the
-DB8500 and DB5500 SoC:s can reuse aproximately the same IRQ
-range with the largest span setting the roof. The same change
-is done for the boards, mutatis mutandis, with a new file for
-the U5500 board.
-
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Prem Karat <prem.karat@linux.vnet.ibm.com>
 ---
- .../mach-ux500/include/mach/irqs-board-mop500.h    |    5 ++
- .../arm/mach-ux500/include/mach/irqs-board-u5500.h |   21 ++++++++
- arch/arm/mach-ux500/include/mach/irqs-db5500.h     |   27 ++++++++++
- arch/arm/mach-ux500/include/mach/irqs-db8500.h     |   54 ++++++++++++++++++++
- arch/arm/mach-ux500/include/mach/irqs.h            |   46 ++++++++---------
- 5 files changed, 129 insertions(+), 24 deletions(-)
- create mode 100644 arch/arm/mach-ux500/include/mach/irqs-board-u5500.h
+ include/net/9p/client.h    |    6 ++--
+ include/net/9p/transport.h |    2 +-
+ net/9p/client.c            |   47 ++++++++++++++++++++++++++++++-------------
+ net/9p/mod.c               |    4 +-
+ 4 files changed, 39 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h b/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h
-index 97ef55f..4796990 100644
---- a/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h
-+++ b/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h
-@@ -50,6 +50,11 @@
+diff --git a/include/net/9p/client.h b/include/net/9p/client.h
+index 051a99f..0415ba1 100644
+--- a/include/net/9p/client.h
++++ b/include/net/9p/client.h
+@@ -36,9 +36,9 @@
+  */
  
- #define MOP500_IRQ_END		MOP500_NR_IRQS
+ enum p9_proto_versions{
+-	p9_proto_legacy = 0,
+-	p9_proto_2000u = 1,
+-	p9_proto_2000L = 2,
++	p9_proto_legacy,
++	p9_proto_2000u,
++	p9_proto_2000L,
+ };
  
-+/*
-+ * We may have several boards, but only one will run at a
-+ * time, so the one with most IRQs will bump this ahead,
-+ * but the IRQ_BOARD_START remains the same for either board.
-+ */
- #if MOP500_IRQ_END > IRQ_BOARD_END
- #undef IRQ_BOARD_END
- #define IRQ_BOARD_END	MOP500_IRQ_END
-diff --git a/arch/arm/mach-ux500/include/mach/irqs-board-u5500.h b/arch/arm/mach-ux500/include/mach/irqs-board-u5500.h
-new file mode 100644
-index 0000000..29d972c
---- /dev/null
-+++ b/arch/arm/mach-ux500/include/mach/irqs-board-u5500.h
-@@ -0,0 +1,21 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#ifndef __MACH_IRQS_BOARD_U5500_H
-+#define __MACH_IRQS_BOARD_U5500_H
-+
-+#define AB5500_NR_IRQS		5
-+#define IRQ_AB5500_BASE		IRQ_BOARD_START
-+#define IRQ_AB5500_END		(IRQ_AB5500_BASE + AB5500_NR_IRQS)
-+
-+#define U5500_IRQ_END		IRQ_AB5500_END
-+
-+#if IRQ_BOARD_END < U5500_IRQ_END
-+#undef IRQ_BOARD_END
-+#define IRQ_BOARD_END		U5500_IRQ_END
-+#endif
-+
-+#endif
-diff --git a/arch/arm/mach-ux500/include/mach/irqs-db5500.h b/arch/arm/mach-ux500/include/mach/irqs-db5500.h
-index bfa123d..7723977 100644
---- a/arch/arm/mach-ux500/include/mach/irqs-db5500.h
-+++ b/arch/arm/mach-ux500/include/mach/irqs-db5500.h
-@@ -83,4 +83,31 @@
- #define IRQ_DB5500_GPIO6		(IRQ_SHPI_START + 125)
- #define IRQ_DB5500_GPIO7		(IRQ_SHPI_START + 126)
  
-+#ifdef CONFIG_UX500_SOC_DB5500
-+
-+/*
-+ * After the GPIO ones we reserve a range of IRQ:s in which virtual
-+ * IRQ:s representing modem IRQ:s can be allocated
-+ */
-+#define IRQ_MODEM_EVENTS_BASE	IRQ_SOC_START
-+#define IRQ_MODEM_EVENTS_NBR	72
-+#define IRQ_MODEM_EVENTS_END	(IRQ_MODEM_EVENTS_BASE + IRQ_MODEM_EVENTS_NBR)
-+
-+/* List of virtual IRQ:s that are allocated from the range above */
-+#define MBOX_PAIR0_VIRT_IRQ	(IRQ_MODEM_EVENTS_BASE + 43)
-+#define MBOX_PAIR1_VIRT_IRQ	(IRQ_MODEM_EVENTS_BASE + 45)
-+#define MBOX_PAIR2_VIRT_IRQ	(IRQ_MODEM_EVENTS_BASE + 41)
-+
-+/*
-+ * We may have several SoCs, but only one will run at a
-+ * time, so the one with most IRQs will bump this ahead,
-+ * but the IRQ_SOC_START remains the same for either SoC.
-+ */
-+#if IRQ_SOC_END < IRQ_MODEM_EVENTS_END
-+#undef IRQ_SOC_END
-+#define IRQ_SOC_END		IRQ_MODEM_EVENTS_END
-+#endif
-+
-+#endif /* CONFIG_UX500_SOC_DB5500 */
-+
- #endif
-diff --git a/arch/arm/mach-ux500/include/mach/irqs-db8500.h b/arch/arm/mach-ux500/include/mach/irqs-db8500.h
-index 8b5d9f0..68bc149 100644
---- a/arch/arm/mach-ux500/include/mach/irqs-db8500.h
-+++ b/arch/arm/mach-ux500/include/mach/irqs-db8500.h
-@@ -93,4 +93,58 @@
- #define IRQ_DB8500_GPIO7		(IRQ_SHPI_START + 126)
- #define IRQ_DB8500_GPIO8		(IRQ_SHPI_START + 127)
+diff --git a/include/net/9p/transport.h b/include/net/9p/transport.h
+index 8f08c73..d32b472 100644
+--- a/include/net/9p/transport.h
++++ b/include/net/9p/transport.h
+@@ -66,7 +66,7 @@ struct p9_trans_module {
  
-+#define IRQ_CA_WAKE_REQ_ED			(IRQ_SHPI_START + 71)
-+#define IRQ_AC_READ_NOTIFICATION_0_ED		(IRQ_SHPI_START + 66)
-+#define IRQ_AC_READ_NOTIFICATION_1_ED		(IRQ_SHPI_START + 64)
-+#define IRQ_CA_MSG_PEND_NOTIFICATION_0_ED	(IRQ_SHPI_START + 67)
-+#define IRQ_CA_MSG_PEND_NOTIFICATION_1_ED	(IRQ_SHPI_START + 65)
+ void v9fs_register_trans(struct p9_trans_module *m);
+ void v9fs_unregister_trans(struct p9_trans_module *m);
+-struct p9_trans_module *v9fs_get_trans_by_name(const substring_t *name);
++struct p9_trans_module *v9fs_get_trans_by_name(char *s);
+ struct p9_trans_module *v9fs_get_default_trans(void);
+ void v9fs_put_trans(struct p9_trans_module *m);
+ #endif /* NET_9P_TRANSPORT_H */
+diff --git a/net/9p/client.c b/net/9p/client.c
+index 7736774..4f51250 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -72,23 +72,22 @@ inline int p9_is_proto_dotu(struct p9_client *clnt)
+ EXPORT_SYMBOL(p9_is_proto_dotu);
+ 
+ /* Interpret mount option for protocol version */
+-static int get_protocol_version(const substring_t *name)
++static int get_protocol_version(char *s)
+ {
+ 	int version = -EINVAL;
+ 
+-	if (!strncmp("9p2000", name->from, name->to-name->from)) {
++	if (!strcmp(s, "9p2000")) {
+ 		version = p9_proto_legacy;
+ 		P9_DPRINTK(P9_DEBUG_9P, "Protocol version: Legacy\n");
+-	} else if (!strncmp("9p2000.u", name->from, name->to-name->from)) {
++	} else if (!strcmp(s, "9p2000.u")) {
+ 		version = p9_proto_2000u;
+ 		P9_DPRINTK(P9_DEBUG_9P, "Protocol version: 9P2000.u\n");
+-	} else if (!strncmp("9p2000.L", name->from, name->to-name->from)) {
++	} else if (!strcmp(s, "9p2000.L")) {
+ 		version = p9_proto_2000L;
+ 		P9_DPRINTK(P9_DEBUG_9P, "Protocol version: 9P2000.L\n");
+-	} else {
+-		P9_DPRINTK(P9_DEBUG_ERROR, "Unknown protocol version %s. ",
+-							name->from);
+-	}
++	} else
++		printk(KERN_INFO "9p: Unknown protocol version %s.\n", s);
 +
-+#define IRQ_CA_WAKE_REQ_V1			(IRQ_SHPI_START + 83)
-+#define IRQ_AC_READ_NOTIFICATION_0_V1		(IRQ_SHPI_START + 78)
-+#define IRQ_AC_READ_NOTIFICATION_1_V1		(IRQ_SHPI_START + 76)
-+#define IRQ_CA_MSG_PEND_NOTIFICATION_0_V1	(IRQ_SHPI_START + 79)
-+#define IRQ_CA_MSG_PEND_NOTIFICATION_1_V1	(IRQ_SHPI_START + 77)
-+
-+#ifdef CONFIG_UX500_SOC_DB8500
-+
-+/* Virtual interrupts corresponding to the PRCMU wakeups.  */
-+#define IRQ_PRCMU_BASE IRQ_SOC_START
-+#define NUM_PRCMU_WAKEUPS (IRQ_PRCMU_END - IRQ_PRCMU_BASE)
-+
-+#define IRQ_PRCMU_RTC (IRQ_PRCMU_BASE)
-+#define IRQ_PRCMU_RTT0 (IRQ_PRCMU_BASE + 1)
-+#define IRQ_PRCMU_RTT1 (IRQ_PRCMU_BASE + 2)
-+#define IRQ_PRCMU_HSI0 (IRQ_PRCMU_BASE + 3)
-+#define IRQ_PRCMU_HSI1 (IRQ_PRCMU_BASE + 4)
-+#define IRQ_PRCMU_CA_WAKE (IRQ_PRCMU_BASE + 5)
-+#define IRQ_PRCMU_USB (IRQ_PRCMU_BASE + 6)
-+#define IRQ_PRCMU_ABB (IRQ_PRCMU_BASE + 7)
-+#define IRQ_PRCMU_ABB_FIFO (IRQ_PRCMU_BASE + 8)
-+#define IRQ_PRCMU_ARM (IRQ_PRCMU_BASE + 9)
-+#define IRQ_PRCMU_MODEM_SW_RESET_REQ (IRQ_PRCMU_BASE + 10)
-+#define IRQ_PRCMU_GPIO0 (IRQ_PRCMU_BASE + 11)
-+#define IRQ_PRCMU_GPIO1 (IRQ_PRCMU_BASE + 12)
-+#define IRQ_PRCMU_GPIO2 (IRQ_PRCMU_BASE + 13)
-+#define IRQ_PRCMU_GPIO3 (IRQ_PRCMU_BASE + 14)
-+#define IRQ_PRCMU_GPIO4 (IRQ_PRCMU_BASE + 15)
-+#define IRQ_PRCMU_GPIO5 (IRQ_PRCMU_BASE + 16)
-+#define IRQ_PRCMU_GPIO6 (IRQ_PRCMU_BASE + 17)
-+#define IRQ_PRCMU_GPIO7 (IRQ_PRCMU_BASE + 18)
-+#define IRQ_PRCMU_GPIO8 (IRQ_PRCMU_BASE + 19)
-+#define IRQ_PRCMU_CA_SLEEP (IRQ_PRCMU_BASE + 20)
-+#define IRQ_PRCMU_HOTMON_LOW (IRQ_PRCMU_BASE + 21)
-+#define IRQ_PRCMU_HOTMON_HIGH (IRQ_PRCMU_BASE + 22)
-+#define IRQ_PRCMU_END (IRQ_PRCMU_BASE + 23)
-+
-+/*
-+ * We may have several SoCs, but only one will run at a
-+ * time, so the one with most IRQs will bump this ahead,
-+ * but the IRQ_SOC_START remains the same for either SoC.
-+ */
-+#if IRQ_SOC_END < IRQ_PRCMU_END
-+#undef IRQ_SOC_END
-+#define IRQ_SOC_END IRQ_PRCMU_END
-+#endif
-+
-+#endif /* CONFIG_UX500_SOC_DB8500 */
- #endif
-diff --git a/arch/arm/mach-ux500/include/mach/irqs.h b/arch/arm/mach-ux500/include/mach/irqs.h
-index ba1294c..9db68d2 100644
---- a/arch/arm/mach-ux500/include/mach/irqs.h
-+++ b/arch/arm/mach-ux500/include/mach/irqs.h
-@@ -10,49 +10,47 @@
- #ifndef ASM_ARCH_IRQS_H
- #define ASM_ARCH_IRQS_H
+ 	return version;
+ }
  
--#include <mach/irqs-db5500.h>
--#include <mach/irqs-db8500.h>
-+#include <mach/hardware.h>
+@@ -109,6 +108,7 @@ static int parse_opts(char *opts, struct p9_client *clnt)
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int option;
++	char *s;
+ 	int ret = 0;
  
--#define IRQ_LOCALTIMER                  29
--#define IRQ_LOCALWDOG                   30
-+#define IRQ_LOCALTIMER			29
-+#define IRQ_LOCALWDOG			30
+ 	clnt->proto_version = p9_proto_2000u;
+@@ -144,22 +144,41 @@ static int parse_opts(char *opts, struct p9_client *clnt)
+ 			clnt->msize = option;
+ 			break;
+ 		case Opt_trans:
+-			clnt->trans_mod = v9fs_get_trans_by_name(&args[0]);
+-			if(clnt->trans_mod == NULL) {
++			s = match_strdup(&args[0]);
++			if (!s) {
++				ret = -ENOMEM;
+ 				P9_DPRINTK(P9_DEBUG_ERROR,
+-				   "Could not find request transport: %s\n",
+-				   (char *) &args[0]);
++					"problem allocating copy of trans arg\n");
++				goto free_and_return;
++			 }
++			clnt->trans_mod = v9fs_get_trans_by_name(s);
++			if (clnt->trans_mod == NULL) {
++				printk(KERN_INFO
++					"9p: Could not find "
++					"request transport: %s\n", s);
+ 				ret = -EINVAL;
++				kfree(s);
+ 				goto free_and_return;
+ 			}
++			kfree(s);
+ 			break;
+ 		case Opt_legacy:
+ 			clnt->proto_version = p9_proto_legacy;
+ 			break;
+ 		case Opt_version:
+-			ret = get_protocol_version(&args[0]);
+-			if (ret == -EINVAL)
++			s = match_strdup(&args[0]);
++			if (!s) {
++				ret = -ENOMEM;
++				P9_DPRINTK(P9_DEBUG_ERROR,
++					"problem allocating copy of version arg\n");
++				goto free_and_return;
++			}
++			ret = get_protocol_version(s);
++			if (ret == -EINVAL) {
++				kfree(s);
+ 				goto free_and_return;
++			}
++			kfree(s);
+ 			clnt->proto_version = ret;
+ 			break;
+ 		default:
+diff --git a/net/9p/mod.c b/net/9p/mod.c
+index cf8a412..40b06ac 100644
+--- a/net/9p/mod.c
++++ b/net/9p/mod.c
+@@ -80,14 +80,14 @@ EXPORT_SYMBOL(v9fs_unregister_trans);
+  * @name: string identifying transport
+  *
+  */
+-struct p9_trans_module *v9fs_get_trans_by_name(const substring_t *name)
++struct p9_trans_module *v9fs_get_trans_by_name(char *s)
+ {
+ 	struct p9_trans_module *t, *found = NULL;
  
- /* Shared Peripheral Interrupt (SHPI) */
- #define IRQ_SHPI_START			32
+ 	spin_lock(&v9fs_trans_lock);
  
--/* Interrupt numbers generic for shared peripheral */
-+/*
-+ * MTU0 preserved for now until plat-nomadik is taught not to use it.  Don't
-+ * add any other IRQs here, use the irqs-dbx500.h files.
-+ */
- #define IRQ_MTU0		(IRQ_SHPI_START + 4)
- 
--/* There are 128 shared peripheral interrupts assigned to
-- * INTID[160:32]. The first 32 interrupts are reserved.
-- */
--#define DBX500_NR_INTERNAL_IRQS		161
-+#define DBX500_NR_INTERNAL_IRQS		160
- 
- /* After chip-specific IRQ numbers we have the GPIO ones */
- #define NOMADIK_NR_GPIO			288
- #define NOMADIK_GPIO_TO_IRQ(gpio)	((gpio) + DBX500_NR_INTERNAL_IRQS)
- #define NOMADIK_IRQ_TO_GPIO(irq)	((irq) - DBX500_NR_INTERNAL_IRQS)
--#define IRQ_BOARD_START			NOMADIK_GPIO_TO_IRQ(NOMADIK_NR_GPIO)
-+#define IRQ_GPIO_END			NOMADIK_GPIO_TO_IRQ(NOMADIK_NR_GPIO)
-+
-+#define IRQ_SOC_START		IRQ_GPIO_END
-+/* This will be overridden by SoC-specific irq headers */
-+#define IRQ_SOC_END		IRQ_SOC_START
- 
-+#include <mach/irqs-db5500.h>
-+#include <mach/irqs-db8500.h>
-+
-+#define IRQ_BOARD_START		IRQ_SOC_END
- /* This will be overridden by board-specific irq headers */
--#define IRQ_BOARD_END			IRQ_BOARD_START
-+#define IRQ_BOARD_END		IRQ_BOARD_START
- 
- #ifdef CONFIG_MACH_U8500
- #include <mach/irqs-board-mop500.h>
- #endif
- 
--/*
-- * After the board specific IRQ:s we reserve a range of IRQ:s in which virtual
-- * IRQ:s representing modem IRQ:s can be allocated
-- */
--#define IRQ_MODEM_EVENTS_BASE (IRQ_BOARD_END + 1)
--#define IRQ_MODEM_EVENTS_NBR 72
--#define IRQ_MODEM_EVENTS_END (IRQ_MODEM_EVENTS_BASE + IRQ_MODEM_EVENTS_NBR)
--
--/* List of virtual IRQ:s that are allocated from the range above */
--#define MBOX_PAIR0_VIRT_IRQ (IRQ_MODEM_EVENTS_BASE + 43)
--#define MBOX_PAIR1_VIRT_IRQ (IRQ_MODEM_EVENTS_BASE + 45)
--#define MBOX_PAIR2_VIRT_IRQ (IRQ_MODEM_EVENTS_BASE + 41)
-+#ifdef CONFIG_MACH_U5500
-+#include <mach/irqs-board-u5500.h>
-+#endif
- 
--#define NR_IRQS				IRQ_MODEM_EVENTS_END
-+#define NR_IRQS			IRQ_BOARD_END
- 
- #endif /* ASM_ARCH_IRQS_H */
+ 	list_for_each_entry(t, &v9fs_trans_list, list)
+-		if (strncmp(t->name, name->from, name->to-name->from) == 0 &&
++		if (strcmp(t->name, s) == 0 &&
+ 		    try_module_get(t->owner)) {
+ 			found = t;
+ 			break;
 -- 
-1.7.3.2
+1.7.4
 
+-- 
+Cheers,
+Prem
+Linux Technology Center,
+IBM Systems & Technology Labs
