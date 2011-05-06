@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab1EFPdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 11:33:46 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:53310 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752463Ab1EFPdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 11:33:45 -0400
-Date: Fri, 6 May 2011 10:33:44 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: poll waiting for I/OAT DMA channel status
-Message-ID: <20110506153344.GA16977@sgi.com>
+	id S1755831Ab1EFPfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 11:35:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37906 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752140Ab1EFPfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 11:35:31 -0400
+Message-ID: <4DC4153E.5020304@suse.com>
+Date: Fri, 06 May 2011 11:35:26 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@google.com>
+Subject: [PATCH] softlockup: re-increase hung tasks check from 2 minutes to
+ 8 minutes
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For certain system configurations a 5 usec udelay before checking I/OAT DMA
-channel status is sometimes not sufficient, resulting in a false failure
-status and unnecessary freeing of channel resources.  Conversely, for many
-configurations 5 usec is longer than necessary.
+ Commit e162b39a, which moved the soft lockup code around a bit,
+ accidentally reverted commit fb822db4, which extended the soft lockup
+ timeout from 2 minutes to 8 minutes.
 
-Loop for up to 20 usec waiting for successful status before failing.
+ This patch restores it to 8 minutes.
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-___
+ From the original patch:
+ >Andrew says:
+ >
+ >> Seems that about 100% of the reports we get of this warning triggering
+ >> are sys_sync, transaction commit, etc.
+ >
+ >increase the timeout. If it still triggers for people, we can kill it.
 
- drivers/dma/ioat/dma_v2.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Originally-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
 
-Index: linux/drivers/dma/ioat/dma_v2.c
-===================================================================
---- linux.orig/drivers/dma/ioat/dma_v2.c
-+++ linux/drivers/dma/ioat/dma_v2.c
-@@ -507,6 +507,7 @@ int ioat2_alloc_chan_resources(struct dm
- 	struct ioat_ring_ent **ring;
- 	u64 status;
- 	int order;
-+	int i = 0;
+ kernel/hung_task.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -33,7 +33,7 @@ unsigned long __read_mostly sysctl_hung_
+ /*
+  * Zero means infinite timeout - no checking done:
+  */
+-unsigned long __read_mostly sysctl_hung_task_timeout_secs = 120;
++unsigned long __read_mostly sysctl_hung_task_timeout_secs = 480;
  
- 	/* have we already been set up? */
- 	if (ioat->ring)
-@@ -547,8 +548,11 @@ int ioat2_alloc_chan_resources(struct dm
- 	ioat2_start_null_desc(ioat);
+ unsigned long __read_mostly sysctl_hung_task_warnings = 10;
  
- 	/* check that we got off the ground */
--	udelay(5);
--	status = ioat_chansts(chan);
-+	do {
-+		udelay(1);
-+		status = ioat_chansts(chan);
-+	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
-+
- 	if (is_ioat_active(status) || is_ioat_idle(status)) {
- 		set_bit(IOAT_RUN, &chan->state);
- 		return 1 << ioat->alloc_order;
+-- 
+Jeff Mahoney
+SUSE Labs
