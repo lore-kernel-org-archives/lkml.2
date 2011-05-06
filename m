@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab1EFNGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:06:00 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:47579 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932096Ab1EFNF5 (ORCPT
+	id S1756336Ab1EFN2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:28:51 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:46498 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756168Ab1EFN2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:05:57 -0400
+	Fri, 6 May 2011 09:28:49 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 05/10] mach-ux500: rename PRCMU driver per SoC
-Date: Fri, 6 May 2011 15:05:48 +0200
-Message-ID: <1304687148-23647-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 06/10] mach-ux500: make PRCMU base address dynamic
+Date: Fri, 6 May 2011 15:05:56 +0200
+Message-ID: <1304687156-23680-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,33 +22,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-This renames the prcmu.c file to prcmu-db8500.c so as to indicate
-that it is for this one SoC.
+This makes the PRCMU base address be selected at runtime for U8500
+and U5500 instead of being compiled-in.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-ux500/Makefile                    |    2 +-
- arch/arm/mach-ux500/{prcmu.c => prcmu-db8500.c} |    0
- 2 files changed, 1 insertions(+), 1 deletions(-)
- rename arch/arm/mach-ux500/{prcmu.c => prcmu-db8500.c} (100%)
+ arch/arm/mach-ux500/cpu-db5500.c              |    2 ++
+ arch/arm/mach-ux500/cpu-db8500.c              |    2 ++
+ arch/arm/mach-ux500/cpu.c                     |    2 ++
+ arch/arm/mach-ux500/include/mach/hardware.h   |    1 +
+ arch/arm/mach-ux500/include/mach/prcmu-regs.h |    2 --
+ 5 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
-index b549a8f..2a08a10 100644
---- a/arch/arm/mach-ux500/Makefile
-+++ b/arch/arm/mach-ux500/Makefile
-@@ -5,7 +5,7 @@
- obj-y				:= clock.o cpu.o devices.o devices-common.o \
- 				   id.o usb.o
- obj-$(CONFIG_UX500_SOC_DB5500)	+= cpu-db5500.o dma-db5500.o
--obj-$(CONFIG_UX500_SOC_DB8500)	+= cpu-db8500.o devices-db8500.o prcmu.o
-+obj-$(CONFIG_UX500_SOC_DB8500)	+= cpu-db8500.o devices-db8500.o prcmu-db8500.o
- obj-$(CONFIG_MACH_U8500)	+= board-mop500.o board-mop500-sdi.o \
- 				board-mop500-regulators.o \
- 				board-mop500-uib.o board-mop500-stuib.o \
-diff --git a/arch/arm/mach-ux500/prcmu.c b/arch/arm/mach-ux500/prcmu-db8500.c
-similarity index 100%
-rename from arch/arm/mach-ux500/prcmu.c
-rename to arch/arm/mach-ux500/prcmu-db8500.c
+diff --git a/arch/arm/mach-ux500/cpu-db5500.c b/arch/arm/mach-ux500/cpu-db5500.c
+index b227ce8..c51da69 100644
+--- a/arch/arm/mach-ux500/cpu-db5500.c
++++ b/arch/arm/mach-ux500/cpu-db5500.c
+@@ -187,6 +187,8 @@ void __init u5500_map_io(void)
+ 	ux500_map_io();
+ 
+ 	iotable_init(u5500_io_desc, ARRAY_SIZE(u5500_io_desc));
++
++	_PRCMU_BASE = __io_address(U5500_PRCMU_BASE);
+ }
+ 
+ static int usb_db5500_rx_dma_cfg[] = {
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 69b4f00..8d5e99f 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -87,6 +87,8 @@ void __init u8500_map_io(void)
+ 		iotable_init(u8500_v1_io_desc, ARRAY_SIZE(u8500_v1_io_desc));
+ 	else if (cpu_is_u8500v2())
+ 		iotable_init(u8500_v2_io_desc, ARRAY_SIZE(u8500_v2_io_desc));
++
++	_PRCMU_BASE = __io_address(U8500_PRCMU_BASE);
+ }
+ 
+ static struct resource db8500_pmu_resources[] = {
+diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
+index 5a43107..0190e0e 100644
+--- a/arch/arm/mach-ux500/cpu.c
++++ b/arch/arm/mach-ux500/cpu.c
+@@ -23,6 +23,8 @@
+ 
+ #include "clock.h"
+ 
++void __iomem *_PRCMU_BASE;
++
+ #ifdef CONFIG_CACHE_L2X0
+ static void __iomem *l2x0_base;
+ #endif
+diff --git a/arch/arm/mach-ux500/include/mach/hardware.h b/arch/arm/mach-ux500/include/mach/hardware.h
+index bf63f26..2c6f710 100644
+--- a/arch/arm/mach-ux500/include/mach/hardware.h
++++ b/arch/arm/mach-ux500/include/mach/hardware.h
+@@ -35,6 +35,7 @@
+ #ifndef __ASSEMBLY__
+ 
+ #include <mach/id.h>
++extern void __iomem *_PRCMU_BASE;
+ 
+ #define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
+ 
+diff --git a/arch/arm/mach-ux500/include/mach/prcmu-regs.h b/arch/arm/mach-ux500/include/mach/prcmu-regs.h
+index 455467e..c1226da 100644
+--- a/arch/arm/mach-ux500/include/mach/prcmu-regs.h
++++ b/arch/arm/mach-ux500/include/mach/prcmu-regs.h
+@@ -15,8 +15,6 @@
+ 
+ #include <mach/hardware.h>
+ 
+-#define _PRCMU_BASE		IO_ADDRESS(U8500_PRCMU_BASE)
+-
+ #define PRCM_ARM_PLLDIVPS	(_PRCMU_BASE + 0x118)
+ #define PRCM_ARM_CHGCLKREQ	(_PRCMU_BASE + 0x114)
+ #define PRCM_PLLARM_ENABLE	(_PRCMU_BASE + 0x98)
 -- 
 1.7.3.2
 
