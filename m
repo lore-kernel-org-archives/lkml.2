@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab1EFANR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:17 -0400
-Received: from kroah.org ([198.145.64.141]:32787 "EHLO coco.kroah.org"
+	id S1754565Ab1EFANT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:13:19 -0400
+Received: from kroah.org ([198.145.64.141]:32795 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753150Ab1EFANN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:13 -0400
+	id S1754232Ab1EFANO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:14 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:07 2011
-Message-Id: <20110506001207.759379119@clark.kroah.org>
+Message-Id: <20110506001207.874116832@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:37 -0700
+Date: Thu, 05 May 2011 17:10:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [patch 05/38] ALSA: HDA: Fix automute for Gateway NV79
+Subject: [patch 06/38] Revert "ALSA: hda - Fix pin-config of Gigabyte mobo"
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 94024cd1aefa0f8bcc9dfe46c05bd7ce3f471a1c upstream.
+commit ebb47241ea0eac6a5a23404821a2d62f64c68496 upstream.
 
-The PCI SSID is 1025:031c and the codec SSID is 1025:031d,
-so the driver mistakes this for a SKU value, but looking at
-the numbers, this is obviously wrong.
+This reverts commit c6b358748e19ce7e230b0926ac42696bc485a562.
 
-BugLink: http://bugs.launchpad.net/bugs/761861
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+It turned out that there are different pin configurations for this
+PCI SSID, including multi-channel modes.  And more proper fix for
+allowing line-out mutes will come up in 2.6.40 tree, so we won't need
+this fixup any more there.
+
+Reported-by: Andrew Clayton <andrew@digital-domain.net>
+Reported-by: Emmanuel Benisty <benisty.e@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ sound/pci/hda/patch_realtek.c |   21 +++------------------
+ 1 file changed, 3 insertions(+), 18 deletions(-)
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -19556,6 +19556,7 @@ enum {
+@@ -9932,6 +9932,7 @@ static struct snd_pci_quirk alc882_cfg_t
+ 	SND_PCI_QUIRK(0x1071, 0x8258, "Evesham Voyaeger", ALC883_LAPTOP_EAPD),
+ 	SND_PCI_QUIRK(0x10f1, 0x2350, "TYAN-S2350", ALC888_6ST_DELL),
+ 	SND_PCI_QUIRK(0x108e, 0x534d, NULL, ALC883_3ST_6ch),
++	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte P35 DS3R", ALC882_6ST_DIG),
+ 
+ 	SND_PCI_QUIRK(0x1462, 0x0349, "MSI", ALC883_TARGA_2ch_DIG),
+ 	SND_PCI_QUIRK(0x1462, 0x040d, "MSI", ALC883_TARGA_2ch_DIG),
+@@ -10768,7 +10769,6 @@ enum {
+ 	PINFIX_LENOVO_Y530,
+ 	PINFIX_PB_M5210,
+ 	PINFIX_ACER_ASPIRE_7736,
+-	PINFIX_GIGABYTE_880GM,
+ };
+ 
+ static const struct alc_fixup alc882_fixups[] = {
+@@ -10800,13 +10800,6 @@ static const struct alc_fixup alc882_fix
+ 		.type = ALC_FIXUP_SKU,
+ 		.v.sku = ALC_FIXUP_SKU_IGNORE,
+ 	},
+-	[PINFIX_GIGABYTE_880GM] = {
+-		.type = ALC_FIXUP_PINS,
+-		.v.pins = (const struct alc_pincfg[]) {
+-			{ 0x14, 0x1114410 }, /* set as speaker */
+-			{ }
+-		}
+-	},
+ };
+ 
+ static struct snd_pci_quirk alc882_fixup_tbl[] = {
+@@ -10814,7 +10807,6 @@ static struct snd_pci_quirk alc882_fixup
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Y530", PINFIX_LENOVO_Y530),
+ 	SND_PCI_QUIRK(0x147b, 0x107a, "Abit AW9D-MAX", PINFIX_ABIT_AW9D_MAX),
+ 	SND_PCI_QUIRK(0x1025, 0x0296, "Acer Aspire 7736z", PINFIX_ACER_ASPIRE_7736),
+-	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte", PINFIX_GIGABYTE_880GM),
+ 	{}
+ };
+ 
+@@ -18882,6 +18874,8 @@ static struct snd_pci_quirk alc662_cfg_t
+ 		      ALC662_3ST_6ch_DIG),
+ 	SND_PCI_QUIRK(0x1179, 0xff6e, "Toshiba NB20x", ALC662_AUTO),
+ 	SND_PCI_QUIRK(0x144d, 0xca00, "Samsung NC10", ALC272_SAMSUNG_NC10),
++	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte 945GCM-S2L",
++		      ALC662_3ST_6ch_DIG),
+ 	SND_PCI_QUIRK(0x152d, 0x2304, "Quanta WH1", ALC663_ASUS_H13),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar TA780G M2+", ALC662_3ST_6ch_DIG),
+ 	SND_PCI_QUIRK(0x1631, 0xc10c, "PB RS65", ALC663_ASUS_M51VA),
+@@ -19555,7 +19549,6 @@ enum {
+ 	ALC662_FIXUP_IDEAPAD,
  	ALC272_FIXUP_MARIO,
  	ALC662_FIXUP_CZC_P10T,
- 	ALC662_FIXUP_GIGABYTE,
-+	ALC662_FIXUP_SKU_IGNORE,
+-	ALC662_FIXUP_GIGABYTE,
+ 	ALC662_FIXUP_SKU_IGNORE,
  };
  
- static const struct alc_fixup alc662_fixups[] = {
-@@ -19591,10 +19592,15 @@ static const struct alc_fixup alc662_fix
- 			{ }
+@@ -19585,13 +19578,6 @@ static const struct alc_fixup alc662_fix
+ 			{}
  		}
  	},
-+	[ALC662_FIXUP_SKU_IGNORE] = {
-+		.type = ALC_FIXUP_SKU,
-+		.v.sku = ALC_FIXUP_SKU_IGNORE,
-+	},
- };
- 
- static struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x0308, "Acer Aspire 8942G", ALC662_FIXUP_ASPIRE),
-+	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
+-	[ALC662_FIXUP_GIGABYTE] = {
+-		.type = ALC_FIXUP_PINS,
+-		.v.pins = (const struct alc_pincfg[]) {
+-			{ 0x14, 0x1114410 }, /* set as speaker */
+-			{ }
+-		}
+-	},
+ 	[ALC662_FIXUP_SKU_IGNORE] = {
+ 		.type = ALC_FIXUP_SKU,
+ 		.v.sku = ALC_FIXUP_SKU_IGNORE,
+@@ -19603,7 +19589,6 @@ static struct snd_pci_quirk alc662_fixup
+ 	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
  	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
  	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte", ALC662_FIXUP_GIGABYTE),
+-	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte", ALC662_FIXUP_GIGABYTE),
+ 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
 
 
