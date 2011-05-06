@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab1EFAZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:25:01 -0400
-Received: from kroah.org ([198.145.64.141]:36811 "EHLO coco.kroah.org"
+	id S932295Ab1EFAxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:53:48 -0400
+Received: from kroah.org ([198.145.64.141]:36814 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab1EFAY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:57 -0400
+	id S932230Ab1EFAY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:58 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:11 2011
-Message-Id: <20110506002210.980892583@clark.kroah.org>
+Message-Id: <20110506002211.085208403@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:44 -0700
+Date: Thu, 05 May 2011 17:20:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [059/143] Staging: rtl8192su: Fix procfs code for interfaces not named wlan0
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>
+Subject: [060/143] Staging: rtl8192su: remove device ids
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,106 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Florian Schilhabel <florian.c.schilhabel@googlemail.com>
 
-commit 41a38d9e632f7c9ec5ad8fc627567d97f4302c4a upstream.
+commit 60b42de30ad6fb131dc8e9dbd11a8a9ea0ab394c upstream.
 
-The current code creates directories in procfs named after interfaces,
-but doesn't handle renaming.  This can result in name collisions and
-consequent WARNINGs.  It also means that the interface name cannot
-reliably be used to remove the directory - in fact the current code
-doesn't even try, and always uses "wlan0"!
+This patch removes some device-ids.
+The list of unsupported devices was extracted from realteks driver package.
+removed IDs are:
+(0x0bda, 0x8192)
+(0x0bda, 0x8709)
+(0x07aa, 0x0043)
+(0x050d, 0x805E)
+(0x0df6, 0x0031)
+(0x1740, 0x9201)
+(0x2001, 0x3301)
+(0x5a57, 0x0290)
+These devices are _not_ rtl819su based.
 
-Since the name of a proc_dir_entry is embedded in it, use that when
-removing it.
-
-Add a netdev notifier to catch interface renaming, and remove and
-re-add the directory at this point.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Florian Schilhabel <florian.c.schilhabel@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/staging/rtl8192su/r8192U_core.c |   35 +++++++++++++++++++++++++++++---
- 1 file changed, 32 insertions(+), 3 deletions(-)
+ drivers/staging/rtl8192su/r8192U_core.c |   14 --------------
+ 1 file changed, 14 deletions(-)
 
 --- a/drivers/staging/rtl8192su/r8192U_core.c
 +++ b/drivers/staging/rtl8192su/r8192U_core.c
-@@ -25,6 +25,7 @@
-  */
- 
- #include <linux/vmalloc.h>
-+#include <linux/notifier.h>
- 
- #undef LOOP_TEST
- #undef DUMP_RX
-@@ -160,6 +161,8 @@ MODULE_PARM_DESC(channels," Channel bitm
- static int __devinit rtl8192_usb_probe(struct usb_interface *intf,
- 			 const struct usb_device_id *id);
- static void __devexit rtl8192_usb_disconnect(struct usb_interface *intf);
-+static const struct net_device_ops rtl8192_netdev_ops;
-+static struct notifier_block proc_netdev_notifier;
- 
- static struct usb_driver rtl8192_usb_driver = {
- 	.name		= RTL819xU_MODULE_NAME,	          /* Driver name   */
-@@ -961,14 +964,22 @@ static int proc_get_stats_rx(char *page,
- 
- int rtl8192_proc_module_init(void)
- {
-+	int ret;
-+
- 	RT_TRACE(COMP_INIT, "Initializing proc filesystem");
- 	rtl8192_proc=create_proc_entry(RTL819xU_MODULE_NAME, S_IFDIR, init_net.proc_net);
--	return rtl8192_proc ? 0 : -ENOMEM;
-+	if (!rtl8192_proc)
-+		return -ENOMEM;
-+	ret = register_netdevice_notifier(&proc_netdev_notifier);
-+	if (ret)
-+		remove_proc_entry(RTL819xU_MODULE_NAME, init_net.proc_net);
-+	return ret;
- }
- 
- 
- void rtl8192_proc_module_remove(void)
- {
-+	unregister_netdevice_notifier(&proc_netdev_notifier);
- 	remove_proc_entry(RTL819xU_MODULE_NAME, init_net.proc_net);
- }
- 
-@@ -996,8 +1007,7 @@ void rtl8192_proc_remove_one(struct net_
- 		remove_proc_entry("registers-e", priv->dir_dev);
- 	//	remove_proc_entry("cck-registers",priv->dir_dev);
- 	//	remove_proc_entry("ofdm-registers",priv->dir_dev);
--		//remove_proc_entry(dev->name, rtl8192_proc);
--		remove_proc_entry("wlan0", rtl8192_proc);
-+		remove_proc_entry(priv->dir_dev->name, rtl8192_proc);
- 		priv->dir_dev = NULL;
- 	}
- }
-@@ -1114,6 +1124,25 @@ void rtl8192_proc_init_one(struct net_de
- 		      dev->name);
- 	}
- }
-+
-+static int proc_netdev_event(struct notifier_block *this,
-+			     unsigned long event, void *ptr)
-+{
-+	struct net_device *net_dev = ptr;
-+
-+	if (net_dev->netdev_ops == &rtl8192_netdev_ops &&
-+	    event == NETDEV_CHANGENAME) {
-+		rtl8192_proc_remove_one(net_dev);
-+		rtl8192_proc_init_one(net_dev);
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block proc_netdev_notifier = {
-+	.notifier_call = proc_netdev_event,
-+};
-+
- /****************************************************************************
-    -----------------------------MISC STUFF-------------------------
- *****************************************************************************/
+@@ -114,22 +114,8 @@ u32 rt_global_debug_component = \
+ static struct usb_device_id rtl8192_usb_id_tbl[] = {
+ 	/* Realtek */
+ 	{USB_DEVICE(0x0bda, 0x8171)},
+-	{USB_DEVICE(0x0bda, 0x8192)},
+-	{USB_DEVICE(0x0bda, 0x8709)},
+-	/* Corega */
+-	{USB_DEVICE(0x07aa, 0x0043)},
+-	/* Belkin */
+-	{USB_DEVICE(0x050d, 0x805E)},
+ 	{USB_DEVICE(0x050d, 0x815F)}, /* Belkin F5D8053 v6 */
+-	/* Sitecom */
+-	{USB_DEVICE(0x0df6, 0x0031)},
+ 	{USB_DEVICE(0x0df6, 0x004b)},	/* WL-349 */
+-	/* EnGenius */
+-	{USB_DEVICE(0x1740, 0x9201)},
+-	/* Dlink */
+-	{USB_DEVICE(0x2001, 0x3301)},
+-	/* Zinwell */
+-	{USB_DEVICE(0x5a57, 0x0290)},
+ 	/* Guillemot */
+ 	{USB_DEVICE(0x06f8, 0xe031)},
+ 	//92SU
 
 
