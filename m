@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab1EFVba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:31:30 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:54601 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932883Ab1EFVb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:31:29 -0400
-Message-ID: <4DC468AD.70202@candelatech.com>
-Date: Fri, 06 May 2011 14:31:25 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: repeatable 2.6.39-rc6+ lockup on Via C3 system
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755782Ab1EFVmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:42:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15391 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932906Ab1EFVlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 17:41:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,328,1301900400"; 
+   d="scan'208";a="743486011"
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: RFC: Lower broadcast timer idle path lock contention
+Date: Fri,  6 May 2011 14:40:52 -0700
+Message-Id: <1304718056-20206-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a reproducible lockup on a Via C3 board (with kernel compiled for C3).
+This patchkit implements some ideas discussed in the earlier thread
+to lower the lock contention of the broadcast state idle path:
 
-This kernel has some wireless patches and the slub fix from a few days ago.
+- Do check for good C3 timer outside the lock
+[Already in tip, but I'm including it to have a full patchkit]
+- Change the global bitmask to avoid false sharing
+- Exploit that thread siblings keep the timer alive
+[This patch is unfortunately quite hairy and needs very indepth review]
+This uses a lock, but only a local one for a core.
+- Only take the global lock when the timeout of the broadcast device
+is set earlier.
 
-Same kernel (compiled for P-II, SMP, pre-empt) works fine on an Atom system.
+Longer term the global lock likely still needs to be eliminated, but 
+this at least makes it less pressing.
 
-Shortly after the login prompt I see this on serial console:
+Comments/testing welcome. I didn't do a lot of scalability testing so far,
+just ran a stress tester to make sure I didn't miss some case.
 
-BUG: spinlock lockup on CPU#0, net.hotplug/1899, f5a2c470
-
-I tried enabling lockdep and saw no splats.
-
-I'm not sure why there isn't more of a backtrace...
-
-Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+-Andi
 
