@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1EFK5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 06:57:48 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:39603 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755296Ab1EFKy0 (ORCPT
+	id S932378Ab1EFK5b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 06:57:31 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:42901 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755257Ab1EFKy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 06:54:26 -0400
+	Fri, 6 May 2011 06:54:27 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 03/16] staging: usbip: stub_rx.c: coding style cleanup
-Date: Fri,  6 May 2011 03:47:43 -0700
-Message-Id: <c87d8af709e5d944af453af821f2d230545e04ac.1304676742.git.mfm@muteddisk.com>
+Subject: [PATCH 04/16] staging: usbip: stub_tx.c: coding style cleanup
+Date: Fri,  6 May 2011 03:47:44 -0700
+Message-Id: <1b65ea26f5738445f69669e55d57b3cc6c88497a.1304676742.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1304676742.git.mfm@muteddisk.com>
 References: <cover.1304676742.git.mfm@muteddisk.com>
@@ -20,222 +20,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix alignment for consistency and remove extraneous lines.
+Fix alignment for consistency, checkpatch.pl warnings for lines
+over 80 characters, remove extraneous lines, and change conversion
+specifier within a format string to remove warning.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/staging/usbip/stub_rx.c |   50 ++++++++++++++++----------------------
- 1 files changed, 21 insertions(+), 29 deletions(-)
+ drivers/staging/usbip/stub_tx.c |   56 ++++++++++++++++-----------------------
+ 1 files changed, 23 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
-index 51fbd09..ac4dd4d 100644
---- a/drivers/staging/usbip/stub_rx.c
-+++ b/drivers/staging/usbip/stub_rx.c
-@@ -24,7 +24,6 @@
+diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
+index 64a52b2..bbf207d 100644
+--- a/drivers/staging/usbip/stub_tx.c
++++ b/drivers/staging/usbip/stub_tx.c
+@@ -23,7 +23,6 @@
+ #include "usbip_common.h"
  #include "stub.h"
- #include <linux/usb/hcd.h>
  
 -
- static int is_clear_halt_cmd(struct urb *urb)
+ static void stub_free_priv_and_urb(struct stub_priv *priv)
  {
- 	struct usb_ctrlrequest *req;
-@@ -43,7 +42,7 @@ static int is_set_interface_cmd(struct urb *urb)
- 	req = (struct usb_ctrlrequest *) urb->setup_packet;
+ 	struct urb *urb = priv->urb;
+@@ -71,28 +70,27 @@ void stub_complete(struct urb *urb)
  
- 	return (req->bRequest == USB_REQ_SET_INTERFACE) &&
--		   (req->bRequestType == USB_RECIP_INTERFACE);
-+		(req->bRequestType == USB_RECIP_INTERFACE);
- }
+ 	usbip_dbg_stub_tx("complete! status %d\n", urb->status);
  
- static int is_set_configuration_cmd(struct urb *urb)
-@@ -53,7 +52,7 @@ static int is_set_configuration_cmd(struct urb *urb)
- 	req = (struct usb_ctrlrequest *) urb->setup_packet;
+-
+ 	switch (urb->status) {
+ 	case 0:
+ 		/* OK */
+ 		break;
+ 	case -ENOENT:
+ 		usbip_uinfo("stopped by a call of usb_kill_urb() because of"
+-					"cleaning up a virtual connection\n");
++			    "cleaning up a virtual connection\n");
+ 		return;
+ 	case -ECONNRESET:
+ 		usbip_uinfo("unlinked by a call of usb_unlink_urb()\n");
+ 		break;
+ 	case -EPIPE:
+ 		usbip_uinfo("endpoint %d is stalled\n",
+-						usb_pipeendpoint(urb->pipe));
++			    usb_pipeendpoint(urb->pipe));
+ 		break;
+ 	case -ESHUTDOWN:
+ 		usbip_uinfo("device removed?\n");
+ 		break;
+ 	default:
+ 		usbip_uinfo("urb completion with non-zero status %d\n",
+-							urb->status);
++			    urb->status);
+ 	}
  
- 	return (req->bRequest == USB_REQ_SET_CONFIGURATION) &&
--		   (req->bRequestType == USB_RECIP_DEVICE);
-+		(req->bRequestType == USB_RECIP_DEVICE);
- }
- 
- static int is_reset_device_cmd(struct urb *urb)
-@@ -67,8 +66,8 @@ static int is_reset_device_cmd(struct urb *urb)
- 	index = le16_to_cpu(req->wIndex);
- 
- 	if ((req->bRequest == USB_REQ_SET_FEATURE) &&
--			(req->bRequestType == USB_RT_PORT) &&
--			(value == USB_PORT_FEAT_RESET)) {
-+	    (req->bRequestType == USB_RT_PORT) &&
-+	    (value == USB_PORT_FEAT_RESET)) {
- 		usbip_dbg_stub_rx("reset_device_cmd, port %u\n", index);
- 		return 1;
+ 	/* link a urb to the queue of tx. */
+@@ -104,25 +102,23 @@ void stub_complete(struct urb *urb)
  	} else
-@@ -103,10 +102,10 @@ static int tweak_clear_halt_cmd(struct urb *urb)
- 	ret = usb_clear_halt(urb->dev, target_pipe);
- 	if (ret < 0)
- 		usbip_uinfo("clear_halt error: devnum %d endp %d, %d\n",
--					urb->dev->devnum, target_endp, ret);
-+			    urb->dev->devnum, target_endp, ret);
- 	else
- 		usbip_uinfo("clear_halt done: devnum %d endp %d\n",
--					urb->dev->devnum, target_endp);
-+			    urb->dev->devnum, target_endp);
+ 		list_move_tail(&priv->list, &sdev->priv_tx);
  
- 	return ret;
+-
+ 	spin_unlock_irqrestore(&sdev->priv_lock, flags);
+ 
+ 	/* wake up tx_thread */
+ 	wake_up(&sdev->tx_waitq);
  }
-@@ -122,17 +121,16 @@ static int tweak_set_interface_cmd(struct urb *urb)
- 	alternate = le16_to_cpu(req->wValue);
- 	interface = le16_to_cpu(req->wIndex);
  
--	usbip_dbg_stub_rx("set_interface: inf %u alt %u\n", interface,
--								alternate);
-+	usbip_dbg_stub_rx("set_interface: inf %u alt %u\n",
-+			  interface, alternate);
+-
+ /*-------------------------------------------------------------------------*/
+ /* fill PDU */
  
- 	ret = usb_set_interface(urb->dev, interface, alternate);
- 	if (ret < 0)
- 		usbip_uinfo("set_interface error: inf %u alt %u, %d\n",
--					interface, alternate, ret);
-+			    interface, alternate, ret);
- 	else
- 		usbip_uinfo("set_interface done: inf %u alt %u\n",
--							interface,
--							alternate);
-+			    interface, alternate);
- 
- 	return ret;
+ static inline void setup_base_pdu(struct usbip_header_basic *base,
+-		__u32 command, __u32 seqnum)
++				  __u32 command, __u32 seqnum)
+ {
+ 	base->command = command;
+ 	base->seqnum  = seqnum;
+ 	base->devid   = 0;
+ 	base->ep      = 0;
+-	base->direction   = 0;
++	base->direction = 0;
  }
-@@ -161,8 +159,8 @@ static int tweak_set_configuration_cmd(struct urb *urb)
- 	 * A user may need to set a special configuration value before
- 	 * exporting the device.
- 	 */
--	usbip_uinfo("set_configuration (%d) to %s\n", config,
--						dev_name(&urb->dev->dev));
-+	usbip_uinfo("set_configuration %d to %s\n",
-+		    config, dev_name(&urb->dev->dev));
- 	usbip_uinfo("but, skip!\n");
  
- 	return 0;
-@@ -228,13 +226,12 @@ static void tweak_special_requests(struct urb *urb)
-  * See also comments about unlinking strategy in vhci_hcd.c.
-  */
- static int stub_recv_cmd_unlink(struct stub_device *sdev,
--						struct usbip_header *pdu)
-+				struct usbip_header *pdu)
+ static void setup_ret_submit_pdu(struct usbip_header *rpdu, struct urb *urb)
+@@ -130,19 +126,16 @@ static void setup_ret_submit_pdu(struct usbip_header *rpdu, struct urb *urb)
+ 	struct stub_priv *priv = (struct stub_priv *) urb->context;
+ 
+ 	setup_base_pdu(&rpdu->base, USBIP_RET_SUBMIT, priv->seqnum);
+-
+ 	usbip_pack_pdu(rpdu, urb, USBIP_RET_SUBMIT, 1);
+ }
+ 
+ static void setup_ret_unlink_pdu(struct usbip_header *rpdu,
+-		struct stub_unlink *unlink)
++				 struct stub_unlink *unlink)
+ {
+ 	setup_base_pdu(&rpdu->base, USBIP_RET_UNLINK, unlink->seqnum);
+-
+ 	rpdu->u.ret_unlink.status = unlink->status;
+ }
+ 
+-
+ /*-------------------------------------------------------------------------*/
+ /* send RET_SUBMIT */
+ 
+@@ -203,7 +196,7 @@ static int stub_send_ret_submit(struct stub_device *sdev)
+ 		/* 1. setup usbip_header */
+ 		setup_ret_submit_pdu(&pdu_header, urb);
+ 		usbip_dbg_stub_tx("setup txdata seqnum: %d urb: %p\n",
+-						pdu_header.base.seqnum, urb);
++				  pdu_header.base.seqnum, urb);
+ 		/*usbip_dump_header(pdu_header);*/
+ 		usbip_header_correct_endian(&pdu_header, 1);
+ 
+@@ -214,14 +207,14 @@ static int stub_send_ret_submit(struct stub_device *sdev)
+ 
+ 		/* 2. setup transfer buffer */
+ 		if (usb_pipein(urb->pipe) &&
+-				usb_pipetype(urb->pipe) != PIPE_ISOCHRONOUS &&
+-					urb->actual_length > 0) {
++		    usb_pipetype(urb->pipe) != PIPE_ISOCHRONOUS &&
++		    urb->actual_length > 0) {
+ 			iov[iovnum].iov_base = urb->transfer_buffer;
+ 			iov[iovnum].iov_len  = urb->actual_length;
+ 			iovnum++;
+ 			txsize += urb->actual_length;
+ 		} else if (usb_pipein(urb->pipe) &&
+-				usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS) {
++			   usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS) {
+ 			/*
+ 			 * For isochronous packets: actual length is the sum of
+ 			 * the actual length of the individual, packets, but as
+@@ -232,18 +225,23 @@ static int stub_send_ret_submit(struct stub_device *sdev)
+ 
+ 			int i;
+ 			for (i = 0; i < urb->number_of_packets; i++) {
+-				iov[iovnum].iov_base = urb->transfer_buffer + urb->iso_frame_desc[i].offset;
+-				iov[iovnum].iov_len = urb->iso_frame_desc[i].actual_length;
++				iov[iovnum].iov_base = urb->transfer_buffer +
++					urb->iso_frame_desc[i].offset;
++				iov[iovnum].iov_len =
++					urb->iso_frame_desc[i].actual_length;
+ 				iovnum++;
+ 				txsize += urb->iso_frame_desc[i].actual_length;
+ 			}
+ 
+ 			if (txsize != sizeof(pdu_header) + urb->actual_length) {
+ 				dev_err(&sdev->interface->dev,
+-					"actual length of urb (%d) does not match iso packet sizes (%d)\n",
+-					urb->actual_length, txsize-sizeof(pdu_header));
++					"actual length of urb %d does not "
++					"match iso packet sizes %lu\n",
++					urb->actual_length,
++					txsize-sizeof(pdu_header));
+ 				kfree(iov);
+-				usbip_event_add(&sdev->ud, SDEV_EVENT_ERROR_TCP);
++				usbip_event_add(&sdev->ud,
++						SDEV_EVENT_ERROR_TCP);
+ 			   return -1;
+ 			}
+ 		}
+@@ -285,17 +283,14 @@ static int stub_send_ret_submit(struct stub_device *sdev)
+ 	}
+ 
+ 	spin_lock_irqsave(&sdev->priv_lock, flags);
+-
+ 	list_for_each_entry_safe(priv, tmp, &sdev->priv_free, list) {
+ 		stub_free_priv_and_urb(priv);
+ 	}
+-
+ 	spin_unlock_irqrestore(&sdev->priv_lock, flags);
+ 
+ 	return total_size;
+ }
+ 
+-
+ /*-------------------------------------------------------------------------*/
+ /* send RET_UNLINK */
+ 
+@@ -317,7 +312,6 @@ static struct stub_unlink *dequeue_from_unlink_tx(struct stub_device *sdev)
+ 	return NULL;
+ }
+ 
+-
+ static int stub_send_ret_unlink(struct stub_device *sdev)
  {
  	unsigned long flags;
+@@ -358,13 +352,10 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
+ 			return -1;
+ 		}
  
- 	struct stub_priv *priv;
+-
+ 		usbip_dbg_stub_tx("send txdata\n");
+-
+ 		total_size += txsize;
+ 	}
  
 -
  	spin_lock_irqsave(&sdev->priv_lock, flags);
  
- 	list_for_each_entry(priv, &sdev->priv_init, list) {
-@@ -289,7 +286,7 @@ static int stub_recv_cmd_unlink(struct stub_device *sdev,
- 	}
- 
- 	usbip_dbg_stub_rx("seqnum %d is not pending\n",
--						pdu->u.cmd_unlink.seqnum);
-+			  pdu->u.cmd_unlink.seqnum);
- 
- 	/*
- 	 * The urb of the unlink target is not found in priv_init queue. It was
-@@ -301,7 +298,6 @@ static int stub_recv_cmd_unlink(struct stub_device *sdev,
- 
- 	spin_unlock_irqrestore(&sdev->priv_lock, flags);
+ 	list_for_each_entry_safe(unlink, tmp, &sdev->unlink_free, list) {
+@@ -377,7 +368,6 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
+ 	return total_size;
+ }
  
 -
+ /*-------------------------------------------------------------------------*/
+ 
+ int stub_tx_loop(void *data)
+@@ -410,9 +400,9 @@ int stub_tx_loop(void *data)
+ 			break;
+ 
+ 		wait_event_interruptible(sdev->tx_waitq,
+-				(!list_empty(&sdev->priv_tx) ||
+-				 !list_empty(&sdev->unlink_tx) ||
+-				 kthread_should_stop()));
++					 (!list_empty(&sdev->priv_tx) ||
++					  !list_empty(&sdev->unlink_tx) ||
++					  kthread_should_stop()));
+ 	}
+ 
  	return 0;
- }
- 
-@@ -370,8 +366,6 @@ static int get_pipe(struct stub_device *sdev, int epnum, int dir)
- 	}
- 
- 	epd = &ep->desc;
--
--
- #if 0
- 	/* epnum 0 is always control */
- 	if (epnum == 0) {
-@@ -381,7 +375,6 @@ static int get_pipe(struct stub_device *sdev, int epnum, int dir)
- 			return usb_rcvctrlpipe(udev, 0);
- 	}
- #endif
--
- 	if (usb_endpoint_xfer_control(epd)) {
- 		if (dir == USBIP_DIR_OUT)
- 			return usb_sndctrlpipe(udev, epnum);
-@@ -430,19 +423,19 @@ static void masking_bogus_flags(struct urb *urb)
- 		return;
- 
- 	ep = (usb_pipein(urb->pipe) ? dev->ep_in : dev->ep_out)
--			[usb_pipeendpoint(urb->pipe)];
-+		[usb_pipeendpoint(urb->pipe)];
- 	if (!ep)
- 		return;
- 
- 	xfertype = usb_endpoint_type(&ep->desc);
- 	if (xfertype == USB_ENDPOINT_XFER_CONTROL) {
- 		struct usb_ctrlrequest *setup =
--				(struct usb_ctrlrequest *) urb->setup_packet;
-+			(struct usb_ctrlrequest *) urb->setup_packet;
- 
- 		if (!setup)
- 			return;
- 		is_out = !(setup->bRequestType & USB_DIR_IN) ||
--				!setup->wLength;
-+			!setup->wLength;
- 	} else {
- 		is_out = usb_endpoint_dir_out(&ep->desc);
- 	}
-@@ -478,7 +471,6 @@ static void stub_recv_cmd_submit(struct stub_device *sdev,
- 	struct usb_device *udev = sdev->udev;
- 	int pipe = get_pipe(sdev, pdu->base.ep, pdu->base.direction);
- 
--
- 	priv = stub_priv_alloc(sdev, pdu);
- 	if (!priv)
- 		return;
-@@ -486,7 +478,7 @@ static void stub_recv_cmd_submit(struct stub_device *sdev,
- 	/* setup a urb */
- 	if (usb_pipeisoc(pipe))
- 		priv->urb = usb_alloc_urb(pdu->u.cmd_submit.number_of_packets,
--								GFP_KERNEL);
-+					  GFP_KERNEL);
- 	else
- 		priv->urb = usb_alloc_urb(0, GFP_KERNEL);
- 
-@@ -500,7 +492,7 @@ static void stub_recv_cmd_submit(struct stub_device *sdev,
- 	if (pdu->u.cmd_submit.transfer_buffer_length > 0) {
- 		priv->urb->transfer_buffer =
- 			kzalloc(pdu->u.cmd_submit.transfer_buffer_length,
--								GFP_KERNEL);
-+				GFP_KERNEL);
- 		if (!priv->urb->transfer_buffer) {
- 			dev_err(&sdev->interface->dev, "malloc x_buff\n");
- 			usbip_event_add(ud, SDEV_EVENT_ERROR_MALLOC);
-@@ -541,7 +533,7 @@ static void stub_recv_cmd_submit(struct stub_device *sdev,
- 
- 	if (ret == 0)
- 		usbip_dbg_stub_rx("submit urb ok, seqnum %u\n",
--							pdu->base.seqnum);
-+				  pdu->base.seqnum);
- 	else {
- 		dev_err(&sdev->interface->dev, "submit_urb error, %d\n", ret);
- 		usbip_dump_header(pdu);
-@@ -604,7 +596,6 @@ static void stub_rx_pdu(struct usbip_device *ud)
- 		usbip_event_add(ud, SDEV_EVENT_ERROR_TCP);
- 		return;
- 	}
--
- }
- 
- int stub_rx_loop(void *data)
-@@ -617,5 +608,6 @@ int stub_rx_loop(void *data)
- 
- 		stub_rx_pdu(ud);
- 	}
-+
- 	return 0;
- }
 -- 
 1.7.5.1
 
