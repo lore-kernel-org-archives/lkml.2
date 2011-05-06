@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab1EFAOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:14:53 -0400
-Received: from kroah.org ([198.145.64.141]:32967 "EHLO coco.kroah.org"
+	id S1755143Ab1EFAOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:14:40 -0400
+Received: from kroah.org ([198.145.64.141]:32976 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754580Ab1EFANl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:41 -0400
+	id S1754967Ab1EFANm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:10 2011
-Message-Id: <20110506001210.724927797@clark.kroah.org>
+Message-Id: <20110506001210.810495759@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:11:07 -0700
+Date: Thu, 05 May 2011 17:11:08 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        Richard Russon <rich@flatcap.org>
-Subject: [patch 35/38] fs/partitions/ldm.c: fix oops caused by corrupted partition table
+        Jarod Wilson <jarod@wilsonet.com>,
+        Lawrence Rust <lawrence@softsystem.co.uk>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Lawrence Rust <lvr@softsystem.dot.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [patch 36/38] [media] cx88: Fix HVR4000 IR keymap
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Lawrence Rust <lvr@softsystem.dot.uk>
 
-commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
+[fixed in .39 in a much different way that is too big to backport to
+.38 - gregkh]
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
-a bug that causes a kernel oops on certain corrupted LDM partitions.
-A kernel subsystem seems to crash, because, after the oops, the kernel no
-longer recognizes newly connected storage devices.
+Fixes the RC key input for Nova-S plus, HVR1100, HVR3000 and HVR4000 in
+the 2.6.38 kernel.
 
-The patch validates the value of vblk_size.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Cc: Richard Russon <rich@flatcap.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Lawrence Rust <lvr@softsystem.dot.uk>
+Acked-by: Jarod Wilson <jarod@wilsonet.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
 ---
- fs/partitions/ldm.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/media/video/cx88/cx88-input.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/partitions/ldm.c
-+++ b/fs/partitions/ldm.c
-@@ -1299,6 +1299,11 @@ static bool ldm_frag_add (const u8 *data
- 
- 	BUG_ON (!data || !frags);
- 
-+	if (size < 2 * VBLK_SIZE_HEAD) {
-+		ldm_error("Value of size is to small.");
-+		return false;
-+	}
-+
- 	group = get_unaligned_be32(data + 0x08);
- 	rec   = get_unaligned_be16(data + 0x0C);
- 	num   = get_unaligned_be16(data + 0x0E);
-@@ -1306,6 +1311,10 @@ static bool ldm_frag_add (const u8 *data
- 		ldm_error ("A VBLK claims to have %d parts.", num);
- 		return false;
- 	}
-+	if (rec >= num) {
-+		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
-+		return false;
-+	}
- 
- 	list_for_each (item, frags) {
- 		f = list_entry (item, struct frag, list);
-@@ -1334,10 +1343,9 @@ found:
- 
- 	f->map |= (1 << rec);
- 
--	if (num > 0) {
--		data += VBLK_SIZE_HEAD;
--		size -= VBLK_SIZE_HEAD;
--	}
-+	data += VBLK_SIZE_HEAD;
-+	size -= VBLK_SIZE_HEAD;
-+
- 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
- 
- 	return true;
+--- a/drivers/media/video/cx88/cx88-input.c
++++ b/drivers/media/video/cx88/cx88-input.c
+@@ -283,7 +283,7 @@ int cx88_ir_init(struct cx88_core *core,
+ 	case CX88_BOARD_PCHDTV_HD3000:
+ 	case CX88_BOARD_PCHDTV_HD5500:
+ 	case CX88_BOARD_HAUPPAUGE_IRONLY:
+-		ir_codes = RC_MAP_HAUPPAUGE_NEW;
++		ir_codes = RC_MAP_RC5_HAUPPAUGE_NEW;
+ 		ir->sampling = 1;
+ 		break;
+ 	case CX88_BOARD_WINFAST_DTV2000H:
 
 
