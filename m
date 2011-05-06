@@ -1,85 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab1EFAhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:37:47 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:28120 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754197Ab1EFAho (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:37:44 -0400
-From: "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
-To: "'Marc Kleine-Budde'" <mkl@pengutronix.de>
-Cc: "'Wolfgang Grandegger'" <wg@grandegger.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
-References: <02D6556ECE7A41859777EB7300D12394@hacdom.okisemi.com> <4DB81F2E.4050802@pengutronix.de>
-Subject: RE: Question for canutils
-Date: Fri, 6 May 2011 09:37:40 +0900
-Message-ID: <A42D429EA0C74B64BB1BFE96BBFA9815@hacdom.okisemi.com>
+	id S932780Ab1EFArz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:47:55 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:35448 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932325Ab1EFArx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:47:53 -0400
+Date: Fri, 6 May 2011 02:47:49 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Arnd Bergmann <arnd@arndb.de>,
+        John Williams <john.williams@petalogix.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
+Message-ID: <20110506004748.GB2790@local>
+References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-Thread-Index: AcwE4hxAM4FylSFMTa2Yyp0meT65tgGop4Qg
-In-Reply-To: <4DB81F2E.4050802@pengutronix.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+On Thu, May 05, 2011 at 08:40:44AM +0200, Michal Simek wrote:
 
-On Wednesday, April 27, 2011 10:51 PM, Marc Kleine-Budde wrote:
-> Into which location?
-> 
-> Please send me the output of:
-> 
-> ls -l /usr/local/lib
-> ls -l /usr/local/lib/pkgconfig
-
-[morinaga@localhost ~]$ 
-[morinaga@localhost ~]$ ls -l /usr/local/lib
-合計 1412
--rw-r--r--. 1 root root 103226 2011-01-13 16:56 libhistory.a
-lrwxrwxrwx. 1 root root     15 2011-01-13 16:56 libhistory.so -> libhistory.so.6
-lrwxrwxrwx. 1 root root     17 2011-01-13 16:56 libhistory.so.6 -> libhistory.so.6.0
--r-xr-xr-x. 1 root root  80204 2011-01-13 16:56 libhistory.so.6.0
--rw-r--r--. 1 root root 686760 2011-01-13 16:56 libreadline.a
-lrwxrwxrwx. 1 root root     16 2011-01-13 16:56 libreadline.so -> libreadline.so.6
-lrwxrwxrwx. 1 root root     18 2011-01-13 16:56 libreadline.so.6 -> libreadline.so.6.0
--r-xr-xr-x. 1 root root 498839 2011-01-13 16:56 libreadline.so.6.0
--rw-r--r--. 1 root root  28718 2011-04-27 15:40 libsocketcan.a
--rwxr-xr-x. 1 root root    843 2011-04-27 15:40 libsocketcan.la
-lrwxrwxrwx. 1 root root     21 2011-04-27 15:40 libsocketcan.so -> libsocketcan.so.2.2.0
-lrwxrwxrwx. 1 root root     21 2011-04-27 15:40 libsocketcan.so.2 -> libsocketcan.so.2.2.0
--rwxr-xr-x. 1 root root  27835 2011-04-27 15:40 libsocketcan.so.2.2.0
-drwxr-xr-x. 2 root root   4096 2011-04-27 15:53 pkgconfig
-[morinaga@localhost ~]$ ls -l /usr/local/lib/pkgconfig/
-合計 8
--rw-r--r--. 1 root root 198 2011-04-27 15:53 canutils.pc
--rw-r--r--. 1 root root 300 2011-04-27 15:40 libsocketcan.pc
-[morinaga@localhost ~]$ 
-
-
-> First build the canutils, then configure the bitrate, e.g. 250 kbit/s:
->     $ canconfig can0 bitrate 250000
->     $ ifconfig can0 up
-The above commands failed.
-
-[root@localhost can]# 
-[root@localhost can]# canconfig can0 bitrate 250000
-opening CAN interface 'can0' in sysfs failed, maybe not a CAN interface
-No such file or directory
-
-
-[root@localhost ~]# ifconfig can0 up
-SIOCSIFFLAGS: Invalid argument
-[root@localhost ~]# 
-
+I think we've got it.
 
 Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+Hans
 
+> Adding OF binding to genirq.
+> Version string is setup to the "devicetree".
+> 
+> Compatible string is not setup for now but you can add your
+> custom compatible string to uio_of_genirq_match structure.
+> 
+> For example with "vendor,device" compatible string:
+> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> 	{ .compatible = "vendor,device", },
+> 	{ /* empty for now */ },
+> };
+> 
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+
+Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+
+> CC: Hans J. Koch <hjk@hansjkoch.de>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: John Williams <john.williams@petalogix.com>
+> CC: Grant Likely <grant.likely@secretlab.ca>
+> CC: Wolfram Sang <w.sang@pengutronix.de>
+> 
+> ---
+> v5: Free uioinfo in genirq_remove
+>     Use pdev->dev.of_node for OF detection
+> 
+> v4: Remove dev_info messages
+>     Check irq against -ENXIO for no irq
+> 
+> v3: Fix irq binding
+>     Use "devicetree" as version string
+> 
+> v2: Remove additional resource binding
+>     Setup correct version string
+>     Clear compatible string
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   44 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 44 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 7174d51..24bb395 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -23,6 +23,10 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/slab.h>
+>  
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+> +
+>  #define DRIVER_NAME "uio_pdrv_genirq"
+>  
+>  struct uio_pdrv_genirq_platdata {
+> @@ -97,6 +101,27 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	int ret = -EINVAL;
+>  	int i;
+>  
+> +	if (!uioinfo) {
+> +		int irq;
+> +
+> +		/* alloc uioinfo for one device */
+> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> +		if (!uioinfo) {
+> +			ret = -ENOMEM;
+> +			dev_err(&pdev->dev, "unable to kmalloc\n");
+> +			goto bad2;
+> +		}
+> +		uioinfo->name = pdev->dev.of_node->name;
+> +		uioinfo->version = "devicetree";
+> +
+> +		/* Multiple IRQs are not supported */
+> +		irq = platform_get_irq(pdev, 0);
+> +		if (irq == -ENXIO)
+> +			uioinfo->irq = UIO_IRQ_NONE;
+> +		else
+> +			uioinfo->irq = irq;
+> +	}
+> +
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+>  		goto bad0;
+> @@ -180,6 +205,10 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	kfree(priv);
+>  	pm_runtime_disable(&pdev->dev);
+>   bad0:
+> +	/* kfree uioinfo for OF */
+> +	if (pdev->dev.of_node)
+> +		kfree(uioinfo);
+> + bad2:
+>  	return ret;
+>  }
+>  
+> @@ -189,6 +218,11 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+>  
+>  	uio_unregister_device(priv->uioinfo);
+>  	pm_runtime_disable(&pdev->dev);
+> +
+> +	/* kfree uioinfo for OF */
+> +	if (pdev->dev.of_node)
+> +		kfree(priv->uioinfo);
+> +
+>  	kfree(priv);
+>  	return 0;
+>  }
+> @@ -215,6 +249,15 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+>  	.runtime_resume = uio_pdrv_genirq_runtime_nop,
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> +	{ /* empty for now */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> +#else
+> +# define uio_of_genirq_match NULL
+> +#endif
+> +
+>  static struct platform_driver uio_pdrv_genirq = {
+>  	.probe = uio_pdrv_genirq_probe,
+>  	.remove = uio_pdrv_genirq_remove,
+> @@ -222,6 +265,7 @@ static struct platform_driver uio_pdrv_genirq = {
+>  		.name = DRIVER_NAME,
+>  		.owner = THIS_MODULE,
+>  		.pm = &uio_pdrv_genirq_dev_pm_ops,
+> +		.of_match_table = uio_of_genirq_match,
+>  	},
+>  };
+>  
+> -- 
+> 1.5.5.6
+> 
+> 
