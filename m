@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab1EFQlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 12:41:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39572 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753995Ab1EFQla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 12:41:30 -0400
-Subject: [GIT PULL] SCSI fixes for 2.6.39-rc6
-From: James Bottomley <James.Bottomley@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 May 2011 11:41:25 -0500
-Message-ID: <1304700085.12427.10.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1756647Ab1EFQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 12:41:56 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50442 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756403Ab1EFQly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 12:41:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110506132344.1d166260@lxorguk.ukuu.org.uk>
+References: <1013673718.2094564.1304113268455.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+ <4DC3E580.9090500@petalogix.com> <20110506132344.1d166260@lxorguk.ukuu.org.uk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 6 May 2011 10:41:34 -0600
+X-Google-Sender-Auth: BRtIsuLTC8kXMc5dC1Rr8KkstHM
+Message-ID: <BANLkTi=1guAvjXO2FVOPV+4=p53jeU3vUQ@mail.gmail.com>
+Subject: Re: [PATCH V4] tty/serial: add support for Xilinx PS UART
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: michal.simek@petalogix.com, johnlinn@comcast.net, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        joe@perches.com, John Linn <john.linn@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, it's just one fix ... another oops triggered by a previous
-fix.
+On Fri, May 6, 2011 at 6:23 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> I don't agree with this change. NO_IRQ for microblaze, arm and other is -1. BTW:
+>> For ppc is 0. Using NO_IRQ seems to me reasonable.
+>
+> 0 means "no interrupt".
+>
+> The old mis-use of -1 is an old mostly ARM specific ugly that ahould be
+> going away not getting repeated further. If Microblaze is using this hack
+> then it needs to stop.
 
-The patch is available here:
+This will be easier for microblaze when I finish the irq_domain work.
+There are patches on the list, but they need to be reworked before
+they are ready for mainline consumption.
 
-master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
-
-The short changelog is:
-
-James Bottomley (1):
-      fix oops in scsi_run_queue()
-
-The diffstat is:
-
- drivers/scsi/scsi_lib.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-And the full diff below.
-
-James
-
----
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index e9901b8..0bac91e 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -400,10 +400,15 @@ static inline int scsi_host_is_busy(struct Scsi_Host *shost)
- static void scsi_run_queue(struct request_queue *q)
- {
- 	struct scsi_device *sdev = q->queuedata;
--	struct Scsi_Host *shost = sdev->host;
-+	struct Scsi_Host *shost;
- 	LIST_HEAD(starved_list);
- 	unsigned long flags;
- 
-+	/* if the device is dead, sdev will be NULL, so no queue to run */
-+	if (!sdev)
-+		return;
-+
-+	shost = sdev->host;
- 	if (scsi_target(sdev)->single_lun)
- 		scsi_single_lun_run(sdev);
- 
-
-
+g.
