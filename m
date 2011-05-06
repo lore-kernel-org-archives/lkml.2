@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab1EFNo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:44:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52916 "EHLO mga14.intel.com"
+	id S1756501Ab1EFNrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:47:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1197 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756434Ab1EFNoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:44:25 -0400
+	id S1756475Ab1EFNrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 09:47:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,326,1301900400"; 
-   d="scan'208";a="431719478"
-Subject: Re: [PATCH] perf events, x86: Add SandyBridge
- stalled-cycles-frontend/backend events
+   d="scan'208";a="743314931"
+Subject: Re: [PATCH] perf events, x86: Implement Sandybridge last-level
+ cache events
 From: Lin Ming <ming.m.lin@intel.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -19,13 +19,12 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <1304667821.3924.284.camel@minggr.sh.intel.com>
+In-Reply-To: <20110506091950.GA5081@elte.hu>
 References: <1304666042-17577-1-git-send-email-ming.m.lin@intel.com>
-	 <20110506073832.GG23166@elte.hu>
-	 <1304667821.3924.284.camel@minggr.sh.intel.com>
+	 <20110506073832.GG23166@elte.hu>  <20110506091950.GA5081@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 May 2011 21:44:26 +0800
-Message-Id: <1304689466.2200.1.camel@localhost>
+Date: Fri, 06 May 2011 21:47:47 +0800
+Message-Id: <1304689667.2200.3.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -33,49 +32,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 15:43 +0800, Lin Ming wrote:
-> On Fri, 2011-05-06 at 15:38 +0800, Ingo Molnar wrote:
-> > * Lin Ming <ming.m.lin@intel.com> wrote:
-> > 
-> > > Extend the Intel SandyBridge PMU driver with definitions
-> > > for generic front-end and back-end stall events.
-> > > 
-> > > ( As commit 3011203 says, these are only approximations. )
-> > > 
-> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > > ---
-> > >  arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
-> > >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> > > index c1ec7a5..61cbf48 100644
-> > > --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> > > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> > > @@ -1485,6 +1485,12 @@ static __init int intel_pmu_init(void)
-> > >  
-> > >  		x86_pmu.event_constraints = intel_snb_event_constraints;
-> > >  		x86_pmu.pebs_constraints = intel_snb_pebs_events;
-> > > +
-> > > +		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
-> > > +		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
-> > > +		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
-> > > +		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x18001b1;
-> > > +
-> > 
-> > Nice!
-> > 
-> > Could you check Intel Atom perhaps as well, does it have any useful event to 
-> > approximate this?
+On Fri, 2011-05-06 at 17:19 +0800, Ingo Molnar wrote:
+> Btw., there's another missing Intel SandyBridge related perf events feature as 
+> well which was not implemented with the Intel offcore bits.
 > 
-> OK, let me check.
+> Peter did a raw first cut - entirely untested, see it below. Would you be 
+> interested in testing it on Intel SandyBridge hw and sending (the working 
+> version) to lkml with your Signed-off-by if the events looks good to you in 
+> some real tests (i.e. are counting real LL cache events)?
 
-Checked, but don't find this kind of event.
+OK, but I can't access SandyBridge machine at home now.
+Will try it next Monday.
 
 > 
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
+> Thanks,
 > 
+> 	Ingo
 
 
