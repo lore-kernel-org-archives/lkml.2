@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab1EFA2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:28:24 -0400
-Received: from kroah.org ([198.145.64.141]:37689 "EHLO coco.kroah.org"
+	id S932868Ab1EFA5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:57:10 -0400
+Received: from kroah.org ([198.145.64.141]:55560 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932768Ab1EFA1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:27:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:11 2011
-Message-Id: <20110506002611.441594954@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:26:04 -0700
+	id S932260Ab1EFA5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:57:06 -0400
+Date: Thu, 5 May 2011 17:26:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [43/43] iwlwifi: fix skb usage after free
-In-Reply-To: <20110506002625.GA20426@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/43] 2.6.33.13-longterm review
+Message-ID: <20110506002625.GA20426@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.33.13 release.
+There are 43 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Sunday, May 8, 2011, 00:01:00 UTC.
+Anything received after that time might be too late.
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.13-rc1.gz
+and the diffstat can be found below.
 
-commit b25026981aecde3685dd0e45ad980fff9f528daa upstream.
+thanks,
 
-Since
-
-commit a120e912eb51e347f36c71b60a1d13af74d30e83
-Author: Stanislaw Gruszka <sgruszka@redhat.com>
-Date:   Fri Feb 19 15:47:33 2010 -0800
-
-    iwlwifi: sanity check before counting number of tfds can be free
-
-we use skb->data after calling ieee80211_tx_status_irqsafe(), which
-could free skb instantly.
-
-On current kernels I do not observe practical problems related with
-bug, but on 2.6.35.y it cause random system hangs when stressing
-wireless link.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/iwlwifi/iwl-tx.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -1162,11 +1162,15 @@ int iwl_tx_queue_reclaim(struct iwl_priv
- 	     q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd)) {
- 
- 		tx_info = &txq->txb[txq->q.read_ptr];
--		iwl_tx_status(priv, tx_info->skb[0]);
-+
-+		if (WARN_ON_ONCE(tx_info->skb == NULL))
-+			continue;
- 
- 		hdr = (struct ieee80211_hdr *)tx_info->skb[0]->data;
--		if (hdr && ieee80211_is_data_qos(hdr->frame_control))
-+		if (ieee80211_is_data_qos(hdr->frame_control))
- 			nfreed++;
-+
-+		iwl_tx_status(priv, tx_info->skb[0]);
- 		tx_info->skb[0] = NULL;
- 
- 		if (priv->cfg->ops->lib->txq_inval_byte_cnt_tbl)
+greg k-h
 
 
+ Makefile                                |    2 +-
+ arch/arm/kernel/sys_oabi-compat.c       |    2 +-
+ arch/m68k/mm/motorola.c                 |    2 ++
+ arch/parisc/mm/init.c                   |    4 +++-
+ arch/x86/kernel/cpu/amd.c               |    2 +-
+ arch/x86/kernel/pci-gart_64.c           |    9 ++++++++-
+ block/blk-sysfs.c                       |    4 +++-
+ drivers/ata/libata-scsi.c               |   24 ++++++++++++++++++------
+ drivers/char/agp/generic.c              |   19 +++++++++++++++----
+ drivers/char/i8k.c                      |    7 ++++---
+ drivers/gpu/drm/radeon/atom.c           |    6 +++---
+ drivers/input/xen-kbdfront.c            |   12 +++++++++++-
+ drivers/media/dvb/b2c2/flexcop-pci.c    |    2 +-
+ drivers/mmc/host/sdhci-pci.c            |    1 +
+ drivers/mmc/host/sdhci.c                |    9 ++++++++-
+ drivers/net/igbvf/igbvf.h               |    1 -
+ drivers/net/wireless/ath/regd_common.h  |    1 +
+ drivers/net/wireless/iwlwifi/iwl-5000.c |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-tx.c   |    8 ++++++--
+ drivers/net/wireless/p54/txrx.c         |    2 +-
+ drivers/pci/intel-iommu.c               |   15 +++++++++++++--
+ drivers/s390/block/dasd_eckd.c          |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c      |   23 +++++++++++++++++++++--
+ drivers/scsi/pmcraid.c                  |    3 +++
+ drivers/scsi/scsi_sysfs.c               |   16 ++++++++--------
+ drivers/serial/imx.c                    |    3 ++-
+ drivers/staging/usbip/vhci_hcd.c        |    2 +-
+ drivers/usb/musb/musb_core.c            |    1 +
+ fs/nfs/inode.c                          |   26 +++++++++++++++++---------
+ fs/nfs/nfs4state.c                      |    4 ++--
+ fs/nfs/super.c                          |    9 +++++++++
+ fs/nfsd/vfs.c                           |    9 ++++++++-
+ fs/partitions/ldm.c                     |   16 ++++++++++++----
+ fs/ubifs/recovery.c                     |   26 ++++++++++++++++++++++++++
+ init/Kconfig                            |    1 +
+ net/can/bcm.c                           |    7 ++++++-
+ net/ipv4/ip_output.c                    |    9 ++++++---
+ net/unix/af_unix.c                      |   16 +++++++++++++++-
+ scripts/kconfig/conf.c                  |    2 +-
+ sound/soc/codecs/wm_hubs.c              |    8 ++++----
+ 40 files changed, 246 insertions(+), 71 deletions(-)
