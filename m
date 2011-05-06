@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860Ab1EFA6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:58:36 -0400
-Received: from kroah.org ([198.145.64.141]:36708 "EHLO coco.kroah.org"
+	id S932251Ab1EFA6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:58:19 -0400
+Received: from kroah.org ([198.145.64.141]:36724 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932159Ab1EFAYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:39 -0400
+	id S932187Ab1EFAYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:40 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:09 2011
-Message-Id: <20110506002209.054241288@clark.kroah.org>
+Message-Id: <20110506002209.159080197@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:24 -0700
+Date: Thu, 05 May 2011 17:20:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [039/143] can: Add missing socket check in can/bcm release.
+        Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        Richard Russon <rich@flatcap.org>
+Subject: [040/143] fs/partitions/ldm.c: fix oops caused by corrupted partition table
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit c6914a6f261aca0c9f715f883a353ae7ff51fe83 upstream.
+commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
 
-We can get here with a NULL socket argument passed from userspace,
-so we need to handle it accordingly.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
+a bug that causes a kernel oops on certain corrupted LDM partitions.
+A kernel subsystem seems to crash, because, after the oops, the kernel no
+longer recognizes newly connected storage devices.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The patch validates the value of vblk_size.
+
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
+Cc: Richard Russon <rich@flatcap.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/can/bcm.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/partitions/ldm.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -1425,9 +1425,14 @@ static int bcm_init(struct sock *sk)
- static int bcm_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
--	struct bcm_sock *bo = bcm_sk(sk);
-+	struct bcm_sock *bo;
- 	struct bcm_op *op, *next;
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -1299,6 +1299,11 @@ static bool ldm_frag_add (const u8 *data
  
-+	if (sk == NULL)
-+		return 0;
-+
-+	bo = bcm_sk(sk);
-+
- 	/* remove bcm_ops, timer, rx_unregister(), etc. */
+ 	BUG_ON (!data || !frags);
  
- 	unregister_netdevice_notifier(&bo->notifier);
++	if (size < 2 * VBLK_SIZE_HEAD) {
++		ldm_error("Value of size is to small.");
++		return false;
++	}
++
+ 	group = get_unaligned_be32(data + 0x08);
+ 	rec   = get_unaligned_be16(data + 0x0C);
+ 	num   = get_unaligned_be16(data + 0x0E);
+@@ -1306,6 +1311,10 @@ static bool ldm_frag_add (const u8 *data
+ 		ldm_error ("A VBLK claims to have %d parts.", num);
+ 		return false;
+ 	}
++	if (rec >= num) {
++		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
++		return false;
++	}
+ 
+ 	list_for_each (item, frags) {
+ 		f = list_entry (item, struct frag, list);
+@@ -1334,10 +1343,9 @@ found:
+ 
+ 	f->map |= (1 << rec);
+ 
+-	if (num > 0) {
+-		data += VBLK_SIZE_HEAD;
+-		size -= VBLK_SIZE_HEAD;
+-	}
++	data += VBLK_SIZE_HEAD;
++	size -= VBLK_SIZE_HEAD;
++
+ 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
+ 
+ 	return true;
 
 
