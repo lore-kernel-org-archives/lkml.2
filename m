@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab1EFPrp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 11:47:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51849 "EHLO
+	id S1756576Ab1EFPrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 11:47:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35673 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756414Ab1EFPrm (ORCPT
+	with ESMTP id S1756516Ab1EFPro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 11:47:42 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=vhdKIqpQuCYA:10 a=PSrBKi5oSckA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=gEXOCKwQNvEARti_BIIA:9 a=lIZ5yIxBFCDuzwRUHb8A:7 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Fri, 6 May 2011 11:47:44 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=9s6iyktqyeIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=VQUNIRac2-N1bN5HVmkA:9 a=Jh2-D-EFQ3nIADJUGMcA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110506152624.776982312@goodmis.org>
+Message-Id: <20110506154739.344597908@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 06 May 2011 11:26:24 -0400
+Date: Fri, 06 May 2011 11:26:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -23,90 +23,325 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Jiri Olsa <jolsa@redhat.com>, David Sharp <dhsharp@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         Michael Rubin <mrubin@google.com>
-Subject: [RFC][PATCH 00/13] ftrace: Allow multiple users to pick and choose functions to trace
+Subject: [RFC][PATCH 01/13] ftrace: Replace FTRACE_FL_NOTRACE flag with a hash of ignored functions
+References: <20110506152624.776982312@goodmis.org>
+Content-Disposition: inline; filename=0001-ftrace-Replace-FTRACE_FL_NOTRACE-flag-with-a-hash-of.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Ingo, et. al.
+To prepare for the accounting system that will allow multiple users of
+the function tracer, having the FTRACE_FL_NOTRACE as a flag in the
+dyn_trace record does not make sense.
 
-This is an RFC patch set of the work I did to allow multiple users
-to pick and choose which functions they would like to trace without
-being affected by other users (well, they are still affected, but
-they can choose their own functions).
+All ftrace_ops will soon have a hash of functions they should trace
+and not trace. By making a global hash of functions not to trace makes
+this easier for the transition.
 
-Since this rewrote a lot of the guts of ftrace's function handling
-I broke it up into steps that I can sequentially think about how to
-make the conversion. It also helped in understanding the changes that
-had to be made.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h |    1 -
+ kernel/trace/ftrace.c  |  176 +++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 150 insertions(+), 27 deletions(-)
 
-The end result now has this:
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 3204744..fe0a90a 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -149,7 +149,6 @@ enum {
+ 	FTRACE_FL_FREE		= (1 << 0),
+ 	FTRACE_FL_FILTER	= (1 << 1),
+ 	FTRACE_FL_ENABLED	= (1 << 2),
+-	FTRACE_FL_NOTRACE	= (1 << 3),
+ };
+ 
+ struct dyn_ftrace {
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index d340634..04c002a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -57,6 +57,7 @@
+ /* hash bits for specific function selection */
+ #define FTRACE_HASH_BITS 7
+ #define FTRACE_FUNC_HASHSIZE (1 << FTRACE_HASH_BITS)
++#define FTRACE_HASH_MAX_BITS 10
+ 
+ /* ftrace_enabled is a method to turn ftrace on or off */
+ int ftrace_enabled __read_mostly;
+@@ -865,6 +866,22 @@ enum {
+ 	FTRACE_START_FUNC_RET		= (1 << 3),
+ 	FTRACE_STOP_FUNC_RET		= (1 << 4),
+ };
++struct ftrace_func_entry {
++	struct hlist_node hlist;
++	unsigned long ip;
++};
++
++struct ftrace_hash {
++	unsigned long		size_bits;
++	struct hlist_head	*buckets;
++	unsigned long		count;
++};
++
++static struct hlist_head notrace_buckets[1 << FTRACE_HASH_MAX_BITS];
++static struct ftrace_hash notrace_hash = {
++	.size_bits = FTRACE_HASH_MAX_BITS,
++	.buckets = notrace_buckets,
++};
+ 
+ static int ftrace_filtered;
+ 
+@@ -889,6 +906,79 @@ static struct ftrace_page	*ftrace_pages;
+ 
+ static struct dyn_ftrace *ftrace_free_records;
+ 
++static struct ftrace_func_entry *
++ftrace_lookup_ip(struct ftrace_hash *hash, unsigned long ip)
++{
++	unsigned long key;
++	struct ftrace_func_entry *entry;
++	struct hlist_head *hhd;
++	struct hlist_node *n;
++
++	if (!hash->count)
++		return NULL;
++
++	if (hash->size_bits > 0)
++		key = hash_long(ip, hash->size_bits);
++	else
++		key = 0;
++
++	hhd = &hash->buckets[key];
++
++	hlist_for_each_entry_rcu(entry, n, hhd, hlist) {
++		if (entry->ip == ip)
++			return entry;
++	}
++	return NULL;
++}
++
++static int add_hash_entry(struct ftrace_hash *hash, unsigned long ip)
++{
++	struct ftrace_func_entry *entry;
++	struct hlist_head *hhd;
++	unsigned long key;
++
++	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
++	if (!entry)
++		return -ENOMEM;
++
++	if (hash->size_bits)
++		key = hash_long(ip, hash->size_bits);
++	else
++		key = 0;
++
++	entry->ip = ip;
++	hhd = &hash->buckets[key];
++	hlist_add_head(&entry->hlist, hhd);
++	hash->count++;
++
++	return 0;
++}
++
++static void
++remove_hash_entry(struct ftrace_hash *hash,
++		  struct ftrace_func_entry *entry)
++{
++	hlist_del(&entry->hlist);
++	kfree(entry);
++	hash->count--;
++}
++
++static void ftrace_hash_clear(struct ftrace_hash *hash)
++{
++	struct hlist_head *hhd;
++	struct hlist_node *tp, *tn;
++	struct ftrace_func_entry *entry;
++	int size = 1 << hash->size_bits;
++	int i;
++
++	for (i = 0; i < size; i++) {
++		hhd = &hash->buckets[i];
++		hlist_for_each_entry_safe(entry, tp, tn, hhd, hlist)
++			remove_hash_entry(hash, entry);
++	}
++	FTRACE_WARN_ON(hash->count);
++}
++
+ /*
+  * This is a double for. Do not use 'break' to break out of the loop,
+  * you must use a goto.
+@@ -1032,7 +1122,7 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
+ 	 * If we want to enable it and filtering is on, enable it only if
+ 	 * it's filtered
+ 	 */
+-	if (enable && !(rec->flags & FTRACE_FL_NOTRACE)) {
++	if (enable && !ftrace_lookup_ip(&notrace_hash, rec->ip)) {
+ 		if (!ftrace_filtered || (rec->flags & FTRACE_FL_FILTER))
+ 			flag = FTRACE_FL_ENABLED;
+ 	}
+@@ -1465,7 +1555,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
+ 		     !(rec->flags & FTRACE_FL_FILTER)) ||
+ 
+ 		    ((iter->flags & FTRACE_ITER_NOTRACE) &&
+-		     !(rec->flags & FTRACE_FL_NOTRACE))) {
++		     !ftrace_lookup_ip(&notrace_hash, rec->ip))) {
+ 			rec = NULL;
+ 			goto retry;
+ 		}
+@@ -1609,14 +1699,15 @@ static void ftrace_filter_reset(int enable)
+ {
+ 	struct ftrace_page *pg;
+ 	struct dyn_ftrace *rec;
+-	unsigned long type = enable ? FTRACE_FL_FILTER : FTRACE_FL_NOTRACE;
+ 
+ 	mutex_lock(&ftrace_lock);
+-	if (enable)
++	if (enable) {
+ 		ftrace_filtered = 0;
+-	do_for_each_ftrace_rec(pg, rec) {
+-		rec->flags &= ~type;
+-	} while_for_each_ftrace_rec();
++		do_for_each_ftrace_rec(pg, rec) {
++			rec->flags &= ~FTRACE_FL_FILTER;
++		} while_for_each_ftrace_rec();
++	} else
++		ftrace_hash_clear(&notrace_hash);
+ 	mutex_unlock(&ftrace_lock);
+ }
+ 
+@@ -1716,13 +1807,36 @@ static int ftrace_match(char *str, char *regex, int len, int type)
+ 	return matched;
+ }
+ 
+-static void
+-update_record(struct dyn_ftrace *rec, unsigned long flag, int not)
++static int
++update_record(struct dyn_ftrace *rec, int enable, int not)
+ {
+-	if (not)
+-		rec->flags &= ~flag;
+-	else
+-		rec->flags |= flag;
++	struct ftrace_func_entry *entry;
++	struct ftrace_hash *hash = &notrace_hash;
++	int ret = 0;
++
++	if (enable) {
++		if (not)
++			rec->flags &= ~FTRACE_FL_FILTER;
++		else
++			rec->flags |= FTRACE_FL_FILTER;
++	} else {
++		if (not) {
++			/* Do nothing if it doesn't exist */
++			entry = ftrace_lookup_ip(hash, rec->ip);
++			if (!entry)
++				return 0;
++
++			remove_hash_entry(hash, entry);
++		} else {
++			/* Do nothing if it exists */
++			entry = ftrace_lookup_ip(hash, rec->ip);
++			if (entry)
++				return 0;
++
++			ret = add_hash_entry(hash, rec->ip);
++		}
++	}
++	return ret;
+ }
+ 
+ static int
+@@ -1754,16 +1868,14 @@ static int match_records(char *buff, int len, char *mod, int enable, int not)
+ 	struct dyn_ftrace *rec;
+ 	int type = MATCH_FULL;
+ 	char *search = buff;
+-	unsigned long flag;
+ 	int found = 0;
++	int ret;
+ 
+ 	if (len) {
+ 		type = filter_parse_regex(buff, len, &search, &not);
+ 		search_len = strlen(search);
+ 	}
+ 
+-	flag = enable ? FTRACE_FL_FILTER : FTRACE_FL_NOTRACE;
+-
+ 	mutex_lock(&ftrace_lock);
+ 
+ 	if (unlikely(ftrace_disabled))
+@@ -1772,7 +1884,11 @@ static int match_records(char *buff, int len, char *mod, int enable, int not)
+ 	do_for_each_ftrace_rec(pg, rec) {
+ 
+ 		if (ftrace_match_record(rec, mod, search, search_len, type)) {
+-			update_record(rec, flag, not);
++			ret = update_record(rec, enable, not);
++			if (ret < 0) {
++				found = ret;
++				goto out_unlock;
++			}
+ 			found = 1;
+ 		}
+ 		/*
+@@ -1821,6 +1937,7 @@ static int
+ ftrace_mod_callback(char *func, char *cmd, char *param, int enable)
+ {
+ 	char *mod;
++	int ret = -EINVAL;
+ 
+ 	/*
+ 	 * cmd == 'mod' because we only registered this func
+@@ -1832,15 +1949,19 @@ ftrace_mod_callback(char *func, char *cmd, char *param, int enable)
+ 
+ 	/* we must have a module name */
+ 	if (!param)
+-		return -EINVAL;
++		return ret;
+ 
+ 	mod = strsep(&param, ":");
+ 	if (!strlen(mod))
+-		return -EINVAL;
++		return ret;
+ 
+-	if (ftrace_match_module_records(func, mod, enable))
+-		return 0;
+-	return -EINVAL;
++	ret = ftrace_match_module_records(func, mod, enable);
++	if (!ret)
++		ret = -EINVAL;
++	if (ret < 0)
++		return ret;
++
++	return 0;
+ }
+ 
+ static struct ftrace_func_command ftrace_mod_cmd = {
+@@ -2132,14 +2253,17 @@ static int ftrace_process_regex(char *buff, int len, int enable)
+ {
+ 	char *func, *command, *next = buff;
+ 	struct ftrace_func_command *p;
+-	int ret = -EINVAL;
++	int ret;
+ 
+ 	func = strsep(&next, ":");
+ 
+ 	if (!next) {
+-		if (ftrace_match_records(func, len, enable))
+-			return 0;
+-		return ret;
++		ret = ftrace_match_records(func, len, enable);
++		if (!ret)
++			ret = -EINVAL;
++		if (ret < 0)
++			return ret;
++		return 0;
+ 	}
+ 
+ 	/* command found */
+-- 
+1.7.2.3
 
- o The function record list flags item now stores a ref count, and
-   we no longer need to have the flags if the records are filtered
-   or set for "notrace"
 
- o Each ftrace_ops has its own set of functions to trace or not trace
-   which is used to update the ref counts of the function records
-   mentioned above. If the ftrace_ops is not currently active, the
-   records are not touched when the filters are changed. If the filters
-   are changed while the ftrace_ops is active, it is done in a way
-   with RCU to make the updates.
-
- o If only one ftrace_ops is registered for tracing (actively tracing),
-   its handler is called directly from mcount. Unless the ftrace_ops
-   was allocated and not a static/global core kernel variable (see below).
-
- o If more than one ftrace_ops is registered, then a function is called
-   that will iterate over the list of registered ftrace_ops, performing
-   a check of each of its hashes to know if ftrace_ops handler should
-   be called for that function.
-
- o If a ftrace_ops is allocated and not a static/global core kernel
-   variable, it will be forced to use the function that loops through
-   the ftrace_ops even if its the only one. This is because that function
-   disables preemption when it performs the loop. This is needed, because
-   dynamically allocated ftrace_ops must call synchronize_sched() before
-   being freed (which is done when the dynamic ftrace_ops has been
-   unregistered).
-
- o A file has been created in the debugfs/tracing directory called
-   enabled_functions. This file contains a list of all functions that
-   any ftrace_ops has registered, along with each functions ref count.
-   This can be used to make sure nothing is tracing.
-
-I'm posting this patch series as an RFC, but I do not expect it to
-change much. I still have to put it through more tests even though
-I ran several on each set already.
-
--- Steve
-
-Steven Rostedt (13):
-      ftrace: Replace FTRACE_FL_NOTRACE flag with a hash of ignored functions
-      ftrace: Use hash instead for FTRACE_FL_FILTER
-      ftrace: Create a global_ops to hold the filter and notrace hashes
-      ftrace: Separate hash allocation and assignment
-      ftrace: Use counters to enable functions to trace
-      ftrace: Add enabled_functions file
-      ftrace: Add ops parameter to ftrace_startup/shutdown functions
-      ftrace: Have global_ops store the functions that are to be traced
-      ftrace: Free hash with call_rcu_sched()
-      ftrace: Implement separate user function filtering
-      ftrace: Allow dynamically allocated function tracers
-      ftrace: Modify ftrace_set_filter/notrace to take ops
-      ftrace: Add self-tests for multiple function trace users
-
-----
- include/linux/ftrace.h                |   33 +-
- include/linux/kernel.h                |    1 +
- kernel/extable.c                      |    8 +
- kernel/trace/ftrace.c                 |  992 ++++++++++++++++++++++++++++-----
- kernel/trace/trace.h                  |    2 +
- kernel/trace/trace_functions.c        |    2 +
- kernel/trace/trace_irqsoff.c          |    1 +
- kernel/trace/trace_sched_wakeup.c     |    1 +
- kernel/trace/trace_selftest.c         |  214 +++++++-
- kernel/trace/trace_selftest_dynamic.c |    6 +
- kernel/trace/trace_stack.c            |    1 +
- 11 files changed, 1116 insertions(+), 145 deletions(-)
