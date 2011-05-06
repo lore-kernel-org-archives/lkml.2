@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab1EFQys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 12:54:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53112 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab1EFQyq (ORCPT
+	id S1756720Ab1EFQ4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 12:56:42 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:55791 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756653Ab1EFQ4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 12:54:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=ZI0mwniDKfmitqwQN0SSoue/CKjkv7CONjgyCasRWvxEDxJehPim6OS0vxzEVf+B8g
-         WJiImYAvzboGyTOS1vcq+Do9CmNyQinpqM9ycxMVCjUEieT1eoSu06h3pZN42I3P7+yu
-         Cqq9nr7KIusOulKcQ7u+fi8DRdrDCoN/1v3FE=
-Message-ID: <4DC427D4.7030903@gmail.com>
-Date: Fri, 06 May 2011 18:54:44 +0200
-From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
+	Fri, 6 May 2011 12:56:41 -0400
+Message-ID: <4DC42841.9040103@atmel.com>
+Date: Fri, 06 May 2011 18:56:33 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: compiling of tools/perf fail on x86 64bit kernel and 32bit userspace
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: vinod.koul@intel.com
+CC: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] dmaengine: at_hdmac: implement pause and resume
+ in atc_control
+References: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com> <be7d19459501aaa604aebe91daa9e9e59bb41c86.1304704588.git.nicolas.ferre@atmel.com>
+In-Reply-To: <be7d19459501aaa604aebe91daa9e9e59bb41c86.1304704588.git.nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le 06/05/2011 19:56, Nicolas Ferre :
+> Pause and resume controls are useful for audio devices. This also returns
+> correct status from atc_tx_status() in case chan is paused.
+> 
+> Idea from dw_dmac patch by Linus Walleij.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
 
-with latest git, i cannot compile perf on 32 bit userspace with a 64 bit 
-kernel.
+V2: In case of pause, some peripheral are not draining data out of FIFO
+    if they are stopped or not clocked: we need to find a way out with
+    a simple timeout.
 
-~/src/linux-2.6/tools/perf$ make
-PERF_VERSION = 2.6.39.rc6.224.g06d006f
-     GEN common-cmds.h
-     * new build flags or prefix
-     CC perf.o
-     CC builtin-annotate.o
-     CC builtin-bench.o
-     CC bench/sched-messaging.o
-     CC bench/sched-pipe.o
-     CC bench/mem-memcpy-x86-64-asm.o
-bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
-bench/../../../arch/x86/lib/memcpy_64.S:28: Error: bad register name `%rdi'
-bench/../../../arch/x86/lib/memcpy_64.S:33: Error: invalid instruction 
-suffix for `movs'
+[..]
 
-ARCH=x86 make works fine
+Best regards,
+-- 
+Nicolas Ferre
 
-thanks,
-riccardo
