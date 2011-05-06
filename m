@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab1EFAvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:51:38 -0400
-Received: from kroah.org ([198.145.64.141]:36913 "EHLO coco.kroah.org"
+	id S932817Ab1EFAvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:51:21 -0400
+Received: from kroah.org ([198.145.64.141]:36917 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285Ab1EFAZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:07 -0400
+	id S932297Ab1EFAZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:08 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:12 2011
-Message-Id: <20110506002212.101731211@clark.kroah.org>
+Message-Id: <20110506002212.189011971@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:55 -0700
+Date: Thu, 05 May 2011 17:20:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jovi Zhang <bookjovi@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [070/143] nfs: fix compilation warning
+        Timo Warns <warns@pre-sense.de>
+Subject: [071/143] Fix corrupted OSF partition table parsing
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jovi Zhang <bookjovi@gmail.com>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit 43b7c3f051dea504afccc39bcb56d8e26c2e0b77 upstream.
+commit 1eafbfeb7bdf59cfe173304c76188f3fd5f1fd05 upstream.
 
-this commit fix compilation warning as following:
-linux-2.6/fs/nfs/nfs4proc.c:3265: warning: comparison of distinct pointer types lacks a cast
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating OSF partitions contains a bug that leaks data
+from kernel heap memory to userspace for certain corrupted OSF
+partitions.
 
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+In more detail:
+
+  for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
+
+iterates from 0 to d_npartitions - 1, where d_npartitions is read from
+the partition table without validation and partition is a pointer to an
+array of at most 8 d_partitions.
+
+Add the proper and obvious validation.
+
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: stable@kernel.org
+[ Changed the patch trivially to not repeat the whole le16_to_cpu()
+  thing, and to use an explicit constant for the magic value '8' ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/nfs/nfs4proc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/partitions/osf.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3142,7 +3142,7 @@ static int buf_to_pages_noslab(const voi
- 	spages = pages;
+--- a/fs/partitions/osf.c
++++ b/fs/partitions/osf.c
+@@ -10,10 +10,13 @@
+ #include "check.h"
+ #include "osf.h"
  
- 	do {
--		len = min(PAGE_CACHE_SIZE, buflen);
-+		len = min_t(size_t, PAGE_CACHE_SIZE, buflen);
- 		newpage = alloc_page(GFP_KERNEL);
++#define MAX_OSF_PARTITIONS 8
++
+ int osf_partition(struct parsed_partitions *state, struct block_device *bdev)
+ {
+ 	int i;
+ 	int slot = 1;
++	unsigned int npartitions;
+ 	Sector sect;
+ 	unsigned char *data;
+ 	struct disklabel {
+@@ -45,7 +48,7 @@ int osf_partition(struct parsed_partitio
+ 			u8  p_fstype;
+ 			u8  p_frag;
+ 			__le16 p_cpg;
+-		} d_partitions[8];
++		} d_partitions[MAX_OSF_PARTITIONS];
+ 	} * label;
+ 	struct d_partition * partition;
  
- 		if (newpage == NULL)
+@@ -63,7 +66,12 @@ int osf_partition(struct parsed_partitio
+ 		put_dev_sector(sect);
+ 		return 0;
+ 	}
+-	for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
++	npartitions = le16_to_cpu(label->d_npartitions);
++	if (npartitions > MAX_OSF_PARTITIONS) {
++		put_dev_sector(sect);
++		return 0;
++	}
++	for (i = 0 ; i < npartitions; i++, partition++) {
+ 		if (slot == state->limit)
+ 		        break;
+ 		if (le32_to_cpu(partition->p_size))
 
 
