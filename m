@@ -1,263 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab1EFH4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 03:56:44 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48598 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab1EFH4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 03:56:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 6 May 2011 16:50:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, yinghan@google.com
-Subject: Re: + memcg-add-stats-to-monitor-soft_limit-reclaim-v2.patch added
- to -mm tree
-Message-Id: <20110506165006.3df50f77.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <201105032314.p43NE1Ae016380@imap1.linux-foundation.org>
-References: <201105032314.p43NE1Ae016380@imap1.linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754659Ab1EFHua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 03:50:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51199 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282Ab1EFHu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 03:50:29 -0400
+Date: Fri, 6 May 2011 09:50:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4] mm: make expand_downwards symmetrical to expand_upwards
+Message-ID: <20110506075027.GB32495@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 May 2011 16:14:01 -0700
-akpm@linux-foundation.org wrote:
------------------------------------------------------
-> Subject: memcg-add-stats-to-monitor-soft_limit-reclaim-v2
-> From: Ying Han <yinghan@google.com>
-> 
-> Extend the soft_limit reclaim stats to both global background reclaim and
-> global direct reclaim.
-> 
-> The following stats are renamed and added:
-> 
-> $cat /dev/cgroup/memory/A/memory.stat
-> soft_kswapd_steal 1053626
-> soft_kswapd_scan 1053693
-> soft_direct_steal 1481810
-> soft_direct_scan 1481996
-> 
-> changelog v2..v1:
-> 1. rename the stats on soft_kswapd/direct_steal/scan.
-> 2. fix the documentation to match the stat name.
-> 
+Hi Andrew,
+I am sorry to repost this kind of trivial cleanup for the 4th time,
+but after recent discussion (https://lkml.org/lkml/2011/5/3/323)
+with Hugh I think that it makes sense to keep the original
+expand_{upwards,downwards} without being explicit about the stack in the
+name. As Hugh pointed out, IA64 uses expand_upwards for something that
+is not really a stack (it is a backing storage for registers).
+The following patch reworks the original one so it is not incremental.
+If you prefer incremental one I can send that one instead. 
+Just for record this patch obsoletes:
+	mm-make-expand_downwards-symmetrical-with-expand_upwards.patch
+	mm-make-expand_downwards-symmetrical-with-expand_upwards-v3.patch
+in your current (2011-04-29-16-25) mm tree.
 
-This patch is not based on mmotm and need some tweak and fix.
-It may be better to wait for Ying's v3 but this is a quick v3 by me.
-==
-Subject: memcg-add-stats-to-monitor-soft_limit-reclaim-v3
-From: Ying Han <yinghan@google.com>
-
-Extend the soft_limit reclaim stats to both global background reclaim and
-global direct reclaim.
-
-The following stats are renamed and added:
-
-$cat /dev/cgroup/memory/A/memory.stat
-soft_kswapd_steal 1053626
-soft_kswapd_scan 1053693
-soft_direct_steal 1481810
-soft_direct_scan 1481996
-
-changelog v3..v2:
-1. rebased onto mmotm-Apr29.(which includes memcg pgfault counter)
-2. fixed missing codes for adding stat strings as "soft_direct_steal" etc..
-changelog v2..v1:
-1. rename the stats on soft_kswapd/direct_steal/scan.
-2. fix the documentation to match the stat name.
-
-Signed-off-by: Ying Han <yinghan@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Balbir Singh <balbir@in.ibm.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
+>From 1b679558f464530c59c93930b958a3436a250c25 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 15 Apr 2011 14:56:26 +0200
+Subject: [PATCH] mm: make expand_downwards symmetrical to expand_upwards
 
- Documentation/cgroups/memory.txt |   16 ++++++--
- mm/memcontrol.c                  |   70 ++++++++++++++++++++++++++++-----------
- 2 files changed, 63 insertions(+), 23 deletions(-)
+Currently we have expand_upwards exported while expand_downwards is
+accessible only via expand_stack or expand_stack_downwards.
 
-Index: mmotm-Apr29/Documentation/cgroups/memory.txt
-===================================================================
---- mmotm-Apr29.orig/Documentation/cgroups/memory.txt
-+++ mmotm-Apr29/Documentation/cgroups/memory.txt
-@@ -389,8 +389,14 @@ pgpgout		- # of pages paged out (equival
- swap		- # of bytes of swap usage
- pgfault		- # of page faults.
- pgmajfault	- # of major page faults.
--soft_steal	- # of pages reclaimed from global hierarchical reclaim
--soft_scan	- # of pages scanned from global hierarchical reclaim
-+soft_kswapd_steal- # of pages reclaimed in global hierarchical reclaim from
-+		background reclaim
-+soft_kswapd_scan - # of pages scanned in global hierarchical reclaim from
-+		background reclaim
-+soft_direct_steal- # of pages reclaimed in global hierarchical reclaim from
-+		direct reclaim
-+soft_direct_scan- # of pages scanned in global hierarchical reclaim from
-+		direct reclaim
- inactive_anon	- # of bytes of anonymous memory and swap cache memory on
- 		LRU list.
- active_anon	- # of bytes of anonymous and swap cache memory on active
-@@ -414,8 +420,10 @@ total_pgpgout		- sum of all children's "
- total_swap		- sum of all children's "swap"
- total_pgfault		- sum of all children's "pgfault"
- total_pgmajfault	- sum of all children's "pgmajfault"
--total_soft_steal	- sum of all children's "soft_steal"
--total_soft_scan		- sum of all children's "soft_scan"
-+total_soft_kswapd_steal	- sum of all children's "soft_kswapd_steal"
-+total_soft_kswapd_scan	- sum of all children's "soft_kswapd_scan"
-+total_soft_direct_steal	- sum of all children's "soft_direct_steal"
-+total_soft_direct_scan	- sum of all children's "soft_direct_scan"
- total_inactive_anon	- sum of all children's "inactive_anon"
- total_active_anon	- sum of all children's "active_anon"
- total_inactive_file	- sum of all children's "inactive_file"
-Index: mmotm-Apr29/mm/memcontrol.c
-===================================================================
---- mmotm-Apr29.orig/mm/memcontrol.c
-+++ mmotm-Apr29/mm/memcontrol.c
-@@ -96,10 +96,14 @@ enum mem_cgroup_events_index {
- 	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
- 	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
- 	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
--	MEM_CGROUP_EVENTS_SOFT_STEAL,	/* # of pages reclaimed from */
--					/* soft reclaim               */
--	MEM_CGROUP_EVENTS_SOFT_SCAN,	/* # of pages scanned from */
--					/* soft reclaim               */
-+	MEM_CGROUP_EVENTS_SOFT_KSWAPD_STEAL, /* # of pages reclaimed from */
-+					/* soft reclaim in background reclaim */
-+	MEM_CGROUP_EVENTS_SOFT_KSWAPD_SCAN, /* # of pages scanned from */
-+					/* soft reclaim in background reclaim */
-+	MEM_CGROUP_EVENTS_SOFT_DIRECT_STEAL, /* # of pages reclaimed from */
-+					/* soft reclaim in direct reclaim */
-+	MEM_CGROUP_EVENTS_SOFT_DIRECT_SCAN, /* # of pages scanned from */
-+					/* soft reclaim in direct reclaim */
- 	MEM_CGROUP_EVENTS_NSTATS,
- };
- /*
-@@ -640,14 +644,30 @@ static void mem_cgroup_charge_statistics
- 	preempt_enable();
- }
+check_stack_guard_page is a nice example of the asymmetry. It uses
+expand_stack for VM_GROWSDOWN while expand_upwards is called for
+VM_GROWSUP case.
+
+Let's clean this up by exporting both functions and make those names
+consistent. Let's use expand_{upwards,downwards} because expanding
+doesn't always involve stack manipulation (an example is
+ia64_do_page_fault which uses expand_upwards for registers backing store
+expansion).
+expand_downwards has to be defined for both CONFIG_STACK_GROWS{UP,DOWN}
+because get_arg_page calls the downwards version in the early process
+initialization phase for growsup configuration.
+
+CC: Hugh Dickins <hughd@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ fs/exec.c          |    2 +-
+ include/linux/mm.h |    8 +++++---
+ mm/memory.c        |    2 +-
+ mm/mmap.c          |    7 +------
+ 4 files changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 5e62d26..c2668ff 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -194,7 +194,7 @@ struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
  
--static void mem_cgroup_soft_steal(struct mem_cgroup *mem, int val)
-+static void mem_cgroup_soft_steal(struct mem_cgroup *mem, bool is_kswapd,
-+				  int val)
- {
--	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_STEAL], val);
-+	if (is_kswapd)
-+		this_cpu_add(
-+			mem->stat->events[MEM_CGROUP_EVENTS_SOFT_KSWAPD_STEAL],
-+									val);
-+	else
-+		this_cpu_add(
-+			mem->stat->events[MEM_CGROUP_EVENTS_SOFT_DIRECT_STEAL],
-+									val);
- }
- 
--static void mem_cgroup_soft_scan(struct mem_cgroup *mem, int val)
--{
--	this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_SOFT_SCAN], val);
-+static void mem_cgroup_soft_scan(struct mem_cgroup *mem, bool is_kswapd,
-+				 int val)
-+{
-+	if (is_kswapd)
-+		this_cpu_add(
-+			mem->stat->events[MEM_CGROUP_EVENTS_SOFT_KSWAPD_SCAN],
-+									val);
-+	else
-+		this_cpu_add(
-+			mem->stat->events[MEM_CGROUP_EVENTS_SOFT_DIRECT_SCAN],
-+									val);
- }
- 
- static unsigned long mem_cgroup_get_local_zonestat(struct mem_cgroup *mem,
-@@ -1495,6 +1515,7 @@ static int mem_cgroup_hierarchical_recla
- 	bool noswap = reclaim_options & MEM_CGROUP_RECLAIM_NOSWAP;
- 	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
- 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
-+	bool is_kswapd = false;
- 	unsigned long excess;
- 	unsigned long nr_scanned;
- 
-@@ -1504,6 +1525,9 @@ static int mem_cgroup_hierarchical_recla
- 	if (root_mem->memsw_is_minimum)
- 		noswap = true;
- 
-+	if (current_is_kswapd())
-+		is_kswapd = true;
-+
- 	while (1) {
- 		victim = mem_cgroup_select_victim(root_mem);
- 		if (victim == root_mem) {
-@@ -1544,8 +1568,8 @@ static int mem_cgroup_hierarchical_recla
- 				noswap, get_swappiness(victim), zone,
- 				&nr_scanned);
- 			*total_scanned += nr_scanned;
--			mem_cgroup_soft_steal(victim, ret);
--			mem_cgroup_soft_scan(victim, nr_scanned);
-+			mem_cgroup_soft_steal(victim, is_kswapd, ret);
-+			mem_cgroup_soft_scan(victim, is_kswapd, nr_scanned);
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
- 						noswap, get_swappiness(victim));
-@@ -3840,8 +3864,10 @@ enum {
- 	MCS_SWAP,
- 	MCS_PGFAULT,
- 	MCS_PGMAJFAULT,
--	MCS_SOFT_STEAL,
--	MCS_SOFT_SCAN,
-+	MCS_SOFT_KSWAPD_STEAL,
-+	MCS_SOFT_KSWAPD_SCAN,
-+	MCS_SOFT_DIRECT_STEAL,
-+	MCS_SOFT_DIRECT_SCAN,
- 	MCS_INACTIVE_ANON,
- 	MCS_ACTIVE_ANON,
- 	MCS_INACTIVE_FILE,
-@@ -3866,8 +3892,10 @@ struct {
- 	{"swap", "total_swap"},
- 	{"pgfault", "total_pgfault"},
- 	{"pgmajfault", "total_pgmajfault"},
--	{"soft_steal", "total_soft_steal"},
--	{"soft_scan", "total_soft_scan"},
-+	{"soft_kswapd_steal", "total_soft_kswapd_steal"},
-+	{"soft_kswapd_scan", "total_soft_kswapd_scan"},
-+	{"soft_direct_steal", "total_soft_direct_steal"},
-+	{"soft_direct_scan", "total_soft_direct_scan"},
- 	{"inactive_anon", "total_inactive_anon"},
- 	{"active_anon", "total_active_anon"},
- 	{"inactive_file", "total_inactive_file"},
-@@ -3896,14 +3924,18 @@ mem_cgroup_get_local_stat(struct mem_cgr
- 		val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
- 		s->stat[MCS_SWAP] += val * PAGE_SIZE;
+ #ifdef CONFIG_STACK_GROWSUP
+ 	if (write) {
+-		ret = expand_stack_downwards(bprm->vma, pos);
++		ret = expand_downwards(bprm->vma, pos);
+ 		if (ret < 0)
+ 			return NULL;
  	}
--	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_STEAL);
--	s->stat[MCS_SOFT_STEAL] += val;
--	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_SCAN);
--	s->stat[MCS_SOFT_SCAN] += val;
- 	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGFAULT);
- 	s->stat[MCS_PGFAULT] += val;
- 	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGMAJFAULT);
- 	s->stat[MCS_PGMAJFAULT] += val;
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_KSWAPD_STEAL);
-+	s->stat[MCS_SOFT_KSWAPD_STEAL] += val;
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_KSWAPD_SCAN);
-+	s->stat[MCS_SOFT_KSWAPD_SCAN] += val;
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_DIRECT_STEAL);
-+	s->stat[MCS_SOFT_DIRECT_STEAL] += val;
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_SOFT_DIRECT_SCAN);
-+	s->stat[MCS_SOFT_DIRECT_SCAN] += val;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 692dbae..2d4f62b 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1494,15 +1494,17 @@ unsigned long ra_submit(struct file_ra_state *ra,
+ 			struct address_space *mapping,
+ 			struct file *filp);
  
- 	/* per zone stat */
- 	val = mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON);
+-/* Do stack extension */
++/* Generic expand stack which grows the stack according to GROWS{UP,DOWN} */
+ extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
++
++/* CONFIG_STACK_GROWSUP still needs to to grow downwards at some places */
++extern int expand_downwards(struct vm_area_struct *vma,
++		unsigned long address);
+ #if VM_GROWSUP
+ extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
+ #else
+   #define expand_upwards(vma, address) do { } while (0)
+ #endif
+-extern int expand_stack_downwards(struct vm_area_struct *vma,
+-				  unsigned long address);
+ 
+ /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+ extern struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr);
+diff --git a/mm/memory.c b/mm/memory.c
+index ce22a25..f404fb6 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2969,7 +2969,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
+ 		if (prev && prev->vm_end == address)
+ 			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
+ 
+-		expand_stack(vma, address - PAGE_SIZE);
++		expand_downwards(vma, address - PAGE_SIZE);
+ 	}
+ 	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
+ 		struct vm_area_struct *next = vma->vm_next;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index e27e0cf..4c10287 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1782,7 +1782,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ /*
+  * vma is the first one with address < vma->vm_start.  Have to extend vma.
+  */
+-static int expand_downwards(struct vm_area_struct *vma,
++int expand_downwards(struct vm_area_struct *vma,
+ 				   unsigned long address)
+ {
+ 	int error;
+@@ -1829,11 +1829,6 @@ static int expand_downwards(struct vm_area_struct *vma,
+ 	return error;
+ }
+ 
+-int expand_stack_downwards(struct vm_area_struct *vma, unsigned long address)
+-{
+-	return expand_downwards(vma, address);
+-}
+-
+ #ifdef CONFIG_STACK_GROWSUP
+ int expand_stack(struct vm_area_struct *vma, unsigned long address)
+ {
+-- 
+1.7.4.4
 
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
