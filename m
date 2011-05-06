@@ -1,63 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab1EFMtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 08:49:53 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38897 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751878Ab1EFMtt (ORCPT
+	id S1755004Ab1EFMyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:54:23 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:54307 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab1EFMyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 08:49:49 -0400
-Message-ID: <4DC3EF64.9050305@dsn.okisemi.com>
-Date: Fri, 06 May 2011 21:53:56 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Fri, 6 May 2011 08:54:22 -0400
+Date: Fri, 6 May 2011 18:24:18 +0530
+From: Prem Karat <prem.karat@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/9p: Fix invalid mount options/args
+Message-ID: <20110506125417.GD6759@d6fc318.ibm.com>
 MIME-Version: 1.0
-To: ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: [PATCH 2/2] PCH_GbE : Fixed the issue of checksum judgment
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The checksum judgment was mistaken.
-  Judgment result
-     0:Correct 1:Wrong
 
-This patch fixes the issue.
+fs/9p: Fix invalid mount options/args
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Without this fix, if any invalid mount options/args are passed while mouting the 9p fs,
+no error (-EINVAL) is returned and default arg value is assigned.
+
+This fix returns -EINVAL when an invalid arguement is found while parsing mount options.
+
+Signed-off-by: Prem Karat <prem.karat@linux.vnet.ibm.com>
 ---
- drivers/net/pch_gbe/pch_gbe_main.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ fs/9p/v9fs.c |   43 ++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index babe663..6f10361 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -1494,12 +1494,11 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
- 			/* Write meta date of skb */
- 			skb_put(skb, length);
- 			skb->protocol = eth_type_trans(skb, netdev);
--			if ((tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK) ==
--			    PCH_GBE_RXD_ACC_STAT_TCPIPOK) {
--				skb->ip_summed = CHECKSUM_UNNECESSARY;
--			} else {
-+			if (tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK)
- 				skb->ip_summed = CHECKSUM_NONE;
--			}
-+			else
-+				skb->ip_summed = CHECKSUM_UNNECESSARY;
+diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
+index c82b017..033c23e 100644
+--- a/fs/9p/v9fs.c
++++ b/fs/9p/v9fs.c
+@@ -78,6 +78,25 @@ static const match_table_t tokens = {
+ 	{Opt_err, NULL}
+ };
+ 
++/* Interpret mount options for cache mode */
++static int get_cache_mode(char *s)
++{
++	int version = -EINVAL;
 +
- 			napi_gro_receive(&adapter->napi, skb);
- 			(*work_done)++;
- 			pr_debug("Receive skb->ip_summed: %d length: %d\n",
++	if (!strcmp(s, "loose")) {
++		version = CACHE_LOOSE;
++		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: loose\n");
++	} else if (!strcmp(s, "fscache")) {
++		version = CACHE_FSCACHE;
++		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: fscache\n");
++	} else if (!strcmp(s, "none")) {
++		version = CACHE_NONE;
++		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: none\n");
++	} else
++		printk(KERN_INFO "9p: Unknown Cache mode %s.\n", s);
++	return version;
++}
++
+ /**
+  * v9fs_parse_options - parse mount options into session structure
+  * @v9ses: existing v9fs session information
+@@ -97,7 +116,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+ 	/* setup defaults */
+ 	v9ses->afid = ~0;
+ 	v9ses->debug = 0;
+-	v9ses->cache = 0;
++	v9ses->cache = CACHE_NONE;
+ #ifdef CONFIG_9P_FSCACHE
+ 	v9ses->cachetag = NULL;
+ #endif
+@@ -171,13 +190,13 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+ 				  "problem allocating copy of cache arg\n");
+ 				goto free_and_return;
+ 			}
++			ret = get_cache_mode(s);
++			if (ret == -EINVAL) {
++				kfree(s);
++				goto free_and_return;
++			}
+ 
+-			if (strcmp(s, "loose") == 0)
+-				v9ses->cache = CACHE_LOOSE;
+-			else if (strcmp(s, "fscache") == 0)
+-				v9ses->cache = CACHE_FSCACHE;
+-			else
+-				v9ses->cache = CACHE_NONE;
++			v9ses->cache = ret;
+ 			kfree(s);
+ 			break;
+ 
+@@ -200,9 +219,15 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+ 			} else {
+ 				v9ses->flags |= V9FS_ACCESS_SINGLE;
+ 				v9ses->uid = simple_strtoul(s, &e, 10);
+-				if (*e != '\0')
+-					v9ses->uid = ~0;
++				if (*e != '\0') {
++					ret = -EINVAL;
++					printk(KERN_INFO "9p: Unknown access "
++							"argument %s.\n", s);
++					kfree(s);
++					goto free_and_return;
++				}
+ 			}
++
+ 			kfree(s);
+ 			break;
+ 
 -- 
-1.6.2.5
+1.7.4
+
+-- 
+Cheers,
+Prem
+Linux Technology Center,
+IBM Systems & Technology Labs
