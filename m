@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab1EFATH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:19:07 -0400
-Received: from kroah.org ([198.145.64.141]:32835 "EHLO coco.kroah.org"
+	id S1754657Ab1EFANY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:13:24 -0400
+Received: from kroah.org ([198.145.64.141]:32841 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578Ab1EFANU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:20 -0400
+	id S1754583Ab1EFANV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:21 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:08 2011
-Message-Id: <20110506001208.453902190@clark.kroah.org>
+Message-Id: <20110506001208.549509651@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:44 -0700
+Date: Thu, 05 May 2011 17:10:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jie Yang <jie.yang@atheros.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [patch 12/38] atl1c: Fix work event interrupt/task races
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: [patch 13/38] UBIFS: do not free write-buffers when in R/O mode
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,84 +25,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Gardner <timg@tpi.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit cb771838715b1c470bc5735bdae709b33b18e0ad upstream.
+commit b50b9f408502a2ea90459ae36ba8cdc9cc005cfe upstream.
 
-The mechanism used to initiate work events from the interrupt
-handler has a classic read/modify/write race between the interrupt
-handler that sets the condition, and the worker task that reads and
-clears the condition. Close these races by using atomic
-bit fields.
+Currently UBIFS has a small optimization - it frees write-buffers when it is
+re-mounted from R/W mode to R/O mode. Of course, when it is mounted R/O, it
+does not allocate write-buffers as well.
 
-Cc: Jie Yang <jie.yang@atheros.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This optimization is nice but it leads to subtle problems and complications
+in recovery, which I can reproduce using the integck test. The symptoms are
+that after a power cut the file-system cannot be mounted if we first mount
+it R/O, and then re-mount R/W - 'ubifs_rcvry_gc_commit()' prints:
+
+UBIFS error (pid 34456): could not find an empty LEB
+
+Analysis of the  problem.
+
+When mounting R/W, the reply process sets journal heads to buds [1], but
+when mounting R/O - it does not do this, because the write-buffers are not
+allocated. So 'ubifs_rcvry_gc_commit()' works completely differently for the
+same file-system but for the following 2 cases:
+
+1. mounting R/W after a power cut and recover
+2. mounting R/O after a power cut, re-mounting R/W and run deferred recovery
+
+In the former case, we have journal heads seeked to the a bud, in the latter
+case, they are non-seeked (wbuf->lnum == -1). So in the latter case we do not
+try to recover the GC LEB by garbage-collecting to the GC head, but we just
+try to find an empty LEB, and there may be no empty LEBs, so we just fail.
+On the other hand, in the former case (mount R/W), we are able to make a GC LEB
+(@c->gc_lnum) by garbage-collecting.
+
+Thus, let's remove this small nice optimization and always allocate
+write-buffers. This should not make too big difference - we have only 3
+of them, each of max. write unit size, which is usually 2KiB. So this is
+about 6KiB of RAM for the typical case, and only when mounted R/O.
+
+[1]: Note, currently the replay process is setting (seeking) the journal heads
+to _some_ buds, not necessarily to the buds which had been the journal heads
+before the power cut happened. This will be fixed separately.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/atl1c/atl1c.h      |    6 +++---
- drivers/net/atl1c/atl1c_main.c |   14 +++++---------
- 2 files changed, 8 insertions(+), 12 deletions(-)
+ fs/ubifs/log.c   |   20 --------------------
+ fs/ubifs/super.c |   15 ++++-----------
+ 2 files changed, 4 insertions(+), 31 deletions(-)
 
---- a/drivers/net/atl1c/atl1c.h
-+++ b/drivers/net/atl1c/atl1c.h
-@@ -566,9 +566,9 @@ struct atl1c_adapter {
- #define __AT_TESTING        0x0001
- #define __AT_RESETTING      0x0002
- #define __AT_DOWN           0x0003
--	u8 work_event;
--#define ATL1C_WORK_EVENT_RESET 		0x01
--#define ATL1C_WORK_EVENT_LINK_CHANGE	0x02
-+	unsigned long work_event;
-+#define	ATL1C_WORK_EVENT_RESET		0
-+#define	ATL1C_WORK_EVENT_LINK_CHANGE	1
- 	u32 msg_enable;
- 
- 	bool have_msi;
---- a/drivers/net/atl1c/atl1c_main.c
-+++ b/drivers/net/atl1c/atl1c_main.c
-@@ -325,7 +325,7 @@ static void atl1c_link_chg_event(struct
- 		}
- 	}
- 
--	adapter->work_event |= ATL1C_WORK_EVENT_LINK_CHANGE;
-+	set_bit(ATL1C_WORK_EVENT_LINK_CHANGE, &adapter->work_event);
- 	schedule_work(&adapter->common_task);
+--- a/fs/ubifs/log.c
++++ b/fs/ubifs/log.c
+@@ -175,26 +175,6 @@ void ubifs_add_bud(struct ubifs_info *c,
  }
  
-@@ -337,20 +337,16 @@ static void atl1c_common_task(struct wor
- 	adapter = container_of(work, struct atl1c_adapter, common_task);
- 	netdev = adapter->netdev;
- 
--	if (adapter->work_event & ATL1C_WORK_EVENT_RESET) {
--		adapter->work_event &= ~ATL1C_WORK_EVENT_RESET;
-+	if (test_and_clear_bit(ATL1C_WORK_EVENT_RESET, &adapter->work_event)) {
- 		netif_device_detach(netdev);
- 		atl1c_down(adapter);
- 		atl1c_up(adapter);
- 		netif_device_attach(netdev);
--		return;
- 	}
- 
--	if (adapter->work_event & ATL1C_WORK_EVENT_LINK_CHANGE) {
--		adapter->work_event &= ~ATL1C_WORK_EVENT_LINK_CHANGE;
-+	if (test_and_clear_bit(ATL1C_WORK_EVENT_LINK_CHANGE,
-+		&adapter->work_event))
- 		atl1c_check_link_status(adapter);
+ /**
+- * ubifs_create_buds_lists - create journal head buds lists for remount rw.
+- * @c: UBIFS file-system description object
+- */
+-void ubifs_create_buds_lists(struct ubifs_info *c)
+-{
+-	struct rb_node *p;
+-
+-	spin_lock(&c->buds_lock);
+-	p = rb_first(&c->buds);
+-	while (p) {
+-		struct ubifs_bud *bud = rb_entry(p, struct ubifs_bud, rb);
+-		struct ubifs_jhead *jhead = &c->jheads[bud->jhead];
+-
+-		list_add_tail(&bud->list, &jhead->buds_list);
+-		p = rb_next(p);
 -	}
--	return;
- }
+-	spin_unlock(&c->buds_lock);
+-}
+-
+-/**
+  * ubifs_add_bud_to_log - add a new bud to the log.
+  * @c: UBIFS file-system description object
+  * @jhead: journal head the bud belongs to
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1235,12 +1235,12 @@ static int mount_ubifs(struct ubifs_info
+ 		goto out_free;
+ 	}
  
++	err = alloc_wbufs(c);
++	if (err)
++		goto out_cbuf;
++
+ 	sprintf(c->bgt_name, BGT_NAME_PATTERN, c->vi.ubi_num, c->vi.vol_id);
+ 	if (!c->ro_mount) {
+-		err = alloc_wbufs(c);
+-		if (err)
+-			goto out_cbuf;
+-
+ 		/* Create background thread */
+ 		c->bgt = kthread_create(ubifs_bg_thread, c, "%s", c->bgt_name);
+ 		if (IS_ERR(c->bgt)) {
+@@ -1603,12 +1603,6 @@ static int ubifs_remount_rw(struct ubifs
+ 	if (err)
+ 		goto out;
  
-@@ -369,7 +365,7 @@ static void atl1c_tx_timeout(struct net_
- 	struct atl1c_adapter *adapter = netdev_priv(netdev);
+-	err = alloc_wbufs(c);
+-	if (err)
+-		goto out;
+-
+-	ubifs_create_buds_lists(c);
+-
+ 	/* Create background thread */
+ 	c->bgt = kthread_create(ubifs_bg_thread, c, "%s", c->bgt_name);
+ 	if (IS_ERR(c->bgt)) {
+@@ -1717,7 +1711,6 @@ static void ubifs_remount_ro(struct ubif
+ 	if (err)
+ 		ubifs_ro_mode(c, err);
  
- 	/* Do the reset outside of interrupt context */
--	adapter->work_event |= ATL1C_WORK_EVENT_RESET;
-+	set_bit(ATL1C_WORK_EVENT_RESET, &adapter->work_event);
- 	schedule_work(&adapter->common_task);
- }
- 
+-	free_wbufs(c);
+ 	vfree(c->orph_buf);
+ 	c->orph_buf = NULL;
+ 	vfree(c->ileb_buf);
 
 
