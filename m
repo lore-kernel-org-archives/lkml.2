@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab1EFEJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 00:09:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63715 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab1EFEJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 00:09:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,324,1301900400"; 
-   d="scan'208";a="688955678"
-Date: Fri, 6 May 2011 12:09:14 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 00/17] writeback fixes and cleanups for 2.6.40
-Message-ID: <20110506040914.GA20493@localhost>
-References: <20110506030821.523093711@intel.com>
- <BANLkTimaf29+FDJV-6L3Jv5JQ9EvvOJrfA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimaf29+FDJV-6L3Jv5JQ9EvvOJrfA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751356Ab1EFEPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 00:15:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:27552 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab1EFEPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 00:15:32 -0400
+X-AuditID: cbfee61a-b7c84ae000006ee6-59-4dc375e21ed2
+Date: Fri, 06 May 2011 13:15:27 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] leds: drop leds-h1940 driver
+In-reply-to: <1303912597-32653-1-git-send-email-anarsoul@gmail.com>
+To: "'Vasily Khoruzhick'" <anarsoul@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Arnaud Patard (Rtp)'" <arnaud.patard@rtp-net.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+Cc: rpurdie@rpsys.net
+Message-id: <00f701cc0ba4$3cb4b680$b61e2380$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcwE45PCSwu7GiP0TqCTXTQWDnkykAGwAS6Q
+References: <1303912597-32653-1-git-send-email-anarsoul@gmail.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 12:06:42PM +0800, Anca Emanuel wrote:
-> On Fri, May 6, 2011 at 6:08 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > The patches are also git pullable from
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git fs-writeback
+Vasily Khoruzhick wrote:
 > 
-> git pull git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git
-> fs-writeback
-> fatal: Couldn't find remote ref fs-writeback
+> H1940 machine now uses leds-gpio and leds-h1940 has no users anymore. So
+> drop it.
 > 
+> Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
+> ---
+>  drivers/leds/Kconfig      |    7 --
+>  drivers/leds/Makefile     |    1 -
+>  drivers/leds/leds-h1940.c |  170
+-------------------------------------------
+> --
+>  3 files changed, 0 insertions(+), 178 deletions(-)
+>  delete mode 100644 drivers/leds/leds-h1940.c
 > 
-> git ls-remote git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git
-> 5895198c56d131cc696556a45f7ff0ea99ac297b	HEAD
-> dbe30770c0b9d280742d3ef0c12b8187ce6e19a7	refs/heads/dirty-throttling-v2
-> a56422a5103f57066e401e1d506f1e0cadbe3ad7	refs/heads/dirty-throttling-v3
-> 1fe1fbdcbcd2bc1a0034ec84a927222b3278dca9	refs/heads/dirty-throttling-v4
-> 6b7ca194675e2fb4aaf4394df3aedfda69ab14a4	refs/heads/dirty-throttling-v5
-> 5f35306e8d2e56dd6973556a5b844e4eb8ce24c4	refs/heads/dirty-throttling-v6
-> d0e30163e390d87387ec13e3b1c2168238c26793	refs/heads/dirty-throttling-v7
-> 5895198c56d131cc696556a45f7ff0ea99ac297b	refs/heads/master
-> ...
-> 
-> no branch fs-writeback.
+Hi Vasily,
 
-It seems that it takes quite some time for the new branch to show up
-publicly..
+Hmm, regarding maintainer who is Richard Purdie(LED) in this case should be
+added in Cc. (Cc'ed him)
 
-Thanks,
-Fengguang
+And I think need following with this patch.
+
+--- a/arch/arm/configs/s3c2410_defconfig
++++ b/arch/arm/configs/s3c2410_defconfig
+@@ -389,7 +389,6 @@ CONFIG_MMC_SPI=m
+ CONFIG_MMC_S3C=y
+ CONFIG_LEDS_CLASS=m
+ CONFIG_LEDS_S3C24XX=m
+-CONFIG_LEDS_H1940=m
+ CONFIG_LEDS_PCA9532=m
+ CONFIG_LEDS_GPIO=m
+ CONFIG_LEDS_PCA955X=m
+
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
