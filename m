@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab1EFAmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:42:44 -0400
-Received: from kroah.org ([198.145.64.141]:37216 "EHLO coco.kroah.org"
+	id S932484Ab1EFAm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:42:26 -0400
+Received: from kroah.org ([198.145.64.141]:37222 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416Ab1EFAZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:46 -0400
+	id S932375Ab1EFAZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:47 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:16 2011
-Message-Id: <20110506002216.239097490@clark.kroah.org>
+Message-Id: <20110506002216.331500595@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:37 -0700
+Date: Thu, 05 May 2011 17:21:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rezwanul Kabir <Rezwanul_Kabir@dell.com>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [112/143] dell-laptop: Add another Dell laptop family to the DMI whitelist
+        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [113/143] scsi_dh_emc: fix mode select request setup
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rezwanul Kabir <Rezwanul_Kabir@dell.com>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 410d44c74cf9942e3055d5b7d73953fac8efbacb upstream.
+commit 6c71dcb28ff9b63b814a0b76a256f5dae08d3e0d upstream.
 
-This is to support Precision M4500 and others.
+This patch fixes the request setup code for mode selects. I got the fixes from
+Hannes Reinecke while trying to hunt down some problems and merged it
+into one patch. I am sending it because Hannes is busy with other things.
 
-Signed-off-by: Rezwanul Kabir <Rezwanul_Kabir@dell.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+The patch fixes:
+- setting of the length for mode selects.
+- setting of the data direction for mode select 10.
+
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/platform/x86/dell-laptop.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/scsi/device_handler/scsi_dh_emc.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/platform/x86/dell-laptop.c
-+++ b/drivers/platform/x86/dell-laptop.c
-@@ -72,6 +72,12 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_CHASSIS_TYPE, "9"), /*Laptop*/
-+		},
-+	},
-+	{
- 		.ident = "Dell Computer Corporation",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
-@@ -404,4 +410,5 @@ MODULE_AUTHOR("Matthew Garrett <mjg@redh
- MODULE_DESCRIPTION("Dell laptop driver");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("dmi:*svnDellInc.:*:ct8:*");
-+MODULE_ALIAS("dmi:*svnDellInc.:*:ct9:*");
- MODULE_ALIAS("dmi:*svnDellComputerCorporation.:*:ct8:*");
+--- a/drivers/scsi/device_handler/scsi_dh_emc.c
++++ b/drivers/scsi/device_handler/scsi_dh_emc.c
+@@ -272,7 +272,7 @@ static struct request *get_req(struct sc
+ 	int len = 0;
+ 
+ 	rq = blk_get_request(sdev->request_queue,
+-			(cmd == MODE_SELECT) ? WRITE : READ, GFP_NOIO);
++			(cmd != INQUIRY) ? WRITE : READ, GFP_NOIO);
+ 	if (!rq) {
+ 		sdev_printk(KERN_INFO, sdev, "get_req: blk_get_request failed");
+ 		return NULL;
+@@ -286,14 +286,17 @@ static struct request *get_req(struct sc
+ 		len = sizeof(short_trespass);
+ 		rq->cmd_flags |= REQ_RW;
+ 		rq->cmd[1] = 0x10;
++		rq->cmd[4] = len;
+ 		break;
+ 	case MODE_SELECT_10:
+ 		len = sizeof(long_trespass);
+ 		rq->cmd_flags |= REQ_RW;
+ 		rq->cmd[1] = 0x10;
++		rq->cmd[8] = len;
+ 		break;
+ 	case INQUIRY:
+ 		len = CLARIION_BUFFER_SIZE;
++		rq->cmd[4] = len;
+ 		memset(buffer, 0, len);
+ 		break;
+ 	default:
+@@ -301,7 +304,6 @@ static struct request *get_req(struct sc
+ 		break;
+ 	}
+ 
+-	rq->cmd[4] = len;
+ 	rq->cmd_type = REQ_TYPE_BLOCK_PC;
+ 	rq->cmd_flags |= REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT |
+ 			 REQ_FAILFAST_DRIVER;
 
 
