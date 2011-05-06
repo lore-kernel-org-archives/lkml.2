@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1EFX1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 19:27:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45734 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1EFX1p (ORCPT
+	id S1752479Ab1EFX2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 19:28:48 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33723 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab1EFX2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 19:27:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=e3VnYnWHlRIrzCSkkr0YvtXDWGeS7NGa3Cw40hahMdVvxRniTd3mtRj8Ok++LA042R
-         DSvidJjEL5tfinNBXf7Fakltt1cTC9pLMuNY+INnrFw8fOGoqnlZMszP/NhkuVTXBVGt
-         /QsrPqXktk75KrvBsxrIOxxD9YsWy887G3OKo=
-MIME-Version: 1.0
-In-Reply-To: <20110506232814.3ca7b943@lxorguk.ukuu.org.uk>
-References: <1304719780-27347-1-git-send-email-lrodriguez@atheros.com>
- <1304719780-27347-3-git-send-email-lrodriguez@atheros.com> <20110506232814.3ca7b943@lxorguk.ukuu.org.uk>
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Date: Fri, 6 May 2011 16:27:25 -0700
-X-Google-Sender-Auth: YqBo3Tyqn0KRXtWiBLaa_haBCAk
-Message-ID: <BANLkTik5g3r_aqbp=zTawEtgzYCGwCZ_Xw@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86: add Atheros ar1520 platform support for mrst
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: akpm@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, allen.kao@atheros.com,
-        roman.gezikov@atheros.com, joonas.viskari@atheros.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 May 2011 19:28:46 -0400
+Subject: Re: [RFC] time: xtime_lock is held too long
+From: john stultz <johnstul@us.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1304722835.2821.192.camel@edumazet-laptop>
+References: <1304574244.32152.666.camel@edumazet-laptop>
+	 <1304576495.2943.40.camel@work-vm>
+	 <1304604284.3032.78.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051630390.3005@ionos>
+	 <1304608095.3032.95.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051750540.3005@ionos>
+	 <20110505210118.GI2925@one.firstfloor.org>
+	 <alpine.LFD.2.02.1105061117220.3005@ionos>
+	 <20110506165913.GF11636@one.firstfloor.org>
+	 <1304703767.3066.211.camel@edumazet-laptop>
+	 <20110506175051.GL11636@one.firstfloor.org>
+	 <1304710003.2821.0.camel@edumazet-laptop>
+	 <1304712267.2821.29.camel@edumazet-laptop>
+	 <1304713443.20980.124.camel@work-vm>
+	 <1304721004.2821.148.camel@edumazet-laptop>
+	 <1304722000.20980.130.camel@work-vm>
+	 <1304722835.2821.192.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 16:28:39 -0700
+Message-ID: <1304724519.20980.139.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 6, 2011 at 3:28 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 6 May 2011 15:09:40 -0700
-> "Luis R. Rodriguez" <lrodriguez@atheros.com> wrote:
->
->> From: Allen Kao <allen.kao@atheros.com>
->>
->> This adds platform driver support for Atheros ar1520 GPS device
->> on the Intel Moorestown Low Power Intel Architecture (LPIA) based
->> Moblin Internet Device (MID) platform.
->
-> NAK - for the same reasons as before, and the same NAK you already got on
-> the other list.
->
-> No open user space or sufficient API docs to make use of the kernel
-> driver and write your own = not a candidate for submission. Same for the
-> 3D graphics on that platform.
+On Sat, 2011-05-07 at 01:00 +0200, Eric Dumazet wrote:
+> Le vendredi 06 mai 2011 à 15:46 -0700, john stultz a écrit :
+> > On Sat, 2011-05-07 at 00:30 +0200, Eric Dumazet wrote:
+> > > I can see many cpus entering tick_do_update_jiffies64() and all are
+> > > calling write_seqlock(&xtime_lock);
+> > > 
+> > > Only first one can perform the work, but all others are waiting on the
+> > > spinlock, get it, change seqcount, and realize they have nothing to
+> > > do...
+> > 
+> > Huh. So who is calling tick_do_update_jiffies64 in your case? I know the
+> > sched_tick_timer and tick_nohz_handler checks to make sure
+> > tick_do_timer_cpu == cpu to avoid exactly the thundering heard problem
+> > on the jiffies update.
+> > 
+> > There's other spots that call tick_do_update_jiffies64, but I thought
+> > those were more rare. So there may be something else wrong going on
+> > here.
+> > 
+> 
+> That I can answer :
+[snip]
+> (I added do_timestamp1/do_timestamp2) after/before write_seqlock()/write_sequnlock()
+> 
+>          <idle>-0     [003]   920.355377: do_timestamp1 <-tick_do_update_jiffies64
+>           <idle>-0     [006]   920.355377: tick_do_update_jiffies64 <-tick_sched_timer
+>           <idle>-0     [003]   920.355378: do_timestamp2 <-tick_do_update_jiffies64
+>           <idle>-0     [000]   920.355657: tick_do_update_jiffies64 <-tick_check_idle
+>           <idle>-0     [000]   920.355660: tick_do_update_jiffies64 <-tick_nohz_restart_sched_tick
 
-I was under the impression an open userspace app was going to be
-provided.... I'll check with the team.
+Thomas, any clues why this would be getting hammered?
 
- Luis
+
+
+> > >  	/* Reevalute with xtime_lock held */
+> > > -	write_seqlock(&xtime_lock);
+> > > +	spin_lock(&xtime_lock.lock);
+> > 
+> > Oof.. No, this is too ugly and really just abuses the seqlock structure.
+> > 
+> 
+> That was a hack/POC, of course, but we can cleanup seqlock.h to provide
+> clean thing. A seqlock_t should include a seqcount_t and a spinlock_t.
+
+Maybe I'm misunderstanding, but you seem to be trying to create some
+sort of a layered lock from the seqlock ? I don't quite understand why
+your proposing this instead of actually splitting the lock out?
+
+
+> > If you really want to untangle what xtime_lock protects, you need to
+> > introduce a new lock (I suggest in the timekeeper structure) to protect
+> > the timekeeping data.
+> > 
+> > Then we can refine xtime_lock to also just protect the jiffies/tick
+> > management bits as well if needed.
+> 
+> For the moment I am trying to understand the code. Its quite complex and
+> uses a monolithic seqlock, defeating seqlock power.
+
+Defeating seqlock power? My thoughts are that seqlocks are nice
+lightweight reader/writer locks that avoid writer starvation. You seem
+to be trying to redefine or extend them to be something else which is
+more subtle. 
+
+I agree, the code is complex!  I'm just not sure adding more
+complicated/subtle locking mechanisms is a good solution. Instead I'd
+suggest simply splitting up the locks (by using new locks) to reduce the
+amount of data that is being protected by a single lock.
+
+But again, maybe I'm misunderstanding you?
+
+thanks
+-john
+
+
+
+
