@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab1EFBFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 21:05:49 -0400
-Received: from kroah.org ([198.145.64.141]:36522 "EHLO coco.kroah.org"
+	id S1755232Ab1EFBFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 21:05:19 -0400
+Received: from kroah.org ([198.145.64.141]:36527 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754497Ab1EFAYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:08 -0400
+	id S1753689Ab1EFAYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:09 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:05 2011
-Message-Id: <20110506002205.556386294@clark.kroah.org>
+Message-Id: <20110506002205.649609512@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:19:50 -0700
+Date: Thu, 05 May 2011 17:19:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Donald Dutile <ddutile@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [005/143] intel-iommu: Fix get_domain_for_dev() error path
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [006/143] drm/radeon/kms: fix bad shift in atom iio table parser
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 2fe9723df8e45fd247782adea244a5e653c30bf4 upstream.
+commit 8e461123f28e6b17456225e70eb834b3b30d28bb upstream.
 
-If we run out of domain_ids and fail iommu_attach_domain(), we
-fall into domain_exit() without having setup enough of the
-domain structure for this to do anything useful.  In fact, it
-typically runs off into the weeds walking the bogus domain->devices
-list.  Just free the domain.
+Noticed by Patrick Lowry.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atom.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -1858,7 +1858,7 @@ static struct dmar_domain *get_domain_fo
- 
- 	ret = iommu_attach_domain(domain, iommu);
- 	if (ret) {
--		domain_exit(domain);
-+		free_domain_mem(domain);
- 		goto error;
- 	}
- 
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -126,7 +126,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_INDEX:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((index >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -136,7 +136,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_DATA:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((data >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -146,7 +146,7 @@ static uint32_t atom_iio_execute(struct
+ 		case ATOM_IIO_MOVE_ATTR:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((ctx->
+ 			      io_attr >> CU8(base + 2)) & (0xFFFFFFFF >> (32 -
 
 
