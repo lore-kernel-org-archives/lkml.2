@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab1EFNuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:50:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20909 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab1EFNuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:50:21 -0400
-Date: Fri, 6 May 2011 09:49:25 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: mcree@orcon.net.nz, linux-kernel@vger.kernel.org,
-        linux-alpha@vger.kernel.org, mattst88@gmail.com, rth@twiddle.net,
-        ink@jurassic.park.msu.ru
-Subject: Re: [PATCH] alpha: Add DMA_ERROR_CODE defn to avert compiler error
- in drm
-Message-ID: <20110506134925.GB5500@dumpdata.com>
-References: <1304496817-7646-1-git-send-email-mcree@orcon.net.nz>
- <20110506212708I.fujita.tomonori@lab.ntt.co.jp>
+	id S1751634Ab1EFOR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 10:17:26 -0400
+Received: from dee.erg.abdn.ac.uk ([139.133.204.82]:53607 "EHLO erg.abdn.ac.uk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751074Ab1EFORZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 10:17:25 -0400
+X-Greylist: delayed 725 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 10:17:24 EDT
+Date: Fri, 6 May 2011 15:53:45 +0200
+From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: davem@davemloft.net, dccp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] dccp: handle invalid feature options length
+Message-ID: <20110506135345.GA3434@gerrit.erg.abdn.ac.uk>
+Mail-Followup-To: Gerrit Renker <gerrit@erg.abdn.ac.uk>,
+	Dan Rosenberg <drosenberg@vsecurity.com>, davem@davemloft.net,
+	dccp@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, security@kernel.org
+References: <1304688438.29544.16.camel@dan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110506212708I.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4DC3FC72.015C:SCFSTAT5015188,ss=1,fgs=0
+In-Reply-To: <1304688438.29544.16.camel@dan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-ERG-MailScanner: Found to be clean
+X-ERG-MailScanner-From: gerrit@erg.abdn.ac.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 09:30:03PM +0900, FUJITA Tomonori wrote:
-> On Wed,  4 May 2011 20:13:37 +1200
-> Michael Cree <mcree@orcon.net.nz> wrote:
-> 
-> > The radeon drm code now relies on DMA_ERROR_CODE.  This defines
-> > it in alpha dma-mapping header to at least enable me to compile
-> > radeon drm/kms into kernel.
-> > 
-> > Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-> > ---
-> >  arch/alpha/include/asm/dma-mapping.h |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> This isn't correct. The drivers should not use DMA_ERROR_CODE directly
-> (some architecture specific drivers use it though). Fix rademon
-> drm/kms instead.
+Quoting Dan Rosenberg:
+| A length of zero (after subtracting two for the type and len fields) for
+| the DCCPO_{CHANGE,CONFIRM}_{L,R} options will cause an underflow due to
+| the subtraction.  The subsequent code may read past the end of the
+| options value buffer when parsing.  I'm unsure of what the consequences
+| of this might be, but it's probably not good.
+| 
+Can you please check again: did you experience this condition, to me it 
+seems the patch is based on reading this code.
 
-What would be a proper value for non-existent bus addresses? As in the value
-had not been set? 0?
+In this case, please consider the condition before the switch statement:
+
+                /* Check if this isn't a single byte option */
+                if (opt > DCCPO_MAX_RESERVED) {
+                        if (opt_ptr == opt_end)
+                                goto out_nonsensical_length;
+
+                        len = *opt_ptr++;
+                        if (len < 2)
+                                goto out_nonsensical_length;
+                         
+The described range (DCCPO_CHANGE_L = 32 ... DCCPO_CONFIRM_R = 35) is after DCCPO_MAX_RESERVED = 31,
+so that the above test applies.
+
+Hence for these option types the len is always at least 1, so that (len - 1) >= 0.
+
+| --- a/net/dccp/options.c
+| +++ b/net/dccp/options.c
+| @@ -123,6 +123,8 @@ int dccp_parse_options(struct sock *sk, struct dccp_request_sock *dreq,
+|  		case DCCPO_CHANGE_L ... DCCPO_CONFIRM_R:
+|  			if (pkt_type == DCCP_PKT_DATA)      /* RFC 4340, 6 */
+|  				break;
+| +			if (len == 0)
+| +				goto out_invalid_option;
+|  			rc = dccp_feat_parse_options(sk, dreq, mandatory, opt,
+|  						    *value, value + 1, len - 1);
+|  			if (rc)
+| 
+| 
+
+-- 
