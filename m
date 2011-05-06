@@ -1,131 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab1EFNPC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:15:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38236 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab1EFNPA convert rfc822-to-8bit (ORCPT
+	id S1756213Ab1EFNZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:25:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46034 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab1EFNZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:15:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,326,1301900400"; 
-   d="scan'208";a="689109186"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: "Tian, Kevin" <kevin.tian@intel.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        Campbell <Ian.Campbell@eu.citrix.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Fri, 6 May 2011 21:14:55 +0800
-Subject: RE: [Xen-devel] RE: [PATCH v2 2/2] x86: don't unmask disabled irqs
- when migrating them
-Thread-Topic: [Xen-devel] RE: [PATCH v2 2/2] x86: don't unmask disabled irqs
- when migrating them
-Thread-Index: AcwL1GyqnvmzZBFoTHyj0RqABKyCfgAE23UAAAGZtnA=
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F96B@shsmsx502.ccr.corp.intel.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
-	<alpine.LFD.2.02.1105061149330.3005@ionos>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 May 2011 09:25:19 -0400
+Date: Fri, 6 May 2011 09:19:22 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        orinoco-users@lists.sourceforge.net,
+        orinoco-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] wireless: Make and use const struct ieee80211_channel
+Message-ID: <20110506131922.GA2252@tuxdriver.com>
+References: <cover.1304054543.git.joe@perches.com>
+ <20110505184934.GB3005@tuxdriver.com>
+ <1304634107.1788.171.camel@Joe-Laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1304634107.1788.171.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Tian, Kevin
-> Sent: Friday, May 06, 2011 8:55 PM
+On Thu, May 05, 2011 at 03:21:47PM -0700, Joe Perches wrote:
+> On Thu, 2011-05-05 at 14:49 -0400, John W. Linville wrote:
+> > These patches generated a lot of warnings in net/mac80211.  Did you
+> > actually build them?
 > 
-> > From: Thomas Gleixner
-> > Sent: Friday, May 06, 2011 6:00 PM
-> >
-> > On Fri, 6 May 2011, Tian, Kevin wrote:
-> > > x86: don't unmask disabled irqs when migrating them
-> > >
-> > > it doesn't make sense to mask/unmask a disabled irq when migrating
-> > > it from offlined cpu to another, because it's not expected to handle
-> > > any instance of it. Current mask/set_affinity/unmask steps may
-> > > trigger unexpected instance on disabled irq which then simply bug on
-> > > when there is no handler for it. One failing example is observed in Xen.
-> > > Xen pvops
-> >
-> > So there is no handler, why the heck is there an irq action?
-> >
-> > 	  if (!irq_has_action(irq) ....
-> > 	     	continue;
-> >
-> > Should have caught an uninitialized interrupt. If Xen abuses
-> > interrupts that way, then it rightfully explodes. And we do not fix it by magic
-> somewhere else.
+> Yes.
 > 
-> sorry that my bad description here. there does be a dummy handler registered
-> on such irqs which simply throws out a BUG_ON when hit. I should just say such
-> injection is not expected instead of no handler. :-)
-> 
-> >
-> > > guest marks a special type of irqs as disabled, which are simply
-> > > used
-> >
-> > As I explained before several times, IRQF_DISABLED has absolutely
-> > nothing to do with it and pvops _CANNOT_ mark an interrupt disabled.
-> 
-> I have to admit that I need more study about whole interrupt sub-system, to
-> better understand your explanation here. Also here again my description is not
-> accurate enough. I meant that Xen pvops request the special irq with below
-> flags:
-> 	IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING
-> and then later explicitly disable it with disable_irq(). As you said that
-> IRQF_DISABLED itself has nothing to do with it, and it's the later disable_irq()
-> which takes real effect because Xen event chip hooks this callback to mask the
-> irq from the chip level.
-> 
-> >
-> > >
-> > >  		chip = irq_data_get_irq_chip(data);
-> > > -		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
-> > > +		do_mask = !irqd_irq_disabled(data) &&
-> > > +			!irqd_can_move_in_process_context(data) &&
-> chip->irq_mask;
-> > > +		if (do_mask)
-> > >  			chip->irq_mask(data);
-> >
-> > This is completely wrong. irqd_irq_disabled() is a status information
-> > which does not tell you whether the interrupt is actually masked at
-> > the hardware level because we do lazy interrupt hardware masking. So
-> > your change would keep the line unmasked at the hardware level for all
-> > interrupts which are in the lazy disabled state.
-> 
-> Got it.
-> 
-> >
-> > The only conditional which is interesting is the unmask path and
-> > that's a simple optimization and not a correctness problem.
-> >
-> 
-> So what's your suggestion based on my updated information? Is there any
-> interface I may take to differentiate above exception with normal case?
-> Basically in Xen usage we want such irqs permanently disabled at the chip level.
-> Or could we only do mask/unmask for irqs which are unmasked atm if as you
-> said it's just an optimization step? :-)
-> 
+> Did you apply patch 1/2 first?
+> It's a dependent patch.
 
-After another thought, I just got myself messed. This is not required by Xen
-actually, as the 1st patch to handle IRQF_PERCPU has been enough to cover
-the special requirement. Could you ack the 1st one if you agree?
+That's the one that cause most of the warnings...
 
-This 2nd patch is cooked upon the question whether generally a irq disabled at 
-chip level should be unmasked at migration. If there's no action registered,
-it won't be migrated. The only question is if there does be action registered,
-and this irq is disabled at chip level, will there be any issue to force unmask it 
-at migration, or should we only mask/unmask for a irq which is unmasked at
-the migration?
-
-Thanks
-Kevin
+-- 
+John W. Linville                Someday the world will need a hero, and you
+linville@tuxdriver.com                  might be all we have.  Be ready.
