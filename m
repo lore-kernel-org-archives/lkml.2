@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab1EFANY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:24 -0400
-Received: from kroah.org ([198.145.64.141]:32841 "EHLO coco.kroah.org"
+	id S1754697Ab1EFAN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:13:26 -0400
+Received: from kroah.org ([198.145.64.141]:32846 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583Ab1EFANV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:21 -0400
+	id S1754553Ab1EFANW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:08 2011
-Message-Id: <20110506001208.549509651@clark.kroah.org>
+Message-Id: <20110506001208.645949202@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:45 -0700
+Date: Thu, 05 May 2011 17:10:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [patch 13/38] UBIFS: do not free write-buffers when in R/O mode
+Subject: [patch 14/38] UBIFS: seek journal heads to the latest bud in replay
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,121 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit b50b9f408502a2ea90459ae36ba8cdc9cc005cfe upstream.
+commit 52c6e6f990669deac3f370f1603815adb55a1dbd upstream.
 
-Currently UBIFS has a small optimization - it frees write-buffers when it is
-re-mounted from R/W mode to R/O mode. Of course, when it is mounted R/O, it
-does not allocate write-buffers as well.
-
-This optimization is nice but it leads to subtle problems and complications
-in recovery, which I can reproduce using the integck test. The symptoms are
-that after a power cut the file-system cannot be mounted if we first mount
-it R/O, and then re-mount R/W - 'ubifs_rcvry_gc_commit()' prints:
+This is the second fix of the following symptom:
 
 UBIFS error (pid 34456): could not find an empty LEB
 
-Analysis of the  problem.
+which sometimes happens after power cuts when we mount the file-system - UBIFS
+refuses it with the above error message which comes from the
+'ubifs_rcvry_gc_commit()' function. I can reproduce this using the integck test
+with the UBIFS power cut emulation enabled.
 
-When mounting R/W, the reply process sets journal heads to buds [1], but
-when mounting R/O - it does not do this, because the write-buffers are not
-allocated. So 'ubifs_rcvry_gc_commit()' works completely differently for the
-same file-system but for the following 2 cases:
+Analysis of the problem.
 
-1. mounting R/W after a power cut and recover
-2. mounting R/O after a power cut, re-mounting R/W and run deferred recovery
+Currently UBIFS replay seeks the journal heads to the last _replayed_ bud.
+But the buds are replayed out-of-order, so the replay basically seeks journal
+heads to the "random" bud belonging to this head, and not to the _last_ one.
 
-In the former case, we have journal heads seeked to the a bud, in the latter
-case, they are non-seeked (wbuf->lnum == -1). So in the latter case we do not
-try to recover the GC LEB by garbage-collecting to the GC head, but we just
-try to find an empty LEB, and there may be no empty LEBs, so we just fail.
-On the other hand, in the former case (mount R/W), we are able to make a GC LEB
-(@c->gc_lnum) by garbage-collecting.
+The result of this is that the GC head may be seeked to a full LEB with no free
+space, or very little free space. And 'ubifs_rcvry_gc_commit()' tries to find a
+fully or mostly dirty LEB to match the current GC head (because we need to
+garbage-collect that dirty LEB at one go, because we do not have @c->gc_lnum).
+So 'ubifs_find_dirty_leb()' fails and we fall back to finding an empty LEB and
+also fail. As a result - recovery fails and mounting fails.
 
-Thus, let's remove this small nice optimization and always allocate
-write-buffers. This should not make too big difference - we have only 3
-of them, each of max. write unit size, which is usually 2KiB. So this is
-about 6KiB of RAM for the typical case, and only when mounted R/O.
-
-[1]: Note, currently the replay process is setting (seeking) the journal heads
-to _some_ buds, not necessarily to the buds which had been the journal heads
-before the power cut happened. This will be fixed separately.
+This patch teaches the replay to initialize the GC heads exactly to the latest
+buds, i.e. the buds which have the largest sequence number in corresponding
+log reference nodes.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ubifs/log.c   |   20 --------------------
- fs/ubifs/super.c |   15 ++++-----------
- 2 files changed, 4 insertions(+), 31 deletions(-)
+ fs/ubifs/replay.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/fs/ubifs/log.c
-+++ b/fs/ubifs/log.c
-@@ -175,26 +175,6 @@ void ubifs_add_bud(struct ubifs_info *c,
- }
- 
- /**
-- * ubifs_create_buds_lists - create journal head buds lists for remount rw.
-- * @c: UBIFS file-system description object
-- */
--void ubifs_create_buds_lists(struct ubifs_info *c)
--{
--	struct rb_node *p;
--
--	spin_lock(&c->buds_lock);
--	p = rb_first(&c->buds);
--	while (p) {
--		struct ubifs_bud *bud = rb_entry(p, struct ubifs_bud, rb);
--		struct ubifs_jhead *jhead = &c->jheads[bud->jhead];
--
--		list_add_tail(&bud->list, &jhead->buds_list);
--		p = rb_next(p);
--	}
--	spin_unlock(&c->buds_lock);
--}
--
--/**
-  * ubifs_add_bud_to_log - add a new bud to the log.
-  * @c: UBIFS file-system description object
-  * @jhead: journal head the bud belongs to
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1235,12 +1235,12 @@ static int mount_ubifs(struct ubifs_info
- 		goto out_free;
- 	}
- 
-+	err = alloc_wbufs(c);
-+	if (err)
-+		goto out_cbuf;
-+
- 	sprintf(c->bgt_name, BGT_NAME_PATTERN, c->vi.ubi_num, c->vi.vol_id);
- 	if (!c->ro_mount) {
--		err = alloc_wbufs(c);
--		if (err)
--			goto out_cbuf;
--
- 		/* Create background thread */
- 		c->bgt = kthread_create(ubifs_bg_thread, c, "%s", c->bgt_name);
- 		if (IS_ERR(c->bgt)) {
-@@ -1603,12 +1603,6 @@ static int ubifs_remount_rw(struct ubifs
- 	if (err)
+--- a/fs/ubifs/replay.c
++++ b/fs/ubifs/replay.c
+@@ -59,6 +59,7 @@ enum {
+  * @new_size: truncation new size
+  * @free: amount of free space in a bud
+  * @dirty: amount of dirty space in a bud from padding and deletion nodes
++ * @jhead: journal head number of the bud
+  *
+  * UBIFS journal replay must compare node sequence numbers, which means it must
+  * build a tree of node information to insert into the TNC.
+@@ -80,6 +81,7 @@ struct replay_entry {
+ 		struct {
+ 			int free;
+ 			int dirty;
++			int jhead;
+ 		};
+ 	};
+ };
+@@ -159,6 +161,11 @@ static int set_bud_lprops(struct ubifs_i
+ 		err = PTR_ERR(lp);
  		goto out;
+ 	}
++
++	/* Make sure the journal head points to the latest bud */
++	err = ubifs_wbuf_seek_nolock(&c->jheads[r->jhead].wbuf, r->lnum,
++				     c->leb_size - r->free, UBI_SHORTTERM);
++
+ out:
+ 	ubifs_release_lprops(c);
+ 	return err;
+@@ -627,10 +634,6 @@ static int replay_bud(struct ubifs_info
+ 	ubifs_assert(sleb->endpt - offs >= used);
+ 	ubifs_assert(sleb->endpt % c->min_io_size == 0);
  
--	err = alloc_wbufs(c);
--	if (err)
--		goto out;
+-	if (sleb->endpt + c->min_io_size <= c->leb_size && !c->ro_mount)
+-		err = ubifs_wbuf_seek_nolock(&c->jheads[jhead].wbuf, lnum,
+-					     sleb->endpt, UBI_SHORTTERM);
 -
--	ubifs_create_buds_lists(c);
--
- 	/* Create background thread */
- 	c->bgt = kthread_create(ubifs_bg_thread, c, "%s", c->bgt_name);
- 	if (IS_ERR(c->bgt)) {
-@@ -1717,7 +1711,6 @@ static void ubifs_remount_ro(struct ubif
- 	if (err)
- 		ubifs_ro_mode(c, err);
+ 	*dirty = sleb->endpt - offs - used;
+ 	*free = c->leb_size - sleb->endpt;
  
--	free_wbufs(c);
- 	vfree(c->orph_buf);
- 	c->orph_buf = NULL;
- 	vfree(c->ileb_buf);
+@@ -653,12 +656,14 @@ out_dump:
+  * @sqnum: sequence number
+  * @free: amount of free space in bud
+  * @dirty: amount of dirty space from padding and deletion nodes
++ * @jhead: journal head number for the bud
+  *
+  * This function inserts a reference node to the replay tree and returns zero
+  * in case of success or a negative error code in case of failure.
+  */
+ static int insert_ref_node(struct ubifs_info *c, int lnum, int offs,
+-			   unsigned long long sqnum, int free, int dirty)
++			   unsigned long long sqnum, int free, int dirty,
++			   int jhead)
+ {
+ 	struct rb_node **p = &c->replay_tree.rb_node, *parent = NULL;
+ 	struct replay_entry *r;
+@@ -688,6 +693,7 @@ static int insert_ref_node(struct ubifs_
+ 	r->flags = REPLAY_REF;
+ 	r->free = free;
+ 	r->dirty = dirty;
++	r->jhead = jhead;
+ 
+ 	rb_link_node(&r->rb, parent, p);
+ 	rb_insert_color(&r->rb, &c->replay_tree);
+@@ -712,7 +718,7 @@ static int replay_buds(struct ubifs_info
+ 		if (err)
+ 			return err;
+ 		err = insert_ref_node(c, b->bud->lnum, b->bud->start, b->sqnum,
+-				      free, dirty);
++				      free, dirty, b->bud->jhead);
+ 		if (err)
+ 			return err;
+ 	}
 
 
