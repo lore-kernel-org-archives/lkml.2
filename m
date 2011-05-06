@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab1EFSE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 14:04:57 -0400
-Received: from mail.perches.com ([173.55.12.10]:1293 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754695Ab1EFSE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 14:04:56 -0400
-Subject: Re: [TRIVIAL PATCH 0/3] pcmcia: Make struct pcmcia_device_id const
-From: Joe Perches <joe@perches.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Linux PCMCIA team <linux-pcmcia@lists.infradead.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110506061527.GA26026@comet.dominikbrodowski.net>
-References: <cover.1304475547.git.joe@perches.com>
-	 <20110506061527.GA26026@comet.dominikbrodowski.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 May 2011 11:04:55 -0700
-Message-ID: <1304705095.11874.21.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755179Ab1EFSG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 14:06:58 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:22757 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751096Ab1EFSG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 14:06:56 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: R96UCOYVM1kWc8ougMCEc3bzB3HfhsvVsP32q4QWYk74htq
+ ievijltdGY.OTm07ahPFNswa5nfzah7BPiP.5k3NHa7b.SXGR6aDyT8TaxII
+ ySsaensFB5h3G6qaHSFstx.ehX9bvMKXtQwTE._5YonExasliFoNIfcEKI9g
+ shLUVsVSekDZhAHCFuwpFI_q0.dfhVxGiH3ykJNtp6SK5URswLLAkr2qDoBF
+ p72xzpwLVsIOsL0Vf2e9LnYoApBVfSolVMP3zQThBhD6dFTlb8ZgCoCyyaHm
+ vEwMgoat47r0mA0B2qqi72WVfBKeWapBwQYhhnEs8C8JrF.In
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20110506180541.990069206@linux.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 06 May 2011 13:05:41 -0500
+From: Christoph Lameter <cl@linux.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [slubllv4 00/16] SLUB: Lockless freelists for objects V4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 08:15 +0200, Dominik Brodowski wrote:
-> On Tue, May 03, 2011 at 07:28:59PM -0700, Joe Perches wrote:
-> > Reduces data use.
-> > Staging could be applied now, but additional harmless warnings do result.
-> > Joe Perches (3):
-> >   pcmcia: Make declaration and uses of struct pcmcia_device_id const
-> >   pcmcia: Convert pcmcia_device_id declarations to const
-> >   staging: pcmcia: Convert pcmcia_device_id declarations to const
-> Thanks, applied all three patches to the pcmcia git tree.
+V3->V4	- Diffed against Pekka's slab/next tree plus the ifdef removal patch
+		 (which should be in slab/next soon).
+	- Numerous cleanups in particular as a result of the removal of the
+	  #ifdef CMPXCHG_LOCAL stuff.
+	- Smaller cleanups whereever I saw something.
 
-Hi Dominik, just so you're aware...
+V2->V3
+	- Provide statistics
+	- Fallback logic to page lock if cmpxchg16b is not available.
+	- Better counter support
+	- More cleanups and clarifications
 
-By the time your tree gets pushed, there'll likely
-be conflicts with staging changes.
+Well here is another result of my obsession with SLAB allocators. There must be
+some way to get an allocator done that is faster without queueing and I hope
+that we are now there (maybe only almost...). Any help with cleaning up the
+rough edges would be appreciated.
 
-It might be appropriate to keep the staging patch
-separate from the other 2.
+This patchset implement wider lockless operations in slub affecting most of the
+slowpaths. In particular the patch decreases the overhead in the performance
+critical section of __slab_free.
 
-There are also a couple of uses of pcmcia_device_id
-in sound/ that could be modified.
+One test that I ran was "hackbench 200 process 200" on 2.6.29-rc3 under KVM
 
-$ grep -rPwn --include=*.[ch] pcmcia_device_id sound
-sound/pcmcia/vx/vxpocket.c:353:static struct pcmcia_device_id vxp_ids[] = {
-sound/pcmcia/pdaudiocf/pdaudiocf.c:281:static struct pcmcia_device_id snd_pdacf_ids[] = {
+Run	SLAB	SLUB	SLUB LL
+1st	35.2	35.9	31.9
+2nd	34.6	30.8	27.9
+3rd	33.8	29.9	28.8
 
-Here's a patch for those as well
+Note that the SLUB version in 2.6.29-rc1 already has an optimized allocation
+and free path using this_cpu_cmpxchg_double(). SLUB LL takes it to new heights
+by also using cmpxchg_double() in the slowpaths (especially in the kfree()
+case where we frequently cannot use the fastpath because there is no queue).
 
----
+The patch uses a cmpxchg_double (also introduced here) to do an atomic change
+on the state of a slab page that includes the following pieces of information:
 
-Make declarations of struct pcmcia_device_id const.
+1. Freelist pointer
+2. Number of objects inuse
+3. Frozen state of a slab
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Disabling of interrupts (which is a significant latency in the
+allocator paths) is avoided in the __slab_free case.
 
----
+There are some concerns with this patch. The use of cmpxchg_double on
+fields of the page struct requires alignment of the fields to double
+word boundaries. That can only be accomplished by adding some padding
+to struct page which blows it up to 64 byte (on x86_64). Comments
+in the source describe these things in more detail.
 
- sound/pcmcia/pdaudiocf/pdaudiocf.c |    2 +-
- sound/pcmcia/vx/vxpocket.c         |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/pcmcia/pdaudiocf/pdaudiocf.c b/sound/pcmcia/pdaudiocf/pdaudiocf.c
-index 8cc4733..ce33be0 100644
---- a/sound/pcmcia/pdaudiocf/pdaudiocf.c
-+++ b/sound/pcmcia/pdaudiocf/pdaudiocf.c
-@@ -278,7 +278,7 @@ static int pdacf_resume(struct pcmcia_device *link)
- /*
-  * Module entry points
-  */
--static struct pcmcia_device_id snd_pdacf_ids[] = {
-+static const struct pcmcia_device_id snd_pdacf_ids[] = {
- 	/* this is too general PCMCIA_DEVICE_MANF_CARD(0x015d, 0x4c45), */
- 	PCMCIA_DEVICE_PROD_ID12("Core Sound","PDAudio-CF",0x396d19d2,0x71717b49),
- 	PCMCIA_DEVICE_NULL
-diff --git a/sound/pcmcia/vx/vxpocket.c b/sound/pcmcia/vx/vxpocket.c
-index 80000d6..d9ef21d 100644
---- a/sound/pcmcia/vx/vxpocket.c
-+++ b/sound/pcmcia/vx/vxpocket.c
-@@ -350,7 +350,7 @@ static void vxpocket_detach(struct pcmcia_device *link)
-  * Module entry points
-  */
- 
--static struct pcmcia_device_id vxp_ids[] = {
-+static const struct pcmcia_device_id vxp_ids[] = {
- 	PCMCIA_DEVICE_MANF_CARD(0x01f1, 0x0100),
- 	PCMCIA_DEVICE_NULL
- };
-
+The cmpxchg_double() operation introduced here could also be used to
+update other doublewords in the page struct in a lockless fashion. One
+can envision page state changes that involved flags and mappings or
+maybe do list operations locklessly (but with the current scheme we
+would need to update two other words elsewhere at the same time too,
+so another scheme would be needed).
 
