@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab1EFAZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:25:52 -0400
-Received: from kroah.org ([198.145.64.141]:37249 "EHLO coco.kroah.org"
+	id S932459Ab1EFAld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:41:33 -0400
+Received: from kroah.org ([198.145.64.141]:37256 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1EFAZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:50 -0400
+	id S932361Ab1EFAZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:51 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:16 2011
-Message-Id: <20110506002216.647860787@clark.kroah.org>
+Message-Id: <20110506002216.760105247@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:41 -0700
+Date: Thu, 05 May 2011 17:21:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [116/143] e1000e: Reset 82577/82578 PHY before first PHY register read
+Subject: [117/143] e1000: fix Tx hangs by disabling 64-bit DMA
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +27,254 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Jesse Brandeburg <jesse.brandeburg@intel.com>
 
-commit 627c8a041f7aaaea93c766f69bd61d952a277586 upstream.
+commit e508be174ad36b0cf9b324cd04978c2b13c21502 upstream.
 
-Reset the PHY before first accessing it.  Doing so, ensure that the PHY is
-in a known good state before we read/write PHY registers. This fixes a
-driver probe failure.
+Several users report issues with 32-bit adapters when plugged
+into PCI slots in machines with >= 4GB ram.  In particular AMD
+systems with HyperTransport to PCI bridges seem to trigger the
+issue, but it isn't limited to only them.
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+This issue is not easily reproducible here, yet still continues
+to occur in the field.  For e1000 on PCI devices, just disable DMA
+addresses over the 4GB boundary when in PCI (not PCI-X) mode, to
+prevent the issue from continuing to pop up.  The performance
+impact for this is negligible.
+
+The code was refactored to move the init of the hw struct to its
+own function. This allows the init to be called very early in
+probe, which then allows using hw-> members for this fix.
+
+A slight refactor to the DMA mask code was done for minor
+correctness based on the instructions in DMA-API-HOWTO.
+
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
 Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[Backported to 2.6.32 by dann frazier <dannf@debian.org>]
+[bwh: Adjust for 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/e1000e/ich8lan.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/e1000/e1000_main.c |  162 +++++++++++++++++++++++------------------
+ 1 file changed, 92 insertions(+), 70 deletions(-)
 
---- a/drivers/net/e1000e/ich8lan.c
-+++ b/drivers/net/e1000e/ich8lan.c
-@@ -274,6 +274,16 @@ static s32 e1000_init_phy_params_pchlan(
- 	phy->ops.write_phy_reg_locked = e1000_write_phy_reg_hv_locked;
- 	phy->autoneg_mask             = AUTONEG_ADVERTISE_SPEED_DEFAULT;
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -790,6 +790,70 @@ static const struct net_device_ops e1000
+ };
  
-+	/*
-+	 * Reset the PHY before any acccess to it.  Doing so, ensures that
-+	 * the PHY is in a known good state before we read/write PHY registers.
-+	 * The generic reset is sufficient here, because we haven't determined
-+	 * the PHY type yet.
-+	 */
-+	ret_val = e1000e_phy_hw_reset_generic(hw);
-+	if (ret_val)
-+		goto out;
+ /**
++ * e1000_init_hw_struct - initialize members of hw struct
++ * @adapter: board private struct
++ * @hw: structure used by e1000_hw.c
++ *
++ * Factors out initialization of the e1000_hw struct to its own function
++ * that can be called very early at init (just after struct allocation).
++ * Fields are initialized based on PCI device information and
++ * OS network device settings (MTU size).
++ * Returns negative error codes if MAC type setup fails.
++ */
++static int e1000_init_hw_struct(struct e1000_adapter *adapter,
++				struct e1000_hw *hw)
++{
++	struct pci_dev *pdev = adapter->pdev;
 +
- 	phy->id = e1000_phy_unknown;
- 	e1000e_get_phy_id(hw);
- 	phy->type = e1000e_get_phy_type_from_id(phy->id);
-@@ -287,6 +297,7 @@ static s32 e1000_init_phy_params_pchlan(
- 		phy->ops.commit_phy = e1000e_phy_sw_reset;
++	/* PCI config space info */
++	hw->vendor_id = pdev->vendor;
++	hw->device_id = pdev->device;
++	hw->subsystem_vendor_id = pdev->subsystem_vendor;
++	hw->subsystem_id = pdev->subsystem_device;
++	hw->revision_id = pdev->revision;
++
++	pci_read_config_word(pdev, PCI_COMMAND, &hw->pci_cmd_word);
++
++	hw->max_frame_size = adapter->netdev->mtu +
++			     ENET_HEADER_SIZE + ETHERNET_FCS_SIZE;
++	hw->min_frame_size = MINIMUM_ETHERNET_FRAME_SIZE;
++
++	/* identify the MAC */
++	if (e1000_set_mac_type(hw)) {
++		DPRINTK(PROBE, ERR, "Unknown MAC Type\n");
++		return -EIO;
++	}
++
++	switch (hw->mac_type) {
++	default:
++		break;
++	case e1000_82541:
++	case e1000_82547:
++	case e1000_82541_rev_2:
++	case e1000_82547_rev_2:
++		hw->phy_init_script = 1;
++		break;
++	}
++
++	e1000_set_media_type(hw);
++	e1000_get_bus_info(hw);
++
++	hw->wait_autoneg_complete = false;
++	hw->tbi_compatibility_en = true;
++	hw->adaptive_ifs = true;
++
++	/* Copper options */
++
++	if (hw->media_type == e1000_media_type_copper) {
++		hw->mdix = AUTO_ALL_MODES;
++		hw->disable_polarity_correction = false;
++		hw->master_slave = E1000_MASTER_SLAVE;
++	}
++
++	return 0;
++}
++
++/**
+  * e1000_probe - Device Initialization Routine
+  * @pdev: PCI device information struct
+  * @ent: entry in e1000_pci_tbl
+@@ -826,22 +890,6 @@ static int __devinit e1000_probe(struct
+ 	if (err)
+ 		return err;
+ 
+-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) &&
+-	    !pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64))) {
+-		pci_using_dac = 1;
+-	} else {
+-		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+-		if (err) {
+-			err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+-			if (err) {
+-				E1000_ERR("No usable DMA configuration, "
+-					  "aborting\n");
+-				goto err_dma;
+-			}
+-		}
+-		pci_using_dac = 0;
+-	}
+-
+ 	err = pci_request_selected_regions(pdev, bars, e1000_driver_name);
+ 	if (err)
+ 		goto err_pci_reg;
+@@ -882,6 +930,32 @@ static int __devinit e1000_probe(struct
+ 		}
  	}
  
-+ out:
- 	return ret_val;
- }
++	/* make ready for any if (hw->...) below */
++	err = e1000_init_hw_struct(adapter, hw);
++	if (err)
++		goto err_sw_init;
++
++	/*
++	 * there is a workaround being applied below that limits
++	 * 64-bit DMA addresses to 64-bit hardware.  There are some
++	 * 32-bit adapters that Tx hang when given 64-bit DMA addresses
++	 */
++	pci_using_dac = 0;
++	if ((hw->bus_type == e1000_bus_type_pcix) &&
++	    !pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
++		/*
++		 * according to DMA-API-HOWTO, coherent calls will always
++		 * succeed if the set call did
++		 */
++		pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
++		pci_using_dac = 1;
++	} else if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
++		pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
++	} else {
++		E1000_ERR("No usable DMA configuration, aborting\n");
++		goto err_dma;
++	}
++
+ 	netdev->netdev_ops = &e1000_netdev_ops;
+ 	e1000_set_ethtool_ops(netdev);
+ 	netdev->watchdog_timeo = 5 * HZ;
+@@ -956,8 +1030,6 @@ static int __devinit e1000_probe(struct
+ 	if (!is_valid_ether_addr(netdev->perm_addr))
+ 		DPRINTK(PROBE, ERR, "Invalid MAC Address\n");
  
+-	e1000_get_bus_info(hw);
+-
+ 	init_timer(&adapter->tx_fifo_stall_timer);
+ 	adapter->tx_fifo_stall_timer.function = &e1000_82547_tx_fifo_stall;
+ 	adapter->tx_fifo_stall_timer.data = (unsigned long)adapter;
+@@ -1070,6 +1142,7 @@ err_eeprom:
+ 		iounmap(hw->flash_address);
+ 	kfree(adapter->tx_ring);
+ 	kfree(adapter->rx_ring);
++err_dma:
+ err_sw_init:
+ 	iounmap(hw->hw_addr);
+ err_ioremap:
+@@ -1077,7 +1150,6 @@ err_ioremap:
+ err_alloc_etherdev:
+ 	pci_release_selected_regions(pdev, bars);
+ err_pci_reg:
+-err_dma:
+ 	pci_disable_device(pdev);
+ 	return err;
+ }
+@@ -1129,62 +1201,12 @@ static void __devexit e1000_remove(struc
+  * @adapter: board private structure to initialize
+  *
+  * e1000_sw_init initializes the Adapter private data structure.
+- * Fields are initialized based on PCI device information and
+- * OS network device settings (MTU size).
++ * e1000_init_hw_struct MUST be called before this function
+  **/
+ 
+ static int __devinit e1000_sw_init(struct e1000_adapter *adapter)
+ {
+-	struct e1000_hw *hw = &adapter->hw;
+-	struct net_device *netdev = adapter->netdev;
+-	struct pci_dev *pdev = adapter->pdev;
+-
+-	/* PCI config space info */
+-
+-	hw->vendor_id = pdev->vendor;
+-	hw->device_id = pdev->device;
+-	hw->subsystem_vendor_id = pdev->subsystem_vendor;
+-	hw->subsystem_id = pdev->subsystem_device;
+-	hw->revision_id = pdev->revision;
+-
+-	pci_read_config_word(pdev, PCI_COMMAND, &hw->pci_cmd_word);
+-
+ 	adapter->rx_buffer_len = MAXIMUM_ETHERNET_VLAN_SIZE;
+-	hw->max_frame_size = netdev->mtu +
+-			     ENET_HEADER_SIZE + ETHERNET_FCS_SIZE;
+-	hw->min_frame_size = MINIMUM_ETHERNET_FRAME_SIZE;
+-
+-	/* identify the MAC */
+-
+-	if (e1000_set_mac_type(hw)) {
+-		DPRINTK(PROBE, ERR, "Unknown MAC Type\n");
+-		return -EIO;
+-	}
+-
+-	switch (hw->mac_type) {
+-	default:
+-		break;
+-	case e1000_82541:
+-	case e1000_82547:
+-	case e1000_82541_rev_2:
+-	case e1000_82547_rev_2:
+-		hw->phy_init_script = 1;
+-		break;
+-	}
+-
+-	e1000_set_media_type(hw);
+-
+-	hw->wait_autoneg_complete = false;
+-	hw->tbi_compatibility_en = true;
+-	hw->adaptive_ifs = true;
+-
+-	/* Copper options */
+-
+-	if (hw->media_type == e1000_media_type_copper) {
+-		hw->mdix = AUTO_ALL_MODES;
+-		hw->disable_polarity_correction = false;
+-		hw->master_slave = E1000_MASTER_SLAVE;
+-	}
+ 
+ 	adapter->num_tx_queues = 1;
+ 	adapter->num_rx_queues = 1;
 
 
