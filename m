@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1EFAYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:24:19 -0400
-Received: from kroah.org ([198.145.64.141]:36573 "EHLO coco.kroah.org"
+	id S1755712Ab1EFBDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 21:03:17 -0400
+Received: from kroah.org ([198.145.64.141]:36575 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729Ab1EFAYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:17 -0400
+	id S1755312Ab1EFAYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:18 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:06 2011
-Message-Id: <20110506002206.534094064@clark.kroah.org>
+Message-Id: <20110506002206.651062766@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:00 -0700
+Date: Thu, 05 May 2011 17:20:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jie Yang <jie.yang@atheros.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [015/143] atl1c: duplicate atl1c_get_tpd
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: [016/143] udp: Fix bogus UFO packet generation
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jie Yang <jie.yang@atheros.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 678b77e265f6d66f1e68f3d095841c44ba5ab112 upstream.
+commit 26cde9f7e2747b6d254b704594eed87ab959afa5 upstream.
 
-remove duplicate atl1c_get_tpd, it may cause hardware to send wrong packets.
+It has been reported that the new UFO software fallback path
+fails under certain conditions with NFS.  I tracked the problem
+down to the generation of UFO packets that are smaller than the
+MTU.  The software fallback path simply discards these packets.
 
-Signed-off-by: Jie Yang <jie.yang@atheros.com>
+This patch fixes the problem by not generating such packets on
+the UFO path.
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Willy Tarreau <w@1wt.eu>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/atl1c/atl1c_main.c |    2 --
- 1 file changed, 2 deletions(-)
+ net/ipv4/ip_output.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/atl1c/atl1c_main.c
-+++ b/drivers/net/atl1c/atl1c_main.c
-@@ -1976,8 +1976,6 @@ static void atl1c_tx_map(struct atl1c_ad
- 		else {
- 			use_tpd = atl1c_get_tpd(adapter, type);
- 			memcpy(use_tpd, tpd, sizeof(struct atl1c_tpd_desc));
--			use_tpd = atl1c_get_tpd(adapter, type);
--			memcpy(use_tpd, tpd, sizeof(struct atl1c_tpd_desc));
- 		}
- 		buffer_info = atl1c_get_tx_buffer(adapter, use_tpd);
- 		buffer_info->length = buf_len - mapped_len;
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -867,8 +867,10 @@ int ip_append_data(struct sock *sk,
+ 	    !exthdrlen)
+ 		csummode = CHECKSUM_PARTIAL;
+ 
++	skb = skb_peek_tail(&sk->sk_write_queue);
++
+ 	inet->cork.length += length;
+-	if (((length> mtu) || !skb_queue_empty(&sk->sk_write_queue)) &&
++	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->u.dst.dev->features & NETIF_F_UFO)) {
+ 		err = ip_ufo_append_data(sk, getfrag, from, length, hh_len,
+@@ -886,7 +888,7 @@ int ip_append_data(struct sock *sk,
+ 	 * adding appropriate IP header.
+ 	 */
+ 
+-	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
++	if (!skb)
+ 		goto alloc_new_skb;
+ 
+ 	while (length > 0) {
+@@ -1115,7 +1117,8 @@ ssize_t	ip_append_page(struct sock *sk,
+ 		return -EINVAL;
+ 
+ 	inet->cork.length += size;
+-	if ((sk->sk_protocol == IPPROTO_UDP) &&
++	if ((size + skb->len > mtu) &&
++	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->u.dst.dev->features & NETIF_F_UFO)) {
+ 		skb_shinfo(skb)->gso_size = mtu - fragheaderlen;
+ 		skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
 
 
