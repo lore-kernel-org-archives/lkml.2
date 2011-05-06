@@ -1,112 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab1EFU2b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:28:31 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:13306 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab1EFU2a (ORCPT
+	id S932707Ab1EFUqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:46:10 -0400
+Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:49380 "EHLO
+	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932451Ab1EFUqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:28:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=gRIfVVje3Bpa2n9Acl4AWA8pZIJMoolu0dhuoTTEMxP+oxWRzLoUQ4Ddvmu7QmsnO
-	MyeXRAnnonHEUTn++WWJg==
-From: Mike Waychison <mikew@google.com>
-To: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
-        Matt_Domsch@dell.com
-Cc: akpm@linux-foundation.org, matthew.e.tolentino@intel.com, gregkh@suse.de,
-        Mike Waychison <mikew@google.com>
-Subject: [PATCH v3] efivars: prevent oops on unload when efi is not enabled
-Date: Fri,  6 May 2011 13:27:41 -0700
-Message-Id: <1304713661-14708-1-git-send-email-mikew@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20110506125702.2585228b.randy.dunlap@oracle.com>
-References: <20110506125702.2585228b.randy.dunlap@oracle.com>
+	Fri, 6 May 2011 16:46:09 -0400
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 16:46:08 EDT
+Message-ID: <4DC45BA3.7@neli.hopto.org>
+Date: Fri, 06 May 2011 22:35:47 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: get_user_pages + put_task_struct
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Hi,
 
-efivars_exit() should check for efi_enabled and not undo
-allocations when efi is not enabled.  Otherwise there is an Oops
-during module unload:
+I am writing a (pci) device driver, in which I'm doing userspace DMA 
+with get_user_pages. After some complicated locking, it occurred to me 
+to use reference counting instead, after finding the functions 
+get_task_mm and get_task_struct. However, put_task_struct cannot be used 
+in a module, linker will complain about __put_task_struct_cb being 
+undefined. I saw it explicitly being removed as a symbol, "we do not 
+want device drivers holding references to task structs". Why exactly is 
+this?
 
-calling  efivars_init+0x0/0x1000 [efivars] @ 2810
-EFI Variables Facility v0.08 2004-May-17
-initcall efivars_init+0x0/0x1000 [efivars] returned 0 after 5120 usecs
-Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-last sysfs file: /sys/module/firmware_class/initstate
-CPU 1
-Modules linked in: efivars(-) af_packet tun nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep mousedev snd_seq joydev snd_seq_device mac_hid evdev snd_pcm usbkbd usbmouse usbhid snd_timer hid tg3 snd sr_mod pcspkr rtc_cmos soundcore cdrom iTCO_wdt processor sg dcdbas i2c_i801 rtc_core iTCO_vendor_support intel_agp snd_page_alloc thermal_sys rtc_lib intel_gtt 8250_pnp button hwmon unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_class ehci_hcd usbcore [last unloaded: dell_rbu]
+mmput is exported, so no problem for the mm. BTW, I'm also not exactly 
+sure why I (conceptually) need a task to get the pages; but I think it's 
+for statistics.
 
-Pid: 2812, comm: rmmod Not tainted 2.6.39-rc6 #1 Dell Inc.                 OptiPlex 745                 /0TY565
-RIP: 0010:[<ffffffffa06a17f6>]  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
-RSP: 0018:ffff88005eedde98  EFLAGS: 00010283
-RAX: ffffffffa06a23fc RBX: ffffffffa06a44c0 RCX: ffff88007c227a50
-RDX: 0000000000000000 RSI: 00000055ac13db78 RDI: ffffffffa06a44c0
-RBP: ffff88005eeddec8 R08: 0000000000000000 R09: ffff88005eeddd78
-R10: ffffffffa06a4220 R11: ffff88005eeddd78 R12: fffffffffffff7d0
-R13: 00007fff5a3aaec0 R14: 0000000000000000 R15: ffffffffa06a4508
-FS:  00007fa8dcc4a6f0(0000) GS:ffff88007c200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 000000005d148000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process rmmod (pid: 2812, threadinfo ffff88005eedc000, task ffff88006754b000)
-Stack:
- ffff88005eeddec8 ffffffffa06a4220 0000000000000000 00007fff5a3aaec0
- 0000000000000000 0000000000000001 ffff88005eedded8 ffffffffa06a2418
- ffff88005eeddf78 ffffffff810d3598 ffffffffa06a4220 0000000000000880
-Call Trace:
- [<ffffffffa06a2418>] efivars_exit+0x1c/0xc04 [efivars]
- [<ffffffff810d3598>] sys_delete_module+0x2d6/0x368
- [<ffffffff812d1db9>] ? lockdep_sys_exit_thunk+0x35/0x67
- [<ffffffff810fcba1>] ? audit_syscall_entry+0x172/0x1a5
- [<ffffffff81575082>] system_call_fastpath+0x16/0x1b
-Code: 5c c9 c3 55 48 89 e5 41 57 41 56 41 55 41 54 53 48 83 ec 08 0f 1f 44 00 00 4c 8b 67 48 48 89 fb 4c 8d 7f 48 49 81 ec 30 08 00 00 <4d> 8b ac 24 30 08 00 00 49 81 ed 30 08 00 00 eb 59 48 89 df 48
-RIP  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
- RSP <ffff88005eedde98>
-CR2: 0000000000000000
- ---[ end trace aa99b99090f70baa ]---
+I need to hold on to this task because the DMA transaction may need to 
+be split in multiple pieces, continuing after the initial call by the 
+user; during which time that process may have exited (e.g. unexpected kill).
 
-Matt apparently removed such a check in 2004 (with no reason given):
- *  17 May 2004 - Matt Domsch <Matt_Domsch@dell.com>
- *   remove check for efi_enabled in exit
-but there have been several changes since then.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Mike Waychison <mikew@google.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>
-Cc: <matthew.e.tolentino@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
-v3:
-- Fix typo that I forgot to commit.
-v2:
-- Updated to conditionally unregister efivars for real EFI in the module
-  unload itself -- mikew
----
- drivers/firmware/efivars.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index ff0c373..2934a13 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -820,8 +820,10 @@ efivars_init(void)
- static void __exit
- efivars_exit(void)
- {
--	unregister_efivars(&__efivars);
--	kobject_put(efi_kobj);
-+	if (efi_enabled) {
-+		unregister_efivars(&__efivars);
-+		kobject_put(efi_kobj);
-+	}
- }
- 
- module_init(efivars_init);
--- 
-1.7.3.1
-
+Micha
