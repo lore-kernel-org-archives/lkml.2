@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1EFVSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:18:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35564 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755507Ab1EFVSH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:18:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
-References: <BANLkTimNvX=U6qy2FgvDpWE6HY7cehWvyQ@mail.gmail.com>
-	<20110412090207.GE19819@8bytes.org>
-	<BANLkTimSgAmT5a1s0ciBr2jsE-Nu7n4buQ@mail.gmail.com>
-	<20110412184433.GF19819@8bytes.org>
-	<20110413064609.GA18777@elte.hu>
-	<20110413172147.GI19819@8bytes.org>
-	<4DA5F62F.3030504@kernel.org>
-	<20110413193459.GL19819@8bytes.org>
-	<4DA60C30.4060606@kernel.org>
-	<BANLkTik7W0u92n_s0t32dsoLULu4QTZneA@mail.gmail.com>
-	<4DA6145D.9070703@kernel.org>
-	<BANLkTinud+4nUkZtnYRrU_gAFaMDWRa_AA@mail.gmail.com>
-	<4DA655E7.3000904@zytor.com>
-	<BANLkTimqR_M5keMqr5WAuz-t+1BkCZbwCg@mail.gmail.com>
-Date: Fri, 6 May 2011 14:17:59 -0700
-Message-ID: <BANLkTinw5iuZGjcSeQ2z3sVBpRVG1HWxdQ@mail.gmail.com>
-Subject: Re: Linux 2.6.39-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932782Ab1EFVT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:19:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:43471 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755507Ab1EFVT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 17:19:28 -0400
+Date: Fri, 6 May 2011 23:19:25 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, arnd@arndb.de
+Subject: Re: Remove last BKL leftover: lock_depth
+Message-ID: <20110506211925.GA20111@one.firstfloor.org>
+References: <1304715928-19266-1-git-send-email-andi@firstfloor.org> <20110506141114.10795803.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110506141114.10795803.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 13, 2011, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wednesday, April 13, 2011, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> Yes.  However, even if we *do* revert (and the time is running short on
->> not reverting) I would like to understand this particular one, simply
->> because I think it may very well be a problem that is manifesting itself
->> in other ways on other systems.
+On Fri, May 06, 2011 at 02:11:14PM -0700, Andrew Morton wrote:
+> On Fri,  6 May 2011 14:05:24 -0700
+> Andi Kleen <andi@firstfloor.org> wrote:
+> 
+> > I noticed the BKL task->lock_depth field was there with various users.
+> > But they all don't need it anymore because the BKL is gone.
+> > Fix up all the users and then finally remove the field.
+> > 
+> > This patchkit only removes code.
+> 
+> Patches in Ingo's tree from Jon Corbet have done this removal.
 
- sorry, fingerfart. Anyway, I agree 100%.
+Ok thanks.  I was wondering why noone had done it.
 
- we definitely want to also understand the reason for things not
-working, even if we do revert..
-
-        Linus
->> of complete b*llsh*t magic numbers in this
->
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
