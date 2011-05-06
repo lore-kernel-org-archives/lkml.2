@@ -1,121 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab1EFMyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 08:54:23 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:54307 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab1EFMyW (ORCPT
+	id S1755425Ab1EFMyr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:54:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2538 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754235Ab1EFMyp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 08:54:22 -0400
-Date: Fri, 6 May 2011 18:24:18 +0530
-From: Prem Karat <prem.karat@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fs/9p: Fix invalid mount options/args
-Message-ID: <20110506125417.GD6759@d6fc318.ibm.com>
+	Fri, 6 May 2011 08:54:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,326,1301900400"; 
+   d="scan'208";a="431696542"
+From: "Tian, Kevin" <kevin.tian@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Fri, 6 May 2011 20:54:39 +0800
+Subject: RE: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
+ them
+Thread-Topic: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
+ them
+Thread-Index: AcwL1GyqnvmzZBFoTHyj0RqABKyCfgAE23UA
+Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
+ <alpine.LFD.2.02.1105061149330.3005@ionos>
+In-Reply-To: <alpine.LFD.2.02.1105061149330.3005@ionos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Thomas Gleixner
+> Sent: Friday, May 06, 2011 6:00 PM
+> 
+> On Fri, 6 May 2011, Tian, Kevin wrote:
+> > x86: don't unmask disabled irqs when migrating them
+> >
+> > it doesn't make sense to mask/unmask a disabled irq when migrating it
+> > from offlined cpu to another, because it's not expected to handle any
+> > instance of it. Current mask/set_affinity/unmask steps may trigger
+> > unexpected instance on disabled irq which then simply bug on when
+> > there is no handler for it. One failing example is observed in Xen.
+> > Xen pvops
+> 
+> So there is no handler, why the heck is there an irq action?
+> 
+> 	  if (!irq_has_action(irq) ....
+> 	     	continue;
+> 
+> Should have caught an uninitialized interrupt. If Xen abuses interrupts that way,
+> then it rightfully explodes. And we do not fix it by magic somewhere else.
 
-fs/9p: Fix invalid mount options/args
+sorry that my bad description here. there does be a dummy handler registered
+on such irqs which simply throws out a BUG_ON when hit. I should just say such 
+injection is not expected instead of no handler. :-)
 
-Without this fix, if any invalid mount options/args are passed while mouting the 9p fs,
-no error (-EINVAL) is returned and default arg value is assigned.
+> 
+> > guest marks a special type of irqs as disabled, which are simply used
+> 
+> As I explained before several times, IRQF_DISABLED has absolutely nothing to
+> do with it and pvops _CANNOT_ mark an interrupt disabled.
 
-This fix returns -EINVAL when an invalid arguement is found while parsing mount options.
+I have to admit that I need more study about whole interrupt sub-system, to better
+understand your explanation here. Also here again my description is not accurate
+enough. I meant that Xen pvops request the special irq with below flags:
+	IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING
+and then later explicitly disable it with disable_irq(). As you said that IRQF_DISABLED
+itself has nothing to do with it, and it's the later disable_irq() which takes real 
+effect because Xen event chip hooks this callback to mask the irq from the chip level.
 
-Signed-off-by: Prem Karat <prem.karat@linux.vnet.ibm.com>
----
- fs/9p/v9fs.c |   43 ++++++++++++++++++++++++++++++++++---------
- 1 files changed, 34 insertions(+), 9 deletions(-)
+> 
+> >
+> >  		chip = irq_data_get_irq_chip(data);
+> > -		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
+> > +		do_mask = !irqd_irq_disabled(data) &&
+> > +			!irqd_can_move_in_process_context(data) && chip->irq_mask;
+> > +		if (do_mask)
+> >  			chip->irq_mask(data);
+> 
+> This is completely wrong. irqd_irq_disabled() is a status information which does
+> not tell you whether the interrupt is actually masked at the hardware level
+> because we do lazy interrupt hardware masking. So your change would keep
+> the line unmasked at the hardware level for all interrupts which are in the lazy
+> disabled state.
 
-diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
-index c82b017..033c23e 100644
---- a/fs/9p/v9fs.c
-+++ b/fs/9p/v9fs.c
-@@ -78,6 +78,25 @@ static const match_table_t tokens = {
- 	{Opt_err, NULL}
- };
+Got it.
+
+> 
+> The only conditional which is interesting is the unmask path and that's a simple
+> optimization and not a correctness problem.
+> 
+
+So what's your suggestion based on my updated information? Is there any
+interface I may take to differentiate above exception with normal case? Basically
+in Xen usage we want such irqs permanently disabled at the chip level. Or
+could we only do mask/unmask for irqs which are unmasked atm if as you said
+it's just an optimization step? :-)
  
-+/* Interpret mount options for cache mode */
-+static int get_cache_mode(char *s)
-+{
-+	int version = -EINVAL;
-+
-+	if (!strcmp(s, "loose")) {
-+		version = CACHE_LOOSE;
-+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: loose\n");
-+	} else if (!strcmp(s, "fscache")) {
-+		version = CACHE_FSCACHE;
-+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: fscache\n");
-+	} else if (!strcmp(s, "none")) {
-+		version = CACHE_NONE;
-+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: none\n");
-+	} else
-+		printk(KERN_INFO "9p: Unknown Cache mode %s.\n", s);
-+	return version;
-+}
-+
- /**
-  * v9fs_parse_options - parse mount options into session structure
-  * @v9ses: existing v9fs session information
-@@ -97,7 +116,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
- 	/* setup defaults */
- 	v9ses->afid = ~0;
- 	v9ses->debug = 0;
--	v9ses->cache = 0;
-+	v9ses->cache = CACHE_NONE;
- #ifdef CONFIG_9P_FSCACHE
- 	v9ses->cachetag = NULL;
- #endif
-@@ -171,13 +190,13 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
- 				  "problem allocating copy of cache arg\n");
- 				goto free_and_return;
- 			}
-+			ret = get_cache_mode(s);
-+			if (ret == -EINVAL) {
-+				kfree(s);
-+				goto free_and_return;
-+			}
- 
--			if (strcmp(s, "loose") == 0)
--				v9ses->cache = CACHE_LOOSE;
--			else if (strcmp(s, "fscache") == 0)
--				v9ses->cache = CACHE_FSCACHE;
--			else
--				v9ses->cache = CACHE_NONE;
-+			v9ses->cache = ret;
- 			kfree(s);
- 			break;
- 
-@@ -200,9 +219,15 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
- 			} else {
- 				v9ses->flags |= V9FS_ACCESS_SINGLE;
- 				v9ses->uid = simple_strtoul(s, &e, 10);
--				if (*e != '\0')
--					v9ses->uid = ~0;
-+				if (*e != '\0') {
-+					ret = -EINVAL;
-+					printk(KERN_INFO "9p: Unknown access "
-+							"argument %s.\n", s);
-+					kfree(s);
-+					goto free_and_return;
-+				}
- 			}
-+
- 			kfree(s);
- 			break;
- 
--- 
-1.7.4
 
--- 
-Cheers,
-Prem
-Linux Technology Center,
-IBM Systems & Technology Labs
+Thanks
+Kevin
+
