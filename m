@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab1EFM0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 08:26:50 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63914 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab1EFM0t (ORCPT
+	id S1755074Ab1EFMix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:38:53 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:39857 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752258Ab1EFMiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 08:26:49 -0400
-X-Nat-Received: from [202.181.97.72]:50698 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1304684803.26892
-To: akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] coredump: use task comm instead of (unknown)
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <4DC0FFAB.1000805@gmail.com>
-	<1304494354-21487-1-git-send-email-jslaby@suse.cz>
-	<20110505150601.a4457970.akpm@linux-foundation.org>
-In-Reply-To: <20110505150601.a4457970.akpm@linux-foundation.org>
-Message-Id: <201105062126.DIE34311.OJHtFMFFSQLVOO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 6 May 2011 21:26:39 +0900
-Mime-Version: 1.0
+	Fri, 6 May 2011 08:38:52 -0400
+Date: Fri, 6 May 2011 14:28:30 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        kernel@avr32linux.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] avr32: add some more at91 to cpu.h definition
+Message-ID: <20110506122830.GJ11267@game.jcrosoft.org>
+References: <1304680123-20218-1-git-send-email-nicolas.ferre@atmel.com>
+ <1304683480.3025.2.camel@hcegtvedt.norway.atmel.com>
+ <4DC3EA35.5030709@atmel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06052011 #5383052, status: clean
+Content-Disposition: inline
+In-Reply-To: <4DC3EA35.5030709@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 16994614669147482988
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> Direct access to current->comm is racy since we added
-> prctl(PR_SET_NAME).
+On 14:31 Fri 06 May     , Nicolas Ferre wrote:
+> Le 06/05/2011 14:04, Hans-Christian Egtvedt :
+> > On Fri, 2011-05-06 at 13:08 +0200, Nicolas Ferre wrote:
+> >> Somme common drivers will need those at91 cpu_is_xxx() definitions.
+> >> Those definitions are already in Linus' tree so if we want to use them
+> >> in common drivers, we will need them in AVR32 cpu.h file.
+> >>
+> >> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > 
+> > Will you push this update for 2.6.39? I don't have anything for Linus
+> > right now.
+> 
+> Ah, Linus has just pulled from our tree...
+> Maybe we can wait a few days to see if some fixes have to be pushed
+> upstream before -final...
+> 
+> > Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> > with one comment...
+I've a bug fix for udc but nothing more
+maybe map_io fix can go now
 
-A passer-by's question. Did we change below one
-
-char *get_task_comm(char *buf, struct task_struct *tsk)
-{
-	/* buf must be at least sizeof(tsk->comm) in size */
-	task_lock(tsk);
-	strncpy(buf, tsk->comm, sizeof(tsk->comm));
-	task_unlock(tsk);
-	return buf;
-}
-
-since some archs may do like
-
-char *strncpy(char *dest, const char *src, size_t n)
-{
-	size_t len = __strnend(src, n) - src;
-	__builtin_memset(dest + len, 0, n - len);
-	__builtin_memcpy(dest, src, len);
-	return dest;
-}
-
-( arch/s390/lib/string.c ) after adding prctl(PR_SET_NAME)?
+Best Regards,
+J.
