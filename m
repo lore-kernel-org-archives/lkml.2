@@ -1,168 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab1EFArz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:47:55 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:35448 "EHLO www.hansjkoch.de"
+	id S932261Ab1EFAz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:55:27 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:35800 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab1EFArx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:47:53 -0400
-Date: Fri, 6 May 2011 02:47:49 +0200
+	id S932134Ab1EFAzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:55:24 -0400
+Date: Fri, 6 May 2011 02:55:13 +0200
 From: "Hans J. Koch" <hjk@hansjkoch.de>
 To: Michal Simek <monstr@monstr.eu>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Arnd Bergmann <arnd@arndb.de>,
-        John Williams <john.williams@petalogix.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
-Message-ID: <20110506004748.GB2790@local>
-References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Wolfram Sang <w.sang@pengutronix.de>,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH v4] uio/pdrv_genirq: Add OF support
+Message-ID: <20110506005513.GC2790@local>
+References: <1304319115-32745-1-git-send-email-monstr@monstr.eu>
+ <20110503203412.GA2119@pengutronix.de>
+ <20110503221440.GB2737@local>
+ <4DC152F3.2050500@monstr.eu>
+ <20110504194730.GA2820@local>
+ <4DC23513.2090007@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+In-Reply-To: <4DC23513.2090007@monstr.eu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 08:40:44AM +0200, Michal Simek wrote:
+On Thu, May 05, 2011 at 07:26:43AM +0200, Michal Simek wrote:
+> Hans J. Koch wrote:
+> >On Wed, May 04, 2011 at 03:21:55PM +0200, Michal Simek wrote:
+> >>Hans J. Koch wrote:
+> >>>On Tue, May 03, 2011 at 10:34:12PM +0200, Wolfram Sang wrote:
+> >>>>On Mon, May 02, 2011 at 08:51:55AM +0200, Michal Simek wrote:
+> >>>>>Adding OF binding to genirq.
+> >>>>>Version string is setup to the "devicetree".
+> >>>>>
+> >>>>>Compatible string is not setup for now but you can add your
+> >>>>>custom compatible string to uio_of_genirq_match structure.
+> >>>>>
+> >>>>>For example with "vendor,device" compatible string:
+> >>>>>static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+> >>>>>	{ .compatible = "vendor,device", },
+> >>>>>	{ /* empty for now */ },
+> >>>>>};
+> >>>>>
+> >>>>>Signed-off-by: Michal Simek <monstr@monstr.eu>
+> >>>>[...]
+> >>>>
+> >>>>>+		/* alloc uioinfo for one device */
+> >>>>>+		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
+> >>>>kfree in remove?
+> >>>Oh yes. Missed that one. It should probably look like the "bad0" case in probe().
+> >>Yes, freeing uioinfo in uio_pdrv_genirq_remove make sense for CONFIG_OF.
+> >>
+> >>Please correct me if I am wrong dev.of_node is not NULL for OF. I
+> >>think yes that's why I would prefer to use this construct instead of
+> >>#ifdef CONFIG_OF.
+> >>
+> >>	if (pdev->dev.of_node)
+> >>		kfree(pdev->dev.platform_data);
+> >
+> >Huh? You didn't allocate platform_data, so you shouldn't free it.
+> >It's uioinfo you allocated.
+> 
+> grrr. I am stupid!
 
-I think we've got it.
+We all are, sometimes. That's why we have a public review process so that
+collective stupidity can lead to good code.
 
 Thanks,
 Hans
-
-> Adding OF binding to genirq.
-> Version string is setup to the "devicetree".
-> 
-> Compatible string is not setup for now but you can add your
-> custom compatible string to uio_of_genirq_match structure.
-> 
-> For example with "vendor,device" compatible string:
-> static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
-> 	{ .compatible = "vendor,device", },
-> 	{ /* empty for now */ },
-> };
-> 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-
-Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-
-> CC: Hans J. Koch <hjk@hansjkoch.de>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> CC: John Williams <john.williams@petalogix.com>
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Wolfram Sang <w.sang@pengutronix.de>
-> 
-> ---
-> v5: Free uioinfo in genirq_remove
->     Use pdev->dev.of_node for OF detection
-> 
-> v4: Remove dev_info messages
->     Check irq against -ENXIO for no irq
-> 
-> v3: Fix irq binding
->     Use "devicetree" as version string
-> 
-> v2: Remove additional resource binding
->     Setup correct version string
->     Clear compatible string
-> ---
->  drivers/uio/uio_pdrv_genirq.c |   44 +++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 44 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> index 7174d51..24bb395 100644
-> --- a/drivers/uio/uio_pdrv_genirq.c
-> +++ b/drivers/uio/uio_pdrv_genirq.c
-> @@ -23,6 +23,10 @@
->  #include <linux/pm_runtime.h>
->  #include <linux/slab.h>
->  
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_address.h>
-> +
->  #define DRIVER_NAME "uio_pdrv_genirq"
->  
->  struct uio_pdrv_genirq_platdata {
-> @@ -97,6 +101,27 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  	int ret = -EINVAL;
->  	int i;
->  
-> +	if (!uioinfo) {
-> +		int irq;
-> +
-> +		/* alloc uioinfo for one device */
-> +		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
-> +		if (!uioinfo) {
-> +			ret = -ENOMEM;
-> +			dev_err(&pdev->dev, "unable to kmalloc\n");
-> +			goto bad2;
-> +		}
-> +		uioinfo->name = pdev->dev.of_node->name;
-> +		uioinfo->version = "devicetree";
-> +
-> +		/* Multiple IRQs are not supported */
-> +		irq = platform_get_irq(pdev, 0);
-> +		if (irq == -ENXIO)
-> +			uioinfo->irq = UIO_IRQ_NONE;
-> +		else
-> +			uioinfo->irq = irq;
-> +	}
-> +
->  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
->  		dev_err(&pdev->dev, "missing platform_data\n");
->  		goto bad0;
-> @@ -180,6 +205,10 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  	kfree(priv);
->  	pm_runtime_disable(&pdev->dev);
->   bad0:
-> +	/* kfree uioinfo for OF */
-> +	if (pdev->dev.of_node)
-> +		kfree(uioinfo);
-> + bad2:
->  	return ret;
->  }
->  
-> @@ -189,6 +218,11 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
->  
->  	uio_unregister_device(priv->uioinfo);
->  	pm_runtime_disable(&pdev->dev);
-> +
-> +	/* kfree uioinfo for OF */
-> +	if (pdev->dev.of_node)
-> +		kfree(priv->uioinfo);
-> +
->  	kfree(priv);
->  	return 0;
->  }
-> @@ -215,6 +249,15 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
->  	.runtime_resume = uio_pdrv_genirq_runtime_nop,
->  };
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
-> +	{ /* empty for now */ },
-> +};
-> +MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
-> +#else
-> +# define uio_of_genirq_match NULL
-> +#endif
-> +
->  static struct platform_driver uio_pdrv_genirq = {
->  	.probe = uio_pdrv_genirq_probe,
->  	.remove = uio_pdrv_genirq_remove,
-> @@ -222,6 +265,7 @@ static struct platform_driver uio_pdrv_genirq = {
->  		.name = DRIVER_NAME,
->  		.owner = THIS_MODULE,
->  		.pm = &uio_pdrv_genirq_dev_pm_ops,
-> +		.of_match_table = uio_of_genirq_match,
->  	},
->  };
->  
-> -- 
-> 1.5.5.6
-> 
-> 
