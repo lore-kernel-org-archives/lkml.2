@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab1EFAZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:25:49 -0400
-Received: from kroah.org ([198.145.64.141]:37199 "EHLO coco.kroah.org"
+	id S932422Ab1EFAZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:25:46 -0400
+Received: from kroah.org ([198.145.64.141]:37205 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1EFAZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:43 -0400
+	id S932375Ab1EFAZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:44 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:16 2011
-Message-Id: <20110506002215.952123804@clark.kroah.org>
+Message-Id: <20110506002216.040615255@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:34 -0700
+Date: Thu, 05 May 2011 17:21:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hagen Paul Pfeifer <hagen@jauu.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [109/143] econet: Fix redeclaration of symbol len
+        Phil Blundell <philb@gnu.org>, "David S. Miller" <davem@davemloft.net>
+Subject: [110/143] econet: fix CVE-2010-3848
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +25,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hagen Paul Pfeifer <hagen@jauu.net>
+From: Phil Blundell <philb@gnu.org>
 
-commit 9e8342971d44ce86d8567047f5366fc1c06a75ed upstream.
+commit a27e13d370415add3487949c60810e36069a23a6 upstream.
 
-Function argument len was redeclarated within the
-function. This patch fix the redeclaration of symbol 'len'.
+Don't declare variable sized array of iovecs on the stack since this
+could cause stack overflow if msg->msgiovlen is large.  Instead, coalesce
+the user-supplied data into a new buffer and use a single iovec for it.
 
-Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Signed-off-by: Phil Blundell <philb@gnu.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 [Adjusted to apply to 2.6.32 by dann frazier <dannf@debian.org>]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/econet/af_econet.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/econet/af_econet.c |   62 ++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
 --- a/net/econet/af_econet.c
 +++ b/net/econet/af_econet.c
-@@ -447,15 +447,15 @@ static int econet_sendmsg(struct kiocb *
- 	iov[0].iov_len = size;
- 	for (i = 0; i < msg->msg_iovlen; i++) {
- 		void __user *base = msg->msg_iov[i].iov_base;
--		size_t len = msg->msg_iov[i].iov_len;
-+		size_t iov_len = msg->msg_iov[i].iov_len;
- 		/* Check it now since we switch to KERNEL_DS later. */
--		if (!access_ok(VERIFY_READ, base, len)) {
-+		if (!access_ok(VERIFY_READ, base, iov_len)) {
- 			mutex_unlock(&econet_mutex);
- 			return -EFAULT;
+@@ -30,6 +30,7 @@
+ #include <linux/wireless.h>
+ #include <linux/skbuff.h>
+ #include <linux/udp.h>
++#include <linux/vmalloc.h>
+ #include <net/sock.h>
+ #include <net/inet_common.h>
+ #include <linux/stat.h>
+@@ -275,12 +276,12 @@ static int econet_sendmsg(struct kiocb *
+ #endif
+ #ifdef CONFIG_ECONET_AUNUDP
+ 	struct msghdr udpmsg;
+-	struct iovec iov[msg->msg_iovlen+1];
++	struct iovec iov[2];
+ 	struct aunhdr ah;
+ 	struct sockaddr_in udpdest;
+ 	__kernel_size_t size;
+-	int i;
+ 	mm_segment_t oldfs;
++	char *userbuf;
+ #endif
+ 
+ 	/*
+@@ -318,17 +319,17 @@ static int econet_sendmsg(struct kiocb *
  		}
- 		iov[i+1].iov_base = base;
--		iov[i+1].iov_len = len;
--		size += len;
-+		iov[i+1].iov_len = iov_len;
-+		size += iov_len;
  	}
  
+-	if (len + 15 > dev->mtu) {
+-		mutex_unlock(&econet_mutex);
+-		return -EMSGSIZE;
+-	}
+-
+ 	if (dev->type == ARPHRD_ECONET) {
+ 		/* Real hardware Econet.  We're not worthy etc. */
+ #ifdef CONFIG_ECONET_NATIVE
+ 		unsigned short proto = 0;
+ 		int res;
+ 
++		if (len + 15 > dev->mtu) {
++			mutex_unlock(&econet_mutex);
++			return -EMSGSIZE;
++		}
++
+ 		dev_hold(dev);
+ 
+ 		skb = sock_alloc_send_skb(sk, len+LL_ALLOCATED_SPACE(dev),
+@@ -404,6 +405,11 @@ static int econet_sendmsg(struct kiocb *
+ 		return -ENETDOWN;		/* No socket - can't send */
+ 	}
+ 
++	if (len > 32768) {
++		err = -E2BIG;
++		goto error;
++	}
++
+ 	/* Make up a UDP datagram and hand it off to some higher intellect. */
+ 
+ 	memset(&udpdest, 0, sizeof(udpdest));
+@@ -435,36 +441,26 @@ static int econet_sendmsg(struct kiocb *
+ 
+ 	/* tack our header on the front of the iovec */
+ 	size = sizeof(struct aunhdr);
+-	/*
+-	 * XXX: that is b0rken.  We can't mix userland and kernel pointers
+-	 * in iovec, since on a lot of platforms copy_from_user() will
+-	 * *not* work with the kernel and userland ones at the same time,
+-	 * regardless of what we do with set_fs().  And we are talking about
+-	 * econet-over-ethernet here, so "it's only ARM anyway" doesn't
+-	 * apply.  Any suggestions on fixing that code?		-- AV
+-	 */
+ 	iov[0].iov_base = (void *)&ah;
+ 	iov[0].iov_len = size;
+-	for (i = 0; i < msg->msg_iovlen; i++) {
+-		void __user *base = msg->msg_iov[i].iov_base;
+-		size_t iov_len = msg->msg_iov[i].iov_len;
+-		/* Check it now since we switch to KERNEL_DS later. */
+-		if (!access_ok(VERIFY_READ, base, iov_len)) {
+-			mutex_unlock(&econet_mutex);
+-			return -EFAULT;
+-		}
+-		iov[i+1].iov_base = base;
+-		iov[i+1].iov_len = iov_len;
+-		size += iov_len;
++
++	userbuf = vmalloc(len);
++	if (userbuf == NULL) {
++		err = -ENOMEM;
++		goto error;
+ 	}
+ 
++	iov[1].iov_base = userbuf;
++	iov[1].iov_len = len;
++	err = memcpy_fromiovec(userbuf, msg->msg_iov, len);
++	if (err)
++		goto error_free_buf;
++
  	/* Get a skbuff (no data, just holds our cb information) */
+ 	if ((skb = sock_alloc_send_skb(sk, 0,
+ 				       msg->msg_flags & MSG_DONTWAIT,
+-				       &err)) == NULL) {
+-		mutex_unlock(&econet_mutex);
+-		return err;
+-	}
++				       &err)) == NULL)
++		goto error_free_buf;
+ 
+ 	eb = (struct ec_cb *)&skb->cb;
+ 
+@@ -480,7 +476,7 @@ static int econet_sendmsg(struct kiocb *
+ 	udpmsg.msg_name = (void *)&udpdest;
+ 	udpmsg.msg_namelen = sizeof(udpdest);
+ 	udpmsg.msg_iov = &iov[0];
+-	udpmsg.msg_iovlen = msg->msg_iovlen + 1;
++	udpmsg.msg_iovlen = 2;
+ 	udpmsg.msg_control = NULL;
+ 	udpmsg.msg_controllen = 0;
+ 	udpmsg.msg_flags=0;
+@@ -488,9 +484,13 @@ static int econet_sendmsg(struct kiocb *
+ 	oldfs = get_fs(); set_fs(KERNEL_DS);	/* More privs :-) */
+ 	err = sock_sendmsg(udpsock, &udpmsg, size);
+ 	set_fs(oldfs);
++
++error_free_buf:
++	vfree(userbuf);
+ #else
+ 	err = -EPROTOTYPE;
+ #endif
++	error:
+ 	mutex_unlock(&econet_mutex);
+ 
+ 	return err;
 
 
