@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab1EFA0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:26:00 -0400
-Received: from kroah.org ([198.145.64.141]:37285 "EHLO coco.kroah.org"
+	id S1756140Ab1EFAk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:40:58 -0400
+Received: from kroah.org ([198.145.64.141]:37290 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab1EFAZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932459Ab1EFAZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 May 2011 20:25:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:17 2011
-Message-Id: <20110506002217.166675829@clark.kroah.org>
+Message-Id: <20110506002217.276457898@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:46 -0700
+Date: Thu, 05 May 2011 17:21:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [121/143] init, sched: Fix race between init and kthreadd
+        "Edgar (gimli) Hucek" <gimli@dark-green.com>,
+        Richard Purdie <rpurdie@linux.intel.com>
+Subject: [122/143] backlight: MacBookAir3,1(3,2) mbp-nvidia-bl support
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,66 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Edgar (gimli) Hucek <gimli@dark-green.com>
 
-commit b433c3d4549ae74935b585115f076c6fb7bc48fe upstream.
+commit bd760e1e5b34351e0705705e5163cb89c1316d71 upstream.
 
-Ilya reported that on a very slow machine he could reliably
-reproduce a race between forking init and kthreadd. We first
-fork init so that it  obtains pid-1, however since the scheduler
-is already fully running at this point it can preempt and run
-the init thread before we spawn and set kthreadd_task.
+Add support for the MacBookAir3,1 and MacBookAir3,2 to the mbp-nvidia-bl
+driver.
 
-The init thread can then attempt spawning kthreads without
-kthreadd being present which results in an OOPS.
-
-Reported-by: Ilya Loginov <isloginov@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <1277736661.3561.110.camel@laptop>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+Acked-by: Richard Purdie <rpurdie@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- init/main.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/video/backlight/mbp_nvidia_bl.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/init/main.c
-+++ b/init/main.c
-@@ -407,16 +407,24 @@ static void __init setup_command_line(ch
-  * gcc-3.4 accidentally inlines this function, so use noinline.
-  */
+--- a/drivers/video/backlight/mbp_nvidia_bl.c
++++ b/drivers/video/backlight/mbp_nvidia_bl.c
+@@ -272,6 +272,24 @@ static const struct dmi_system_id __init
+ 		},
+ 		.driver_data	= (void *)&nvidia_chipset_data,
+ 	},
++	{
++		.callback	= mbp_dmi_match,
++		.ident		= "MacBookAir 3,1",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3,1"),
++		},
++		.driver_data	= (void *)&nvidia_chipset_data,
++	},
++	{
++		.callback	= mbp_dmi_match,
++		.ident		= "MacBookAir 3,2",
++		.matches	= {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3,2"),
++		},
++		.driver_data	= (void *)&nvidia_chipset_data,
++	},
+ 	{ }
+ };
  
-+static __initdata DECLARE_COMPLETION(kthreadd_done);
-+
- static noinline void __init_refok rest_init(void)
- 	__releases(kernel_lock)
- {
- 	int pid;
- 
- 	rcu_scheduler_starting();
-+	/*
-+	 * We need to spawn init first so that it obtains pid-1, however
-+	 * the init task will end up wanting to create kthreads, which, if
-+	 * we schedule it before we create kthreadd, will OOPS.
-+	 */
- 	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
- 	numa_default_policy();
- 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
- 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
-+	complete(&kthreadd_done);
- 	unlock_kernel();
- 
- 	/*
-@@ -841,6 +849,10 @@ static noinline int init_post(void)
- 
- static int __init kernel_init(void * unused)
- {
-+	/*
-+	 * Wait until kthreadd is all set-up.
-+	 */
-+	wait_for_completion(&kthreadd_done);
- 	lock_kernel();
- 
- 	/*
 
 
