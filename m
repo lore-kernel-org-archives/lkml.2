@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab1EFVYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:24:06 -0400
-Received: from kroah.org ([198.145.64.141]:54594 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756747Ab1EFVYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:24:05 -0400
-Date: Fri, 6 May 2011 14:22:07 -0700
-From: Greg KH <greg@kroah.com>
-To: "Javier M. Mellid" <jmunhoz@igalia.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
-Message-ID: <20110506212207.GA3222@kroah.com>
-References: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
+	id S932814Ab1EFVYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:24:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33988 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932663Ab1EFVYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 17:24:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304716255.25414.2540.camel@gandalf.stny.rr.com>
+References: <4DC45537.6070609@linux.intel.com>
+	<1304713252.25414.2532.camel@gandalf.stny.rr.com>
+	<BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+	<1304716255.25414.2540.camel@gandalf.stny.rr.com>
+Date: Fri, 6 May 2011 14:24:05 -0700
+Message-ID: <BANLkTi=KVXjKR82sqsz4gwjr+E0vtqCmvA@mail.gmail.com>
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 07:24:56PM +0200, Javier M. Mellid wrote:
-> This patch implements dynamic framebuffer mode setting.
-> 
-> Previous code works with mode setting in a hard code way. Previous hard
-> code configuration is used as default configuration if dynamic mode
-> setting or boot mode setting (via sm712vga_setup) is not used.
-> 
-> Tested with SM712 supporting 1024x600x16 as default hardware resolution.
-> 
-> Changes:
-> 
-> - Implement fb_check_var and fb_set_par callbacks
-> - Remove __maybe_unused decorator in function being used (sm712vga_setup)
-> - Minor cleanup on initialization structs related with mode settings
-> - Updated author copyright
-> - Updated TODO file
-> 
-> Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
-> ---
->  drivers/staging/sm7xx/TODO     |    1 -
+On 5/6/11, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2011-05-06 at 13:51 -0700, Linus Torvalds wrote:
+>> On Fri, May 6, 2011 at 1:20 PM, Steven Rostedt <rostedt@goodmis.org>
+>
+> Um, this is an internal tracepoint. Does this mean that all internal
+> data inside the kernel that is exported with trace events are locked
+> down?
 
-This applies with fuzz, this leads me to believe that you didn't test
-this on the latest linux-next tree, right?
+ it's clearly NOT an internal tracepoint. By definition. It's being
+used by powertop.
 
-What did you make this patch against?
+What part of "reality" vs "your wishes" didn't you understand?
 
-thanks,
+               Linus
 
-greg k-h
+>
+>>
+>> I
