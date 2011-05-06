@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab1EFAZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:25:56 -0400
-Received: from kroah.org ([198.145.64.141]:37276 "EHLO coco.kroah.org"
+	id S932496Ab1EFA0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:26:00 -0400
+Received: from kroah.org ([198.145.64.141]:37285 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1EFAZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:53 -0400
+	id S932455Ab1EFAZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:17 2011
-Message-Id: <20110506002217.060207898@clark.kroah.org>
+Message-Id: <20110506002217.166675829@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:45 -0700
+Date: Thu, 05 May 2011 17:21:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [120/143] af_unix: limit unix_tot_inflight
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [121/143] init, sched: Fix race between init and kthreadd
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 9915672d41273f5b77f1b3c29b391ffb7732b84b upstream.
+commit b433c3d4549ae74935b585115f076c6fb7bc48fe upstream.
 
-Vegard Nossum found a unix socket OOM was possible, posting an exploit
-program.
+Ilya reported that on a very slow machine he could reliably
+reproduce a race between forking init and kthreadd. We first
+fork init so that it  obtains pid-1, however since the scheduler
+is already fully running at this point it can preempt and run
+the init thread before we spawn and set kthreadd_task.
 
-My analysis is we can eat all LOWMEM memory before unix_gc() being
-called from unix_release_sock(). Moreover, the thread blocked in
-unix_gc() can consume huge amount of time to perform cleanup because of
-huge working set.
+The init thread can then attempt spawning kthreads without
+kthreadd being present which results in an OOPS.
 
-One way to handle this is to have a sensible limit on unix_tot_inflight,
-tested from wait_for_unix_gc() and to force a call to unix_gc() if this
-limit is hit.
-
-This solves the OOM and also reduce overall latencies, and should not
-slowdown normal workloads.
-
-Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Ilya Loginov <isloginov@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <1277736661.3561.110.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/unix/garbage.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ init/main.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/net/unix/garbage.c
-+++ b/net/unix/garbage.c
-@@ -269,9 +269,16 @@ static void inc_inflight_move_tail(struc
- }
+--- a/init/main.c
++++ b/init/main.c
+@@ -407,16 +407,24 @@ static void __init setup_command_line(ch
+  * gcc-3.4 accidentally inlines this function, so use noinline.
+  */
  
- static bool gc_in_progress = false;
-+#define UNIX_INFLIGHT_TRIGGER_GC 16000
++static __initdata DECLARE_COMPLETION(kthreadd_done);
++
+ static noinline void __init_refok rest_init(void)
+ 	__releases(kernel_lock)
+ {
+ 	int pid;
  
- void wait_for_unix_gc(void)
+ 	rcu_scheduler_starting();
++	/*
++	 * We need to spawn init first so that it obtains pid-1, however
++	 * the init task will end up wanting to create kthreads, which, if
++	 * we schedule it before we create kthreadd, will OOPS.
++	 */
+ 	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+ 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
++	complete(&kthreadd_done);
+ 	unlock_kernel();
+ 
+ 	/*
+@@ -841,6 +849,10 @@ static noinline int init_post(void)
+ 
+ static int __init kernel_init(void * unused)
  {
 +	/*
-+	 * If number of inflight sockets is insane,
-+	 * force a garbage collect right now.
++	 * Wait until kthreadd is all set-up.
 +	 */
-+	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
-+		unix_gc();
- 	wait_event(unix_gc_wait, gc_in_progress == false);
- }
++	wait_for_completion(&kthreadd_done);
+ 	lock_kernel();
  
+ 	/*
 
 
