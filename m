@@ -1,319 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab1EFPtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 11:49:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48841 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514Ab1EFPrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 11:47:43 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=wDeMVmb7LykA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=pQlb3qSmZVtWkxVqSJUA:9 a=MaoGoWIVhgm_0D8Xek0A:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110506154742.475796558@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 06 May 2011 11:26:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Jiri Olsa <jolsa@redhat.com>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Michael Rubin <mrubin@google.com>
-Subject: [RFC][PATCH 13/13] ftrace: Add self-tests for multiple function trace users
-References: <20110506152624.776982312@goodmis.org>
-Content-Disposition: inline; filename=0013-ftrace-Add-self-tests-for-multiple-function-trace-us.patch
+	id S1755335Ab1EFPdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 11:33:46 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:53310 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752463Ab1EFPdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 11:33:45 -0400
+Date: Fri, 6 May 2011 10:33:44 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: poll waiting for I/OAT DMA channel status
+Message-ID: <20110506153344.GA16977@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+For certain system configurations a 5 usec udelay before checking I/OAT DMA
+channel status is sometimes not sufficient, resulting in a false failure
+status and unnecessary freeing of channel resources.  Conversely, for many
+configurations 5 usec is longer than necessary.
 
-Add some basic sanity tests for multiple users of the function
-tracer at startup.
+Loop for up to 20 usec waiting for successful status before failing.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.h                  |    2 +
- kernel/trace/trace_selftest.c         |  209 ++++++++++++++++++++++++++++++++-
- kernel/trace/trace_selftest_dynamic.c |    6 +
- 3 files changed, 215 insertions(+), 2 deletions(-)
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+___
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 5e9dfc6..6b69c4b 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -419,6 +419,8 @@ extern void trace_find_cmdline(int pid, char comm[]);
- extern unsigned long ftrace_update_tot_cnt;
- #define DYN_FTRACE_TEST_NAME trace_selftest_dynamic_test_func
- extern int DYN_FTRACE_TEST_NAME(void);
-+#define DYN_FTRACE_TEST_NAME2 trace_selftest_dynamic_test_func2
-+extern int DYN_FTRACE_TEST_NAME2(void);
- #endif
- 
- extern int ring_buffer_expanded;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 0d563a9..288541f 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -101,6 +101,206 @@ static inline void warn_failed_init_tracer(struct tracer *trace, int init_ret)
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
-+static int trace_selftest_test_probe1_cnt;
-+static void trace_selftest_test_probe1_func(unsigned long ip,
-+					    unsigned long pip)
-+{
-+	trace_selftest_test_probe1_cnt++;
-+}
-+
-+static int trace_selftest_test_probe2_cnt;
-+static void trace_selftest_test_probe2_func(unsigned long ip,
-+					    unsigned long pip)
-+{
-+	trace_selftest_test_probe2_cnt++;
-+}
-+
-+static int trace_selftest_test_probe3_cnt;
-+static void trace_selftest_test_probe3_func(unsigned long ip,
-+					    unsigned long pip)
-+{
-+	trace_selftest_test_probe3_cnt++;
-+}
-+
-+static int trace_selftest_test_global_cnt;
-+static void trace_selftest_test_global_func(unsigned long ip,
-+					    unsigned long pip)
-+{
-+	trace_selftest_test_global_cnt++;
-+}
-+
-+static int trace_selftest_test_dyn_cnt;
-+static void trace_selftest_test_dyn_func(unsigned long ip,
-+					 unsigned long pip)
-+{
-+	trace_selftest_test_dyn_cnt++;
-+}
-+
-+static struct ftrace_ops test_probe1 = {
-+	.func			= trace_selftest_test_probe1_func,
-+};
-+
-+static struct ftrace_ops test_probe2 = {
-+	.func			= trace_selftest_test_probe2_func,
-+};
-+
-+static struct ftrace_ops test_probe3 = {
-+	.func			= trace_selftest_test_probe3_func,
-+};
-+
-+static struct ftrace_ops test_global = {
-+	.func			= trace_selftest_test_global_func,
-+	.flags			= FTRACE_OPS_FL_GLOBAL,
-+};
-+
-+static void print_counts(void)
-+{
-+	printk("(%d %d %d %d %d) ",
-+	       trace_selftest_test_probe1_cnt,
-+	       trace_selftest_test_probe2_cnt,
-+	       trace_selftest_test_probe3_cnt,
-+	       trace_selftest_test_global_cnt,
-+	       trace_selftest_test_dyn_cnt);
-+}
-+
-+static void reset_counts(void)
-+{
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
-+	trace_selftest_test_probe3_cnt = 0;
-+	trace_selftest_test_global_cnt = 0;
-+	trace_selftest_test_dyn_cnt = 0;
-+}
-+
-+static int trace_selftest_ops(int cnt)
-+{
-+	int save_ftrace_enabled = ftrace_enabled;
-+	struct ftrace_ops *dyn_ops;
-+	char *func1_name;
-+	char *func2_name;
-+	int len1;
-+	int len2;
-+	int ret = -1;
-+
-+	printk(KERN_CONT "PASSED\n");
-+	pr_info("Testing dynamic ftrace ops #%d: ", cnt);
-+
-+	ftrace_enabled = 1;
-+	reset_counts();
-+
-+	/* Handle PPC64 '.' name */
-+	func1_name = "*" __stringify(DYN_FTRACE_TEST_NAME);
-+	func2_name = "*" __stringify(DYN_FTRACE_TEST_NAME2);
-+	len1 = strlen(func1_name);
-+	len2 = strlen(func2_name);
-+
-+	/*
-+	 * Probe 1 will trace function 1.
-+	 * Probe 2 will trace function 2.
-+	 * Probe 3 will trace functions 1 and 2.
-+	 */
-+	ftrace_set_filter(&test_probe1, func1_name, len1, 1);
-+	ftrace_set_filter(&test_probe2, func2_name, len2, 1);
-+	ftrace_set_filter(&test_probe3, func1_name, len1, 1);
-+	ftrace_set_filter(&test_probe3, func2_name, len2, 0);
-+
-+	register_ftrace_function(&test_probe1);
-+	register_ftrace_function(&test_probe2);
-+	register_ftrace_function(&test_probe3);
-+	register_ftrace_function(&test_global);
-+
-+	DYN_FTRACE_TEST_NAME();
-+
-+	print_counts();
-+
-+	if (trace_selftest_test_probe1_cnt != 1)
-+		goto out;
-+	if (trace_selftest_test_probe2_cnt != 0)
-+		goto out;
-+	if (trace_selftest_test_probe3_cnt != 1)
-+		goto out;
-+	if (trace_selftest_test_global_cnt == 0)
-+		goto out;
-+
-+	DYN_FTRACE_TEST_NAME2();
-+
-+	print_counts();
-+
-+	if (trace_selftest_test_probe1_cnt != 1)
-+		goto out;
-+	if (trace_selftest_test_probe2_cnt != 1)
-+		goto out;
-+	if (trace_selftest_test_probe3_cnt != 2)
-+		goto out;
-+
-+	/* Add a dynamic probe */
-+	dyn_ops = kzalloc(sizeof(*dyn_ops), GFP_KERNEL);
-+	if (!dyn_ops) {
-+		printk("MEMORY ERROR ");
-+		goto out;
-+	}
-+
-+	dyn_ops->func = trace_selftest_test_dyn_func;
-+
-+	register_ftrace_function(dyn_ops);
-+
-+	trace_selftest_test_global_cnt = 0;
-+
-+	DYN_FTRACE_TEST_NAME();
-+
-+	print_counts();
-+
-+	if (trace_selftest_test_probe1_cnt != 2)
-+		goto out_free;
-+	if (trace_selftest_test_probe2_cnt != 1)
-+		goto out_free;
-+	if (trace_selftest_test_probe3_cnt != 3)
-+		goto out_free;
-+	if (trace_selftest_test_global_cnt == 0)
-+		goto out;
-+	if (trace_selftest_test_dyn_cnt == 0)
-+		goto out_free;
-+
-+	DYN_FTRACE_TEST_NAME2();
-+
-+	print_counts();
-+
-+	if (trace_selftest_test_probe1_cnt != 2)
-+		goto out_free;
-+	if (trace_selftest_test_probe2_cnt != 2)
-+		goto out_free;
-+	if (trace_selftest_test_probe3_cnt != 4)
-+		goto out_free;
-+
-+	ret = 0;
-+ out_free:
-+	unregister_ftrace_function(dyn_ops);
-+	kfree(dyn_ops);
-+
-+ out:
-+	/* Purposely unregister in the same order */
-+	unregister_ftrace_function(&test_probe1);
-+	unregister_ftrace_function(&test_probe2);
-+	unregister_ftrace_function(&test_probe3);
-+	unregister_ftrace_function(&test_global);
-+
-+	/* Make sure everything is off */
-+	reset_counts();
-+	DYN_FTRACE_TEST_NAME();
-+	DYN_FTRACE_TEST_NAME();
-+
-+	if (trace_selftest_test_probe1_cnt ||
-+	    trace_selftest_test_probe2_cnt ||
-+	    trace_selftest_test_probe3_cnt ||
-+	    trace_selftest_test_global_cnt ||
-+	    trace_selftest_test_dyn_cnt)
-+		ret = -1;
-+
-+	ftrace_enabled = save_ftrace_enabled;
-+
-+	return ret;
-+}
-+
- /* Test dynamic code modification and ftrace filters */
- int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
- 					   struct trace_array *tr,
-@@ -166,16 +366,20 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
- 
- 	/* check the trace buffer */
- 	ret = trace_test_buffer(tr, &count);
--	trace->reset(tr);
- 	tracing_start();
- 
- 	/* we should only have one item */
- 	if (!ret && count != 1) {
-+		trace->reset(tr);
- 		printk(KERN_CONT ".. filter failed count=%ld ..", count);
- 		ret = -1;
- 		goto out;
- 	}
- 
-+	/* Test the ops with global tracing running */
-+	ret = trace_selftest_ops(1);
-+	trace->reset(tr);
-+
-  out:
- 	ftrace_enabled = save_ftrace_enabled;
- 	tracer_enabled = save_tracer_enabled;
-@@ -183,8 +387,9 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
- 	/* Enable tracing on all functions again */
- 	ftrace_set_global_filter(NULL, 0, 1);
- 
-+	/* Test the ops with global tracing off */
- 	if (!ret)
--		ret = trace_selftest_probes();
-+		ret = trace_selftest_ops(2);
- 
- 	return ret;
- }
-diff --git a/kernel/trace/trace_selftest_dynamic.c b/kernel/trace/trace_selftest_dynamic.c
-index 54dd77c..b4c475a 100644
---- a/kernel/trace/trace_selftest_dynamic.c
-+++ b/kernel/trace/trace_selftest_dynamic.c
-@@ -5,3 +5,9 @@ int DYN_FTRACE_TEST_NAME(void)
- 	/* used to call mcount */
- 	return 0;
- }
-+
-+int DYN_FTRACE_TEST_NAME2(void)
-+{
-+	/* used to call mcount */
-+	return 0;
-+}
--- 
-1.7.2.3
+ drivers/dma/ioat/dma_v2.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-
+Index: linux/drivers/dma/ioat/dma_v2.c
+===================================================================
+--- linux.orig/drivers/dma/ioat/dma_v2.c
++++ linux/drivers/dma/ioat/dma_v2.c
+@@ -507,6 +507,7 @@ int ioat2_alloc_chan_resources(struct dm
+ 	struct ioat_ring_ent **ring;
+ 	u64 status;
+ 	int order;
++	int i = 0;
+ 
+ 	/* have we already been set up? */
+ 	if (ioat->ring)
+@@ -547,8 +548,11 @@ int ioat2_alloc_chan_resources(struct dm
+ 	ioat2_start_null_desc(ioat);
+ 
+ 	/* check that we got off the ground */
+-	udelay(5);
+-	status = ioat_chansts(chan);
++	do {
++		udelay(1);
++		status = ioat_chansts(chan);
++	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
++
+ 	if (is_ioat_active(status) || is_ioat_idle(status)) {
+ 		set_bit(IOAT_RUN, &chan->state);
+ 		return 1 << ioat->alloc_order;
