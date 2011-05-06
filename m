@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1EFAY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:24:56 -0400
-Received: from kroah.org ([198.145.64.141]:36795 "EHLO coco.kroah.org"
+	id S932286Ab1EFAy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:54:26 -0400
+Received: from kroah.org ([198.145.64.141]:36801 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932230Ab1EFAYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:53 -0400
+	id S932238Ab1EFAYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:54 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:10 2011
-Message-Id: <20110506002210.602176788@clark.kroah.org>
+Message-Id: <20110506002210.690436780@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:40 -0700
+Date: Thu, 05 May 2011 17:20:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?=C3=89ric=20Piel?= <eric.piel@tremplin-utc.net>,
         Dmitry Torokhov <dtor@mail.ru>
-Subject: [055/143] Input: elantech - relax signature checks
+Subject: [056/143] Input: elantech - discard the first 2 positions on some firmwares
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Éric Piel <eric.piel@tremplin-utc.net>
 
-commit a083632eaf6231162b33e40561cfec6a9c156945 upstream.
+commit 7f29f17b57255b6395046805a98bc663ded63fb8 upstream.
 
-Apparently there are Elantech touchpads that report non-zero in the 2nd byte
-of their signature. Adjust the detection routine so that if 2nd byte is
-zero and 3rd byte contains value that is not a valid report rate, we still
-assume that signature is valid.
+According to the Dell/Ubuntu driver, what was previously observed as
+"jumpy cursor" corresponds to the hardware sending incorrect data for
+the first two reports of a one touch finger. So let's use the same
+workaround as in the other driver. Also, detect another firmware
+version with the same behaviour, as in the other driver.
 
-Tested-by: Eric Piel <eric.piel@tremplin-utc.net>
+Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
 Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-[bwh: Adjust context for 2.6.32]
+[bwh: Adjust for 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/input/mouse/elantech.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/input/mouse/elantech.c |   21 ++++++++++-----------
+ drivers/input/mouse/elantech.h |    7 ++++---
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
 --- a/drivers/input/mouse/elantech.c
 +++ b/drivers/input/mouse/elantech.c
-@@ -574,6 +574,24 @@ static struct attribute_group elantech_a
- 	.attrs = elantech_attrs,
+@@ -182,7 +182,6 @@ static void elantech_report_absolute_v1(
+ 	struct elantech_data *etd = psmouse->private;
+ 	unsigned char *packet = psmouse->packet;
+ 	int fingers;
+-	static int old_fingers;
+ 
+ 	if (etd->fw_version < 0x020000) {
+ 		/*
+@@ -200,10 +199,13 @@ static void elantech_report_absolute_v1(
+ 	}
+ 
+ 	if (etd->jumpy_cursor) {
+-		/* Discard packets that are likely to have bogus coordinates */
+-		if (fingers > old_fingers) {
++		if (fingers != 1) {
++			etd->single_finger_reports = 0;
++		} else if (etd->single_finger_reports < 2) {
++			/* Discard first 2 reports of one finger, bogus */
++			etd->single_finger_reports++;
+ 			elantech_debug("elantech.c: discarding packet\n");
+-			goto discard_packet_v1;
++			return;
+ 		}
+ 	}
+ 
+@@ -235,9 +237,6 @@ static void elantech_report_absolute_v1(
+ 	}
+ 
+ 	input_sync(dev);
+-
+- discard_packet_v1:
+-	old_fingers = fingers;
+ }
+ 
+ /*
+@@ -733,14 +732,14 @@ int elantech_init(struct psmouse *psmous
+ 	etd->capabilities = param[0];
+ 
+ 	/*
+-	 * This firmware seems to suffer from misreporting coordinates when
++	 * This firmware suffers from misreporting coordinates when
+ 	 * a touch action starts causing the mouse cursor or scrolled page
+ 	 * to jump. Enable a workaround.
+ 	 */
+-	if (etd->fw_version == 0x020022) {
+-		pr_info("elantech.c: firmware version 2.0.34 detected, "
++	if (etd->fw_version == 0x020022 || etd->fw_version == 0x020600) {
++		pr_info("elantech.c: firmware version 2.0.34/2.6.0 detected, "
+ 			"enabling jumpy cursor workaround\n");
+-		etd->jumpy_cursor = 1;
++		etd->jumpy_cursor = true;
+ 	}
+ 
+ 	if (elantech_set_absolute_mode(psmouse)) {
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -100,10 +100,11 @@ struct elantech_data {
+ 	unsigned char reg_26;
+ 	unsigned char debug;
+ 	unsigned char capabilities;
+-	unsigned char paritycheck;
+-	unsigned char jumpy_cursor;
++	bool paritycheck;
++	bool jumpy_cursor;
+ 	unsigned char hw_version;
+-	unsigned int  fw_version;
++	unsigned int fw_version;
++	unsigned int single_finger_reports;
+ 	unsigned char parity[256];
  };
  
-+static bool elantech_is_signature_valid(const unsigned char *param)
-+{
-+	static const unsigned char rates[] = { 200, 100, 80, 60, 40, 20, 10 };
-+	int i;
-+
-+	if (param[0] == 0)
-+		return false;
-+
-+	if (param[1] == 0)
-+		return true;
-+
-+	for (i = 0; i < ARRAY_SIZE(rates); i++)
-+		if (param[2] == rates[i])
-+			return false;
-+
-+	return true;
-+}
-+
- /*
-  * Use magic knock to detect Elantech touchpad
-  */
-@@ -617,7 +635,7 @@ int elantech_detect(struct psmouse *psmo
- 	pr_debug("elantech.c: Elantech version query result 0x%02x, 0x%02x, 0x%02x.\n",
- 		 param[0], param[1], param[2]);
- 
--	if (param[0] == 0 || param[1] != 0) {
-+	if (!elantech_is_signature_valid(param)) {
- 		if (!force_elantech) {
- 			pr_debug("elantech.c: Probably not a real Elantech touchpad. Aborting.\n");
- 			return -1;
 
 
