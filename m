@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932839Ab1EFAzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:55:03 -0400
-Received: from kroah.org ([198.145.64.141]:36781 "EHLO coco.kroah.org"
+	id S932236Ab1EFAYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:24:54 -0400
+Received: from kroah.org ([198.145.64.141]:36786 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755892Ab1EFAYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:51 -0400
+	id S1755913Ab1EFAYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:52 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:10 2011
-Message-Id: <20110506002210.313803632@clark.kroah.org>
+Message-Id: <20110506002210.410581170@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:37 -0700
+Date: Thu, 05 May 2011 17:20:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Florian Ragwitz <rafl@debian.org>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [052/143] Input: elantech - allow forcing Elantech protocol
+Subject: [053/143] Input: elantech - ignore high bits in the position coordinates
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Florian Ragwitz <rafl@debian.org>
 
-commit f81bc788ff91d4efd4baf88b2c29713838caa8e5 upstream.
+commit e938fbfd4a7ac829d48b767c4dc365535d5c4f97 upstream.
 
-Apparently hardware vendors now ship elantech touchpads with different version
-magic. This options allows for them to be tested easier with the current driver
-in order to add their magic to the whitelist later.
+In older versions of the elantech hardware/firmware those bits always
+were unset, so it didn't actually matter, but newer versions seem to
+use those high bits for something else, screwing up the coordinates
+we report to the input layer for those devices.
 
 Signed-off-by: Florian Ragwitz <rafl@debian.org>
 Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/input/mouse/elantech.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/input/mouse/elantech.c |   69 ++++++++++++++++++++++++++---------------
+ 1 file changed, 44 insertions(+), 25 deletions(-)
 
 --- a/drivers/input/mouse/elantech.c
 +++ b/drivers/input/mouse/elantech.c
-@@ -24,6 +24,10 @@
- 			printk(KERN_DEBUG format, ##arg);	\
- 	} while (0)
+@@ -185,13 +185,17 @@ static void elantech_report_absolute_v1(
+ 	static int old_fingers;
  
-+static bool force_elantech;
-+module_param_named(force_elantech, force_elantech, bool, 0644);
-+MODULE_PARM_DESC(force_elantech, "Force the Elantech PS/2 protocol extension to be used, 1 = enabled, 0 = disabled (default).");
-+
- /*
-  * Send a Synaptics style sliced query command
-  */
-@@ -595,8 +599,12 @@ int elantech_detect(struct psmouse *psmo
- 		 param[0], param[1], param[2]);
- 
- 	if (param[0] == 0 || param[1] != 0) {
--		pr_debug("elantech.c: Probably not a real Elantech touchpad. Aborting.\n");
--		return -1;
-+		if (!force_elantech) {
-+			pr_debug("elantech.c: Probably not a real Elantech touchpad. Aborting.\n");
-+			return -1;
-+		}
-+
-+		pr_debug("elantech.c: Probably not a real Elantech touchpad. Enabling anyway due to force_elantech.\n");
+ 	if (etd->fw_version_maj == 0x01) {
+-		/* byte 0:  D   U  p1  p2   1  p3   R   L
+-		   byte 1:  f   0  th  tw  x9  x8  y9  y8 */
++		/*
++		 * byte 0:  D   U  p1  p2   1  p3   R   L
++		 * byte 1:  f   0  th  tw  x9  x8  y9  y8
++		 */
+ 		fingers = ((packet[1] & 0x80) >> 7) +
+ 				((packet[1] & 0x30) >> 4);
+ 	} else {
+-		/* byte 0: n1  n0  p2  p1   1  p3   R   L
+-		   byte 1:  0   0   0   0  x9  x8  y9  y8 */
++		/*
++		 * byte 0: n1  n0  p2  p1   1  p3   R   L
++		 * byte 1:  0   0   0   0  x9  x8  y9  y8
++		 */
+ 		fingers = (packet[0] & 0xc0) >> 6;
  	}
  
- 	if (set_properties) {
+@@ -205,13 +209,15 @@ static void elantech_report_absolute_v1(
+ 
+ 	input_report_key(dev, BTN_TOUCH, fingers != 0);
+ 
+-	/* byte 2: x7  x6  x5  x4  x3  x2  x1  x0
+-	   byte 3: y7  y6  y5  y4  y3  y2  y1  y0 */
++	/*
++	 * byte 2: x7  x6  x5  x4  x3  x2  x1  x0
++	 * byte 3: y7  y6  y5  y4  y3  y2  y1  y0
++	 */
+ 	if (fingers) {
+ 		input_report_abs(dev, ABS_X,
+ 			((packet[1] & 0x0c) << 6) | packet[2]);
+-		input_report_abs(dev, ABS_Y, ETP_YMAX_V1 -
+-			(((packet[1] & 0x03) << 8) | packet[3]));
++		input_report_abs(dev, ABS_Y,
++			ETP_YMAX_V1 - (((packet[1] & 0x03) << 8) | packet[3]));
+ 	}
+ 
+ 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+@@ -250,34 +256,47 @@ static void elantech_report_absolute_v2(
+ 
+ 	switch (fingers) {
+ 	case 1:
+-		/* byte 1: x15 x14 x13 x12 x11 x10 x9  x8
+-		   byte 2: x7  x6  x5  x4  x4  x2  x1  x0 */
+-		input_report_abs(dev, ABS_X, (packet[1] << 8) | packet[2]);
+-		/* byte 4: y15 y14 y13 y12 y11 y10 y8  y8
+-		   byte 5: y7  y6  y5  y4  y3  y2  y1  y0 */
+-		input_report_abs(dev, ABS_Y, ETP_YMAX_V2 -
+-			((packet[4] << 8) | packet[5]));
++		/*
++		 * byte 1:  .   .   .   .   .  x10 x9  x8
++		 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
++		 */
++		input_report_abs(dev, ABS_X,
++			((packet[1] & 0x07) << 8) | packet[2]);
++		/*
++		 * byte 4:  .   .   .   .   .   .  y9  y8
++		 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
++		 */
++		input_report_abs(dev, ABS_Y,
++			ETP_YMAX_V2 - (((packet[4] & 0x03) << 8) | packet[5]));
+ 		break;
+ 
+ 	case 2:
+-		/* The coordinate of each finger is reported separately with
+-		   a lower resolution for two finger touches */
+-		/* byte 0:  .   .  ay8 ax8  .   .   .   .
+-		   byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0 */
++		/*
++		 * The coordinate of each finger is reported separately
++		 * with a lower resolution for two finger touches:
++		 * byte 0:  .   .  ay8 ax8  .   .   .   .
++		 * byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0
++		 */
+ 		x1 = ((packet[0] & 0x10) << 4) | packet[1];
+ 		/* byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0 */
+ 		y1 = ETP_2FT_YMAX - (((packet[0] & 0x20) << 3) | packet[2]);
+-		/* byte 3:  .   .  by8 bx8  .   .   .   .
+-		   byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0 */
++		/*
++		 * byte 3:  .   .  by8 bx8  .   .   .   .
++		 * byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0
++		 */
+ 		x2 = ((packet[3] & 0x10) << 4) | packet[4];
+ 		/* byte 5: by7 by8 by5 by4 by3 by2 by1 by0 */
+ 		y2 = ETP_2FT_YMAX - (((packet[3] & 0x20) << 3) | packet[5]);
+-		/* For compatibility with the X Synaptics driver scale up one
+-		   coordinate and report as ordinary mouse movent */
++		/*
++		 * For compatibility with the X Synaptics driver scale up
++		 * one coordinate and report as ordinary mouse movent
++		 */
+ 		input_report_abs(dev, ABS_X, x1 << 2);
+ 		input_report_abs(dev, ABS_Y, y1 << 2);
+-		/* For compatibility with the proprietary X Elantech driver
+-		   report both coordinates as hat coordinates */
++		/*
++		 * For compatibility with the proprietary X Elantech driver
++		 * report both coordinates as hat coordinates
++		 */
+ 		input_report_abs(dev, ABS_HAT0X, x1);
+ 		input_report_abs(dev, ABS_HAT0Y, y1);
+ 		input_report_abs(dev, ABS_HAT1X, x2);
 
 
