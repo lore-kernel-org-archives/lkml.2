@@ -1,147 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab1EFUoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:44:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49720 "EHLO
+	id S932699Ab1EFUpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:45:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50382 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab1EFUoC (ORCPT
+	with ESMTP id S932451Ab1EFUpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:44:02 -0400
-Message-ID: <4DC45D7E.3020900@kernel.org>
-Date: Fri, 06 May 2011 13:43:42 -0700
+	Fri, 6 May 2011 16:45:06 -0400
+Message-ID: <4DC45DBA.6030805@kernel.org>
+Date: Fri, 06 May 2011 13:44:42 -0700
 From: Yinghai Lu <yinghai@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: [PATCH 1/2] pci: Using add_list in pcie hotplug path.
+Subject: [PATCH 2/2] pci: honor child buses add_size in hot plug configuration
 References: <4DC250A6.9040802@kernel.org> <20110506081243.GF16782@ram-laptop> <4DC4586C.6020308@kernel.org>
 In-Reply-To: <4DC4586C.6020308@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090201.4DC45D87.002B,ss=1,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4DC45DC2.000A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During pci remove/rescan testing found:
 
-[  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-[  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
-[  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-[  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-[  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-[  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
-[  541.199202] pci 0000:c0:03.0: enabling bus mastering
-[  541.199209] pci 0000:c0:03.0: setting latency timer to 64
-[  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-[  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
+Recent pci_bus_size change will use add_size for minimum resource size for pcie
+hotplug bridge.  But it does not pass children back to parent bridge.
 
-This bug was uncovered by commit
-| commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
-| Author: Ram Pai <linuxram@us.ibm.com>
-| Date:   Mon Feb 14 17:43:20 2011 -0800
-|
-|    PCI: pre-allocate additional resources to devices only after successful allo
-cation of essential resources.
+that will have problem on some setup like:
+hot add one chassis with more hot plug slots.
+for example: if the chassis have 8 slots, we should allocate 8x2M instead
+of one 1x2M for parent bus.
 
-After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size.
-So it will not get into failed list, and will not be reset there.
-
-It turns out we need to add_head for those calling.
-So those resource get reset properly.
-
-after patch, will get right result:
-[  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-[  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
-[  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-[  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-[  621.247012] pci 0000:c0:03.0: enabling bus mastering
-[  621.247275] pci 0000:c0:03.0: setting latency timer to 64
-[  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
-[  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
-[  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
-[  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
-[  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
-[  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
-[  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
-
-We also need this patch when pluging in hotplug chassis without cards.
-
--v2: update a little bit descriptions.
+So try to get child add_size and compare the sum with parent bus bridge...
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- drivers/pci/setup-bus.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
 Index: linux-2.6/drivers/pci/setup-bus.c
 ===================================================================
 --- linux-2.6.orig/drivers/pci/setup-bus.c
 +++ linux-2.6/drivers/pci/setup-bus.c
-@@ -217,13 +217,14 @@ static void __assign_resources_sorted(st
+@@ -537,6 +537,20 @@ static resource_size_t calculate_memsize
+ 	return size;
  }
  
- static void pdev_assign_resources_sorted(struct pci_dev *dev,
-+				 struct resource_list_x *add_head,
- 				 struct resource_list_x *fail_head)
- {
- 	struct resource_list head;
++static resource_size_t get_res_add_size(struct resource_list_x *add_head,
++					struct resource *res)
++{
++	struct resource_list_x *list;
++
++	/* check if it is in add_head list */
++	for (list = add_head->next; list && list->res != res;
++			list = list->next);
++	if (list)
++		return list->add_size;
++
++	return 0;
++}
++
+ /**
+  * pbus_size_io() - size the io window of a given bus
+  *
+@@ -556,6 +570,7 @@ static void pbus_size_io(struct pci_bus
+ 	struct pci_dev *dev;
+ 	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
+ 	unsigned long size = 0, size0 = 0, size1 = 0;
++	resource_size_t children_add_size = 0;
  
- 	head.next = NULL;
- 	__dev_sort_resources(dev, &head);
--	__assign_resources_sorted(&head, NULL, fail_head);
-+	__assign_resources_sorted(&head, add_head, fail_head);
+ 	if (!b_res)
+  		return;
+@@ -576,10 +591,15 @@ static void pbus_size_io(struct pci_bus
+ 				size += r_size;
+ 			else
+ 				size1 += r_size;
++
++			if (add_head)
++				children_add_size += get_res_add_size(add_head, r);
+ 		}
+ 	}
+ 	size0 = calculate_iosize(size, min_size, size1,
+ 			resource_size(b_res), 4096);
++	if (children_add_size > add_size)
++		add_size = children_add_size;
+ 	size1 = !add_size? size0:
+ 		calculate_iosize(size, min_size+add_size, size1,
+ 			resource_size(b_res), 4096);
+@@ -621,6 +641,7 @@ static int pbus_size_mem(struct pci_bus
+ 	int order, max_order;
+ 	struct resource *b_res = find_free_bus_resource(bus, type);
+ 	unsigned int mem64_mask = 0;
++	resource_size_t children_add_size = 0;
  
- }
- 
-@@ -852,17 +853,19 @@ void __ref pci_bus_assign_resources(cons
- EXPORT_SYMBOL(pci_bus_assign_resources);
- 
- static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
-+					 struct resource_list_x *add_head,
- 					 struct resource_list_x *fail_head)
- {
- 	struct pci_bus *b;
- 
--	pdev_assign_resources_sorted((struct pci_dev *)bridge, fail_head);
-+	pdev_assign_resources_sorted((struct pci_dev *)bridge,
-+					 add_head, fail_head);
- 
- 	b = bridge->subordinate;
- 	if (!b)
- 		return;
- 
--	__pci_bus_assign_resources(b, NULL, fail_head);
-+	__pci_bus_assign_resources(b, add_head, fail_head);
- 
- 	switch (bridge->class >> 8) {
- 	case PCI_CLASS_BRIDGE_PCI:
-@@ -1129,6 +1132,8 @@ enable_and_dump:
- void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
- {
- 	struct pci_bus *parent = bridge->subordinate;
-+	struct resource_list_x add_list; /* list of resources that
-+					want additional resources */
- 	int tried_times = 0;
- 	struct resource_list_x head, *list;
- 	int retval;
-@@ -1136,11 +1141,12 @@ void pci_assign_unassigned_bridge_resour
- 				  IORESOURCE_PREFETCH;
- 
- 	head.next = NULL;
-+	add_list.next = NULL;
- 
- again:
--	pci_bus_size_bridges(parent);
--	__pci_bridge_assign_resources(bridge, &head);
--
-+	__pci_bus_size_bridges(parent, &add_list);
-+	__pci_bridge_assign_resources(bridge, &add_list, &head);
-+	BUG_ON(add_list.next);
- 	tried_times++;
- 
- 	if (!head.next)
+ 	if (!b_res)
+ 		return 0;
+@@ -662,6 +683,9 @@ static int pbus_size_mem(struct pci_bus
+ 			if (order > max_order)
+ 				max_order = order;
+ 			mem64_mask &= r->flags & IORESOURCE_MEM_64;
++
++			if (add_head)
++				children_add_size += get_res_add_size(add_head, r);
+ 		}
+ 	}
+ 	align = 0;
+@@ -678,6 +702,8 @@ static int pbus_size_mem(struct pci_bus
+ 		align += aligns[order];
+ 	}
+ 	size0 = calculate_memsize(size, min_size, 0, resource_size(b_res), min_align);
++	if (children_add_size > add_size)
++		add_size = children_add_size;
+ 	size1 = !add_size ? size :
+ 		calculate_memsize(size, min_size+add_size, 0,
+ 				resource_size(b_res), min_align);
