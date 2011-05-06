@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab1EFQtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 12:49:43 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:52765 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756619Ab1EFQtl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 12:49:41 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 3/3] dmaengine: at_hdmac: use descriptor chaining help function
-Date: Fri,  6 May 2011 19:56:53 +0200
-Message-Id: <f2d2fb135151456f81dd3ac1938771589a0e5503.1304704588.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
-References: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
-In-Reply-To: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304704588.git.nicolas.ferre@atmel.com>
-References: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304704588.git.nicolas.ferre@atmel.com>
+	id S932180Ab1EFSE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 14:04:57 -0400
+Received: from mail.perches.com ([173.55.12.10]:1293 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754695Ab1EFSE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 14:04:56 -0400
+Subject: Re: [TRIVIAL PATCH 0/3] pcmcia: Make struct pcmcia_device_id const
+From: Joe Perches <joe@perches.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Linux PCMCIA team <linux-pcmcia@lists.infradead.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110506061527.GA26026@comet.dominikbrodowski.net>
+References: <cover.1304475547.git.joe@perches.com>
+	 <20110506061527.GA26026@comet.dominikbrodowski.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 11:04:55 -0700
+Message-ID: <1304705095.11874.21.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A little function helps to chain descriptors:
-it is already used in cyclic dma operations, now use it in memcpy and slave_sg
-preparation functions.
+On Fri, 2011-05-06 at 08:15 +0200, Dominik Brodowski wrote:
+> On Tue, May 03, 2011 at 07:28:59PM -0700, Joe Perches wrote:
+> > Reduces data use.
+> > Staging could be applied now, but additional harmless warnings do result.
+> > Joe Perches (3):
+> >   pcmcia: Make declaration and uses of struct pcmcia_device_id const
+> >   pcmcia: Convert pcmcia_device_id declarations to const
+> >   staging: pcmcia: Convert pcmcia_device_id declarations to const
+> Thanks, applied all three patches to the pcmcia git tree.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Hi Dominik, just so you're aware...
+
+By the time your tree gets pushed, there'll likely
+be conflicts with staging changes.
+
+It might be appropriate to keep the staging patch
+separate from the other 2.
+
+There are also a couple of uses of pcmcia_device_id
+in sound/ that could be modified.
+
+$ grep -rPwn --include=*.[ch] pcmcia_device_id sound
+sound/pcmcia/vx/vxpocket.c:353:static struct pcmcia_device_id vxp_ids[] = {
+sound/pcmcia/pdaudiocf/pdaudiocf.c:281:static struct pcmcia_device_id snd_pdacf_ids[] = {
+
+Here's a patch for those as well
+
 ---
- drivers/dma/at_hdmac.c |   33 +++------------------------------
- 1 files changed, 3 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 5968245..2c6bc3a 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -626,16 +626,7 @@ atc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+Make declarations of struct pcmcia_device_id const.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+
+---
+
+ sound/pcmcia/pdaudiocf/pdaudiocf.c |    2 +-
+ sound/pcmcia/vx/vxpocket.c         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/pcmcia/pdaudiocf/pdaudiocf.c b/sound/pcmcia/pdaudiocf/pdaudiocf.c
+index 8cc4733..ce33be0 100644
+--- a/sound/pcmcia/pdaudiocf/pdaudiocf.c
++++ b/sound/pcmcia/pdaudiocf/pdaudiocf.c
+@@ -278,7 +278,7 @@ static int pdacf_resume(struct pcmcia_device *link)
+ /*
+  * Module entry points
+  */
+-static struct pcmcia_device_id snd_pdacf_ids[] = {
++static const struct pcmcia_device_id snd_pdacf_ids[] = {
+ 	/* this is too general PCMCIA_DEVICE_MANF_CARD(0x015d, 0x4c45), */
+ 	PCMCIA_DEVICE_PROD_ID12("Core Sound","PDAudio-CF",0x396d19d2,0x71717b49),
+ 	PCMCIA_DEVICE_NULL
+diff --git a/sound/pcmcia/vx/vxpocket.c b/sound/pcmcia/vx/vxpocket.c
+index 80000d6..d9ef21d 100644
+--- a/sound/pcmcia/vx/vxpocket.c
++++ b/sound/pcmcia/vx/vxpocket.c
+@@ -350,7 +350,7 @@ static void vxpocket_detach(struct pcmcia_device *link)
+  * Module entry points
+  */
  
- 		desc->txd.cookie = 0;
- 
--		if (!first) {
--			first = desc;
--		} else {
--			/* inform the HW lli about chaining */
--			prev->lli.dscr = desc->txd.phys;
--			/* insert the link descriptor to the LD ring */
--			list_add_tail(&desc->desc_node,
--					&first->tx_list);
--		}
--		prev = desc;
-+		atc_desc_chain(&first, &prev, desc);
- 	}
- 
- 	/* First descriptor of the chain embedds additional information */
-@@ -726,16 +717,7 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 					| len >> mem_width;
- 			desc->lli.ctrlb = ctrlb;
- 
--			if (!first) {
--				first = desc;
--			} else {
--				/* inform the HW lli about chaining */
--				prev->lli.dscr = desc->txd.phys;
--				/* insert the link descriptor to the LD ring */
--				list_add_tail(&desc->desc_node,
--						&first->tx_list);
--			}
--			prev = desc;
-+			atc_desc_chain(&first, &prev, desc);
- 			total_len += len;
- 		}
- 		break;
-@@ -769,16 +751,7 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 					| len >> reg_width;
- 			desc->lli.ctrlb = ctrlb;
- 
--			if (!first) {
--				first = desc;
--			} else {
--				/* inform the HW lli about chaining */
--				prev->lli.dscr = desc->txd.phys;
--				/* insert the link descriptor to the LD ring */
--				list_add_tail(&desc->desc_node,
--						&first->tx_list);
--			}
--			prev = desc;
-+			atc_desc_chain(&first, &prev, desc);
- 			total_len += len;
- 		}
- 		break;
--- 
-1.7.3
+-static struct pcmcia_device_id vxp_ids[] = {
++static const struct pcmcia_device_id vxp_ids[] = {
+ 	PCMCIA_DEVICE_MANF_CARD(0x01f1, 0x0100),
+ 	PCMCIA_DEVICE_NULL
+ };
+
 
