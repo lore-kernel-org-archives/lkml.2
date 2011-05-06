@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1EFUJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:09:46 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:57051 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab1EFUJp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:09:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=aIQio/ooBluwXfSue/KoExSi95RokCXvMGeF9t266yHpV9XJfGdHNF5lxvosOVTpNd
-         zjgz5BIZ4pMj8gFh/xIA==
-MIME-Version: 1.0
-In-Reply-To: <20110506200456.GA18229@emperor.us.dell.com>
-References: <20110506125702.2585228b.randy.dunlap@oracle.com> <20110506200456.GA18229@emperor.us.dell.com>
-From: Mike Waychison <mikew@google.com>
-Date: Fri, 6 May 2011 15:09:22 -0500
-Message-ID: <BANLkTinC10VapWniyuEE3RLgVRC6fm1EcQ@mail.gmail.com>
-Subject: Re: [PATCH] efivars: prevent oops on unload when efi is not enabled
-To: Matt Domsch <Matt_Domsch@dell.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
-        "matthew.e.tolentino@intel.com" <matthew.e.tolentino@intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S932568Ab1EFUSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:18:17 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35617 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab1EFUSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 16:18:16 -0400
+Subject: Re: [RFC] time: xtime_lock is held too long
+From: john stultz <johnstul@us.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1304703767.3066.211.camel@edumazet-laptop>
+References: <m2oc3jxgtt.fsf@firstfloor.org>
+	 <1304564090.2943.36.camel@work-vm>
+	 <1304574244.32152.666.camel@edumazet-laptop>
+	 <1304576495.2943.40.camel@work-vm>
+	 <1304604284.3032.78.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051630390.3005@ionos>
+	 <1304608095.3032.95.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1105051750540.3005@ionos>
+	 <20110505210118.GI2925@one.firstfloor.org>
+	 <alpine.LFD.2.02.1105061117220.3005@ionos>
+	 <20110506165913.GF11636@one.firstfloor.org>
+	 <1304703767.3066.211.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 13:18:07 -0700
+Message-ID: <1304713087.20980.120.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 6, 2011 at 3:04 PM, Matt Domsch <Matt_Domsch@dell.com> wrote:
-> On Fri, May 06, 2011 at 02:57:02PM -0500, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> unregister_efivars() should check for efi_enabled and not undo
->> allocations when efi is not enabled.  Otherwise there is an Oops
->> during module unload:
->
-> Thanks Randy.
->
-> I'm not sure why the driver is still loaded at all if efi_enabled==0.
->
-> static int __init
-> efivars_init(void)
-> {
-> ...
->        if (!efi_enabled)
->                return 0;
->
->
->
-> That return 0 should be return -ENODEV I think.  Mike?
+On Fri, 2011-05-06 at 19:42 +0200, Eric Dumazet wrote:
+> Le vendredi 06 mai 2011 Ã  18:59 +0200, Andi Kleen a Ã©crit :
+> 
+> > If you have a better way to make it faster please share it.
+> 
+> Ideally we could use RCU :)
+> 
+> Have whatever state hold in one structure (possibly big, it doesnt
+> matter) and switch pointer in writer once everything is setup in new
+> structure.
 
-Ya, I changed efivars so that others could still use the
-register_efivars/unregister_efivars interfaces when !efi_enabled.
-They are used by the drivers/firmware/google/gsmi.c driver currently
-pending in linux-next.
+Yea. RCU is tough though, because we do need the hardware cycle value
+that we use to be valid for the current interval stored in the
+timekeeper structure (ie: the cycle value can't be before the current
+cycle_last, and it can't be greater then the next cycle_last).
 
-I think the right approach in this case would be to do
+The reason being, that should a frequency correction occur, you might
+end up applying the old frequency to a longer interval then desired,
+which could cause small timekeeping inconsistencies.
 
-        if (efi_enabled) {
-               unregister_efivars(&__efivars);
-               kobject_put(efi_kobj);
-        }
+So we really do need a way to ensure that gettimeofday calls fall on one
+side or the other of the accumulation loop. We may be able to tighten
+that window some, but I don't know if RCU will work.
 
-in efivars_exit().
+thanks
+-john
 
->
-> Thanks,
-> Matt
->
-> --
-> Matt Domsch
-> Technology Strategist
-> Dell | Office of the CTO
->
