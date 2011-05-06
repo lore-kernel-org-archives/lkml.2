@@ -1,154 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab1EFKG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 06:06:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64269 "EHLO mga02.intel.com"
+	id S1756263Ab1EFKPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 06:15:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55511 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755111Ab1EFKGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 06:06:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,325,1301900400"; 
-   d="scan'208";a="743249362"
-Date: Fri, 6 May 2011 18:06:48 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Chinner <david@fromorbit.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: [RFC][PATCH v2] writeback: limit number of moved inodes in
- queue_io()
-Message-ID: <20110506100648.GA3435@localhost>
-References: <20110420080336.441157866@intel.com>
- <20110420080918.560499032@intel.com>
- <20110504073931.GA22675@localhost>
- <20110505163708.GN5323@quack.suse.cz>
- <20110506052955.GA24904@localhost>
- <20110506084238.GA487@localhost>
+	id S1752013Ab1EFKPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 06:15:23 -0400
+Message-ID: <4DC3CA39.30806@suse.cz>
+Date: Fri, 06 May 2011 12:15:21 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506084238.GA487@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] Add $KERNELRELEASE to firmware install path
+References: <20110505173939.GA20575@dev1756.snc6.facebook.com>
+In-Reply-To: <20110505173939.GA20575@dev1756.snc6.facebook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 04:42:38PM +0800, Wu Fengguang wrote:
-> > patched trace-tar-dd-ext4-2.6.39-rc3+
-> 
-> >        flush-8:0-3048  [004]  1929.981734: writeback_queue_io: bdi 8:0: older=4296600898 age=2 enqueue=13227
-> 
-> > vanilla trace-tar-dd-ext4-2.6.39-rc3
-> 
-> >        flush-8:0-2911  [004]    77.158312: writeback_queue_io: bdi 8:0: older=0 age=-1 enqueue=18938
-> 
-> >        flush-8:0-2911  [000]    82.461064: writeback_queue_io: bdi 8:0: older=0 age=-1 enqueue=6957
-> 
-> It looks too much to move 13227 and 18938 inodes at once. So I tried
-> arbitrarily limiting the max move number to 1000 and it helps reduce
-> the lock hold time and contentions a lot.
+(Adding David Woodhouse and lkml to CC, in general it's usually better 
+to CC topic lists in addition to lkml, rather than instead of lkml.)
 
-Oh it seems 1000 is too small at least for this workload, it hurts
-dd+tar+sync total elapsed time. 
+On 5.5.2011 19:39, Arun Sharma wrote:
+> Useful in the presence of multiple kernels with different
+> firmware versions.
 
-no limit:
-                avg        167.486 
-                stddev       8.996 
-limit=1000:
-                avg        171.222 
-                stddev       5.588 
-limit=3000:
-                avg        165.335 
-                stddev       5.503 
+The changelog should also include the udev version that is able to find 
+the firmware there (v127, August 2008). FWIW, SUSE has been using this 
+patch since about that time, but we forgot to push this :-|. Anyway
 
-So use 3000 as the new limit.
+Acked-by: Michal Marek <mmarek@suse.cz>
 
-Thanks,
-Fengguang
----
-Subject: writeback: limit number of moved inodes in queue_io()
-Date: Fri May 06 13:34:08 CST 2011
 
-Only move 3000 inodes from b_dirty to b_io at one time. This reduces
-lock max hold time and lock contentions by many times in a simple dd+tar
-workload in a 8p test box. This workload was observed to move 10000+
-inodes in one shot on ext4 which was obviously too much.
+> Signed-off-by: Arun Sharma<asharma@fb.com>
+>
+> diff --git a/Makefile b/Makefile
+> index e712243..cb715df 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -997,7 +997,7 @@ depend dep:
+>
+>   # ---------------------------------------------------------------------------
+>   # Firmware install
+> -INSTALL_FW_PATH=$(INSTALL_MOD_PATH)/lib/firmware
+> +INSTALL_FW_PATH=$(INSTALL_MOD_PATH)/lib/firmware/$(KERNELRELEASE)
+>   export INSTALL_FW_PATH
+>
+>   PHONY += firmware_install
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-                              class name    con-bounces    contentions   waittime-min   waittime-max waittime-total    acq-b
-ounces   acquisitions   holdtime-min   holdtime-max holdtime-total
-----------------------------------------------------------------------------------------------------------------------------
--------------------------------------------------------------------
-vanilla 2.6.39-rc3:
-                      inode_wb_list_lock:          2063           2065           0.12        2648.66        5948.99
- 27475         943778           0.09        2704.76      498340.24
-                      ------------------
-                      inode_wb_list_lock             89          [<ffffffff8115cf3a>] sync_inode+0x28/0x5f
-                      inode_wb_list_lock             38          [<ffffffff8115ccab>] inode_wait_for_writeback+0xa8/0xc6
-                      inode_wb_list_lock            629          [<ffffffff8115da35>] __mark_inode_dirty+0x170/0x1d0
-                      inode_wb_list_lock            842          [<ffffffff8115d334>] writeback_sb_inodes+0x10f/0x157
-                      ------------------
-                      inode_wb_list_lock            891          [<ffffffff8115ce3e>] writeback_single_inode+0x175/0x249
-                      inode_wb_list_lock             13          [<ffffffff8115dc4e>] writeback_inodes_wb+0x3a/0x143
-                      inode_wb_list_lock            499          [<ffffffff8115da35>] __mark_inode_dirty+0x170/0x1d0
-                      inode_wb_list_lock            617          [<ffffffff8115d334>] writeback_sb_inodes+0x10f/0x157
-
-limit=1000:
-
-dd+tar+sync total elapsed time (10 runs):
-				avg        171.222 
-				stddev       5.588 
-
-                &(&wb->list_lock)->rlock:           842            842           0.14         101.10        1013.34
- 20489         970892           0.09         234.11      509829.79
-                ------------------------
-                &(&wb->list_lock)->rlock            275          [<ffffffff8115db09>] __mark_inode_dirty+0x173/0x1cf
-                &(&wb->list_lock)->rlock            114          [<ffffffff8115cdd3>] writeback_single_inode+0x18a/0x27e
-                &(&wb->list_lock)->rlock             56          [<ffffffff8115cc29>] inode_wait_for_writeback+0xac/0xcc
-                &(&wb->list_lock)->rlock            132          [<ffffffff8115cf2a>] sync_inode+0x63/0xa2
-                ------------------------
-                &(&wb->list_lock)->rlock              2          [<ffffffff8115dfea>] inode_wb_list_del+0x5f/0x85
-                &(&wb->list_lock)->rlock             33          [<ffffffff8115cf2a>] sync_inode+0x63/0xa2
-                &(&wb->list_lock)->rlock              9          [<ffffffff8115cc29>] inode_wait_for_writeback+0xac/0xcc
-                &(&wb->list_lock)->rlock            430          [<ffffffff8115cdd3>] writeback_single_inode+0x18a/0x27e
-
-limit=3000:
-
-dd+tar+sync total elapsed time (10 runs):
-				avg        165.335
-				stddev       5.503
-
-                &(&wb->list_lock)->rlock:          1088           1092           0.11         245.08        3268.75
- 21124        1718636           0.09         384.53      849827.20
-                ------------------------
-                &(&wb->list_lock)->rlock            518          [<ffffffff8115db09>] __mark_inode_dirty+0x173/0x1cf
-                &(&wb->list_lock)->rlock              3          [<ffffffff8115dfea>] inode_wb_list_del+0x5f/0x85
-                &(&wb->list_lock)->rlock             54          [<ffffffff8115cf2a>] sync_inode+0x63/0xa2
-                &(&wb->list_lock)->rlock             10          [<ffffffff8115cc29>] inode_wait_for_writeback+0xac/0xcc
-                ------------------------
-                &(&wb->list_lock)->rlock              4          [<ffffffff8115dfea>] inode_wb_list_del+0x5f/0x85
-                &(&wb->list_lock)->rlock            379          [<ffffffff8115db09>] __mark_inode_dirty+0x173/0x1cf
-                &(&wb->list_lock)->rlock              4          [<ffffffff8115cc29>] inode_wait_for_writeback+0xac/0xcc
-                &(&wb->list_lock)->rlock            446          [<ffffffff8115cdd3>] writeback_single_inode+0x18a/0x27e
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- linux-next.orig/fs/fs-writeback.c	2011-05-06 13:32:41.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-06 16:44:58.000000000 +0800
-@@ -279,6 +279,8 @@ static int move_expired_inodes(struct li
- 		sb = inode->i_sb;
- 		list_move(&inode->i_wb_list, &tmp);
- 		moved++;
-+		if (unlikely(moved >= 3000))	/* limit spinlock hold time */
-+			break;
- 	}
- 
- 	/* just one sb in list, splice to dispatch_queue and we're done */
