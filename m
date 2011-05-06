@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab1EFAmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:42:07 -0400
-Received: from kroah.org ([198.145.64.141]:37231 "EHLO coco.kroah.org"
+	id S932473Ab1EFAlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:41:53 -0400
+Received: from kroah.org ([198.145.64.141]:37240 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429Ab1EFAZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:48 -0400
+	id S932432Ab1EFAZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:49 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:16 2011
-Message-Id: <20110506002216.432340019@clark.kroah.org>
+Message-Id: <20110506002216.539134842@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:39 -0700
+Date: Thu, 05 May 2011 17:21:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [114/143] scsi_dh_emc: request flag cleanup
+        Oskar Schirmer <oskar@scara.com>, Andi Kleen <ak@linux.intel.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [115/143] cifs: fix another memleak, in cifs_root_iget
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Oskar Schirmer <oskar@scara.com>
 
-commit 5738d4449c1baf05e8345684d12371f76296473d upstream.
+commit a7851ce73b9fdef53f251420e6883cf4f3766534 upstream.
 
-blk_get_request sets the cmd_flags, so we should not and do not
-need to set them. If we did set them to a different value then
-it can cause a oops in the elevator code.
+cifs_root_iget allocates full_path through
+cifs_build_path_to_root, but fails to kfree it upon
+cifs_get_inode_info* failure.
 
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Make all failure exit paths traverse clean up
+handling at the end of the function.
+
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/scsi/device_handler/scsi_dh_emc.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/cifs/inode.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/device_handler/scsi_dh_emc.c
-+++ b/drivers/scsi/device_handler/scsi_dh_emc.c
-@@ -284,13 +284,11 @@ static struct request *get_req(struct sc
- 	switch (cmd) {
- 	case MODE_SELECT:
- 		len = sizeof(short_trespass);
--		rq->cmd_flags |= REQ_RW;
- 		rq->cmd[1] = 0x10;
- 		rq->cmd[4] = len;
- 		break;
- 	case MODE_SELECT_10:
- 		len = sizeof(long_trespass);
--		rq->cmd_flags |= REQ_RW;
- 		rq->cmd[1] = 0x10;
- 		rq->cmd[8] = len;
- 		break;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -688,8 +688,10 @@ struct inode *cifs_root_iget(struct supe
+ 		rc = cifs_get_inode_info(&inode, full_path, NULL, sb,
+ 						xid, NULL);
+ 
+-	if (!inode)
+-		return ERR_PTR(-ENOMEM);
++	if (!inode) {
++		inode = ERR_PTR(rc);
++		goto out;
++	}
+ 
+ 	if (rc && cifs_sb->tcon->ipc) {
+ 		cFYI(1, ("ipc connection - fake read inode"));
+@@ -700,13 +702,11 @@ struct inode *cifs_root_iget(struct supe
+ 		inode->i_uid = cifs_sb->mnt_uid;
+ 		inode->i_gid = cifs_sb->mnt_gid;
+ 	} else if (rc) {
+-		kfree(full_path);
+-		_FreeXid(xid);
+ 		iget_failed(inode);
+-		return ERR_PTR(rc);
++		inode = ERR_PTR(rc);
+ 	}
+ 
+-
++out:
+ 	kfree(full_path);
+ 	/* can not call macro FreeXid here since in a void func
+ 	 * TODO: This is no longer true
 
 
