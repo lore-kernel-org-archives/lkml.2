@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab1EFDyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 23:54:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42469 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab1EFDxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 23:53:54 -0400
-Date: Fri, 6 May 2011 13:53:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysock" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (suspend
- tree related)
-Message-Id: <20110506135345.a885d08a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__6_May_2011_13_53_45_+1000_ewtuQpQzJW8wg+f7"
+	id S1751353Ab1EFEGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 00:06:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41392 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab1EFEGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 00:06:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=yHU5tsgz9bXkTUaQEbBfUvcQ6Vn0BNpILv2mF6/cbI/H5QIM0Ymqq0697V04iIul7G
+         xBcwQByoc7XT8Dv4LAVKoOSrDrf6tvcyWwBBm0/nIaK5A3VMi/hRemI/dA2swAHxA7DB
+         JpxMhiUpDafM/tDJCQuxqHPT8a3KfCgtVQkTk=
+MIME-Version: 1.0
+In-Reply-To: <20110506030821.523093711@intel.com>
+References: <20110506030821.523093711@intel.com>
+Date: Fri, 6 May 2011 07:06:42 +0300
+Message-ID: <BANLkTimaf29+FDJV-6L3Jv5JQ9EvvOJrfA@mail.gmail.com>
+Subject: Re: [PATCH 00/17] writeback fixes and cleanups for 2.6.40
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_May_2011_13_53_45_+1000_ewtuQpQzJW8wg+f7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 6, 2011 at 6:08 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> The patches are also git pullable from
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git fs-writeback
 
-Hi all,
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git
+fs-writeback
+fatal: Couldn't find remote ref fs-writeback
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
 
-drivers/built-in.o: In function `_request_firmware':
-firmware_class.c:(.text+0x385c8): undefined reference to `usermodehelper_is=
-_disabled'
+git ls-remote git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git
+5895198c56d131cc696556a45f7ff0ea99ac297b	HEAD
+dbe30770c0b9d280742d3ef0c12b8187ce6e19a7	refs/heads/dirty-throttling-v2
+a56422a5103f57066e401e1d506f1e0cadbe3ad7	refs/heads/dirty-throttling-v3
+1fe1fbdcbcd2bc1a0034ec84a927222b3278dca9	refs/heads/dirty-throttling-v4
+6b7ca194675e2fb4aaf4394df3aedfda69ab14a4	refs/heads/dirty-throttling-v5
+5f35306e8d2e56dd6973556a5b844e4eb8ce24c4	refs/heads/dirty-throttling-v6
+d0e30163e390d87387ec13e3b1c2168238c26793	refs/heads/dirty-throttling-v7
+5895198c56d131cc696556a45f7ff0ea99ac297b	refs/heads/master
+...
 
-Caused by commit 3e61c4dd3e1e ("PM: Print a warning if firmware is
-requested when tasks are frozen").  usermodehelper_is_disabled is only
-defined if CONFIG_PM_SLEEP is set.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__6_May_2011_13_53_45_+1000_ewtuQpQzJW8wg+f7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNw3DJAAoJEDMEi1NhKgbsLkMIAISP1t2N1mF3gSAMp4LQ7cTr
-PIz7ACM+BK2ijyRhwvmrGlMKYOWl2pC3ye7lPZjmukTmh35bWcXgLEEvZB8/t0Gi
-3lKmRFrcAFK+Lz/NVNkTvIa8d+Fw3Tqw9jcSi58OlQIe3sdNRvKnxQj8dzhaPmLg
-ndCVMLAKTqHnyTWGtxpAq6LCzmBYJMFuwRbzrIiKsKDNyLWQsKPjXmzek750lxFc
-jVpeYxx8XkE+gneJie2vXBLfSWhz86jBr8IJolVD9ZOwDYiv4skwf5Ik8zxPeNwu
-jOK08c+HwagPfltSyflh8H/E71EK+xVGlIE2CvIcnqbmgOW37CgvjNrsomFvfXs=
-=WCMs
------END PGP SIGNATURE-----
-
---Signature=_Fri__6_May_2011_13_53_45_+1000_ewtuQpQzJW8wg+f7--
+no branch fs-writeback.
