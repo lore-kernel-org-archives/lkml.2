@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab1EFAZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:25:35 -0400
-Received: from kroah.org ([198.145.64.141]:37089 "EHLO coco.kroah.org"
+	id S932719Ab1EFAqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:46:00 -0400
+Received: from kroah.org ([198.145.64.141]:37101 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932348Ab1EFAZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:32 -0400
+	id S932349Ab1EFAZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:33 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:14 2011
-Message-Id: <20110506002214.781469261@clark.kroah.org>
+Message-Id: <20110506002214.874384046@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:22 -0700
+Date: Thu, 05 May 2011 17:21:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [097/143] perf tools: Test -fstack-protector-all compiler option for inclusion in CFLAGS
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [098/143] perf tools: Support static build
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,50 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Cree <mcree@orcon.net.nz>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-commit 5d7bdab75cd56d2bdc0986ae5546be3b09fea70a upstream.
+commit 751386507701010831d72c522171753d2cd903d2 upstream.
 
-Some architectures (e.g. Alpha) do not support the
--fstack-protector-all compiler option and the use of the option
-with -Werror causes the compiler to abort and the build fails.
+This makes it possible to build perf statically, by
+performing:
 
-Test that the compiler supports -fstack-protector-all before
-inclusion in CFLAGS.
+  make LDFLAGS=-static
 
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Since static libraries are only searched in the order they are
+specified, move library list from LDFLAGS to EXTLIBS, so that
+they are put at the end of linker command line.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
-LKML-Reference: <20091111074302.GA3728@omega>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-Reference: <20091029152002.GA5406@redhat.com>
+[ v2: resolved conflicts ]
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 [bwh: Backport to 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- tools/perf/Makefile |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ tools/perf/Makefile |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -207,7 +207,7 @@ ifndef PERF_DEBUG
-   CFLAGS_OPTIMIZE = -O6
+@@ -145,6 +145,8 @@ all::
+ # Define NO_EXTERNAL_GREP if you don't want "perf grep" to ever call
+ # your external grep (e.g., if your system lacks grep, if its grep is
+ # broken, or spawning external process is slower than built-in grep perf has).
++#
++# Define LDFLAGS=-static to build a static binary.
+ 
+ PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN
+@@ -208,7 +210,7 @@ ifndef PERF_DEBUG
  endif
  
--CFLAGS = $(MBITS) -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -fstack-protector-all -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS)
-+CFLAGS = $(MBITS) -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS)
- LDFLAGS = -lpthread -lrt -lelf -lm
+ CFLAGS = $(MBITS) -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS)
+-LDFLAGS = -lpthread -lrt -lelf -lm
++EXTLIBS = -lpthread -lrt -lelf -lm
  ALL_CFLAGS = $(CFLAGS)
  ALL_LDFLAGS = $(LDFLAGS)
-@@ -261,6 +261,9 @@ PTHREAD_LIBS = -lpthread
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ STRIP ?= strip
+@@ -433,12 +435,12 @@ ifeq ($(uname_S),Darwin)
+ 	PTHREAD_LIBS =
+ endif
  
-+ifeq ($(shell sh -c "echo 'int foo(void) {char X[2]; return 3;}' | $(CC) -x c -c -Werror -fstack-protector-all - -o /dev/null >/dev/null 2>&1 && echo y"), y)
-+  CFLAGS := $(CFLAGS) -fstack-protector-all
-+endif
+-ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o /dev/null $(ALL_LDFLAGS) > /dev/null 2>&1 && echo y"), y)
++ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) > /dev/null 2>&1 && echo y"), y)
+ 	msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]);
+ endif
  
+-ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o /dev/null $(ALL_LDFLAGS) > /dev/null 2>&1 && echo y"), y)
+-	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o /dev/null $(ALL_LDFLAGS) > /dev/null 2>&1 && echo y"), y)
++ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) > /dev/null 2>&1 && echo y"), y)
++	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) > /dev/null 2>&1 && echo y"), y)
+ 		BASIC_CFLAGS += -DLIBELF_NO_MMAP
+ 	endif
+ else
+@@ -448,20 +450,20 @@ endif
+ ifdef NO_DEMANGLE
+ 	BASIC_CFLAGS += -DNO_DEMANGLE
+ else
+-	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) -lbfd > /dev/null 2>&1 && echo y")
++	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) -lbfd > /dev/null 2>&1 && echo y")
  
- ### --- END CONFIGURATION SECTION ---
+ 	ifeq ($(has_bfd),y)
+ 		EXTLIBS += -lbfd
+ 	else
+-		has_bfd_iberty := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) -lbfd -liberty > /dev/null 2>&1 && echo y")
++		has_bfd_iberty := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty > /dev/null 2>&1 && echo y")
+ 		ifeq ($(has_bfd_iberty),y)
+ 			EXTLIBS += -lbfd -liberty
+ 		else
+-			has_bfd_iberty_z := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) -lbfd -liberty -lz > /dev/null 2>&1 && echo y")
++			has_bfd_iberty_z := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty -lz > /dev/null 2>&1 && echo y")
+ 			ifeq ($(has_bfd_iberty_z),y)
+ 				EXTLIBS += -lbfd -liberty -lz
+ 			else
+-				has_cplus_demangle := $(shell sh -c "(echo 'extern char *cplus_demangle(const char *, int);'; echo 'int main(void) { cplus_demangle(0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) -liberty > /dev/null 2>&1 && echo y")
++				has_cplus_demangle := $(shell sh -c "(echo 'extern char *cplus_demangle(const char *, int);'; echo 'int main(void) { cplus_demangle(0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o /dev/null $(ALL_LDFLAGS) $(EXTLIBS) -liberty > /dev/null 2>&1 && echo y")
+ 				ifeq ($(has_cplus_demangle),y)
+ 					EXTLIBS += -liberty
+ 					BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
 
 
