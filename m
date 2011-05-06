@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab1EFXNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 19:13:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32259 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1EFXN2 (ORCPT
+	id S1752596Ab1EFX1r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 19:27:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45734 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab1EFX1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 19:13:28 -0400
-Date: Fri, 6 May 2011 16:13:10 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] soc: fix wm8958-dsp2 printk format warnings
-Message-Id: <20110506161310.54b22b9f.randy.dunlap@oracle.com>
-In-Reply-To: <20110505134959.b3761297.sfr@canb.auug.org.au>
-References: <20110505134959.b3761297.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4DC48091.024D:SCFMA922111,ss=1,fgs=0
+	Fri, 6 May 2011 19:27:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=e3VnYnWHlRIrzCSkkr0YvtXDWGeS7NGa3Cw40hahMdVvxRniTd3mtRj8Ok++LA042R
+         DSvidJjEL5tfinNBXf7Fakltt1cTC9pLMuNY+INnrFw8fOGoqnlZMszP/NhkuVTXBVGt
+         /QsrPqXktk75KrvBsxrIOxxD9YsWy887G3OKo=
+MIME-Version: 1.0
+In-Reply-To: <20110506232814.3ca7b943@lxorguk.ukuu.org.uk>
+References: <1304719780-27347-1-git-send-email-lrodriguez@atheros.com>
+ <1304719780-27347-3-git-send-email-lrodriguez@atheros.com> <20110506232814.3ca7b943@lxorguk.ukuu.org.uk>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Fri, 6 May 2011 16:27:25 -0700
+X-Google-Sender-Auth: YqBo3Tyqn0KRXtWiBLaa_haBCAk
+Message-ID: <BANLkTik5g3r_aqbp=zTawEtgzYCGwCZ_Xw@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86: add Atheros ar1520 platform support for mrst
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: akpm@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, allen.kao@atheros.com,
+        roman.gezikov@atheros.com, joonas.viskari@atheros.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, May 6, 2011 at 3:28 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Fri, 6 May 2011 15:09:40 -0700
+> "Luis R. Rodriguez" <lrodriguez@atheros.com> wrote:
+>
+>> From: Allen Kao <allen.kao@atheros.com>
+>>
+>> This adds platform driver support for Atheros ar1520 GPS device
+>> on the Intel Moorestown Low Power Intel Architecture (LPIA) based
+>> Moblin Internet Device (MID) platform.
+>
+> NAK - for the same reasons as before, and the same NAK you already got on
+> the other list.
+>
+> No open user space or sufficient API docs to make use of the kernel
+> driver and write your own = not a candidate for submission. Same for the
+> 3D graphics on that platform.
 
-Fix printk format warnings in wm8958-dsp2.c:
+I was under the impression an open userspace app was going to be
+provided.... I'll check with the team.
 
-sound/soc/codecs/wm8958-dsp2.c:103: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
-sound/soc/codecs/wm8958-dsp2.c:111: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
-sound/soc/codecs/wm8958-dsp2.c:144: warning: format '%d' expects type 'int', but argument 5 has type 'size_t'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- sound/soc/codecs/wm8958-dsp2.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- linux-next-20110505.orig/sound/soc/codecs/wm8958-dsp2.c
-+++ linux-next-20110505/sound/soc/codecs/wm8958-dsp2.c
-@@ -99,7 +99,7 @@ static int wm8958_dsp2_fw(struct snd_soc
- 	len = fw->size - len;
- 	while (len) {
- 		if (len < 12) {
--			dev_err(codec->dev, "%s short data block of %d\n",
-+			dev_err(codec->dev, "%s short data block of %zd\n",
- 				name, len);
- 			goto err;
- 		}
-@@ -107,7 +107,7 @@ static int wm8958_dsp2_fw(struct snd_soc
- 		memcpy(&data32, data + 4, sizeof(data32));
- 		block_len = be32_to_cpu(data32);
- 		if (block_len + 8 > len) {
--			dev_err(codec->dev, "%d byte block longer than file\n",
-+			dev_err(codec->dev, "%zd byte block longer than file\n",
- 				block_len);
- 			goto err;
- 		}
-@@ -141,7 +141,7 @@ static int wm8958_dsp2_fw(struct snd_soc
- 		case WM_FW_BLOCK_I:
- 		case WM_FW_BLOCK_A:
- 		case WM_FW_BLOCK_C:
--			dev_dbg(codec->dev, "%s: %d bytes of %x@%x\n", name,
-+			dev_dbg(codec->dev, "%s: %zd bytes of %x@%x\n", name,
- 				block_len, (data32 >> 24) & 0xff,
- 				data32 & 0xffffff);
- 
+ Luis
