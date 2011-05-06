@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab1EFOR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 10:17:26 -0400
-Received: from dee.erg.abdn.ac.uk ([139.133.204.82]:53607 "EHLO erg.abdn.ac.uk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751074Ab1EFORZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 10:17:25 -0400
-X-Greylist: delayed 725 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 10:17:24 EDT
-Date: Fri, 6 May 2011 15:53:45 +0200
-From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: davem@davemloft.net, dccp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH] dccp: handle invalid feature options length
-Message-ID: <20110506135345.GA3434@gerrit.erg.abdn.ac.uk>
-Mail-Followup-To: Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-	Dan Rosenberg <drosenberg@vsecurity.com>, davem@davemloft.net,
-	dccp@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, security@kernel.org
-References: <1304688438.29544.16.camel@dan>
+	id S1755783Ab1EFN7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:59:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42433 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab1EFN7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 09:59:01 -0400
+Date: Fri, 6 May 2011 09:58:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Tian, Kevin" <kevin.tian@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v2 1/2] x86: skip migrating IRQF_PER_CPU irq in fixup_irqs
+Message-ID: <20110506135828.GC5500@dumpdata.com>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E2@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304688438.29544.16.camel@dan>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-ERG-MailScanner: Found to be clean
-X-ERG-MailScanner-From: gerrit@erg.abdn.ac.uk
+In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E2@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DC3FE90.00A4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Dan Rosenberg:
-| A length of zero (after subtracting two for the type and len fields) for
-| the DCCPO_{CHANGE,CONFIRM}_{L,R} options will cause an underflow due to
-| the subtraction.  The subsequent code may read past the end of the
-| options value buffer when parsing.  I'm unsure of what the consequences
-| of this might be, but it's probably not good.
-| 
-Can you please check again: did you experience this condition, to me it 
-seems the patch is based on reading this code.
+On Fri, May 06, 2011 at 02:43:36PM +0800, Tian, Kevin wrote:
+> x86: skip migrating IRQF_PER_CPU irq in fixup_irqs
+> 
+> IRQF_PER_CPU marks a irq binding to a specific cpu, and can never be
+> moved away from that cpu. So it shouldn't be migrated when fixup irqs
+> to offline a cpu. Xen pvops guest is one source using IRQF_PER_CPU
+  ^- are called 
+> on a set of virtual interrupts. Previously no error is observed 
+                                                      ^^- was
+ Which ones? Can you be more specific here of which type of virtual interrupts?
+ spinlock? timer? 
+> because Xen event chip silently fails the set_affinity ops, and
+> logically IRQF_PER_CPU should be recognized here.
 
-In this case, please consider the condition before the switch statement:
-
-                /* Check if this isn't a single byte option */
-                if (opt > DCCPO_MAX_RESERVED) {
-                        if (opt_ptr == opt_end)
-                                goto out_nonsensical_length;
-
-                        len = *opt_ptr++;
-                        if (len < 2)
-                                goto out_nonsensical_length;
-                         
-The described range (DCCPO_CHANGE_L = 32 ... DCCPO_CONFIRM_R = 35) is after DCCPO_MAX_RESERVED = 31,
-so that the above test applies.
-
-Hence for these option types the len is always at least 1, so that (len - 1) >= 0.
-
-| --- a/net/dccp/options.c
-| +++ b/net/dccp/options.c
-| @@ -123,6 +123,8 @@ int dccp_parse_options(struct sock *sk, struct dccp_request_sock *dreq,
-|  		case DCCPO_CHANGE_L ... DCCPO_CONFIRM_R:
-|  			if (pkt_type == DCCP_PKT_DATA)      /* RFC 4340, 6 */
-|  				break;
-| +			if (len == 0)
-| +				goto out_invalid_option;
-|  			rc = dccp_feat_parse_options(sk, dreq, mandatory, opt,
-|  						    *value, value + 1, len - 1);
-|  			if (rc)
-| 
-| 
-
--- 
+OK, so what if the set_affinity ops was implemented?
+> 
+> Signed-off-by: Fengzhe Zhang <fengzhe.zhang@intel.com>
+> Signed-off-by: Kevin Tian <kevin.tian@intel.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: H. Peter Anvin <hpa@zytor.com>
+> CC: Ian Campbell <Ian.Campbell@citrix.com>
+> CC: Jan Beulich <JBeulich@novell.com>
+> 
+> --- linux-2.6.39-rc6.orig/arch/x86/kernel/irq.c	2011-05-04 10:59:13.000000000 +0800
+> +++ linux-2.6.39-rc6/arch/x86/kernel/irq.c	2011-05-06 09:20:25.563963000 +0800
+> @@ -249,7 +250,7 @@ void fixup_irqs(void)
+>  
+>  		data = irq_desc_get_irq_data(desc);
+>  		affinity = data->affinity;
+> -		if (!irq_has_action(irq) ||
+> +		if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
+>  		    cpumask_subset(affinity, cpu_online_mask)) {
+>  			raw_spin_unlock(&desc->lock);
+>  			continue;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
