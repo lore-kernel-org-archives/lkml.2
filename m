@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab1EFWh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 18:37:29 -0400
-Received: from outmail019.snc4.facebook.com ([66.220.144.151]:44933 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754031Ab1EFWh2 (ORCPT
+	id S1754294Ab1EFWkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 18:40:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39148 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752666Ab1EFWkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 18:37:28 -0400
-Date: Fri, 6 May 2011 15:37:27 -0700
-From: Arun Sharma <asharma@fb.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Arun Sharma <asharma@fb.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add $KERNELRELEASE to firmware install path
-Message-ID: <20110506223727.GA29011@dev1756.snc6.facebook.com>
-References: <20110505173939.GA20575@dev1756.snc6.facebook.com>
- <4DC3CA39.30806@suse.cz>
- <1304677113.20656.2.camel@i7.infradead.org>
- <20110506184438.GA30417@dev1756.snc6.facebook.com>
- <1304708557.20656.49.camel@i7.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304708557.20656.49.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 May 2011 18:40:07 -0400
+Date: Fri, 6 May 2011 15:39:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefan Hellermann <stefan@the2masters.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH] mm: Use alloc_bootmem_node_nopanic on really needed path
+Message-Id: <20110506153914.b1bceb51.akpm@linux-foundation.org>
+In-Reply-To: <4DC47655.5040201@kernel.org>
+References: <4DC30251.9040902@the2masters.de>
+	<4DC31D5F.8070209@the2masters.de>
+	<4DC31F72.5050206@kernel.org>
+	<4DC328AC.1060906@the2masters.de>
+	<4DC3958F.1090800@kernel.org>
+	<4DC3B6C6.7000704@the2masters.de>
+	<4DC47655.5040201@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 08:02:36PM +0100, David Woodhouse wrote:
-> On Fri, 2011-05-06 at 11:44 -0700, Arun Sharma wrote:
-> > 
-> > Without this change, if you have two kernel rpms/debs from different
-> > kernel versions installed, they'll result in a namespace conflict
-> > (rpm/deb install will fail), which gets resolved by this patch. 
-> 
-> The packages are broken then. They shouldn't include *any* files
-> in /lib/firmware.
-> 
-> Fix *that*, and the problem goes away.
+On Fri, 06 May 2011 15:29:41 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-Sounds good.
+> Stefan found nobootmem does not work on his system that only have 8M ram.
 
-Michal: Should I send you a patch that drops /lib/firmware?
+What does "does not work" mean?  From the patch, it appears that the
+machine paniced?
 
- -Arun
+This is important because without a recognisable description of the
+failure it is hard for people to determine whether your patch might fix
+a problem which they are observing.
+
+The patch applies to 2.6.36, 37 and 38 (at least).  Do you think it
+should be backported?  If so, how far back in time is it applicable?
+
