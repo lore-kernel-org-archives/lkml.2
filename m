@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab1EFAYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:24:35 -0400
-Received: from kroah.org ([198.145.64.141]:36635 "EHLO coco.kroah.org"
+	id S1755818Ab1EFAYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:24:33 -0400
+Received: from kroah.org ([198.145.64.141]:36638 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab1EFAY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:29 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:07 2011
-Message-Id: <20110506002207.894747486@clark.kroah.org>
+	id S1754232Ab1EFAYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:08 2011
+Message-Id: <20110506002207.993104844@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:13 -0700
+Date: Thu, 05 May 2011 17:20:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [028/143] [SCSI] put stricter guards on queue dead checks
+        Chris Ball <cjb@laptop.org>
+Subject: [029/143] mmc: sdhci-pci: Fix error case in sdhci_pci_probe_slot()
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@suse.de>
+From: Chris Ball <cjb@laptop.org>
 
-commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b upstream.
+commit 9fdcdbb0d84922e7ccda2f717a04ea62629f7e18 upstream.
 
-SCSI uses request_queue->queuedata == NULL as a signal that the queue
-is dying.  We set this state in the sdev release function.  However,
-this allows a small window where we release the last reference but
-haven't quite got to this stage yet and so something will try to take
-a reference in scsi_request_fn and oops.  It's very rare, but we had a
-report here, so we're pushing this as a bug fix
+If pci_ioremap_bar() fails during probe, we "goto release;" and free the
+host, but then we return 0 -- which tells sdhci_pci_probe() that the probe
+succeeded.  Since we think the probe succeeded, when we unload sdhci we'll
+go to sdhci_pci_remove_slot() and it will try to dereference slot->host,
+which is now NULL because we freed it in the error path earlier.
 
-The actual fix is to set request_queue->queuedata to NULL in
-scsi_remove_device() before we drop the reference.  This causes
-correct automatic rejects from scsi_request_fn as people who hold
-additional references try to submit work and prevents anything from
-getting a new reference to the sdev that way.
+The patch simply sets ret appropriately, so that sdhci_pci_probe() will
+detect the failure immediately and bail out.
 
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_sysfs.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/mmc/host/sdhci-pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -318,14 +318,8 @@ static void scsi_device_dev_release_user
- 		kfree(evt);
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -569,6 +569,7 @@ static struct sdhci_pci_slot * __devinit
+ 	host->ioaddr = pci_ioremap_bar(pdev, bar);
+ 	if (!host->ioaddr) {
+ 		dev_err(&pdev->dev, "failed to remap registers\n");
++		ret = -ENOMEM;
+ 		goto release;
  	}
- 
--	if (sdev->request_queue) {
--		sdev->request_queue->queuedata = NULL;
--		/* user context needed to free queue */
--		scsi_free_queue(sdev->request_queue);
--		/* temporary expedient, try to catch use of queue lock
--		 * after free of sdev */
--		sdev->request_queue = NULL;
--	}
-+	/* NULL queue means the device can't be used */
-+	sdev->request_queue = NULL;
- 
- 	scsi_target_reap(scsi_target(sdev));
- 
-@@ -925,6 +919,12 @@ void __scsi_remove_device(struct scsi_de
- 	if (sdev->host->hostt->slave_destroy)
- 		sdev->host->hostt->slave_destroy(sdev);
- 	transport_destroy_device(dev);
-+
-+	/* cause the request function to reject all I/O requests */
-+	sdev->request_queue->queuedata = NULL;
-+
-+	/* Freeing the queue signals to block that we're done */
-+	scsi_free_queue(sdev->request_queue);
- 	put_device(dev);
- }
  
 
 
