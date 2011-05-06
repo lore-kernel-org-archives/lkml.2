@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1EFIYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 04:24:10 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:34532 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab1EFIYI (ORCPT
+	id S1753944Ab1EFIZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 04:25:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44106 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab1EFIZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 04:24:08 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Linux\/m68k" <linux-m68k@vger.kernel.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        uClinux list <uclinux-dev@uclinux.org>
-Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
-References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
-	<201105050824.34056.arnd@arndb.de>
-	<alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
-	<201105052237.11656.arnd@arndb.de>
-	<BANLkTinqouGVWH8CmfM038TKFvhpJEczUQ@mail.gmail.com>
-X-Yow: I'll clean your ROOM!!  I know some GOOD stories, too!!  All about
- ROAD Island's, HUSH Puppies, and how LUKE finds GOLD on his LAND!!
-Date: Fri, 06 May 2011 10:24:04 +0200
-In-Reply-To: <BANLkTinqouGVWH8CmfM038TKFvhpJEczUQ@mail.gmail.com> (Geert
-	Uytterhoeven's message of "Fri, 6 May 2011 07:11:42 +0200")
-Message-ID: <m38vuk9qzf.fsf@linux-m68k.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 6 May 2011 04:25:34 -0400
+Date: Fri, 6 May 2011 10:25:24 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] leds: provide helper to register "leds-gpio" devices
+Message-ID: <20110506082524.GR11574@pengutronix.de>
+References: <1302097097.22904.41.camel@rex>
+ <1302554157-24145-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20110426150815.GY31131@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110426150815.GY31131@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+Hi Richard,
 
-> BTW, we have a hole at 218/219. I don't remember why, but it may have been
-> a placeholder for pselect6 and ppoll when that implementation was still in flux.
-> Couldn't find anything about it in git/cvs archives, so I'll check
-> have to check my
-> old mailing list archives...
+On Tue, Apr 26, 2011 at 05:08:15PM +0200, Uwe Kleine-König wrote:
+> On Mon, Apr 11, 2011 at 10:35:57PM +0200, Uwe Kleine-König wrote:
+> > This function makes a deep copy of the platform data to allow it to live
+> > in init memory.
+> > The definition cannot go into leds-gpio.c because it needs to be builtin
+> > to be usable by platforms.
+> > 
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> any comment by you?
+ping
 
-Probably it originated from the time when it was still deemed useful to
-keep the numbers in sync with the x86 ones.  The hole is filled with
-mincore and madvice there (pselect6 and ppoll came much later).
-
-Andreas.
+Best regards
+Uwe
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
