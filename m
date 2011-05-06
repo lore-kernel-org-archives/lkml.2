@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1EFOWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 10:22:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35337 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908Ab1EFOWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 10:22:07 -0400
-Date: Fri, 6 May 2011 16:21:55 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Chinner <david@fromorbit.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] writeback: refill b_io iff empty
-Message-ID: <20110506142155.GD18982@quack.suse.cz>
-References: <20110420080336.441157866@intel.com>
- <20110420080918.560499032@intel.com>
- <20110504073931.GA22675@localhost>
- <20110505163708.GN5323@quack.suse.cz>
- <20110506052955.GA24904@localhost>
+	id S1756382Ab1EFNdZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:33:25 -0400
+Received: from mailout.rz.uni-frankfurt.de ([141.2.22.233]:36982 "EHLO
+	mailout.rz.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756259Ab1EFNdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 09:33:24 -0400
+Message-ID: <4DC40484.3050205@gmx.de>
+Date: Fri, 06 May 2011 16:24:04 +0200
+From: Thomas Sattler <tsattler@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Mnenhy/0.8.3 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506052955.GA24904@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: iotop: khugepaged at 99.99% (2.6.38.X)
+References: <4DAF6C0B.3070009@gmx.de> <20110427134613.GI32590@random.random> <4DC14474.9040001@gmx.de> <20110504143842.GK7838@random.random> <4DC31EDE.2020503@gmx.de> <20110506011319.GH7838@random.random> <4DC3B629.7010409@gmx.de> <4DC3B72A.302@gmx.de>
+In-Reply-To: <4DC3B72A.302@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-MailScanner: Found to be clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 06-05-11 13:29:55, Wu Fengguang wrote:
-> On Fri, May 06, 2011 at 12:37:08AM +0800, Jan Kara wrote:
-> > On Wed 04-05-11 15:39:31, Wu Fengguang wrote:
-> > > To help understand the behavior change, I wrote the writeback_queue_io
-> > > trace event, and found very different patterns between
-> > > - vanilla kernel
-> > > - this patchset plus the sync livelock fixes
-> > > 
-> > > Basically the vanilla kernel each time pulls a random number of inodes
-> > > from b_dirty, while the patched kernel tends to pull a fixed number of
-> > > inodes (enqueue=1031) from b_dirty. The new behavior is very interesting...
-> >   This regularity is really strange. Did you have a chance to look more into
-> > it? I find it highly unlikely that there would be exactly 1031 dirty inodes
-> > in b_dirty list every time you call move_expired_inodes()...
-> 
-> Jan, I got some results for ext4. The total dd+tar+sync time is
-> decreased from 177s to 167s. The other numbers are either raised or
-> dropped.
-  Nice, but what I was more curious about was to understand why you saw
-enqueued=1031 all the time. BTW, I'd suppose that the better performance
-numbers come from sync using page tagging, right? Because from the traces
-it seems that not much IO is going on until sync is called. And I expect
-that tagging can bring you some performance because now you sync a file in
-one big sweep instead of 4MB chunks...
+> Aaarg, wrong kernel tree. I patched and compiled 2.6.38.5.
+> Do you think it is important to stay with 2.6.38.2, after
+> we know 2.6.38.4 is also affected?
 
-> 1902.672610: writeback_queue_io: older=4296543506 age=30000 enqueue=0
-> 1905.209570: writeback_queue_io: older=4296546051 age=30000 enqueue=0
-> 1907.294936: writeback_queue_io: older=4296548143 age=30000 enqueue=0
-> 1909.607301: writeback_queue_io: older=4296550462 age=30000 enqueue=0
-> 1912.290627: writeback_queue_io: older=4296553154 age=30000 enqueue=0
-> 1914.331197: writeback_queue_io: older=4296555201 age=30000 enqueue=0
-> 1927.275838: writeback_queue_io: older=4296568186 age=30000 enqueue=0
-> 1927.277794: writeback_queue_io: older=4296568188 age=30000 enqueue=0
-> 1927.279504: writeback_queue_io: older=4296568189 age=30000 enqueue=0
-> 1927.279923: writeback_queue_io: older=4296568190 age=30000 enqueue=0
-> 1929.981734: writeback_queue_io: older=4296600898 age=2 enqueue=13227
-> 1932.840150: writeback_queue_io: older=4296600898 age=2869 enqueue=0
-> 1932.840781: writeback_queue_io: older=4296603768 age=0 enqueue=0
-> 1932.840787: writeback_queue_io: older=4296573768 age=30000 enqueue=0
-> 1932.991596: writeback_queue_io: older=4296603919 age=0 enqueue=1
-> 1937.975765: writeback_queue_io: older=4296578919 age=30000 enqueue=0
-> 1942.960305: writeback_queue_io: older=4296583919 age=30000 enqueue=0
-> 1947.944925: writeback_queue_io: older=4296588919 age=30000 enqueue=0
-> 1952.929427: writeback_queue_io: older=4296593919 age=30000 enqueue=0
-> 1957.914031: writeback_queue_io: older=4296598919 age=30000 enqueue=0
-> 1962.898507: writeback_queue_io: older=4296603919 age=30000 enqueue=1
-> 1962.898518: writeback_queue_io: older=4296603919 age=30000 enqueue=0
-  OK, so now enqueue numbers look like what I'd expect. I'm relieved :)
-Thanks for running the tests.
+I bootet 2.6.38.5.aa1 ("aa1" for the "make-it-worse-patch")
+but nothing happened within an hour. So I put some stress
+on the system:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+$ stress --cpu 80 --io 40 --vm 20 --vm-bytes 1280M --timeout 5s
+stress: info: [31924] dispatching hogs: 80 cpu, 40 io, 20 vm, 0 hdd
+
+The command _did_not_end_ after five seconds. I tried to
+kill it after ~15 minutes. I had no success killing it.
+
+"nr_isolated_anon" was "0" all the time. 'ps xal' hung its
+terminal. Just like 'pkill stress', 'pkill firefox', 'pkill
+thunderbird', 'pkill pkill' and 'pkill -9 stress'.
+
+top/iotop: http://pastebin.com/raw.php?i=BCtmHpmX
+ps xal:    http://pastebin.com/raw.php?i=ED71cuKe
+zoneinfo:  http://pastebin.com/raw.php?i=aBNjz1Up
+
+I hit SysRq-[lmtw] several times, you'll find all kernel
+messages (/var/log/messages) from boot to reboot here:
+
+  http://pastebin.com/raw.php?i=VG28YRbi
+
+The system did not shutdown properly, I waited some time
+for sshd to stop and eventually hit SysRq-sub.
+
+Thomas
