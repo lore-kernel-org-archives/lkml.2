@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab1EFHyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 03:54:19 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48845 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab1EFHyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 03:54:17 -0400
-Date: Fri, 6 May 2011 09:54:08 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Kaywinnit L. Frye" <kaywinnit.lee.frye.2497@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-Subject: Re: [PATCH] wait: include linux/sched.h
-Message-ID: <20110506075408.GI23166@elte.hu>
-References: <1304372042-12098-1-git-send-email-kaywinnit.lee.frye.2497@gmail.com>
+	id S1754878Ab1EFIDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 04:03:49 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53561 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327Ab1EFIDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 04:03:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=GjUUb0ua2SOZ3M+6BVMDzsn1R9YVt0Dufuellio4Q9pkADfP3NJRKn62Deyka8+7oi
+         TuF86f2p7z0UDIu807Z7GF6vS6/8xNpHSDcVcTSv82/ssezdHACmedWuA41FKfP/22dR
+         0USMzxLHvUWGe3PK+UE3/DViMwcjAz/3RHyMM=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] leds: drop leds-h1940 driver
+Date: Fri, 6 May 2011 11:01:34 +0300
+User-Agent: KMail/1.13.6 (Linux/2.6.38-gentoo-anarsoul; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org,
+        "'Arnaud Patard (Rtp)'" <arnaud.patard@rtp-net.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Ben Dooks'" <ben-linux@fluff.org>, rpurdie@rpsys.net
+References: <1303912597-32653-1-git-send-email-anarsoul@gmail.com> <00f701cc0ba4$3cb4b680$b61e2380$%kim@samsung.com>
+In-Reply-To: <00f701cc0ba4$3cb4b680$b61e2380$%kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304372042-12098-1-git-send-email-kaywinnit.lee.frye.2497@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105061101.34589.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 06 May 2011 07:15:27 Kukjin Kim wrote:
+> Hi Vasily,
 
-* Kaywinnit L. Frye <kaywinnit.lee.frye.2497@gmail.com> wrote:
+Hi
+ 
+> Hmm, regarding maintainer who is Richard Purdie(LED) in this case should be
+> added in Cc. (Cc'ed him)
 
-> signal_pending(), schedule*() and TASK_* are used in various macros in
-> wait.h and all defined in linux/sched.h
+Sorry, forgot to add him to CC :(
+
+> And I think need following with this patch.
 > 
-> Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Kaywinnit L. Frye <kaywinnit.lee.frye.2497@gmail.com>
-> ---
->  include/linux/wait.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/wait.h b/include/linux/wait.h
-> index 3efc9f3..667a3d7 100644
-> --- a/include/linux/wait.h
-> +++ b/include/linux/wait.h
-> @@ -22,6 +22,7 @@
->  #include <linux/list.h>
->  #include <linux/stddef.h>
->  #include <linux/spinlock.h>
-> +#include <linux/sched.h>
->  #include <asm/system.h>
->  #include <asm/current.h>
+> --- a/arch/arm/configs/s3c2410_defconfig
+> +++ b/arch/arm/configs/s3c2410_defconfig
+> @@ -389,7 +389,6 @@ CONFIG_MMC_SPI=m
+>  CONFIG_MMC_S3C=y
+>  CONFIG_LEDS_CLASS=m
+>  CONFIG_LEDS_S3C24XX=m
+> -CONFIG_LEDS_H1940=m
+>  CONFIG_LEDS_PCA9532=m
+>  CONFIG_LEDS_GPIO=m
+>  CONFIG_LEDS_PCA955X=m
 
-I'm quite sure this will break the build all around the place, because sched.h 
-itself uses wait.h primitives.
+Sure. Can you commit this change to your tree, or should I resend patch with 
+this change?
 
-To fix these super-headers like sched.h and to make wait.h self-sufficient the 
-right and cleanest approach would be to split data types and primitive accessor 
-functions from higher level helper methods (which inevitably mix different 
-domains) and put them into two separate files.
-
-We have a few such split files in the kernel tree, spinlock_types.h and 
-spinlock_api.h, and this concept works reasonably well.
-
-So here we'd need wait_types.h and wait_api.h and of course sched_types.h and 
-sched_api.h.
-
-For simplicity of migration wait_api.h could be wait.h itself and sched_api.h 
-could be sched.h itself.
-
-That way we'd stop the exponential explosion of header file inter-dependencies 
-at its source and would create a clean hierarchy of data types (the *_types.h 
-files, which never include *_api.h files), plus the real *_api.h files that .c 
-files would use.
-
-As a result we'd probably have faster build times and we could also remove a 
-lot of CPP macro hell which is currently used to work around dependency 
-spaghetti bugs.
-
-Thanks,
-
-	Ingo
+Regards
+Vasily
