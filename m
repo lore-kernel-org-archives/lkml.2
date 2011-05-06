@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab1EFAbp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:31:45 -0400
-Received: from kroah.org ([198.145.64.141]:37608 "EHLO coco.kroah.org"
+	id S932567Ab1EFAbX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:31:23 -0400
+Received: from kroah.org ([198.145.64.141]:37612 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932690Ab1EFA1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:27:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:09 2011
-Message-Id: <20110506002609.904849315@clark.kroah.org>
+	id S932549Ab1EFA1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:27:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:10 2011
+Message-Id: <20110506002609.995552185@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:25:48 -0700
+Date: Thu, 05 May 2011 17:25:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Eric Moore <eric.moore@lsi.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [27/43] [SCSI] mpt2sas: prevent heap overflows and unchecked reads
+Subject: [28/43] [SCSI] put stricter guards on queue dead checks
 In-Reply-To: <20110506002625.GA20426@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,86 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit a1f74ae82d133ebb2aabb19d181944b4e83e9960 upstream.
+commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b upstream.
 
-At two points in handling device ioctls via /dev/mpt2ctl, user-supplied
-length values are used to copy data from userspace into heap buffers
-without bounds checking, allowing controllable heap corruption and
-subsequently privilege escalation.
+SCSI uses request_queue->queuedata == NULL as a signal that the queue
+is dying.  We set this state in the sdev release function.  However,
+this allows a small window where we release the last reference but
+haven't quite got to this stage yet and so something will try to take
+a reference in scsi_request_fn and oops.  It's very rare, but we had a
+report here, so we're pushing this as a bug fix
 
-Additionally, user-supplied values are used to determine the size of a
-copy_to_user() as well as the offset into the buffer to be read, with no
-bounds checking, allowing users to read arbitrary kernel memory.
+The actual fix is to set request_queue->queuedata to NULL in
+scsi_remove_device() before we drop the reference.  This causes
+correct automatic rejects from scsi_request_fn as people who hold
+additional references try to submit work and prevents anything from
+getting a new reference to the sdev that way.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Eric Moore <eric.moore@lsi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_ctl.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_sysfs.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -636,6 +636,13 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPT
- 	data_out_sz = karg.data_out_size;
- 	data_in_sz = karg.data_in_size;
- 
-+	/* Check for overflow and wraparound */
-+	if (karg.data_sge_offset * 4 > ioc->request_sz ||
-+	    karg.data_sge_offset > (UINT_MAX / 4)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
- 	/* copy in request message frame from user */
- 	if (copy_from_user(mpi_request, mf, karg.data_sge_offset*4)) {
- 		printk(KERN_ERR "failure at %s:%d/%s()!\n", __FILE__, __LINE__,
-@@ -1876,7 +1883,7 @@ _ctl_diag_read_buffer(void __user *arg,
- 	Mpi2DiagBufferPostReply_t *mpi_reply;
- 	int rc, i;
- 	u8 buffer_type;
--	unsigned long timeleft;
-+	unsigned long timeleft, request_size, copy_size;
- 	u16 smid;
- 	u16 ioc_status;
- 	u8 issue_reset = 0;
-@@ -1912,6 +1919,8 @@ _ctl_diag_read_buffer(void __user *arg,
- 		return -ENOMEM;
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -318,14 +318,8 @@ static void scsi_device_dev_release_user
+ 		kfree(evt);
  	}
  
-+	request_size = ioc->diag_buffer_sz[buffer_type];
-+
- 	if ((karg.starting_offset % 4) || (karg.bytes_to_read % 4)) {
- 		printk(MPT2SAS_ERR_FMT "%s: either the starting_offset "
- 		    "or bytes_to_read are not 4 byte aligned\n", ioc->name,
-@@ -1919,13 +1928,23 @@ _ctl_diag_read_buffer(void __user *arg,
- 		return -EINVAL;
- 	}
+-	if (sdev->request_queue) {
+-		sdev->request_queue->queuedata = NULL;
+-		/* user context needed to free queue */
+-		scsi_free_queue(sdev->request_queue);
+-		/* temporary expedient, try to catch use of queue lock
+-		 * after free of sdev */
+-		sdev->request_queue = NULL;
+-	}
++	/* NULL queue means the device can't be used */
++	sdev->request_queue = NULL;
  
-+	if (karg.starting_offset > request_size)
-+		return -EINVAL;
-+
- 	diag_data = (void *)(request_data + karg.starting_offset);
- 	dctlprintk(ioc, printk(MPT2SAS_DEBUG_FMT "%s: diag_buffer(%p), "
- 	    "offset(%d), sz(%d)\n", ioc->name, __func__,
- 	    diag_data, karg.starting_offset, karg.bytes_to_read));
+ 	scsi_target_reap(scsi_target(sdev));
  
-+	/* Truncate data on requests that are too large */
-+	if ((diag_data + karg.bytes_to_read < diag_data) ||
-+	    (diag_data + karg.bytes_to_read > request_data + request_size))
-+		copy_size = request_size - karg.starting_offset;
-+	else
-+		copy_size = karg.bytes_to_read;
+@@ -963,6 +957,12 @@ void __scsi_remove_device(struct scsi_de
+ 	if (sdev->host->hostt->slave_destroy)
+ 		sdev->host->hostt->slave_destroy(sdev);
+ 	transport_destroy_device(dev);
 +
- 	if (copy_to_user((void __user *)uarg->diagnostic_data,
--	    diag_data, karg.bytes_to_read)) {
-+	    diag_data, copy_size)) {
- 		printk(MPT2SAS_ERR_FMT "%s: Unable to write "
- 		    "mpt_diag_read_buffer_t data @ %p\n", ioc->name,
- 		    __func__, diag_data);
++	/* cause the request function to reject all I/O requests */
++	sdev->request_queue->queuedata = NULL;
++
++	/* Freeing the queue signals to block that we're done */
++	scsi_free_queue(sdev->request_queue);
+ 	put_device(dev);
+ }
+ 
 
 
