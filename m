@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab1EFINF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 04:13:05 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34711 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752973Ab1EFIM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 04:12:59 -0400
-Date: Fri, 6 May 2011 01:12:43 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] pci: Check bridge resources after resource allocation.
-Message-ID: <20110506081243.GF16782@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <4DC250A6.9040802@kernel.org>
+	id S1754143Ab1EFIZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 04:25:51 -0400
+Received: from web94913.mail.in2.yahoo.com ([203.104.17.184]:21965 "HELO
+	web94913.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753966Ab1EFIZs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 04:25:48 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 04:25:48 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=W0AEHCbgphcCoIWfSfD+uySf0mynx3fGDCgxrLZGQvN0fsS7fx6sZnDIKeqbUOBpddZRF9VxNW2B2LKof6d8c+rED6Nz7Oyg90rLh1QfKeWs1x9myVHQ2hn230ofRtE2X1wDqMRuDpbKbdermxuI5BcIHK8mtyyXRooJDcoHCDc=;
+Message-ID: <258099.79796.qm@web94913.mail.in2.yahoo.com>
+X-YMail-OSG: 6v9P.oQVM1ni3juVMKCVwBy.HE0GlMdNrmZWEnbWB2fEO7n
+ 3JNdv_8P7WnSIRZbzhA.mgAGRWeCvc4uY1_.x_w5Z48z2YhItcEpTUN7i9YV
+ VET9kkidCljGJMG.K5DfW_rxOiWMcj5dvFryq7lDAZpbwk9wzrb6RjDRjiVh
+ Vk72i_Z6gwdE0sBkUxv_VxmXhyE3Fc3xDZ2.gqIKzHLnM65Bo5.g16t52Oaz
+ Pf4djS_G4UIdpCzfEc4OKWElzud6Lrr8iF3qowIvzQ41xTMH2rZpt9DBTqfz
+ 3iVpIbK8woOfqllB4CZVsJGe8WdlDl9j6NdF3NsEqCYaQVJ0IK1xcWD405dJ
+ vZFrvkpRQJn52nqm1HCWegAVDORTTv9uTNejBUrnyr33GIzvhf9UVeNPDZE_
+ .tASxlaUS9ZCGYDSm9bloJc_Uexacoi2..QLFdKDekQA7dR0ey2N0_W3fff.
+ 69litPYKYlorKreKR9b_jZaaKpwJqcZPwk.dIOPFfXoqlbAasbKOqb1uoWuC
+ Tq8M6KMuy8px8.XHBLotUfwJdRVsSLopD9vrNoiG.pOqW5oszhnWQ9ET5uEa
+ 4VncMxQ--
+X-Mailer: YahooMailRC/559 YahooMailWebService/0.8.110.299900
+Date: Fri, 6 May 2011 13:49:04 +0530 (IST)
+From: Prashant Saxena <animator333@yahoo.com>
+Subject: physical vs virtual mac address and mac address from NIC's firmware
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC250A6.9040802@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 12:24:22AM -0700, Yinghai Lu wrote:
-> 
-> During pci remove/rescan testing found:
-> 
-> [  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-> [  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
-> [  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-> [  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-> [  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-> [  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
-> [  541.199202] pci 0000:c0:03.0: enabling bus mastering
-> [  541.199209] pci 0000:c0:03.0: setting latency timer to 64
-> [  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-> [  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
-> 
-> This bug was uncovered by commit
-> | commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
-> | Author: Ram Pai <linuxram@us.ibm.com>
-> | Date:   Mon Feb 14 17:43:20 2011 -0800
-> |
-> |    PCI: pre-allocate additional resources to devices only after successful allo
-> cation of essential resources.
-> 
-> After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size. So it will not get into failed list, and will not be reset there.
-> 
-> The root cause is: pci_bridge_check_ranges will set RESOURCE_IO flag for pci
-> bridge, and later if children does not need to IO resource. those bridge
-> resources will not need to be allocated. but flags still there.
-> 
-> Add pci_bridge_check_resources() to close the loop.
+Hi,
 
-How about resetting the resource in  adjust_resources_sorted() if  call to
-adjust_resource() fails, and the resource is left with zero size?
+I am a newbie on linux and writing a small tool to get info of ethernet adapters 
 
-Something like this:
-
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 8e73abf..77e8454 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -157,8 +157,11 @@ static void adjust_resources_sorted(struct resource_list_x *add_head,
-                         if(pci_assign_resource(list->dev, idx))
-                                reset_resource(res);
-                } else if (add_size) {
--                       adjust_resource(res, res->start,
--                               resource_size(res) + add_size);
-+                       if (adjust_resource(res, res->start,
-+                               resource_size(res) + add_size) && 
-+                               !resource_size(res)) {
-+                               reset_resource(res);
-+                       }
-                }
- out:
-                tmp = list;
+installed. Please find more details and discussions in this post:
+http://www.linuxforums.org/forum/programming-scripting/177222-physical-vs-virtual-mac-address-mac-address-nics-firmware.html#post842296
 
 
-RP
+
+As the tool plays an important role in licensing system thus I need to make sure 
+
+that solution should work
+ideally on as many distros as possible. Considering the major and most commonly 
+used distributions such as fedora, ubuntu, opensuse, debian etc. including their 
+
+latest versions and bit older ones (3-4 years), what are the cons I might face 
+using ethtool
+api to get perma address?
+
+BTW, you are kernel guys and I hoping that you might give me an answer for 
+differentiating between physical and virtual adapters.
+
+The details of my distribution including requirements of app is posted on the 
+above mentioned topic.
+
+Best Regards
+
+Prashant
