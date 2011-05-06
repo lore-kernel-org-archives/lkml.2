@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab1EFA0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:26:04 -0400
-Received: from kroah.org ([198.145.64.141]:37330 "EHLO coco.kroah.org"
+	id S932601Ab1EFAjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:39:08 -0400
+Received: from kroah.org ([198.145.64.141]:37334 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932494Ab1EFA0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:26:00 -0400
+	id S932455Ab1EFA0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:26:01 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:17 2011
-Message-Id: <20110506002217.782417797@clark.kroah.org>
+Message-Id: <20110506002217.868954009@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:52 -0700
+Date: Thu, 05 May 2011 17:21:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Romain Francoise <romain@orebokech.com>,
+        James Chapman <jchapman@katalix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [127/143] ipv6: Silence privacy extensions initialization
+Subject: [128/143] l2tp: Fix UDP socket reference count bugs in the pppol2tp driver
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Romain Francoise <romain@orebokech.com>
+From: James Chapman <jchapman@katalix.com>
 
-commit 2fdc1c8093255f9da877d7b9ce3f46c2098377dc upstream.
+commit c3259c8a7060d480e8eb2166da0a99d6879146b4 upstream.
 
-When a network namespace is created (via CLONE_NEWNET), the loopback
-interface is automatically added to the new namespace, triggering a
-printk in ipv6_add_dev() if CONFIG_IPV6_PRIVACY is set.
+This patch fixes UDP socket refcnt bugs in the pppol2tp driver.
 
-This is problematic for applications which use CLONE_NEWNET as
-part of a sandbox, like Chromium's suid sandbox or recent versions of
-vsftpd. On a busy machine, it can lead to thousands of useless
-"lo: Disabled Privacy Extensions" messages appearing in dmesg.
+A bug can cause a kernel stack trace when a tunnel socket is closed.
 
-It's easy enough to check the status of privacy extensions via the
-use_tempaddr sysctl, so just removing the printk seems like the most
-sensible solution.
+A way to reproduce the issue is to prepare the UDP socket for L2TP (by
+opening a tunnel pppol2tp socket) and then close it before any L2TP
+sessions are added to it. The sequence is
 
-Signed-off-by: Romain Francoise <romain@orebokech.com>
+Create UDP socket
+Create tunnel pppol2tp socket to prepare UDP socket for L2TP
+  pppol2tp_connect: session_id=0, peer_session_id=0
+L2TP SCCRP control frame received (tunnel_id==0)
+  pppol2tp_recv_core: sock_hold()
+  pppol2tp_recv_core: sock_put
+L2TP ZLB control frame received (tunnel_id=nnn)
+  pppol2tp_recv_core: sock_hold()
+  pppol2tp_recv_core: sock_put
+Close tunnel management socket
+  pppol2tp_release: session_id=0, peer_session_id=0
+Close UDP socket
+  udp_lib_close: BUG
+
+The addition of sock_hold() in pppol2tp_connect() solves the problem.
+
+For data frames, two sock_put() calls were added to plug a refcnt leak
+per received data frame. The ref that is grabbed at the top of
+pppol2tp_recv_core() must always be released, but this wasn't done for
+accepted data frames or data frames discarded because of bad UDP
+checksums. This leak meant that any UDP socket that had passed L2TP
+data traffic (i.e. L2TP data frames, not just L2TP control frames)
+using pppol2tp would not be released by the kernel.
+
+WARNING: at include/net/sock.h:435 udp_lib_unhash+0x117/0x120()
+Pid: 1086, comm: openl2tpd Not tainted 2.6.33-rc1 #8
+Call Trace:
+ [<c119e9b7>] ? udp_lib_unhash+0x117/0x120
+ [<c101b871>] ? warn_slowpath_common+0x71/0xd0
+ [<c119e9b7>] ? udp_lib_unhash+0x117/0x120
+ [<c101b8e3>] ? warn_slowpath_null+0x13/0x20
+ [<c119e9b7>] ? udp_lib_unhash+0x117/0x120
+ [<c11598a7>] ? sk_common_release+0x17/0x90
+ [<c11a5e33>] ? inet_release+0x33/0x60
+ [<c11577b0>] ? sock_release+0x10/0x60
+ [<c115780f>] ? sock_close+0xf/0x30
+ [<c106e542>] ? __fput+0x52/0x150
+ [<c106b68e>] ? filp_close+0x3e/0x70
+ [<c101d2e2>] ? put_files_struct+0x62/0xb0
+ [<c101eaf7>] ? do_exit+0x5e7/0x650
+ [<c1081623>] ? mntput_no_expire+0x13/0x70
+ [<c106b68e>] ? filp_close+0x3e/0x70
+ [<c101eb8a>] ? do_group_exit+0x2a/0x70
+ [<c101ebe1>] ? sys_exit_group+0x11/0x20
+ [<c10029b0>] ? sysenter_do_call+0x12/0x26
+
+Signed-off-by: James Chapman <jchapman@katalix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv6/addrconf.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/pppol2tp.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -407,9 +407,6 @@ static struct inet6_dev * ipv6_add_dev(s
- 	    dev->type == ARPHRD_TUNNEL6 ||
- 	    dev->type == ARPHRD_SIT ||
- 	    dev->type == ARPHRD_NONE) {
--		printk(KERN_INFO
--		       "%s: Disabled Privacy Extensions\n",
--		       dev->name);
- 		ndev->cnf.use_tempaddr = -1;
+--- a/drivers/net/pppol2tp.c
++++ b/drivers/net/pppol2tp.c
+@@ -756,6 +756,7 @@ static int pppol2tp_recv_core(struct soc
+ 
+ 	/* Try to dequeue as many skbs from reorder_q as we can. */
+ 	pppol2tp_recv_dequeue(session);
++	sock_put(sock);
+ 
+ 	return 0;
+ 
+@@ -772,6 +773,7 @@ discard_bad_csum:
+ 	UDP_INC_STATS_USER(&init_net, UDP_MIB_INERRORS, 0);
+ 	tunnel->stats.rx_errors++;
+ 	kfree_skb(skb);
++	sock_put(sock);
+ 
+ 	return 0;
+ 
+@@ -1658,6 +1660,7 @@ static int pppol2tp_connect(struct socke
+ 		if (tunnel_sock == NULL)
+ 			goto end;
+ 
++		sock_hold(tunnel_sock);
+ 		tunnel = tunnel_sock->sk_user_data;
  	} else {
- 		in6_dev_hold(ndev);
+ 		tunnel = pppol2tp_tunnel_find(sock_net(sk), sp->pppol2tp.s_tunnel);
 
 
