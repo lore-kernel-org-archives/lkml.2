@@ -1,65 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab1EFUSR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:18:17 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:35617 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab1EFUSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:18:16 -0400
-Subject: Re: [RFC] time: xtime_lock is held too long
-From: john stultz <johnstul@us.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1304703767.3066.211.camel@edumazet-laptop>
-References: <m2oc3jxgtt.fsf@firstfloor.org>
-	 <1304564090.2943.36.camel@work-vm>
-	 <1304574244.32152.666.camel@edumazet-laptop>
-	 <1304576495.2943.40.camel@work-vm>
-	 <1304604284.3032.78.camel@edumazet-laptop>
-	 <alpine.LFD.2.02.1105051630390.3005@ionos>
-	 <1304608095.3032.95.camel@edumazet-laptop>
-	 <alpine.LFD.2.02.1105051750540.3005@ionos>
-	 <20110505210118.GI2925@one.firstfloor.org>
-	 <alpine.LFD.2.02.1105061117220.3005@ionos>
-	 <20110506165913.GF11636@one.firstfloor.org>
-	 <1304703767.3066.211.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 May 2011 13:18:07 -0700
-Message-ID: <1304713087.20980.120.camel@work-vm>
+	id S1756585Ab1EFUU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:20:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54647 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab1EFUUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 16:20:55 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QyXUC8HyAAAA:8 a=KprvwOr0OoX29dIBteQA:9 a=Ldm_36VrNXLqVPPiywEA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4DC45537.6070609@linux.intel.com>
+References: <4DC45537.6070609@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 06 May 2011 16:20:52 -0400
+Message-ID: <1304713252.25414.2532.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 19:42 +0200, Eric Dumazet wrote:
-> Le vendredi 06 mai 2011 à 18:59 +0200, Andi Kleen a écrit :
+On Fri, 2011-05-06 at 13:08 -0700, Arjan van de Ven wrote:
+> From c2db3ab8cff0d1cfb9582fc149df2794978a332e Mon Sep 17 00:00:00 2001
+> From: Arjan van de Ven <arjan@linux.intel.com>
+> Date: Thu, 5 May 2011 23:55:18 -0400
+> Subject: [PATCH] Regression: partial revert "tracing: Remove lock_depth 
+> from event entry"
 > 
-> > If you have a better way to make it faster please share it.
+> This patch partially reverts commit 
+> e6e1e2593592a8f6f6380496655d8c6f67431266.
+> That commit changed the structure layout of the trace structure, which in
+> turn broke PowerTOP (1.9x generation) quite badly.
 > 
-> Ideally we could use RCU :)
+> I appreciate not wanting to expose the variable in question, and 
+> PowerTOP was
+> not using it, so I've replaced the variable with just a padding field....
+> ... that way if in the future a new field is needed it can just use this 
+> padding
+> variable.
 > 
-> Have whatever state hold in one structure (possibly big, it doesnt
-> matter) and switch pointer in writer once everything is setup in new
-> structure.
 
-Yea. RCU is tough though, because we do need the hardware cycle value
-that we use to be valid for the current interval stored in the
-timekeeper structure (ie: the cycle value can't be before the current
-cycle_last, and it can't be greater then the next cycle_last).
+I strongly NACK this!
 
-The reason being, that should a frequency correction occur, you might
-end up applying the old frequency to a longer interval then desired,
-which could cause small timekeeping inconsistencies.
+We can not be locked down in the format of the trace events.
 
-So we really do need a way to ensure that gettimeofday calls fall on one
-side or the other of the accumulation loop. We may be able to tighten
-that window some, but I don't know if RCU will work.
+THAT'S WHY I EXPORTED THE FORMATS IN THE FIRST PLACE
 
-thanks
--john
+User tools that do not parse the formats, are broken. Look at this
+patch. It adds nothing but padding, wasted space in the ring buffer.
+Why??? Because a tool read raw binary data without using the correct
+means to extract it. I already have a user space library that does the
+work for you. Perf currently uses it (although, an older version of it,
+and it is hardcoded into perf).
+
+Sure, perhaps event names should not be modfied, nor should some fields
+without true reason. But come on, lockdepth?  This was added by Frederic
+to help with the BKL removal. I think he only used it for a very short
+time. It probably should have never been there in the first place. But I
+do not want to waste 4 bytes of the ring buffer for every event because
+of a broken tool.
+
+Note, coming soon, we will probably be removing preempt count, flags,
+and even the pid. What then? Is this broken tool going to prevent us
+from moving forward?
+
+I could understand this if we did not give you the means to parse the
+data. But we did. It's been there as long as the trace events
+themselves.
+
+The format of the event format files are the ABI, not the raw data of
+the events themselves.
+
+-- Steve
+
+> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+> ---
+>   include/linux/ftrace_event.h |    1 +
+>   kernel/trace/trace.c         |    1 +
+>   kernel/trace/trace_events.c  |    1 +
+>   3 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index 22b32af1..b5a550a 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -37,6 +37,7 @@ struct trace_entry {
+>       unsigned char        flags;
+>       unsigned char        preempt_count;
+>       int            pid;
+> +    int            padding;
+>   };
+> 
+>   #define FTRACE_MAX_EVENT                        \
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index d38c16a..1cb49be 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1110,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry 
+> *entry, unsigned long flags,
+> 
+>       entry->preempt_count        = pc & 0xff;
+>       entry->pid            = (tsk) ? tsk->pid : 0;
+> +    entry->padding            = 0;
+>       entry->flags =
+>   #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
+>           (irqs_disabled_flags(flags) ? TRACE_FLAG_IRQS_OFF : 0) |
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index e88f74f..2fe1103 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -116,6 +116,7 @@ static int trace_define_common_fields(void)
+>       __common_field(unsigned char, flags);
+>       __common_field(unsigned char, preempt_count);
+>       __common_field(int, pid);
+> +    __common_field(int, padding);
+> 
+>       return ret;
+>   }
+
 
