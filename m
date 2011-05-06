@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab1EFArI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:47:08 -0400
-Received: from kroah.org ([198.145.64.141]:37036 "EHLO coco.kroah.org"
+	id S932733Ab1EFAqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:46:49 -0400
+Received: from kroah.org ([198.145.64.141]:37042 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932329Ab1EFAZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:27 -0400
+	id S932332Ab1EFAZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:14 2011
-Message-Id: <20110506002214.124823285@clark.kroah.org>
+Message-Id: <20110506002214.223881896@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:16 -0700
+Date: Thu, 05 May 2011 17:21:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Roskin <proski@gnu.org>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [091/143] rt2x00: use correct headroom for transmission
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: [092/143] Bluetooth: Add support Bluetooth controller of MacbookPro 6,2
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,51 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Roskin <proski@gnu.org>
+From: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
 
-commit b59a52f12e483b79e7d32da7ec30dcf3b2e0210b upstream.
+commit 9c047157a20521cd525527947b13b950d168d2e6 upstream.
 
-Use rt2x00dev->ops->extra_tx_headroom, not rt2x00dev->hw->extra_tx_headroom
-in the tx code, as the later may include other headroom not to be used in
-the chipset driver.
+Bluetooth controller of MacbookPro 6,2 does not work.
+Because Device Class of these controllers was set 255 (Vendor Sepecific Class).
 
-Signed-off-by: Pavel Roskin <proski@gnu.org>
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+T:  Bus=01 Lev=03 Prnt=03 Port=02 Cnt=03 Dev#=  8 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=05ac ProdID=8218 Rev=00.22
+S:  Manufacturer=Apple Inc.
+S:  Product=Bluetooth USB Host Controller
+C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+
+Signed-off-by: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/bluetooth/btusb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -103,7 +103,7 @@ void rt2x00queue_map_txskb(struct rt2x00
- 	 * is also mapped to the DMA so it can be used for transfering
- 	 * additional descriptor information to the hardware.
- 	 */
--	skb_push(skb, rt2x00dev->hw->extra_tx_headroom);
-+	skb_push(skb, rt2x00dev->ops->extra_tx_headroom);
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -62,6 +62,9 @@ static struct usb_device_id btusb_table[
+ 	/* Apple iMac11,1 */
+ 	{ USB_DEVICE(0x05ac, 0x8215) },
  
- 	skbdesc->skb_dma =
- 	    dma_map_single(rt2x00dev->dev, skb->data, skb->len, DMA_TO_DEVICE);
-@@ -111,7 +111,7 @@ void rt2x00queue_map_txskb(struct rt2x00
- 	/*
- 	 * Restore data pointer to original location again.
- 	 */
--	skb_pull(skb, rt2x00dev->hw->extra_tx_headroom);
-+	skb_pull(skb, rt2x00dev->ops->extra_tx_headroom);
++	/* Apple MacBookPro6,2 */
++	{ USB_DEVICE(0x05ac, 0x8218) },
++
+ 	/* Apple MacBookPro8,2 */
+ 	{ USB_DEVICE(0x05ac, 0x821a) },
  
- 	skbdesc->flags |= SKBDESC_DMA_MAPPED_TX;
- }
-@@ -133,7 +133,7 @@ void rt2x00queue_unmap_skb(struct rt2x00
- 		 * by the driver, but it was actually mapped to DMA.
- 		 */
- 		dma_unmap_single(rt2x00dev->dev, skbdesc->skb_dma,
--				 skb->len + rt2x00dev->hw->extra_tx_headroom,
-+				 skb->len + rt2x00dev->ops->extra_tx_headroom,
- 				 DMA_TO_DEVICE);
- 		skbdesc->flags &= ~SKBDESC_DMA_MAPPED_TX;
- 	}
 
 
