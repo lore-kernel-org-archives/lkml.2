@@ -1,114 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab1EFLmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 07:42:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40783 "EHLO mx2.suse.de"
+	id S1752850Ab1EFLr1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 07:47:27 -0400
+Received: from csamuel.org ([74.50.50.137]:38164 "EHLO csamuel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756391Ab1EFLmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 07:42:49 -0400
-Date: Fri, 6 May 2011 12:42:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
-        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-Message-ID: <20110506114245.GE6591@suse.de>
-References: <20110428171826.GZ4658@suse.de>
- <1304015436.2598.19.camel@mulgrave.site>
- <20110428192104.GA4658@suse.de>
- <1304020767.2598.21.camel@mulgrave.site>
- <1304025145.2598.24.camel@mulgrave.site>
- <1304030629.2598.42.camel@mulgrave.site>
- <20110503091320.GA4542@novell.com>
- <1304431982.2576.5.camel@mulgrave.site>
- <1304432553.2576.10.camel@mulgrave.site>
- <20110506074224.GB6591@suse.de>
+	id S1751062Ab1EFLr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 07:47:26 -0400
+From: Chris Samuel <chris@csamuel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [tip:x86/urgent] x86, setup: When probing memory with e801, use ax/bx as a pair
+Date: Fri, 6 May 2011 21:47:03 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+References: <1303566747.12067.10.camel@localhost.localdomain> <201105052157.06317.chris@csamuel.org> <20110505121059.GA31473@elte.hu>
+In-Reply-To: <20110505121059.GA31473@elte.hu>
+X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@
+ =?iso-8859-1?q?=5ESdaXtmdYGRq=0A=09=5B?=>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<
+ =?iso-8859-1?q?=7Bn8m=3BX=5F=0A=09g=5CY9LQ=3Dv/b5=60?=)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)
+ =?iso-8859-1?q?F!1M3=3Dw=3Ai9MsWp=26v=3B=25usOXL=3Bw=0A=096kF=3FwAZjss=2E?=
+ =?iso-8859-1?q?+y?=(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110506074224.GB6591@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart3350936.vY14niAmun";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105062147.09398.chris@csamuel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 08:42:24AM +0100, Mel Gorman wrote:
-> On Tue, May 03, 2011 at 09:22:33AM -0500, James Bottomley wrote:
-> > On Tue, 2011-05-03 at 09:13 -0500, James Bottomley wrote:
-> > > I've got a ftrace output of kswapd ... it's 500k compressed, so I'll
-> > > send under separate cover.
-> > 
-> > Here it is ... it's under 2.6.38.4 vanilla, but the code is similar. 
-> > 
-> 
-> I was quiet because I was off trying to reproduce this but not having
-> much luck. It doesn't seem directly related to filesystems or
-> cgroups. For example, here is what I see with ext4 without cgroups
-> 
->                 2.6.34-vanilla    2.6.37-vanilla    2.6.38-vanilla       rc6-vanilla
-> download tar           70 ( 0.00%)   68 ( 2.94%)   69 ( 1.45%)   70 ( 0.00%)
-> unpack tar            601 ( 0.00%)  605 (-0.66%)  604 (-0.50%)  605 (-0.66%)
-> copy source files     319 ( 0.00%)  321 (-0.62%)  320 (-0.31%)  332 (-3.92%)
-> create tarfile       1368 ( 0.00%) 1372 (-0.29%) 1371 (-0.22%) 1363 ( 0.37%)
-> delete source dirs     21 ( 0.00%)   21 ( 0.00%)   23 (-8.70%)   22 (-4.55%)
-> expand tar            263 ( 0.00%)  261 ( 0.77%)  257 ( 2.33%)  259 ( 1.54%)
-> 
-> (all results are in seconds)
-> 
-> When running in cgroups, the results are similar - bit slower but
-> not remarkably so. ext3 is slower but not enough to count as the bug.
-> 
-> The trace you posted is very short but kswapd is not going to sleep
-> in it. It's less than a seconds worth on different cpus so it's hard
-> to draw any conclusion from it other than sleeping_prematurely()
-> is often deciding that kswapd should not sleep.
-> 
-> So lets consider what keeps it awake.
-> 
-> 1. High-order allocations? You machine is using i915 and RPC, something
->    neither of my test machine uses. i915 is potentially a source for
->    high-order allocations. I'm attaching a perl script. Please run it as
->    ./watch-highorder.pl --output /tmp/highorders.txt
->    while you are running tar. When kswapd is running for about 30
->    seconds, interrupt it with ctrl+c twice in quick succession and
->    post /tmp/highorders.txt
-> 
-> 2. All unreclaimable is not being set or we are not balancing at all.
->    Can you post the output of sysrq+m while the machine is struggling
->    please?
-> 
-> 3. Slab may not be shrinking for some reason. Can you run a shell
->    script like this during the whole test and record its output please?
-> 
->    #!/bin/bash
->    while [ 1 ]; do
-> 	   echo time: `date +%s`
-> 	   cat /proc/vmstat
-> 	   sleep 2
->    done
-> 
->    Similarly if this is a slab issue, it'd be nice to know who it is so
-> 
->    #!/bin/bash
->    while [ 1 ]; do
-> 	   echo time: `date +%s`
-> 	   cat /proc/slabinfo
-> 	   sleep $MONITOR_UPDATE_FREQUENCY
->    done
-> 
-> 4. Lets get a better look at what is going on in kswapd
-> 
->    echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
->    cat /sys/kernel/debug/tracing/trace_pipe > vmscan-ftrace.txt
-> 
+--nextPart3350936.vY14niAmun
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Also, could you test the patch at https://lkml.org/lkml/2011/3/5/121
-please?
+On Thu, 5 May 2011 10:10:59 PM Ingo Molnar wrote:
 
--- 
-Mel Gorman
-SUSE Labs
+> Thanks for the update!
+
+My pleasure.
+
+> Note that the noapic and the scsi-sync-scan boot parameter suggests
+> that  there's two regressions remaining.
+
+Understood, I would guess that the SCSI one would map to the
+introduction of the async scsi scanning patch in 2.6.19-rc2
+and its enablement in later Ubuntu kernels.
+
+No idea on the APIC one but I'm happy to try and bisect both
+cases if you'd like me to try ?
+
+> The stock kernel wont boot - you can work it around via boot
+> options but most  users wont be able to do that.
+
+Indeed - though at the moment you can't even install a current
+Debian release as the boot loader on the install CD locks the
+box up. :-(
+
+cheers,
+Chris
+=2D-=20
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+
+This email may come with a PGP signature as a file. Do not panic.
+=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
+
+--nextPart3350936.vY14niAmun
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUATcPfuI1yjaOTJg85AQLb8wgAm0WLUL365Qkhw0bkpOb6qVFbADRdz2iJ
+YxZtpxM/VKC9IBi4k/JAWDDcmUwhlkFHizdCwRPJfbgdd9hZuGA4NJ8z2Efc/HKP
+jQeleimN9qdb8p8eh1lH4LPObIOFVrW4V9OyDLTMFsn4g9eh4Np9+V3lXM9G8Q30
+eqPzoXJSt/s6thbkhtVIWuRuB10tfRcQwulOl2KvYiuKOehN9mnPW8sQopuQLnq4
+TbTcyb8S5miANwCD9BjSMGjPd+9AYLJZiPzGGGhWP4D7wEQKH90bCfjY3DcFqSL4
+NSBhKg8SXlQCkIq/LWpndDuM6AP/JwbKKPhPpx3FSx2JQQpKv7fo3w==
+=hIhb
+-----END PGP SIGNATURE-----
+
+--nextPart3350936.vY14niAmun--
