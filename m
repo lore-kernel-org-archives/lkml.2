@@ -1,167 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab1EFUIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:08:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20915 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab1EFUIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:08:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,327,1301900400"; 
-   d="scan'208,223";a="639142582"
-Message-ID: <4DC45537.6070609@linux.intel.com>
-Date: Fri, 06 May 2011 13:08:23 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1756552Ab1EFUJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:09:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:57051 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab1EFUJp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 16:09:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=aIQio/ooBluwXfSue/KoExSi95RokCXvMGeF9t266yHpV9XJfGdHNF5lxvosOVTpNd
+         zjgz5BIZ4pMj8gFh/xIA==
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Fix powerTOP regression with 2.6.39-rc5
-Content-Type: multipart/mixed;
- boundary="------------010505050104000802010308"
+In-Reply-To: <20110506200456.GA18229@emperor.us.dell.com>
+References: <20110506125702.2585228b.randy.dunlap@oracle.com> <20110506200456.GA18229@emperor.us.dell.com>
+From: Mike Waychison <mikew@google.com>
+Date: Fri, 6 May 2011 15:09:22 -0500
+Message-ID: <BANLkTinC10VapWniyuEE3RLgVRC6fm1EcQ@mail.gmail.com>
+Subject: Re: [PATCH] efivars: prevent oops on unload when efi is not enabled
+To: Matt Domsch <Matt_Domsch@dell.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+        "matthew.e.tolentino@intel.com" <matthew.e.tolentino@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010505050104000802010308
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, May 6, 2011 at 3:04 PM, Matt Domsch <Matt_Domsch@dell.com> wrote:
+> On Fri, May 06, 2011 at 02:57:02PM -0500, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> unregister_efivars() should check for efi_enabled and not undo
+>> allocations when efi is not enabled.  Otherwise there is an Oops
+>> during module unload:
+>
+> Thanks Randy.
+>
+> I'm not sure why the driver is still loaded at all if efi_enabled==0.
+>
+> static int __init
+> efivars_init(void)
+> {
+> ...
+>        if (!efi_enabled)
+>                return 0;
+>
+>
+>
+> That return 0 should be return -ENODEV I think.  Mike?
 
- From c2db3ab8cff0d1cfb9582fc149df2794978a332e Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Thu, 5 May 2011 23:55:18 -0400
-Subject: [PATCH] Regression: partial revert "tracing: Remove lock_depth 
-from event entry"
+Ya, I changed efivars so that others could still use the
+register_efivars/unregister_efivars interfaces when !efi_enabled.
+They are used by the drivers/firmware/google/gsmi.c driver currently
+pending in linux-next.
 
-This patch partially reverts commit 
-e6e1e2593592a8f6f6380496655d8c6f67431266.
-That commit changed the structure layout of the trace structure, which in
-turn broke PowerTOP (1.9x generation) quite badly.
+I think the right approach in this case would be to do
 
-I appreciate not wanting to expose the variable in question, and 
-PowerTOP was
-not using it, so I've replaced the variable with just a padding field....
-... that way if in the future a new field is needed it can just use this 
-padding
-variable.
+        if (efi_enabled) {
+               unregister_efivars(&__efivars);
+               kobject_put(efi_kobj);
+        }
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
----
-  include/linux/ftrace_event.h |    1 +
-  kernel/trace/trace.c         |    1 +
-  kernel/trace/trace_events.c  |    1 +
-  3 files changed, 3 insertions(+), 0 deletions(-)
+in efivars_exit().
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 22b32af1..b5a550a 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -37,6 +37,7 @@ struct trace_entry {
-      unsigned char        flags;
-      unsigned char        preempt_count;
-      int            pid;
-+    int            padding;
-  };
-
-  #define FTRACE_MAX_EVENT                        \
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d38c16a..1cb49be 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1110,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry 
-*entry, unsigned long flags,
-
-      entry->preempt_count        = pc & 0xff;
-      entry->pid            = (tsk) ? tsk->pid : 0;
-+    entry->padding            = 0;
-      entry->flags =
-  #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
-          (irqs_disabled_flags(flags) ? TRACE_FLAG_IRQS_OFF : 0) |
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e88f74f..2fe1103 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -116,6 +116,7 @@ static int trace_define_common_fields(void)
-      __common_field(unsigned char, flags);
-      __common_field(unsigned char, preempt_count);
-      __common_field(int, pid);
-+    __common_field(int, padding);
-
-      return ret;
-  }
--- 
-1.7.2.2
-
-
---------------010505050104000802010308
-Content-Type: text/plain;
- name="0001-Regression-partial-revert-tracing-Remove-lock_depth.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-Regression-partial-revert-tracing-Remove-lock_depth.pat";
- filename*1="ch"
-
->From c2db3ab8cff0d1cfb9582fc149df2794978a332e Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Thu, 5 May 2011 23:55:18 -0400
-Subject: [PATCH] Regression: partial revert "tracing: Remove lock_depth from event entry"
-
-This patch partially reverts commit e6e1e2593592a8f6f6380496655d8c6f67431266.
-That commit changed the structure layout of the trace structure, which in
-turn broke PowerTOP (1.9x generation) quite badly.
-
-I appreciate not wanting to expose the variable in question, and PowerTOP was
-not using it, so I've replaced the variable with just a padding byte....
-... that way if in the future a new field is needed it can just use this padding
-byte.
-
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
----
- include/linux/ftrace_event.h |    1 +
- kernel/trace/trace.c         |    1 +
- kernel/trace/trace_events.c  |    1 +
- 3 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 22b32af1..b5a550a 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -37,6 +37,7 @@ struct trace_entry {
- 	unsigned char		flags;
- 	unsigned char		preempt_count;
- 	int			pid;
-+	int			padding;
- };
- 
- #define FTRACE_MAX_EVENT						\
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d38c16a..1cb49be 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1110,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry *entry, unsigned long flags,
- 
- 	entry->preempt_count		= pc & 0xff;
- 	entry->pid			= (tsk) ? tsk->pid : 0;
-+	entry->padding			= 0;
- 	entry->flags =
- #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
- 		(irqs_disabled_flags(flags) ? TRACE_FLAG_IRQS_OFF : 0) |
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e88f74f..2fe1103 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -116,6 +116,7 @@ static int trace_define_common_fields(void)
- 	__common_field(unsigned char, flags);
- 	__common_field(unsigned char, preempt_count);
- 	__common_field(int, pid);
-+	__common_field(int, padding);
- 
- 	return ret;
- }
--- 
-1.7.2.2
-
-
---------------010505050104000802010308--
+>
+> Thanks,
+> Matt
+>
+> --
+> Matt Domsch
+> Technology Strategist
+> Dell | Office of the CTO
+>
