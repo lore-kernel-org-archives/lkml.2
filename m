@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab1EFMMb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 08:12:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40590 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab1EFMMa (ORCPT
+	id S1753636Ab1EFMOA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:14:00 -0400
+Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:50405 "EHLO
+	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751324Ab1EFMN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 08:12:30 -0400
-Message-ID: <4DC3E5AB.9090905@petalogix.com>
-Date: Fri, 06 May 2011 14:12:27 +0200
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: John Linn <john.linn@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        joe@perches.com, grant.likely@secretlab.ca
-Subject: Re: [PATCH V6] tty/serial: add support for Xilinx PS UART
-References: <64601bfb-0904-4741-8fc8-075a262c988c@VA3EHSMHS024.ehs.local> <20110430002602.GA1818@kroah.com>
-In-Reply-To: <20110430002602.GA1818@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 6 May 2011 08:13:59 -0400
+Subject: Re: [PATCH] RCU: remove alignment padding from rcu_data on 64 bit
+ builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+In-Reply-To: <1304662845.3131.23.camel@edumazet-laptop>
+References: <1304610604.1984.6.camel@castor.rsk>
+	 <1304662845.3131.23.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 13:13:56 +0100
+Message-ID: <1304684036.1998.10.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Fri, Apr 29, 2011 at 06:13:07PM -0600, John Linn wrote:
->> The Xilinx PS Uart is used on the new ARM based SoC. This
->> UART is not compatible with others such that a seperate
->> driver is required.
->>
->> Signed-off-by: John Linn <john.linn@xilinx.com>
->> ---
->>
->> V6 
->>
->> Removed legal footer issues. My apologies Greg.
+On Fri, 2011-05-06 at 08:20 +0200, Eric Dumazet wrote:
+...
+> We could shrink this structure more, converting some 64bit fields to
+> 32bit ones.
 > 
-> Nope, it's still there:
+> Rationale is the algo is working well on 32bit arches, no need to use
+> 64bit fields.
 > 
->> This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
->>
+> candidates : completed, gpnum, passed_quiesc_completed, qlen,
+> qlen_last_fqs_check, blimit.
 > 
-> {double sigh}
-> 
+> Counters might be converted too.
 
-Look at my email for V4 about NO_IRQ which I think should be also fixed.
+I don't know the code well enough to make that decision ;)
+Is it possible to shrink it enough to free up another cache line ?
+(16 longs to ints).
 
-Michal
+CONFIG_NO_HZ adds 24 bytes so even for users with !CONFIG_NO_HZ the
+variables you suggest are not enough to free a cache line.  
+
+regards
+Richard
 
 
-
--- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
