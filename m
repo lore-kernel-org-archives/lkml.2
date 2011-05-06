@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab1EFAjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:39:08 -0400
-Received: from kroah.org ([198.145.64.141]:37334 "EHLO coco.kroah.org"
+	id S932530Ab1EFAjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:39:05 -0400
+Received: from kroah.org ([198.145.64.141]:37339 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab1EFA0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:26:01 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:17 2011
-Message-Id: <20110506002217.868954009@clark.kroah.org>
+	id S932498Ab1EFA0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:26:02 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:18 2011
+Message-Id: <20110506002217.957734951@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:53 -0700
+Date: Thu, 05 May 2011 17:21:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Chapman <jchapman@katalix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [128/143] l2tp: Fix UDP socket reference count bugs in the pppol2tp driver
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [129/143] MIPS: DMA: Fix computation of DMA flags from devices coherent_dma_mask.
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,96 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Chapman <jchapman@katalix.com>
+From: Ralf Baechle <ralf@linux-mips.org>
 
-commit c3259c8a7060d480e8eb2166da0a99d6879146b4 upstream.
+commit 3b9c6c11f519718d618f5d7c9508daf78b207f6f upstream.
 
-This patch fixes UDP socket refcnt bugs in the pppol2tp driver.
+This only matters for ISA devices with a 24-bit DMA limit or for devices
+with a 32-bit DMA limit on systems with ZONE_DMA32 enabled.  The latter
+currently only affects 32-bit PCI cards on Sibyte-based systems with more
+than 1GB RAM installed.
 
-A bug can cause a kernel stack trace when a tunnel socket is closed.
-
-A way to reproduce the issue is to prepare the UDP socket for L2TP (by
-opening a tunnel pppol2tp socket) and then close it before any L2TP
-sessions are added to it. The sequence is
-
-Create UDP socket
-Create tunnel pppol2tp socket to prepare UDP socket for L2TP
-  pppol2tp_connect: session_id=0, peer_session_id=0
-L2TP SCCRP control frame received (tunnel_id==0)
-  pppol2tp_recv_core: sock_hold()
-  pppol2tp_recv_core: sock_put
-L2TP ZLB control frame received (tunnel_id=nnn)
-  pppol2tp_recv_core: sock_hold()
-  pppol2tp_recv_core: sock_put
-Close tunnel management socket
-  pppol2tp_release: session_id=0, peer_session_id=0
-Close UDP socket
-  udp_lib_close: BUG
-
-The addition of sock_hold() in pppol2tp_connect() solves the problem.
-
-For data frames, two sock_put() calls were added to plug a refcnt leak
-per received data frame. The ref that is grabbed at the top of
-pppol2tp_recv_core() must always be released, but this wasn't done for
-accepted data frames or data frames discarded because of bad UDP
-checksums. This leak meant that any UDP socket that had passed L2TP
-data traffic (i.e. L2TP data frames, not just L2TP control frames)
-using pppol2tp would not be released by the kernel.
-
-WARNING: at include/net/sock.h:435 udp_lib_unhash+0x117/0x120()
-Pid: 1086, comm: openl2tpd Not tainted 2.6.33-rc1 #8
-Call Trace:
- [<c119e9b7>] ? udp_lib_unhash+0x117/0x120
- [<c101b871>] ? warn_slowpath_common+0x71/0xd0
- [<c119e9b7>] ? udp_lib_unhash+0x117/0x120
- [<c101b8e3>] ? warn_slowpath_null+0x13/0x20
- [<c119e9b7>] ? udp_lib_unhash+0x117/0x120
- [<c11598a7>] ? sk_common_release+0x17/0x90
- [<c11a5e33>] ? inet_release+0x33/0x60
- [<c11577b0>] ? sock_release+0x10/0x60
- [<c115780f>] ? sock_close+0xf/0x30
- [<c106e542>] ? __fput+0x52/0x150
- [<c106b68e>] ? filp_close+0x3e/0x70
- [<c101d2e2>] ? put_files_struct+0x62/0xb0
- [<c101eaf7>] ? do_exit+0x5e7/0x650
- [<c1081623>] ? mntput_no_expire+0x13/0x70
- [<c106b68e>] ? filp_close+0x3e/0x70
- [<c101eb8a>] ? do_group_exit+0x2a/0x70
- [<c101ebe1>] ? sys_exit_group+0x11/0x20
- [<c10029b0>] ? sysenter_do_call+0x12/0x26
-
-Signed-off-by: James Chapman <jchapman@katalix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/pppol2tp.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/mips/mm/dma-default.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
---- a/drivers/net/pppol2tp.c
-+++ b/drivers/net/pppol2tp.c
-@@ -756,6 +756,7 @@ static int pppol2tp_recv_core(struct soc
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -43,27 +43,39 @@ static inline int cpu_is_noncoherent_r10
  
- 	/* Try to dequeue as many skbs from reorder_q as we can. */
- 	pppol2tp_recv_dequeue(session);
-+	sock_put(sock);
+ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+ {
++	gfp_t dma_flag;
++
+ 	/* ignore region specifiers */
+ 	gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
  
- 	return 0;
+-#ifdef CONFIG_ZONE_DMA
++#ifdef CONFIG_ISA
+ 	if (dev == NULL)
+-		gfp |= __GFP_DMA;
+-	else if (dev->coherent_dma_mask < DMA_BIT_MASK(24))
+-		gfp |= __GFP_DMA;
++		dma_flag = __GFP_DMA;
+ 	else
+ #endif
+-#ifdef CONFIG_ZONE_DMA32
++#if defined(CONFIG_ZONE_DMA32) && defined(CONFIG_ZONE_DMA)
+ 	     if (dev->coherent_dma_mask < DMA_BIT_MASK(32))
+-		gfp |= __GFP_DMA32;
++			dma_flag = __GFP_DMA;
++	else if (dev->coherent_dma_mask < DMA_BIT_MASK(64))
++			dma_flag = __GFP_DMA32;
++	else
++#endif
++#if defined(CONFIG_ZONE_DMA32) && !defined(CONFIG_ZONE_DMA)
++	     if (dev->coherent_dma_mask < DMA_BIT_MASK(64))
++		dma_flag = __GFP_DMA32;
++	else
++#endif
++#if defined(CONFIG_ZONE_DMA) && !defined(CONFIG_ZONE_DMA32)
++	     if (dev->coherent_dma_mask < DMA_BIT_MASK(64))
++		dma_flag = __GFP_DMA;
+ 	else
+ #endif
+-		;
++		dma_flag = 0;
  
-@@ -772,6 +773,7 @@ discard_bad_csum:
- 	UDP_INC_STATS_USER(&init_net, UDP_MIB_INERRORS, 0);
- 	tunnel->stats.rx_errors++;
- 	kfree_skb(skb);
-+	sock_put(sock);
+ 	/* Don't invoke OOM killer */
+ 	gfp |= __GFP_NORETRY;
  
- 	return 0;
+-	return gfp;
++	return gfp | dma_flag;
+ }
  
-@@ -1658,6 +1660,7 @@ static int pppol2tp_connect(struct socke
- 		if (tunnel_sock == NULL)
- 			goto end;
- 
-+		sock_hold(tunnel_sock);
- 		tunnel = tunnel_sock->sk_user_data;
- 	} else {
- 		tunnel = pppol2tp_tunnel_find(sock_net(sk), sp->pppol2tp.s_tunnel);
+ void *dma_alloc_noncoherent(struct device *dev, size_t size,
 
 
