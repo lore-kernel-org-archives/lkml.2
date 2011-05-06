@@ -1,152 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab1EFEQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 00:16:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4854 "EHLO mga14.intel.com"
+	id S1751731Ab1EFEcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 00:32:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10713 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab1EFEQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 00:16:52 -0400
+	id S1751034Ab1EFEcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 00:32:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,324,1301900400"; 
-   d="scan'208";a="431505216"
-Date: Fri, 6 May 2011 12:16:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 16/17] writeback: trace event writeback_single_inode (v2)
-Message-ID: <20110506041638.GA21713@localhost>
-References: <20110506030821.523093711@intel.com>
- <20110506031613.807611954@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506031613.807611954@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="918725246"
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
+ non-queueable flush drive
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
+In-Reply-To: <20110505083853.GC30950@htj.dyndns.org>
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
+	 <20110505020417.817084678@sli10-conroe.sh.intel.com>
+	 <20110505083853.GC30950@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 12:32:05 +0800
+Message-ID: <1304656325.3828.22.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[changes:
-- move trace point into writeback_single_inode() to cover the other 2 callers;
-- change format to show the original rather than remained wbc->nr_to_write
-]
+On Thu, 2011-05-05 at 16:38 +0800, Tejun Heo wrote:
+> (cc'ing James, Ric, Christoph and lscsi.  Hi! Please jump to the
+> bottom of the message.)
+> 
+> Hello,
+> 
+> On Thu, May 05, 2011 at 09:59:34AM +0800, shaohua.li@intel.com wrote:
+> > In some drives, flush requests are non-queueable. When flush request is running,
+> > normal read/write requests can't run. If block layer dispatches such request,
+> > driver can't handle it and requeue it.
+> > Tejun suggested we can hold the queue when flush is running. This can avoid
+> > unnecessary requeue.
+> > Also this can improve performance. For example, we have request flush1, write1,
+> > flush 2. flush1 is dispatched, then queue is hold, write1 isn't inserted to
+> > queue. After flush1 is finished, flush2 will be dispatched. Since disk cache
+> > is already clean, flush2 will be finished very soon, so looks like flush2 is
+> > folded to flush1.
+> > In my test, the queue holding completely solves a regression introduced by
+> > commit 53d63e6b0dfb95882ec0219ba6bbd50cde423794:
+> >     block: make the flush insertion use the tail of the dispatch list
+> > 
+> >     It's not a preempt type request, in fact we have to insert it
+> >     behind requests that do specify INSERT_FRONT.
+> > which causes about 20% regression running a sysbench fileio
+> > workload.
+> > 
+> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+Thanks. I updated changelogs.
 
-It is valuable to know how the dirty inodes are iterated and their IO size.
+> And two more things that I think are worth investigating.
+> 
+> - I wonder whether this would be useful for even devices which can
+>   queue flushes (ie. native SCSI ones).  There definitely are some
+>   benefits to queueing flushes in terms of hiding command dispatching
+>   overhead and if the device is smart/deep enough parallelly
+>   processing non-conflicting operations (ie. reads and flushing later
+>   writes together if the head sweeps that way).
+> 
+>   That said, flushes are mostly mutually exclusive w.r.t. writes and
+>   even with queueable flushes, we might benefit more by holding
+>   further writes until flush finishes.  Under light sync workload,
+>   this doesn't matter anyway.  Under heavy, the benefit of queueing
+>   the later writes together can be easily outweighted by some of
+>   flushes becoming noops.
+> 
+>   Unfortunately (or rather, fortunately), I don't have any access to
+>   such fancy devices so it would be great if the upscale storage guys
+>   can tinker with it a bit and see how it fares.  If it goes well, we
+>   can also make things more advanced by implementing back-to-back
+>   noop'ing in block layer and allowing issue of reads parallelly with
+>   flushes, if the benefits they bring justify the added complexity.
+> 
+> - This is much more minor but if block layer already knows flushes are
+>   non-queueable, it might be a good idea to hold dispatching of
+>   flushes if other requests are already in progress.  It will only
+>   save dispatch/requeue overhead which might not matter at all, so
+>   this has pretty good chance of not being worth of the added
+>   complexity tho.
+I did some experiment to hold flush too, but no obvious performance
+difference. It doesn't make more flush requests merge. Avoiding
+unnecessary requeue is a gain for fast devices, but my test doesn't
+show.
 
-"writeback_single_inode: bdi 8:0: ino=134246746 state=I_DIRTY_SYNC|I_SYNC age=414 index=0 wrote=0 to_write=1024"
 
-- "state" reflects inode->i_state at the end of writeback_single_inode()
-- "index" reflects mapping->writeback_index after the ->writepages() call
-- "to_write" is the wbc->nr_to_write at entrance of writeback_single_inode()
-- "wrote" is the number of pages actually written
+Subject: block: hold queue if flush is running for non-queueable flush drive
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Commit 53d63e6b0dfb9(block: make the flush insertion use the tail of
+the dispatch list) causes about 20% regression running a sysbench fileio
+workload. Let's consider the following scenario:
+- flush1 is dispatched with write1 in the elevator.
+- Driver dispatches write1 and requeues it.
+- flush2 is issued and appended to dispatch queue after the requeued write1. 
+  As write1 has been requeued flush2 can't be put in front of it.
+- When flush1 finishes, the driver has to process write1 before flush2 even
+  though there's no fundamental reason flush2 can't be processed first and,
+  when two flushes are issued back-to-back without intervening writes, the
+  second one essentially becomes noop.
+Without the commit, flush2 is inserted before write1, so the issue is hiden.
+But the commit itself makes sense, because flush request isn't a preempt
+request, there is no reason to add it to queue head.
+
+The regression is exposed in a SATA device. In SATA, flush requests are
+non-queueable. When flush request is running, normal read/write requests
+can't run. If block layer dispatches such request, driver can't handle it
+and requeue it. Tejun suggested we can hold the queue when flush is running.
+This can avoid unnecessary requeue.
+
+And also this can improve performance and solve the regression. In above
+scenario, when flush1 is running, queue is hold, so write1 isn't dispatched.
+flush2 will be the only request in the queue. After flush1 is finished, flush2
+will be dispatched soon. Since there is no write between flush1 and flush2,
+flush2 essentially becomes noop.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- fs/fs-writeback.c                |    6 ++-
- include/trace/events/writeback.h |   56 +++++++++++++++++++++++++++++
- 2 files changed, 61 insertions(+), 1 deletion(-)
+ block/blk-flush.c      |   19 ++++++++++++++-----
+ block/blk.h            |   35 ++++++++++++++++++++++++++++++++++-
+ include/linux/blkdev.h |    1 +
+ 3 files changed, 49 insertions(+), 6 deletions(-)
 
---- linux-next.orig/include/trace/events/writeback.h	2011-05-06 12:10:16.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-05-06 12:13:04.000000000 +0800
-@@ -8,6 +8,19 @@
- #include <linux/device.h>
- #include <linux/writeback.h>
- 
-+#define show_inode_state(state)					\
-+	__print_flags(state, "|",				\
-+		{I_DIRTY_SYNC,		"I_DIRTY_SYNC"},	\
-+		{I_DIRTY_DATASYNC,	"I_DIRTY_DATASYNC"},	\
-+		{I_DIRTY_PAGES,		"I_DIRTY_PAGES"},	\
-+		{I_NEW,			"I_NEW"},		\
-+		{I_WILL_FREE,		"I_WILL_FREE"},		\
-+		{I_FREEING,		"I_FREEING"},		\
-+		{I_CLEAR,		"I_CLEAR"},		\
-+		{I_SYNC,		"I_SYNC"},		\
-+		{I_REFERENCED,		"I_REFERENCED"}		\
-+	)
-+
- struct wb_writeback_work;
- 
- DECLARE_EVENT_CLASS(writeback_work_class,
-@@ -180,6 +193,49 @@ DEFINE_EVENT(writeback_congest_waited_te
- 	TP_ARGS(usec_timeout, usec_delayed)
- );
- 
-+TRACE_EVENT(writeback_single_inode,
-+
-+	TP_PROTO(struct inode *inode,
-+		 struct writeback_control *wbc,
-+		 unsigned long nr_to_write
-+	),
-+
-+	TP_ARGS(inode, wbc, nr_to_write),
-+
-+	TP_STRUCT__entry(
-+		__array(char, name, 32)
-+		__field(unsigned long, ino)
-+		__field(unsigned long, state)
-+		__field(unsigned long, age)
-+		__field(unsigned long, writeback_index)
-+		__field(long, nr_to_write)
-+		__field(unsigned long, wrote)
-+	),
-+
-+	TP_fast_assign(
-+		strncpy(__entry->name,
-+			dev_name(inode->i_mapping->backing_dev_info->dev), 32);
-+		__entry->ino		= inode->i_ino;
-+		__entry->state		= inode->i_state;
-+		__entry->age		= (jiffies - inode->dirtied_when) *
-+								1000 / HZ;
-+		__entry->writeback_index = inode->i_mapping->writeback_index;
-+		__entry->nr_to_write	= nr_to_write;
-+		__entry->wrote		= nr_to_write - wbc->nr_to_write;
-+	),
-+
-+	TP_printk("bdi %s: ino=%lu state=%s age=%lu "
-+		  "index=%lu to_write=%ld wrote=%lu",
-+		  __entry->name,
-+		  __entry->ino,
-+		  show_inode_state(__entry->state),
-+		  __entry->age,
-+		  __entry->writeback_index,
-+		  __entry->nr_to_write,
-+		  __entry->wrote
-+	)
-+);
-+
- #endif /* _TRACE_WRITEBACK_H */
- 
- /* This part must be outside protection */
---- linux-next.orig/fs/fs-writeback.c	2011-05-06 12:10:16.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-06 12:11:48.000000000 +0800
-@@ -356,6 +356,7 @@ writeback_single_inode(struct inode *ino
- 		       struct writeback_control *wbc)
- {
- 	struct address_space *mapping = inode->i_mapping;
-+	long nr_to_write = wbc->nr_to_write;
- 	unsigned dirty;
- 	int ret;
- 
-@@ -378,7 +379,8 @@ writeback_single_inode(struct inode *ino
- 		 */
- 		if (wbc->sync_mode != WB_SYNC_ALL) {
- 			requeue_io(inode, wb);
--			return 0;
-+			ret = 0;
-+			goto out;
- 		}
- 
- 		/*
-@@ -476,6 +478,8 @@ writeback_single_inode(struct inode *ino
- 		}
+Index: linux/block/blk-flush.c
+===================================================================
+--- linux.orig/block/blk-flush.c	2011-05-05 10:33:03.000000000 +0800
++++ linux/block/blk-flush.c	2011-05-06 11:21:20.000000000 +0800
+@@ -212,13 +212,22 @@ static void flush_end_io(struct request
  	}
- 	inode_sync_complete(inode);
-+out:
-+	trace_writeback_single_inode(inode, wbc, nr_to_write);
- 	return ret;
+ 
+ 	/*
+-	 * Moving a request silently to empty queue_head may stall the
+-	 * queue.  Kick the queue in those cases.  This function is called
+-	 * from request completion path and calling directly into
+-	 * request_fn may confuse the driver.  Always use kblockd.
++	 * After flush sequencing, the following two cases may lead to
++	 * queue stall.
++	 *
++	 * 1. Moving a request silently to empty queue_head.
++	 *
++	 * 2. If flush request was non-queueable, request dispatching may
++	 *    have been blocked while flush was in progress.
++	 *
++	 * Make sure queue processing is restarted by kicking the queue.
++	 * As this function is called from request completion path,
++	 * calling directly into request_fn may confuse the driver.  Always
++	 * use kblockd.
+ 	 */
+-	if (queued)
++	if (queued || q->flush_queue_delayed)
+ 		blk_run_queue_async(q);
++	q->flush_queue_delayed = 0;
  }
  
+ /**
+Index: linux/include/linux/blkdev.h
+===================================================================
+--- linux.orig/include/linux/blkdev.h	2011-05-06 11:20:08.000000000 +0800
++++ linux/include/linux/blkdev.h	2011-05-06 11:20:14.000000000 +0800
+@@ -365,6 +365,7 @@ struct request_queue
+ 	 */
+ 	unsigned int		flush_flags;
+ 	unsigned int		flush_not_queueable:1;
++	unsigned int		flush_queue_delayed:1;
+ 	unsigned int		flush_pending_idx:1;
+ 	unsigned int		flush_running_idx:1;
+ 	unsigned long		flush_pending_since;
+Index: linux/block/blk.h
+===================================================================
+--- linux.orig/block/blk.h	2011-05-05 10:33:03.000000000 +0800
++++ linux/block/blk.h	2011-05-06 11:22:42.000000000 +0800
+@@ -61,7 +61,40 @@ static inline struct request *__elv_next
+ 			rq = list_entry_rq(q->queue_head.next);
+ 			return rq;
+ 		}
+-
++		/*
++		 * Hold dispatching of regular requests if non-queueable
++		 * flush is in progress; otherwise, the low level driver
++		 * would keep dispatching IO requests just to requeue them
++		 * until the flush finishes, which not only adds
++		 * dispatching / requeueing overhead but may also
++		 * significantly affect throughput when multiple flushes
++		 * are issued back-to-back.  Please consider the following
++		 * scenario.
++		 *
++		 * - flush1 is dispatched with write1 in the elevator.
++		 *
++		 * - Driver dispatches write1 and requeues it.
++		 *
++		 * - flush2 is issued and appended to dispatch queue after
++		 *   the requeued write1.  As write1 has been requeued
++		 *   flush2 can't be put in front of it.
++		 *
++		 * - When flush1 finishes, the driver has to process write1
++		 *   before flush2 even though there's no fundamental
++		 *   reason flush2 can't be processed first and, when two
++		 *   flushes are issued back-to-back without intervening
++		 *   writes, the second one essentially becomes noop.
++		 *
++		 * This phenomena becomes quite visible under heavy
++		 * concurrent fsync workload and holding the queue while
++		 * flush is in progress leads to significant throughput
++		 * gain.
++		 */
++		if (q->flush_pending_idx != q->flush_running_idx &&
++				!queue_flush_queueable(q)) {
++			q->flush_queue_delayed = 1;
++			return NULL;
++		}
+ 		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
+ 			return NULL;
+ 	}
+
+
