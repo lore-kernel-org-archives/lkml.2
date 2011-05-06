@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab1EFAnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:43:20 -0400
-Received: from kroah.org ([198.145.64.141]:37191 "EHLO coco.kroah.org"
+	id S932438Ab1EFAZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:25:49 -0400
+Received: from kroah.org ([198.145.64.141]:37199 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932399Ab1EFAZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:15 2011
-Message-Id: <20110506002215.844491474@clark.kroah.org>
+	id S932406Ab1EFAZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:43 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:16 2011
+Message-Id: <20110506002215.952123804@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:33 -0700
+Date: Thu, 05 May 2011 17:21:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [108/143] b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [109/143] econet: Fix redeclaration of symbol len
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,68 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Hagen Paul Pfeifer <hagen@jauu.net>
 
-commit 9f2a0fac625bcef9c579bcf0b0c904ab1a56e7c4 upstream.
+commit 9e8342971d44ce86d8567047f5366fc1c06a75ed upstream.
 
-On module removal, the sdio version of b43 generates the following warning:
+Function argument len was redeclarated within the
+function. This patch fix the redeclaration of symbol 'len'.
 
-[  851.560519] ------------[ cut here ]------------
-[  851.560531] WARNING: at drivers/mmc/core/core.c:237 mmc_wait_for_cmd+0x88/0x90()
-[  851.560534] Hardware name: 20552PG
-[  851.560536] Modules linked in: b43(-) ssb mmc_block binfmt_misc rfcomm sco bnep ppdev l2cap ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp kvm_intel kvm arc4 iwlagn snd_hda_codec_conexant snd_hda_intel snd_hda_codec iwlcore snd_hwdep snd_pcm thinkpad_acpi mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq r852 joydev snd_timer sm_common pcmcia nand snd_seq_device cfg80211 sdhci_pci btusb psmouse tpm_tis yenta_socket nand_ids lp snd pcmcia_rsrc nand_ecc bluetooth sdhci tpm pcmcia_core parport mtd snd_page_alloc serio_raw tpm_bios soundcore nvram led_class sha256_generic aes_i586 aes_generic dm_crypt i915 drm_kms_helper drm ahci intel_agp i2c_algo_bit intel_gtt e1000e libahci video agpgart output
-[  851.560620] Pid: 2504, comm: rmmod Not tainted 2.6.36-titan0+ #1
-[  851.560622] Call Trace:
-[  851.560631]  [<c014a102>] warn_slowpath_common+0x72/0xa0
-[  851.560636]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
-[  851.560641]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
-[  851.560645]  [<c014a152>] warn_slowpath_null+0x22/0x30
-[  851.560649]  [<c04d94c8>] mmc_wait_for_cmd+0x88/0x90
-[  851.560655]  [<c0401585>] ? device_release+0x25/0x80
-[  851.560660]  [<c04df210>] mmc_io_rw_direct_host+0xa0/0x150
-[  851.560665]  [<c04df370>] mmc_io_rw_direct+0x30/0x40
-[  851.560669]  [<c04e06e7>] sdio_disable_func+0x37/0xa0
-[  851.560683]  [<f8dfcb80>] b43_sdio_remove+0x30/0x50 [b43]
-[  851.560687]  [<c04df8cc>] sdio_bus_remove+0x1c/0x60
-[  851.560692]  [<c016d39f>] ? blocking_notifier_call_chain+0x1f/0x30
-[  851.560697]  [<c0404991>] __device_release_driver+0x51/0xb0
-[  851.560701]  [<c0404a7f>] driver_detach+0x8f/0xa0
-[  851.560705]  [<c0403c83>] bus_remove_driver+0x63/0xa0
-[  851.560709]  [<c0405039>] driver_unregister+0x49/0x80
-[  851.560713]  [<c0405039>] ? driver_unregister+0x49/0x80
-[  851.560718]  [<c04dfad7>] sdio_unregister_driver+0x17/0x20
-[  851.560727]  [<f8dfcb42>] b43_sdio_exit+0x12/0x20 [b43]
-[  851.560734]  [<f8dfe76f>] b43_exit+0x17/0x3c [b43]
-[  851.560740]  [<c017fb8d>] sys_delete_module+0x13d/0x200
-[  851.560747]  [<c01fd7d2>] ? do_munmap+0x212/0x300
-[  851.560752]  [<c010311f>] sysenter_do_call+0x12/0x28
-[  851.560757] ---[ end trace 31e14488072d2f7d ]---
-[  851.560759] ------------[ cut here ]------------
-
-The warning is caused by b43 not claiming the device before calling
-sdio_disable_func().
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Arnd Hannemann <arnd@arndnet.de>
-Tested-by: Arnd Hannemann <arnd@arndnet.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[Adjusted to apply to 2.6.32 by dann frazier <dannf@debian.org>]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/net/wireless/b43/sdio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/econet/af_econet.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/b43/sdio.c
-+++ b/drivers/net/wireless/b43/sdio.c
-@@ -174,7 +174,9 @@ static void b43_sdio_remove(struct sdio_
- 	struct b43_sdio *sdio = sdio_get_drvdata(func);
+--- a/net/econet/af_econet.c
++++ b/net/econet/af_econet.c
+@@ -447,15 +447,15 @@ static int econet_sendmsg(struct kiocb *
+ 	iov[0].iov_len = size;
+ 	for (i = 0; i < msg->msg_iovlen; i++) {
+ 		void __user *base = msg->msg_iov[i].iov_base;
+-		size_t len = msg->msg_iov[i].iov_len;
++		size_t iov_len = msg->msg_iov[i].iov_len;
+ 		/* Check it now since we switch to KERNEL_DS later. */
+-		if (!access_ok(VERIFY_READ, base, len)) {
++		if (!access_ok(VERIFY_READ, base, iov_len)) {
+ 			mutex_unlock(&econet_mutex);
+ 			return -EFAULT;
+ 		}
+ 		iov[i+1].iov_base = base;
+-		iov[i+1].iov_len = len;
+-		size += len;
++		iov[i+1].iov_len = iov_len;
++		size += iov_len;
+ 	}
  
- 	ssb_bus_unregister(&sdio->ssb);
-+	sdio_claim_host(func);
- 	sdio_disable_func(func);
-+	sdio_release_host(func);
- 	kfree(sdio);
- 	sdio_set_drvdata(func, NULL);
- }
+ 	/* Get a skbuff (no data, just holds our cb information) */
 
 
