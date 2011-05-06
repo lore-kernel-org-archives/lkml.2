@@ -1,132 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab1EFUU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:20:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54647 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab1EFUUz (ORCPT
+	id S932609Ab1EFUWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:22:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43986 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381Ab1EFUWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:20:55 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QyXUC8HyAAAA:8 a=KprvwOr0OoX29dIBteQA:9 a=Ldm_36VrNXLqVPPiywEA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Fix powerTOP regression with 2.6.39-rc5
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <4DC45537.6070609@linux.intel.com>
-References: <4DC45537.6070609@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 06 May 2011 16:20:52 -0400
-Message-ID: <1304713252.25414.2532.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 6 May 2011 16:22:39 -0400
+Message-ID: <4DC4586C.6020308@kernel.org>
+Date: Fri, 06 May 2011 13:22:04 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ram Pai <linuxram@us.ibm.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] pci: Check bridge resources after resource allocation.
+References: <4DC250A6.9040802@kernel.org> <20110506081243.GF16782@ram-laptop>
+In-Reply-To: <20110506081243.GF16782@ram-laptop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4DC4586F.003D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 13:08 -0700, Arjan van de Ven wrote:
-> From c2db3ab8cff0d1cfb9582fc149df2794978a332e Mon Sep 17 00:00:00 2001
-> From: Arjan van de Ven <arjan@linux.intel.com>
-> Date: Thu, 5 May 2011 23:55:18 -0400
-> Subject: [PATCH] Regression: partial revert "tracing: Remove lock_depth 
-> from event entry"
+On 05/06/2011 01:12 AM, Ram Pai wrote:
+> On Thu, May 05, 2011 at 12:24:22AM -0700, Yinghai Lu wrote:
+>>
+>> During pci remove/rescan testing found:
+>>
+>> [  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+>> [  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
+>> [  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+>> [  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+>> [  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+>> [  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
+>> [  541.199202] pci 0000:c0:03.0: enabling bus mastering
+>> [  541.199209] pci 0000:c0:03.0: setting latency timer to 64
+>> [  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+>> [  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
+>>
+>> This bug was uncovered by commit
+>> | commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+>> | Author: Ram Pai <linuxram@us.ibm.com>
+>> | Date:   Mon Feb 14 17:43:20 2011 -0800
+>> |
+>> |    PCI: pre-allocate additional resources to devices only after successful allo
+>> cation of essential resources.
+>>
+>> After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size. So it will not get into failed list, and will not be reset there.
+>>
+>> The root cause is: pci_bridge_check_ranges will set RESOURCE_IO flag for pci
+>> bridge, and later if children does not need to IO resource. those bridge
+>> resources will not need to be allocated. but flags still there.
+>>
+>> Add pci_bridge_check_resources() to close the loop.
 > 
-> This patch partially reverts commit 
-> e6e1e2593592a8f6f6380496655d8c6f67431266.
-> That commit changed the structure layout of the trace structure, which in
-> turn broke PowerTOP (1.9x generation) quite badly.
+> How about resetting the resource in  adjust_resources_sorted() if  call to
+> adjust_resource() fails, and the resource is left with zero size?
 > 
-> I appreciate not wanting to expose the variable in question, and 
-> PowerTOP was
-> not using it, so I've replaced the variable with just a padding field....
-> ... that way if in the future a new field is needed it can just use this 
-> padding
-> variable.
+> Something like this:
+> 
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 8e73abf..77e8454 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -157,8 +157,11 @@ static void adjust_resources_sorted(struct resource_list_x *add_head,
+>                          if(pci_assign_resource(list->dev, idx))
+>                                 reset_resource(res);
+>                 } else if (add_size) {
+> -                       adjust_resource(res, res->start,
+> -                               resource_size(res) + add_size);
+> +                       if (adjust_resource(res, res->start,
+> +                               resource_size(res) + add_size) && 
+> +                               !resource_size(res)) {
+> +                               reset_resource(res);
+> +                       }
+>                 }
+>  out:
+>                 tmp = list;
+> 
 > 
 
-I strongly NACK this!
+no, adjust_resource will not change resource size to zero.
 
-We can not be locked down in the format of the trace events.
+also pci_assign_unassigned_bridge_resources ==> pci_bus_size_bridges, it will not take add_list. 
 
-THAT'S WHY I EXPORTED THE FORMATS IN THE FIRST PLACE
+following patch works too.
 
-User tools that do not parse the formats, are broken. Look at this
-patch. It adds nothing but padding, wasted space in the ring buffer.
-Why??? Because a tool read raw binary data without using the correct
-means to extract it. I already have a user space library that does the
-work for you. Perf currently uses it (although, an older version of it,
-and it is hardcoded into perf).
+[PATCH] pci: Using add_list in pcie hotplug path.
 
-Sure, perhaps event names should not be modfied, nor should some fields
-without true reason. But come on, lockdepth?  This was added by Frederic
-to help with the BKL removal. I think he only used it for a very short
-time. It probably should have never been there in the first place. But I
-do not want to waste 4 bytes of the ring buffer for every event because
-of a broken tool.
+During pci remove/rescan testing found:
 
-Note, coming soon, we will probably be removing preempt count, flags,
-and even the pid. What then? Is this broken tool going to prevent us
-from moving forward?
+[  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+[  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
+[  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+[  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+[  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+[  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
+[  541.199202] pci 0000:c0:03.0: enabling bus mastering
+[  541.199209] pci 0000:c0:03.0: setting latency timer to 64
+[  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+[  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
 
-I could understand this if we did not give you the means to parse the
-data. But we did. It's been there as long as the trace events
-themselves.
+This bug was uncovered by commit
+| commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+| Author: Ram Pai <linuxram@us.ibm.com>
+| Date:   Mon Feb 14 17:43:20 2011 -0800
+|
+|    PCI: pre-allocate additional resources to devices only after successful allo
+cation of essential resources.
 
-The format of the event format files are the ABI, not the raw data of
-the events themselves.
+After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size.
+So it will not get into failed list, and will not be reset there.
 
--- Steve
+It turns out we need to add_head for those calling.
+So those resource get reset properly.
 
-> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-> ---
->   include/linux/ftrace_event.h |    1 +
->   kernel/trace/trace.c         |    1 +
->   kernel/trace/trace_events.c  |    1 +
->   3 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 22b32af1..b5a550a 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -37,6 +37,7 @@ struct trace_entry {
->       unsigned char        flags;
->       unsigned char        preempt_count;
->       int            pid;
-> +    int            padding;
->   };
-> 
->   #define FTRACE_MAX_EVENT                        \
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index d38c16a..1cb49be 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1110,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry 
-> *entry, unsigned long flags,
-> 
->       entry->preempt_count        = pc & 0xff;
->       entry->pid            = (tsk) ? tsk->pid : 0;
-> +    entry->padding            = 0;
->       entry->flags =
->   #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
->           (irqs_disabled_flags(flags) ? TRACE_FLAG_IRQS_OFF : 0) |
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index e88f74f..2fe1103 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -116,6 +116,7 @@ static int trace_define_common_fields(void)
->       __common_field(unsigned char, flags);
->       __common_field(unsigned char, preempt_count);
->       __common_field(int, pid);
-> +    __common_field(int, padding);
-> 
->       return ret;
->   }
+after patch, will get right result:
+[  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+[  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
+[  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+[  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+[  621.247012] pci 0000:c0:03.0: enabling bus mastering
+[  621.247275] pci 0000:c0:03.0: setting latency timer to 64
+[  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
+[  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
+[  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
+[  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
+[  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
+[  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
+[  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/setup-bus.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/drivers/pci/setup-bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/setup-bus.c
++++ linux-2.6/drivers/pci/setup-bus.c
+@@ -217,13 +217,14 @@ static void __assign_resources_sorted(st
+ }
+ 
+ static void pdev_assign_resources_sorted(struct pci_dev *dev,
++				 struct resource_list_x *add_head,
+ 				 struct resource_list_x *fail_head)
+ {
+ 	struct resource_list head;
+ 
+ 	head.next = NULL;
+ 	__dev_sort_resources(dev, &head);
+-	__assign_resources_sorted(&head, NULL, fail_head);
++	__assign_resources_sorted(&head, add_head, fail_head);
+ 
+ }
+ 
+@@ -852,17 +853,19 @@ void __ref pci_bus_assign_resources(cons
+ EXPORT_SYMBOL(pci_bus_assign_resources);
+ 
+ static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
++					 struct resource_list_x *add_head,
+ 					 struct resource_list_x *fail_head)
+ {
+ 	struct pci_bus *b;
+ 
+-	pdev_assign_resources_sorted((struct pci_dev *)bridge, fail_head);
++	pdev_assign_resources_sorted((struct pci_dev *)bridge,
++					 add_head, fail_head);
+ 
+ 	b = bridge->subordinate;
+ 	if (!b)
+ 		return;
+ 
+-	__pci_bus_assign_resources(b, NULL, fail_head);
++	__pci_bus_assign_resources(b, add_head, fail_head);
+ 
+ 	switch (bridge->class >> 8) {
+ 	case PCI_CLASS_BRIDGE_PCI:
+@@ -1129,6 +1132,8 @@ enable_and_dump:
+ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+ {
+ 	struct pci_bus *parent = bridge->subordinate;
++	struct resource_list_x add_list; /* list of resources that
++					want additional resources */
+ 	int tried_times = 0;
+ 	struct resource_list_x head, *list;
+ 	int retval;
+@@ -1136,11 +1141,12 @@ void pci_assign_unassigned_bridge_resour
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	head.next = NULL;
++	add_list.next = NULL;
+ 
+ again:
+-	pci_bus_size_bridges(parent);
+-	__pci_bridge_assign_resources(bridge, &head);
+-
++	__pci_bus_size_bridges(parent, &add_list);
++	__pci_bridge_assign_resources(bridge, &add_list, &head);
++	BUG_ON(add_list.next);
+ 	tried_times++;
+ 
+ 	if (!head.next)
+
+
+
+
 
 
