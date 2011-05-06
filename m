@@ -1,155 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab1EFXG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 19:06:26 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:50515 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750889Ab1EFXGY (ORCPT
+	id S1752105Ab1EFXNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 19:13:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32259 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab1EFXN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 19:06:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApwDAJp9xE15LBzagWdsb2JhbACmHRUBARYmJYhxvRYOhXsElnOHSw
-Date: Sat, 7 May 2011 09:06:19 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [RFC][PATCH v2] writeback: limit number of moved inodes in
- queue_io()
-Message-ID: <20110506230619.GG26837@dastard>
-References: <20110420080336.441157866@intel.com>
- <20110420080918.560499032@intel.com>
- <20110504073931.GA22675@localhost>
- <20110505163708.GN5323@quack.suse.cz>
- <20110506052955.GA24904@localhost>
- <20110506084238.GA487@localhost>
- <20110506100648.GA3435@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506100648.GA3435@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 6 May 2011 19:13:28 -0400
+Date: Fri, 6 May 2011 16:13:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] soc: fix wm8958-dsp2 printk format warnings
+Message-Id: <20110506161310.54b22b9f.randy.dunlap@oracle.com>
+In-Reply-To: <20110505134959.b3761297.sfr@canb.auug.org.au>
+References: <20110505134959.b3761297.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4DC48091.024D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 06:06:48PM +0800, Wu Fengguang wrote:
-> On Fri, May 06, 2011 at 04:42:38PM +0800, Wu Fengguang wrote:
-> > > patched trace-tar-dd-ext4-2.6.39-rc3+
-> > 
-> > >        flush-8:0-3048  [004]  1929.981734: writeback_queue_io: bdi 8:0: older=4296600898 age=2 enqueue=13227
-> > 
-> > > vanilla trace-tar-dd-ext4-2.6.39-rc3
-> > 
-> > >        flush-8:0-2911  [004]    77.158312: writeback_queue_io: bdi 8:0: older=0 age=-1 enqueue=18938
-> > 
-> > >        flush-8:0-2911  [000]    82.461064: writeback_queue_io: bdi 8:0: older=0 age=-1 enqueue=6957
-> > 
-> > It looks too much to move 13227 and 18938 inodes at once. So I tried
-> > arbitrarily limiting the max move number to 1000 and it helps reduce
-> > the lock hold time and contentions a lot.
-> 
-> Oh it seems 1000 is too small at least for this workload, it hurts
-> dd+tar+sync total elapsed time. 
-> 
-> no limit:
->                 avg        167.486 
->                 stddev       8.996 
-> limit=1000:
->                 avg        171.222 
->                 stddev       5.588 
-> limit=3000:
->                 avg        165.335 
->                 stddev       5.503 
-> 
-> So use 3000 as the new limit.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I don't think that's even enough. The number is going to be workload
-dependent and while a limit might be a good idea, I don't think it
-can be chosen just from one simple benchmark. e.g. what does it to
-do performance of workloads creating tens of thousands of small
-dirty files a second?
+Fix printk format warnings in wm8958-dsp2.c:
 
-....
+sound/soc/codecs/wm8958-dsp2.c:103: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
+sound/soc/codecs/wm8958-dsp2.c:111: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
+sound/soc/codecs/wm8958-dsp2.c:144: warning: format '%d' expects type 'int', but argument 5 has type 'size_t'
 
->                               class name    con-bounces    contentions   waittime-min   waittime-max waittime-total    acq-b
-> ounces   acquisitions   holdtime-min   holdtime-max holdtime-total
-> ----------------------------------------------------------------------------------------------------------------------------
-> -------------------------------------------------------------------
-> vanilla 2.6.39-rc3:
->                       inode_wb_list_lock:          2063           2065           0.12        2648.66        5948.99
->  27475         943778           0.09        2704.76      498340.24
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ sound/soc/codecs/wm8958-dsp2.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-I wouldn't consider this a contended lock at all on this workload.
-
-FWIW, my profiles on sustained 8-way small file creation workloads
-on ext4 over tens of millions of inodes show a 0.1% contention rate
-for the inode_wb_list_lock. That compares to a 2% contention rate
-for the inode_lru_lock, a 4% contention rate on the
-inode_sb_list_lock and a 6% contention rate on the inode_hash_lock.
-So really, the inode_wb_list_lock is not the lock we need to spend
-effort on optimising to the nth degree right now...
-
-......
-> limit=1000:
-> 
-> dd+tar+sync total elapsed time (10 runs):
-> 				avg        171.222 
-> 				stddev       5.588 
-> 
->                 &(&wb->list_lock)->rlock:           842            842           0.14         101.10        1013.34
->  20489         970892           0.09         234.11      509829.79
-.....
-> limit=3000:
-> 
-> dd+tar+sync total elapsed time (10 runs):
-> 				avg        165.335
-> 				stddev       5.503
-> 
->                 &(&wb->list_lock)->rlock:          1088           1092           0.11         245.08        3268.75
->  21124        1718636           0.09         384.53      849827.20
-
-So, from this acquisitions are doubled, and the total lock hold time
-has almost doubled as well. That seems like there's a fair bit of
-inefficiency introduced. What does it do to the CPU time consumed by
-queue_io() (perf top is your friend)?
-
-FYI, queue_io() is already a _massive_ CPU hog.  See commit dcd79a1
-("xfs: don't use vfs writeback for pure metadata modifications") for
-how XFS tries to avoid putting dirty inodes on the list if at all
-possible:
-
-    Under heavy multi-way parallel create workloads, the VFS
-    struggles to write back all the inodes that have been changed in
-    age order.  The bdi flusher thread becomes CPU bound, spending
-    85% of it's time in the VFS code, mostly traversing the
-    superblock dirty inode list to separate dirty inodes old enough
-    to flush.
-
-    We already keep an index of all metadata changes in age order -
-    in the AIL - and continued log pressure will do age ordered
-    writeback without any extra overhead at all. If there is no
-    pressure on the log, the xfssyncd will periodically write back
-    metadata in ascending disk address offset order so will be very
-    efficient.
-    .....
-
-We're moving towards only tracking inodes with dirty pages in the
-b_dirty list for XFS because this time based expiry is so
-inefficient. So anything that reduces the efficiency of
-queue_io()....
-
-Cheers,
-
-Dave.
-
-
--- 
-Dave Chinner
-david@fromorbit.com
+--- linux-next-20110505.orig/sound/soc/codecs/wm8958-dsp2.c
++++ linux-next-20110505/sound/soc/codecs/wm8958-dsp2.c
+@@ -99,7 +99,7 @@ static int wm8958_dsp2_fw(struct snd_soc
+ 	len = fw->size - len;
+ 	while (len) {
+ 		if (len < 12) {
+-			dev_err(codec->dev, "%s short data block of %d\n",
++			dev_err(codec->dev, "%s short data block of %zd\n",
+ 				name, len);
+ 			goto err;
+ 		}
+@@ -107,7 +107,7 @@ static int wm8958_dsp2_fw(struct snd_soc
+ 		memcpy(&data32, data + 4, sizeof(data32));
+ 		block_len = be32_to_cpu(data32);
+ 		if (block_len + 8 > len) {
+-			dev_err(codec->dev, "%d byte block longer than file\n",
++			dev_err(codec->dev, "%zd byte block longer than file\n",
+ 				block_len);
+ 			goto err;
+ 		}
+@@ -141,7 +141,7 @@ static int wm8958_dsp2_fw(struct snd_soc
+ 		case WM_FW_BLOCK_I:
+ 		case WM_FW_BLOCK_A:
+ 		case WM_FW_BLOCK_C:
+-			dev_dbg(codec->dev, "%s: %d bytes of %x@%x\n", name,
++			dev_dbg(codec->dev, "%s: %zd bytes of %x@%x\n", name,
+ 				block_len, (data32 >> 24) & 0xff,
+ 				data32 & 0xffffff);
+ 
