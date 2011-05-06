@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab1EFR1V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 13:27:21 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:45325 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab1EFR1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 13:27:19 -0400
-From: Paul Moore <paul.moore@hp.com>
-Organization: Hewlett-Packard
-To: Samir Bellabes <sam@synack.fr>
-Subject: Re: [RFC v3 02/10] Revert "lsm: Remove the socket_post_accept() hook"
-Date: Fri, 6 May 2011 13:27:15 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r2; KDE/4.6.2; x86_64; ; )
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        hadi@cyberus.ca, kaber@trash.net, zbr@ioremap.net, root@localdomain.pl
-References: <1304432663-1575-1-git-send-email-sam@synack.fr> <201105060643.JBD90633.MOQJtSFFLFHOOV@I-love.SAKURA.ne.jp> <87iptop4di.fsf@synack.fr>
-In-Reply-To: <87iptop4di.fsf@synack.fr>
+	id S1756469Ab1EFR27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 13:28:59 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:56942 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752140Ab1EFR26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 13:28:58 -0400
+X-ASG-Debug-ID: 1304702937-03d6a50f3637bb0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DC42FD6.8010508@fusionio.com>
+Date: Fri, 6 May 2011 11:28:54 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Tejun Heo <htejun@gmail.com>
+CC: Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for  non-queueable
+ flush drive
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com> <20110505020417.817084678@sli10-conroe.sh.intel.com> <20110505083853.GC30950@htj.dyndns.org> <1304656325.3828.22.camel@sli10-conroe> <20110506065347.GA8824@htj.dyndns.org>
+X-ASG-Orig-Subj: Re: [patch v3 2/3] block: hold queue if flush is running for  non-queueable
+ flush drive
+In-Reply-To: <20110506065347.GA8824@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105061327.15339.paul.moore@hp.com>
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1304702937
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.62961
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 06, 2011 5:25:45 AM Samir Bellabes wrote:
-> the main argument for socket_post_accept is to known informations of the
-> remote inet.
-> 
-> from socket_accept(), we have no clue of who (inet->daddr and inet->saddr)
-> is connecting to the local service. with socket_post_accept(), inet->daddr
-> and inet->saddr are filled with the true distant informations.
-> 
-> This informations is interesting for next security operations on the
-> socket. (we known with who we are talking to).
+On 2011-05-06 00:53, Tejun Heo wrote:
+> Jens, can you please queue this for the next merge window?
 
-Looking at the snet_socket_post_accept() hook, I believe all of the 
-information you are looking for should be available to you in the sock_graft() 
-hook.
+Yep I will, I'll mark it as a backport as well.
 
---
-paul moore
-linux @ hp
+-- 
+Jens Axboe
+
