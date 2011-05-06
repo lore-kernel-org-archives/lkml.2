@@ -1,74 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab1EFEPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 00:15:34 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:27552 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1EFEPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 00:15:32 -0400
-X-AuditID: cbfee61a-b7c84ae000006ee6-59-4dc375e21ed2
-Date: Fri, 06 May 2011 13:15:27 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH] leds: drop leds-h1940 driver
-In-reply-to: <1303912597-32653-1-git-send-email-anarsoul@gmail.com>
-To: "'Vasily Khoruzhick'" <anarsoul@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Arnaud Patard (Rtp)'" <arnaud.patard@rtp-net.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: rpurdie@rpsys.net
-Message-id: <00f701cc0ba4$3cb4b680$b61e2380$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcwE45PCSwu7GiP0TqCTXTQWDnkykAGwAS6Q
-References: <1303912597-32653-1-git-send-email-anarsoul@gmail.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1751685Ab1EFEQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 00:16:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:4854 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429Ab1EFEQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 00:16:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,324,1301900400"; 
+   d="scan'208";a="431505216"
+Date: Fri, 6 May 2011 12:16:38 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 16/17] writeback: trace event writeback_single_inode (v2)
+Message-ID: <20110506041638.GA21713@localhost>
+References: <20110506030821.523093711@intel.com>
+ <20110506031613.807611954@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110506031613.807611954@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasily Khoruzhick wrote:
-> 
-> H1940 machine now uses leds-gpio and leds-h1940 has no users anymore. So
-> drop it.
-> 
-> Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
-> ---
->  drivers/leds/Kconfig      |    7 --
->  drivers/leds/Makefile     |    1 -
->  drivers/leds/leds-h1940.c |  170
--------------------------------------------
-> --
->  3 files changed, 0 insertions(+), 178 deletions(-)
->  delete mode 100644 drivers/leds/leds-h1940.c
-> 
-Hi Vasily,
+[changes:
+- move trace point into writeback_single_inode() to cover the other 2 callers;
+- change format to show the original rather than remained wbc->nr_to_write
+]
 
-Hmm, regarding maintainer who is Richard Purdie(LED) in this case should be
-added in Cc. (Cc'ed him)
+It is valuable to know how the dirty inodes are iterated and their IO size.
 
-And I think need following with this patch.
+"writeback_single_inode: bdi 8:0: ino=134246746 state=I_DIRTY_SYNC|I_SYNC age=414 index=0 wrote=0 to_write=1024"
 
---- a/arch/arm/configs/s3c2410_defconfig
-+++ b/arch/arm/configs/s3c2410_defconfig
-@@ -389,7 +389,6 @@ CONFIG_MMC_SPI=m
- CONFIG_MMC_S3C=y
- CONFIG_LEDS_CLASS=m
- CONFIG_LEDS_S3C24XX=m
--CONFIG_LEDS_H1940=m
- CONFIG_LEDS_PCA9532=m
- CONFIG_LEDS_GPIO=m
- CONFIG_LEDS_PCA955X=m
+- "state" reflects inode->i_state at the end of writeback_single_inode()
+- "index" reflects mapping->writeback_index after the ->writepages() call
+- "to_write" is the wbc->nr_to_write at entrance of writeback_single_inode()
+- "wrote" is the number of pages actually written
 
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c                |    6 ++-
+ include/trace/events/writeback.h |   56 +++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 1 deletion(-)
 
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+--- linux-next.orig/include/trace/events/writeback.h	2011-05-06 12:10:16.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-05-06 12:13:04.000000000 +0800
+@@ -8,6 +8,19 @@
+ #include <linux/device.h>
+ #include <linux/writeback.h>
+ 
++#define show_inode_state(state)					\
++	__print_flags(state, "|",				\
++		{I_DIRTY_SYNC,		"I_DIRTY_SYNC"},	\
++		{I_DIRTY_DATASYNC,	"I_DIRTY_DATASYNC"},	\
++		{I_DIRTY_PAGES,		"I_DIRTY_PAGES"},	\
++		{I_NEW,			"I_NEW"},		\
++		{I_WILL_FREE,		"I_WILL_FREE"},		\
++		{I_FREEING,		"I_FREEING"},		\
++		{I_CLEAR,		"I_CLEAR"},		\
++		{I_SYNC,		"I_SYNC"},		\
++		{I_REFERENCED,		"I_REFERENCED"}		\
++	)
++
+ struct wb_writeback_work;
+ 
+ DECLARE_EVENT_CLASS(writeback_work_class,
+@@ -180,6 +193,49 @@ DEFINE_EVENT(writeback_congest_waited_te
+ 	TP_ARGS(usec_timeout, usec_delayed)
+ );
+ 
++TRACE_EVENT(writeback_single_inode,
++
++	TP_PROTO(struct inode *inode,
++		 struct writeback_control *wbc,
++		 unsigned long nr_to_write
++	),
++
++	TP_ARGS(inode, wbc, nr_to_write),
++
++	TP_STRUCT__entry(
++		__array(char, name, 32)
++		__field(unsigned long, ino)
++		__field(unsigned long, state)
++		__field(unsigned long, age)
++		__field(unsigned long, writeback_index)
++		__field(long, nr_to_write)
++		__field(unsigned long, wrote)
++	),
++
++	TP_fast_assign(
++		strncpy(__entry->name,
++			dev_name(inode->i_mapping->backing_dev_info->dev), 32);
++		__entry->ino		= inode->i_ino;
++		__entry->state		= inode->i_state;
++		__entry->age		= (jiffies - inode->dirtied_when) *
++								1000 / HZ;
++		__entry->writeback_index = inode->i_mapping->writeback_index;
++		__entry->nr_to_write	= nr_to_write;
++		__entry->wrote		= nr_to_write - wbc->nr_to_write;
++	),
++
++	TP_printk("bdi %s: ino=%lu state=%s age=%lu "
++		  "index=%lu to_write=%ld wrote=%lu",
++		  __entry->name,
++		  __entry->ino,
++		  show_inode_state(__entry->state),
++		  __entry->age,
++		  __entry->writeback_index,
++		  __entry->nr_to_write,
++		  __entry->wrote
++	)
++);
++
+ #endif /* _TRACE_WRITEBACK_H */
+ 
+ /* This part must be outside protection */
+--- linux-next.orig/fs/fs-writeback.c	2011-05-06 12:10:16.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-06 12:11:48.000000000 +0800
+@@ -356,6 +356,7 @@ writeback_single_inode(struct inode *ino
+ 		       struct writeback_control *wbc)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
++	long nr_to_write = wbc->nr_to_write;
+ 	unsigned dirty;
+ 	int ret;
+ 
+@@ -378,7 +379,8 @@ writeback_single_inode(struct inode *ino
+ 		 */
+ 		if (wbc->sync_mode != WB_SYNC_ALL) {
+ 			requeue_io(inode, wb);
+-			return 0;
++			ret = 0;
++			goto out;
+ 		}
+ 
+ 		/*
+@@ -476,6 +478,8 @@ writeback_single_inode(struct inode *ino
+ 		}
+ 	}
+ 	inode_sync_complete(inode);
++out:
++	trace_writeback_single_inode(inode, wbc, nr_to_write);
+ 	return ret;
+ }
+ 
