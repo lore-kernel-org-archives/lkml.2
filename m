@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab1EFQtm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 12:49:42 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:27709 "EHLO
+	id S1756672Ab1EFQtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 12:49:43 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:52765 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab1EFQtl (ORCPT
+	with ESMTP id S1756619Ab1EFQtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 May 2011 12:49:41 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: vinod.koul@intel.com, dan.j.williams@intel.com,
         linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 2/3] dmaengine: at_hdmac: implement pause and resume in atc_control
-Date: Fri,  6 May 2011 19:56:52 +0200
-Message-Id: <be7d19459501aaa604aebe91daa9e9e59bb41c86.1304704588.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 3/3] dmaengine: at_hdmac: use descriptor chaining help function
+Date: Fri,  6 May 2011 19:56:53 +0200
+Message-Id: <f2d2fb135151456f81dd3ac1938771589a0e5503.1304704588.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
 References: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
@@ -23,160 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pause and resume controls are useful for audio devices. This also returns
-correct status from atc_tx_status() in case chan is paused.
-
-Idea from dw_dmac patch by Linus Walleij.
+A little function helps to chain descriptors:
+it is already used in cyclic dma operations, now use it in memcpy and slave_sg
+preparation functions.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/dma/at_hdmac.c      |   97 +++++++++++++++++++++++++++++++------------
- drivers/dma/at_hdmac_regs.h |    1 +
- 2 files changed, 71 insertions(+), 27 deletions(-)
+ drivers/dma/at_hdmac.c |   33 +++------------------------------
+ 1 files changed, 3 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index ba0b5ec..5968245 100644
+index 5968245..2c6bc3a 100644
 --- a/drivers/dma/at_hdmac.c
 +++ b/drivers/dma/at_hdmac.c
-@@ -508,7 +508,8 @@ static irqreturn_t at_dma_interrupt(int irq, void *dev_id)
- 			if (pending & (AT_DMA_BTC(i) | AT_DMA_ERR(i))) {
- 				if (pending & AT_DMA_ERR(i)) {
- 					/* Disable channel on AHB error */
--					dma_writel(atdma, CHDR, atchan->mask);
-+					dma_writel(atdma, CHDR,
-+						AT_DMA_RES(i) | atchan->mask);
- 					/* Give information to tasklet */
- 					set_bit(ATC_IS_ERROR, &atchan->status);
- 				}
-@@ -952,39 +953,78 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- {
- 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
- 	struct at_dma		*atdma = to_at_dma(chan->device);
--	struct at_desc		*desc, *_desc;
-+	int			chan_id = atchan->chan_common.chan_id;
-+
- 	LIST_HEAD(list);
+@@ -626,16 +626,7 @@ atc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
  
--	/* Only supports DMA_TERMINATE_ALL */
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
-+	dev_vdbg(chan2dev(chan), "atc_control (%d)\n", cmd);
+ 		desc->txd.cookie = 0;
  
--	/*
--	 * This is only called when something went wrong elsewhere, so
--	 * we don't really care about the data. Just disable the
--	 * channel. We still have to poll the channel enable bit due
--	 * to AHB/HSB limitations.
--	 */
--	spin_lock_bh(&atchan->lock);
-+	if (cmd == DMA_PAUSE) {
-+		int pause_timeout = 1000;
+-		if (!first) {
+-			first = desc;
+-		} else {
+-			/* inform the HW lli about chaining */
+-			prev->lli.dscr = desc->txd.phys;
+-			/* insert the link descriptor to the LD ring */
+-			list_add_tail(&desc->desc_node,
+-					&first->tx_list);
+-		}
+-		prev = desc;
++		atc_desc_chain(&first, &prev, desc);
+ 	}
  
--	dma_writel(atdma, CHDR, atchan->mask);
-+		spin_lock_bh(&atchan->lock);
+ 	/* First descriptor of the chain embedds additional information */
+@@ -726,16 +717,7 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 					| len >> mem_width;
+ 			desc->lli.ctrlb = ctrlb;
  
--	/* confirm that this channel is disabled */
--	while (dma_readl(atdma, CHSR) & atchan->mask)
--		cpu_relax();
-+		dma_writel(atdma, CHER, AT_DMA_SUSP(chan_id));
-+
-+		/* wait for FIFO to be empty */
-+		while (!(dma_readl(atdma, CHSR) & AT_DMA_EMPT(chan_id))) {
-+			if (pause_timeout-- > 0) {
-+				/* the FIFO can only drain if the peripheral
-+				 * is still requesting data:
-+				 * -> timeout if it is not the case. */
-+				dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
-+				spin_unlock_bh(&atchan->lock);
-+				return -ETIMEDOUT;
-+			}
-+			cpu_relax();
-+		}
+-			if (!first) {
+-				first = desc;
+-			} else {
+-				/* inform the HW lli about chaining */
+-				prev->lli.dscr = desc->txd.phys;
+-				/* insert the link descriptor to the LD ring */
+-				list_add_tail(&desc->desc_node,
+-						&first->tx_list);
+-			}
+-			prev = desc;
++			atc_desc_chain(&first, &prev, desc);
+ 			total_len += len;
+ 		}
+ 		break;
+@@ -769,16 +751,7 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 					| len >> reg_width;
+ 			desc->lli.ctrlb = ctrlb;
  
--	/* active_list entries will end up before queued entries */
--	list_splice_init(&atchan->queue, &list);
--	list_splice_init(&atchan->active_list, &list);
-+		set_bit(ATC_IS_PAUSED, &atchan->status);
- 
--	/* Flush all pending and queued descriptors */
--	list_for_each_entry_safe(desc, _desc, &list, desc_node)
--		atc_chain_complete(atchan, desc);
-+		spin_unlock_bh(&atchan->lock);
-+	} else if (cmd == DMA_RESUME) {
-+		if (!test_bit(ATC_IS_PAUSED, &atchan->status))
-+			return 0;
- 
--	/* if channel dedicated to cyclic operations, free it */
--	clear_bit(ATC_IS_CYCLIC, &atchan->status);
-+		spin_lock_bh(&atchan->lock);
- 
--	spin_unlock_bh(&atchan->lock);
-+		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
-+		clear_bit(ATC_IS_PAUSED, &atchan->status);
-+
-+		spin_unlock_bh(&atchan->lock);
-+	} else if (cmd == DMA_TERMINATE_ALL) {
-+		struct at_desc	*desc, *_desc;
-+		/*
-+		 * This is only called when something went wrong elsewhere, so
-+		 * we don't really care about the data. Just disable the
-+		 * channel. We still have to poll the channel enable bit due
-+		 * to AHB/HSB limitations.
-+		 */
-+		spin_lock_bh(&atchan->lock);
-+
-+		/* disabling channel: must also remove suspend state */
-+		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id) | atchan->mask);
-+
-+		/* confirm that this channel is disabled */
-+		while (dma_readl(atdma, CHSR) & atchan->mask)
-+			cpu_relax();
-+
-+		/* active_list entries will end up before queued entries */
-+		list_splice_init(&atchan->queue, &list);
-+		list_splice_init(&atchan->active_list, &list);
-+
-+		/* Flush all pending and queued descriptors */
-+		list_for_each_entry_safe(desc, _desc, &list, desc_node)
-+			atc_chain_complete(atchan, desc);
-+
-+		clear_bit(ATC_IS_PAUSED, &atchan->status);
-+		/* if channel dedicated to cyclic operations, free it */
-+		clear_bit(ATC_IS_CYCLIC, &atchan->status);
-+
-+		spin_unlock_bh(&atchan->lock);
-+	} else {
-+		return -ENXIO;
-+	}
- 
- 	return 0;
- }
-@@ -1032,8 +1072,11 @@ atc_tx_status(struct dma_chan *chan,
- 	else
- 		dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
--	dev_vdbg(chan2dev(chan), "tx_status: %d (d%d, u%d)\n",
--		 cookie, last_complete ? last_complete : 0,
-+	if (test_bit(ATC_IS_PAUSED, &atchan->status))
-+		ret = DMA_PAUSED;
-+
-+	dev_vdbg(chan2dev(chan), "tx_status %d: cookie = %d (d%d, u%d)\n",
-+		 ret, cookie, last_complete ? last_complete : 0,
- 		 last_used ? last_used : 0);
- 
- 	return ret;
-diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-index ae3056d..087dbf1 100644
---- a/drivers/dma/at_hdmac_regs.h
-+++ b/drivers/dma/at_hdmac_regs.h
-@@ -191,6 +191,7 @@ txd_to_at_desc(struct dma_async_tx_descriptor *txd)
-  */
- enum atc_status {
- 	ATC_IS_ERROR = 0,
-+	ATC_IS_PAUSED = 1,
- 	ATC_IS_CYCLIC = 24,
- };
- 
+-			if (!first) {
+-				first = desc;
+-			} else {
+-				/* inform the HW lli about chaining */
+-				prev->lli.dscr = desc->txd.phys;
+-				/* insert the link descriptor to the LD ring */
+-				list_add_tail(&desc->desc_node,
+-						&first->tx_list);
+-			}
+-			prev = desc;
++			atc_desc_chain(&first, &prev, desc);
+ 			total_len += len;
+ 		}
+ 		break;
 -- 
 1.7.3
 
