@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab1EFMmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 08:42:06 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:41647 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751420Ab1EFMmE (ORCPT
-	<rfc822;groupwise-jlee@novell.com:7:1>);
-	Fri, 6 May 2011 08:42:04 -0400
-Message-Id: <4DC47937020000230002C446@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Fri, 06 May 2011 06:41:59 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <melchior.franz@gmail.com>
-Cc: <chris@chris-wilson.co.uk>, <dri-devel@lists.freedesktop.org>,
-        "Joey Lee" <JLee@novell.com>, <carlos@strangeworlds.co.uk>,
-        <tiwai@suse.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: i915/kms/backlight-combo mode problem
-References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
- <s5htyd9kumz.wl%tiwai@suse.de> <201105052242.22217@rk-nord.at>
- <201105061052.06638@rk-nord.at>
-In-Reply-To: <201105061052.06638@rk-nord.at>
+	id S1755043Ab1EFMoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:44:04 -0400
+Received: from sh.osrg.net ([192.16.179.4]:60071 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752325Ab1EFMoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 08:44:02 -0400
+Date: Fri, 6 May 2011 21:43:44 +0900
+To: mattst88@gmail.com
+Cc: mcree@orcon.net.nz, linux-kernel@vger.kernel.org,
+        linux-alpha@vger.kernel.org, rth@twiddle.net, ink@jurassic.park.msu.ru
+Subject: Re: [PATCH] alpha: Add DMA_ERROR_CODE defn to avert compiler error
+ in drm
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <BANLkTiknKa8xq5UQYTWKZnGDqVyAjGhVmw@mail.gmail.com>
+References: <1304496817-7646-1-git-send-email-mcree@orcon.net.nz>
+	<BANLkTiknKa8xq5UQYTWKZnGDqVyAjGhVmw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110506214052V.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 06 May 2011 21:43:46 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Melchior, 
+On Wed, 4 May 2011 17:59:29 -0400
+Matt Turner <mattst88@gmail.com> wrote:
 
-於 五，2011-05-06 於 10:52 +0200，Melchior FRANZ 提到：
-> * Melchior FRANZ -- Thursday 05 May 2011:
-> > This revised patch works correctly for me.
+> Other architectures define this differently.
 > 
-> ... and changing backlight brightness worked with acpi_osi=Linux, too.
-> Unfortunately, that does no longer work now, although I haven't changed
-> anything. Pressing the brightness buttons causes some ACPI debug output,
-> but it doesn't adjust anything.
+> arch/ia64/include/asm/dma-mapping.h:#define DMA_ERROR_CODE 0
+> arch/microblaze/include/asm/dma-mapping.h:#define DMA_ERROR_CODE
+>          (~(dma_addr_t)0x0)
+> arch/powerpc/include/asm/dma-mapping.h:#define DMA_ERROR_CODE
+>  (~(dma_addr_t)0x0)
+> arch/sparc/include/asm/dma-mapping.h:#define DMA_ERROR_CODE
+> (~(dma_addr_t)0x0)
+> arch/x86/include/asm/dma-mapping.h:#define DMA_ERROR_CODE       0
 > 
-> m. 
+> Any idea what the reason is?
 
-hmm........ Takashi's patch works before, but doesn't work now?
+Because an invalid DMA address is architecture specific. To be exact,
+an invalid DMA address is DMA operation specific.
 
-Does that because my new patch for bko#34142 ? Could you please add
-acer-wmi to /etc/modprobe.d/blacklist then reboot machine ?
+As I wrote in another mail, this patch is wrong.
 
-Step:
-	- add acer-wmi to /etc/modprobe.d/blacklist
-	- shutdown your machine
-	- remove AC power and notebook's battery
-	- plugin AC power then boot your notebook
-	- check the brightness control 
+Architectures don't need to define DMA_ERROR_CODE.
 
+Some architectures need multiple dma_mapping_error functions. You
+could use DMA_ERROR_CODE in order to avoid duplicated code like
+this. That is, you define only for dma_map_ops that needs the own
+mapping_error function.
 
-Thank's
-Joey Lee
+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+{
+	struct dma_map_ops *ops = get_dma_ops(dev);
+	if (ops->mapping_error)
+		return ops->mapping_error(dev, dma_addr);
 
+	return (dma_addr == DMA_ERROR_CODE);
+}
