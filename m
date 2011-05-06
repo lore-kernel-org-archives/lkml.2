@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab1EFAZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:25:46 -0400
-Received: from kroah.org ([198.145.64.141]:37205 "EHLO coco.kroah.org"
+	id S932486Ab1EFAm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:42:59 -0400
+Received: from kroah.org ([198.145.64.141]:37209 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932375Ab1EFAZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:44 -0400
+	id S932409Ab1EFAZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:45 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:16 2011
-Message-Id: <20110506002216.040615255@clark.kroah.org>
+Message-Id: <20110506002216.126296204@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:35 -0700
+Date: Thu, 05 May 2011 17:21:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Phil Blundell <philb@gnu.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [110/143] econet: fix CVE-2010-3848
+        Erik Andren <erik.andren@gmail.com>
+Subject: [111/143] dell-laptop: Add another Dell laptop to the DMI whitelist
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,154 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Blundell <philb@gnu.org>
+From: Erik Andren <erik.andren@gmail.com>
 
-commit a27e13d370415add3487949c60810e36069a23a6 upstream.
+commit cb6a7937f4328a267e0806680ade500ed2c3c01a upstream.
 
-Don't declare variable sized array of iovecs on the stack since this
-could cause stack overflow if msg->msgiovlen is large.  Instead, coalesce
-the user-supplied data into a new buffer and use a single iovec for it.
+The Latitude C640 has another variation of dell in its DMI vendor entry.
+Add it to the whitelist in order to enjoy the sweet fruits of software
+backlight toggling.
 
-Signed-off-by: Phil Blundell <philb@gnu.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[Adjusted to apply to 2.6.32 by dann frazier <dannf@debian.org>]
+Signed-off-by: Erik Andren <erik.andren@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/econet/af_econet.c |   62 ++++++++++++++++++++++++-------------------------
- 1 file changed, 31 insertions(+), 31 deletions(-)
+ drivers/platform/x86/dell-laptop.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/net/econet/af_econet.c
-+++ b/net/econet/af_econet.c
-@@ -30,6 +30,7 @@
- #include <linux/wireless.h>
- #include <linux/skbuff.h>
- #include <linux/udp.h>
-+#include <linux/vmalloc.h>
- #include <net/sock.h>
- #include <net/inet_common.h>
- #include <linux/stat.h>
-@@ -275,12 +276,12 @@ static int econet_sendmsg(struct kiocb *
- #endif
- #ifdef CONFIG_ECONET_AUNUDP
- 	struct msghdr udpmsg;
--	struct iovec iov[msg->msg_iovlen+1];
-+	struct iovec iov[2];
- 	struct aunhdr ah;
- 	struct sockaddr_in udpdest;
- 	__kernel_size_t size;
--	int i;
- 	mm_segment_t oldfs;
-+	char *userbuf;
- #endif
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -71,6 +71,13 @@ static const struct dmi_system_id __init
+ 			DMI_MATCH(DMI_CHASSIS_TYPE, "8"),
+ 		},
+ 	},
++	{
++		.ident = "Dell Computer Corporation",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
++			DMI_MATCH(DMI_CHASSIS_TYPE, "8"),
++		},
++	},
+ 	{ }
+ };
  
- 	/*
-@@ -318,17 +319,17 @@ static int econet_sendmsg(struct kiocb *
- 		}
- 	}
- 
--	if (len + 15 > dev->mtu) {
--		mutex_unlock(&econet_mutex);
--		return -EMSGSIZE;
--	}
--
- 	if (dev->type == ARPHRD_ECONET) {
- 		/* Real hardware Econet.  We're not worthy etc. */
- #ifdef CONFIG_ECONET_NATIVE
- 		unsigned short proto = 0;
- 		int res;
- 
-+		if (len + 15 > dev->mtu) {
-+			mutex_unlock(&econet_mutex);
-+			return -EMSGSIZE;
-+		}
-+
- 		dev_hold(dev);
- 
- 		skb = sock_alloc_send_skb(sk, len+LL_ALLOCATED_SPACE(dev),
-@@ -404,6 +405,11 @@ static int econet_sendmsg(struct kiocb *
- 		return -ENETDOWN;		/* No socket - can't send */
- 	}
- 
-+	if (len > 32768) {
-+		err = -E2BIG;
-+		goto error;
-+	}
-+
- 	/* Make up a UDP datagram and hand it off to some higher intellect. */
- 
- 	memset(&udpdest, 0, sizeof(udpdest));
-@@ -435,36 +441,26 @@ static int econet_sendmsg(struct kiocb *
- 
- 	/* tack our header on the front of the iovec */
- 	size = sizeof(struct aunhdr);
--	/*
--	 * XXX: that is b0rken.  We can't mix userland and kernel pointers
--	 * in iovec, since on a lot of platforms copy_from_user() will
--	 * *not* work with the kernel and userland ones at the same time,
--	 * regardless of what we do with set_fs().  And we are talking about
--	 * econet-over-ethernet here, so "it's only ARM anyway" doesn't
--	 * apply.  Any suggestions on fixing that code?		-- AV
--	 */
- 	iov[0].iov_base = (void *)&ah;
- 	iov[0].iov_len = size;
--	for (i = 0; i < msg->msg_iovlen; i++) {
--		void __user *base = msg->msg_iov[i].iov_base;
--		size_t iov_len = msg->msg_iov[i].iov_len;
--		/* Check it now since we switch to KERNEL_DS later. */
--		if (!access_ok(VERIFY_READ, base, iov_len)) {
--			mutex_unlock(&econet_mutex);
--			return -EFAULT;
--		}
--		iov[i+1].iov_base = base;
--		iov[i+1].iov_len = iov_len;
--		size += iov_len;
-+
-+	userbuf = vmalloc(len);
-+	if (userbuf == NULL) {
-+		err = -ENOMEM;
-+		goto error;
- 	}
- 
-+	iov[1].iov_base = userbuf;
-+	iov[1].iov_len = len;
-+	err = memcpy_fromiovec(userbuf, msg->msg_iov, len);
-+	if (err)
-+		goto error_free_buf;
-+
- 	/* Get a skbuff (no data, just holds our cb information) */
- 	if ((skb = sock_alloc_send_skb(sk, 0,
- 				       msg->msg_flags & MSG_DONTWAIT,
--				       &err)) == NULL) {
--		mutex_unlock(&econet_mutex);
--		return err;
--	}
-+				       &err)) == NULL)
-+		goto error_free_buf;
- 
- 	eb = (struct ec_cb *)&skb->cb;
- 
-@@ -480,7 +476,7 @@ static int econet_sendmsg(struct kiocb *
- 	udpmsg.msg_name = (void *)&udpdest;
- 	udpmsg.msg_namelen = sizeof(udpdest);
- 	udpmsg.msg_iov = &iov[0];
--	udpmsg.msg_iovlen = msg->msg_iovlen + 1;
-+	udpmsg.msg_iovlen = 2;
- 	udpmsg.msg_control = NULL;
- 	udpmsg.msg_controllen = 0;
- 	udpmsg.msg_flags=0;
-@@ -488,9 +484,13 @@ static int econet_sendmsg(struct kiocb *
- 	oldfs = get_fs(); set_fs(KERNEL_DS);	/* More privs :-) */
- 	err = sock_sendmsg(udpsock, &udpmsg, size);
- 	set_fs(oldfs);
-+
-+error_free_buf:
-+	vfree(userbuf);
- #else
- 	err = -EPROTOTYPE;
- #endif
-+	error:
- 	mutex_unlock(&econet_mutex);
- 
- 	return err;
+@@ -397,3 +404,4 @@ MODULE_AUTHOR("Matthew Garrett <mjg@redh
+ MODULE_DESCRIPTION("Dell laptop driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("dmi:*svnDellInc.:*:ct8:*");
++MODULE_ALIAS("dmi:*svnDellComputerCorporation.:*:ct8:*");
 
 
