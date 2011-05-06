@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab1EFAvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:51:00 -0400
-Received: from kroah.org ([198.145.64.141]:36921 "EHLO coco.kroah.org"
+	id S932309Ab1EFAZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:25:20 -0400
+Received: from kroah.org ([198.145.64.141]:36929 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932303Ab1EFAZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:09 -0400
+	id S1755920Ab1EFAZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:12 2011
-Message-Id: <20110506002212.286653496@clark.kroah.org>
+Message-Id: <20110506002212.391962847@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:57 -0700
+Date: Thu, 05 May 2011 17:20:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [072/143] Increase OSF partition limit from 8 to 18
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ron Murray <rjmx@rjmx.net>, "David S. Miller" <davem@davemloft.net>
+Subject: [073/143] Please add support for Microsoft MN-120 PCMCIA network card
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,38 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Ron Murray <rjmx@rjmx.net>
 
-commit 34d211a2d5df4984a35b18d8ccacbe1d10abb067 upstream.
+commit 60abe78279568a7109db2bcbc71131766a91c2e5 upstream.
 
-It turns out that while a maximum of 8 partitions may be what people
-"should" have had, you can actually fit up to 18 entries(*) in a sector.
+Please add support for Microsoft MN-120 PCMCIA network card. It's an
+old card, I know, but adding support is very easy. You just need to
+get tulip_core.c to recognise its vendor/device ID.
 
-And some people clearly were taking advantage of that, like Michael
-Cree, who had ten partitions on one of his OSF disks.
+Patch for kernel 2.6.32.4 (and many previous) attached.
 
-(*) The OSF partition data starts at byte offset 64 in the first sector,
-    and the array of 16-byte partition entries start at offset 148 in
-    the on-disk partition structure.
+ .....Ron Murray
 
-Reported-by: Michael Cree <mcree@orcon.net.nz>
-Cc: stable@kernel.org (v2.6.38)
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ron Murray <rjmx@rjmx.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/partitions/osf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/tulip/tulip_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/partitions/osf.c
-+++ b/fs/partitions/osf.c
-@@ -10,7 +10,7 @@
- #include "check.h"
- #include "osf.h"
- 
--#define MAX_OSF_PARTITIONS 8
-+#define MAX_OSF_PARTITIONS 18
- 
- int osf_partition(struct parsed_partitions *state, struct block_device *bdev)
- {
+--- a/drivers/net/tulip/tulip_core.c
++++ b/drivers/net/tulip/tulip_core.c
+@@ -249,6 +249,7 @@ static struct pci_device_id tulip_pci_tb
+ 	{ 0x17B3, 0xAB08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
+ 	{ 0x10b7, 0x9300, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET }, /* 3Com 3CSOHO100B-TX */
+ 	{ 0x14ea, 0xab08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET }, /* Planex FNW-3602-TX */
++	{ 0x1414, 0x0001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET }, /* Microsoft MN-120 */
+ 	{ 0x1414, 0x0002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
+ 	{ } /* terminate list */
+ };
 
 
