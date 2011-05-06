@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab1EFAr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:47:27 -0400
-Received: from kroah.org ([198.145.64.141]:37028 "EHLO coco.kroah.org"
+	id S932373Ab1EFArI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:47:08 -0400
+Received: from kroah.org ([198.145.64.141]:37036 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab1EFAZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:26 -0400
+	id S932329Ab1EFAZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:27 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:14 2011
-Message-Id: <20110506002214.036157708@clark.kroah.org>
+Message-Id: <20110506002214.124823285@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:15 -0700
+Date: Thu, 05 May 2011 17:21:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Pavel Roskin <proski@gnu.org>,
         Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo van Doorn <ivdoorn@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [090/143] rt2x00: Properly request tx headroom for alignment operations.
+Subject: [091/143] rt2x00: use correct headroom for transmission
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,63 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Pavel Roskin <proski@gnu.org>
 
-commit 7a4a77b7771164d61ce702a588067d1e1d66db7c upstream.
+commit b59a52f12e483b79e7d32da7ec30dcf3b2e0210b upstream.
 
-Current rt2x00 drivers may result in a "ieee80211_tx_status: headroom too
-small" error message when a frame needs to be properly aligned before
-transmitting it.
-This is because the space needed to ensure proper alignment isn't
-requested from mac80211.
-Fix this by adding sufficient amount of alignment space to the amount
-of headroom requested for TX frames.
+Use rt2x00dev->ops->extra_tx_headroom, not rt2x00dev->hw->extra_tx_headroom
+in the tx code, as the later may include other headroom not to be used in
+the chipset driver.
 
-Reported-by: David Ellingsworth <david@identd.dyndns.org>
+Signed-off-by: Pavel Roskin <proski@gnu.org>
 Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo van Doorn <ivdoorn@gmail.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/wireless/rt2x00/rt2x00.h    |    6 ++++++
- drivers/net/wireless/rt2x00/rt2x00dev.c |   12 +++++++++++-
- 2 files changed, 17 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00queue.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -112,6 +112,12 @@
- 	(  ((unsigned long)((__skb)->data + (__header))) & 3 )
- 
- /*
-+ * Constants for extra TX headroom for alignment purposes.
-+ */
-+#define RT2X00_ALIGN_SIZE	4 /* Only whole frame needs alignment */
-+#define RT2X00_L2PAD_SIZE	8 /* Both header & payload need alignment */
-+
-+/*
-  * Standard timing and size defines.
-  * These values should follow the ieee80211 specifications.
-  */
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -686,7 +686,17 @@ static int rt2x00lib_probe_hw(struct rt2
- 	/*
- 	 * Initialize extra TX headroom required.
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -103,7 +103,7 @@ void rt2x00queue_map_txskb(struct rt2x00
+ 	 * is also mapped to the DMA so it can be used for transfering
+ 	 * additional descriptor information to the hardware.
  	 */
--	rt2x00dev->hw->extra_tx_headroom = rt2x00dev->ops->extra_tx_headroom;
-+	rt2x00dev->hw->extra_tx_headroom =
-+		max_t(unsigned int, IEEE80211_TX_STATUS_HEADROOM,
-+		      rt2x00dev->ops->extra_tx_headroom);
-+
-+	/*
-+	 * Take TX headroom required for alignment into account.
-+	 */
-+	if (test_bit(DRIVER_REQUIRE_L2PAD, &rt2x00dev->flags))
-+		rt2x00dev->hw->extra_tx_headroom += RT2X00_L2PAD_SIZE;
-+	else if (test_bit(DRIVER_REQUIRE_DMA, &rt2x00dev->flags))
-+		rt2x00dev->hw->extra_tx_headroom += RT2X00_ALIGN_SIZE;
+-	skb_push(skb, rt2x00dev->hw->extra_tx_headroom);
++	skb_push(skb, rt2x00dev->ops->extra_tx_headroom);
  
+ 	skbdesc->skb_dma =
+ 	    dma_map_single(rt2x00dev->dev, skb->data, skb->len, DMA_TO_DEVICE);
+@@ -111,7 +111,7 @@ void rt2x00queue_map_txskb(struct rt2x00
  	/*
- 	 * Register HW.
+ 	 * Restore data pointer to original location again.
+ 	 */
+-	skb_pull(skb, rt2x00dev->hw->extra_tx_headroom);
++	skb_pull(skb, rt2x00dev->ops->extra_tx_headroom);
+ 
+ 	skbdesc->flags |= SKBDESC_DMA_MAPPED_TX;
+ }
+@@ -133,7 +133,7 @@ void rt2x00queue_unmap_skb(struct rt2x00
+ 		 * by the driver, but it was actually mapped to DMA.
+ 		 */
+ 		dma_unmap_single(rt2x00dev->dev, skbdesc->skb_dma,
+-				 skb->len + rt2x00dev->hw->extra_tx_headroom,
++				 skb->len + rt2x00dev->ops->extra_tx_headroom,
+ 				 DMA_TO_DEVICE);
+ 		skbdesc->flags &= ~SKBDESC_DMA_MAPPED_TX;
+ 	}
 
 
