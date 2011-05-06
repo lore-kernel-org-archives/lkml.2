@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab1EFR4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 13:56:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59260 "EHLO mx1.redhat.com"
+	id S1756685Ab1EFQuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 12:50:07 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:4824 "EHLO sjogate2.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1EFR4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 13:56:17 -0400
-Date: Fri, 6 May 2011 19:55:48 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Thomas Sattler <tsattler@gmx.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.X)
-Message-ID: <20110506175548.GE6330@random.random>
-References: <4DAF6C0B.3070009@gmx.de>
- <20110427134613.GI32590@random.random>
- <4DC14474.9040001@gmx.de>
- <20110504143842.GK7838@random.random>
- <4DC31EDE.2020503@gmx.de>
- <20110506011319.GH7838@random.random>
- <4DC3B629.7010409@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC3B629.7010409@gmx.de>
+	id S1756637Ab1EFQtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 12:49:42 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 1/3] dmaengine: at_hdmac: set residue as total len in atc_tx_status
+Date: Fri,  6 May 2011 19:56:51 +0200
+Message-Id: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304704588.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
+References: <f4341d4672a23a958398b75cb4305e0e680f2e32.1304532833.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 10:49:45AM +0200, Thomas Sattler wrote:
-> > You can already run "grep threshold /proc/zoneinfo" on the system
-> > where you reproduced the hang the last time (the one running 2.6.38.4)
-> > the one with 1.5G of ram. They all should be well below 512 (so in
-> > theory not causing troubles because of the per-cpu stats, and with so
-> > few cpus it shouldn't have been such a longstanding problem anyway).
-> 
-> 'grep threshold /proc/zoneinfo' returns nothing on this machine after
-> a reboot and before a crash. Did I tell it's a single core machine?
+If transfer status is !=DMA_SUCCESS, return total transfer len as residue,
+instead of zero.
 
-Hmm single core machine doesn't seem to fit my theory of per-cpu stats
-too well... I think it's not impossible but it should only be possible
-on smp and maybe it's not reproducible and probably not what you're
-dealing with.
+Idea from dw_dmac patch by Viresh Kumar.
 
-The new make-it-worse-patch should help to reproduce though.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/dma/at_hdmac.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-If you can "cat /proc/zoneinfo" _during_ the hang (and then run
-sysrq+t again to see the status, no need of sysrq+l), it'll help to
-try to track this down. I'll recheck your last sysrq+t once again to
-see if I get other ideas.
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index f52c9e3..ba0b5ec 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1026,7 +1026,12 @@ atc_tx_status(struct dma_chan *chan,
+ 
+ 	spin_unlock_bh(&atchan->lock);
+ 
+-	dma_set_tx_state(txstate, last_complete, last_used, 0);
++	if (ret != DMA_SUCCESS)
++		dma_set_tx_state(txstate, last_complete, last_used,
++			atc_first_active(atchan)->len);
++	else
++		dma_set_tx_state(txstate, last_complete, last_used, 0);
++
+ 	dev_vdbg(chan2dev(chan), "tx_status: %d (d%d, u%d)\n",
+ 		 cookie, last_complete ? last_complete : 0,
+ 		 last_used ? last_used : 0);
+-- 
+1.7.3
 
-A 'cat /proc/zoneinfo' after the hang resolves itself and the system
-is mostly idle, will also be interesting to verify the nr_isolated_*
-are all zero.
-
-Thanks,
-Andrea
