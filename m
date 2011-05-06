@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab1EFPv4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 11:51:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52370 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab1EFPvy (ORCPT
+	id S1756622Ab1EFP6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 11:58:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47167 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab1EFP6O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 11:51:54 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=KCicORRhOoQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=b8VgSBC0AAAA:8 a=XKDW7ASRPWmzK34nlB8A:9 a=PUjeQqilurYA:10 a=dGJ0OcVc7YAA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [tip:perf/core] perf events, x86: Add SandyBridge
- stalled-cycles-frontend/backend events
-From: Steven Rostedt <rostedt@goodmis.org>
-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        fweisbec@gmail.com, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-e04d1b23f9706186187dcb0be1a752e48dcc540b@git.kernel.org>
-References: <1304666042-17577-1-git-send-email-ming.m.lin@intel.com>
-	 <tip-e04d1b23f9706186187dcb0be1a752e48dcc540b@git.kernel.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 06 May 2011 11:51:52 -0400
-Message-ID: <1304697112.25414.2523.camel@gandalf.stny.rr.com>
+	Fri, 6 May 2011 11:58:14 -0400
+Date: Fri, 6 May 2011 08:58:03 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: linux-next: Tree for May 6 (wireless)
+Message-Id: <20110506085803.c15692bb.randy.dunlap@oracle.com>
+In-Reply-To: <BANLkTimqboATe5cO+19Bv5p9dStnwevwng@mail.gmail.com>
+References: <20110506154921.47700781.sfr@canb.auug.org.au>
+	<20110506084031.a1f2e483.randy.dunlap@oracle.com>
+	<BANLkTimqboATe5cO+19Bv5p9dStnwevwng@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4DC41A90.0074:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 07:40 +0000, tip-bot for Lin Ming wrote:
-> Commit-ID:  e04d1b23f9706186187dcb0be1a752e48dcc540b
-> Gitweb:     http://git.kernel.org/tip/e04d1b23f9706186187dcb0be1a752e48dcc540b
-> Author:     Lin Ming <ming.m.lin@intel.com>
-> AuthorDate: Fri, 6 May 2011 07:14:02 +0000
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Fri, 6 May 2011 09:37:03 +0200
+On Fri, 6 May 2011 17:44:44 +0200 Sedat Dilek wrote:
+
+> On Fri, May 6, 2011 at 5:40 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > On Fri, 6 May 2011 15:49:21 +1000 Stephen Rothwell wrote:
+> >
+> >> Hi all,
+> >>
+> >> Changes since 20110505:
+> >
+> >
+> > when PM is not enabled:
+> >
+> > net/mac80211/main.c:700: error: 'const struct ieee80211_ops' has no member named 'suspend'
+> > net/mac80211/main.c:700: error: 'const struct ieee80211_ops' has no member named 'resume'
+> >
+> > ---
+> > ~Randy
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 > 
-> perf events, x86: Add SandyBridge stalled-cycles-frontend/backend events
-> 
-> Extend the Intel SandyBridge PMU driver with definitions
-> for generic front-end and back-end stall events.
-> 
-> ( As commit 3011203 "perf events, x86: Add Westmere stalled-cycles-frontend/backend
->   events" says, these are only approximations. )
+> There was a patch sent today, see "[PATCH] mac80211: Fix build error
+> when CONFIG_PM is not defined" from Larry.
 
-I now get the following build error:
+Thanks.  That works.
 
-In file included from /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event.c:1449:0:
-/home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c: In function 'intel_pmu_init':
-/home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c:1479:27: error: 'PERF_COUNT_HW_STALLED_CYCLES_FRONTEND' undeclared (first use in this fun
-ction)
-/home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c:1479:27: note: each undeclared identifier is reported only once for each function it appe
-ars in
-/home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c:1481:27: error: 'PERF_COUNT_HW_STALLED_CYCLES_BACKEND' undeclared (first use in this func
-tion)
-
-Config can be found here:
-
-http://rostedt.homelinux.com/private/config-sandy-failed
-
--- Steve
-
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
