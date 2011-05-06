@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab1EFA0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:26:15 -0400
-Received: from kroah.org ([198.145.64.141]:37394 "EHLO coco.kroah.org"
+	id S932536Ab1EFA0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:26:13 -0400
+Received: from kroah.org ([198.145.64.141]:37401 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932526Ab1EFA0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:26:09 -0400
+	id S932527Ab1EFA0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:26:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:18 2011
-Message-Id: <20110506002218.720237710@clark.kroah.org>
+Message-Id: <20110506002218.820703899@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:22:02 -0700
+Date: Thu, 05 May 2011 17:22:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [137/143] wireless: b43: fix error path in SDIO
+        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
+        Jonathan Liu <net147@gmail.com>
+Subject: [138/143] libata: set queue DMA alignment to sector size for ATAPI too
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,31 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Tejun Heo <htejun@gmail.com>
 
-commit e476a5a41ad67d0e2b4a652820c49a3923eb936b upstream.
+commit 729a6a300e628a48cf12bac93a964a535e83cd1d upstream.
 
-Fix unbalanced call to sdio_release_host() on the error path.
+ata_pio_sectors() expects buffer for each sector to be contained in a
+single page; otherwise, it ends up overrunning the first page.  This
+is achieved by setting queue DMA alignment.  If sector_size is smaller
+than PAGE_SIZE and all buffers are sector_size aligned, buffer for
+each sector is always contained in a single page.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This wasn't applied to ATAPI devices but IDENTIFY_PACKET is executed
+as ATA_PROT_PIO and thus uses ata_pio_sectors().  Newer versions of
+udev issue IDENTIFY_PACKET with unaligned buffer triggering the
+problem and causing oops.
+
+This patch fixes the problem by setting sdev->sector_size to
+ATA_SECT_SIZE on ATATPI devices and always setting DMA alignment to
+sector_size.  While at it, add a warning for the unlikely but still
+possible scenario where sector_size is larger than PAGE_SIZE, in which
+case the alignment wouldn't be enough.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: John Stanley <jpsinthemix@verizon.net>
+Tested-by: John Stanley <jpsinthemix@verizon.net>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Jonathan Liu <net147@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/net/wireless/b43/sdio.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/libata-scsi.c |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/b43/sdio.c
-+++ b/drivers/net/wireless/b43/sdio.c
-@@ -162,6 +162,7 @@ static int b43_sdio_probe(struct sdio_fu
- err_free_ssb:
- 	kfree(sdio);
- err_disable_func:
-+	sdio_claim_host(func);
- 	sdio_disable_func(func);
- err_release_host:
- 	sdio_release_host(func);
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -1099,13 +1099,13 @@ static int ata_scsi_dev_config(struct sc
+ 	/* configure max sectors */
+ 	blk_queue_max_sectors(sdev->request_queue, dev->max_sectors);
+ 
++	sdev->sector_size = ATA_SECT_SIZE;
++
+ 	if (dev->class == ATA_DEV_ATAPI) {
+ 		struct request_queue *q = sdev->request_queue;
+ 		void *buf;
+ 
+-		/* set the min alignment and padding */
+-		blk_queue_update_dma_alignment(sdev->request_queue,
+-					       ATA_DMA_PAD_SZ - 1);
++		/* set DMA padding */
+ 		blk_queue_update_dma_pad(sdev->request_queue,
+ 					 ATA_DMA_PAD_SZ - 1);
+ 
+@@ -1119,12 +1119,24 @@ static int ata_scsi_dev_config(struct sc
+ 
+ 		blk_queue_dma_drain(q, atapi_drain_needed, buf, ATAPI_MAX_DRAIN);
+ 	} else {
+-		/* ATA devices must be sector aligned */
+-		blk_queue_update_dma_alignment(sdev->request_queue,
+-					       ATA_SECT_SIZE - 1);
+ 		sdev->manage_start_stop = 1;
+ 	}
+ 
++	/*
++	 * ata_pio_sectors() expects buffer for each sector to not cross
++	 * page boundary.  Enforce it by requiring buffers to be sector
++	 * aligned, which works iff sector_size is not larger than
++	 * PAGE_SIZE.  ATAPI devices also need the alignment as
++	 * IDENTIFY_PACKET is executed as ATA_PROT_PIO.
++	 */
++	if (sdev->sector_size > PAGE_SIZE)
++		ata_dev_printk(dev, KERN_WARNING,
++			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
++			sdev->sector_size);
++
++	blk_queue_update_dma_alignment(sdev->request_queue,
++				       sdev->sector_size - 1);
++
+ 	if (dev->flags & ATA_DFLAG_AN)
+ 		set_bit(SDEV_EVT_MEDIA_CHANGE, sdev->supported_events);
+ 
 
 
