@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1EFANL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:11 -0400
-Received: from kroah.org ([198.145.64.141]:60995 "EHLO coco.kroah.org"
+	id S1754198Ab1EFANN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:13:13 -0400
+Received: from kroah.org ([198.145.64.141]:32770 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab1EFANK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753150Ab1EFANK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 May 2011 20:13:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:07 2011
-Message-Id: <20110506001207.348023550@clark.kroah.org>
+Message-Id: <20110506001207.447041139@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:33 -0700
+Date: Thu, 05 May 2011 17:10:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Dan Rosenberg <drosenberg@vsecurity.com>,
-        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        Eric Moore <eric.moore@lsi.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [patch 01/38] [SCSI] pmcraid: reject negative request size
+Subject: [patch 02/38] [SCSI] mpt2sas: prevent heap overflows and unchecked reads
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,51 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 5f6279da3760ce48f478f2856aacebe0c59a39f3 upstream.
+commit a1f74ae82d133ebb2aabb19d181944b4e83e9960 upstream.
 
-There's a code path in pmcraid that can be reached via device ioctl that
-causes all sorts of ugliness, including heap corruption or triggering
-the OOM killer due to consecutive allocation of large numbers of pages.
-Not especially relevant from a security perspective, since users must
-have CAP_SYS_ADMIN to open the character device.
+At two points in handling device ioctls via /dev/mpt2ctl, user-supplied
+length values are used to copy data from userspace into heap buffers
+without bounds checking, allowing controllable heap corruption and
+subsequently privilege escalation.
 
-First, the user can call pmcraid_chr_ioctl() with a type
-PMCRAID_PASSTHROUGH_IOCTL.  A pmcraid_passthrough_ioctl_buffer
-is copied in, and the request_size variable is set to
-buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit signed
-value provided by the user.
-
-If a negative value is provided here, bad things can happen.  For
-example, pmcraid_build_passthrough_ioadls() is called with this
-request_size, which immediately calls pmcraid_alloc_sglist() with a
-negative size.  The resulting math on allocating a scatter list can
-result in an overflow in the kzalloc() call (if num_elem is 0, the
-sglist will be smaller than expected), or if num_elem is unexpectedly
-large the subsequent loop will call alloc_pages() repeatedly, a high
-number of pages will be allocated and the OOM killer might be invoked.
-
-Prevent this value from being negative in pmcraid_ioctl_passthrough().
+Additionally, user-supplied values are used to determine the size of a
+copy_to_user() as well as the offset into the buffer to be read, with no
+bounds checking, allowing users to read arbitrary kernel memory.
 
 Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+Acked-by: Eric Moore <eric.moore@lsi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/pmcraid.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -3814,6 +3814,9 @@ static long pmcraid_ioctl_passthrough(
- 			rc = -EFAULT;
- 			goto out_free_buffer;
- 		}
-+	} else if (request_size < 0) {
-+		rc = -EINVAL;
-+		goto out_free_buffer;
+--- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+@@ -688,6 +688,13 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPT
+ 		goto out;
  	}
  
- 	/* check if we have any additional command parameters */
++	/* Check for overflow and wraparound */
++	if (karg.data_sge_offset * 4 > ioc->request_sz ||
++	    karg.data_sge_offset > (UINT_MAX / 4)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
+ 	/* copy in request message frame from user */
+ 	if (copy_from_user(mpi_request, mf, karg.data_sge_offset*4)) {
+ 		printk(KERN_ERR "failure at %s:%d/%s()!\n", __FILE__, __LINE__,
+@@ -1963,7 +1970,7 @@ _ctl_diag_read_buffer(void __user *arg,
+ 	Mpi2DiagBufferPostReply_t *mpi_reply;
+ 	int rc, i;
+ 	u8 buffer_type;
+-	unsigned long timeleft;
++	unsigned long timeleft, request_size, copy_size;
+ 	u16 smid;
+ 	u16 ioc_status;
+ 	u8 issue_reset = 0;
+@@ -1999,6 +2006,8 @@ _ctl_diag_read_buffer(void __user *arg,
+ 		return -ENOMEM;
+ 	}
+ 
++	request_size = ioc->diag_buffer_sz[buffer_type];
++
+ 	if ((karg.starting_offset % 4) || (karg.bytes_to_read % 4)) {
+ 		printk(MPT2SAS_ERR_FMT "%s: either the starting_offset "
+ 		    "or bytes_to_read are not 4 byte aligned\n", ioc->name,
+@@ -2006,13 +2015,23 @@ _ctl_diag_read_buffer(void __user *arg,
+ 		return -EINVAL;
+ 	}
+ 
++	if (karg.starting_offset > request_size)
++		return -EINVAL;
++
+ 	diag_data = (void *)(request_data + karg.starting_offset);
+ 	dctlprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: diag_buffer(%p), "
+ 	    "offset(%d), sz(%d)\n", ioc->name, __func__,
+ 	    diag_data, karg.starting_offset, karg.bytes_to_read));
+ 
++	/* Truncate data on requests that are too large */
++	if ((diag_data + karg.bytes_to_read < diag_data) ||
++	    (diag_data + karg.bytes_to_read > request_data + request_size))
++		copy_size = request_size - karg.starting_offset;
++	else
++		copy_size = karg.bytes_to_read;
++
+ 	if (copy_to_user((void __user *)uarg->diagnostic_data,
+-	    diag_data, karg.bytes_to_read)) {
++	    diag_data, copy_size)) {
+ 		printk(MPT2SAS_ERR_FMT "%s: Unable to write "
+ 		    "mpt_diag_read_buffer_t data @ %p\n", ioc->name,
+ 		    __func__, diag_data);
 
 
