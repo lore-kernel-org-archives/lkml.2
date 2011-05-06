@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab1EFBMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 21:12:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63766 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab1EFBMq convert rfc822-to-8bit (ORCPT
+	id S1754951Ab1EFBNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 21:13:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40510 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab1EFBNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 21:12:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,323,1301900400"; 
-   d="scan'208";a="431442548"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>
-Date: Fri, 6 May 2011 09:12:37 +0800
-Subject: RE: [PATCH] x86: skip migrating percpu irq in fixup_irqs
-Thread-Topic: [PATCH] x86: skip migrating percpu irq in fixup_irqs
-Thread-Index: AcwLB5MndYVUnZuiQCuR8J2thl8z1AAgl2ew
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F574@shsmsx502.ccr.corp.intel.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F327@shsmsx502.ccr.corp.intel.com>
- <1304585343.26692.71.camel@zakaz.uk.xensource.com>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7F3A9@shsmsx502.ccr.corp.intel.com>
- <alpine.LFD.2.02.1105051108320.3005@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105051108320.3005@ionos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 May 2011 21:13:51 -0400
+Message-ID: <4DC34B21.9040203@oracle.com>
+Date: Thu, 05 May 2011 18:13:05 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] pci, dmar: flush IOTLB before exit domain
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090201.4DC34B2C.000C:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Thursday, May 05, 2011 5:34 PM
-> 
-> On Thu, 5 May 2011, Tian, Kevin wrote:
-> > > From: Ian Campbell [mailto:Ian.Campbell@eu.citrix.com]
-> > > Sent: Thursday, May 05, 2011 4:49 PM
-> > >
-> > > On Thu, 2011-05-05 at 09:15 +0100, Tian, Kevin wrote:
-> > > > x86: skip migrating percpu irq in fixup_irqs
-> > > >
-> > > > IRQF_PER_CPU is used by Xen for a set of virtual interrupts
-> > > > binding to a specific vcpu, but it's not recognized in fixup_irqs
-> > > > which simply atempts to migrate it to other vcpus. In most cases
-> > > > this just works, because Xen event channel chip silently fails the
-> > > > set_affinity ops for irqs marked as IRQF_PER_CPU. But there's a
-> > > > special category (like used for pv spinlock) also adds a
-> > > > IRQ_DISABLED flag, used as polled only
-> 
-> I guess you mean IRQF_DISABLED, right?
 
-yes. :-)
+during one hotplug testing on system that support iommu/dmar.
+got memory corruption.
 
-> 
-> > > > event channels which don't expect any instance injected. However
-> > > > fixup_irqs absolutely masks/unmasks irqs which makes such special
-> > > > type irq injected unexpectely while there's no handler for it.
-> 
-> IRQF_DISABLED has absolutely nothing to do with polling and mask/unmask.
-> IRQF_DISABLED is actually a NOOP and totally irrelevant.
+[  578.279327] pci 0000:c4:00.0: no hotplug settings from platform
+[  578.299240] scsi11 : Fusion MPT SAS Host
+[  578.301033] mpt2sas2: mpt2sas_base_attach
+[  578.302643] mpt2sas2: mpt2sas_base_map_resources
+[  578.302797] BUG: Bad page state in process udevd  pfn:dffe23e
+[  578.302801] page:ffffea030ff97d90 count:0 mapcount:-27 mapping:          (null) index:0xffff88dffe23eec0
+[  578.302803] page flags: 0x1a00000000000000()
+[  578.302807] Pid: 18215, comm: udevd Not tainted 2.6.39-rc5-tip-yh-03961-gced6a85-dirty #898
+[  578.302809] Call Trace:
+[  578.302825]  [<ffffffff81101528>] ? dump_page+0xbb/0xc0
+[  578.302831]  [<ffffffff8110160a>] bad_page+0xdd/0xf2
+[  578.302838]  [<ffffffff811023e6>] prep_new_page+0x70/0x141
+[  578.302844]  [<ffffffff811028da>] get_page_from_freelist+0x423/0x59f
+[  578.302851]  [<ffffffff81102c0a>] __alloc_pages_nodemask+0x1b4/0x7fe
+[  578.302864]  [<ffffffff810a276a>] ? local_clock+0x2b/0x3c
+[  578.302879]  [<ffffffff8111929e>] ? __pud_alloc+0x73/0x84
+[  578.302885]  [<ffffffff810a276a>] ? local_clock+0x2b/0x3c
+[  578.302896]  [<ffffffff8112d5a1>] alloc_pages_current+0xba/0xdd
+[  578.302903]  [<ffffffff810ff774>] __get_free_pages+0xe/0x4b
+[  578.302909]  [<ffffffff810ff7c7>] get_zeroed_page+0x16/0x18
+[  578.302915]  [<ffffffff811192d1>] __pmd_alloc+0x22/0x85
+[  578.302922]  [<ffffffff8111a6ad>] copy_page_range+0x238/0x3d8
+[  578.302938]  [<ffffffff8107dd1b>] dup_mmap+0x2b9/0x375
+[  578.302944]  [<ffffffff8107e3c5>] dup_mm+0xab/0x171
+[  578.302951]  [<ffffffff8107eb99>] copy_process+0x6ea/0xd8e
+[  578.302959]  [<ffffffff810b1a87>] ? __lock_release+0x166/0x16f
+[  578.302965]  [<ffffffff8107f396>] do_fork+0x130/0x2dd
+[  578.302976]  [<ffffffff811541c2>] ? mntput_no_expire+0x27/0xc8
+[  578.302982]  [<ffffffff81154289>] ? mntput+0x26/0x28
+[  578.302994]  [<ffffffff8113c429>] ? __fput+0x1b9/0x1c8
+[  578.303004]  [<ffffffff81c2f69c>] ? sysret_check+0x27/0x62
+[  578.303015]  [<ffffffff81040f41>] sys_clone+0x28/0x2a
+[  578.303021]  [<ffffffff81c2f953>] stub_clone+0x13/0x20
+[  578.303027]  [<ffffffff81c2f66b>] ? system_call_fastpath+0x16/0x1b
 
-this is just due to the way how Xen pvops implements the event polling, with
-corresponding irq marked as both IRQF_PER_CPU and IRQ_DISABLED. This
-way when the event polled by the pvops guest comes, Xen simply resumes
-the guest at next instruction after the poll hypercall but no need to make this
-instance aware into the guest.
+the bug is uncoverred by
 
-> 
-> > > > This error is triggered on some box when doing reboot. The fix is
-> > > > to recognize IRQF_PER_CPU flag early before the affinity change,
-> > > > which actually matches the rationale of IRQF_PER_CPU.
-> > >
-> > > Skipping affinity fixup for PER_CPU IRQs seems logical enough (so I
-> > > suspect this patch is good in its own right) but if the real issue
-> > > you are fixing is that IRQ_DISABLED IQRs are getting unmasked should
-> > > that issue be addressed directly rather than relying on it being a side-effect
-> of PER_CPU-ness?
-> >
-> > actually this is one thing I'm not sure and would like to hear more
-> suggestions.
-> > imo affinity and percpu are same type of attributes, which describe
-> > the constraints to host a given irq, while disabled/masked are another
-> > type of
-> 
-> They are similar, but percpu says explicitely: This interrupt can never be moved
-> away from the cpu it is bound to. Affinity ist just the current binding which is
-> allowed to be changed.
+| commit a97590e56d0d58e1dd262353f7cbd84e81d8e600
+| Author: Alex Williamson <alex.williamson@redhat.com>
+| Date:   Fri Mar 4 14:52:16 2011 -0700
+|
+|    intel-iommu: Unlink domain from iommu
+|    
+|    When we remove a device, we unlink the iommu from the domain, but
+|    we never do the reverse unlinking of the domain from the iommu.
+|    This means that we never clear iommu->domain_ids, eventually leading
+|    to resource exhaustion if we repeatedly bind and unbind a device
+|    to a driver.  Also free empty domains to avoid a resource leak.
 
-yes.
+that will remove domain really...
+It exposes the problem that defer flushing is not handled properly during hot removing.
 
-> 
-> > attributes which describe whether to accept an irq instance (mask is
-> > for short period). even without the IRQ_DISABLED issue, this patch is
-> > also required though it doesn't expose observable failure. I didn't
-> > bake the 2nd patch to avoid unmask for IRQ_DISABLED, because I want to
-> > know whether this is desired, e.g. IRQ_DISABLED is set in the fly when
-> > there can be still one instance pending?
-> 
-> What you probably mean is the core internal disabled state of the interrupt line.
-> Yes, we should not unmask such interrupts in the fixup move.
-> 
+Try to flush unmaps before exit.
 
-OK, I'll send an updated patch to cover both IRQF_PER_CPU and IRQF_DISABLED
-case.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Thanks
-Kevin
+---
+ drivers/pci/intel-iommu.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6/drivers/pci/intel-iommu.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/intel-iommu.c
++++ linux-2.6/drivers/pci/intel-iommu.c
+@@ -3252,6 +3252,9 @@ static int device_notifier(struct notifi
+ 		return 0;
+ 
+ 	if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through) {
++		/* before we remove dev with domain, flush IOTLB */
++		flush_unmaps();
++
+ 		domain_remove_one_dev_info(domain, pdev);
+ 
+ 		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
