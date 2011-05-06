@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1EFNF1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:05:27 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:45894 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753625Ab1EFNFZ (ORCPT
+	id S1756377Ab1EFN2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:28:52 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:49106 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755413Ab1EFN2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:05:25 -0400
+	Fri, 6 May 2011 09:28:49 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 00/10] Ux500 PRCMU into MFD and update deps
-Date: Fri, 6 May 2011 15:04:50 +0200
-Message-ID: <1304687090-23401-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 01/10] mach-ux500: update the DB8500 register file
+Date: Fri, 6 May 2011 15:05:15 +0200
+Message-ID: <1304687115-23501-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,85 +22,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-This moves the DB8500 PRCMU driver from the arch/arm/mach-ux500/
-dir to MFD, updates it, adds the missing DB5500 PRCMU driver,
-updates some dependent register files etc, and also updates the
-CPUfreq driver that use the PRCMU and moves it to drivers/cpufreq
-as discussed recently.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/mach-ux500/include/mach/db8500-regs.h |   37 +++++++++++++++++++----
+ 1 files changed, 30 insertions(+), 7 deletions(-)
 
-I will attempt to slim this down a bit, mainly the set is a
-review point for the MFD maintainer to check out if the PRCMU
-driver fits within MFD.
-
-We cannot avoid doing some updates to the mach-ux500/* files in
-the process, but I think this turns out on the positive side
-anyway, removing some 500+ lines from arch/arm/*.
-
-Bengt Jonsson (1):
-  mach-ux500: voltage domain regulators for DB8500
-
-Linus Walleij (8):
-  mach-ux500: update the DB8500 register file
-  mach-ux500: update the DB5500 register file
-  mach-ux500: update ASIC version detection
-  mach-ux500: rename PRCMU driver per SoC
-  mach-ux500: make PRCMU base address dynamic
-  mfd: move DB8500 PRCMU driver to the MFD subsystem
-  mfd: add DB5500 PRCMU driver
-  mach-ux500: update and move cpufreq driver
-
-Rabin Vincent (1):
-  mach-ux500: update SoC and board IRQ handling
-
- arch/arm/mach-ux500/Kconfig                        |    3 +
- arch/arm/mach-ux500/Makefile                       |    4 +-
- arch/arm/mach-ux500/cpu-db5500.c                   |    2 +
- arch/arm/mach-ux500/cpu-db8500.c                   |    7 +
- arch/arm/mach-ux500/cpu.c                          |    7 +-
- arch/arm/mach-ux500/cpufreq.c                      |  211 --
- arch/arm/mach-ux500/include/mach/db5500-regs.h     |   20 +-
- arch/arm/mach-ux500/include/mach/db8500-regs.h     |   37 +-
- arch/arm/mach-ux500/include/mach/hardware.h        |    1 +
- arch/arm/mach-ux500/include/mach/id.h              |   20 +
- .../mach-ux500/include/mach/irqs-board-mop500.h    |    5 +
- .../arm/mach-ux500/include/mach/irqs-board-u5500.h |   21 +
- arch/arm/mach-ux500/include/mach/irqs-db5500.h     |   27 +
- arch/arm/mach-ux500/include/mach/irqs-db8500.h     |   54 +
- arch/arm/mach-ux500/include/mach/irqs.h            |   46 +-
- arch/arm/mach-ux500/include/mach/prcmu-defs.h      |   30 -
- arch/arm/mach-ux500/include/mach/prcmu.h           |   28 -
- arch/arm/mach-ux500/prcmu.c                        |  394 ----
- drivers/cpufreq/Makefile                           |    1 +
- drivers/cpufreq/db8500-cpufreq.c                   |  169 ++
- drivers/mfd/Kconfig                                |   22 +-
- drivers/mfd/Makefile                               |    5 +-
- drivers/mfd/ab8500-i2c.c                           |    3 +-
- .../mfd/db5500-prcmu-regs.h                        |   27 +-
- drivers/mfd/db5500-prcmu.c                         |  448 +++++
- drivers/mfd/db8500-prcmu-regs.h                    |  162 ++
- drivers/mfd/db8500-prcmu.c                         | 2065 ++++++++++++++++++++
- drivers/regulator/Kconfig                          |    7 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/db8500-prcmu.c                   |  560 ++++++
- include/linux/mfd/db5500-prcmu.h                   |   45 +
- include/linux/mfd/db8500-prcmu.h                   |  978 +++++++++
- include/linux/regulator/db8500-prcmu.h             |   45 +
- 33 files changed, 4748 insertions(+), 707 deletions(-)
- delete mode 100644 arch/arm/mach-ux500/cpufreq.c
- create mode 100644 arch/arm/mach-ux500/include/mach/irqs-board-u5500.h
- delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu-defs.h
- delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu.h
- delete mode 100644 arch/arm/mach-ux500/prcmu.c
- create mode 100644 drivers/cpufreq/db8500-cpufreq.c
- rename arch/arm/mach-ux500/include/mach/prcmu-regs.h => drivers/mfd/db5500-prcmu-regs.h (80%)
- create mode 100644 drivers/mfd/db5500-prcmu.c
- create mode 100644 drivers/mfd/db8500-prcmu-regs.h
- create mode 100644 drivers/mfd/db8500-prcmu.c
- create mode 100644 drivers/regulator/db8500-prcmu.c
- create mode 100644 include/linux/mfd/db5500-prcmu.h
- create mode 100644 include/linux/mfd/db8500-prcmu.h
- create mode 100644 include/linux/regulator/db8500-prcmu.h
-
+diff --git a/arch/arm/mach-ux500/include/mach/db8500-regs.h b/arch/arm/mach-ux500/include/mach/db8500-regs.h
+index 16647b2..0499971 100644
+--- a/arch/arm/mach-ux500/include/mach/db8500-regs.h
++++ b/arch/arm/mach-ux500/include/mach/db8500-regs.h
+@@ -15,8 +15,13 @@
+ #define U8500_ESRAM_BANK2	(U8500_ESRAM_BANK1 + U8500_ESRAM_BANK_SIZE)
+ #define U8500_ESRAM_BANK3	(U8500_ESRAM_BANK2 + U8500_ESRAM_BANK_SIZE)
+ #define U8500_ESRAM_BANK4	(U8500_ESRAM_BANK3 + U8500_ESRAM_BANK_SIZE)
+-/* Use bank 4 for DMA LCPA */
+-#define U8500_DMA_LCPA_BASE	U8500_ESRAM_BANK4
++/*
++ * on V1 DMA uses 4KB for logical parameters position is right after the 64KB
++ * reserved for security
++ */
++#define U8500_ESRAM_DMA_LCPA_OFFSET     0x10000
++
++#define U8500_DMA_LCPA_BASE    (U8500_ESRAM_BANK0 + U8500_ESRAM_DMA_LCPA_OFFSET)
+ #define U8500_DMA_LCPA_BASE_ED	(U8500_ESRAM_BANK4 + 0x4000)
+ 
+ #define U8500_PER3_BASE		0x80000000
+@@ -27,9 +32,12 @@
+ #define U8500_B2R2_BASE		0x80130000
+ #define U8500_HSEM_BASE		0x80140000
+ #define U8500_PER4_BASE		0x80150000
++#define U8500_TPIU_BASE		0x80190000
+ #define U8500_ICN_BASE		0x81000000
+ 
+ #define U8500_BOOT_ROM_BASE	0x90000000
++/* ASIC ID is at 0xbf4 offset within this region */
++#define U8500_ASIC_ID_BASE	0x9001D000
+ 
+ #define U8500_PER6_BASE		0xa03c0000
+ #define U8500_PER5_BASE		0xa03e0000
+@@ -70,13 +78,15 @@
+ 
+ /* per6 base addresses */
+ #define U8500_RNG_BASE		(U8500_PER6_BASE + 0x0000)
+-#define U8500_PKA_BASE		(U8500_PER6_BASE + 0x1000)
+-#define U8500_PKAM_BASE		(U8500_PER6_BASE + 0x2000)
++#define U8500_HASH0_BASE        (U8500_PER6_BASE + 0x1000)
++#define U8500_HASH1_BASE        (U8500_PER6_BASE + 0x2000)
++#define U8500_PKA_BASE		(U8500_PER6_BASE + 0x4000)
++#define U8500_PKAM_BASE		(U8500_PER6_BASE + 0x5100)
+ #define U8500_MTU0_BASE		(U8500_PER6_BASE + 0x6000) /* v1 */
+ #define U8500_MTU1_BASE		(U8500_PER6_BASE + 0x7000) /* v1 */
+ #define U8500_CR_BASE		(U8500_PER6_BASE + 0x8000) /* v1 */
+-#define U8500_CRYPTO0_BASE	(U8500_PER6_BASE + 0xa000)
+-#define U8500_CRYPTO1_BASE	(U8500_PER6_BASE + 0xb000)
++#define U8500_CRYP0_BASE	(U8500_PER6_BASE + 0xa000)
++#define U8500_CRYP1_BASE	(U8500_PER6_BASE + 0xb000)
+ #define U8500_CLKRST6_BASE	(U8500_PER6_BASE + 0xf000)
+ 
+ /* per5 base addresses */
+@@ -93,7 +103,8 @@
+ #define U8500_DMC_BASE		(U8500_PER4_BASE + 0x06000)
+ #define U8500_PRCMU_BASE	(U8500_PER4_BASE + 0x07000)
+ #define U8500_PRCMU_TCDM_BASE_V1 (U8500_PER4_BASE + 0x0f000)
+-#define U8500_PRCMU_TCDM_BASE   (U8500_PER4_BASE + 0x68000)
++#define U8500_PRCMU_TCDM_BASE	(U8500_PER4_BASE + 0x68000)
++#define U8500_PRCMU_TCPM_BASE   (U8500_PER4_BASE + 0x60000)
+ 
+ /* per3 base addresses */
+ #define U8500_FSMC_BASE		(U8500_PER3_BASE + 0x0000)
+@@ -124,6 +135,7 @@
+ #define U8500_I2C1_BASE		(U8500_PER1_BASE + 0x2000)
+ #define U8500_MSP0_BASE		(U8500_PER1_BASE + 0x3000)
+ #define U8500_MSP1_BASE		(U8500_PER1_BASE + 0x4000)
++#define U8500_MSP3_BASE		(U8500_PER1_BASE + 0x5000)
+ #define U8500_SDI0_BASE		(U8500_PER1_BASE + 0x6000)
+ #define U8500_I2C2_BASE		(U8500_PER1_BASE + 0x8000)
+ #define U8500_SPI3_BASE		(U8500_PER1_BASE + 0x9000)
+@@ -143,4 +155,15 @@
+ #define U8500_GPIOBANK7_BASE	(U8500_GPIO2_BASE + 0x80)
+ #define U8500_GPIOBANK8_BASE	U8500_GPIO3_BASE
+ 
++#define U8500_MCDE_SIZE		0x1000
++#define U8500_DSI_LINK_SIZE	0x1000
++#define U8500_DSI_LINK1_BASE	(U8500_MCDE_BASE + U8500_MCDE_SIZE)
++#define U8500_DSI_LINK2_BASE	(U8500_DSI_LINK1_BASE + U8500_DSI_LINK_SIZE)
++#define U8500_DSI_LINK3_BASE	(U8500_DSI_LINK2_BASE + U8500_DSI_LINK_SIZE)
++#define U8500_DSI_LINK_COUNT	0x3
++
++/* Modem and APE physical addresses */
++#define U8500_MODEM_BASE	0xe000000
++#define U8500_APE_BASE		0x6000000
++
+ #endif
 -- 
 1.7.3.2
 
