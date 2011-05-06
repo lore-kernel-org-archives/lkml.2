@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab1EFK5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 06:57:31 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:42901 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755257Ab1EFKy1 (ORCPT
+	id S1755376Ab1EFKy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 06:54:26 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:43266 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755257Ab1EFKyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 06:54:27 -0400
+	Fri, 6 May 2011 06:54:24 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 04/16] staging: usbip: stub_tx.c: coding style cleanup
-Date: Fri,  6 May 2011 03:47:44 -0700
-Message-Id: <1b65ea26f5738445f69669e55d57b3cc6c88497a.1304676742.git.mfm@muteddisk.com>
+Subject: [PATCH 05/16] staging: usbip: usbip_common.h: coding style cleanup
+Date: Fri,  6 May 2011 03:47:45 -0700
+Message-Id: <412e28859e38bdbe9b279629a89aa646c518e95f.1304676742.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1304676742.git.mfm@muteddisk.com>
 References: <cover.1304676742.git.mfm@muteddisk.com>
@@ -20,225 +20,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix alignment for consistency, checkpatch.pl warnings for lines
-over 80 characters, remove extraneous lines, and change conversion
-specifier within a format string to remove warning.
+Use the compiler macro __packed, fix a few alignment issues, and
+remove extraneous lines.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/staging/usbip/stub_tx.c |   56 ++++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 33 deletions(-)
+ drivers/staging/usbip/usbip_common.h |   75 +++++++++++++---------------------
+ 1 files changed, 29 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
-index 64a52b2..bbf207d 100644
---- a/drivers/staging/usbip/stub_tx.c
-+++ b/drivers/staging/usbip/stub_tx.c
-@@ -23,7 +23,6 @@
- #include "usbip_common.h"
- #include "stub.h"
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index c767f52..7acec75 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -20,8 +20,8 @@
+ #ifndef __VHCI_COMMON_H
+ #define __VHCI_COMMON_H
  
 -
- static void stub_free_priv_and_urb(struct stub_priv *priv)
- {
- 	struct urb *urb = priv->urb;
-@@ -71,28 +70,27 @@ void stub_complete(struct urb *urb)
+ #include <linux/version.h>
++#include <linux/compiler.h>
+ #include <linux/usb.h>
+ #include <asm/byteorder.h>
+ #include <net/sock.h>
+@@ -37,23 +37,21 @@
+  * @fmt:
+  * @args:
+  */
+-
+ #ifdef CONFIG_USB_IP_DEBUG_ENABLE
  
- 	usbip_dbg_stub_tx("complete! status %d\n", urb->status);
+ #define usbip_udbg(fmt, args...)					\
+ 	do {								\
+ 		printk(KERN_DEBUG "%-10s:(%s,%d) %s: " fmt,		\
+-			(in_interrupt() ? "interrupt" : (current)->comm),\
+-			__FILE__, __LINE__, __func__, ##args);		\
++		       (in_interrupt() ? "interrupt" : (current)->comm),\
++		       __FILE__, __LINE__, __func__, ##args);		\
+ 	} while (0)
+ 
+ #else  /* CONFIG_USB_IP_DEBUG_ENABLE */
+ 
+-#define usbip_udbg(fmt, args...)		do { } while (0)
++#define usbip_udbg(fmt, args...)	do { } while (0)
+ 
+ #endif /* CONFIG_USB_IP_DEBUG_ENABLE */
  
 -
- 	switch (urb->status) {
- 	case 0:
- 		/* OK */
- 		break;
- 	case -ENOENT:
- 		usbip_uinfo("stopped by a call of usb_kill_urb() because of"
--					"cleaning up a virtual connection\n");
-+			    "cleaning up a virtual connection\n");
- 		return;
- 	case -ECONNRESET:
- 		usbip_uinfo("unlinked by a call of usb_unlink_urb()\n");
- 		break;
- 	case -EPIPE:
- 		usbip_uinfo("endpoint %d is stalled\n",
--						usb_pipeendpoint(urb->pipe));
-+			    usb_pipeendpoint(urb->pipe));
- 		break;
- 	case -ESHUTDOWN:
- 		usbip_uinfo("device removed?\n");
- 		break;
- 	default:
- 		usbip_uinfo("urb completion with non-zero status %d\n",
--							urb->status);
-+			    urb->status);
- 	}
+ enum {
+ 	usbip_debug_xmit	= (1 << 0),
+ 	usbip_debug_sysfs	= (1 << 1),
+@@ -87,16 +85,16 @@ extern struct device_attribute dev_attr_usbip_debug;
+ #define usbip_dbg_with_flag(flag, fmt, args...)		\
+ 	do {						\
+ 		if (flag & usbip_debug_flag)		\
+-			usbip_udbg(fmt , ##args);		\
++			usbip_udbg(fmt , ##args);	\
+ 	} while (0)
  
- 	/* link a urb to the queue of tx. */
-@@ -104,25 +102,23 @@ void stub_complete(struct urb *urb)
- 	} else
- 		list_move_tail(&priv->list, &sdev->priv_tx);
+-#define usbip_dbg_sysfs(fmt, args...)		\
++#define usbip_dbg_sysfs(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_sysfs, fmt , ##args)
+-#define usbip_dbg_xmit(fmt, args...)		\
++#define usbip_dbg_xmit(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_xmit, fmt , ##args)
+-#define usbip_dbg_urb(fmt, args...)		\
++#define usbip_dbg_urb(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_urb, fmt , ##args)
+-#define usbip_dbg_eh(fmt, args...)		\
++#define usbip_dbg_eh(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_eh, fmt , ##args)
  
--
- 	spin_unlock_irqrestore(&sdev->priv_lock, flags);
+ #define usbip_dbg_vhci_rh(fmt, args...)	\
+@@ -107,17 +105,16 @@ extern struct device_attribute dev_attr_usbip_debug;
+ 	usbip_dbg_with_flag(usbip_debug_vhci_rx, fmt , ##args)
+ #define usbip_dbg_vhci_tx(fmt, args...)	\
+ 	usbip_dbg_with_flag(usbip_debug_vhci_tx, fmt , ##args)
+-#define usbip_dbg_vhci_sysfs(fmt, args...)	\
++#define usbip_dbg_vhci_sysfs(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_vhci_sysfs, fmt , ##args)
  
- 	/* wake up tx_thread */
- 	wake_up(&sdev->tx_waitq);
- }
- 
--
- /*-------------------------------------------------------------------------*/
- /* fill PDU */
- 
- static inline void setup_base_pdu(struct usbip_header_basic *base,
--		__u32 command, __u32 seqnum)
-+				  __u32 command, __u32 seqnum)
- {
- 	base->command = command;
- 	base->seqnum  = seqnum;
- 	base->devid   = 0;
- 	base->ep      = 0;
--	base->direction   = 0;
-+	base->direction = 0;
- }
- 
- static void setup_ret_submit_pdu(struct usbip_header *rpdu, struct urb *urb)
-@@ -130,19 +126,16 @@ static void setup_ret_submit_pdu(struct usbip_header *rpdu, struct urb *urb)
- 	struct stub_priv *priv = (struct stub_priv *) urb->context;
- 
- 	setup_base_pdu(&rpdu->base, USBIP_RET_SUBMIT, priv->seqnum);
--
- 	usbip_pack_pdu(rpdu, urb, USBIP_RET_SUBMIT, 1);
- }
- 
- static void setup_ret_unlink_pdu(struct usbip_header *rpdu,
--		struct stub_unlink *unlink)
-+				 struct stub_unlink *unlink)
- {
- 	setup_base_pdu(&rpdu->base, USBIP_RET_UNLINK, unlink->seqnum);
--
- 	rpdu->u.ret_unlink.status = unlink->status;
- }
+-#define usbip_dbg_stub_cmp(fmt, args...)	\
++#define usbip_dbg_stub_cmp(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_stub_cmp, fmt , ##args)
+-#define usbip_dbg_stub_rx(fmt, args...)	\
++#define usbip_dbg_stub_rx(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_stub_rx, fmt , ##args)
+-#define usbip_dbg_stub_tx(fmt, args...)	\
++#define usbip_dbg_stub_tx(fmt, args...) \
+ 	usbip_dbg_with_flag(usbip_debug_stub_tx, fmt , ##args)
  
 -
- /*-------------------------------------------------------------------------*/
- /* send RET_SUBMIT */
+ /**
+  * usbip_uerr - print error messages
+  * @fmt:
+@@ -126,8 +123,8 @@ extern struct device_attribute dev_attr_usbip_debug;
+ #define usbip_uerr(fmt, args...)					\
+ 	do {								\
+ 		printk(KERN_ERR "%-10s: ***ERROR*** (%s,%d) %s: " fmt,	\
+-			(in_interrupt() ? "interrupt" : (current)->comm),\
+-			__FILE__, __LINE__, __func__, ##args);	\
++		       (in_interrupt() ? "interrupt" : (current)->comm),\
++		       __FILE__, __LINE__, __func__, ##args);		\
+ 	} while (0)
  
-@@ -203,7 +196,7 @@ static int stub_send_ret_submit(struct stub_device *sdev)
- 		/* 1. setup usbip_header */
- 		setup_ret_submit_pdu(&pdu_header, urb);
- 		usbip_dbg_stub_tx("setup txdata seqnum: %d urb: %p\n",
--						pdu_header.base.seqnum, urb);
-+				  pdu_header.base.seqnum, urb);
- 		/*usbip_dump_header(pdu_header);*/
- 		usbip_header_correct_endian(&pdu_header, 1);
- 
-@@ -214,14 +207,14 @@ static int stub_send_ret_submit(struct stub_device *sdev)
- 
- 		/* 2. setup transfer buffer */
- 		if (usb_pipein(urb->pipe) &&
--				usb_pipetype(urb->pipe) != PIPE_ISOCHRONOUS &&
--					urb->actual_length > 0) {
-+		    usb_pipetype(urb->pipe) != PIPE_ISOCHRONOUS &&
-+		    urb->actual_length > 0) {
- 			iov[iovnum].iov_base = urb->transfer_buffer;
- 			iov[iovnum].iov_len  = urb->actual_length;
- 			iovnum++;
- 			txsize += urb->actual_length;
- 		} else if (usb_pipein(urb->pipe) &&
--				usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS) {
-+			   usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS) {
- 			/*
- 			 * For isochronous packets: actual length is the sum of
- 			 * the actual length of the individual, packets, but as
-@@ -232,18 +225,23 @@ static int stub_send_ret_submit(struct stub_device *sdev)
- 
- 			int i;
- 			for (i = 0; i < urb->number_of_packets; i++) {
--				iov[iovnum].iov_base = urb->transfer_buffer + urb->iso_frame_desc[i].offset;
--				iov[iovnum].iov_len = urb->iso_frame_desc[i].actual_length;
-+				iov[iovnum].iov_base = urb->transfer_buffer +
-+					urb->iso_frame_desc[i].offset;
-+				iov[iovnum].iov_len =
-+					urb->iso_frame_desc[i].actual_length;
- 				iovnum++;
- 				txsize += urb->iso_frame_desc[i].actual_length;
- 			}
- 
- 			if (txsize != sizeof(pdu_header) + urb->actual_length) {
- 				dev_err(&sdev->interface->dev,
--					"actual length of urb (%d) does not match iso packet sizes (%d)\n",
--					urb->actual_length, txsize-sizeof(pdu_header));
-+					"actual length of urb %d does not "
-+					"match iso packet sizes %lu\n",
-+					urb->actual_length,
-+					txsize-sizeof(pdu_header));
- 				kfree(iov);
--				usbip_event_add(&sdev->ud, SDEV_EVENT_ERROR_TCP);
-+				usbip_event_add(&sdev->ud,
-+						SDEV_EVENT_ERROR_TCP);
- 			   return -1;
- 			}
- 		}
-@@ -285,17 +283,14 @@ static int stub_send_ret_submit(struct stub_device *sdev)
- 	}
- 
- 	spin_lock_irqsave(&sdev->priv_lock, flags);
--
- 	list_for_each_entry_safe(priv, tmp, &sdev->priv_free, list) {
- 		stub_free_priv_and_urb(priv);
- 	}
--
- 	spin_unlock_irqrestore(&sdev->priv_lock, flags);
- 
- 	return total_size;
- }
- 
--
- /*-------------------------------------------------------------------------*/
- /* send RET_UNLINK */
- 
-@@ -317,7 +312,6 @@ static struct stub_unlink *dequeue_from_unlink_tx(struct stub_device *sdev)
- 	return NULL;
- }
- 
--
- static int stub_send_ret_unlink(struct stub_device *sdev)
- {
- 	unsigned long flags;
-@@ -358,13 +352,10 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
- 			return -1;
- 		}
- 
--
- 		usbip_dbg_stub_tx("send txdata\n");
--
- 		total_size += txsize;
- 	}
- 
--
- 	spin_lock_irqsave(&sdev->priv_lock, flags);
- 
- 	list_for_each_entry_safe(unlink, tmp, &sdev->unlink_free, list) {
-@@ -377,7 +368,6 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
- 	return total_size;
- }
+ /**
+@@ -140,7 +137,6 @@ extern struct device_attribute dev_attr_usbip_debug;
+ 		printk(KERN_INFO "usbip: " fmt , ## args);	\
+ 	} while (0)
  
 -
  /*-------------------------------------------------------------------------*/
  
- int stub_tx_loop(void *data)
-@@ -410,9 +400,9 @@ int stub_tx_loop(void *data)
- 			break;
+ /*
+@@ -185,7 +181,7 @@ struct usbip_header_basic {
+ #define USBIP_DIR_IN	1
+ 	__u32 direction;
+ 	__u32 ep;     /* endpoint number */
+-} __attribute__ ((packed));
++} __packed;
  
- 		wait_event_interruptible(sdev->tx_waitq,
--				(!list_empty(&sdev->priv_tx) ||
--				 !list_empty(&sdev->unlink_tx) ||
--				 kthread_should_stop()));
-+					 (!list_empty(&sdev->priv_tx) ||
-+					  !list_empty(&sdev->unlink_tx) ||
-+					  kthread_should_stop()));
- 	}
+ /*
+  * An additional header for a CMD_SUBMIT packet.
+@@ -212,43 +208,40 @@ struct usbip_header_cmd_submit {
  
- 	return 0;
+ 	/* set setup packet data for a CTRL request */
+ 	unsigned char setup[8];
+-} __attribute__ ((packed));
++} __packed;
+ 
+ /*
+  * An additional header for a RET_SUBMIT packet.
+  */
+ struct usbip_header_ret_submit {
+ 	__s32 status;
+-	__s32 actual_length; /* returned data length */
+-	__s32 start_frame; /* ISO and INT */
+-	__s32 number_of_packets;  /* ISO only */
+-	__s32 error_count; /* ISO only */
+-} __attribute__ ((packed));
++	__s32 actual_length;		/* returned data length */
++	__s32 start_frame;		/* ISO and INT */
++	__s32 number_of_packets;	/* ISO only */
++	__s32 error_count;		/* ISO only */
++} __packed;
+ 
+ /*
+  * An additional header for a CMD_UNLINK packet.
+  */
+ struct usbip_header_cmd_unlink {
+-	__u32 seqnum; /* URB's seqnum which will be unlinked */
+-} __attribute__ ((packed));
+-
++	__u32 seqnum;			/* URB's seqnum that will be unlinked */
++} __packed;
+ 
+ /*
+  * An additional header for a RET_UNLINK packet.
+  */
+ struct usbip_header_ret_unlink {
+ 	__s32 status;
+-} __attribute__ ((packed));
+-
++} __packed;
+ 
+ /* the same as usb_iso_packet_descriptor but packed for pdu */
+ struct usbip_iso_packet_descriptor {
+ 	__u32 offset;
+-	__u32 length;            /* expected length */
++	__u32 length;			/* expected length */
+ 	__u32 actual_length;
+ 	__u32 status;
+-} __attribute__ ((packed));
+-
++} __packed;
+ 
+ /*
+  * All usbip packets use a common header to keep code simple.
+@@ -262,18 +255,13 @@ struct usbip_header {
+ 		struct usbip_header_cmd_unlink	cmd_unlink;
+ 		struct usbip_header_ret_unlink	ret_unlink;
+ 	} u;
+-} __attribute__ ((packed));
+-
+-
+-
++} __packed;
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-
+ int usbip_xmit(int, struct socket *, char *, int, int);
+ int usbip_sendmsg(struct socket *, struct msghdr *, int);
+ 
+-
+ static inline int interface_to_busnum(struct usb_interface *interface)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(interface);
+@@ -304,7 +292,6 @@ int set_sockaddr(struct socket *socket, struct sockaddr_storage *ss);
+ void usbip_dump_urb(struct urb *purb);
+ void usbip_dump_header(struct usbip_header *pdu);
+ 
+-
+ struct usbip_device;
+ 
+ enum usbip_side {
+@@ -331,7 +318,6 @@ enum usbip_status {
+ /* a common structure for stub_device and vhci_device */
+ struct usbip_device {
+ 	enum usbip_side side;
+-
+ 	enum usbip_status status;
+ 
+ 	/* lock for status */
+@@ -370,9 +356,8 @@ struct usbip_device {
+ 	} eh_ops;
+ };
+ 
+-
+ void usbip_pack_pdu(struct usbip_header *pdu, struct urb *urb, int cmd,
+-								int pack);
++		    int pack);
+ 
+ void usbip_header_correct_endian(struct usbip_header *pdu, int send);
+ /* some members of urb must be substituted before. */
+@@ -383,12 +368,10 @@ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb);
+ int usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
+ void *usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen);
+ 
+-
+ /* usbip_event.c */
+ int usbip_start_eh(struct usbip_device *ud);
+ void usbip_stop_eh(struct usbip_device *ud);
+ void usbip_event_add(struct usbip_device *ud, unsigned long event);
+ int usbip_event_happened(struct usbip_device *ud);
+ 
+-
+ #endif
 -- 
 1.7.5.1
 
