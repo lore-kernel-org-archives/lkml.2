@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab1EFANg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:36 -0400
-Received: from kroah.org ([198.145.64.141]:32916 "EHLO coco.kroah.org"
+	id S1755000Ab1EFAQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:16:06 -0400
+Received: from kroah.org ([198.145.64.141]:32924 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753327Ab1EFANd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:33 -0400
+	id S1754840Ab1EFANe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:34 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:10 2011
-Message-Id: <20110506001209.967389509@clark.kroah.org>
+Message-Id: <20110506001210.069249667@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:59 -0700
+Date: Thu, 05 May 2011 17:11:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Boris Ostrovsky <Boris.Ostrovsky@amd.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [patch 27/38] x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processors
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 28/38] ath9k: fix the return value of ath_stoprecv
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <ostr@amd64.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e20a2d205c05cef6b5783df339a7d54adeb50962 upstream.
+commit 2232d31bf18ba02f5cd632bbfc3466aeca394c75 upstream.
 
-Older AMD K8 processors (Revisions A-E) are affected by erratum
-400 (APIC timer interrupts don't occur in C states greater than
-C1). This, for example, means that X86_FEATURE_ARAT flag should
-not be set for these parts.
+The patch 'ath9k_hw: fix stopping rx DMA during resets' added code to detect
+a condition where rx DMA was stopped, but the MAC failed to enter the idle
+state. This condition requires a hardware reset, however the return value
+of ath_stoprecv was 'true' in that case, which allowed it to skip the reset
+when issuing a fast channel change.
 
-This addresses regression introduced by commit
-b87cf80af3ba4b4c008b4face3c68d604e1715c6 ("x86, AMD: Set ARAT
-feature on AMD processors") where the system may become
-unresponsive until external interrupt (such as keyboard input)
-occurs. This results, for example, in time not being reported
-correctly, lack of progress on the system and other lockups.
-
-Reported-by: Joerg-Volker Peetz <jvpeetz@web.de>
-Tested-by: Joerg-Volker Peetz <jvpeetz@web.de>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Boris Ostrovsky <Boris.Ostrovsky@amd.com>
-Link: http://lkml.kernel.org/r/1304113663-6586-1-git-send-email-ostr@amd64.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Reported-by: Paul Stewart <pstew@google.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/amd.c |    2 +-
+ drivers/net/wireless/ath/ath9k/recv.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -681,7 +681,7 @@ cpu_dev_register(amd_cpu_dev);
-  */
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -533,7 +533,7 @@ bool ath_stoprecv(struct ath_softc *sc)
+ 			"confusing the DMA engine when we start RX up\n");
+ 		ATH_DBG_WARN_ON_ONCE(!stopped);
+ 	}
+-	return stopped || reset;
++	return stopped && !reset;
+ }
  
- const int amd_erratum_400[] =
--	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
-+	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0x0f, 0x4, 0x2, 0xff, 0xf),
- 			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
- EXPORT_SYMBOL_GPL(amd_erratum_400);
- 
+ void ath_flushrecv(struct ath_softc *sc)
 
 
