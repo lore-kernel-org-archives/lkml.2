@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab1EFUY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:24:28 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42271 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756357Ab1EFUY0 (ORCPT
+	id S1756726Ab1EFU2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:28:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:13306 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab1EFU2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:24:26 -0400
-Subject: Re: [RFC] time: xtime_lock is held too long
-From: john stultz <johnstul@us.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1304712267.2821.29.camel@edumazet-laptop>
-References: <1304574244.32152.666.camel@edumazet-laptop>
-	 <1304576495.2943.40.camel@work-vm>
-	 <1304604284.3032.78.camel@edumazet-laptop>
-	 <alpine.LFD.2.02.1105051630390.3005@ionos>
-	 <1304608095.3032.95.camel@edumazet-laptop>
-	 <alpine.LFD.2.02.1105051750540.3005@ionos>
-	 <20110505210118.GI2925@one.firstfloor.org>
-	 <alpine.LFD.2.02.1105061117220.3005@ionos>
-	 <20110506165913.GF11636@one.firstfloor.org>
-	 <1304703767.3066.211.camel@edumazet-laptop>
-	 <20110506175051.GL11636@one.firstfloor.org>
-	 <1304710003.2821.0.camel@edumazet-laptop>
-	 <1304712267.2821.29.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 May 2011 13:24:03 -0700
-Message-ID: <1304713443.20980.124.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 6 May 2011 16:28:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=gRIfVVje3Bpa2n9Acl4AWA8pZIJMoolu0dhuoTTEMxP+oxWRzLoUQ4Ddvmu7QmsnO
+	MyeXRAnnonHEUTn++WWJg==
+From: Mike Waychison <mikew@google.com>
+To: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
+        Matt_Domsch@dell.com
+Cc: akpm@linux-foundation.org, matthew.e.tolentino@intel.com, gregkh@suse.de,
+        Mike Waychison <mikew@google.com>
+Subject: [PATCH v3] efivars: prevent oops on unload when efi is not enabled
+Date: Fri,  6 May 2011 13:27:41 -0700
+Message-Id: <1304713661-14708-1-git-send-email-mikew@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110506125702.2585228b.randy.dunlap@oracle.com>
+References: <20110506125702.2585228b.randy.dunlap@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 22:04 +0200, Eric Dumazet wrote:
-> Le vendredi 06 mai 2011 à 21:26 +0200, Eric Dumazet a écrit :
-> > Le vendredi 06 mai 2011 à 19:50 +0200, Andi Kleen a écrit :
-> > > On Fri, May 06, 2011 at 07:42:47PM +0200, Eric Dumazet wrote:
-> > > > Le vendredi 06 mai 2011 à 18:59 +0200, Andi Kleen a écrit :
-> > > > 
-> > > > > If you have a better way to make it faster please share it.
-> > > > 
-> > > > Ideally we could use RCU :)
-> > > 
-> > > Hmm, I didn't think my case had a lot of loops in the seqlock -- just
-> > > expensive cache misses -- but I should double check.
-> > > 
-> > > For the lots of loop case we probably need to understand first why you
-> > > iterate that often.
-> > 
-> > Yep, I'll try to investigate on this
-> > 
-> 
-> So apparently some calls to tick_do_update_jiffies64() are pretty
-> expensive :
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-So would the easier solution be to just break out timekeeper locking
-from the xtime_lock?
+efivars_exit() should check for efi_enabled and not undo
+allocations when efi is not enabled.  Otherwise there is an Oops
+during module unload:
 
-So basically we would just add a timekeeper.lock seqlock and use it to
-protect only the timekeeping code? We can still keep xtime_lock around
-for the tick/jiffies protection (well, until tglx kills jiffies :), but
-gettimeofday and friends wouldn't be blocked for so long.
+calling  efivars_init+0x0/0x1000 [efivars] @ 2810
+EFI Variables Facility v0.08 2004-May-17
+initcall efivars_init+0x0/0x1000 [efivars] returned 0 after 5120 usecs
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+last sysfs file: /sys/module/firmware_class/initstate
+CPU 1
+Modules linked in: efivars(-) af_packet tun nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep mousedev snd_seq joydev snd_seq_device mac_hid evdev snd_pcm usbkbd usbmouse usbhid snd_timer hid tg3 snd sr_mod pcspkr rtc_cmos soundcore cdrom iTCO_wdt processor sg dcdbas i2c_i801 rtc_core iTCO_vendor_support intel_agp snd_page_alloc thermal_sys rtc_lib intel_gtt 8250_pnp button hwmon unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_class ehci_hcd usbcore [last unloaded: dell_rbu]
 
-That should be pretty straight forward now that the timekeeper data is
-completely static to timkeeeping.c.
+Pid: 2812, comm: rmmod Not tainted 2.6.39-rc6 #1 Dell Inc.                 OptiPlex 745                 /0TY565
+RIP: 0010:[<ffffffffa06a17f6>]  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
+RSP: 0018:ffff88005eedde98  EFLAGS: 00010283
+RAX: ffffffffa06a23fc RBX: ffffffffa06a44c0 RCX: ffff88007c227a50
+RDX: 0000000000000000 RSI: 00000055ac13db78 RDI: ffffffffa06a44c0
+RBP: ffff88005eeddec8 R08: 0000000000000000 R09: ffff88005eeddd78
+R10: ffffffffa06a4220 R11: ffff88005eeddd78 R12: fffffffffffff7d0
+R13: 00007fff5a3aaec0 R14: 0000000000000000 R15: ffffffffa06a4508
+FS:  00007fa8dcc4a6f0(0000) GS:ffff88007c200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 000000005d148000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process rmmod (pid: 2812, threadinfo ffff88005eedc000, task ffff88006754b000)
+Stack:
+ ffff88005eeddec8 ffffffffa06a4220 0000000000000000 00007fff5a3aaec0
+ 0000000000000000 0000000000000001 ffff88005eedded8 ffffffffa06a2418
+ ffff88005eeddf78 ffffffff810d3598 ffffffffa06a4220 0000000000000880
+Call Trace:
+ [<ffffffffa06a2418>] efivars_exit+0x1c/0xc04 [efivars]
+ [<ffffffff810d3598>] sys_delete_module+0x2d6/0x368
+ [<ffffffff812d1db9>] ? lockdep_sys_exit_thunk+0x35/0x67
+ [<ffffffff810fcba1>] ? audit_syscall_entry+0x172/0x1a5
+ [<ffffffff81575082>] system_call_fastpath+0x16/0x1b
+Code: 5c c9 c3 55 48 89 e5 41 57 41 56 41 55 41 54 53 48 83 ec 08 0f 1f 44 00 00 4c 8b 67 48 48 89 fb 4c 8d 7f 48 49 81 ec 30 08 00 00 <4d> 8b ac 24 30 08 00 00 49 81 ed 30 08 00 00 eb 59 48 89 df 48
+RIP  [<ffffffffa06a17f6>] unregister_efivars+0x28/0x12c [efivars]
+ RSP <ffff88005eedde98>
+CR2: 0000000000000000
+ ---[ end trace aa99b99090f70baa ]---
 
-thanks
--john
+Matt apparently removed such a check in 2004 (with no reason given):
+ *  17 May 2004 - Matt Domsch <Matt_Domsch@dell.com>
+ *   remove check for efi_enabled in exit
+but there have been several changes since then.
 
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Mike Waychison <mikew@google.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>
+Cc: <matthew.e.tolentino@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+v3:
+- Fix typo that I forgot to commit.
+v2:
+- Updated to conditionally unregister efivars for real EFI in the module
+  unload itself -- mikew
+---
+ drivers/firmware/efivars.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index ff0c373..2934a13 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -820,8 +820,10 @@ efivars_init(void)
+ static void __exit
+ efivars_exit(void)
+ {
+-	unregister_efivars(&__efivars);
+-	kobject_put(efi_kobj);
++	if (efi_enabled) {
++		unregister_efivars(&__efivars);
++		kobject_put(efi_kobj);
++	}
+ }
+ 
+ module_init(efivars_init);
+-- 
+1.7.3.1
 
