@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab1EFTIm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 15:08:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52471 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622Ab1EFTIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 15:08:40 -0400
-Date: Fri, 6 May 2011 21:08:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        fweisbec@gmail.com, ming.m.lin@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf events, x86: Add SandyBridge
- stalled-cycles-frontend/backend events
-Message-ID: <20110506190821.GA7151@elte.hu>
-References: <1304666042-17577-1-git-send-email-ming.m.lin@intel.com>
- <tip-e04d1b23f9706186187dcb0be1a752e48dcc540b@git.kernel.org>
- <1304697112.25414.2523.camel@gandalf.stny.rr.com>
+	id S1756771Ab1EFTIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 15:08:50 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:57247 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab1EFTIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 15:08:48 -0400
+Date: Fri, 6 May 2011 21:08:42 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux/m68k <linux-m68k@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>
+cc: Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH] m68k: Really wire up sys_pselect6 and sys_ppoll
+Message-ID: <alpine.DEB.2.00.1105062107290.23969@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304697112.25414.2523.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We reserved the numbers a long time ago, but never wired them up in the
+syscall table as they need TIF_RESTORE_SIGMASK, which we only got last year
+in commit cb6831d5d3099e772a510eb3e1ed0760ccffb45e ("m68k: Switch to saner
+sigsuspend()")
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+I'll move this before "m68k: unistd - Comment out definitions for unimplemented
+syscalls", and will update the latter.
 
-> On Fri, 2011-05-06 at 07:40 +0000, tip-bot for Lin Ming wrote:
-> > Commit-ID:  e04d1b23f9706186187dcb0be1a752e48dcc540b
-> > Gitweb:     http://git.kernel.org/tip/e04d1b23f9706186187dcb0be1a752e48dcc540b
-> > Author:     Lin Ming <ming.m.lin@intel.com>
-> > AuthorDate: Fri, 6 May 2011 07:14:02 +0000
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Fri, 6 May 2011 09:37:03 +0200
-> > 
-> > perf events, x86: Add SandyBridge stalled-cycles-frontend/backend events
-> > 
-> > Extend the Intel SandyBridge PMU driver with definitions
-> > for generic front-end and back-end stall events.
-> > 
-> > ( As commit 3011203 "perf events, x86: Add Westmere stalled-cycles-frontend/backend
-> >   events" says, these are only approximations. )
-> 
-> I now get the following build error:
-> 
-> In file included from /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event.c:1449:0:
-> /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c: In function 'intel_pmu_init':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c:1479:27: error: 'PERF_COUNT_HW_STALLED_CYCLES_FRONTEND' undeclared (first use in this fun
-> ction)
-> /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c:1479:27: note: each undeclared identifier is reported only once for each function it appe
-> ars in
-> /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/kernel/cpu/perf_event_intel.c:1481:27: error: 'PERF_COUNT_HW_STALLED_CYCLES_BACKEND' undeclared (first use in this func
-> tion)
-> 
-> Config can be found here:
-> 
-> http://rostedt.homelinux.com/private/config-sandy-failed
+ arch/m68k/kernel/syscalltable.S |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Ok, could you check latest perf/core (57d524154ffe), does it work better?
+diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
+index cb3bc1b..6f7b091 100644
+--- a/arch/m68k/kernel/syscalltable.S
++++ b/arch/m68k/kernel/syscalltable.S
+@@ -321,8 +321,8 @@ ENTRY(sys_call_table)
+ 	.long sys_readlinkat
+ 	.long sys_fchmodat
+ 	.long sys_faccessat		/* 300 */
+-	.long sys_ni_syscall		/* Reserved for pselect6 */
+-	.long sys_ni_syscall		/* Reserved for ppoll */
++	.long sys_pselect6
++	.long sys_ppoll
+ 	.long sys_unshare
+ 	.long sys_set_robust_list
+ 	.long sys_get_robust_list	/* 305 */
+-- 
+1.7.0.4
 
-Thanks,
+Gr{oetje,eeting}s,
 
-	Ingo
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
