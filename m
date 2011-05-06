@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab1EFA1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:27:54 -0400
-Received: from kroah.org ([198.145.64.141]:37675 "EHLO coco.kroah.org"
+	id S932810Ab1EFA25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:28:57 -0400
+Received: from kroah.org ([198.145.64.141]:37681 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932768Ab1EFA1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:27:52 -0400
+	id S932771Ab1EFA1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:27:53 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:11 2011
-Message-Id: <20110506002611.141381727@clark.kroah.org>
+Message-Id: <20110506002611.231685696@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:26:01 -0700
+Date: Thu, 05 May 2011 17:26:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        Richard Russon <rich@flatcap.org>
-Subject: [40/43] fs/partitions/ldm.c: fix oops caused by corrupted partition table
+        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
+        Jonathan Liu <net147@gmail.com>
+Subject: [41/43] libata: set queue DMA alignment to sector size for ATAPI too
 In-Reply-To: <20110506002625.GA20426@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Tejun Heo <htejun@gmail.com>
 
-commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
+commit 729a6a300e628a48cf12bac93a964a535e83cd1d upstream.
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
-a bug that causes a kernel oops on certain corrupted LDM partitions.
-A kernel subsystem seems to crash, because, after the oops, the kernel no
-longer recognizes newly connected storage devices.
+ata_pio_sectors() expects buffer for each sector to be contained in a
+single page; otherwise, it ends up overrunning the first page.  This
+is achieved by setting queue DMA alignment.  If sector_size is smaller
+than PAGE_SIZE and all buffers are sector_size aligned, buffer for
+each sector is always contained in a single page.
 
-The patch validates the value of vblk_size.
+This wasn't applied to ATAPI devices but IDENTIFY_PACKET is executed
+as ATA_PROT_PIO and thus uses ata_pio_sectors().  Newer versions of
+udev issue IDENTIFY_PACKET with unaligned buffer triggering the
+problem and causing oops.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Cc: Richard Russon <rich@flatcap.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch fixes the problem by setting sdev->sector_size to
+ATA_SECT_SIZE on ATATPI devices and always setting DMA alignment to
+sector_size.  While at it, add a warning for the unlikely but still
+possible scenario where sector_size is larger than PAGE_SIZE, in which
+case the alignment wouldn't be enough.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: John Stanley <jpsinthemix@verizon.net>
+Tested-by: John Stanley <jpsinthemix@verizon.net>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Jonathan Liu <net147@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/partitions/ldm.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/ata/libata-scsi.c |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
---- a/fs/partitions/ldm.c
-+++ b/fs/partitions/ldm.c
-@@ -1299,6 +1299,11 @@ static bool ldm_frag_add (const u8 *data
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -1099,13 +1099,13 @@ static int ata_scsi_dev_config(struct sc
+ 	/* configure max sectors */
+ 	blk_queue_max_sectors(sdev->request_queue, dev->max_sectors);
  
- 	BUG_ON (!data || !frags);
- 
-+	if (size < 2 * VBLK_SIZE_HEAD) {
-+		ldm_error("Value of size is to small.");
-+		return false;
-+	}
++	sdev->sector_size = ATA_SECT_SIZE;
 +
- 	group = get_unaligned_be32(data + 0x08);
- 	rec   = get_unaligned_be16(data + 0x0C);
- 	num   = get_unaligned_be16(data + 0x0E);
-@@ -1306,6 +1311,10 @@ static bool ldm_frag_add (const u8 *data
- 		ldm_error ("A VBLK claims to have %d parts.", num);
- 		return false;
+ 	if (dev->class == ATA_DEV_ATAPI) {
+ 		struct request_queue *q = sdev->request_queue;
+ 		void *buf;
+ 
+-		/* set the min alignment and padding */
+-		blk_queue_update_dma_alignment(sdev->request_queue,
+-					       ATA_DMA_PAD_SZ - 1);
++		/* set DMA padding */
+ 		blk_queue_update_dma_pad(sdev->request_queue,
+ 					 ATA_DMA_PAD_SZ - 1);
+ 
+@@ -1119,12 +1119,24 @@ static int ata_scsi_dev_config(struct sc
+ 
+ 		blk_queue_dma_drain(q, atapi_drain_needed, buf, ATAPI_MAX_DRAIN);
+ 	} else {
+-		/* ATA devices must be sector aligned */
+-		blk_queue_update_dma_alignment(sdev->request_queue,
+-					       ATA_SECT_SIZE - 1);
+ 		sdev->manage_start_stop = 1;
  	}
-+	if (rec >= num) {
-+		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
-+		return false;
-+	}
  
- 	list_for_each (item, frags) {
- 		f = list_entry (item, struct frag, list);
-@@ -1334,10 +1343,9 @@ found:
- 
- 	f->map |= (1 << rec);
- 
--	if (num > 0) {
--		data += VBLK_SIZE_HEAD;
--		size -= VBLK_SIZE_HEAD;
--	}
-+	data += VBLK_SIZE_HEAD;
-+	size -= VBLK_SIZE_HEAD;
++	/*
++	 * ata_pio_sectors() expects buffer for each sector to not cross
++	 * page boundary.  Enforce it by requiring buffers to be sector
++	 * aligned, which works iff sector_size is not larger than
++	 * PAGE_SIZE.  ATAPI devices also need the alignment as
++	 * IDENTIFY_PACKET is executed as ATA_PROT_PIO.
++	 */
++	if (sdev->sector_size > PAGE_SIZE)
++		ata_dev_printk(dev, KERN_WARNING,
++			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
++			sdev->sector_size);
 +
- 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
++	blk_queue_update_dma_alignment(sdev->request_queue,
++				       sdev->sector_size - 1);
++
+ 	if (dev->flags & ATA_DFLAG_AN)
+ 		set_bit(SDEV_EVT_MEDIA_CHANGE, sdev->supported_events);
  
- 	return true;
 
 
