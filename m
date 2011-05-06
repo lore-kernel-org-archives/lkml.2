@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab1EFBtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 21:49:24 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63558 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754519Ab1EFBtX (ORCPT
+	id S1755486Ab1EFCSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 22:18:51 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:52580 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab1EFCSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 21:49:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au8DAD9Sw015LBzagWdsb2JhbACmPhUBARYmJYhyvQYOhXkEnis
-Date: Fri, 6 May 2011 11:49:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Bruno Pr?mont <bonbons@linux-vserver.org>, xfs-masters@oss.sgi.com,
-        xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: Re: 2.6.39-rc3, 2.6.39-rc4: XFS lockup - regression since 2.6.38
-Message-ID: <20110506014906.GF26837@dastard>
-References: <20110423224403.5fd1136a@neptune.home>
- <20110427050850.GG12436@dastard>
- <20110427182622.05a068a2@neptune.home>
- <20110428194528.GA1627@x4.trippels.de>
- <20110429011929.GA13542@dastard>
- <20110504005736.GA2958@cucamonga.audible.transient.net>
- <20110505002126.GA26797@dastard>
- <20110505022613.GA26837@dastard>
- <20110505122117.GB26837@dastard>
- <20110505123959.GA21098@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110505123959.GA21098@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 5 May 2011 22:18:49 -0400
+Subject: Re: [GIT pull] rtc fixes for 2.6.39
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Wolfram Sang <w.sang@pengutronix.de>
+In-Reply-To: <alpine.LFD.2.02.1105060124440.3005@ionos>
+References: <1304624059.20980.10.camel@work-vm>
+	 <alpine.LFD.2.02.1105060124440.3005@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 May 2011 19:18:39 -0700
+Message-ID: <1304648319.20980.100.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 08:39:59AM -0400, Christoph Hellwig wrote:
-> > The third problem is that updating the push target is not safe on 32
-> > bit machines. We cannot copy a 64 bit LSN without the possibility of
-> > corrupting the result when racing with another updating thread. We
-> > have function to do this update safely without needing to care about
-> > 32/64 bit issues - xfs_trans_ail_copy_lsn() - so use that when
-> > updating the AIL push target.
+On Fri, 2011-05-06 at 02:23 +0200, Thomas Gleixner wrote:
+> On Thu, 5 May 2011, john stultz wrote:
 > 
-> But reading xa_target without xa_lock isn't safe on 32-bit either, is it?
-
-Not sure - I think it depends on the platform. I don't think we
-protect LSN reads in any specific way on 32 bit platforms.
-
-In this case, I don't think it matters so much on read, because if
-we get a race with a write that mixes upper/lower words of the
-target we will eventually hit the stop condition and we won't get a
-match. That will trigger the requeue code and we'll start the push
-again.
-
-The problem with getting such a race on the target write is that we
-could get a cycle/block pair that is beyond the current head of the
-log and we'd never be able to push the AIL again as all push
-thresholds are truncated to the current head LSN on disk...
-
-> For the first read it can trivially be moved into the critical
-> section a few lines below, and the second one should probably use
-> XFS_LSN_CMP.
+> > Hey Thomas,
+> > 	Here are some urgent 2.6.39 boot fixups from Wolfram for RTC devices
+> > that register themselves before they are finished initializing.
+> > 
+> > They are available in the git repository at:
+> > 
+> >   git://git.linaro.org/people/jstultz/linux.git fortglx/39/tip/timers/rtc
+> > 
+> > Wolfram Sang (3):
+> >       rtc: mxc: fix crash on boot
+> >       rtc: davinci: fix crash on boot
+> >       rtc: ep93xx: fix crash on boot
 > 
-> > @@ -482,19 +481,24 @@ xfs_ail_worker(
-> >  	/* assume we have more work to do in a short while */
-> >  	tout = 10;
-> >  	if (!count) {
-> > +out_done:
+> No. I'm not pulling that. The changelogs are completely ass backwards.
 > 
-> Jumping into conditionals is really ugly.  By initializing count a bit
-> earlier you can just jump in front of the if/else clauses.  And while
-> you're there maybe moving the tout = 10; into an else clause would
-> also make the code more readable.
-> an uninitialied used of tout.
-
-Ok, I'll rework that.
-
-> > +		if (ailp->xa_target == target ||
-> > +		    (test_and_set_bit(XFS_AIL_PUSHING_BIT, &ailp->xa_flags)))
+>     rtc: $machine: fix crash on boot
 > 
-> no need for braces around the test_and_set_bit call.
+> "fix crash on boot" is equally informative as "Fix bug". It's not
+> informative at all, it's just sloppy.
+> 
+>     rtc: $machine: Initialize driver data before registering device
+> 
+> would tell me: Yes, that's an obvious late -rc fix.
+> 
+>     Commit f44f7f96a20 ("RTC: Initialize kernel state from RTC") caused a
+>     crash when initializing the driver.
+> 
+> That's totally misleading. The reality is that the stupid drivers
+> registered their device _BEFORE_ completing the initialization of the
+> setup and that commit unearthed that. So not the commit caused the
+> problem, the problem was there forever and was not noticed because the
+> register code did not touch any of the non initialized data up to that
+> point.
+> 
+>     The reason is that rtc_device_register() calls rtc_read_alarm() after
+>     that change, when the driver does not have all driver data set up yet.
+> 
+> And that's just the continuation of the distorted reality.
+> 
+> The reason is that the f*cking driver did register the device _BEFORE_
+> initializing the relevant data structures and that commit unearthed
+> the crap.
+> 
+> It does _NOT_ matter at all whether this worked before by chance. The
+> ordering is and _WAS_ always completely wrong.
 
-*nod*. Left over from developing the fix...
+Yea. Sorry about this. I got caught up in the "A change I made keeps
+systems from booting" view of it and rushed it a bit.
 
-I'll split all these and post them to the xfs-list for review...
+I'll work with Wolfram to get the subject/commit messages cleaned up.
 
-Cheers,
+> As a side note, this is not the first fallout of the RTC rework which
+> unearthed these wrong order initialization problems. The obvious
+> reaction on the first "fix ordering problems" patch should have been
+> to add
+> 
+> 	if (driver data == NULL) {
+> 		printk("Fix your crap\n");
+> 		return -EMORON;}
+> 	}
+> 
+> to rtc_device_register().
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Well, unfortunately the various rtc drivers use the drvdata differently.
+Some store indirection structures (which are the problematic case),
+while others just store the rtc pointer returned from
+rtc_device_register.
+
+Regardless, I'll be going through doing an audit by hand to try to make
+sure all the rtc drivers are looking correct.
+
+thanks
+-john
+
