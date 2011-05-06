@@ -1,161 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1EFLx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 07:53:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53544 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab1EFLx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 07:53:27 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=Not3D1qn5yUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=siikddU-Ll2xhr7IKbQA:9 a=gkpJSY3_r8wCo2W3Yt8A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is
- and how it works.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Drewry <wad@chromium.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Eric Paris <eparis@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, agl@chromium.org, jmorris@namei.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <BANLkTin2ZS8DCLGZXxV7EN+S-aNRK=B8Sw@mail.gmail.com>
-References: <20110428070636.GC952@elte.hu>
-	 <1304002571.2101.38.camel@localhost.localdomain>
-	 <BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
-	 <20110429131845.GA1768@nowhere>
-	 <BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
-	 <20110503012857.GA8399@nowhere>
-	 <BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
-	 <BANLkTimPFHwJfqXHShnOt7mBp84NQQNWDw@mail.gmail.com>
-	 <20110504175229.GB1804@nowhere>
-	 <1304533382.25414.2447.camel@gandalf.stny.rr.com>
-	 <20110504183052.GD1804@nowhere>
-	 <1304534785.25414.2452.camel@gandalf.stny.rr.com>
-	 <BANLkTin2ZS8DCLGZXxV7EN+S-aNRK=B8Sw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 06 May 2011 07:53:23 -0400
-Message-ID: <1304682803.25414.2520.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753353Ab1EFMAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 08:00:39 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:35994
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751825Ab1EFMAh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 08:00:37 -0400
+X-SpamScore: -34
+X-BigFish: VS-34(zz9371O111aL4015L179dN168aJ542M1432N98dK853kzz1202hzz8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Kushwaha Prabhakar-B32579 <B32579@freescale.com>
+To: "iws@ovro.caltech.edu" <iws@ovro.caltech.edu>
+CC: Zang Roy-R61911 <R61911@freescale.com>,
+        Gala Kumar-B11780 <B11780@freescale.com>,
+        Gupta Maneesh-B18878 <B18878@freescale.com>,
+        Aggrwal Poonam-B10812 <B10812@freescale.com>,
+        Kalra Ashish-B00888 <B00888@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: [RFC v2] virtio: add virtio-over-PCI driver
+Thread-Topic: [RFC v2] virtio: add virtio-over-PCI driver
+Thread-Index: AQHMC+KpxpHRMtOFm0y8bk2Pqd9fE5R/rjKAgAAAUUA=
+Date: Fri, 6 May 2011 12:00:34 +0000
+Message-ID: <071A08F2C6A57E4E94D980ECA553F8741A54D4@039-SN1MPN1-004.039d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.57]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-05 at 02:21 -0700, Will Drewry wrote:
+Hi,
 
-> In particular, if the userspace code wants to stage some filters and
-> apply them all at once, when ready, I'm not sure that it makes sense
-> to me to put that complexity in the kernel itself.  For instance,
-> Eric's second sample showed a call that took an array of ints and
-> coalesced them into "fd == %d || ...".  That simple example shows that
-> we could easily get by with a pretty minimal kernel-supported
-> interface as long as the richer behavior could live userspace side --
-> even if just in a simple helper library.  It'd be pretty easy to
-> implement a userspace library that exposed add_filter(syscall_nr,
-> filter) and apply_filters() such that it could manage building the
-> final filter string for a given syscall and pushing it to prctl on
-> apply.
+I want to use this patch as base patch for "FSL 85xx platform" to support PCIe Agent.
+The work looks to be little old now. So wanted to understand if any development has happened further on it.
 
-I'm fine with a single kernel call and the "temporary filter" be done in
-userspace. Making the kernel code less complex is better :)
+In case no, I would take this work forward for PCIe Agent. 
 
+Any help/suggestions are most appreciated in this regard.
+
+Thanks,
+Prabhakar
+
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Ira Snyder
+Sent: Friday, 27 February, 2009 3:19 AM
+To: Arnd Bergmann
+Cc: linux-kernel@vger.kernel.org; Rusty Russell; Jan-Bernd Themann; linuxppc-dev@ozlabs.org; netdev@vger.kernel.org
+Subject: Re: [RFC v2] virtio: add virtio-over-PCI driver
+
+On Thu, Feb 26, 2009 at 09:37:14PM +0100, Arnd Bergmann wrote:
+> On Thursday 26 February 2009, Ira Snyder wrote:
+> > On Thu, Feb 26, 2009 at 05:15:27PM +0100, Arnd Bergmann wrote:
+> >
+> > I think so too. I was just getting something working, and thought it 
+> > would be better to have it "out there" rather than be working on it 
+> > forever. I'll try to break things up as I have time.
 > 
-> I think that could also help simplify the primitives.  For instance,
-> if any separate SET called on a system call resulting in an &&
-> operation, then the behavior could be consistent prior to enforcement
-> of the filtering and after.  E.g.,
->   SET, __NR_read, "fd == 1"
->   SET, __NR_read, "len < 4097"
-> would result in an evaluated "fd == 1 && len < 4097".  It would do so
-> after a single APPLY call too:
->   SET, __NR_read, "1"
->   APPLY
->   SET, __NR_read, "fd == 1"
->   SET, __NR_read, "len < 4097"
-> Results in: "1 && fd == 1 && len < 4097", and SET, nr, "0" would
-> nullify the syscall filter in total.
-
-Only that that was not applied? We can't let tasks nullify their
-restrictions once they have been applied. This keeps the kernel code
-simpler.
-
->   It seems like that would be
-> enough to build the SET-SET-...-APPLY, SET-SET-...-SET-APPLY logic
-> into a userspace library so that all temporary unapplied state doesn't
-> have to be explicitly managed by the kernel.
-
-Thus, the SETs are done in the userspace library that does not need to
-interact with the kernel (besides perhaps allocating memory). Then the
-apply would send all the filters to the kernel which would restrict the
-task (or the task on exec) further.
-
+> Ok, perfect!
+>  
+> > For the "libraries", would you suggest breaking things into seperate 
+> > code files, and using EXPORT_SYMBOL_GPL()? I'm not very familiar 
+> > with doing that, I've mostly been writing code within the existing 
+> > device driver frameworks. Or do I need export symbol at all? I'm not sure...
 > 
-> While I completely agree with the comment around ease-of-use as being
-> key to security, I also find that the more the state diagram explodes,
-> the harder it is to feel confident that a solution is actually secure.
->  To try to achieve both objectives, I'd like to limit the kernel
-> interface to the bare minimum of primitives and build any API
-> fanciness into userspace.
+> You have both options. When you list each file as a separate module in 
+> the Makefile, you use EXPORT_SYMBOL_GPL to mark functions that get 
+> called by dependent modules, but this will work only in one way.
+> 
+> You can also link multiple files together into one module, although it 
+> is less common to link a single source file into multiple modules.
+> 
 
-Fair enough.
+Ok. I'm more familiar with the EXPORT_SYMBOL_GPL interface, so I'll do that. If we decide it sucks later, we'll change it.
 
+> > I always thought you were supposed to use packed for data structures 
+> > that are external to the system. I purposely designed the structures 
+> > so they wouldn't need padding.
 > 
-> Does it seem that the tradeoff isn't worth it, or are there some
-> specific behaviors that aren't addressed using that model?
+> That would only make sense for structures that are explicitly 
+> unaligned, like a register layout using
 > 
-> While writing that, another option occurred to me that touches on the
-> other proposals but makes the behaviors much more explicit.
-> A prctl prototype could be provided:
->  prctl(<SET|GET>, <AND|OR>, <syscall_nr>, <filter string>)
-> e.g.,
->  prctl(PR_SET_SECCOMP_FILTER, PR_SECCOMP_FILTER_OR, __NR_read, "fd == 2");
+> struct my_registers {
+> 	__le16 first;
+> 	__le32 second __attribute__((packed));
+> 	__le16 third;
+> };
 > 
-> The explicit prctl argument list would allow the filter strings to be
-> self-referential and allow the userspace app to decide what behaviors
-> are allowed and when. If we followed that route, all implicit filters
-> would be "0" and the initial call to get things started might be:
->    #define SET 33
->    #define OR 0
->    #define AND 1
->    SET, OR, __NR_prctl, "option == 33 && (arg1 == 0 || arg1 == 1)"
->    prctl(PR_SET_SECCOMP, 2);
+> Even here, I'd recommend listing the individual members as packed 
+> rather than the entire struct. Obviously if you layout the members in 
+> a sane way, you don't need either.
 > 
-> So now the "locked down" binary can call prctl to set an OR or AND
-> filter for any syscall.  A subsequent call could change that:
->   SET, OR, __NR_read, "fd == 2"  /* => "0 || fd == 2" */
->   SET, AND, __NR_prctl, "(arg2 != 63 || arg1 != 0)"  /* __NR_read == 63 */
-> 
-> This would OR in a __NR_read filter, then disallow a future call to
-> prctl to OR in more NR_read filters, but for other syscalls ANDing and
-> ORing is still possible until you pass in something like:
-> 
->   SET, AND, __NR_prctl, "arg1 == 1"
-> 
-> which would lock down all future prctl calls to only ANDing filters
-> in.  (The numbers in the examples could then be properly managed in a
-> userspace library to ensure platform correctness.)
 
-I don't know about this. It seems to be starting to get too complex, and
-thus error prone. Is there any reason we should allow an OR to the task?
-Why would we want to restrict a task where the task could easily
-unrestrict itself?
+Ok. I'll drop the __attribute__((packed)) and make sure there aren't problems. I don't suspect any, though.
 
+> > I mostly don't need it. In fact, the only place I'm using registers 
+> > not specific to the messaging unit is in the probe routine, where I 
+> > setup the 1GB window into host memory and setting up access to the 
+> > guest memory on the PCI bus.
 > 
-> While this would reduce the primitives a bit further, I'm not sure if
-> this would be the right approach either, but it would open the door to
-> pushing even more down to userspace very explicitly and further
-> removing magic policy logic from the kernel-side.  Is this vaguely
-> interesting or just another layer of confusing-ness?
+> You could add the registers you need for this to the "reg" property of 
+> your device, to be mapped with of_iomap.
+> 
+> If the registers for setting up this window don't logically fit into 
+> the same device as the one you already use, the cleanest solution 
+> would be to have another device just for this and then make a function 
+> call into that driver to set up the window.
+> 
 
-I'm confused, thus I must have hit that layer ;)
+The registers are part of the board control registers. They don't fit at all in the message unit. Doing this in the bootloader seems like a logical place, but that would require any testers to flash a new U-Boot image into their mpc8349emds boards.
 
--- Steve
+The first set of access is used to set up a 1GB region in the memory map that accesses the host's memory. Any reads/writes to addresses 0x80000000-0xc0000000 actually hit the host's memory.
+
+The last access sets up PCI BAR1 to hit the memory from dma_alloc_coherent(). The bootloader already sets up the window as 16K, it just doesn't point it anywhere. Maybe this /should/ go into the bootloader. Like above, it would require testers to flash a new U-Boot image into their mpc8349emds boards.
+
+> > Now, I wouldn't need to access these registers at all if the 
+> > bootloader could handle it. I just don't know if it is possible to 
+> > have Linux not use some memory that the bootloader allocated, other 
+> > than with the mem=XXX trick, which I'm sure wouldn't be acceptable.
+> > I've just used regular RAM so this is portable to my custom board 
+> > (mpc8349emds based) and a regular mpc8349emds. I didn't want to 
+> > change anything board specific.
+> > 
+> > I would love to have the bootloader allocate (or reserve somewhere 
+> > in the memory map) 16K of RAM, and not be required to allocate it 
+> > with dma_alloc_coherent(). It would save me plenty of headaches.
+> 
+> I believe you can do that through the "memory" devices in the device 
+> tree, by leaving out a small part of the description of main memory, 
+> at putting it into the "reg" property of your own device.
+> 
+
+I'll explore this option. I didn't even know you could do this.  Is a driver that requires the trick acceptable for mainline inclusion? Just like setting up the 16K PCI window, this is very platform specific.
+
+This limits the guest driver to systems which are able to change Linux's view of their memory somehow. Maybe this isn't a problem.
+
+> > Code complexity only. Also, it was easier to write 80-char lines 
+> > with something like:
+> > 
+> > vop_get_desc(vq, idx, &desc);
+> > if (desc.flags & VOP_DESC_F_NEXT) {
+> > 	/* do something */
+> > }
+> > 
+> > Instead of:
+> > if (le16_to_cpu(vq->desc[idx].flags) & VOP_DESC_F_NEXT) {
+> > 	/* do something */
+> > }
+> > 
+> > Plus, I didn't have to remember how many bits were in each field. I 
+> > just thought it made everything simpler to understand. Suggestions?
+> 
+> hmm, in this particular case, you could change the definition of 
+> VOP_DESC_F_NEXT to
+> 
+> #define VOP_DESC_F_NEXT cpu_to_le16(1)
+> 
+> and then do the code as the even simpler (source and object code wise)
+> 
+> if (vq->desc[idx].flags) & VOP_DESC_F_NEXT)
+> 
+> I'm not sure if you can do something along these lines for the other 
+> cases as well though.
+> 
+
+That's a good idea. It wouldn't fix the addresses, lengths, and next fields, though. I'll make the change and see how bad it is, then report back. It may not be so bad after all.
+
+> > I used 3 so they would would align to 1024 byte boundaries within a 
+> > 4K page. Then the layout was 16K on the bus, each 4K page is a 
+> > single virtio-device, and each 1K block is a single virtqueue. The 
+> > first 1K is for virtio-device status and feature bits, etc.
+> > 
+> > Packing them differently isn't a problem. It was just easier to code 
+> > because setting up a window with the correct size is so platform 
+> > specific.
+> 
+> Ok. I guess the important question is what part of the code makes this 
+> decision. Ideally, the virtio-net glue would instantiate the device 
+> with the right number of queues.
+> 
+
+Yeah, virtio doesn't work that way.
+
+The virtio drivers just call find_vq() with a different index for each queue they want to use. You have no way of knowing how many queues each virtio driver will want, unless you go read their source code.
+
+virtio-net currently uses 3 queues, but we only support the first two.
+The third is optional (for now...), and non-symmetric.
+
+Thanks again,
+Ira
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
 
