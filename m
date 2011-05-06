@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab1EFKSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 06:18:55 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50494 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756288Ab1EFKSy (ORCPT
+	id S1756275Ab1EFKSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 06:18:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36971 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835Ab1EFKSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 06:18:54 -0400
-Message-ID: <4DC3CAA9.5040203@mvista.com>
-Date: Fri, 06 May 2011 14:17:13 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Fri, 6 May 2011 06:18:33 -0400
+Date: Fri, 6 May 2011 12:18:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, john stultz <johnstul@us.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC] time: xtime_lock is held too long
+In-Reply-To: <20110505210118.GI2925@one.firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1105061117220.3005@ionos>
+References: <1304478708-1273-1-git-send-email-john.stultz@linaro.org> <m2oc3jxgtt.fsf@firstfloor.org> <1304564090.2943.36.camel@work-vm> <1304574244.32152.666.camel@edumazet-laptop> <1304576495.2943.40.camel@work-vm> <1304604284.3032.78.camel@edumazet-laptop>
+ <alpine.LFD.2.02.1105051630390.3005@ionos> <1304608095.3032.95.camel@edumazet-laptop> <alpine.LFD.2.02.1105051750540.3005@ionos> <20110505210118.GI2925@one.firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Daney <ddaney@caviumnetworks.com>
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 2/6] of: Make of_find_node_by_path() traverse /aliases
- for relative paths.
-References: <1304614949-30460-1-git-send-email-ddaney@caviumnetworks.com> <1304614949-30460-3-git-send-email-ddaney@caviumnetworks.com>
-In-Reply-To: <1304614949-30460-3-git-send-email-ddaney@caviumnetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, 5 May 2011, Andi Kleen wrote:
 
-On 05-05-2011 21:02, David Daney wrote:
+> > > Another idea would be to prime cache lines to be dirtied in cpu cache
+> > > before taking locks, and better pack variables to reduce number of cache
+> > > lines.
+> > 
+> > Most variables are packed already in struct timekeeper, which should
+> > be pretty cache hot anyway, so I don't know whether we gain much.
+> 
+> There's actually some potential here. I got a moderate speedup in a
+> database benchmark with this patch recently. The biggest win
 
-> Currently all paths passed to of_find_node_by_path() must begin with a
-> '/', indicating a full path to the desired node.
+Numbers please.
 
-> Augment the look-up code so that if a path does *not* begin with '/',
-> the path is used as the name of an /aliases property.  The value of
-> this alias is then used as the full node path to be found.
+> was in the timer interrupt.
 
-> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
-> ---
->   drivers/of/base.c |   41 ++++++++++++++++++++++++++++++++++++++++-
->   1 files changed, 40 insertions(+), 1 deletions(-)
+Because this _is_ the timer interrupt ?
+ 
+> All those variables are on separate cache lines.
 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 632ebae..1a0a83e 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-[...]
-> @@ -348,14 +351,50 @@ EXPORT_SYMBOL(of_get_next_child);
->   struct device_node *of_find_node_by_path(const char *path)
->   {
->   	struct device_node *np = allnodes;
-> +	struct device_node *aliases = NULL;
-> +	char *alias = NULL;
-> +	char *new_path = NULL;
->
->   	read_lock(&devtree_lock);
-> +
-> +	if (path[0] != '/') {
-> +		const char *ps;
-> +		aliases = of_find_node_by_path("/aliases");
-> +		if (!aliases)
-> +			goto out;
-> +
-> +		ps = strchr(path, '/');
-> +		if (ps) {
-> +			size_t len = ps - path;
-> +			alias = kmalloc(len + 1, GFP_KERNEL);
-> +			strncpy(alias, path, len);
-> +			alias[len] = 0;
+Well, then we should make sure that they are not.
 
-    BTW, you could use kstrndup() (from mm/util.c) instead of the above 3 lines.
+And looking at a few kernel images the interesting variables
+timekeeper, xtime, wall_to_monotonic are in a consecutive area which
+is not really surprising. Further all images have xtime and
+wall_to_monotonic in the same cacheline, just xtime_lock is somewhere
+else.
 
-WBR, Sergei
+> (needs some cleanups, just for illustration)
+
+And how's that cleanup going to look like? Making the timekeeping
+internal variables global again is not going to happen. And if you
+want prefetching those variables in the timer interrupt, then you want
+to prefetch them in any random code path which ends up touching them.
+
+That's the completely wrong aproach, really. If stuff takes too long,
+then we need to tackle it at the root of the problem and not solve it
+by sprinkling magic prefetches all over the place.
+
+Thanks,
+
+	tglx
