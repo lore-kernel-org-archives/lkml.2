@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab1EFAYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:24:33 -0400
-Received: from kroah.org ([198.145.64.141]:36638 "EHLO coco.kroah.org"
+	id S932131Ab1EFAYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:24:32 -0400
+Received: from kroah.org ([198.145.64.141]:36642 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754232Ab1EFAYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:24:30 -0400
+	id S1755688Ab1EFAYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:24:31 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:08 2011
-Message-Id: <20110506002207.993104844@clark.kroah.org>
+Message-Id: <20110506002208.094874188@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:14 -0700
+Date: Thu, 05 May 2011 17:20:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Chris Ball <cjb@laptop.org>
-Subject: [029/143] mmc: sdhci-pci: Fix error case in sdhci_pci_probe_slot()
+Subject: [030/143] mmc: sdhci: Check mrq->cmd in sdhci_tasklet_finish
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <cjb@laptop.org>
+From: Ben Dooks <ben-linux@fluff.org>
 
-commit 9fdcdbb0d84922e7ccda2f717a04ea62629f7e18 upstream.
+commit b7b4d3426d2b5ecab21578eb20d8e456a1aace8f upstream.
 
-If pci_ioremap_bar() fails during probe, we "goto release;" and free the
-host, but then we return 0 -- which tells sdhci_pci_probe() that the probe
-succeeded.  Since we think the probe succeeded, when we unload sdhci we'll
-go to sdhci_pci_remove_slot() and it will try to dereference slot->host,
-which is now NULL because we freed it in the error path earlier.
+It seems that under certain circumstances that the sdhci_tasklet_finish()
+call can be entered with mrq->cmd set to NULL, causing the system to crash
+with a NULL pointer de-reference.
 
-The patch simply sets ret appropriately, so that sdhci_pci_probe() will
-detect the failure immediately and bail out.
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+PC is at sdhci_tasklet_finish+0x34/0xe8
+LR is at sdhci_tasklet_finish+0x24/0xe8
 
+Seen on S3C6410 system.
+
+Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/sdhci-pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mmc/host/sdhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -569,6 +569,7 @@ static struct sdhci_pci_slot * __devinit
- 	host->ioaddr = pci_ioremap_bar(pdev, bar);
- 	if (!host->ioaddr) {
- 		dev_err(&pdev->dev, "failed to remap registers\n");
-+		ret = -ENOMEM;
- 		goto release;
- 	}
- 
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1277,7 +1277,7 @@ static void sdhci_tasklet_finish(unsigne
+ 	 * upon error conditions.
+ 	 */
+ 	if (!(host->flags & SDHCI_DEVICE_DEAD) &&
+-		(mrq->cmd->error ||
++	    ((mrq->cmd && mrq->cmd->error) ||
+ 		 (mrq->data && (mrq->data->error ||
+ 		  (mrq->data->stop && mrq->data->stop->error))) ||
+ 		   (host->quirks & SDHCI_QUIRK_RESET_AFTER_REQUEST))) {
 
 
