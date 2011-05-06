@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab1EFAEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:04:50 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:34983 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab1EFAEt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:04:49 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Greg KH <greg@kroah.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] reboot: disable usermodehelper to prevent fs access
-In-Reply-To: Your message of "Thu, 05 May 2011 14:34:58 PDT."
-             <20110505213458.GA4331@kroah.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1304595126.1284.3.camel@zag> <39558.1304630665@localhost>
-            <20110505213458.GA4331@kroah.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304640285_5038P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 05 May 2011 20:04:46 -0400
-Message-ID: <45795.1304640286@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4DC33B1F.005B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1753993Ab1EFANL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:13:11 -0400
+Received: from kroah.org ([198.145.64.141]:60995 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab1EFANK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:07 2011
+Message-Id: <20110506001207.348023550@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Thu, 05 May 2011 17:10:33 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [patch 01/38] [SCSI] pmcraid: reject negative request size
+In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304640285_5038P
-Content-Type: text/plain; charset=us-ascii
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-On Thu, 05 May 2011 14:34:58 PDT, Greg KH said:
-> On Thu, May 05, 2011 at 05:24:25PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 05 May 2011 13:32:05 +0200, Kay Sievers said:
-> > > In case CONFIG_UEVENT_HELPER_PATH is not set to "", which it
-> > > should be on every system
-> >
-> > If it indeed should be that on every system, shouldn't it be listed
-> > in feature-removal-schedule.txt?
->
-> It's the default value, but distros, and people, can and do override it
-> for various reasons.  Why would it be added to
-> feature-removal-schedule.txt?
+------------------
 
-Well, what Kay said was "it should be on *every* system", making it sound like
-it's an option past its shelf life.  Certainly, "the default should be null for
-the vast majority of systems" is a different scenario.
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-> > Does anybody have a running list of "Stuff we set by default at one time, but
-> > no longer recommend"?
+commit 5f6279da3760ce48f478f2856aacebe0c59a39f3 upstream.
 
-> Look at the default values for different configurations options and why
-> they differ in your system is about the only way that I know of, sorry.
+There's a code path in pmcraid that can be reached via device ioctl that
+causes all sorts of ugliness, including heap corruption or triggering
+the OOM killer due to consecutive allocation of large numbers of pages.
+Not especially relevant from a security perspective, since users must
+have CAP_SYS_ADMIN to open the character device.
 
-Hmm.. I suspect diffconfig will only get me part of the way there.  Maybe what
-I *need* to do is find a 2.6.25-ish x86_64 defconfig, the current one, diff those, and
-then see what changed (as opposed to truly new config flags), and then see
-how many of those changes do/don't show up in *my* config as well..
+First, the user can call pmcraid_chr_ioctl() with a type
+PMCRAID_PASSTHROUGH_IOCTL.  A pmcraid_passthrough_ioctl_buffer
+is copied in, and the request_size variable is set to
+buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit signed
+value provided by the user.
 
-Maybe that would be a good project for some #kernelnewbie to look at ;)
-"In my copious free time" ;)
+If a negative value is provided here, bad things can happen.  For
+example, pmcraid_build_passthrough_ioadls() is called with this
+request_size, which immediately calls pmcraid_alloc_sglist() with a
+negative size.  The resulting math on allocating a scatter list can
+result in an overflow in the kzalloc() call (if num_elem is 0, the
+sglist will be smaller than expected), or if num_elem is unexpectedly
+large the subsequent loop will call alloc_pages() repeatedly, a high
+number of pages will be allocated and the OOM killer might be invoked.
 
+Prevent this value from being negative in pmcraid_ioctl_passthrough().
 
---==_Exmh_1304640285_5038P
-Content-Type: application/pgp-signature
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+---
+ drivers/scsi/pmcraid.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-iD8DBQFNwzsdcC3lWbTT17ARAjp3AKDNRjxUA8mqCDC6FH9Pm1Ar5bcCTgCg3i6O
-OQWDEsTYc8Vuqpqw79vyAXg=
-=zLyW
------END PGP SIGNATURE-----
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3814,6 +3814,9 @@ static long pmcraid_ioctl_passthrough(
+ 			rc = -EFAULT;
+ 			goto out_free_buffer;
+ 		}
++	} else if (request_size < 0) {
++		rc = -EINVAL;
++		goto out_free_buffer;
+ 	}
+ 
+ 	/* check if we have any additional command parameters */
 
---==_Exmh_1304640285_5038P--
 
