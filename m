@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab1EFNdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:33:25 -0400
-Received: from mailout.rz.uni-frankfurt.de ([141.2.22.233]:36982 "EHLO
-	mailout.rz.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756259Ab1EFNdY (ORCPT
+	id S1752646Ab1EFO1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 10:27:17 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:33057 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205Ab1EFO1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:33:24 -0400
-Message-ID: <4DC40484.3050205@gmx.de>
-Date: Fri, 06 May 2011 16:24:04 +0200
-From: Thomas Sattler <tsattler@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Mnenhy/0.8.3 Thunderbird/3.1.10
+	Fri, 6 May 2011 10:27:16 -0400
+X-IronPort-AV: E=Sophos;i="4.64,326,1301875200"; 
+   d="scan'208";a="5639306"
+Date: Fri, 6 May 2011 15:28:38 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "Tian, Kevin" <kevin.tian@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: RE: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
+ them
+In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <alpine.LFD.2.02.1105061149330.3005@ionos> <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.X)
-References: <4DAF6C0B.3070009@gmx.de> <20110427134613.GI32590@random.random> <4DC14474.9040001@gmx.de> <20110504143842.GK7838@random.random> <4DC31EDE.2020503@gmx.de> <20110506011319.GH7838@random.random> <4DC3B629.7010409@gmx.de> <4DC3B72A.302@gmx.de>
-In-Reply-To: <4DC3B72A.302@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-MailScanner: Found to be clean
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Aaarg, wrong kernel tree. I patched and compiled 2.6.38.5.
-> Do you think it is important to stay with 2.6.38.2, after
-> we know 2.6.38.4 is also affected?
+On Fri, 6 May 2011, Tian, Kevin wrote:
+> > From: Thomas Gleixner
+> > Sent: Friday, May 06, 2011 6:00 PM
+> > 
+> > On Fri, 6 May 2011, Tian, Kevin wrote:
+> > > x86: don't unmask disabled irqs when migrating them
+> > >
+> > > it doesn't make sense to mask/unmask a disabled irq when migrating it
+> > > from offlined cpu to another, because it's not expected to handle any
+> > > instance of it. Current mask/set_affinity/unmask steps may trigger
+> > > unexpected instance on disabled irq which then simply bug on when
+> > > there is no handler for it. One failing example is observed in Xen.
+> > > Xen pvops
+> > 
+> > So there is no handler, why the heck is there an irq action?
+> > 
+> > 	  if (!irq_has_action(irq) ....
+> > 	     	continue;
+> > 
+> > Should have caught an uninitialized interrupt. If Xen abuses interrupts that way,
+> > then it rightfully explodes. And we do not fix it by magic somewhere else.
+> 
+> sorry that my bad description here. there does be a dummy handler registered
+> on such irqs which simply throws out a BUG_ON when hit. I should just say such 
+> injection is not expected instead of no handler. :-)
 
-I bootet 2.6.38.5.aa1 ("aa1" for the "make-it-worse-patch")
-but nothing happened within an hour. So I put some stress
-on the system:
+I don't think this patch is necessary anymore after the event channel
+handling cleanup patches I have just sent to the list.
+Could you please try the following two patches:
 
-$ stress --cpu 80 --io 40 --vm 20 --vm-bytes 1280M --timeout 5s
-stress: info: [31924] dispatching hogs: 80 cpu, 40 io, 20 vm, 0 hdd
+http://marc.info/?l=linux-kernel&m=130468120032172&w=2
+http://marc.info/?l=linux-kernel&m=130468178200468&w=2
 
-The command _did_not_end_ after five seconds. I tried to
-kill it after ~15 minutes. I had no success killing it.
-
-"nr_isolated_anon" was "0" all the time. 'ps xal' hung its
-terminal. Just like 'pkill stress', 'pkill firefox', 'pkill
-thunderbird', 'pkill pkill' and 'pkill -9 stress'.
-
-top/iotop: http://pastebin.com/raw.php?i=BCtmHpmX
-ps xal:    http://pastebin.com/raw.php?i=ED71cuKe
-zoneinfo:  http://pastebin.com/raw.php?i=aBNjz1Up
-
-I hit SysRq-[lmtw] several times, you'll find all kernel
-messages (/var/log/messages) from boot to reboot here:
-
-  http://pastebin.com/raw.php?i=VG28YRbi
-
-The system did not shutdown properly, I waited some time
-for sshd to stop and eventually hit SysRq-sub.
-
-Thomas
+and let me know if you still need this patch?
