@@ -1,151 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab1EFKvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 06:51:06 -0400
-Received: from eriks.xs4all.nl ([83.160.41.216]:49992 "EHLO eriks.xs4all.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752239Ab1EFKvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 06:51:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=slagter.name; h=message-id
-	:date:from:mime-version:to:subject:references:in-reply-to
-	:content-type; q=dns; s=2007072601; b=L/4WaLC92pr4sjScgkyzps3Hao
-	vItY+mfqmjcCpuauIPZ7ldtwo6bh0fw28sUwFgMDOChj2gmBNyCr5G5sLXZ7j1SF
-	7eM6r5JCF1L6ksk49J/tKBFDa38U/GHqbLw2frTGRsRnSTveEaTENSQFrBJu5kgz
-	6oRdxYrEmgIL6rUaU=
-Message-ID: <4DC3D296.9060707@slagter.name>
-Date: Fri, 06 May 2011 12:51:02 +0200
-From: Erik Slagter <erik@slagter.name>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Mnenhy/0.8.3 Thunderbird/3.1.10 ThunderBrowse/3.3.5
+	id S932341Ab1EFKzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 06:55:52 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:48077 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932245Ab1EFKzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 06:55:50 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lk2s7oFj0=
+X-RZG-CLASS-ID: mo00
+Date: Fri, 6 May 2011 12:55:46 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH] add hook to read_from_oldmem() to check for non-ram pages
+Message-ID: <20110506105545.GA16945@aepfle.de>
+References: <20110407095646.GA30788@aepfle.de>
+ <20110503190806.GA12485@aepfle.de>
+ <20110505142551.b4d2d95a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: OOPS after connection Droids MuIn USB display
-References: <4DC3B0E3.7010008@slagter.name>
-In-Reply-To: <4DC3B0E3.7010008@slagter.name>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms050309050500040305030208"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110505142551.b4d2d95a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Thu, May 05, Andrew Morton wrote:
 
---------------ms050309050500040305030208
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: quoted-printable
+> On Tue, 3 May 2011 21:08:06 +0200
+> Olaf Hering <olaf@aepfle.de> wrote:
 
-Following up on this bug I have found the location of the OOPS in source =
+> > This will reduce the time to read /proc/vmcore.  Without this change a
+> > 512M guest with 128M crashkernel region needs 200 seconds to read it,
+> > with this change it takes just 2 seconds.
+> 
+> Seems reasonable, I suppose.
 
-code (using bisection). It's clearly not the source of the problem, but=20
-I hope it will help.
+Andrew,
+Thanks for your feedback.
 
-In the file drivers/usb/class/cdc-acm.c, around line 1098, there is a=20
-comment "/*workaround for switched interfaces */" and then a check:
+> Is there some suitable ifdef we can put around this stuff to avoid
+> adding it to kernel builds which will never use it?
 
-if (data_interface->cur_altsetting->desc.bInterfaceClass !=3D=20
-CDC_DATA_INTERFACE_TYPE)
+The change is for pv-on-hvm guests. In this setup the (out-of-tree)
+paravirtualized drivers shutdown the emulated hardware, then they
+communicate directly with the backend.
+There is no ifdef right now.  I guess at some point, when xen is fully
+merged, this hook can be put into some CONFIG_XEN_PV_ON_HVM thing.
 
-At this point, the variable data_interface is NULL and this causes the OO=
-PS.
+> > +void register_oldmem_pfn_is_ram(int (*fn)(unsigned long))
+> > +{
+> > +	if (oldmem_pfn_is_ram == NULL)
+> > +		oldmem_pfn_is_ram = fn;
+> > +}
+> 
+> This is racy, and it should return a success code.  And we may as well
+> mark it __must_check to prevent people from cheating.
+
+I will update that part.
+
+> > +void unregister_oldmem_pfn_is_ram(void)
+> > +{
+> > +	wait_event(oldmem_fn_waitq, atomic_read(&oldmem_fn_refcount) == 0);
+> > +	oldmem_pfn_is_ram = NULL;
+> > +	wmb();
+> > +}
+> 
+> I'd say we should do away with the (also racy) refcount thing. 
+> Instead, require that callers not be using the thing when they
+> unregister.  ie: that callers not be buggy.
+
+I think oldmem_pfn_is_ram can be cleared unconditionally, the NULL check
+in pfn_is_ram() below will prevent a crash.
+This whole refcount thing is to prevent a module unload while
+pfn_is_ram() is calling the hook, in other words the called code should
+not go away until the hook returns to pfn_is_ram().
+Should the called code increase/decrease the modules refcount instead?
+I remember there was some MODULE_INC/MODULE_DEC macro (cant remember the
+exact name) at some point. What needs to be done inside the module to
+prevent an unload while its still in use? Is it __module_get/module_put
+for each call of fn()? 
+
+The called function which will go into the xen source at some point
+looks like shown below. HVMOP_get_mem_type was just merged into xen-unstable.
+
+xen-unstable.hg/unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
+
+#ifdef HAVE_OLDMEM_PFN_IS_RAM
+static int xen_oldmem_pfn_is_ram(unsigned long pfn)
+{
+	struct xen_hvm_get_mem_type a;
+	int ret;
+
+	a.domid = DOMID_SELF;
+	a.pfn = pfn;
+	if (HYPERVISOR_hvm_op(HVMOP_get_mem_type, &a))
+		return -ENXIO;
+
+	switch (a.mem_type) {
+		case HVMMEM_mmio_dm:
+			ret = 0;
+			break;
+		case HVMMEM_ram_rw:
+		case HVMMEM_ram_ro:
+		default:
+			ret = 1;
+			break;
+	}
+
+	return ret;
+}
+#endif
+
+static int __devinit platform_pci_init(...)
+{
+        /* other init stuff */
+#ifdef HAVE_OLDMEM_PFN_IS_RAM
+        register_oldmem_pfn_is_ram(&xen_oldmem_pfn_is_ram);
+#endif
+        /* other init stuff */
+}
 
 
---------------ms050309050500040305030208
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+Also, this xen driver has no module_exit. So for xen the unregister is
+not an issue. I havent looked at the to-be-merged pv-on-hvm drivers,
+maybe they can be properly unloaded.
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPWDCC
-BIowggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UE
-BhMCU0UxFDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5h
-bCBUVFAgTmV0d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0w
-NTA2MDcwODA5MTBaFw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMC
-VVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5l
-dHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVRO
-LVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmFpPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVN
-NRm5pELlzkniii8efNIxB8dOtINknS4p1aJkxIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQy
-lbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2qL+usobNqqrcuZzWLeeEeaYji5kbNoKXq
-vgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAsvIKKjqQOpdeJQ/wWWq8dcdcRWdq6
-hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMeoYV+9Udly/hNVyh00jT/MLbu
-9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3+sQmVO8DveAky1QaMB0G
-A1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/
-BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9BZGRU
-cnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8ubmV0L0Fk
-ZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyispgCi
-54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
-g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHd
-WTBK322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftz
-Mizpm4QkLdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsy
-XEFs/vVdoOr/0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFYTCCBEmgAwIBAgIRAIg14yiGxBLB
-Nd3nEhie2VcwDQYJKoZIhvcNAQEFBQAwga4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJVVDEX
-MBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRoZSBVU0VSVFJVU1QgTmV0d29y
-azEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29tMTYwNAYDVQQDEy1VVE4tVVNF
-UkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1haWwwHhcNMTAxMDE5MDAwMDAw
-WhcNMTExMDE5MjM1OTU5WjBGMQswCQYDVQQGEwJOTDEVMBMGA1UEAxMMRXJpayBTbGFndGVy
-MSAwHgYJKoZIhvcNAQkBFhFlcmlrQHNsYWd0ZXIubmFtZTCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBANbriwH0w2kwn4b2BwVAtiZ0OkHIiwcscx1XIOzD/bp+Sv4tVdjc2bBF
-tXTyEpDzP5cLs5V3g1hTxI5V40lgmsiKrDMp8XR6fDwqv0cdoS3ABS/gvlxhwvbJaeR7tjkM
-Ni4ofKgEfSWi7hzFyijuwM/SrwJVlpTO7Xah+FKDLVh8FWUHRVxtnFuLaHcZR+4y0c0Zi2AE
-gp3CLZQzXCsu/Nsi+0fclP4lbhg+XgAgTKDI2WIm7JuQgMSgoevQ6HFggreTj03tUoKjD4l4
-JIoDb5tc/IutLhwXZTZsrdmW2SE29xhRWauNGs9DnJAcmpUJkXHGGL8cgmqWb1Mlh9JBaN8C
-AwEAAaOCAd8wggHbMB8GA1UdIwQYMBaAFImCZ33EnSZwAEu0UEh83j2uBG59MB0GA1UdDgQW
-BBTK4wFgfa4mmdF0XOGvj3dgyG8ePzAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAd
-BgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIB
-AwUwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwgaUGA1Ud
-HwSBnTCBmjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5jb20vVVROLVVTRVJGaXJzdC1D
-bGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDBKoEigRoZEaHR0cDovL2NybC5jb21v
-ZG8ubmV0L1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRFbWFpbC5jcmww
-bAYIKwYBBQUHAQEEYDBeMDYGCCsGAQUFBzAChipodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9V
-VE5BQUFDbGllbnRDQS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNv
-bTANBgkqhkiG9w0BAQUFAAOCAQEAALQg8UqA2KoLGSmq8SsJTddYzpglJrW3mcd55qDBKLBM
-J5klHPPWoqdV2dA9X0yV4WlaS/eQHfgmQCjvJ42HDNJW6YBw1MrPFPxXFJsbpY0OlIeLY5oh
-VZjuQeI3YfwOB1ZceU4QTkdF636Ljyz3D++PmSw6ww6mm8R8LX18JIYe6vhWZs93sSMQct3R
-2s9kGB94lCKbapyq9lBhT/swM51wWTmnrIxrmFzm0+fFnNu9QwoazTn7hwg7G0Tiv2Zqz+Ba
-x318aG+gZm1OnQQRPn1hiK5C6GiKrWu9/jTV3UaGePBGslkpopMdLrwQ43P/eHmJJGyXHBLx
-87J7yN8HMzCCBWEwggRJoAMCAQICEQCINeMohsQSwTXd5xIYntlXMA0GCSqGSIb3DQEBBQUA
-MIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5
-MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cu
-dXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIEVtYWlsMB4XDTEwMTAxOTAwMDAwMFoXDTExMTAxOTIzNTk1OVowRjELMAkG
-A1UEBhMCTkwxFTATBgNVBAMTDEVyaWsgU2xhZ3RlcjEgMB4GCSqGSIb3DQEJARYRZXJpa0Bz
-bGFndGVyLm5hbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDW64sB9MNpMJ+G
-9gcFQLYmdDpByIsHLHMdVyDsw/26fkr+LVXY3NmwRbV08hKQ8z+XC7OVd4NYU8SOVeNJYJrI
-iqwzKfF0enw8Kr9HHaEtwAUv4L5cYcL2yWnke7Y5DDYuKHyoBH0lou4cxcoo7sDP0q8CVZaU
-zu12ofhSgy1YfBVlB0VcbZxbi2h3GUfuMtHNGYtgBIKdwi2UM1wrLvzbIvtH3JT+JW4YPl4A
-IEygyNliJuybkIDEoKHr0OhxYIK3k49N7VKCow+JeCSKA2+bXPyLrS4cF2U2bK3ZltkhNvcY
-UVmrjRrPQ5yQHJqVCZFxxhi/HIJqlm9TJYfSQWjfAgMBAAGjggHfMIIB2zAfBgNVHSMEGDAW
-gBSJgmd9xJ0mcABLtFBIfN49rgRufTAdBgNVHQ4EFgQUyuMBYH2uJpnRdFzhr493YMhvHj8w
-DgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsG
-AQUFBwMCMEYGA1UdIAQ/MD0wOwYMKwYBBAGyMQECAQMFMCswKQYIKwYBBQUHAgEWHWh0dHBz
-Oi8vc2VjdXJlLmNvbW9kby5uZXQvQ1BTMIGlBgNVHR8EgZ0wgZowTKBKoEiGRmh0dHA6Ly9j
-cmwuY29tb2RvY2EuY29tL1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRF
-bWFpbC5jcmwwSqBIoEaGRGh0dHA6Ly9jcmwuY29tb2RvLm5ldC9VVE4tVVNFUkZpcnN0LUNs
-aWVudEF1dGhlbnRpY2F0aW9uYW5kRW1haWwuY3JsMGwGCCsGAQUFBwEBBGAwXjA2BggrBgEF
-BQcwAoYqaHR0cDovL2NydC5jb21vZG9jYS5jb20vVVROQUFBQ2xpZW50Q0EuY3J0MCQGCCsG
-AQUFBzABhhhodHRwOi8vb2NzcC5jb21vZG9jYS5jb20wDQYJKoZIhvcNAQEFBQADggEBAAC0
-IPFKgNiqCxkpqvErCU3XWM6YJSa1t5nHeeagwSiwTCeZJRzz1qKnVdnQPV9MleFpWkv3kB34
-JkAo7yeNhwzSVumAcNTKzxT8VxSbG6WNDpSHi2OaIVWY7kHiN2H8DgdWXHlOEE5HRet+i48s
-9w/vj5ksOsMOppvEfC19fCSGHur4VmbPd7EjEHLd0drPZBgfeJQim2qcqvZQYU/7MDOdcFk5
-p6yMa5hc5tPnxZzbvUMKGs05+4cIOxtE4r9mas/gWsd9fGhvoGZtTp0EET59YYiuQuhoiq1r
-vf401d1GhnjwRrJZKaKTHS68EONz/3h5iSRslxwS8fOye8jfBzMxggRgMIIEXAIBATCBxDCB
-rjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEe
-MBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVz
-ZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0
-aW9uIGFuZCBFbWFpbAIRAIg14yiGxBLBNd3nEhie2VcwCQYFKw4DAhoFAKCCAnAwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTEwNTA2MTA1MTAyWjAjBgkq
-hkiG9w0BCQQxFgQUVHu1S04fzVIk7j0RM9PWoDdHs48wXwYJKoZIhvcNAQkPMVIwUDALBglg
-hkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcG
-BSsOAwIHMA0GCCqGSIb3DQMCAgEoMIHVBgkrBgEEAYI3EAQxgccwgcQwga4xCzAJBgNVBAYT
-AlVTMQswCQYDVQQIEwJVVDEXMBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRo
-ZSBVU0VSVFJVU1QgTmV0d29yazEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29t
-MTYwNAYDVQQDEy1VVE4tVVNFUkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1h
-aWwCEQCINeMohsQSwTXd5xIYntlXMIHXBgsqhkiG9w0BCRACCzGBx6CBxDCBrjELMAkGA1UE
-BhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMV
-VGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5j
-b20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBF
-bWFpbAIRAIg14yiGxBLBNd3nEhie2VcwDQYJKoZIhvcNAQEBBQAEggEAlI+qjv2yZE+6k2JV
-zEYoFKdYNFMrltPeib34xJeCtc2pdFJBofvzl55rqLxumgZc7IiMZpTAO8l2ZDCihg8ZhrH9
-qVh2gGuhQ4miJNSDzauwiCe9DczCM+GiHtzPueA4FD+XtXrDkaQngXGMgO7Fj93gUlFF1HmX
-EOZMVOEVhw1lOEr5AsWg6UkGKNaw5AJqtk0hP+B6paThvKqpOBZunmwfq8a2kTtUs+v1KvKG
-+JA5IgQfM/LrS4rEwC3zaam8ORqy6WaY933kOaBKF3VF6jVjC8e4BUS0ss9oL9H33yUKlG22
-rLfFLmyNa250P85tJSTilV7X+dfAy4mTdA5o9wAAAAAAAA==
---------------ms050309050500040305030208--
+> > +static int pfn_is_ram(unsigned long pfn)
+> > +{
+> > +	int (*fn)(unsigned long);
+> > +	/* pfn is ram unless fn() checks pagetype */
+> > +	int ret = 1;
+> > +
+> > +	atomic_inc(&oldmem_fn_refcount);
+> > +	smp_mb__after_atomic_inc();
+> > +	fn = oldmem_pfn_is_ram;
+> > +	if (fn)
+> > +		ret = fn(pfn);
+> > +	if (atomic_dec_and_test(&oldmem_fn_refcount))
+> > +		wake_up(&oldmem_fn_waitq);
+> > +
+> > +	return ret;
+> > +}
+> 
+> This function would have been a suitable place at which to document the
+> entire feature.  As it stands, anyone who is reading this code won't
+> have any clue why it exists.
+
+I will add a comment.
+
+> > +EXPORT_SYMBOL_GPL(register_oldmem_pfn_is_ram);
+> > +EXPORT_SYMBOL_GPL(unregister_oldmem_pfn_is_ram);
+> 
+> Each export should be placed immediately after the function which is
+> being exported, please.  Checkpatch reports this.  Please use checkpatch.
+
+Will do.
+
+> > +++ linux-2.6.39-rc5/include/linux/crash_dump.h
+> > @@ -66,6 +66,11 @@ static inline void vmcore_unusable(void)
+> >  	if (is_kdump_kernel())
+> >  		elfcorehdr_addr = ELFCORE_ADDR_ERR;
+> >  }
+> > +
+> > +#define HAVE_OLDMEM_PFN_IS_RAM 1
+> 
+> What's this for?
+
+So that out-of-tree drivers dont fail to compile when they call that
+hook unconditionally. Perhaps they could use the kernel version.
+
+Olaf
