@@ -1,18 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab1EFNGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 09:06:25 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:46898 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755364Ab1EFNGY (ORCPT
+	id S1755794Ab1EFNGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 09:06:49 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:55236 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755565Ab1EFNGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 09:06:24 -0400
+	Fri, 6 May 2011 09:06:46 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 08/10] mfd: add DB5500 PRCMU driver
-Date: Fri, 6 May 2011 15:06:13 +0200
-Message-ID: <1304687173-23747-1-git-send-email-linus.walleij@stericsson.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Jonas Aberg <jonas.aberg@stericsson.com>,
+        Virupax Sadashivpetimath 
+	<virupax.sadashivpetimath@stericsson.com>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 09/10] mach-ux500: voltage domain regulators for DB8500
+Date: Fri, 6 May 2011 15:06:21 +0200
+Message-ID: <1304687181-23780-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -20,729 +29,890 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-This adds the DB5500 PRCMU driver. Right now this one is pretty
-restricted in functionality, exposing a simple interface to send
-I2C messages.
+The DB8500 has ePOD:s (electronic power domains) which are possible
+to switch on/off to deactivate silicon blocks on the DB8500 SoC
+by cutting their power without retention. We model these as simple
+regulators with one bit on/off settings.
 
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
+Signed-off-by: Jonas Aberg <jonas.aberg@stericsson.com>
+Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+Signed-off-by: Martin Persson <martin.persson@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-ux500/Kconfig      |    1 +
- arch/arm/mach-ux500/cpu.c        |    7 +-
- drivers/mfd/Kconfig              |   10 +
- drivers/mfd/Makefile             |    1 +
- drivers/mfd/db5500-prcmu-regs.h  |  115 ++++++++++
- drivers/mfd/db5500-prcmu.c       |  448 ++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/db5500-prcmu.h |   45 ++++
- 7 files changed, 626 insertions(+), 1 deletions(-)
- create mode 100644 drivers/mfd/db5500-prcmu-regs.h
- create mode 100644 drivers/mfd/db5500-prcmu.c
- create mode 100644 include/linux/mfd/db5500-prcmu.h
+ arch/arm/mach-ux500/Kconfig            |    1 +
+ drivers/mfd/db8500-prcmu.c             |  179 ++++++++++
+ drivers/regulator/Kconfig              |    7 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/db8500-prcmu.c       |  560 ++++++++++++++++++++++++++++++++
+ include/linux/regulator/db8500-prcmu.h |   45 +++
+ 6 files changed, 793 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/db8500-prcmu.c
+ create mode 100644 include/linux/regulator/db8500-prcmu.h
 
 diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index 150a8d9..bab0611 100644
+index bab0611..ea3c574 100644
 --- a/arch/arm/mach-ux500/Kconfig
 +++ b/arch/arm/mach-ux500/Kconfig
-@@ -12,6 +12,7 @@ menu "Ux500 SoC"
- 
- config UX500_SOC_DB5500
- 	bool "DB5500"
-+	select MFD_DB5500_PRCMU
- 
+@@ -17,6 +17,7 @@ config UX500_SOC_DB5500
  config UX500_SOC_DB8500
  	bool "DB8500"
-diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
-index 043ffa9..1da23bb 100644
---- a/arch/arm/mach-ux500/cpu.c
-+++ b/arch/arm/mach-ux500/cpu.c
-@@ -9,6 +9,7 @@
- #include <linux/io.h>
- #include <linux/clk.h>
+ 	select MFD_DB8500_PRCMU
++	select REGULATOR_DB8500_PRCMU
+ 
+ endmenu
+ 
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 13c8a50..1534164 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -28,6 +28,8 @@
+ #include <linux/uaccess.h>
+ #include <linux/mfd/core.h>
  #include <linux/mfd/db8500-prcmu.h>
-+#include <linux/mfd/db5500-prcmu.h>
++#include <linux/regulator/db8500-prcmu.h>
++#include <linux/regulator/machine.h>
+ #include <mach/hardware.h>
+ #include <mach/irqs.h>
+ #include <mach/db8500-regs.h>
+@@ -1820,9 +1822,186 @@ void __init prcmu_early_init(void)
+ 	}
+ }
  
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -49,6 +50,8 @@ void __init ux500_init_irq(void)
- 	 * Init clocks here so that they are available for system timer
- 	 * initialization.
- 	 */
-+	if (cpu_is_u5500())
-+		db5500_prcmu_early_init();
- 	if (cpu_is_u8500())
- 		prcmu_early_init();
- 	clk_init();
-@@ -98,7 +101,9 @@ static void ux500_l2x0_inv_all(void)
++/*
++ * Power domain switches (ePODs) modeled as regulators for the DB8500 SoC
++ */
++static struct regulator_consumer_supply db8500_vape_consumers[] = {
++	REGULATOR_SUPPLY("v-ape", NULL),
++	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.0"),
++	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.1"),
++	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.2"),
++	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.3"),
++	/* "v-mmc" changed to "vcore" in the mainline kernel */
++	REGULATOR_SUPPLY("vcore", "sdi0"),
++	REGULATOR_SUPPLY("vcore", "sdi1"),
++	REGULATOR_SUPPLY("vcore", "sdi2"),
++	REGULATOR_SUPPLY("vcore", "sdi3"),
++	REGULATOR_SUPPLY("vcore", "sdi4"),
++	REGULATOR_SUPPLY("v-dma", "dma40.0"),
++	REGULATOR_SUPPLY("v-ape", "ab8500-usb.0"),
++	/* "v-uart" changed to "vcore" in the mainline kernel */
++	REGULATOR_SUPPLY("vcore", "uart0"),
++	REGULATOR_SUPPLY("vcore", "uart1"),
++	REGULATOR_SUPPLY("vcore", "uart2"),
++	REGULATOR_SUPPLY("v-ape", "nmk-ske-keypad.0"),
++};
++
++static struct regulator_consumer_supply db8500_vsmps2_consumers[] = {
++	/* CG2900 and CW1200 power to off-chip peripherals */
++	REGULATOR_SUPPLY("gbf_1v8", "cg2900-uart.0"),
++	REGULATOR_SUPPLY("wlan_1v8", "cw1200.0"),
++	REGULATOR_SUPPLY("musb_1v8", "ab8500-usb.0"),
++	/* AV8100 regulator */
++	REGULATOR_SUPPLY("hdmi_1v8", "0-0070"),
++};
++
++static struct regulator_consumer_supply db8500_b2r2_mcde_consumers[] = {
++	REGULATOR_SUPPLY("vsupply", "b2r2.0"),
++	REGULATOR_SUPPLY("vsupply", "mcde.0"),
++};
++
++static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
++	[DB8500_REGULATOR_VAPE] = {
++		.constraints = {
++			.name = "db8500-vape",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++		.consumer_supplies = db8500_vape_consumers,
++		.num_consumer_supplies = ARRAY_SIZE(db8500_vape_consumers),
++	},
++	[DB8500_REGULATOR_VARM] = {
++		.constraints = {
++			.name = "db8500-varm",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_VMODEM] = {
++		.constraints = {
++			.name = "db8500-vmodem",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_VPLL] = {
++		.constraints = {
++			.name = "db8500-vpll",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_VSMPS1] = {
++		.constraints = {
++			.name = "db8500-vsmps1",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_VSMPS2] = {
++		.constraints = {
++			.name = "db8500-vsmps2",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++		.consumer_supplies = db8500_vsmps2_consumers,
++		.num_consumer_supplies = ARRAY_SIZE(db8500_vsmps2_consumers),
++	},
++	[DB8500_REGULATOR_VSMPS3] = {
++		.constraints = {
++			.name = "db8500-vsmps3",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_VRF1] = {
++		.constraints = {
++			.name = "db8500-vrf1",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SVAMMDSP] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-sva-mmdsp",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SVAMMDSPRET] = {
++		.constraints = {
++			/* "ret" means "retention" */
++			.name = "db8500-sva-mmdsp-ret",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SVAPIPE] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-sva-pipe",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SIAMMDSP] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-sia-mmdsp",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SIAMMDSPRET] = {
++		.constraints = {
++			.name = "db8500-sia-mmdsp-ret",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SIAPIPE] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-sia-pipe",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SGA] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-sga",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_B2R2_MCDE] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-b2r2-mcde",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++		.consumer_supplies = db8500_b2r2_mcde_consumers,
++		.num_consumer_supplies = ARRAY_SIZE(db8500_b2r2_mcde_consumers),
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM12] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-esram12",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM12RET] = {
++		.constraints = {
++			.name = "db8500-esram12-ret",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM34] = {
++		.supply_regulator = "db8500-vape",
++		.constraints = {
++			.name = "db8500-esram34",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM34RET] = {
++		.constraints = {
++			.name = "db8500-esram34-ret",
++			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		},
++	},
++};
++
+ static struct mfd_cell db8500_prcmu_devs[] = {
+ 	{
+ 		.name = "db8500-prcmu-regulators",
++		.mfd_data = &db8500_regulators,
+ 	},
+ 	{
+ 		.name = "cpufreq-u8500",
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index b9f29e0..f0b13a0 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -274,6 +274,13 @@ config REGULATOR_AB8500
+ 	  This driver supports the regulators found on the ST-Ericsson mixed
+ 	  signal AB8500 PMIC
  
- static int ux500_l2x0_init(void)
- {
--	if (cpu_is_u8500())
-+	if (cpu_is_u5500())
-+		l2x0_base = __io_address(U5500_L2CC_BASE);
-+	else if (cpu_is_u8500())
- 		l2x0_base = __io_address(U8500_L2CC_BASE);
- 	else
- 		ux500_unknown_soc();
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 7eaeb97..481770a 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -585,6 +585,16 @@ config MFD_DB8500_PRCMU
- 	  system controller running an XP70 microprocessor, which is accessed
- 	  through a register map.
- 
-+config MFD_DB5500_PRCMU
-+	bool "ST-Ericsson DB5500 Power Reset Control Management Unit"
-+	depends on UX500_SOC_DB5500
-+	select MFD_CORE
++config REGULATOR_DB8500_PRCMU
++	bool "ST-Ericsson DB8500 Voltage Domain Regulators"
++	depends on MFD_DB8500_PRCMU
 +	help
-+	  Select this option to enable support for the DB5500 Power Reset
-+	  and Control Management Unit. This is basically an autonomous
-+	  system controller running an XP70 microprocessor, which is accessed
-+	  through a register map.
++	  This driver supports the voltage domain regulators controlled by the
++	  DB8500 PRCMU
 +
- config MFD_CS5535
- 	tristate "Support for CS5535 and CS5536 southbridge core functions"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 814c57a..24aa444 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -79,6 +79,7 @@ obj-$(CONFIG_AB8500_GPADC)	+= ab8500-gpadc.o
- obj-$(CONFIG_MFD_DB8500_PRCMU)	+= db8500-prcmu.o
- # ab8500-i2c need to come after db8500-prcmu (which provides the channel)
- obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
-+obj-$(CONFIG_MFD_DB5500_PRCMU)	+= db5500-prcmu.o
- obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
- obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
-diff --git a/drivers/mfd/db5500-prcmu-regs.h b/drivers/mfd/db5500-prcmu-regs.h
+ config REGULATOR_TPS6586X
+ 	tristate "TI TPS6586X Power regulators"
+ 	depends on MFD_TPS6586X
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index d72a427..165ff53 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -41,5 +41,6 @@ obj-$(CONFIG_REGULATOR_TPS6524X) += tps6524x-regulator.o
+ obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
++obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
+ 
+ ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
+diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
 new file mode 100644
-index 0000000..9a8e9e4
+index 0000000..f3d51a0
 --- /dev/null
-+++ b/drivers/mfd/db5500-prcmu-regs.h
-@@ -0,0 +1,115 @@
-+/*
-+ * Copyright (C) STMicroelectronics 2009
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * Author: Kumar Sanghvi <kumar.sanghvi@stericsson.com>
-+ * Author: Sundar Iyer <sundar.iyer@stericsson.com>
-+ *
-+ * License Terms: GNU General Public License v2
-+ *
-+ * PRCM Unit registers
-+ */
-+
-+#ifndef __MACH_PRCMU_REGS_H
-+#define __MACH_PRCMU_REGS_H
-+
-+#include <mach/hardware.h>
-+
-+#define PRCM_ARM_PLLDIVPS	(_PRCMU_BASE + 0x118)
-+#define PRCM_ARM_PLLDIVPS_ARM_BRM_RATE		0x3f
-+#define PRCM_ARM_PLLDIVPS_MAX_MASK		0xf
-+
-+#define PRCM_PLLARM_LOCKP       (_PRCMU_BASE + 0x0a8)
-+#define PRCM_PLLARM_LOCKP_PRCM_PLLARM_LOCKP3	0x2
-+
-+#define PRCM_ARM_CHGCLKREQ	(_PRCMU_BASE + 0x114)
-+#define PRCM_ARM_CHGCLKREQ_PRCM_ARM_CHGCLKREQ	0x1
-+
-+#define PRCM_PLLARM_ENABLE	(_PRCMU_BASE + 0x98)
-+#define PRCM_PLLARM_ENABLE_PRCM_PLLARM_ENABLE	0x1
-+#define PRCM_PLLARM_ENABLE_PRCM_PLLARM_COUNTON	0x100
-+
-+#define PRCM_ARMCLKFIX_MGT	(_PRCMU_BASE + 0x0)
-+#define PRCM_A9_RESETN_CLR	(_PRCMU_BASE + 0x1f4)
-+#define PRCM_A9_RESETN_SET	(_PRCMU_BASE + 0x1f0)
-+#define PRCM_ARM_LS_CLAMP	(_PRCMU_BASE + 0x30c)
-+#define PRCM_SRAM_A9		(_PRCMU_BASE + 0x308)
-+
-+/* ARM WFI Standby signal register */
-+#define PRCM_ARM_WFI_STANDBY    (_PRCMU_BASE + 0x130)
-+#define PRCM_IOCR		(_PRCMU_BASE + 0x310)
-+#define PRCM_IOCR_IOFORCE			0x1
-+
-+/* CPU mailbox registers */
-+#define PRCM_MBOX_CPU_VAL	(_PRCMU_BASE + 0x0fc)
-+#define PRCM_MBOX_CPU_SET	(_PRCMU_BASE + 0x100)
-+#define PRCM_MBOX_CPU_CLR	(_PRCMU_BASE + 0x104)
-+
-+/* Dual A9 core interrupt management unit registers */
-+#define PRCM_A9_MASK_REQ	(_PRCMU_BASE + 0x328)
-+#define PRCM_A9_MASK_REQ_PRCM_A9_MASK_REQ	0x1
-+
-+#define PRCM_A9_MASK_ACK	(_PRCMU_BASE + 0x32c)
-+#define PRCM_ARMITMSK31TO0	(_PRCMU_BASE + 0x11c)
-+#define PRCM_ARMITMSK63TO32	(_PRCMU_BASE + 0x120)
-+#define PRCM_ARMITMSK95TO64	(_PRCMU_BASE + 0x124)
-+#define PRCM_ARMITMSK127TO96	(_PRCMU_BASE + 0x128)
-+#define PRCM_POWER_STATE_VAL	(_PRCMU_BASE + 0x25C)
-+#define PRCM_ARMITVAL31TO0	(_PRCMU_BASE + 0x260)
-+#define PRCM_ARMITVAL63TO32	(_PRCMU_BASE + 0x264)
-+#define PRCM_ARMITVAL95TO64	(_PRCMU_BASE + 0x268)
-+#define PRCM_ARMITVAL127TO96	(_PRCMU_BASE + 0x26C)
-+
-+#define PRCM_HOSTACCESS_REQ	(_PRCMU_BASE + 0x334)
-+#define ARM_WAKEUP_MODEM	0x1
-+
-+#define PRCM_ARM_IT1_CLEAR	(_PRCMU_BASE + 0x48C)
-+#define PRCM_ARM_IT1_VAL	(_PRCMU_BASE + 0x494)
-+#define PRCM_HOLD_EVT		(_PRCMU_BASE + 0x174)
-+
-+#define PRCM_ITSTATUS0		(_PRCMU_BASE + 0x148)
-+#define PRCM_ITSTATUS1		(_PRCMU_BASE + 0x150)
-+#define PRCM_ITSTATUS2		(_PRCMU_BASE + 0x158)
-+#define PRCM_ITSTATUS3		(_PRCMU_BASE + 0x160)
-+#define PRCM_ITSTATUS4		(_PRCMU_BASE + 0x168)
-+#define PRCM_ITSTATUS5		(_PRCMU_BASE + 0x484)
-+#define PRCM_ITCLEAR5		(_PRCMU_BASE + 0x488)
-+#define PRCM_ARMIT_MASKXP70_IT	(_PRCMU_BASE + 0x1018)
-+
-+/* System reset register */
-+#define PRCM_APE_SOFTRST	(_PRCMU_BASE + 0x228)
-+
-+/* Level shifter and clamp control registers */
-+#define PRCM_MMIP_LS_CLAMP_SET     (_PRCMU_BASE + 0x420)
-+#define PRCM_MMIP_LS_CLAMP_CLR     (_PRCMU_BASE + 0x424)
-+
-+/* PRCMU clock/PLL/reset registers */
-+#define PRCM_PLLDSI_FREQ           (_PRCMU_BASE + 0x500)
-+#define PRCM_PLLDSI_ENABLE         (_PRCMU_BASE + 0x504)
-+#define PRCM_PLLDSI_LOCKP          (_PRCMU_BASE + 0x508)
-+#define PRCM_LCDCLK_MGT            (_PRCMU_BASE + 0x044)
-+#define PRCM_MCDECLK_MGT           (_PRCMU_BASE + 0x064)
-+#define PRCM_HDMICLK_MGT           (_PRCMU_BASE + 0x058)
-+#define PRCM_TVCLK_MGT             (_PRCMU_BASE + 0x07c)
-+#define PRCM_DSI_PLLOUT_SEL        (_PRCMU_BASE + 0x530)
-+#define PRCM_DSITVCLK_DIV          (_PRCMU_BASE + 0x52C)
-+#define PRCM_PLLDSI_LOCKP          (_PRCMU_BASE + 0x508)
-+#define PRCM_APE_RESETN_SET        (_PRCMU_BASE + 0x1E4)
-+#define PRCM_APE_RESETN_CLR        (_PRCMU_BASE + 0x1E8)
-+#define PRCM_CLKOCR		   (_PRCMU_BASE + 0x1CC)
-+
-+/* ePOD and memory power signal control registers */
-+#define PRCM_EPOD_C_SET            (_PRCMU_BASE + 0x410)
-+#define PRCM_SRAM_LS_SLEEP         (_PRCMU_BASE + 0x304)
-+
-+/* Debug power control unit registers */
-+#define PRCM_POWER_STATE_SET       (_PRCMU_BASE + 0x254)
-+
-+/* Miscellaneous unit registers */
-+#define PRCM_DSI_SW_RESET          (_PRCMU_BASE + 0x324)
-+#define PRCM_GPIOCR                (_PRCMU_BASE + 0x138)
-+#define PRCM_GPIOCR_DBG_STM_MOD_CMD1            0x800
-+#define PRCM_GPIOCR_DBG_UARTMOD_CMD0            0x1
-+
-+
-+#endif /* __MACH_PRCMU__REGS_H */
-diff --git a/drivers/mfd/db5500-prcmu.c b/drivers/mfd/db5500-prcmu.c
-new file mode 100644
-index 0000000..9dbb3ca
---- /dev/null
-+++ b/drivers/mfd/db5500-prcmu.c
-@@ -0,0 +1,448 @@
++++ b/drivers/regulator/db8500-prcmu.c
+@@ -0,0 +1,560 @@
 +/*
 + * Copyright (C) ST-Ericsson SA 2010
 + *
 + * License Terms: GNU General Public License v2
-+ * Author: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
++ * Authors: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
++ *          Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
 + *
-+ * U5500 PRCM Unit interface driver
++ * Power domain regulators on DB8500
 + */
-+#include <linux/module.h>
++
 +#include <linux/kernel.h>
-+#include <linux/delay.h>
-+#include <linux/errno.h>
++#include <linux/init.h>
 +#include <linux/err.h>
 +#include <linux/spinlock.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/completion.h>
-+#include <linux/irq.h>
-+#include <linux/jiffies.h>
-+#include <linux/bitops.h>
-+#include <linux/interrupt.h>
-+#include <linux/mfd/db5500-prcmu.h>
-+#include <mach/hardware.h>
-+#include <mach/irqs.h>
-+#include <mach/db5500-regs.h>
-+#include "db5500-prcmu-regs.h"
-+
-+#define _PRCM_MB_HEADER (tcdm_base + 0xFE8)
-+#define PRCM_REQ_MB0_HEADER (_PRCM_MB_HEADER + 0x0)
-+#define PRCM_REQ_MB1_HEADER (_PRCM_MB_HEADER + 0x1)
-+#define PRCM_REQ_MB2_HEADER (_PRCM_MB_HEADER + 0x2)
-+#define PRCM_REQ_MB3_HEADER (_PRCM_MB_HEADER + 0x3)
-+#define PRCM_REQ_MB4_HEADER (_PRCM_MB_HEADER + 0x4)
-+#define PRCM_REQ_MB5_HEADER (_PRCM_MB_HEADER + 0x5)
-+#define PRCM_REQ_MB6_HEADER (_PRCM_MB_HEADER + 0x6)
-+#define PRCM_REQ_MB7_HEADER (_PRCM_MB_HEADER + 0x7)
-+#define PRCM_ACK_MB0_HEADER (_PRCM_MB_HEADER + 0x8)
-+#define PRCM_ACK_MB1_HEADER (_PRCM_MB_HEADER + 0x9)
-+#define PRCM_ACK_MB2_HEADER (_PRCM_MB_HEADER + 0xa)
-+#define PRCM_ACK_MB3_HEADER (_PRCM_MB_HEADER + 0xb)
-+#define PRCM_ACK_MB4_HEADER (_PRCM_MB_HEADER + 0xc)
-+#define PRCM_ACK_MB5_HEADER (_PRCM_MB_HEADER + 0xd)
-+#define PRCM_ACK_MB6_HEADER (_PRCM_MB_HEADER + 0xe)
-+#define PRCM_ACK_MB7_HEADER (_PRCM_MB_HEADER + 0xf)
-+
-+/* Req Mailboxes */
-+#define PRCM_REQ_MB0 (tcdm_base + 0xFD8)
-+#define PRCM_REQ_MB1 (tcdm_base + 0xFCC)
-+#define PRCM_REQ_MB2 (tcdm_base + 0xFC4)
-+#define PRCM_REQ_MB3 (tcdm_base + 0xFC0)
-+#define PRCM_REQ_MB4 (tcdm_base + 0xF98)
-+#define PRCM_REQ_MB5 (tcdm_base + 0xF90)
-+#define PRCM_REQ_MB6 (tcdm_base + 0xF8C)
-+#define PRCM_REQ_MB7 (tcdm_base + 0xF84)
-+
-+/* Ack Mailboxes */
-+#define PRCM_ACK_MB0 (tcdm_base + 0xF38)
-+#define PRCM_ACK_MB1 (tcdm_base + 0xF30)
-+#define PRCM_ACK_MB2 (tcdm_base + 0xF24)
-+#define PRCM_ACK_MB3 (tcdm_base + 0xF20)
-+#define PRCM_ACK_MB4 (tcdm_base + 0xF1C)
-+#define PRCM_ACK_MB5 (tcdm_base + 0xF14)
-+#define PRCM_ACK_MB6 (tcdm_base + 0xF0C)
-+#define PRCM_ACK_MB7 (tcdm_base + 0xF08)
-+
-+enum mb_return_code {
-+	RC_SUCCESS,
-+	RC_FAIL,
-+};
-+
-+/* Mailbox 0 headers. */
-+enum mb0_header {
-+	/* request */
-+	RMB0H_PWR_STATE_TRANS = 1,
-+	RMB0H_WAKE_UP_CFG,
-+	RMB0H_RD_WAKE_UP_ACK,
-+	/* acknowledge */
-+	AMB0H_WAKE_UP = 1,
-+};
-+
-+/* Mailbox 5 headers. */
-+enum mb5_header {
-+	MB5H_I2C_WRITE = 1,
-+	MB5H_I2C_READ,
-+};
-+
-+/* Request mailbox 5 fields. */
-+#define PRCM_REQ_MB5_I2C_SLAVE (PRCM_REQ_MB5 + 0)
-+#define PRCM_REQ_MB5_I2C_REG (PRCM_REQ_MB5 + 1)
-+#define PRCM_REQ_MB5_I2C_SIZE (PRCM_REQ_MB5 + 2)
-+#define PRCM_REQ_MB5_I2C_DATA (PRCM_REQ_MB5 + 4)
-+
-+/* Acknowledge mailbox 5 fields. */
-+#define PRCM_ACK_MB5_RETURN_CODE (PRCM_ACK_MB5 + 0)
-+#define PRCM_ACK_MB5_I2C_DATA (PRCM_ACK_MB5 + 4)
-+
-+#define NUM_MB 8
-+#define MBOX_BIT BIT
-+#define ALL_MBOX_BITS (MBOX_BIT(NUM_MB) - 1)
++#include <linux/platform_device.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/db8500-prcmu.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/db8500-prcmu.h>
 +
 +/*
-+* Used by MCDE to setup all necessary PRCMU registers
-+*/
-+#define PRCMU_RESET_DSIPLL			0x00004000
-+#define PRCMU_UNCLAMP_DSIPLL			0x00400800
-+
-+/* HDMI CLK MGT PLLSW=001 (PLLSOC0), PLLDIV=0x8, = 50 Mhz*/
-+#define PRCMU_DSI_CLOCK_SETTING			0x00000128
-+/* TVCLK_MGT PLLSW=001 (PLLSOC0) PLLDIV=0x13, = 19.05 MHZ */
-+#define PRCMU_DSI_LP_CLOCK_SETTING		0x00000135
-+#define PRCMU_PLLDSI_FREQ_SETTING		0x0004013C
-+#define PRCMU_DSI_PLLOUT_SEL_SETTING		0x00000002
-+#define PRCMU_ENABLE_ESCAPE_CLOCK_DIV		0x03000101
-+#define PRCMU_DISABLE_ESCAPE_CLOCK_DIV		0x00000101
-+
-+#define PRCMU_ENABLE_PLLDSI			0x00000001
-+#define PRCMU_DISABLE_PLLDSI			0x00000000
-+
-+#define PRCMU_DSI_RESET_SW			0x00000003
-+
-+#define PRCMU_PLLDSI_LOCKP_LOCKED		0x3
-+
-+/*
-+ * mb0_transfer - state needed for mailbox 0 communication.
-+ * @lock:		The transaction lock.
++ * power state reference count
 + */
-+static struct {
-+	spinlock_t lock;
-+} mb0_transfer;
++static int power_state_active_cnt; /* will initialize to zero */
++static DEFINE_SPINLOCK(power_state_active_lock);
 +
-+/*
-+ * mb5_transfer - state needed for mailbox 5 communication.
-+ * @lock:	The transaction lock.
-+ * @work:	The transaction completion structure.
-+ * @ack:	Reply ("acknowledge") data.
-+ */
-+static struct {
-+	struct mutex lock;
-+	struct completion work;
-+	struct {
-+		u8 header;
-+		u8 status;
-+		u8 value[4];
-+	} ack;
-+} mb5_transfer;
-+
-+/* PRCMU TCDM base IO address. */
-+static __iomem void *tcdm_base;
-+
-+/**
-+ * db5500_prcmu_abb_read() - Read register value(s) from the ABB.
-+ * @slave:	The I2C slave address.
-+ * @reg:	The (start) register address.
-+ * @value:	The read out value(s).
-+ * @size:	The number of registers to read.
-+ *
-+ * Reads register value(s) from the ABB.
-+ * @size has to be <= 4.
-+ */
-+int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
-+{
-+	int r;
-+
-+	if ((size < 1) || (4 < size))
-+		return -EINVAL;
-+
-+	mutex_lock(&mb5_transfer.lock);
-+
-+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
-+		cpu_relax();
-+	writeb(slave, PRCM_REQ_MB5_I2C_SLAVE);
-+	writeb(reg, PRCM_REQ_MB5_I2C_REG);
-+	writeb(size, PRCM_REQ_MB5_I2C_SIZE);
-+	writeb(MB5H_I2C_READ, PRCM_REQ_MB5_HEADER);
-+
-+	writel(MBOX_BIT(5), PRCM_MBOX_CPU_SET);
-+	wait_for_completion(&mb5_transfer.work);
-+
-+	r = 0;
-+	if ((mb5_transfer.ack.header == MB5H_I2C_READ) &&
-+		(mb5_transfer.ack.status == RC_SUCCESS))
-+		memcpy(value, mb5_transfer.ack.value, (size_t)size);
-+	else
-+		r = -EIO;
-+
-+	mutex_unlock(&mb5_transfer.lock);
-+
-+	return r;
-+}
-+
-+/**
-+ * db5500_prcmu_abb_write() - Write register value(s) to the ABB.
-+ * @slave:	The I2C slave address.
-+ * @reg:	The (start) register address.
-+ * @value:	The value(s) to write.
-+ * @size:	The number of registers to write.
-+ *
-+ * Writes register value(s) to the ABB.
-+ * @size has to be <= 4.
-+ */
-+int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
-+{
-+	int r;
-+
-+	if ((size < 1) || (4 < size))
-+		return -EINVAL;
-+
-+	mutex_lock(&mb5_transfer.lock);
-+
-+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
-+		cpu_relax();
-+	writeb(slave, PRCM_REQ_MB5_I2C_SLAVE);
-+	writeb(reg, PRCM_REQ_MB5_I2C_REG);
-+	writeb(size, PRCM_REQ_MB5_I2C_SIZE);
-+	memcpy_toio(PRCM_REQ_MB5_I2C_DATA, value, size);
-+	writeb(MB5H_I2C_WRITE, PRCM_REQ_MB5_HEADER);
-+
-+	writel(MBOX_BIT(5), PRCM_MBOX_CPU_SET);
-+	wait_for_completion(&mb5_transfer.work);
-+
-+	if ((mb5_transfer.ack.header == MB5H_I2C_WRITE) &&
-+		(mb5_transfer.ack.status == RC_SUCCESS))
-+		r = 0;
-+	else
-+		r = -EIO;
-+
-+	mutex_unlock(&mb5_transfer.lock);
-+
-+	return r;
-+}
-+
-+int db5500_prcmu_enable_dsipll(void)
-+{
-+	int i;
-+
-+	/* Enable DSIPLL_RESETN resets */
-+	writel(PRCMU_RESET_DSIPLL, PRCM_APE_RESETN_CLR);
-+	/* Unclamp DSIPLL in/out */
-+	writel(PRCMU_UNCLAMP_DSIPLL, PRCM_MMIP_LS_CLAMP_CLR);
-+	/* Set DSI PLL FREQ */
-+	writel(PRCMU_PLLDSI_FREQ_SETTING, PRCM_PLLDSI_FREQ);
-+	writel(PRCMU_DSI_PLLOUT_SEL_SETTING,
-+		PRCM_DSI_PLLOUT_SEL);
-+	/* Enable Escape clocks */
-+	writel(PRCMU_ENABLE_ESCAPE_CLOCK_DIV, PRCM_DSITVCLK_DIV);
-+
-+	/* Start DSI PLL */
-+	writel(PRCMU_ENABLE_PLLDSI, PRCM_PLLDSI_ENABLE);
-+	/* Reset DSI PLL */
-+	writel(PRCMU_DSI_RESET_SW, PRCM_DSI_SW_RESET);
-+	for (i = 0; i < 10; i++) {
-+		if ((readl(PRCM_PLLDSI_LOCKP) &
-+			PRCMU_PLLDSI_LOCKP_LOCKED) == PRCMU_PLLDSI_LOCKP_LOCKED)
-+			break;
-+		udelay(100);
-+	}
-+	/* Release DSIPLL_RESETN */
-+	writel(PRCMU_RESET_DSIPLL, PRCM_APE_RESETN_SET);
-+	return 0;
-+}
-+
-+int db5500_prcmu_disable_dsipll(void)
-+{
-+	/* Disable dsi pll */
-+	writel(PRCMU_DISABLE_PLLDSI, PRCM_PLLDSI_ENABLE);
-+	/* Disable  escapeclock */
-+	writel(PRCMU_DISABLE_ESCAPE_CLOCK_DIV, PRCM_DSITVCLK_DIV);
-+	return 0;
-+}
-+
-+int db5500_prcmu_set_display_clocks(void)
-+{
-+	/* HDMI and TVCLK Should be handled somewhere else */
-+	/* PLLDIV=8, PLLSW=2, CLKEN=1 */
-+	writel(PRCMU_DSI_CLOCK_SETTING, PRCM_HDMICLK_MGT);
-+	/* PLLDIV=14, PLLSW=2, CLKEN=1 */
-+	writel(PRCMU_DSI_LP_CLOCK_SETTING, PRCM_TVCLK_MGT);
-+	return 0;
-+}
-+
-+static void ack_dbb_wakeup(void)
++static void power_state_active_enable(void)
 +{
 +	unsigned long flags;
 +
-+	spin_lock_irqsave(&mb0_transfer.lock, flags);
-+
-+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
-+		cpu_relax();
-+
-+	writeb(RMB0H_RD_WAKE_UP_ACK, PRCM_REQ_MB0_HEADER);
-+	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
-+
-+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
++	spin_lock_irqsave(&power_state_active_lock, flags);
++	power_state_active_cnt++;
++	spin_unlock_irqrestore(&power_state_active_lock, flags);
 +}
 +
-+static inline void print_unknown_header_warning(u8 n, u8 header)
++static int power_state_active_disable(void)
 +{
-+	pr_warning("prcmu: Unknown message header (%d) in mailbox %d.\n",
-+		header, n);
-+}
++	int ret = 0;
++	unsigned long flags;
 +
-+static bool read_mailbox_0(void)
-+{
-+	bool r;
-+	u8 header;
-+
-+	header = readb(PRCM_ACK_MB0_HEADER);
-+	switch (header) {
-+	case AMB0H_WAKE_UP:
-+		r = true;
-+		break;
-+	default:
-+		print_unknown_header_warning(0, header);
-+		r = false;
-+		break;
++	spin_lock_irqsave(&power_state_active_lock, flags);
++	if (power_state_active_cnt <= 0) {
++		pr_err("power state: unbalanced enable/disable calls\n");
++		ret = -EINVAL;
++		goto out;
 +	}
-+	writel(MBOX_BIT(0), PRCM_ARM_IT1_CLEAR);
-+	return r;
++
++	power_state_active_cnt--;
++out:
++	spin_unlock_irqrestore(&power_state_active_lock, flags);
++	return ret;
 +}
 +
-+static bool read_mailbox_1(void)
++/*
++ * Exported interface for CPUIdle only. This function is called when interrupts
++ * are turned off. Hence, no locking.
++ */
++int power_state_active_is_enabled(void)
 +{
-+	writel(MBOX_BIT(1), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool read_mailbox_2(void)
-+{
-+	writel(MBOX_BIT(2), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool read_mailbox_3(void)
-+{
-+	writel(MBOX_BIT(3), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool read_mailbox_4(void)
-+{
-+	writel(MBOX_BIT(4), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool read_mailbox_5(void)
-+{
-+	u8 header;
-+
-+	header = readb(PRCM_ACK_MB5_HEADER);
-+	switch (header) {
-+	case MB5H_I2C_READ:
-+		memcpy_fromio(mb5_transfer.ack.value, PRCM_ACK_MB5_I2C_DATA, 4);
-+	case MB5H_I2C_WRITE:
-+		mb5_transfer.ack.header = header;
-+		mb5_transfer.ack.status = readb(PRCM_ACK_MB5_RETURN_CODE);
-+		complete(&mb5_transfer.work);
-+		break;
-+	default:
-+		print_unknown_header_warning(5, header);
-+		break;
-+	}
-+	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool read_mailbox_6(void)
-+{
-+	writel(MBOX_BIT(6), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool read_mailbox_7(void)
-+{
-+	writel(MBOX_BIT(7), PRCM_ARM_IT1_CLEAR);
-+	return false;
-+}
-+
-+static bool (* const read_mailbox[NUM_MB])(void) = {
-+	read_mailbox_0,
-+	read_mailbox_1,
-+	read_mailbox_2,
-+	read_mailbox_3,
-+	read_mailbox_4,
-+	read_mailbox_5,
-+	read_mailbox_6,
-+	read_mailbox_7
-+};
-+
-+static irqreturn_t prcmu_irq_handler(int irq, void *data)
-+{
-+	u32 bits;
-+	u8 n;
-+	irqreturn_t r;
-+
-+	bits = (readl(PRCM_ARM_IT1_VAL) & ALL_MBOX_BITS);
-+	if (unlikely(!bits))
-+		return IRQ_NONE;
-+
-+	r = IRQ_HANDLED;
-+	for (n = 0; bits; n++) {
-+		if (bits & MBOX_BIT(n)) {
-+			bits -= MBOX_BIT(n);
-+			if (read_mailbox[n]())
-+				r = IRQ_WAKE_THREAD;
-+		}
-+	}
-+	return r;
-+}
-+
-+static irqreturn_t prcmu_irq_thread_fn(int irq, void *data)
-+{
-+	ack_dbb_wakeup();
-+	return IRQ_HANDLED;
-+}
-+
-+void __init db5500_prcmu_early_init(void)
-+{
-+	tcdm_base = __io_address(U5500_PRCMU_TCDM_BASE);
-+	spin_lock_init(&mb0_transfer.lock);
-+	mutex_init(&mb5_transfer.lock);
-+	init_completion(&mb5_transfer.work);
++	return (power_state_active_cnt > 0);
 +}
 +
 +/**
-+ * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
++ * struct db8500_regulator_info - db8500 regulator information
++ * @dev: device pointer
++ * @desc: regulator description
++ * @rdev: regulator device pointer
++ * @is_enabled: status of the regulator
++ * @epod_id: id for EPOD (power domain)
++ * @is_ramret: RAM retention switch for EPOD (power domain)
++ * @operating_point: operating point (only for vape, to be removed)
 + *
 + */
-+int __init db5500_prcmu_init(void)
++struct db8500_regulator_info {
++	struct device *dev;
++	struct regulator_desc desc;
++	struct regulator_dev *rdev;
++	bool is_enabled;
++	u16 epod_id;
++	bool is_ramret;
++	bool exclude_from_power_state;
++	unsigned int operating_point;
++};
++
++static int db8500_regulator_enable(struct regulator_dev *rdev)
 +{
-+	int r = 0;
++	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
 +
-+	if (ux500_is_svp() || !cpu_is_u5500())
-+		return -ENODEV;
++	if (info == NULL)
++		return -EINVAL;
 +
-+	/* Clean up the mailbox interrupts after pre-kernel code. */
-+	writel(ALL_MBOX_BITS, PRCM_ARM_IT1_CLEAR);
++	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-enable\n",
++		info->desc.name);
 +
-+	r = request_threaded_irq(IRQ_DB5500_PRCMU1, prcmu_irq_handler,
-+		prcmu_irq_thread_fn, 0, "prcmu", NULL);
-+	if (r < 0) {
-+		pr_err("prcmu: Failed to allocate IRQ_DB5500_PRCMU1.\n");
-+		return -EBUSY;
-+	}
++	info->is_enabled = true;
++	if (!info->exclude_from_power_state)
++		power_state_active_enable();
++
 +	return 0;
 +}
 +
-+arch_initcall(db5500_prcmu_init);
-diff --git a/include/linux/mfd/db5500-prcmu.h b/include/linux/mfd/db5500-prcmu.h
++static int db8500_regulator_disable(struct regulator_dev *rdev)
++{
++	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
++	int ret = 0;
++
++	if (info == NULL)
++		return -EINVAL;
++
++	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-disable\n",
++		info->desc.name);
++
++	info->is_enabled = false;
++	if (!info->exclude_from_power_state)
++		ret = power_state_active_disable();
++
++	return ret;
++}
++
++static int db8500_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
++
++	if (info == NULL)
++		return -EINVAL;
++
++	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-is_enabled (is_enabled):"
++		" %i\n", info->desc.name, info->is_enabled);
++
++	return info->is_enabled;
++}
++
++/* db8500 regulator operations */
++static struct regulator_ops db8500_regulator_ops = {
++	.enable			= db8500_regulator_enable,
++	.disable		= db8500_regulator_disable,
++	.is_enabled		= db8500_regulator_is_enabled,
++};
++
++/*
++ * EPOD control
++ */
++static bool epod_on[NUM_EPOD_ID];
++static bool epod_ramret[NUM_EPOD_ID];
++
++static int enable_epod(u16 epod_id, bool ramret)
++{
++	int ret;
++
++	if (ramret) {
++		if (!epod_on[epod_id]) {
++			ret = prcmu_set_epod(epod_id, EPOD_STATE_RAMRET);
++			if (ret < 0)
++				return ret;
++		}
++		epod_ramret[epod_id] = true;
++	} else {
++		ret = prcmu_set_epod(epod_id, EPOD_STATE_ON);
++		if (ret < 0)
++			return ret;
++		epod_on[epod_id] = true;
++	}
++
++	return 0;
++}
++
++static int disable_epod(u16 epod_id, bool ramret)
++{
++	int ret;
++
++	if (ramret) {
++		if (!epod_on[epod_id]) {
++			ret = prcmu_set_epod(epod_id, EPOD_STATE_OFF);
++			if (ret < 0)
++				return ret;
++		}
++		epod_ramret[epod_id] = false;
++	} else {
++		if (epod_ramret[epod_id]) {
++			ret = prcmu_set_epod(epod_id, EPOD_STATE_RAMRET);
++			if (ret < 0)
++				return ret;
++		} else {
++			ret = prcmu_set_epod(epod_id, EPOD_STATE_OFF);
++			if (ret < 0)
++				return ret;
++		}
++		epod_on[epod_id] = false;
++	}
++
++	return 0;
++}
++
++/*
++ * Regulator switch
++ */
++static int db8500_regulator_switch_enable(struct regulator_dev *rdev)
++{
++	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
++	int ret;
++
++	if (info == NULL)
++		return -EINVAL;
++
++	dev_vdbg(rdev_get_dev(rdev), "regulator-switch-%s-enable\n",
++		info->desc.name);
++
++	ret = enable_epod(info->epod_id, info->is_ramret);
++	if (ret < 0) {
++		dev_err(rdev_get_dev(rdev),
++			"regulator-switch-%s-enable: prcmu call failed\n",
++			info->desc.name);
++		goto out;
++	}
++
++	info->is_enabled = true;
++out:
++	return ret;
++}
++
++static int db8500_regulator_switch_disable(struct regulator_dev *rdev)
++{
++	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
++	int ret;
++
++	if (info == NULL)
++		return -EINVAL;
++
++	dev_vdbg(rdev_get_dev(rdev), "regulator-switch-%s-disable\n",
++		info->desc.name);
++
++	ret = disable_epod(info->epod_id, info->is_ramret);
++	if (ret < 0) {
++		dev_err(rdev_get_dev(rdev),
++			"regulator_switch-%s-disable: prcmu call failed\n",
++			info->desc.name);
++		goto out;
++	}
++
++	info->is_enabled = 0;
++out:
++	return ret;
++}
++
++static int db8500_regulator_switch_is_enabled(struct regulator_dev *rdev)
++{
++	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
++
++	if (info == NULL)
++		return -EINVAL;
++
++	dev_vdbg(rdev_get_dev(rdev),
++		"regulator-switch-%s-is_enabled (is_enabled): %i\n",
++		info->desc.name, info->is_enabled);
++
++	return info->is_enabled;
++}
++
++static struct regulator_ops db8500_regulator_switch_ops = {
++	.enable			= db8500_regulator_switch_enable,
++	.disable		= db8500_regulator_switch_disable,
++	.is_enabled		= db8500_regulator_switch_is_enabled,
++};
++
++/*
++ * Regulator information
++ */
++static struct db8500_regulator_info
++		db8500_regulator_info[DB8500_NUM_REGULATORS] = {
++	[DB8500_REGULATOR_VAPE] = {
++		.desc = {
++			.name	= "db8500-vape",
++			.id	= DB8500_REGULATOR_VAPE,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_VARM] = {
++		.desc = {
++			.name	= "db8500-varm",
++			.id	= DB8500_REGULATOR_VARM,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_VMODEM] = {
++		.desc = {
++			.name	= "db8500-vmodem",
++			.id	= DB8500_REGULATOR_VMODEM,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_VPLL] = {
++		.desc = {
++			.name	= "db8500-vpll",
++			.id	= DB8500_REGULATOR_VPLL,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_VSMPS1] = {
++		.desc = {
++			.name	= "db8500-vsmps1",
++			.id	= DB8500_REGULATOR_VSMPS1,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_VSMPS2] = {
++		.desc = {
++			.name	= "db8500-vsmps2",
++			.id	= DB8500_REGULATOR_VSMPS2,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.exclude_from_power_state = true,
++	},
++	[DB8500_REGULATOR_VSMPS3] = {
++		.desc = {
++			.name	= "db8500-vsmps3",
++			.id	= DB8500_REGULATOR_VSMPS3,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_VRF1] = {
++		.desc = {
++			.name	= "db8500-vrf1",
++			.id	= DB8500_REGULATOR_VRF1,
++			.ops	= &db8500_regulator_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++	},
++	[DB8500_REGULATOR_SWITCH_SVAMMDSP] = {
++		.desc = {
++			.name	= "db8500-sva-mmdsp",
++			.id	= DB8500_REGULATOR_SWITCH_SVAMMDSP,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SVAMMDSP,
++	},
++	[DB8500_REGULATOR_SWITCH_SVAMMDSPRET] = {
++		.desc = {
++			.name	= "db8500-sva-mmdsp-ret",
++			.id	= DB8500_REGULATOR_SWITCH_SVAMMDSPRET,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SVAMMDSP,
++		.is_ramret = true,
++	},
++	[DB8500_REGULATOR_SWITCH_SVAPIPE] = {
++		.desc = {
++			.name	= "db8500-sva-pipe",
++			.id	= DB8500_REGULATOR_SWITCH_SVAPIPE,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SVAPIPE,
++	},
++	[DB8500_REGULATOR_SWITCH_SIAMMDSP] = {
++		.desc = {
++			.name	= "db8500-sia-mmdsp",
++			.id	= DB8500_REGULATOR_SWITCH_SIAMMDSP,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SIAMMDSP,
++	},
++	[DB8500_REGULATOR_SWITCH_SIAMMDSPRET] = {
++		.desc = {
++			.name	= "db8500-sia-mmdsp-ret",
++			.id	= DB8500_REGULATOR_SWITCH_SIAMMDSPRET,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SIAMMDSP,
++		.is_ramret = true,
++	},
++	[DB8500_REGULATOR_SWITCH_SIAPIPE] = {
++		.desc = {
++			.name	= "db8500-sia-pipe",
++			.id	= DB8500_REGULATOR_SWITCH_SIAPIPE,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SIAPIPE,
++	},
++	[DB8500_REGULATOR_SWITCH_SGA] = {
++		.desc = {
++			.name	= "db8500-sga",
++			.id	= DB8500_REGULATOR_SWITCH_SGA,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_SGA,
++	},
++	[DB8500_REGULATOR_SWITCH_B2R2_MCDE] = {
++		.desc = {
++			.name	= "db8500-b2r2-mcde",
++			.id	= DB8500_REGULATOR_SWITCH_B2R2_MCDE,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_B2R2_MCDE,
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM12] = {
++		.desc = {
++			.name	= "db8500-esram12",
++			.id	= DB8500_REGULATOR_SWITCH_ESRAM12,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id	= EPOD_ID_ESRAM12,
++		.is_enabled	= true,
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM12RET] = {
++		.desc = {
++			.name	= "db8500-esram12-ret",
++			.id	= DB8500_REGULATOR_SWITCH_ESRAM12RET,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_ESRAM12,
++		.is_ramret = true,
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM34] = {
++		.desc = {
++			.name	= "db8500-esram34",
++			.id	= DB8500_REGULATOR_SWITCH_ESRAM34,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id	= EPOD_ID_ESRAM34,
++		.is_enabled	= true,
++	},
++	[DB8500_REGULATOR_SWITCH_ESRAM34RET] = {
++		.desc = {
++			.name	= "db8500-esram34-ret",
++			.id	= DB8500_REGULATOR_SWITCH_ESRAM34RET,
++			.ops	= &db8500_regulator_switch_ops,
++			.type	= REGULATOR_VOLTAGE,
++			.owner	= THIS_MODULE,
++		},
++		.epod_id = EPOD_ID_ESRAM34,
++		.is_ramret = true,
++	},
++};
++
++static int __init db8500_regulator_probe(struct platform_device *pdev)
++{
++	struct regulator_init_data *db8500_init_data = mfd_get_data(pdev);
++	int i, err;
++
++	/* register all regulators */
++	for (i = 0; i < ARRAY_SIZE(db8500_regulator_info); i++) {
++		struct db8500_regulator_info *info;
++		struct regulator_init_data *init_data = &db8500_init_data[i];
++
++		/* assign per-regulator data */
++		info = &db8500_regulator_info[i];
++		info->dev = &pdev->dev;
++
++		/* register with the regulator framework */
++		info->rdev = regulator_register(&info->desc, &pdev->dev,
++				init_data, info);
++		if (IS_ERR(info->rdev)) {
++			err = PTR_ERR(info->rdev);
++			dev_err(&pdev->dev, "failed to register %s: err %i\n",
++				info->desc.name, err);
++
++			/* if failing, unregister all earlier regulators */
++			i--;
++			while (i >= 0) {
++				info = &db8500_regulator_info[i];
++				regulator_unregister(info->rdev);
++				i--;
++			}
++			return err;
++		}
++
++		dev_vdbg(rdev_get_dev(info->rdev),
++			"regulator-%s-probed\n", info->desc.name);
++	}
++
++	return 0;
++}
++
++static int __exit db8500_regulator_remove(struct platform_device *pdev)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(db8500_regulator_info); i++) {
++		struct db8500_regulator_info *info;
++		info = &db8500_regulator_info[i];
++
++		dev_vdbg(rdev_get_dev(info->rdev),
++			"regulator-%s-remove\n", info->desc.name);
++
++		regulator_unregister(info->rdev);
++	}
++
++	return 0;
++}
++
++static struct platform_driver db8500_regulator_driver = {
++	.driver = {
++		.name = "db8500-regulators",
++		.owner = THIS_MODULE,
++	},
++	.remove = __exit_p(db8500_regulator_remove),
++};
++
++static int __init db8500_regulator_init(void)
++{
++	int ret;
++
++	ret = platform_driver_probe(&db8500_regulator_driver,
++				    db8500_regulator_probe);
++	if (ret < 0) {
++		pr_info("db8500_regulator: platform_driver_register fails\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static void __exit db8500_regulator_exit(void)
++{
++	platform_driver_unregister(&db8500_regulator_driver);
++}
++
++arch_initcall(db8500_regulator_init);
++module_exit(db8500_regulator_exit);
++
++MODULE_AUTHOR("STMicroelectronics/ST-Ericsson");
++MODULE_DESCRIPTION("DB8500 regulator driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/regulator/db8500-prcmu.h b/include/linux/regulator/db8500-prcmu.h
 new file mode 100644
-index 0000000..f097798
+index 0000000..6120623
 --- /dev/null
-+++ b/include/linux/mfd/db5500-prcmu.h
++++ b/include/linux/regulator/db8500-prcmu.h
 @@ -0,0 +1,45 @@
 +/*
 + * Copyright (C) ST-Ericsson SA 2010
 + *
 + * License Terms: GNU General Public License v2
 + *
-+ * U5500 PRCMU API.
++ * Author: Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
++ *
++ * Interface to power domain regulators on DB8500
 + */
-+#ifndef __MACH_PRCMU_U5500_H
-+#define __MACH_PRCMU_U5500_H
 +
-+#ifdef CONFIG_UX500_SOC_DB5500
++#ifndef __REGULATOR_H__
++#define __REGULATOR_H__
 +
-+void db5500_prcmu_early_init(void);
++/* Number of DB8500 regulators and regulator enumeration */
++enum db8500_regulator_id {
++	DB8500_REGULATOR_VAPE,
++	DB8500_REGULATOR_VARM,
++	DB8500_REGULATOR_VMODEM,
++	DB8500_REGULATOR_VPLL,
++	DB8500_REGULATOR_VSMPS1,
++	DB8500_REGULATOR_VSMPS2,
++	DB8500_REGULATOR_VSMPS3,
++	DB8500_REGULATOR_VRF1,
++	DB8500_REGULATOR_SWITCH_SVAMMDSP,
++	DB8500_REGULATOR_SWITCH_SVAMMDSPRET,
++	DB8500_REGULATOR_SWITCH_SVAPIPE,
++	DB8500_REGULATOR_SWITCH_SIAMMDSP,
++	DB8500_REGULATOR_SWITCH_SIAMMDSPRET,
++	DB8500_REGULATOR_SWITCH_SIAPIPE,
++	DB8500_REGULATOR_SWITCH_SGA,
++	DB8500_REGULATOR_SWITCH_B2R2_MCDE,
++	DB8500_REGULATOR_SWITCH_ESRAM12,
++	DB8500_REGULATOR_SWITCH_ESRAM12RET,
++	DB8500_REGULATOR_SWITCH_ESRAM34,
++	DB8500_REGULATOR_SWITCH_ESRAM34RET,
++	DB8500_NUM_REGULATORS
++};
 +
-+int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
-+int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
++/*
++ * Exported interface for CPUIdle only. This function is called with all
++ * interrupts turned off.
++ */
++int power_state_active_is_enabled(void);
 +
-+#else /* !CONFIG_UX500_SOC_DB5500 */
-+
-+static inline void db5500_prcmu_early_init(void)
-+{
-+}
-+
-+static inline int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
-+{
-+	return -ENOSYS;
-+}
-+
-+#endif /* CONFIG_UX500_SOC_DB5500 */
-+
-+static inline int db5500_prcmu_config_abb_event_readout(u32 abb_events)
-+{
-+#ifdef CONFIG_MACH_U5500_SIMULATOR
-+	return 0;
-+#else
-+	return -1;
 +#endif
-+}
-+
-+#endif /* __MACH_PRCMU_U5500_H */
 -- 
 1.7.3.2
 
