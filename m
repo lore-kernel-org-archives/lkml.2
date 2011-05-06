@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab1EFHFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 03:05:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25325 "EHLO mga03.intel.com"
+	id S1753829Ab1EFHPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 03:15:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50328 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab1EFHFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 03:05:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,325,1301900400"; 
-   d="scan'208";a="431563177"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf events, x86: Add SandyBridge stalled-cycles-frontend/backend events
-Date: Fri,  6 May 2011 07:14:02 +0000
-Message-Id: <1304666042-17577-1-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1751718Ab1EFHPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 03:15:41 -0400
+Date: Fri, 6 May 2011 09:15:35 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend] mm: get rid of CONFIG_STACK_GROWSUP || CONFIG_IA64
+Message-ID: <20110506071534.GA32495@tiehlicka.suse.cz>
+References: <20110503141044.GA25351@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1105031142260.7349@sister.anvils>
+ <20110504083005.GA1375@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1105041016110.23159@sister.anvils>
+ <20110505063012.GA11529@tiehlicka.suse.cz>
+ <BANLkTikGduoi8DVapz0H-uVPrrXPYF=YGg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikGduoi8DVapz0H-uVPrrXPYF=YGg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend the Intel SandyBridge PMU driver with definitions
-for generic front-end and back-end stall events.
+On Thu 05-05-11 18:12:12, Hugh Dickins wrote:
+> On Wed, May 4, 2011 at 11:30 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > So I think the flag should be used that way. If we ever going to add a
+> > new architecture like IA64 which uses both ways of expanding we should
+> > make it easier by minimizing the places which have to be examined.
+> 
+> If, yes.  Let's just agree to disagree.  It looks like I'm preferring
+> to think of the ia64 case as exceptional, and I want to be reminded of
+> that peculiar case; whereas you are wanting to generalize and make it
+> not stand out.  Both valid.
 
-( As commit 3011203 says, these are only approximations. )
+Probably a call for Andrew?
+Anyway, whatever is the way we go I think that both declaration and
+definition should be guarded by the same ifdefs.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> > OK, now, with the cleanup patch, we have expand_stack and
+> > expand_stack_{downwards,upwards}. I will repost the patch to Andrew with
+> > up and down cases renamed. Does it work for you?
+> 
+> Sounds right.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c1ec7a5..61cbf48 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1485,6 +1485,12 @@ static __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_snb_pebs_events;
-+
-+		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
-+		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
-+		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
-+		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x18001b1;
-+
- 		pr_cont("SandyBridge events, ");
- 		break;
- 
+OK, I will repost the updated patch.
+
+> >> But it's always going to be somewhat confusing and asymmetrical
+> >> because of the ia64 register backing store case.
+> >
+> > How come? We would have expand_stack which is pretty much clear that it
+> > is expanding stack in the architecture specific way. And then we would
+> > have expand_{upwards,downward} which are clear about way how we expand
+> > whatever VMA, right?
+> 
+> Right.  I'm preferring to be reminded of the confusion and asymmetry,
+> you're preferring to smooth over it.
+
+OK
+
+Thanks
 -- 
-1.7.4.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
