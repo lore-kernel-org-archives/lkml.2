@@ -1,43 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab1EFUqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 16:46:10 -0400
-Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:49380 "EHLO
-	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932451Ab1EFUqJ (ORCPT
+	id S932679Ab1EFUoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 16:44:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49720 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab1EFUoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 16:46:09 -0400
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 16:46:08 EDT
-Message-ID: <4DC45BA3.7@neli.hopto.org>
-Date: Fri, 06 May 2011 22:35:47 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+	Fri, 6 May 2011 16:44:02 -0400
+Message-ID: <4DC45D7E.3020900@kernel.org>
+Date: Fri, 06 May 2011 13:43:42 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: get_user_pages + put_task_struct
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: [PATCH 1/2] pci: Using add_list in pcie hotplug path.
+References: <4DC250A6.9040802@kernel.org> <20110506081243.GF16782@ram-laptop> <4DC4586C.6020308@kernel.org>
+In-Reply-To: <4DC4586C.6020308@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090201.4DC45D87.002B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+During pci remove/rescan testing found:
 
-I am writing a (pci) device driver, in which I'm doing userspace DMA 
-with get_user_pages. After some complicated locking, it occurred to me 
-to use reference counting instead, after finding the functions 
-get_task_mm and get_task_struct. However, put_task_struct cannot be used 
-in a module, linker will complain about __put_task_struct_cb being 
-undefined. I saw it explicitly being removed as a symbol, "we do not 
-want device drivers holding references to task structs". Why exactly is 
-this?
+[  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+[  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
+[  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+[  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+[  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+[  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
+[  541.199202] pci 0000:c0:03.0: enabling bus mastering
+[  541.199209] pci 0000:c0:03.0: setting latency timer to 64
+[  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+[  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
 
-mmput is exported, so no problem for the mm. BTW, I'm also not exactly 
-sure why I (conceptually) need a task to get the pages; but I think it's 
-for statistics.
+This bug was uncovered by commit
+| commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+| Author: Ram Pai <linuxram@us.ibm.com>
+| Date:   Mon Feb 14 17:43:20 2011 -0800
+|
+|    PCI: pre-allocate additional resources to devices only after successful allo
+cation of essential resources.
 
-I need to hold on to this task because the DMA transaction may need to 
-be split in multiple pieces, continuing after the initial call by the 
-user; during which time that process may have exited (e.g. unexpected kill).
+After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size.
+So it will not get into failed list, and will not be reset there.
 
-Micha
+It turns out we need to add_head for those calling.
+So those resource get reset properly.
+
+after patch, will get right result:
+[  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+[  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
+[  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+[  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+[  621.247012] pci 0000:c0:03.0: enabling bus mastering
+[  621.247275] pci 0000:c0:03.0: setting latency timer to 64
+[  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
+[  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
+[  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
+[  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
+[  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
+[  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
+[  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
+
+We also need this patch when pluging in hotplug chassis without cards.
+
+-v2: update a little bit descriptions.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/setup-bus.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/drivers/pci/setup-bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/setup-bus.c
++++ linux-2.6/drivers/pci/setup-bus.c
+@@ -217,13 +217,14 @@ static void __assign_resources_sorted(st
+ }
+ 
+ static void pdev_assign_resources_sorted(struct pci_dev *dev,
++				 struct resource_list_x *add_head,
+ 				 struct resource_list_x *fail_head)
+ {
+ 	struct resource_list head;
+ 
+ 	head.next = NULL;
+ 	__dev_sort_resources(dev, &head);
+-	__assign_resources_sorted(&head, NULL, fail_head);
++	__assign_resources_sorted(&head, add_head, fail_head);
+ 
+ }
+ 
+@@ -852,17 +853,19 @@ void __ref pci_bus_assign_resources(cons
+ EXPORT_SYMBOL(pci_bus_assign_resources);
+ 
+ static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
++					 struct resource_list_x *add_head,
+ 					 struct resource_list_x *fail_head)
+ {
+ 	struct pci_bus *b;
+ 
+-	pdev_assign_resources_sorted((struct pci_dev *)bridge, fail_head);
++	pdev_assign_resources_sorted((struct pci_dev *)bridge,
++					 add_head, fail_head);
+ 
+ 	b = bridge->subordinate;
+ 	if (!b)
+ 		return;
+ 
+-	__pci_bus_assign_resources(b, NULL, fail_head);
++	__pci_bus_assign_resources(b, add_head, fail_head);
+ 
+ 	switch (bridge->class >> 8) {
+ 	case PCI_CLASS_BRIDGE_PCI:
+@@ -1129,6 +1132,8 @@ enable_and_dump:
+ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+ {
+ 	struct pci_bus *parent = bridge->subordinate;
++	struct resource_list_x add_list; /* list of resources that
++					want additional resources */
+ 	int tried_times = 0;
+ 	struct resource_list_x head, *list;
+ 	int retval;
+@@ -1136,11 +1141,12 @@ void pci_assign_unassigned_bridge_resour
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	head.next = NULL;
++	add_list.next = NULL;
+ 
+ again:
+-	pci_bus_size_bridges(parent);
+-	__pci_bridge_assign_resources(bridge, &head);
+-
++	__pci_bus_size_bridges(parent, &add_list);
++	__pci_bridge_assign_resources(bridge, &add_list, &head);
++	BUG_ON(add_list.next);
+ 	tried_times++;
+ 
+ 	if (!head.next)
