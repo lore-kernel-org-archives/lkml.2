@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab1EFAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:26 -0400
-Received: from kroah.org ([198.145.64.141]:32846 "EHLO coco.kroah.org"
+	id S1754901Ab1EFASr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:18:47 -0400
+Received: from kroah.org ([198.145.64.141]:32849 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553Ab1EFANW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754622Ab1EFANW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 May 2011 20:13:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:08 2011
-Message-Id: <20110506001208.645949202@clark.kroah.org>
+Message-Id: <20110506001208.762427521@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:46 -0700
+Date: Thu, 05 May 2011 17:10:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [patch 14/38] UBIFS: seek journal heads to the latest bud in replay
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <damm@opensource.se>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [patch 15/38] mmc: fix a race between card-detect rescan and clock-gate work instances
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,116 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit 52c6e6f990669deac3f370f1603815adb55a1dbd upstream.
+commit 26fc8775b51484d8c0a671198639c6d5ae60533e upstream.
 
-This is the second fix of the following symptom:
+Currently there is a race in the MMC core between a card-detect
+rescan work and the clock-gating work, scheduled from a command
+completion. Fix it by removing the dedicated clock-gating mutex
+and using the MMC standard locking mechanism instead.
 
-UBIFS error (pid 34456): could not find an empty LEB
-
-which sometimes happens after power cuts when we mount the file-system - UBIFS
-refuses it with the above error message which comes from the
-'ubifs_rcvry_gc_commit()' function. I can reproduce this using the integck test
-with the UBIFS power cut emulation enabled.
-
-Analysis of the problem.
-
-Currently UBIFS replay seeks the journal heads to the last _replayed_ bud.
-But the buds are replayed out-of-order, so the replay basically seeks journal
-heads to the "random" bud belonging to this head, and not to the _last_ one.
-
-The result of this is that the GC head may be seeked to a full LEB with no free
-space, or very little free space. And 'ubifs_rcvry_gc_commit()' tries to find a
-fully or mostly dirty LEB to match the current GC head (because we need to
-garbage-collect that dirty LEB at one go, because we do not have @c->gc_lnum).
-So 'ubifs_find_dirty_leb()' fails and we fall back to finding an empty LEB and
-also fail. As a result - recovery fails and mounting fails.
-
-This patch teaches the replay to initialize the GC heads exactly to the latest
-buds, i.e. the buds which have the largest sequence number in corresponding
-log reference nodes.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <damm@opensource.se>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ubifs/replay.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/mmc/core/host.c  |    9 ++++-----
+ include/linux/mmc/host.h |    1 -
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
---- a/fs/ubifs/replay.c
-+++ b/fs/ubifs/replay.c
-@@ -59,6 +59,7 @@ enum {
-  * @new_size: truncation new size
-  * @free: amount of free space in a bud
-  * @dirty: amount of dirty space in a bud from padding and deletion nodes
-+ * @jhead: journal head number of the bud
-  *
-  * UBIFS journal replay must compare node sequence numbers, which means it must
-  * build a tree of node information to insert into the TNC.
-@@ -80,6 +81,7 @@ struct replay_entry {
- 		struct {
- 			int free;
- 			int dirty;
-+			int jhead;
- 		};
- 	};
- };
-@@ -159,6 +161,11 @@ static int set_bud_lprops(struct ubifs_i
- 		err = PTR_ERR(lp);
- 		goto out;
+--- a/drivers/mmc/core/host.c
++++ b/drivers/mmc/core/host.c
+@@ -94,7 +94,7 @@ static void mmc_host_clk_gate_delayed(st
+ 		spin_unlock_irqrestore(&host->clk_lock, flags);
+ 		return;
  	}
-+
-+	/* Make sure the journal head points to the latest bud */
-+	err = ubifs_wbuf_seek_nolock(&c->jheads[r->jhead].wbuf, r->lnum,
-+				     c->leb_size - r->free, UBI_SHORTTERM);
-+
- out:
- 	ubifs_release_lprops(c);
- 	return err;
-@@ -627,10 +634,6 @@ static int replay_bud(struct ubifs_info
- 	ubifs_assert(sleb->endpt - offs >= used);
- 	ubifs_assert(sleb->endpt % c->min_io_size == 0);
+-	mutex_lock(&host->clk_gate_mutex);
++	mmc_claim_host(host);
+ 	spin_lock_irqsave(&host->clk_lock, flags);
+ 	if (!host->clk_requests) {
+ 		spin_unlock_irqrestore(&host->clk_lock, flags);
+@@ -104,7 +104,7 @@ static void mmc_host_clk_gate_delayed(st
+ 		pr_debug("%s: gated MCI clock\n", mmc_hostname(host));
+ 	}
+ 	spin_unlock_irqrestore(&host->clk_lock, flags);
+-	mutex_unlock(&host->clk_gate_mutex);
++	mmc_release_host(host);
+ }
  
--	if (sleb->endpt + c->min_io_size <= c->leb_size && !c->ro_mount)
--		err = ubifs_wbuf_seek_nolock(&c->jheads[jhead].wbuf, lnum,
--					     sleb->endpt, UBI_SHORTTERM);
--
- 	*dirty = sleb->endpt - offs - used;
- 	*free = c->leb_size - sleb->endpt;
- 
-@@ -653,12 +656,14 @@ out_dump:
-  * @sqnum: sequence number
-  * @free: amount of free space in bud
-  * @dirty: amount of dirty space from padding and deletion nodes
-+ * @jhead: journal head number for the bud
-  *
-  * This function inserts a reference node to the replay tree and returns zero
-  * in case of success or a negative error code in case of failure.
-  */
- static int insert_ref_node(struct ubifs_info *c, int lnum, int offs,
--			   unsigned long long sqnum, int free, int dirty)
-+			   unsigned long long sqnum, int free, int dirty,
-+			   int jhead)
+ /*
+@@ -130,7 +130,7 @@ void mmc_host_clk_ungate(struct mmc_host
  {
- 	struct rb_node **p = &c->replay_tree.rb_node, *parent = NULL;
- 	struct replay_entry *r;
-@@ -688,6 +693,7 @@ static int insert_ref_node(struct ubifs_
- 	r->flags = REPLAY_REF;
- 	r->free = free;
- 	r->dirty = dirty;
-+	r->jhead = jhead;
+ 	unsigned long flags;
  
- 	rb_link_node(&r->rb, parent, p);
- 	rb_insert_color(&r->rb, &c->replay_tree);
-@@ -712,7 +718,7 @@ static int replay_buds(struct ubifs_info
- 		if (err)
- 			return err;
- 		err = insert_ref_node(c, b->bud->lnum, b->bud->start, b->sqnum,
--				      free, dirty);
-+				      free, dirty, b->bud->jhead);
- 		if (err)
- 			return err;
+-	mutex_lock(&host->clk_gate_mutex);
++	mmc_claim_host(host);
+ 	spin_lock_irqsave(&host->clk_lock, flags);
+ 	if (host->clk_gated) {
+ 		spin_unlock_irqrestore(&host->clk_lock, flags);
+@@ -140,7 +140,7 @@ void mmc_host_clk_ungate(struct mmc_host
  	}
+ 	host->clk_requests++;
+ 	spin_unlock_irqrestore(&host->clk_lock, flags);
+-	mutex_unlock(&host->clk_gate_mutex);
++	mmc_release_host(host);
+ }
+ 
+ /**
+@@ -218,7 +218,6 @@ static inline void mmc_host_clk_init(str
+ 	host->clk_gated = false;
+ 	INIT_WORK(&host->clk_gate_work, mmc_host_clk_gate_work);
+ 	spin_lock_init(&host->clk_lock);
+-	mutex_init(&host->clk_gate_mutex);
+ }
+ 
+ /**
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -183,7 +183,6 @@ struct mmc_host {
+ 	struct work_struct	clk_gate_work; /* delayed clock gate */
+ 	unsigned int		clk_old;	/* old clock value cache */
+ 	spinlock_t		clk_lock;	/* lock for clk fields */
+-	struct mutex		clk_gate_mutex;	/* mutex for clock gating */
+ #endif
+ 
+ 	/* host specific block data */
 
 
