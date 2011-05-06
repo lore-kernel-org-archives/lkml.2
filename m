@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab1EFAji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:39:38 -0400
-Received: from kroah.org ([198.145.64.141]:37321 "EHLO coco.kroah.org"
+	id S932511Ab1EFA0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:26:04 -0400
+Received: from kroah.org ([198.145.64.141]:37330 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932313Ab1EFAZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:59 -0400
+	id S932494Ab1EFA0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:26:00 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:17 2011
-Message-Id: <20110506002217.682955874@clark.kroah.org>
+Message-Id: <20110506002217.782417797@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:51 -0700
+Date: Thu, 05 May 2011 17:21:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Mahoney <jeffm@suse.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [126/143] ipg: Remove device claimed by dl2k from pci id table
+        Romain Francoise <romain@orebokech.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [127/143] ipv6: Silence privacy extensions initialization
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Romain Francoise <romain@orebokech.com>
 
-commit 25cca5352712561fba97bd37c495593d641c1d39 upstream.
+commit 2fdc1c8093255f9da877d7b9ce3f46c2098377dc upstream.
 
-This patch removes D-Link DGE-550T PCI ID (1186:4000) from the ipg
-driver. The ipg driver is for IP2000-based cards and the DGE-550T is
-a DL2000-based card. The driver loads and works for a few moments, but
-once a real workload is applied it stops operating. The ipg driver
-claimed this ID since it was introduced in 2.6.24 and it's forced many
-users to blacklist it.
+When a network namespace is created (via CLONE_NEWNET), the loopback
+interface is automatically added to the new namespace, triggering a
+printk in ipv6_add_dev() if CONFIG_IPV6_PRIVACY is set.
 
-The correct driver for this hardware is the dl2k driver, which has been
-claiming this PCI ID since the 2.4 days.
+This is problematic for applications which use CLONE_NEWNET as
+part of a sandbox, like Chromium's suid sandbox or recent versions of
+vsftpd. On a busy machine, it can lead to thousands of useless
+"lo: Disabled Privacy Extensions" messages appearing in dmesg.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+It's easy enough to check the status of privacy extensions via the
+use_tempaddr sysctl, so just removing the printk seems like the most
+sensible solution.
+
+Signed-off-by: Romain Francoise <romain@orebokech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/ipg.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ipv6/addrconf.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/net/ipg.c
-+++ b/drivers/net/ipg.c
-@@ -88,7 +88,6 @@ static const char *ipg_brand_name[] = {
- 	"Sundance Technology ST2021 based NIC",
- 	"Tamarack Microelectronics TC9020/9021 based NIC",
- 	"Tamarack Microelectronics TC9020/9021 based NIC",
--	"D-Link NIC",
- 	"D-Link NIC IP1000A"
- };
- 
-@@ -97,8 +96,7 @@ static struct pci_device_id ipg_pci_tbl[
- 	{ PCI_VDEVICE(SUNDANCE,	0x2021), 1 },
- 	{ PCI_VDEVICE(SUNDANCE,	0x1021), 2 },
- 	{ PCI_VDEVICE(DLINK,	0x9021), 3 },
--	{ PCI_VDEVICE(DLINK,	0x4000), 4 },
--	{ PCI_VDEVICE(DLINK,	0x4020), 5 },
-+	{ PCI_VDEVICE(DLINK,	0x4020), 4 },
- 	{ 0, }
- };
- 
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -407,9 +407,6 @@ static struct inet6_dev * ipv6_add_dev(s
+ 	    dev->type == ARPHRD_TUNNEL6 ||
+ 	    dev->type == ARPHRD_SIT ||
+ 	    dev->type == ARPHRD_NONE) {
+-		printk(KERN_INFO
+-		       "%s: Disabled Privacy Extensions\n",
+-		       dev->name);
+ 		ndev->cnf.use_tempaddr = -1;
+ 	} else {
+ 		in6_dev_hold(ndev);
 
 
