@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1EFHl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 03:41:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43519 "EHLO mail.skyhub.de"
+	id S1754354Ab1EFHmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 03:42:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51032 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab1EFHlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 03:41:25 -0400
-Date: Fri, 6 May 2011 09:41:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg KH <gregkh@suse.de>, Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk, bp@amd64.org
-Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
- workaround
-Message-ID: <20110506074120.GB21046@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ben Hutchings <ben@decadent.org.uk>, Greg KH <gregkh@suse.de>,
-	Hans Rosenfeld <hans.rosenfeld@amd.com>,
-	linux-kernel@vger.kernel.org, stable@kernel.org,
-	akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-	torvalds@linux-foundation.org, stable-review@kernel.org,
-	alan@lxorguk.ukuu.org.uk, bp@amd64.org
-References: <20110419204117.979118654@clark.kroah.org>
- <1303263653.3464.65.camel@localhost>
- <20110420020128.GA27631@suse.de>
- <1303265862.3464.77.camel@localhost>
- <20110420031105.GA11945@suse.de>
- <1303274910.3464.95.camel@localhost>
- <20110420050617.GA16756@suse.de>
- <1303356555.3464.128.camel@localhost>
- <20110505225302.GC12316@suse.de>
+	id S1754041Ab1EFHma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 03:42:30 -0400
+Date: Fri, 6 May 2011 08:42:24 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
+        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+Message-ID: <20110506074224.GB6591@suse.de>
+References: <1304009778.2598.10.camel@mulgrave.site>
+ <20110428171826.GZ4658@suse.de>
+ <1304015436.2598.19.camel@mulgrave.site>
+ <20110428192104.GA4658@suse.de>
+ <1304020767.2598.21.camel@mulgrave.site>
+ <1304025145.2598.24.camel@mulgrave.site>
+ <1304030629.2598.42.camel@mulgrave.site>
+ <20110503091320.GA4542@novell.com>
+ <1304431982.2576.5.camel@mulgrave.site>
+ <1304432553.2576.10.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110505225302.GC12316@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1304432553.2576.10.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Ben,
-
-On Thu, May 05, 2011 at 03:53:02PM -0700, Greg KH wrote:
-> On Thu, Apr 21, 2011 at 04:29:15AM +0100, Ben Hutchings wrote:
-> > > We got a few new quirks added for AMD hardware platforms that fix
-> > > problems.
-> > 
-> > Maybe, but I still haven't seen anyone explain what those problems are!
+On Tue, May 03, 2011 at 09:22:33AM -0500, James Bottomley wrote:
+> On Tue, 2011-05-03 at 09:13 -0500, James Bottomley wrote:
+> > I've got a ftrace output of kswapd ... it's 500k compressed, so I'll
+> > send under separate cover.
 > 
-> I'll let the AMD people answer this.
+> Here it is ... it's under 2.6.38.4 vanilla, but the code is similar. 
+> 
 
-it's hard to follow back in this thread to what exactly you'd like to
-have answered. Can you please repeat your questions concerning the AMD
-backports? Is it, per chance, about Erratum 400 CPU f/m/s ranges that
-got changed?
+I was quiet because I was off trying to reproduce this but not having
+much luck. It doesn't seem directly related to filesystems or
+cgroups. For example, here is what I see with ext4 without cgroups
 
-Thanks.
+                2.6.34-vanilla    2.6.37-vanilla    2.6.38-vanilla       rc6-vanilla
+download tar           70 ( 0.00%)   68 ( 2.94%)   69 ( 1.45%)   70 ( 0.00%)
+unpack tar            601 ( 0.00%)  605 (-0.66%)  604 (-0.50%)  605 (-0.66%)
+copy source files     319 ( 0.00%)  321 (-0.62%)  320 (-0.31%)  332 (-3.92%)
+create tarfile       1368 ( 0.00%) 1372 (-0.29%) 1371 (-0.22%) 1363 ( 0.37%)
+delete source dirs     21 ( 0.00%)   21 ( 0.00%)   23 (-8.70%)   22 (-4.55%)
+expand tar            263 ( 0.00%)  261 ( 0.77%)  257 ( 2.33%)  259 ( 1.54%)
+
+(all results are in seconds)
+
+When running in cgroups, the results are similar - bit slower but
+not remarkably so. ext3 is slower but not enough to count as the bug.
+
+The trace you posted is very short but kswapd is not going to sleep
+in it. It's less than a seconds worth on different cpus so it's hard
+to draw any conclusion from it other than sleeping_prematurely()
+is often deciding that kswapd should not sleep.
+
+So lets consider what keeps it awake.
+
+1. High-order allocations? You machine is using i915 and RPC, something
+   neither of my test machine uses. i915 is potentially a source for
+   high-order allocations. I'm attaching a perl script. Please run it as
+   ./watch-highorder.pl --output /tmp/highorders.txt
+   while you are running tar. When kswapd is running for about 30
+   seconds, interrupt it with ctrl+c twice in quick succession and
+   post /tmp/highorders.txt
+
+2. All unreclaimable is not being set or we are not balancing at all.
+   Can you post the output of sysrq+m while the machine is struggling
+   please?
+
+3. Slab may not be shrinking for some reason. Can you run a shell
+   script like this during the whole test and record its output please?
+
+   #!/bin/bash
+   while [ 1 ]; do
+	   echo time: `date +%s`
+	   cat /proc/vmstat
+	   sleep 2
+   done
+
+   Similarly if this is a slab issue, it'd be nice to know who it is so
+
+   #!/bin/bash
+   while [ 1 ]; do
+	   echo time: `date +%s`
+	   cat /proc/slabinfo
+	   sleep $MONITOR_UPDATE_FREQUENCY
+   done
+
+4. Lets get a better look at what is going on in kswapd
+
+   echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
+   cat /sys/kernel/debug/tracing/trace_pipe > vmscan-ftrace.txt
+
+Out of curiousity, what's the exact machine you are testing on
+because I want to see what sort of hardware combination triggers
+this problem? Is the tar local or is it copied over NFS? What is the
+configuration of the disk or partition you are copying to?
+
+Thanks
 
 -- 
-Regards/Gruss,
-    Boris.
+Mel Gorman
+SUSE Labs
