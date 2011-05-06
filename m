@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab1EFWtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 18:49:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34783 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab1EFWtG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 18:49:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=N1CCxjzqRQ7ojMOrnE0fPyLK0d+Qa+25SVOE/bghdZ1cm8NgLf1bZwA/nuGkl3Kl2o
-         Iw1YPfoWyirDpyGJ4/Hw==
-Date: Fri, 6 May 2011 15:48:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Hillf Danton <dhillf@gmail.com>
-cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [Question] how to detect mm leaker and kill?
-In-Reply-To: <BANLkTi=S_gSvnQimgqrMmq9eWJYDCDRVmA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1105061547150.2451@chino.kir.corp.google.com>
-References: <BANLkTi=S_gSvnQimgqrMmq9eWJYDCDRVmA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754507Ab1EFWua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 18:50:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56879 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab1EFWua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 18:50:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH] PM / Wakeup: Fix build warning related to the "wakeup" sysfs file
+Date: Sat, 7 May 2011 00:50:55 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, "Greg Kroah-Hartman" <gregkh@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105070050.55235.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 May 2011, Hillf Danton wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> Hi
-> 
-> In the scenario that 2GB  physical RAM is available, and there is a
-> database application that eats 1.4GB RAM without leakage already
-> running, another leaker who leaks 4KB an hour is also running, could
-> the leaker be detected and killed in mm/oom_kill.c with default
-> configure when oom happens?
-> 
+The "wakeup" device sysfs file is only created if CONFIG_PM_SLEEP
+is set, so put it under CONFIG_PM_SLEEP and make a build warning
+related to it go away.
 
-Yes, if you know the database application is going to use 70% of your 
-system RAM and you wish to discount that from its memory use when being 
-considered for oom kill, set its /proc/pid/oom_score_adj to -700.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/sysfs.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-This is only possible on 2.6.36 and later kernels when oom_score_adj was 
-introduced.
-
-If you'd like to completely disable oom killing, set 
-/proc/pid/oom_score_adj to -1000.
+Index: linux-2.6/drivers/base/power/sysfs.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/sysfs.c
++++ linux-2.6/drivers/base/power/sysfs.c
+@@ -212,8 +212,9 @@ static ssize_t autosuspend_delay_ms_stor
+ static DEVICE_ATTR(autosuspend_delay_ms, 0644, autosuspend_delay_ms_show,
+ 		autosuspend_delay_ms_store);
+ 
+-#endif
++#endif /* CONFIG_PM_RUNTIME */
+ 
++#ifdef CONFIG_PM_SLEEP
+ static ssize_t
+ wake_show(struct device * dev, struct device_attribute *attr, char * buf)
+ {
+@@ -248,7 +249,6 @@ wake_store(struct device * dev, struct d
+ 
+ static DEVICE_ATTR(wakeup, 0644, wake_show, wake_store);
+ 
+-#ifdef CONFIG_PM_SLEEP
+ static ssize_t wakeup_count_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
