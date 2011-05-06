@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab1EFAiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:38:51 -0400
-Received: from kroah.org ([198.145.64.141]:37347 "EHLO coco.kroah.org"
+	id S932543Ab1EFAiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:38:25 -0400
+Received: from kroah.org ([198.145.64.141]:37353 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932499Ab1EFA0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:26:03 -0400
+	id S932507Ab1EFA0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:26:04 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:18 2011
-Message-Id: <20110506002218.044949058@clark.kroah.org>
+Message-Id: <20110506002218.146106510@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:21:55 -0700
+Date: Thu, 05 May 2011 17:21:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "Kashyap Desai" <Kashyap.Desai@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [130/143] mpt2sas: fix the incorrect scsi_dma_map error checking
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [131/143] niu: Fix kernel buffer overflow for ETHTOOL_GRXCLSRLALL
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit bb789d01620e5d36081b22edb6fb71cf55ff043c upstream.
+commit ee9c5cfad29c8a13199962614b9b16f1c4137ac9 upstream.
 
-scsi_dma_map() returns -1 if an error occurred (zero means that the
-command has no data). So the following current code can't catch an
-error:
+niu_get_ethtool_tcam_all() assumes that its output buffer is the right
+size, and warns before returning if it is not.  However, the output
+buffer size is under user control and ETHTOOL_GRXCLSRLALL is an
+unprivileged ethtool command.  Therefore this is at least a local
+denial-of-service vulnerability.
 
-sges_left = scsi_dma_map(scmd);
-if (!sges_left) {
-	sdev_printk(KERN_ERR, scmd->device, "pci_map_sg"
-	" failed: request for %d bytes!\n", scsi_bufflen(scmd));
-	return -ENOMEM;
-}
+Change it to check before writing each entry and to return an error if
+the buffer is already full.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Acked-by: "Kashyap Desai" <Kashyap.Desai@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Compile-tested only.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[Adjusted to apply to 2.6.32 by dann frazier <dannf@debian.org>]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/niu.c |   17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -945,7 +945,7 @@ _scsih_build_scatter_gather(struct MPT2S
- 	u32 chain_offset;
- 	u32 chain_length;
- 	u32 chain_flags;
--	u32 sges_left;
-+	int sges_left;
- 	u32 sges_in_segment;
- 	u32 sgl_flags;
- 	u32 sgl_flags_last_element;
-@@ -966,7 +966,7 @@ _scsih_build_scatter_gather(struct MPT2S
+--- a/drivers/net/niu.c
++++ b/drivers/net/niu.c
+@@ -7315,33 +7315,28 @@ static int niu_get_ethtool_tcam_all(stru
+ 	struct niu_parent *parent = np->parent;
+ 	struct niu_tcam_entry *tp;
+ 	int i, idx, cnt;
+-	u16 n_entries;
+ 	unsigned long flags;
+-
++	int ret = 0;
  
- 	sg_scmd = scsi_sglist(scmd);
- 	sges_left = scsi_dma_map(scmd);
--	if (!sges_left) {
-+	if (sges_left < 0) {
- 		sdev_printk(KERN_ERR, scmd->device, "pci_map_sg"
- 		" failed: request for %d bytes!\n", scsi_bufflen(scmd));
- 		return -ENOMEM;
+ 	/* put the tcam size here */
+ 	nfc->data = tcam_get_size(np);
+ 
+ 	niu_lock_parent(np, flags);
+-	n_entries = nfc->rule_cnt;
+ 	for (cnt = 0, i = 0; i < nfc->data; i++) {
+ 		idx = tcam_get_index(np, i);
+ 		tp = &parent->tcam[idx];
+ 		if (!tp->valid)
+ 			continue;
++		if (cnt == nfc->rule_cnt) {
++			ret = -EMSGSIZE;
++			break;
++		}
+ 		rule_locs[cnt] = i;
+ 		cnt++;
+ 	}
+ 	niu_unlock_parent(np, flags);
+ 
+-	if (n_entries != cnt) {
+-		/* print warning, this should not happen */
+-		pr_info(PFX "niu%d: %s In niu_get_ethtool_tcam_all, "
+-			"n_entries[%d] != cnt[%d]!!!\n\n",
+-			np->parent->index, np->dev->name, n_entries, cnt);
+-	}
+-
+-	return 0;
++	return ret;
+ }
+ 
+ static int niu_get_nfc(struct net_device *dev, struct ethtool_rxnfc *cmd,
 
 
