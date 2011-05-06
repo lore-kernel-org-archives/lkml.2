@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab1EFA0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:26:13 -0400
-Received: from kroah.org ([198.145.64.141]:37401 "EHLO coco.kroah.org"
+	id S932576Ab1EFAh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:37:27 -0400
+Received: from kroah.org ([198.145.64.141]:37408 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932527Ab1EFA0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:26:10 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:18 2011
-Message-Id: <20110506002218.820703899@clark.kroah.org>
+	id S932075Ab1EFA0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:26:11 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:19 2011
+Message-Id: <20110506002218.927682512@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:22:03 -0700
+Date: Thu, 05 May 2011 17:22:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
-        Jonathan Liu <net147@gmail.com>
-Subject: [138/143] libata: set queue DMA alignment to sector size for ATAPI too
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [139/143] usb: musb: core: set has_tt flag
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,84 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <htejun@gmail.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 729a6a300e628a48cf12bac93a964a535e83cd1d upstream.
+commit ec95d35a6bd0047f05fe8a21e6c52f8bb418da55 upstream.
 
-ata_pio_sectors() expects buffer for each sector to be contained in a
-single page; otherwise, it ends up overrunning the first page.  This
-is achieved by setting queue DMA alignment.  If sector_size is smaller
-than PAGE_SIZE and all buffers are sector_size aligned, buffer for
-each sector is always contained in a single page.
+MUSB is a non-standard host implementation which
+can handle all speeds with the same core. We need
+to set has_tt flag after commit
+d199c96d41d80a567493e12b8e96ea056a1350c1 (USB: prevent
+buggy hubs from crashing the USB stack) in order for
+MUSB HCD to continue working.
 
-This wasn't applied to ATAPI devices but IDENTIFY_PACKET is executed
-as ATA_PROT_PIO and thus uses ata_pio_sectors().  Newer versions of
-udev issue IDENTIFY_PACKET with unaligned buffer triggering the
-problem and causing oops.
-
-This patch fixes the problem by setting sdev->sector_size to
-ATA_SECT_SIZE on ATATPI devices and always setting DMA alignment to
-sector_size.  While at it, add a warning for the unlikely but still
-possible scenario where sector_size is larger than PAGE_SIZE, in which
-case the alignment wouldn't be enough.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: John Stanley <jpsinthemix@verizon.net>
-Tested-by: John Stanley <jpsinthemix@verizon.net>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Jonathan Liu <net147@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Michael Jones <michael.jones@matrix-vision.de>
+Tested-by: Alexander Holler <holler@ahsoftware.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-scsi.c |   24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+ drivers/usb/musb/musb_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -1099,13 +1099,13 @@ static int ata_scsi_dev_config(struct sc
- 	/* configure max sectors */
- 	blk_queue_max_sectors(sdev->request_queue, dev->max_sectors);
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1792,6 +1792,7 @@ allocate_instance(struct device *dev,
+ 	INIT_LIST_HEAD(&musb->out_bulk);
  
-+	sdev->sector_size = ATA_SECT_SIZE;
-+
- 	if (dev->class == ATA_DEV_ATAPI) {
- 		struct request_queue *q = sdev->request_queue;
- 		void *buf;
+ 	hcd->uses_new_polling = 1;
++	hcd->has_tt = 1;
  
--		/* set the min alignment and padding */
--		blk_queue_update_dma_alignment(sdev->request_queue,
--					       ATA_DMA_PAD_SZ - 1);
-+		/* set DMA padding */
- 		blk_queue_update_dma_pad(sdev->request_queue,
- 					 ATA_DMA_PAD_SZ - 1);
- 
-@@ -1119,12 +1119,24 @@ static int ata_scsi_dev_config(struct sc
- 
- 		blk_queue_dma_drain(q, atapi_drain_needed, buf, ATAPI_MAX_DRAIN);
- 	} else {
--		/* ATA devices must be sector aligned */
--		blk_queue_update_dma_alignment(sdev->request_queue,
--					       ATA_SECT_SIZE - 1);
- 		sdev->manage_start_stop = 1;
- 	}
- 
-+	/*
-+	 * ata_pio_sectors() expects buffer for each sector to not cross
-+	 * page boundary.  Enforce it by requiring buffers to be sector
-+	 * aligned, which works iff sector_size is not larger than
-+	 * PAGE_SIZE.  ATAPI devices also need the alignment as
-+	 * IDENTIFY_PACKET is executed as ATA_PROT_PIO.
-+	 */
-+	if (sdev->sector_size > PAGE_SIZE)
-+		ata_dev_printk(dev, KERN_WARNING,
-+			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
-+			sdev->sector_size);
-+
-+	blk_queue_update_dma_alignment(sdev->request_queue,
-+				       sdev->sector_size - 1);
-+
- 	if (dev->flags & ATA_DFLAG_AN)
- 		set_bit(SDEV_EVT_MEDIA_CHANGE, sdev->supported_events);
- 
+ 	musb->vbuserr_retry = VBUSERR_RETRY_COUNT;
+ 	musb->a_wait_bcon = OTG_TIME_A_WAIT_BCON;
 
 
