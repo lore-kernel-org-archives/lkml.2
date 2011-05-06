@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab1EFIZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 04:25:51 -0400
-Received: from web94913.mail.in2.yahoo.com ([203.104.17.184]:21965 "HELO
-	web94913.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753966Ab1EFIZs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 04:25:48 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 04:25:48 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=W0AEHCbgphcCoIWfSfD+uySf0mynx3fGDCgxrLZGQvN0fsS7fx6sZnDIKeqbUOBpddZRF9VxNW2B2LKof6d8c+rED6Nz7Oyg90rLh1QfKeWs1x9myVHQ2hn230ofRtE2X1wDqMRuDpbKbdermxuI5BcIHK8mtyyXRooJDcoHCDc=;
-Message-ID: <258099.79796.qm@web94913.mail.in2.yahoo.com>
-X-YMail-OSG: 6v9P.oQVM1ni3juVMKCVwBy.HE0GlMdNrmZWEnbWB2fEO7n
- 3JNdv_8P7WnSIRZbzhA.mgAGRWeCvc4uY1_.x_w5Z48z2YhItcEpTUN7i9YV
- VET9kkidCljGJMG.K5DfW_rxOiWMcj5dvFryq7lDAZpbwk9wzrb6RjDRjiVh
- Vk72i_Z6gwdE0sBkUxv_VxmXhyE3Fc3xDZ2.gqIKzHLnM65Bo5.g16t52Oaz
- Pf4djS_G4UIdpCzfEc4OKWElzud6Lrr8iF3qowIvzQ41xTMH2rZpt9DBTqfz
- 3iVpIbK8woOfqllB4CZVsJGe8WdlDl9j6NdF3NsEqCYaQVJ0IK1xcWD405dJ
- vZFrvkpRQJn52nqm1HCWegAVDORTTv9uTNejBUrnyr33GIzvhf9UVeNPDZE_
- .tASxlaUS9ZCGYDSm9bloJc_Uexacoi2..QLFdKDekQA7dR0ey2N0_W3fff.
- 69litPYKYlorKreKR9b_jZaaKpwJqcZPwk.dIOPFfXoqlbAasbKOqb1uoWuC
- Tq8M6KMuy8px8.XHBLotUfwJdRVsSLopD9vrNoiG.pOqW5oszhnWQ9ET5uEa
- 4VncMxQ--
-X-Mailer: YahooMailRC/559 YahooMailWebService/0.8.110.299900
-Date: Fri, 6 May 2011 13:49:04 +0530 (IST)
-From: Prashant Saxena <animator333@yahoo.com>
-Subject: physical vs virtual mac address and mac address from NIC's firmware
-To: linux-kernel@vger.kernel.org
+	id S1754024Ab1EFIYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 04:24:10 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:34532 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783Ab1EFIYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 04:24:08 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Linux\/m68k" <linux-m68k@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>
+Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
+References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
+	<201105050824.34056.arnd@arndb.de>
+	<alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
+	<201105052237.11656.arnd@arndb.de>
+	<BANLkTinqouGVWH8CmfM038TKFvhpJEczUQ@mail.gmail.com>
+X-Yow: I'll clean your ROOM!!  I know some GOOD stories, too!!  All about
+ ROAD Island's, HUSH Puppies, and how LUKE finds GOLD on his LAND!!
+Date: Fri, 06 May 2011 10:24:04 +0200
+In-Reply-To: <BANLkTinqouGVWH8CmfM038TKFvhpJEczUQ@mail.gmail.com> (Geert
+	Uytterhoeven's message of "Fri, 6 May 2011 07:11:42 +0200")
+Message-ID: <m38vuk9qzf.fsf@linux-m68k.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-I am a newbie on linux and writing a small tool to get info of ethernet adapters 
+> BTW, we have a hole at 218/219. I don't remember why, but it may have been
+> a placeholder for pselect6 and ppoll when that implementation was still in flux.
+> Couldn't find anything about it in git/cvs archives, so I'll check
+> have to check my
+> old mailing list archives...
 
-installed. Please find more details and discussions in this post:
-http://www.linuxforums.org/forum/programming-scripting/177222-physical-vs-virtual-mac-address-mac-address-nics-firmware.html#post842296
+Probably it originated from the time when it was still deemed useful to
+keep the numbers in sync with the x86 ones.  The hole is filled with
+mincore and madvice there (pselect6 and ppoll came much later).
 
+Andreas.
 
-
-As the tool plays an important role in licensing system thus I need to make sure 
-
-that solution should work
-ideally on as many distros as possible. Considering the major and most commonly 
-used distributions such as fedora, ubuntu, opensuse, debian etc. including their 
-
-latest versions and bit older ones (3-4 years), what are the cons I might face 
-using ethtool
-api to get perma address?
-
-BTW, you are kernel guys and I hoping that you might give me an answer for 
-differentiating between physical and virtual adapters.
-
-The details of my distribution including requirements of app is posted on the 
-above mentioned topic.
-
-Best Regards
-
-Prashant
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
