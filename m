@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab1EFANd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:33 -0400
-Received: from kroah.org ([198.145.64.141]:32901 "EHLO coco.kroah.org"
+	id S932110Ab1EFAQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:16:43 -0400
+Received: from kroah.org ([198.145.64.141]:32907 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753327Ab1EFANb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:31 -0400
+	id S1754693Ab1EFANc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:09 2011
-Message-Id: <20110506001209.680029807@clark.kroah.org>
+Message-Id: <20110506001209.766040412@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:56 -0700
+Date: Thu, 05 May 2011 17:10:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [patch 24/38] [media] imon: add conditional locking in change_protocol
+        Eric Paris <eparis@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [patch 25/38] flex_array: flex_array_prealloc takes a number of elements, not an end
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,194 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarod Wilson <jarod@redhat.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 23ef710e1a6c4d6b9ef1c2fa19410f7f1479401e upstream.
+commit 5d30b10bd68df007e7ae21e77d1e0ce184b53040 upstream.
 
-The imon_ir_change_protocol function gets called two different ways, one
-way is from rc_register_device, for initial protocol selection/setup,
-and the other is via a userspace-initiated protocol change request,
-either by direct sysfs prodding or by something like ir-keytable.
+Change flex_array_prealloc to take the number of elements for which space
+should be allocated instead of the last (inclusive) element. Users
+and documentation are updated accordingly.  flex_arrays got introduced before
+they had users.  When folks started using it, they ended up needing a
+different API than was coded up originally.  This swaps over to the API that
+folks apparently need.
 
-In the rc_register_device case, the imon context lock is already held,
-but when initiated from userspace, it is not, so we must acquire it,
-prior to calling send_packet, which requires that the lock is held.
-
-Without this change, there's an easily reproduceable deadlock when
-another function calls send_packet (such as either of the display write
-fops) after a userspace-initiated change_protocol.
-
-With a lock-debugging-enabled kernel, I was getting this:
-
-[   15.014153] =====================================
-[   15.015048] [ BUG: bad unlock balance detected! ]
-[   15.015048] -------------------------------------
-[   15.015048] ir-keytable/773 is trying to release lock (&ictx->lock) at:
-[   15.015048] [<ffffffff814c6297>] mutex_unlock+0xe/0x10
-[   15.015048] but there are no more locks to release!
-[   15.015048]
-[   15.015048] other info that might help us debug this:
-[   15.015048] 2 locks held by ir-keytable/773:
-[   15.015048]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8119d400>] sysfs_write_file+0x3c/0x144
-[   15.015048]  #1:  (s_active#87){.+.+.+}, at: [<ffffffff8119d4ab>] sysfs_write_file+0xe7/0x144
-[   15.015048]
-[   15.015048] stack backtrace:
-[   15.015048] Pid: 773, comm: ir-keytable Not tainted 2.6.38.4-20.fc15.x86_64.debug #1
-[   15.015048] Call Trace:
-[   15.015048]  [<ffffffff81089715>] ? print_unlock_inbalance_bug+0xca/0xd5
-[   15.015048]  [<ffffffff8108b35c>] ? lock_release_non_nested+0xc1/0x263
-[   15.015048]  [<ffffffff814c6297>] ? mutex_unlock+0xe/0x10
-[   15.015048]  [<ffffffff814c6297>] ? mutex_unlock+0xe/0x10
-[   15.015048]  [<ffffffff8108b67b>] ? lock_release+0x17d/0x1a4
-[   15.015048]  [<ffffffff814c6229>] ? __mutex_unlock_slowpath+0xc5/0x125
-[   15.015048]  [<ffffffff814c6297>] ? mutex_unlock+0xe/0x10
-[   15.015048]  [<ffffffffa02964b6>] ? send_packet+0x1c9/0x264 [imon]
-[   15.015048]  [<ffffffff8108b376>] ? lock_release_non_nested+0xdb/0x263
-[   15.015048]  [<ffffffffa0296731>] ? imon_ir_change_protocol+0x126/0x15e [imon]
-[   15.015048]  [<ffffffffa024a334>] ? store_protocols+0x1c3/0x286 [rc_core]
-[   15.015048]  [<ffffffff81326e4e>] ? dev_attr_store+0x20/0x22
-[   15.015048]  [<ffffffff8119d4cc>] ? sysfs_write_file+0x108/0x144
-...
-
-The original report that led to the investigation was the following:
-
-[ 1679.457305] INFO: task LCDd:8460 blocked for more than 120 seconds.
-[ 1679.457307] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 1679.457309] LCDd            D ffff88010fcd89c8     0  8460      1 0x00000000
-[ 1679.457312]  ffff8800d5a03b48 0000000000000082 0000000000000000 ffff8800d5a03fd8
-[ 1679.457314]  00000000012dcd30 fffffffffffffffd ffff8800d5a03fd8 ffff88010fcd86f0
-[ 1679.457316]  ffff8800d5a03fd8 ffff8800d5a03fd8 ffff88010fcd89d0 ffff8800d5a03fd8
-[ 1679.457319] Call Trace:
-[ 1679.457324]  [<ffffffff810ff1a5>] ? zone_statistics+0x75/0x90
-[ 1679.457327]  [<ffffffff810ea907>] ? get_page_from_freelist+0x3c7/0x820
-[ 1679.457330]  [<ffffffff813b0a49>] __mutex_lock_slowpath+0x139/0x320
-[ 1679.457335]  [<ffffffff813b0c41>] mutex_lock+0x11/0x30
-[ 1679.457338]  [<ffffffffa0d54216>] display_open+0x66/0x130 [imon]
-[ 1679.457345]  [<ffffffffa01d06c0>] usb_open+0x180/0x310 [usbcore]
-[ 1679.457349]  [<ffffffff81143b3b>] chrdev_open+0x1bb/0x2d0
-[ 1679.457350]  [<ffffffff8113d93d>] __dentry_open+0x10d/0x370
-[ 1679.457352]  [<ffffffff81143980>] ? chrdev_open+0x0/0x2d0
-...
-
-Bump the driver version here so its easier to tell if people have this
-locking fix or not, and also make locking during probe easier to follow.
-
-Reported-by: Benjamin Hodgetts <ben@xnode.org>
-Signed-off-by: Jarod Wilson <jarod@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Based-on-patch-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Tested-by: Chris Richards <gizmo@giz-works.com>
+Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/rc/imon.c |   31 +++++++++++++++++++++++++++----
- 1 file changed, 27 insertions(+), 4 deletions(-)
+ Documentation/flexible-arrays.txt |    4 ++--
+ include/linux/flex_array.h        |    2 +-
+ lib/flex_array.c                  |   13 ++++++++-----
+ security/selinux/ss/policydb.c    |    6 +++---
+ 4 files changed, 14 insertions(+), 11 deletions(-)
 
---- a/drivers/media/rc/imon.c
-+++ b/drivers/media/rc/imon.c
-@@ -46,7 +46,7 @@
- #define MOD_AUTHOR	"Jarod Wilson <jarod@wilsonet.com>"
- #define MOD_DESC	"Driver for SoundGraph iMON MultiMedia IR/Display"
- #define MOD_NAME	"imon"
--#define MOD_VERSION	"0.9.2"
-+#define MOD_VERSION	"0.9.3"
+--- a/Documentation/flexible-arrays.txt
++++ b/Documentation/flexible-arrays.txt
+@@ -66,10 +66,10 @@ trick is to ensure that any needed memor
+ entering atomic context, using:
  
- #define DISPLAY_MINOR_BASE	144
- #define DEVICE_NAME	"lcd%d"
-@@ -451,8 +451,9 @@ static int display_close(struct inode *i
- }
+     int flex_array_prealloc(struct flex_array *array, unsigned int start,
+-			    unsigned int end, gfp_t flags);
++			    unsigned int nr_elements, gfp_t flags);
+ 
+ This function will ensure that memory for the elements indexed in the range
+-defined by start and end has been allocated.  Thereafter, a
++defined by start and nr_elements has been allocated.  Thereafter, a
+ flex_array_put() call on an element in that range is guaranteed not to
+ block.
+ 
+--- a/include/linux/flex_array.h
++++ b/include/linux/flex_array.h
+@@ -61,7 +61,7 @@ struct flex_array {
+ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
+ 		gfp_t flags);
+ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+-		unsigned int end, gfp_t flags);
++		unsigned int nr_elements, gfp_t flags);
+ void flex_array_free(struct flex_array *fa);
+ void flex_array_free_parts(struct flex_array *fa);
+ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -232,10 +232,10 @@ EXPORT_SYMBOL(flex_array_clear);
  
  /**
-- * Sends a packet to the device -- this function must be called
-- * with ictx->lock held.
-+ * Sends a packet to the device -- this function must be called with
-+ * ictx->lock held, or its unlock/lock sequence while waiting for tx
-+ * to complete can/will lead to a deadlock.
+  * flex_array_prealloc - guarantee that array space exists
+- * @fa:		the flex array for which to preallocate parts
+- * @start:	index of first array element for which space is allocated
+- * @end:	index of last (inclusive) element for which space is allocated
+- * @flags:	page allocation flags
++ * @fa:			the flex array for which to preallocate parts
++ * @start:		index of first array element for which space is allocated
++ * @nr_elements:	number of elements for which space is allocated
++ * @flags:		page allocation flags
+  *
+  * This will guarantee that no future calls to flex_array_put()
+  * will allocate memory.  It can be used if you are expecting to
+@@ -245,13 +245,16 @@ EXPORT_SYMBOL(flex_array_clear);
+  * Locking must be provided by the caller.
   */
- static int send_packet(struct imon_context *ictx)
+ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+-			unsigned int end, gfp_t flags)
++			unsigned int nr_elements, gfp_t flags)
  {
-@@ -982,12 +983,21 @@ static void imon_touch_display_timeout(u
-  * the iMON remotes, and those used by the Windows MCE remotes (which is
-  * really just RC-6), but only one or the other at a time, as the signals
-  * are decoded onboard the receiver.
-+ *
-+ * This function gets called two different ways, one way is from
-+ * rc_register_device, for initial protocol selection/setup, and the other is
-+ * via a userspace-initiated protocol change request, either by direct sysfs
-+ * prodding or by something like ir-keytable. In the rc_register_device case,
-+ * the imon context lock is already held, but when initiated from userspace,
-+ * it is not, so we must acquire it prior to calling send_packet, which
-+ * requires that the lock is held.
-  */
- static int imon_ir_change_protocol(struct rc_dev *rc, u64 rc_type)
- {
- 	int retval;
- 	struct imon_context *ictx = rc->priv;
- 	struct device *dev = ictx->dev;
-+	bool unlock = false;
- 	unsigned char ir_proto_packet[] = {
- 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x86 };
+ 	int start_part;
+ 	int end_part;
+ 	int part_nr;
++	unsigned int end;
+ 	struct flex_array_part *part;
  
-@@ -1020,6 +1030,11 @@ static int imon_ir_change_protocol(struc
- 
- 	memcpy(ictx->usb_tx_buf, &ir_proto_packet, sizeof(ir_proto_packet));
- 
-+	if (!mutex_is_locked(&ictx->lock)) {
-+		unlock = true;
-+		mutex_lock(&ictx->lock);
-+	}
++	end = start + nr_elements - 1;
 +
- 	retval = send_packet(ictx);
- 	if (retval)
+ 	if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
+ 		return -ENOSPC;
+ 	if (elements_fit_in_base(fa))
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -497,7 +497,7 @@ static int policydb_index(struct policyd
  		goto out;
-@@ -1028,6 +1043,9 @@ static int imon_ir_change_protocol(struc
- 	ictx->pad_mouse = false;
  
- out:
-+	if (unlock)
-+		mutex_unlock(&ictx->lock);
-+
- 	return retval;
- }
+ 	rc = flex_array_prealloc(p->type_val_to_struct_array, 0,
+-				 p->p_types.nprim - 1, GFP_KERNEL | __GFP_ZERO);
++				 p->p_types.nprim, GFP_KERNEL | __GFP_ZERO);
+ 	if (rc)
+ 		goto out;
  
-@@ -2125,6 +2143,7 @@ static struct imon_context *imon_init_in
- 		goto rdev_setup_failed;
- 	}
+@@ -514,7 +514,7 @@ static int policydb_index(struct policyd
+ 			goto out;
  
-+	mutex_unlock(&ictx->lock);
- 	return ictx;
+ 		rc = flex_array_prealloc(p->sym_val_to_name[i],
+-					 0, p->symtab[i].nprim - 1,
++					 0, p->symtab[i].nprim,
+ 					 GFP_KERNEL | __GFP_ZERO);
+ 		if (rc)
+ 			goto out;
+@@ -2286,7 +2286,7 @@ int policydb_read(struct policydb *p, vo
+ 		goto bad;
  
- rdev_setup_failed:
-@@ -2196,6 +2215,7 @@ static struct imon_context *imon_init_in
- 		goto urb_submit_failed;
- 	}
- 
-+	mutex_unlock(&ictx->lock);
- 	return ictx;
- 
- urb_submit_failed:
-@@ -2290,6 +2310,8 @@ static int __devinit imon_probe(struct u
- 	usb_set_intfdata(interface, ictx);
- 
- 	if (ifnum == 0) {
-+		mutex_lock(&ictx->lock);
-+
- 		if (product == 0xffdc && ictx->rf_device) {
- 			sysfs_err = sysfs_create_group(&interface->dev.kobj,
- 						       &imon_rf_attr_group);
-@@ -2300,13 +2322,14 @@ static int __devinit imon_probe(struct u
- 
- 		if (ictx->display_supported)
- 			imon_init_display(ictx, interface);
-+
-+		mutex_unlock(&ictx->lock);
- 	}
- 
- 	dev_info(dev, "iMON device (%04x:%04x, intf%d) on "
- 		 "usb<%d:%d> initialized\n", vendor, product, ifnum,
- 		 usbdev->bus->busnum, usbdev->devnum);
- 
--	mutex_unlock(&ictx->lock);
- 	mutex_unlock(&driver_lock);
- 
- 	return 0;
+ 	/* preallocate so we don't have to worry about the put ever failing */
+-	rc = flex_array_prealloc(p->type_attr_map_array, 0, p->p_types.nprim - 1,
++	rc = flex_array_prealloc(p->type_attr_map_array, 0, p->p_types.nprim,
+ 				 GFP_KERNEL | __GFP_ZERO);
+ 	if (rc)
+ 		goto bad;
 
 
