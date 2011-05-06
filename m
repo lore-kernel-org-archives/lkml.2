@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab1EFAgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:36:36 -0400
-Received: from kroah.org ([198.145.64.141]:37455 "EHLO coco.kroah.org"
+	id S932628Ab1EFAgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:36:23 -0400
+Received: from kroah.org ([198.145.64.141]:37465 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932545Ab1EFA1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:27:17 -0400
+	id S932573Ab1EFA1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:27:18 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:07 2011
-Message-Id: <20110506002607.502775716@clark.kroah.org>
+Message-Id: <20110506002607.594430894@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:25:23 -0700
+Date: Thu, 05 May 2011 17:25:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Liu Yuan <tailai.ly@taobao.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [02/43] block, blk-sysfs: Fix an err return path in blk_register_queue()
+        Christian Lamparter <chunkeey@googlemail.com>,
+        Jason Conti <jason.conti@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [03/43] p54: Initialize extra_len in p54_tx_80211
 In-Reply-To: <20110506002625.GA20426@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Yuan <tailai.ly@taobao.com>
+From: Jason Conti <jason.conti@gmail.com>
 
-commit ed5302d3c25006a9edc7a7fbea97a30483f89ef7 upstream.
+commit a6756da9eace8b4af73e9dea43f1fc2889224c94 upstream.
 
-We do not call blk_trace_remove_sysfs() in err return path
-if kobject_add() fails. This path fixes it.
+This patch fixes a very serious off-by-one bug in
+the driver, which could leave the device in an
+unresponsive state.
 
-Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+The problem was that the extra_len variable [used to
+reserve extra scratch buffer space for the firmware]
+was left uninitialized. Because p54_assign_address
+later needs the value to reserve additional space,
+the resulting frame could be to big for the small
+device's memory window and everything would
+immediately come to a grinding halt.
+
+Reference: https://bugs.launchpad.net/bugs/722185
+
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: Jason Conti <jason.conti@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-sysfs.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/p54/txrx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -473,8 +473,10 @@ int blk_register_queue(struct gendisk *d
- 		return ret;
- 
- 	ret = kobject_add(&q->kobj, kobject_get(&dev->kobj), "%s", "queue");
--	if (ret < 0)
-+	if (ret < 0) {
-+		blk_trace_remove_sysfs(dev);
- 		return ret;
-+	}
- 
- 	kobject_uevent(&q->kobj, KOBJ_ADD);
- 
+--- a/drivers/net/wireless/p54/txrx.c
++++ b/drivers/net/wireless/p54/txrx.c
+@@ -703,7 +703,7 @@ int p54_tx_80211(struct ieee80211_hw *de
+ 	struct p54_tx_info *p54info;
+ 	struct p54_hdr *hdr;
+ 	struct p54_tx_data *txhdr;
+-	unsigned int padding, len, extra_len;
++	unsigned int padding, len, extra_len = 0;
+ 	int i, j, ridx;
+ 	u16 hdr_flags = 0, aid = 0;
+ 	u8 rate, queue = 0, crypt_offset = 0;
 
 
