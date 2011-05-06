@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab1EFVT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 17:19:28 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:43471 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab1EFVT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 17:19:28 -0400
-Date: Fri, 6 May 2011 23:19:25 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, arnd@arndb.de
-Subject: Re: Remove last BKL leftover: lock_depth
-Message-ID: <20110506211925.GA20111@one.firstfloor.org>
-References: <1304715928-19266-1-git-send-email-andi@firstfloor.org> <20110506141114.10795803.akpm@linux-foundation.org>
-Mime-Version: 1.0
+	id S932799Ab1EFVYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 17:24:06 -0400
+Received: from kroah.org ([198.145.64.141]:54594 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756747Ab1EFVYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 17:24:05 -0400
+Date: Fri, 6 May 2011 14:22:07 -0700
+From: Greg KH <greg@kroah.com>
+To: "Javier M. Mellid" <jmunhoz@igalia.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
+Message-ID: <20110506212207.GA3222@kroah.com>
+References: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110506141114.10795803.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 02:11:14PM -0700, Andrew Morton wrote:
-> On Fri,  6 May 2011 14:05:24 -0700
-> Andi Kleen <andi@firstfloor.org> wrote:
+On Fri, May 06, 2011 at 07:24:56PM +0200, Javier M. Mellid wrote:
+> This patch implements dynamic framebuffer mode setting.
 > 
-> > I noticed the BKL task->lock_depth field was there with various users.
-> > But they all don't need it anymore because the BKL is gone.
-> > Fix up all the users and then finally remove the field.
-> > 
-> > This patchkit only removes code.
+> Previous code works with mode setting in a hard code way. Previous hard
+> code configuration is used as default configuration if dynamic mode
+> setting or boot mode setting (via sm712vga_setup) is not used.
 > 
-> Patches in Ingo's tree from Jon Corbet have done this removal.
+> Tested with SM712 supporting 1024x600x16 as default hardware resolution.
+> 
+> Changes:
+> 
+> - Implement fb_check_var and fb_set_par callbacks
+> - Remove __maybe_unused decorator in function being used (sm712vga_setup)
+> - Minor cleanup on initialization structs related with mode settings
+> - Updated author copyright
+> - Updated TODO file
+> 
+> Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
+> ---
+>  drivers/staging/sm7xx/TODO     |    1 -
 
-Ok thanks.  I was wondering why noone had done it.
+This applies with fuzz, this leads me to believe that you didn't test
+this on the latest linux-next tree, right?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+What did you make this patch against?
+
+thanks,
+
+greg k-h
