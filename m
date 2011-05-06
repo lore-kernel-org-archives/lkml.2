@@ -1,116 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab1EFHmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 03:42:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51032 "EHLO mx1.suse.de"
+	id S1754489Ab1EFHmz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 03:42:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15454 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754041Ab1EFHma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 03:42:30 -0400
-Date: Fri, 6 May 2011 08:42:24 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
-        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
+	id S1754155Ab1EFHmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 03:42:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,325,1301900400"; 
+   d="scan'208";a="743206219"
+Subject: Re: [PATCH] perf events, x86: Add SandyBridge
+ stalled-cycles-frontend/backend events
+From: Lin Ming <ming.m.lin@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-Message-ID: <20110506074224.GB6591@suse.de>
-References: <1304009778.2598.10.camel@mulgrave.site>
- <20110428171826.GZ4658@suse.de>
- <1304015436.2598.19.camel@mulgrave.site>
- <20110428192104.GA4658@suse.de>
- <1304020767.2598.21.camel@mulgrave.site>
- <1304025145.2598.24.camel@mulgrave.site>
- <1304030629.2598.42.camel@mulgrave.site>
- <20110503091320.GA4542@novell.com>
- <1304431982.2576.5.camel@mulgrave.site>
- <1304432553.2576.10.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1304432553.2576.10.camel@mulgrave.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Mike Galbraith <efault@gmx.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20110506073832.GG23166@elte.hu>
+References: <1304666042-17577-1-git-send-email-ming.m.lin@intel.com>
+	 <20110506073832.GG23166@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 May 2011 15:43:41 +0800
+Message-ID: <1304667821.3924.284.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 03, 2011 at 09:22:33AM -0500, James Bottomley wrote:
-> On Tue, 2011-05-03 at 09:13 -0500, James Bottomley wrote:
-> > I've got a ftrace output of kswapd ... it's 500k compressed, so I'll
-> > send under separate cover.
+On Fri, 2011-05-06 at 15:38 +0800, Ingo Molnar wrote:
+> * Lin Ming <ming.m.lin@intel.com> wrote:
 > 
-> Here it is ... it's under 2.6.38.4 vanilla, but the code is similar. 
+> > Extend the Intel SandyBridge PMU driver with definitions
+> > for generic front-end and back-end stall events.
+> > 
+> > ( As commit 3011203 says, these are only approximations. )
+> > 
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> > index c1ec7a5..61cbf48 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> > @@ -1485,6 +1485,12 @@ static __init int intel_pmu_init(void)
+> >  
+> >  		x86_pmu.event_constraints = intel_snb_event_constraints;
+> >  		x86_pmu.pebs_constraints = intel_snb_pebs_events;
+> > +
+> > +		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+> > +		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
+> > +		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
+> > +		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x18001b1;
+> > +
 > 
+> Nice!
+> 
+> Could you check Intel Atom perhaps as well, does it have any useful event to 
+> approximate this?
 
-I was quiet because I was off trying to reproduce this but not having
-much luck. It doesn't seem directly related to filesystems or
-cgroups. For example, here is what I see with ext4 without cgroups
+OK, let me check.
 
-                2.6.34-vanilla    2.6.37-vanilla    2.6.38-vanilla       rc6-vanilla
-download tar           70 ( 0.00%)   68 ( 2.94%)   69 ( 1.45%)   70 ( 0.00%)
-unpack tar            601 ( 0.00%)  605 (-0.66%)  604 (-0.50%)  605 (-0.66%)
-copy source files     319 ( 0.00%)  321 (-0.62%)  320 (-0.31%)  332 (-3.92%)
-create tarfile       1368 ( 0.00%) 1372 (-0.29%) 1371 (-0.22%) 1363 ( 0.37%)
-delete source dirs     21 ( 0.00%)   21 ( 0.00%)   23 (-8.70%)   22 (-4.55%)
-expand tar            263 ( 0.00%)  261 ( 0.77%)  257 ( 2.33%)  259 ( 1.54%)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-(all results are in seconds)
 
-When running in cgroups, the results are similar - bit slower but
-not remarkably so. ext3 is slower but not enough to count as the bug.
-
-The trace you posted is very short but kswapd is not going to sleep
-in it. It's less than a seconds worth on different cpus so it's hard
-to draw any conclusion from it other than sleeping_prematurely()
-is often deciding that kswapd should not sleep.
-
-So lets consider what keeps it awake.
-
-1. High-order allocations? You machine is using i915 and RPC, something
-   neither of my test machine uses. i915 is potentially a source for
-   high-order allocations. I'm attaching a perl script. Please run it as
-   ./watch-highorder.pl --output /tmp/highorders.txt
-   while you are running tar. When kswapd is running for about 30
-   seconds, interrupt it with ctrl+c twice in quick succession and
-   post /tmp/highorders.txt
-
-2. All unreclaimable is not being set or we are not balancing at all.
-   Can you post the output of sysrq+m while the machine is struggling
-   please?
-
-3. Slab may not be shrinking for some reason. Can you run a shell
-   script like this during the whole test and record its output please?
-
-   #!/bin/bash
-   while [ 1 ]; do
-	   echo time: `date +%s`
-	   cat /proc/vmstat
-	   sleep 2
-   done
-
-   Similarly if this is a slab issue, it'd be nice to know who it is so
-
-   #!/bin/bash
-   while [ 1 ]; do
-	   echo time: `date +%s`
-	   cat /proc/slabinfo
-	   sleep $MONITOR_UPDATE_FREQUENCY
-   done
-
-4. Lets get a better look at what is going on in kswapd
-
-   echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
-   cat /sys/kernel/debug/tracing/trace_pipe > vmscan-ftrace.txt
-
-Out of curiousity, what's the exact machine you are testing on
-because I want to see what sort of hardware combination triggers
-this problem? Is the tar local or is it copied over NFS? What is the
-configuration of the disk or partition you are copying to?
-
-Thanks
-
--- 
-Mel Gorman
-SUSE Labs
