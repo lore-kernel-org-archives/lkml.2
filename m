@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab1EFA3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:29:36 -0400
-Received: from kroah.org ([198.145.64.141]:37658 "EHLO coco.kroah.org"
+	id S932778Ab1EFA3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:29:20 -0400
+Received: from kroah.org ([198.145.64.141]:37659 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932745Ab1EFA1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:27:48 -0400
+	id S932723Ab1EFA1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:27:49 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:26:10 2011
-Message-Id: <20110506002610.769666521@clark.kroah.org>
+Message-Id: <20110506002610.865355616@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:25:57 -0700
+Date: Thu, 05 May 2011 17:25:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jim Bos <jim876@xs4all.nl>, Andi Kleen <andi@firstfloor.org>,
+        Jim Bos <jim876@xs4all.nl>, Jakub Jelinek <jakub@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
         Andreas Schwab <schwab@linux-m68k.org>
-Subject: [36/43] i8k: Tell gcc that *regs gets clobbered
+Subject: [37/43] Fix gcc 4.5.1 miscompiling drivers/char/i8k.c (again)
 In-Reply-To: <20110506002625.GA20426@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Bos <jim876@xs4all.nl>
 
-commit 6b4e81db2552bad04100e7d5ddeed7e848f53b48 upstream.
+commit 22d3243de86bc92d874abb7c5b185d5c47aba323 upstream.
 
-More recent GCC caused the i8k driver to stop working, on Slackware
-compiler was upgraded from gcc-4.4.4 to gcc-4.5.1 after which it didn't
-work anymore, meaning the driver didn't load or gave total nonsensical
-output.
+The fix in commit 6b4e81db2552 ("i8k: Tell gcc that *regs gets
+clobbered") to work around the gcc miscompiling i8k.c to add "+m
+(*regs)" caused register pressure problems and a build failure.
 
-As it turned out the asm(..) statement forgot to mention it modifies the
-*regs variable.
+Changing the 'asm' statement to 'asm volatile' instead should prevent
+that and works around the gcc bug as well, so we can remove the "+m".
 
-Credits to Andi Kleen and Andreas Schwab for providing the fix.
+[ Background on the gcc bug: a memory clobber fails to mark the function
+  the asm resides in as non-pure (aka "__attribute__((const))"), so if
+  the function does nothing else that triggers the non-pure logic, gcc
+  will think that that function has no side effects at all. As a result,
+  callers will be mis-compiled.
+
+  Adding the "+m" made gcc see that it's not a pure function, and so
+  does "asm volatile". The problem was never really the need to mark
+  "*regs" as changed, since the memory clobber did that part - the
+  problem was just a bug in the gcc "pure" function analysis  - Linus ]
 
 Signed-off-by: Jim Bos <jim876@xs4all.nl>
+Acked-by: Jakub Jelinek <jakub@redhat.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Andreas Schwab <schwab@linux-m68k.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/i8k.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/char/i8k.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 --- a/drivers/char/i8k.c
 +++ b/drivers/char/i8k.c
-@@ -141,7 +141,7 @@ static int i8k_smm(struct smm_regs *regs
+@@ -119,7 +119,7 @@ static int i8k_smm(struct smm_regs *regs
+ 	int eax = regs->eax;
+ 
+ #if defined(CONFIG_X86_64)
+-	asm("pushq %%rax\n\t"
++	asm volatile("pushq %%rax\n\t"
+ 		"movl 0(%%rax),%%edx\n\t"
+ 		"pushq %%rdx\n\t"
+ 		"movl 4(%%rax),%%ebx\n\t"
+@@ -141,11 +141,11 @@ static int i8k_smm(struct smm_regs *regs
  		"lahf\n\t"
  		"shrl $8,%%eax\n\t"
  		"andl $1,%%eax\n"
--		:"=a"(rc)
-+		:"=a"(rc), "+m" (*regs)
+-		:"=a"(rc), "+m" (*regs)
++		:"=a"(rc)
  		:    "a"(regs)
  		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
  #else
-@@ -166,7 +166,8 @@ static int i8k_smm(struct smm_regs *regs
- 	    "movl %%edx,0(%%eax)\n\t"
+-	asm("pushl %%eax\n\t"
++	asm volatile("pushl %%eax\n\t"
+ 	    "movl 0(%%eax),%%edx\n\t"
+ 	    "push %%edx\n\t"
+ 	    "movl 4(%%eax),%%ebx\n\t"
+@@ -167,7 +167,7 @@ static int i8k_smm(struct smm_regs *regs
  	    "lahf\n\t"
  	    "shrl $8,%%eax\n\t"
--	    "andl $1,%%eax\n":"=a"(rc)
-+	    "andl $1,%%eax\n"
-+	    :"=a"(rc), "+m" (*regs)
+ 	    "andl $1,%%eax\n"
+-	    :"=a"(rc), "+m" (*regs)
++	    :"=a"(rc)
  	    :    "a"(regs)
  	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
  #endif
