@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829Ab1EFAwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:52:30 -0400
-Received: from kroah.org ([198.145.64.141]:36839 "EHLO coco.kroah.org"
+	id S932301Ab1EFAw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:52:28 -0400
+Received: from kroah.org ([198.145.64.141]:36850 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932286Ab1EFAZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932288Ab1EFAZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 May 2011 20:25:04 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:11 2011
-Message-Id: <20110506002211.717388562@clark.kroah.org>
+Message-Id: <20110506002211.824512687@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:51 -0700
+Date: Thu, 05 May 2011 17:20:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Abhi Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [066/143] GFS2: Fix writing to non-page aligned gfs2_quota structures
+Subject: [067/143] GFS2: BUG in gfs2_adjust_quota
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,129 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Abhijith Das <adas@redhat.com>
 
-commit 7e619bc3e6252dc746f64ac3b486e784822e9533 upstream.
+commit 8b4216018bdbfbb1b76150d202b15ee68c38e991 upstream.
 
-This is the upstream fix for this bug. This patch differs
-from the RHEL5 fix (Red Hat bz #555754) which simply writes to the 8-byte
-value field of the quota. In upstream quota code, we're
-required to write the entire quota (88 bytes) which can be split
-across a page boundary. We check for such quotas, and read/write
-the two parts from/to the corresponding pages holding these parts.
-
-With this patch, I don't see the bug anymore using the reproducer
-in Red Hat bz 555754. I successfully ran a couple of simple tests/mounts/
-umounts and it doesn't seem like this patch breaks anything else.
+HighMem pages on i686 do not get mapped to the buffer_heads and this was
+causing a NULL pointer dereference when we were trying to memset page buffers
+to zero.
+We now use zero_user() that kmaps the page and directly manipulates page data.
+This patch also fixes a boundary condition that was incorrect.
 
 Signed-off-by: Abhi Das <adas@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-[Backported to 2.6.32 by dann frazier <dannf@debian.org>]
+[Adjusted to apply to 2.6.32 by dann frazier <dannf@debian.org>]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/gfs2/quota.c |   62 +++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 48 insertions(+), 14 deletions(-)
+ fs/gfs2/quota.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
 --- a/fs/gfs2/quota.c
 +++ b/fs/gfs2/quota.c
-@@ -633,14 +633,29 @@ static int gfs2_adjust_quota(struct gfs2
- 	unsigned blocksize, iblock, pos;
- 	struct buffer_head *bh;
- 	struct page *page;
--	void *kaddr;
--	struct gfs2_quota *qp;
--	s64 value;
--	int err = -EIO;
-+	void *kaddr, *ptr;
-+	struct gfs2_quota q, *qp;
-+	int err, nbytes;
- 
- 	if (gfs2_is_stuffed(ip))
- 		gfs2_unstuff_dinode(ip, NULL);
--	
-+
-+	memset(&q, 0, sizeof(struct gfs2_quota));
-+	err = gfs2_internal_read(ip, NULL, (char *)&q, &loc, sizeof(q));
-+	if (err < 0)
-+		return err;
-+
-+	err = -EIO;
-+	qp = &q;
-+	qp->qu_value = be64_to_cpu(qp->qu_value);
-+	qp->qu_value += change;
-+	qp->qu_value = cpu_to_be64(qp->qu_value);
-+	qd->qd_qb.qb_value = qp->qu_value;
-+
-+	/* Write the quota into the quota file on disk */
-+	ptr = qp;
-+	nbytes = sizeof(struct gfs2_quota);
-+get_a_page:
- 	page = grab_cache_page(mapping, index);
- 	if (!page)
- 		return -ENOMEM;
-@@ -662,7 +677,12 @@ static int gfs2_adjust_quota(struct gfs2
- 	if (!buffer_mapped(bh)) {
- 		gfs2_block_map(inode, iblock, bh, 1);
+@@ -679,10 +679,8 @@ get_a_page:
  		if (!buffer_mapped(bh))
--			goto unlock;
-+			goto unlock_out;
-+		/* If it's a newly allocated disk block for quota, zero it */
-+		if (buffer_new(bh)) {
-+			memset(bh->b_data, 0, bh->b_size);
-+			set_buffer_uptodate(bh);
-+		}
+ 			goto unlock_out;
+ 		/* If it's a newly allocated disk block for quota, zero it */
+-		if (buffer_new(bh)) {
+-			memset(bh->b_data, 0, bh->b_size);
+-			set_buffer_uptodate(bh);
+-		}
++		if (buffer_new(bh))
++			zero_user(page, pos - blocksize, bh->b_size);
  	}
  
  	if (PageUptodate(page))
-@@ -672,20 +692,32 @@ static int gfs2_adjust_quota(struct gfs2
- 		ll_rw_block(READ_META, 1, &bh);
- 		wait_on_buffer(bh);
- 		if (!buffer_uptodate(bh))
--			goto unlock;
-+			goto unlock_out;
- 	}
+@@ -708,7 +706,7 @@ get_a_page:
  
- 	gfs2_trans_add_bh(ip->i_gl, bh, 0);
- 
- 	kaddr = kmap_atomic(page, KM_USER0);
--	qp = kaddr + offset;
--	value = (s64)be64_to_cpu(qp->qu_value) + change;
--	qp->qu_value = cpu_to_be64(value);
--	qd->qd_qb.qb_value = qp->qu_value;
-+	if (offset + sizeof(struct gfs2_quota) > PAGE_CACHE_SIZE)
-+		nbytes = PAGE_CACHE_SIZE - offset;
-+	memcpy(kaddr + offset, ptr, nbytes);
- 	flush_dcache_page(page);
- 	kunmap_atomic(kaddr, KM_USER0);
-+	unlock_page(page);
-+	page_cache_release(page);
-+
-+	/* If quota straddles page boundary, we need to update the rest of the
-+	 * quota at the beginning of the next page */
-+	if (offset != 0) { /* first page, offset is closer to PAGE_CACHE_SIZE */
-+		ptr = ptr + nbytes;
-+		nbytes = sizeof(struct gfs2_quota) - nbytes;
-+		offset = 0;
-+		index++;
-+		goto get_a_page;
-+	}
- 	err = 0;
--unlock:
-+	return err;
-+unlock_out:
- 	unlock_page(page);
- 	page_cache_release(page);
- 	return err;
-@@ -748,8 +780,10 @@ static int do_sync(unsigned int num_qd,
- 	 * rgrp since it won't be allocated during the transaction
- 	 */
- 	al->al_requested = 1;
--	/* +1 in the end for block requested above for unstuffing */
--	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 1;
-+	/* +3 in the end for unstuffing block, inode size update block
-+	 * and another block in case quota straddles page boundary and
-+	 * two blocks need to be updated instead of 1 */
-+	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 3;
- 
- 	if (nalloc)
- 		al->al_requested += nalloc * (data_blocks + ind_blocks);		
+ 	/* If quota straddles page boundary, we need to update the rest of the
+ 	 * quota at the beginning of the next page */
+-	if (offset != 0) { /* first page, offset is closer to PAGE_CACHE_SIZE */
++	if ((offset + sizeof(struct gfs2_quota)) > PAGE_CACHE_SIZE) {
+ 		ptr = ptr + nbytes;
+ 		nbytes = sizeof(struct gfs2_quota) - nbytes;
+ 		offset = 0;
 
 
