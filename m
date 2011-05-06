@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1EFAN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:13:29 -0400
-Received: from kroah.org ([198.145.64.141]:32878 "EHLO coco.kroah.org"
+	id S1755029Ab1EFARk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:17:40 -0400
+Received: from kroah.org ([198.145.64.141]:32881 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553Ab1EFAN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:13:27 -0400
+	id S1754712Ab1EFAN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:13:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:12:09 2011
-Message-Id: <20110506001209.259032288@clark.kroah.org>
+Message-Id: <20110506001209.366740079@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:10:52 -0700
+Date: Thu, 05 May 2011 17:10:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [patch 20/38] USB: fix regression in usbip by setting has_tt flag
+        Benjamin Buchalter <bj@mhlabs.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [patch 21/38] firewire: Fix for broken configrom updates in quick succession
 In-Reply-To: <20110506001225.GA10547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: B.J. Buchalter <bj@mhlabs.com>
 
-commit cee6a262550f53a13acfefbc1e3e5ff35c96182c upstream.
+commit 2e053a27d9d5ad5e0831e002cbf8043836fb2060 upstream.
 
-This patch (as1460) fixes a regression in the usbip driver caused by
-the new check for Transaction Translators in USB-2 hubs.  The root hub
-registered by vhci_hcd needs to have the has_tt flag set, because it
-can connect to low- and full-speed devices as well as high-speed
-devices.
+Current implementation of ohci_set_config_rom() uses a deferred
+bus reset via fw_schedule_bus_reset(). If clients add multiple
+unit descriptors to the config_rom in quick succession, the
+deferred bus reset may not have fired before succeeding update
+requests have come in. This can lead to an incorrect partial
+update of the config_rom for both addition and removal of
+config_rom descriptors, as the ohci_set_config_rom() routine
+will return -EBUSY if a previous pending update has not been
+completed yet; the requested update just gets dropped on the floor.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+This patch recognizes that the "in-flight" update can be modified
+until it has been processed by the bus-reset, and the locking
+in the bus_reset_tasklet ensures that the update is done atomically
+with respect to modifications made by ohci_set_config_rom(). The
+-EBUSY error case is simply removed.
+
+[Stefan R:  The bug always existed at least theoretically.  But it
+became easy to trigger since 2.6.36 commit 02d37bed188c "firewire: core:
+integrate software-forced bus resets with bus management" which
+introduced long mandatory delays between janitorial bus resets.]
+
+Signed-off-by: Benjamin Buchalter <bj@mhlabs.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci_hcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firewire/ohci.c |   39 +++++++++++++++++++++++++--------------
+ 1 file changed, 25 insertions(+), 14 deletions(-)
 
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -1135,7 +1135,7 @@ static int vhci_hcd_probe(struct platfor
- 		usbip_uerr("create hcd failed\n");
- 		return -ENOMEM;
- 	}
--
-+	hcd->has_tt = 1;
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2163,7 +2163,6 @@ static int ohci_set_config_rom(struct fw
+ {
+ 	struct fw_ohci *ohci;
+ 	unsigned long flags;
+-	int ret = -EBUSY;
+ 	__be32 *next_config_rom;
+ 	dma_addr_t uninitialized_var(next_config_rom_bus);
  
- 	/* this is private data for vhci_hcd */
- 	the_controller = hcd_to_vhci(hcd);
+@@ -2204,22 +2203,37 @@ static int ohci_set_config_rom(struct fw
+ 
+ 	spin_lock_irqsave(&ohci->lock, flags);
+ 
++	/*
++	 * If there is not an already pending config_rom update,
++	 * push our new allocation into the ohci->next_config_rom
++	 * and then mark the local variable as null so that we
++	 * won't deallocate the new buffer.
++	 *
++	 * OTOH, if there is a pending config_rom update, just
++	 * use that buffer with the new config_rom data, and
++	 * let this routine free the unused DMA allocation.
++	 */
++
+ 	if (ohci->next_config_rom == NULL) {
+ 		ohci->next_config_rom = next_config_rom;
+ 		ohci->next_config_rom_bus = next_config_rom_bus;
++		next_config_rom = NULL;
++	}
+ 
+-		copy_config_rom(ohci->next_config_rom, config_rom, length);
++	copy_config_rom(ohci->next_config_rom, config_rom, length);
+ 
+-		ohci->next_header = config_rom[0];
+-		ohci->next_config_rom[0] = 0;
++	ohci->next_header = config_rom[0];
++	ohci->next_config_rom[0] = 0;
+ 
+-		reg_write(ohci, OHCI1394_ConfigROMmap,
+-			  ohci->next_config_rom_bus);
+-		ret = 0;
+-	}
++	reg_write(ohci, OHCI1394_ConfigROMmap, ohci->next_config_rom_bus);
+ 
+ 	spin_unlock_irqrestore(&ohci->lock, flags);
+ 
++	/* If we didn't use the DMA allocation, delete it. */
++	if (next_config_rom != NULL)
++		dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
++				  next_config_rom, next_config_rom_bus);
++
+ 	/*
+ 	 * Now initiate a bus reset to have the changes take
+ 	 * effect. We clean up the old config rom memory and DMA
+@@ -2227,13 +2241,10 @@ static int ohci_set_config_rom(struct fw
+ 	 * controller could need to access it before the bus reset
+ 	 * takes effect.
+ 	 */
+-	if (ret == 0)
+-		fw_schedule_bus_reset(&ohci->card, true, true);
+-	else
+-		dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
+-				  next_config_rom, next_config_rom_bus);
+ 
+-	return ret;
++	fw_schedule_bus_reset(&ohci->card, true, true);
++
++	return 0;
+ }
+ 
+ static void ohci_send_request(struct fw_card *card, struct fw_packet *packet)
 
 
