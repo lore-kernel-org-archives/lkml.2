@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1EFAw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 May 2011 20:52:28 -0400
-Received: from kroah.org ([198.145.64.141]:36850 "EHLO coco.kroah.org"
+	id S932826Ab1EFAwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 May 2011 20:52:08 -0400
+Received: from kroah.org ([198.145.64.141]:36894 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab1EFAZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 May 2011 20:25:04 -0400
+	id S1754248Ab1EFAZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 May 2011 20:25:05 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu May  5 17:22:11 2011
-Message-Id: <20110506002211.824512687@clark.kroah.org>
+Message-Id: <20110506002211.912837948@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 05 May 2011 17:20:52 -0700
+Date: Thu, 05 May 2011 17:20:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Abhi Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [067/143] GFS2: BUG in gfs2_adjust_quota
+        Andy Chittenden <andyc.bluearc@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [068/143] SUNRPC: fix NFS client over TCP hangs due to packet loss (Bug 16494)
 In-Reply-To: <20110506002311.GA15354@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Abhijith Das <adas@redhat.com>
+From: Andy Chittenden <andyc.bluearc@gmail.com>
 
-commit 8b4216018bdbfbb1b76150d202b15ee68c38e991 upstream.
+commit 669502ff31d7dba1849aec7ee2450a3c61f57d39 upstream.
 
-HighMem pages on i686 do not get mapped to the buffer_heads and this was
-causing a NULL pointer dereference when we were trying to memset page buffers
-to zero.
-We now use zero_user() that kmaps the page and directly manipulates page data.
-This patch also fixes a boundary condition that was incorrect.
+When reusing a TCP connection, ensure that it's aborted if a previous
+shutdown attempt has been made on that connection so that the RPC over
+TCP recovery mechanism succeeds.
 
-Signed-off-by: Abhi Das <adas@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-[Adjusted to apply to 2.6.32 by dann frazier <dannf@debian.org>]
+Signed-off-by: Andy Chittenden <andyc.bluearc@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/gfs2/quota.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ net/sunrpc/xprtsock.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -679,10 +679,8 @@ get_a_page:
- 		if (!buffer_mapped(bh))
- 			goto unlock_out;
- 		/* If it's a newly allocated disk block for quota, zero it */
--		if (buffer_new(bh)) {
--			memset(bh->b_data, 0, bh->b_size);
--			set_buffer_uptodate(bh);
--		}
-+		if (buffer_new(bh))
-+			zero_user(page, pos - blocksize, bh->b_size);
- 	}
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1343,10 +1343,11 @@ static void xs_tcp_state_change(struct s
+ 	if (!(xprt = xprt_from_sock(sk)))
+ 		goto out;
+ 	dprintk("RPC:       xs_tcp_state_change client %p...\n", xprt);
+-	dprintk("RPC:       state %x conn %d dead %d zapped %d\n",
++	dprintk("RPC:       state %x conn %d dead %d zapped %d sk_shutdown %d\n",
+ 			sk->sk_state, xprt_connected(xprt),
+ 			sock_flag(sk, SOCK_DEAD),
+-			sock_flag(sk, SOCK_ZAPPED));
++			sock_flag(sk, SOCK_ZAPPED),
++			sk->sk_shutdown);
  
- 	if (PageUptodate(page))
-@@ -708,7 +706,7 @@ get_a_page:
+ 	switch (sk->sk_state) {
+ 	case TCP_ESTABLISHED:
+@@ -1817,10 +1818,25 @@ static void xs_tcp_reuse_connection(stru
+ {
+ 	unsigned int state = transport->inet->sk_state;
  
- 	/* If quota straddles page boundary, we need to update the rest of the
- 	 * quota at the beginning of the next page */
--	if (offset != 0) { /* first page, offset is closer to PAGE_CACHE_SIZE */
-+	if ((offset + sizeof(struct gfs2_quota)) > PAGE_CACHE_SIZE) {
- 		ptr = ptr + nbytes;
- 		nbytes = sizeof(struct gfs2_quota) - nbytes;
- 		offset = 0;
+-	if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED)
+-		return;
+-	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT))
+-		return;
++	if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED) {
++		/* we don't need to abort the connection if the socket
++		 * hasn't undergone a shutdown
++		 */
++		if (transport->inet->sk_shutdown == 0)
++			return;
++		dprintk("RPC:       %s: TCP_CLOSEd and sk_shutdown set to %d\n",
++				__func__, transport->inet->sk_shutdown);
++	}
++	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT)) {
++		/* we don't need to abort the connection if the socket
++		 * hasn't undergone a shutdown
++		 */
++		if (transport->inet->sk_shutdown == 0)
++			return;
++		dprintk("RPC:       %s: ESTABLISHED/SYN_SENT "
++				"sk_shutdown set to %d\n",
++				__func__, transport->inet->sk_shutdown);
++	}
+ 	xs_abort_connection(xprt, transport);
+ }
+ 
 
 
