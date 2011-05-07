@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab1EGS51 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 14:57:27 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:52684 "EHLO
+	id S1756021Ab1EGS5W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 14:57:22 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:52682 "EHLO
 	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755991Ab1EGS5O (ORCPT
+	by vger.kernel.org with ESMTP id S1755983Ab1EGS5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 14:57:14 -0400
-Date: Sat, 7 May 2011 20:55:42 +0200
+	Sat, 7 May 2011 14:57:10 -0400
+Date: Sat, 7 May 2011 20:55:49 +0200
 From: Nicolas Kaiser <nikai@nikai.net>
-To: Chris Zankel <chris@zankel.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] xtensa: unbalanced parentheses
-Message-ID: <20110507205542.67bd6d33@absol.kitzblitz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] thp: unbalanced parenthesis
+Message-ID: <20110507205549.6bb0f49f@absol.kitzblitz>
 Organization: -
 Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
  AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
@@ -31,30 +31,21 @@ Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 ---
 Untested.
 
- arch/xtensa/variants/s6000/gpio.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/asm-generic/pgtable.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/xtensa/variants/s6000/gpio.c b/arch/xtensa/variants/s6000/gpio.c
-index 7af0757..50b02c2 100644
---- a/arch/xtensa/variants/s6000/gpio.c
-+++ b/arch/xtensa/variants/s6000/gpio.c
-@@ -164,7 +164,7 @@ static void demux_irqs(unsigned int irq, struct irq_desc *desc)
- 	int cirq;
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index b4bfe33..b80daee 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -88,7 +88,7 @@ static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
+ 	pmd_t pmd = *pmdp;
+ 	pmd_clear(mm, address, pmdp);
+ 	return pmd;
+-})
++}
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
  
- 	chip->irq_mask(&desc->irq_data);
--	chip->irq_ack(&desc->irq_data));
-+	chip->irq_ack(&desc->irq_data);
- 	pending = readb(S6_REG_GPIO + S6_GPIO_BANK(0) + S6_GPIO_MIS) & *mask;
- 	cirq = IRQ_BASE - 1;
- 	while (pending) {
-@@ -173,7 +173,7 @@ static void demux_irqs(unsigned int irq, struct irq_desc *desc)
- 		pending >>= n;
- 		generic_handle_irq(cirq);
- 	}
--	chip->irq_unmask(&desc->irq_data));
-+	chip->irq_unmask(&desc->irq_data);
- }
- 
- extern const signed char *platform_irq_mappings[XTENSA_NR_IRQS];
 -- 
 1.7.5.rc3
