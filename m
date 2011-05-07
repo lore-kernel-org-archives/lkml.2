@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab1EGPmY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 11:42:24 -0400
-Received: from kroah.org ([198.145.64.141]:40796 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755506Ab1EGPmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 11:42:11 -0400
-Date: Sat, 7 May 2011 08:43:07 -0700
-From: Greg KH <greg@kroah.com>
-To: Maxin John <maxin.john@gmail.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>, gregkh@suse.de,
-        stern@rowland.harvard.edu, m-sonasath@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        roger.quadros@nokia.com
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which
- is always true
-Message-ID: <20110507154307.GE23672@kroah.com>
-References: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
- <op.vuynsdh13l0zgt@mnazarewicz-glaptop>
- <BANLkTinxvtMUcFz9T7L1iq9pFUx8ocQnRQ@mail.gmail.com>
- <20110507010927.GA32142@kroah.com>
- <BANLkTikPgm7kpaoofVSkJCBXYyea4HeB8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikPgm7kpaoofVSkJCBXYyea4HeB8A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755730Ab1EGPyp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 11:54:45 -0400
+Received: from diomedes.noc.ntua.gr ([147.102.222.220]:59380 "EHLO
+	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab1EGPyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 11:54:44 -0400
+From: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, schwab@linux-m68k.org
+Subject: [RESEND PATCH 1/2] ppc: Fix compiler warning in ptrace.c [-Wno-array-bounds]
+Date: Sat,  7 May 2011 18:54:34 +0300
+Message-Id: <1304783674-3977-1-git-send-email-psomas@cslab.ece.ntua.gr>
+X-Mailer: git-send-email 1.7.5.rc3
+In-Reply-To: <m2oc3eh744.fsf@igel.home>
+References: <m2oc3eh744.fsf@igel.home>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (diomedes.noc.ntua.gr [147.102.222.220]); Sat, 07 May 2011 18:54:37 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 07, 2011 at 12:27:58PM +0300, Maxin John wrote:
-> Hi Greg,
-> 
-> >> Please find the patch for "file_storage.c" below. Should I merge these
-> >> two patches and re-submit as a single one?
-> >
-> > Yes please.
-> 
-> As per your suggestion, please find the merged patch below:
-> 
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-> Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+The trick used to bypass the thread_struct fpr array in order to access the
+struct fpscr, in arch/powerpc/kernel/ptrace.c, can trigger an "array subscript
+is above array bounds [-Werror=array-bounds]" warning.
 
-Ok, but you forgot a changelog entry and a good subject line.
+Add -Wno-array-bounds to CFLAGS_ptrace.o, in arch/powerpc/kernel/Makefile to
+slience this warning.
 
-Care to redo this in a format that I don't have to edit it in order to
-be able to apply it properly?
+Signed-off-by: Stratos Psomadakis <psomas@ece.ntua.gr>
+---
+ arch/powerpc/kernel/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-thanks,
+diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+index 3bb2a3e..92b1002 100644
+--- a/arch/powerpc/kernel/Makefile
++++ b/arch/powerpc/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
+ #
+ 
+-CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
++CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"' $(call cc-option, -Wno-array-bounds)
+ 
+ subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
+ 
+-- 
+1.5.6.5
 
-greg k-h
