@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab1EGDB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 23:01:26 -0400
-Received: from nm3.access.bullet.mail.mud.yahoo.com ([66.94.237.204]:44499
-	"HELO nm3.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753268Ab1EGDBZ (ORCPT
+	id S1754931Ab1EGDIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 23:08:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51046 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1EGDIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 23:01:25 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 May 2011 23:01:25 EDT
-X-Yahoo-Newman-Id: 495038.45530.bm@omp1025.access.mail.mud.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: uQELA.QVM1kpMrd6z8irBI0g.juW.VxdC.21Y15Rhz2PKi3
- G29nPO5X0pP9h9R017UdUxRD3IoDmf_P4_Km3dB4tJ71pxsgxH270U3Zw55t
- pwtYI.zDz7rIFtsiWW6IYOLes9azIrJW6aEZtoRKtU2KU29jP3gI5jJnk_mj
- 7iusfJ7uRXsXqPccVjEIMitcTJle8zj0OOOJX4c4RaHkoiy2bsP4_KoST_Xw
- bkhACMhW2oeNNWIu3ZYw.v3IAaQFKmmGQwAGX1u6oXwYTIP6qHNwoV9Hc4Up
- 0mj3UjLE5F_Ls1n4eUAlhGLuoRwhajoKH3OKg7j8Pi3l8zlMEvkKVI9yjD3L
- 4Y0.BmrDT_OdzGJx.VrvEioYBZJVYsA--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Kiran Patil <kiran.patil@intel.com>,
-        "Robert W. Love" <robert.w.love@intel.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Bart Van Assche <bvanassche@acm.org>, Hannes Reinecke <hare@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>, Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3/3] target: Fix bug with task_sg chained transport_free_dev_tasks release
-Date: Fri,  6 May 2011 19:54:58 -0700
-Message-Id: <1304736898-10830-4-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1304736898-10830-1-git-send-email-nab@linux-iscsi.org>
-References: <1304736898-10830-1-git-send-email-nab@linux-iscsi.org>
+	Fri, 6 May 2011 23:08:45 -0400
+Date: Fri, 6 May 2011 23:08:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: mcree@orcon.net.nz, linux-kernel@vger.kernel.org,
+        linux-alpha@vger.kernel.org, mattst88@gmail.com, rth@twiddle.net,
+        ink@jurassic.park.msu.ru
+Subject: Re: [PATCH] alpha: Add DMA_ERROR_CODE defn to avert compiler error
+ in drm
+Message-ID: <20110507030803.GA18069@dumpdata.com>
+References: <1304496817-7646-1-git-send-email-mcree@orcon.net.nz>
+ <20110506212708I.fujita.tomonori@lab.ntt.co.jp>
+ <20110506134925.GB5500@dumpdata.com>
+ <20110507090257L.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110507090257L.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4DC4B79E.0048:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Sat, May 07, 2011 at 09:05:50AM +0900, FUJITA Tomonori wrote:
+> On Fri, 6 May 2011 09:49:25 -0400
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+> > On Fri, May 06, 2011 at 09:30:03PM +0900, FUJITA Tomonori wrote:
+> > > On Wed,  4 May 2011 20:13:37 +1200
+> > > Michael Cree <mcree@orcon.net.nz> wrote:
+> > > 
+> > > > The radeon drm code now relies on DMA_ERROR_CODE.  This defines
+> > > > it in alpha dma-mapping header to at least enable me to compile
+> > > > radeon drm/kms into kernel.
+> > > > 
+> > > > Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+> > > > ---
+> > > >  arch/alpha/include/asm/dma-mapping.h |    2 ++
+> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > > 
+> > > This isn't correct. The drivers should not use DMA_ERROR_CODE directly
+> > > (some architecture specific drivers use it though). Fix rademon
+> > > drm/kms instead.
+> > 
+> > What would be a proper value for non-existent bus addresses? As in the value
+> > had not been set? 0?
+> 
+> Zero is a valid DMA address for some devices.
 
-This patch addresses a bug in the target core release path for HW
-operation where transport_free_dev_tasks() was incorrectly being called
-from transport_lun_remove_cmd() while releasing a se_cmd reference and
-calling struct target_core_fabric_ops->queue_data_in().
-
-This would result in a OOPs with HW target mode when the release of
-se_task->task_sg[] would happen before pci_unmap_sg() can be called in
-HW target mode fabric module code.  This patch addresses the issue by
-moving transport_free_dev_tasks() from transport_lun_remove_cmd() into
-transport_generic_free_cmd(), and adding TRANSPORT_FREE_CMD_INTR and
-transport_generic_free_cmd_intr() to allow se_cmd descriptor release
-to happen fromfrom within transport_processing_thread() process context
-when release of se_cmd is not possible from HW interrupt context.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_transport.c |   13 ++++++++++++-
- include/target/target_core_base.h      |    1 +
- include/target/target_core_transport.h |    1 +
- 3 files changed, 14 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index fefe10a..3eeb3e2 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -762,7 +762,6 @@ static void transport_lun_remove_cmd(struct se_cmd *cmd)
- 	transport_all_task_dev_remove_state(cmd);
- 	spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
- 
--	transport_free_dev_tasks(cmd);
- 
- check_lun:
- 	spin_lock_irqsave(&lun->lun_cmd_lock, flags);
-@@ -2058,6 +2057,13 @@ int transport_generic_handle_tmr(
- }
- EXPORT_SYMBOL(transport_generic_handle_tmr);
- 
-+void transport_generic_free_cmd_intr(
-+	struct se_cmd *cmd)
-+{
-+	transport_add_cmd_to_queue(cmd, TRANSPORT_FREE_CMD_INTR);
-+}
-+EXPORT_SYMBOL(transport_generic_free_cmd_intr);
-+
- static int transport_stop_tasks_for_cmd(struct se_cmd *cmd)
- {
- 	struct se_task *task, *task_tmp;
-@@ -5301,6 +5307,8 @@ void transport_generic_free_cmd(
- 		if (wait_for_tasks && cmd->transport_wait_for_tasks)
- 			cmd->transport_wait_for_tasks(cmd, 0, 0);
- 
-+		transport_free_dev_tasks(cmd);
-+
- 		transport_generic_remove(cmd, release_to_pool,
- 				session_reinstatement);
- 	}
-@@ -6136,6 +6144,9 @@ get_cmd:
- 		case TRANSPORT_REMOVE:
- 			transport_generic_remove(cmd, 1, 0);
- 			break;
-+		case TRANSPORT_FREE_CMD_INTR:
-+			transport_generic_free_cmd(cmd, 0, 1, 0);
-+			break;
- 		case TRANSPORT_PROCESS_TMR:
- 			transport_generic_do_tmr(cmd);
- 			break;
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 1d3b5b2..561ac99 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -98,6 +98,7 @@ enum transport_state_table {
- 	TRANSPORT_REMOVE	= 14,
- 	TRANSPORT_FREE		= 15,
- 	TRANSPORT_NEW_CMD_MAP	= 16,
-+	TRANSPORT_FREE_CMD_INTR = 17,
- };
- 
- /* Used for struct se_cmd->se_cmd_flags */
-diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
-index 59aa464..24a1c6c 100644
---- a/include/target/target_core_transport.h
-+++ b/include/target/target_core_transport.h
-@@ -172,6 +172,7 @@ extern int transport_generic_handle_cdb_map(struct se_cmd *);
- extern int transport_generic_handle_data(struct se_cmd *);
- extern void transport_new_cmd_failure(struct se_cmd *);
- extern int transport_generic_handle_tmr(struct se_cmd *);
-+extern void transport_generic_free_cmd_intr(struct se_cmd *);
- extern void __transport_stop_task_timer(struct se_task *, unsigned long *);
- extern unsigned char transport_asciihex_to_binaryhex(unsigned char val[2]);
- extern int transport_generic_map_mem_to_cmd(struct se_cmd *cmd, struct scatterlist *, u32,
--- 
-1.7.5.1
-
+Ok, so what is an invalid DMA address?
