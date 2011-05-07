@@ -1,179 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab1EGRf4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 13:35:56 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64152 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab1EGRfx convert rfc822-to-8bit (ORCPT
+	id S1755745Ab1EGRlg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 13:41:36 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:46413 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752832Ab1EGRle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 13:35:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GZcxZy2U/cPrjvUnZ0IqNq5OIquzY3af888hPfne/gtFXTvmZ2j8Pa8ytTcHG6vygi
-         5jMD39mhCntKRSBLscodcL0y9N8GVG33VxKzAPw4B+LjCBSHxgxVxFpg2KEsOzfMY1TQ
-         ePhS4kyyPCbAUg77zrlGenA0ZsvIKz91ODICs=
+	Sat, 7 May 2011 13:41:34 -0400
+To: infinipath@qlogic.com, linux-rdma@vger.kernel.org
+Subject: [PATCH 1/2] ipath: use pci_dev->revision, again
+Content-Disposition: inline
+Cc: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-kernel@vger.kernel.org
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Organization: MontaVista Software Inc.
+Date: Sat, 7 May 2011 21:39:37 +0400
 MIME-Version: 1.0
-In-Reply-To: <4DC5805C.2010202@hauke-m.de>
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
-	<4DC56FB9.5000208@hauke-m.de>
-	<BANLkTi=FfjK7obq0hj4TjYZc-GgzTuUC6g@mail.gmail.com>
-	<4DC57425.30206@hauke-m.de>
-	<BANLkTikTarvigU-xZNZikhLyvUWse448Tg@mail.gmail.com>
-	<4DC5805C.2010202@hauke-m.de>
-Date: Sat, 7 May 2011 19:35:52 +0200
-Message-ID: <BANLkTik1bZHk6+DqKpBdDOZW2=Sheia5kQ@mail.gmail.com>
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105072139.37992.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/7 Hauke Mehrtens <hauke@hauke-m.de>:
-> On 05/07/2011 06:51 PM, Rafał Miłecki wrote:
->> 2011/5/7 Hauke Mehrtens <hauke@hauke-m.de>:
->>> On 05/07/2011 06:23 PM, Rafał Miłecki wrote:
->>>> 2011/5/7 Hauke Mehrtens <hauke@hauke-m.de>:
->>>>> On 05/05/2011 11:59 PM, Rafał Miłecki wrote:
->>>>>> Cc: Greg KH <greg@kroah.com>
->>>>>> Cc: Michael Büsch <mb@bu3sch.de>
->>>>>> Cc: Larry Finger <Larry.Finger@lwfinger.net>
->>>>>> Cc: George Kashperko <george@znau.edu.ua>
->>>>>> Cc: Arend van Spriel <arend@broadcom.com>
->>>>>> Cc: linux-arm-kernel@lists.infradead.org
->>>>>> Cc: Russell King <rmk@arm.linux.org.uk>
->>>>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>>>> Cc: Andy Botting <andy@andybotting.com>
->>>>>> Cc: linuxdriverproject <devel@linuxdriverproject.org>
->>>>>> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
->>>>>> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
->>>>>> ---
->>>>>> V2: Rename to axi
->>>>>>     Use DEFINE_PCI_DEVICE_TABLE in bridge
->>>>>>     Make use of pr_fmt and pr_*
->>>>>>     Store core class
->>>>>>     Rename bridge to not b43 specific
->>>>>>     Replace magic 0x1000 with BCMAI_CORE_SIZE
->>>>>>     Remove some old "ssb" names and defines
->>>>>>     Move BCMAI_ADDR_BASE def
->>>>>>     Add drvdata field
->>>>>> V3: Fix reloading (kfree issue)
->>>>>>     Add 14e4:0x4331
->>>>>>     Fix non-initialized struct issue
->>>>>>     Drop useless inline functions wrappers for pci core drv
->>>>>>     Proper pr_* usage
->>>>>> V3.1: Include forgotten changes (pr_* and include related)
->>>>>>     Explain why we dare to implement empty release function
->>>>>> V4: Add ABI documentation
->>>>>>     Move struct device to wrapper and alloc it dynamically
->>>>>>     checkpatch.pl pointed fixes
->>>>>> V5: Rename to bcma, AXI was really bad name
->>>>>>     Use EXPORT_SYMBOL_GPL
->>>>>>     Set pci driver fields in one place
->>>>>>     Drop unlikely
->>>>>>     Use BCMA_CORE_SIZE for calc in awrite32
->>>>>>     Add README
->>>>>>     Fix compilation (delay.h)
->>>>>> ---
->>>>>>  Documentation/ABI/testing/sysfs-bus-bcma    |   31 ++
->>>>>>  drivers/Kconfig                             |    2 +
->>>>>>  drivers/Makefile                            |    1 +
->>>>>>  drivers/bcma/Kconfig                        |   33 +++
->>>>>>  drivers/bcma/Makefile                       |    7 +
->>>>>>  drivers/bcma/README                         |   18 ++
->>>>>>  drivers/bcma/TODO                           |    3 +
->>>>>>  drivers/bcma/bcma_private.h                 |   31 ++
->>>>>>  drivers/bcma/core.c                         |   51 ++++
->>>>>>  drivers/bcma/driver_chipcommon.c            |   87 ++++++
->>>>>>  drivers/bcma/driver_chipcommon_pmu.c        |  134 +++++++++
->>>>>>  drivers/bcma/driver_pci.c                   |  163 +++++++++++
->>>>>>  drivers/bcma/host_pci.c                     |  196 +++++++++++++
->>>>>>  drivers/bcma/main.c                         |  271 ++++++++++++++++++
->>>>>>  drivers/bcma/scan.c                         |  392 +++++++++++++++++++++++++++
->>>>>>  drivers/bcma/scan.h                         |   56 ++++
->>>>>>  include/linux/bcma/bcma.h                   |  232 ++++++++++++++++
->>>>>>  include/linux/bcma/bcma_driver_chipcommon.h |  297 ++++++++++++++++++++
->>>>>>  include/linux/bcma/bcma_driver_pci.h        |   89 ++++++
->>>>>>  include/linux/bcma/bcma_regs.h              |   34 +++
->>>>>>  include/linux/mod_devicetable.h             |   17 ++
->>>>>>  scripts/mod/file2alias.c                    |   22 ++
->>>>>>  22 files changed, 2167 insertions(+), 0 deletions(-)
->>>>>>  create mode 100644 Documentation/ABI/testing/sysfs-bus-bcma
->>>>>>  create mode 100644 drivers/bcma/Kconfig
->>>>>>  create mode 100644 drivers/bcma/Makefile
->>>>>>  create mode 100644 drivers/bcma/README
->>>>>>  create mode 100644 drivers/bcma/TODO
->>>>>>  create mode 100644 drivers/bcma/bcma_private.h
->>>>>>  create mode 100644 drivers/bcma/core.c
->>>>>>  create mode 100644 drivers/bcma/driver_chipcommon.c
->>>>>>  create mode 100644 drivers/bcma/driver_chipcommon_pmu.c
->>>>>>  create mode 100644 drivers/bcma/driver_pci.c
->>>>>>  create mode 100644 drivers/bcma/host_pci.c
->>>>>>  create mode 100644 drivers/bcma/main.c
->>>>>>  create mode 100644 drivers/bcma/scan.c
->>>>>>  create mode 100644 drivers/bcma/scan.h
->>>>>>  create mode 100644 include/linux/bcma/bcma.h
->>>>>>  create mode 100644 include/linux/bcma/bcma_driver_chipcommon.h
->>>>>>  create mode 100644 include/linux/bcma/bcma_driver_pci.h
->>>>>>  create mode 100644 include/linux/bcma/bcma_regs.h
->>>>>>
->>>>> Hi,
->>>>>
->>>>> An entry in the MAINTAINERS file would be nice to find the right
->>>>> addresses to send patches to.
->>>>
->>>> Will do, thanks. Should I put some ML for this driver?
->>>> netdev@vger.kernel.org? linux-wireless@vger.kernel.org? So far there
->>>> are no net drivers for BCMA. Probably b43 will be the first (or
->>>> brcm80211).
->>>>
->>> There is a Ethernet core used on embedded devices with this bus and
->>> George wrote a driver for the first version of this bus implementation,
->>> he send to the ML. Most user will use this with some wireless devices so
->>> I would add linux-wireless@vger.kernel.org. Why does ssb uses netdev ML?
->>
->> Thanks, I didn't know about this ethernet driver. Have to check it!
->> Where was this published? Do you have a thread name?
->
-> I think he haven't send it to the mailing list, there is a link [0] in
-> some Ticket [1] at OpenWrt. This driver was derived from source code
-> Braodcom have published, but not under a GPL compatible license. It will
-> be nice if Braodcom would allow us to publish a driver under the terms
-> of the GPL for the Ethernet core based on their driver, without writing
-> a full spec of the driver like it was done for b43.
+Commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all drivers to use
+pci_device->revision) already converted this driver to using the 'revision'
+field of 'struct pci_dev' but commit bb9171448deb1f7ece27674e2e431e4f267fd453
+(IB/ipath: Misc changes to prepare for IB7220 introduction) later reverted that
+change for some strange reason. Now restore the change...
 
-OK, I'll stay away from this driver for now (license).
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
+---
+The patch is against the recent Linus' tree.
 
->> I'm not sure if we want linux-wireless to be ML, if we already have
->> some Ethernet driver. Some network-general ML makes more sense then.
->> Maybe netdev would be better.
->
-> Some of the embedded devices also have a USB core on the BCMA bus and a
-> pci(e) host controller to connect other pci(e) devices. As most of the
-> patches for ssb came from the wireless guys and I do not thing this will
-> be different for bcma, I thing the wireless mailing list is the correct
-> place.
+ drivers/infiniband/hw/ipath/ipath_driver.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-Ups, yeah, you're right. I didn't think about USB, V90, PCI(e), etc...
-I think situations linux-wireless as most active or linux-kernel as
-most generic should be used. I think I'm fine with linux-wireless.
-
--- 
-Rafał
+Index: linux-2.6/drivers/infiniband/hw/ipath/ipath_driver.c
+===================================================================
+--- linux-2.6.orig/drivers/infiniband/hw/ipath/ipath_driver.c
++++ linux-2.6/drivers/infiniband/hw/ipath/ipath_driver.c
+@@ -398,7 +398,6 @@ static int __devinit ipath_init_one(stru
+ 	struct ipath_devdata *dd;
+ 	unsigned long long addr;
+ 	u32 bar0 = 0, bar1 = 0;
+-	u8 rev;
+ 
+ 	dd = ipath_alloc_devdata(pdev);
+ 	if (IS_ERR(dd)) {
+@@ -540,13 +539,7 @@ static int __devinit ipath_init_one(stru
+ 		goto bail_regions;
+ 	}
+ 
+-	ret = pci_read_config_byte(pdev, PCI_REVISION_ID, &rev);
+-	if (ret) {
+-		ipath_dev_err(dd, "Failed to read PCI revision ID unit "
+-			      "%u: err %d\n", dd->ipath_unit, -ret);
+-		goto bail_regions;	/* shouldn't ever happen */
+-	}
+-	dd->ipath_pcirev = rev;
++	dd->ipath_pcirev = pdev->revision;
+ 
+ #if defined(__powerpc__)
+ 	/* There isn't a generic way to specify writethrough mappings */
