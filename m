@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1EGUGV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 16:06:21 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46893 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756050Ab1EGUGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 16:06:20 -0400
-Subject: Re: [PATCH 7/7] ns: Wire up the setns system call
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linux Containers <containers@lists.osdl.org>,
-        Renato Westphal <renatowestphal@gmail.com>
-In-Reply-To: <1304735101-1824-7-git-send-email-ebiederm@xmission.com>
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
-	 <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
-	 <1304735101-1824-7-git-send-email-ebiederm@xmission.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 May 2011 15:06:15 -0500
-Message-ID: <1304798775.6123.18.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1756256Ab1EGUJA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 16:09:00 -0400
+Received: from kroah.org ([198.145.64.141]:38172 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756168Ab1EGUI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 16:08:58 -0400
+Date: Sat, 7 May 2011 13:09:48 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/4] drivers: create a pinmux subsystem
+Message-ID: <20110507200948.GB19753@kroah.com>
+References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 19:25 -0700, Eric W. Biederman wrote:
-> v2: Most of the architecture support added by Daniel Lezcano <dlezcano@fr.ibm.com>
-> v3: ported to v2.6.36-rc4 by: Eric W. Biederman <ebiederm@xmission.com>
-> v4: Moved wiring up of the system call to another patch
-> v5: ported to v2.6.39-rc6
+On Mon, May 02, 2011 at 09:16:26PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> This creates a subsystem for handling of pinmux devices. These are
+> devices that enable and disable groups of pins on primarily PGA and
+> BGA type of chip packages and common in embedded systems.
+> 
+> This is being done to depopulate the arch/arm/* directory of such
+> custom drivers and try to abstract the infrastructure they all
+> need. See the Documentation/pinmux.txt file that is part of this
+> patch for more details.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  Documentation/ABI/testing/sysfs-class-pinmux |   11 +
+>  Documentation/pinmux.txt                     |  306 +++++++++++
+>  MAINTAINERS                                  |    5 +
+>  drivers/Kconfig                              |    4 +
+>  drivers/Makefile                             |    2 +
+>  drivers/pinmux/Kconfig                       |   26 +
+>  drivers/pinmux/Makefile                      |    5 +
+>  drivers/pinmux/core.c                        |  740 ++++++++++++++++++++++++++
+>  include/linux/pinmux.h                       |  224 ++++++++
+>  9 files changed, 1323 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-class-pinmux
 
-We already have several syscalls queued up for parisc:
+As someone who constantly has to harp on adding documentation for sysfs
+files that are added to the kernel tree, it's nice to see this done
+correctly.
 
-http://git.kernel.org/?p=linux/kernel/git/jejb/parisc-2.6.git;a=shortlog;h=refs/heads/misc
+Good job,
 
-So if you could make this patch over them (or over linux-next), that
-would help the merge process.
-
-Thanks,
-
-James
-
-
+greg k-h
