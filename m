@@ -1,144 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1EGHC4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 03:02:56 -0400
-Received: from eriks.xs4all.nl ([83.160.41.216]:60107 "EHLO eriks.xs4all.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab1EGHCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 03:02:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=slagter.name; h=message-id
-	:date:from:mime-version:to:subject:references:in-reply-to
-	:content-type; q=dns; s=2007072601; b=TFVVRuiHzsqciQr6dOVvX1UGnc
-	QqO+hZ8X6kj1PA/Oo5JD9WpAlJdqS8meivMZ4GMwEEfOdG255ZJomJAuMlUTtQOQ
-	LEJli0IrOvP6GxKVKH3xkudqbuGkKvS235uHhhFNIe7h4cyL1kDVOLPfZhyPTI2k
-	Eg4bDhsjfKivtePXQ=
-Message-ID: <4DC4EE99.1090205@slagter.name>
-Date: Sat, 07 May 2011 09:02:49 +0200
-From: Erik Slagter <erik@slagter.name>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Mnenhy/0.8.3 Thunderbird/3.1.10 ThunderBrowse/3.3.5
+	id S1753895Ab1EGHIl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 03:08:41 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:34185 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab1EGHIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 03:08:39 -0400
+X-SENDER-IP: [85.230.169.19]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsI3ALLvxE1V5qkTPGdsb2JhbACmHQsBAQEBHhkNJYhxvFcOhX0ElBWCa4c+
+X-IronPort-AV: E=Sophos;i="4.64,330,1301868000"; 
+   d="scan'208";a="187700491"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sat, 7 May 2011 09:11:51 +0200
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC] time: xtime_lock is held too long
+Message-ID: <20110507071151.GA10901@polaris.bitmath.org>
+References: <1304574244.32152.666.camel@edumazet-laptop>
+ <1304576495.2943.40.camel@work-vm>
+ <1304604284.3032.78.camel@edumazet-laptop>
+ <alpine.LFD.2.02.1105051630390.3005@ionos>
+ <1304608095.3032.95.camel@edumazet-laptop>
+ <1304744552.2821.571.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: Maxin John <maxin.john@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: OOPS after connection Droids MuIn USB display
-References: <4DC3B0E3.7010008@slagter.name>	<4DC3D296.9060707@slagter.name>	<BANLkTimcWN3=qvurDzyMUs8f5+uFPNumaw@mail.gmail.com>	<4DC42897.3000300@slagter.name> <BANLkTinGydyuG58zwVG43VnDz845BOw1Tg@mail.gmail.com>
-In-Reply-To: <BANLkTinGydyuG58zwVG43VnDz845BOw1Tg@mail.gmail.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms090006000800080901060507"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304744552.2821.571.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+Hi Eric,
 
---------------ms090006000800080901060507
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+> > Defeating seqlock power? My thoughts are that seqlocks are nice
+> > lightweight reader/writer locks that avoid writer starvation. You seem
+> > to be trying to redefine or extend them to be something else which is
+> > more subtle. 
+> > 
+> 
+> All I am trying to explain is that a seqlock is a compound of two
+> things : One spinlock to synchronize writers among themselves, one
+> seqcount to synchronize readers with a writer.
+> 
+> But the API provides only a compound one. Writer uses the whole locking,
+> while it would be nice to be able to separate the two steps. Note that
+> because write_seqlock() and write_sequnlock() are inlined, this would
+> not increase text size.
 
-> Congratulations and thanks for explaining the details.
-
-And now my big question is, can this be fixed upstream? ;-)
+The separate writer and reader idea also came up in the input
+subsystem about a year ago, to adress the one-writer-many-readers
+situation. The patch went a few rounds on lkml
+(https://lkml.org/lkml/2010/6/20/87), but the final version included
+below got dropped because of an unrelated problem with the (evdev)
+usecase. Perhaps it is useful in this setting?
 
 Cheers,
-Erik.
+Henrik
 
+>From bd26d8972130978deb9056a7a6da30b5c049914f Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Fri, 25 Jun 2010 01:59:16 +0200
+Subject: [PATCH] Introduce mrbuf, a multi-reader buffer mechanism
 
---------------ms090006000800080901060507
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+In spite of the many lock patterns and fifo helpers in the kernel, the
+case of a single writer feeding many readers via a circular event
+buffer seems to be uncovered. This patch adds mrbuf, a mechanism
+for handling multiple concurrent read positions in a shared circular
+buffer.  Under normal operation, given adequate buffer size, the
+operation is lock-less.
+---
+ include/linux/mrbuf.h |  228 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 228 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/mrbuf.h
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPWDCC
-BIowggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UE
-BhMCU0UxFDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5h
-bCBUVFAgTmV0d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0w
-NTA2MDcwODA5MTBaFw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMC
-VVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5l
-dHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVRO
-LVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmFpPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVN
-NRm5pELlzkniii8efNIxB8dOtINknS4p1aJkxIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQy
-lbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2qL+usobNqqrcuZzWLeeEeaYji5kbNoKXq
-vgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAsvIKKjqQOpdeJQ/wWWq8dcdcRWdq6
-hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMeoYV+9Udly/hNVyh00jT/MLbu
-9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3+sQmVO8DveAky1QaMB0G
-A1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/
-BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9BZGRU
-cnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8ubmV0L0Fk
-ZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyispgCi
-54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
-g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHd
-WTBK322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftz
-Mizpm4QkLdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsy
-XEFs/vVdoOr/0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFYTCCBEmgAwIBAgIRAIg14yiGxBLB
-Nd3nEhie2VcwDQYJKoZIhvcNAQEFBQAwga4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJVVDEX
-MBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRoZSBVU0VSVFJVU1QgTmV0d29y
-azEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29tMTYwNAYDVQQDEy1VVE4tVVNF
-UkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1haWwwHhcNMTAxMDE5MDAwMDAw
-WhcNMTExMDE5MjM1OTU5WjBGMQswCQYDVQQGEwJOTDEVMBMGA1UEAxMMRXJpayBTbGFndGVy
-MSAwHgYJKoZIhvcNAQkBFhFlcmlrQHNsYWd0ZXIubmFtZTCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBANbriwH0w2kwn4b2BwVAtiZ0OkHIiwcscx1XIOzD/bp+Sv4tVdjc2bBF
-tXTyEpDzP5cLs5V3g1hTxI5V40lgmsiKrDMp8XR6fDwqv0cdoS3ABS/gvlxhwvbJaeR7tjkM
-Ni4ofKgEfSWi7hzFyijuwM/SrwJVlpTO7Xah+FKDLVh8FWUHRVxtnFuLaHcZR+4y0c0Zi2AE
-gp3CLZQzXCsu/Nsi+0fclP4lbhg+XgAgTKDI2WIm7JuQgMSgoevQ6HFggreTj03tUoKjD4l4
-JIoDb5tc/IutLhwXZTZsrdmW2SE29xhRWauNGs9DnJAcmpUJkXHGGL8cgmqWb1Mlh9JBaN8C
-AwEAAaOCAd8wggHbMB8GA1UdIwQYMBaAFImCZ33EnSZwAEu0UEh83j2uBG59MB0GA1UdDgQW
-BBTK4wFgfa4mmdF0XOGvj3dgyG8ePzAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAd
-BgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIB
-AwUwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwgaUGA1Ud
-HwSBnTCBmjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5jb20vVVROLVVTRVJGaXJzdC1D
-bGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDBKoEigRoZEaHR0cDovL2NybC5jb21v
-ZG8ubmV0L1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRFbWFpbC5jcmww
-bAYIKwYBBQUHAQEEYDBeMDYGCCsGAQUFBzAChipodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9V
-VE5BQUFDbGllbnRDQS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNv
-bTANBgkqhkiG9w0BAQUFAAOCAQEAALQg8UqA2KoLGSmq8SsJTddYzpglJrW3mcd55qDBKLBM
-J5klHPPWoqdV2dA9X0yV4WlaS/eQHfgmQCjvJ42HDNJW6YBw1MrPFPxXFJsbpY0OlIeLY5oh
-VZjuQeI3YfwOB1ZceU4QTkdF636Ljyz3D++PmSw6ww6mm8R8LX18JIYe6vhWZs93sSMQct3R
-2s9kGB94lCKbapyq9lBhT/swM51wWTmnrIxrmFzm0+fFnNu9QwoazTn7hwg7G0Tiv2Zqz+Ba
-x318aG+gZm1OnQQRPn1hiK5C6GiKrWu9/jTV3UaGePBGslkpopMdLrwQ43P/eHmJJGyXHBLx
-87J7yN8HMzCCBWEwggRJoAMCAQICEQCINeMohsQSwTXd5xIYntlXMA0GCSqGSIb3DQEBBQUA
-MIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5
-MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cu
-dXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIEVtYWlsMB4XDTEwMTAxOTAwMDAwMFoXDTExMTAxOTIzNTk1OVowRjELMAkG
-A1UEBhMCTkwxFTATBgNVBAMTDEVyaWsgU2xhZ3RlcjEgMB4GCSqGSIb3DQEJARYRZXJpa0Bz
-bGFndGVyLm5hbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDW64sB9MNpMJ+G
-9gcFQLYmdDpByIsHLHMdVyDsw/26fkr+LVXY3NmwRbV08hKQ8z+XC7OVd4NYU8SOVeNJYJrI
-iqwzKfF0enw8Kr9HHaEtwAUv4L5cYcL2yWnke7Y5DDYuKHyoBH0lou4cxcoo7sDP0q8CVZaU
-zu12ofhSgy1YfBVlB0VcbZxbi2h3GUfuMtHNGYtgBIKdwi2UM1wrLvzbIvtH3JT+JW4YPl4A
-IEygyNliJuybkIDEoKHr0OhxYIK3k49N7VKCow+JeCSKA2+bXPyLrS4cF2U2bK3ZltkhNvcY
-UVmrjRrPQ5yQHJqVCZFxxhi/HIJqlm9TJYfSQWjfAgMBAAGjggHfMIIB2zAfBgNVHSMEGDAW
-gBSJgmd9xJ0mcABLtFBIfN49rgRufTAdBgNVHQ4EFgQUyuMBYH2uJpnRdFzhr493YMhvHj8w
-DgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsG
-AQUFBwMCMEYGA1UdIAQ/MD0wOwYMKwYBBAGyMQECAQMFMCswKQYIKwYBBQUHAgEWHWh0dHBz
-Oi8vc2VjdXJlLmNvbW9kby5uZXQvQ1BTMIGlBgNVHR8EgZ0wgZowTKBKoEiGRmh0dHA6Ly9j
-cmwuY29tb2RvY2EuY29tL1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRF
-bWFpbC5jcmwwSqBIoEaGRGh0dHA6Ly9jcmwuY29tb2RvLm5ldC9VVE4tVVNFUkZpcnN0LUNs
-aWVudEF1dGhlbnRpY2F0aW9uYW5kRW1haWwuY3JsMGwGCCsGAQUFBwEBBGAwXjA2BggrBgEF
-BQcwAoYqaHR0cDovL2NydC5jb21vZG9jYS5jb20vVVROQUFBQ2xpZW50Q0EuY3J0MCQGCCsG
-AQUFBzABhhhodHRwOi8vb2NzcC5jb21vZG9jYS5jb20wDQYJKoZIhvcNAQEFBQADggEBAAC0
-IPFKgNiqCxkpqvErCU3XWM6YJSa1t5nHeeagwSiwTCeZJRzz1qKnVdnQPV9MleFpWkv3kB34
-JkAo7yeNhwzSVumAcNTKzxT8VxSbG6WNDpSHi2OaIVWY7kHiN2H8DgdWXHlOEE5HRet+i48s
-9w/vj5ksOsMOppvEfC19fCSGHur4VmbPd7EjEHLd0drPZBgfeJQim2qcqvZQYU/7MDOdcFk5
-p6yMa5hc5tPnxZzbvUMKGs05+4cIOxtE4r9mas/gWsd9fGhvoGZtTp0EET59YYiuQuhoiq1r
-vf401d1GhnjwRrJZKaKTHS68EONz/3h5iSRslxwS8fOye8jfBzMxggRgMIIEXAIBATCBxDCB
-rjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEe
-MBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVz
-ZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0
-aW9uIGFuZCBFbWFpbAIRAIg14yiGxBLBNd3nEhie2VcwCQYFKw4DAhoFAKCCAnAwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTEwNTA3MDcwMjQ5WjAjBgkq
-hkiG9w0BCQQxFgQUfrgB0v9j+pCtBRBQDkQ6ivZB+O0wXwYJKoZIhvcNAQkPMVIwUDALBglg
-hkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcG
-BSsOAwIHMA0GCCqGSIb3DQMCAgEoMIHVBgkrBgEEAYI3EAQxgccwgcQwga4xCzAJBgNVBAYT
-AlVTMQswCQYDVQQIEwJVVDEXMBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRo
-ZSBVU0VSVFJVU1QgTmV0d29yazEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29t
-MTYwNAYDVQQDEy1VVE4tVVNFUkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1h
-aWwCEQCINeMohsQSwTXd5xIYntlXMIHXBgsqhkiG9w0BCRACCzGBx6CBxDCBrjELMAkGA1UE
-BhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMV
-VGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5j
-b20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBF
-bWFpbAIRAIg14yiGxBLBNd3nEhie2VcwDQYJKoZIhvcNAQEBBQAEggEAGS2J98GU9ldzcI0+
-iWk/qwvf8msKE41kTadHKrGo453Cg51j+e6aMw/NQnhaMNQ8rJPwNGL/OuD5/OLJxvVXNF5H
-i5/x0tnufPnB6SGCXEl0P+yKo5FoBr/6kooGKJuw64rKWbvj2Qv8nqfPwZXhGW1QUU3gsfi3
-gP+3Sw9vJI91oi+sA1ECo9HzZu7gyFNlcTEAWIRVyPXmgOUNvRtGtf1qZ+TAqjftHLT0Y9yK
-iiysKCjgs5oYWnEfnjLY9xop67o54PqDavUL1nXz7nJf6wFEfoqzGxoDKLuKwivL1ONApvXc
-HWvckRmMStD1r5IJPG85hkk4Ua8OekRZMCxnqwAAAAAAAA==
---------------ms090006000800080901060507--
+diff --git a/include/linux/mrbuf.h b/include/linux/mrbuf.h
+new file mode 100644
+index 0000000..86ab656
+--- /dev/null
++++ b/include/linux/mrbuf.h
+@@ -0,0 +1,228 @@
++#ifndef _MRBUF_H
++#define _MRBUF_H
++/*
++ * Multi-reader buffer lock for single writer, concurrent readers
++ *
++ * Copyright (c) 2010 Henrik Rydberg
++ *
++ * The mrbuf is a mechanism for handling multiple concurrent read
++ * positions in a shared circular buffer. The mrbuf does not handle
++ * the actual buffer, which can therefore be of any type.
++ *
++ * The writer does not block, but overwrites older events as the
++ * buffer gets full. Writing is performed in two stages; writing the
++ * data and telling the readers about it (syncing).
++ *
++ * The readers all read from the same shared buffer, but at individual
++ * positions. Reading from the position currently being written to
++ * will cause the reader to retry until the read is coherent. During
++ * normal operation, with sufficient buffer size, the mechanism is
++ * practically lock-less.
++ *
++ * The mrbuf is particularly suitable for input event buffers, where
++ * the single writer must not be starved, and where there are several
++ * threads reading the same data.
++ *
++ * Multi-reader buffer locks are similar to seqlocks, but while
++ * seqlocks have a finite retry frequency, mrbufs virtually never
++ * retry. Like seqlocks, mrbufs are not very cache friendly, and
++ * require the buffer to be valid in all threads.
++ *
++ * Multiple writers and re-entrant readers require additional locking.
++ *
++ * Event queue writer example.  Readers are synchronized individually.
++ *
++ *    mrbuf_write_lock(&writer);
++ *
++ *    buffer[mrbuf_write_at(&writer)] = event_to_write;
++ *
++ *    mrbuf_write_unlock(&writer);
++ *
++ *    for (i = 0; i < NUM_READERS; i++)
++ *            mrbuf_write_sync(&writer, &client[i]->reader);
++ *
++ * Event queue reader example, reading all available events.
++ *
++ *    while (!mrbuf_read_empty(&reader)) {
++ *            do {
++ *                    mrbuf_read_try(&reader, &writer);
++ *                    event_to_read = buffer[mrbuf_read_at(&reader, &writer)];
++ *            } while (mrbuf_read_retry(&reader, &writer));
++ *    }
++ *
++ */
++
++/**
++ * struct mrbuf_writer - mrbuf writer
++ * @page: the bits of the circular buffer (page = size - 1)
++ * @head: the current writer head
++ * @next: the head to take effect after the lock
++ *
++ * The buffer size must be a power of two, such that page is the set
++ * of bits in which the buffer positions live.
++ *
++ */
++struct mrbuf_writer {
++	unsigned int page;
++	unsigned int head;
++	unsigned int next;
++};
++
++/**
++ * struct mrbuf_reader - mrbuf reader
++ * @last: the last write head seen beforing trying
++ * @head: the current reader head
++ * @tail: the current reader tail
++ */
++struct mrbuf_reader {
++	unsigned int last;
++	unsigned int head;
++	unsigned int tail;
++};
++
++/**
++ * mrbuf_write_init - initialize writer
++ * @bw: the mrbuf_writer to initialize
++ * @size: the size of the buffer (must be power of two)
++ */
++static inline void mrbuf_write_init(struct mrbuf_writer *bw, unsigned int size)
++{
++	bw->page = size - 1;
++	bw->head = 0;
++	bw->next = 0;
++}
++
++/**
++ * mrbuf_write_lock - lock to write one event
++ * @bw: the mrbuf_writer to lock
++ *
++ * This method prepares to write one event.  The write lock does not
++ * sleep and is thus suitable for use in atomic contexts.
++ *
++ */
++static inline void mrbuf_write_lock(struct mrbuf_writer *bw)
++{
++	++bw->next;
++	smp_wmb();
++}
++
++/**
++ * mrbuf_write_at - return position to write to
++ * @bw: the mrbuf_writer keeping track of the write position
++ *
++ * Returns the buffer position to write to. Must be called from within
++ * the write lock.
++ *
++ */
++static inline unsigned int mrbuf_write_at(const struct mrbuf_writer *bw)
++{
++	return bw->head & bw->page;
++}
++
++/**
++ * mrbuf_write_unlock - unlock writing
++ * @bw: the mrbuf_writer to unlock
++ */
++static inline void mrbuf_write_unlock(struct mrbuf_writer *bw)
++{
++	smp_wmb();
++	++bw->head;
++}
++
++/**
++ * mrbuf_write_sync - synchronize reader with current writer
++ * @bw: the mrbuf_writer to sync with
++ * @br: the mrbuf_reader to sync
++ *
++ * Synchronize the reader head with the writer head, effectively
++ * telling the reader thread that there is new data to read.
++ *
++ */
++static inline void mrbuf_write_sync(const struct mrbuf_writer *bw,
++				    struct mrbuf_reader *br)
++{
++	br->head = bw->head;
++}
++
++/**
++ * mrbuf_read_init - initialize reader
++ * @br: the mrbuf_reader to initialize
++ * @head: the initial reader head
++ * @tail: the initial reader tail
++ *
++ * This function must be called while mrbuf_write_sync() and
++ * mrbuf_read_empty() are out of reach, since the reader state is updated
++ * without coherence guarantees.
++ */
++static inline void mrbuf_read_init(struct mrbuf_reader *br,
++				   unsigned int head, unsigned int tail)
++{
++	br->head = head;
++	br->tail = tail;
++	smp_wmb();
++}
++
++/**
++ * mrbuf_read_empty - true if reader is empty
++ * @br: the mrbuf_reader to check
++ */
++static inline bool mrbuf_read_empty(const struct mrbuf_reader *br)
++{
++	return br->head == br->tail;
++}
++
++/**
++ * mrbuf_read_try - try to read data
++ * @br: the mrbuf_reader to try to read from
++ * @bw: the mrbuf_writer keeping track of the write position
++ *
++ * Prepare to read from buffer. The reader must be non-empty before
++ * trying to read from it. If the reader has fallen behind, it catches
++ * up by jumping to the last page being written to.
++ *
++ */
++static inline void mrbuf_read_try(struct mrbuf_reader *br,
++				  const struct mrbuf_writer *bw)
++{
++	br->last = bw->head;
++	smp_rmb();
++	br->tail += (br->head - 1 - br->tail) & ~bw->page;
++}
++
++/**
++ * mrbuf_read_at - return position to read from
++ * @br: the mrbuf_reader keeping track of the read position
++ * @bw: the mrbuf_writer keeping track of the buffer size
++ *
++ * Returns the buffer position to read from. Must be called from
++ * within the read try block.
++ *
++ */
++static inline unsigned int mrbuf_read_at(const struct mrbuf_reader *br,
++					 const struct mrbuf_writer *bw)
++{
++	return br->tail & bw->page;
++}
++
++/**
++ * mrbuf_read_retry - try to finish read
++ * @br: the mrbuf_reader to try to finish
++ * @bw: the mrbuf_writer keeping track of the write position
++ *
++ * Try to finish the read. Returns false if successful. Otherwise, the
++ * read was incoherent and one must mrbuf_read_try() again.  During
++ * normal operation, with adequate buffer size, this method will
++ * always return false.
++ *
++ */
++static inline bool __must_check mrbuf_read_retry(struct mrbuf_reader *br,
++						 const struct mrbuf_writer *bw)
++{
++	smp_rmb();
++	if (unlikely(((br->tail - br->last) & bw->page) < bw->next - br->last))
++		return true;
++	++br->tail;
++	return false;
++}
++
++#endif /* _MRBUF_H */
+-- 
+1.6.3.3
+
