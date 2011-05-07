@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab1EGPSX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 11:18:23 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:45493 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab1EGPSW (ORCPT
+	id S1755492Ab1EGPYN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 11:24:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44432 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab1EGPYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 11:18:22 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ppc: Fix compiler warning in ptrace.c [-Wno-array-bounds]
-References: <1304777491-7947-1-git-send-email-psomas@cslab.ece.ntua.gr>
-	<1304777491-7947-2-git-send-email-psomas@cslab.ece.ntua.gr>
-X-Yow: Where's the Coke machine?  Tell me a joke!!
-Date: Sat, 07 May 2011 17:18:19 +0200
-In-Reply-To: <1304777491-7947-2-git-send-email-psomas@cslab.ece.ntua.gr>
-	(Stratos Psomadakis's message of "Sat, 7 May 2011 17:11:30 +0300")
-Message-ID: <m2oc3eh744.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Sat, 7 May 2011 11:24:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=PVP6Eip58NVzDGdiocHNPjaeViU9DvRwc1Ji1XVkHexdVJnJ45d8Tc08IuYGVAHwFi
+         HqIMM+IqmognPkWMSrTeKPwGTiyPqTtPa1UukIEzZymshdIdyFPqpUpYqLn4+oeQk7rh
+         YdJCUt7mnXZWwEC+TNX5jNkA3a/hT+EYfHuz8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <BANLkTikF5YL8tJ_f5510yy1Ywm69rOUK2A@mail.gmail.com>
+References: <BANLkTi=8U3=E0=j8MJ-r70O_aO8Pxvv9Nw@mail.gmail.com>
+	<BANLkTi=F8u7oZM+=W+5vzmvf1b0YiN0fQg@mail.gmail.com>
+	<20110420080535.3edd11ac@pluto.restena.lu>
+	<20110420105631.70695dfa@lxorguk.ukuu.org.uk>
+	<BANLkTikF5YL8tJ_f5510yy1Ywm69rOUK2A@mail.gmail.com>
+Date: Sat, 7 May 2011 18:24:09 +0300
+Message-ID: <BANLkTi=x76zkTpZxaHUnSUeP+_O0SsK0Zw@mail.gmail.com>
+Subject: Re: [2.6.39-rc2, framebuffer] use after free oops
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stratos Psomadakis <psomas@cslab.ece.ntua.gr> writes:
+Hi, Daniel J Blueman.
 
-> +CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"' -Wno-array-bounds
+Did you test https://lkml.org/lkml/2011/5/5/208 ? And it works for you ?
+Then please reply with your error and an Tested-by.
 
-You need to check first whether the option is valid.
-
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+And CC: "Dave Airlie" <airlied@redhat.com>
