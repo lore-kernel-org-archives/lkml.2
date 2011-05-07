@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab1EGTLA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 15:11:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65300 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973Ab1EGTK4 convert rfc822-to-8bit (ORCPT
+	id S1756074Ab1EGTPb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 15:15:31 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53012 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab1EGTP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 15:10:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=txVcGHHkpgkbNc1DtXu+8dU6tm4MbYwQocVcjCMckQftltLq9lhTfysF4aQYdumjf+
-         BDIOrhCSBNMCE0DA1vfa7XF8MCUDoz/c2aa2+JOhkfACacjfdggYPx8GdTCBDyM7P9Sn
-         e4cIJCssag5pxmJih1rXqTpbsu4yVEruA/p5Q=
-MIME-Version: 1.0
-In-Reply-To: <20110504091619.GV2092@atomide.com>
-References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
-	<20110504091619.GV2092@atomide.com>
-Date: Sat, 7 May 2011 22:10:56 +0300
-Message-ID: <BANLkTimrGP1ohGX1B4teaNMbgVjSb5Mw5Q@mail.gmail.com>
-Subject: Re: [PATCH 1/4] drivers: create a pinmux subsystem
-From: Mike Rapoport <mike.rapoport@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 7 May 2011 15:15:28 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize latency
+Date: Sat,  7 May 2011 21:14:54 +0200
+Message-Id: <1304795706-27308-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 12:16 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Linus Walleij <linus.walleij@stericsson.com> [110502 12:13]:
->
-> Good to see this, looks like this should work for omaps too.
->
-> The numbering solves the issue where we have multiple
-> pinmux domains (base + offset for each domain).
->
-> Then I would assume that for most cases the pin access can be
-> described with:
->
-> unsigned long pinmux_base;      /* Can have multiple pinux domains */
-> u16 pinmux_reg_offset;          /* Register offset from pinmux_base */
-> u16 flags;                      /* Register width etc */
->
-> Which can be accessed with read[bwl] and write[bwl], so we
-> can have default access functions in the pinux framework and
-> don't necessarily have to implement them for each platform.
+How significant is the cache maintenance over head?
+It depends, the eMMC are much faster now
+compared to a few years ago and cache maintenance cost more due to
+multiple cache levels and speculative cache pre-fetch. In relation the
+cost for handling the caches have increased and is now a bottle neck
+dealing with fast eMMC together with DMA.
 
-On some platforms setting the pin configuration won't require to keep
-that lot of data, see, e.g. Orion and it's successors.
+The intention for introducing none blocking mmc requests is to minimize the
+time between a mmc request ends and another mmc request starts. In the
+current implementation the MMC controller is idle when dma_map_sg and
+dma_unmap_sg is processing. Introducing none blocking mmc request makes it
+possible to prepare the caches for next job parallel with an active
+mmc request.
 
-> Does this work for you? If so, then we can have the data in the
-> same format for all the architectures for devicetree.
->
-> And then we can have pin_get and pin_set functions, so platforms
-> can implement their custom flags like wake-up trigger etc with
-> just read[bwl] and write[bwl].
->
-> Also noticed one typo:
->
->> +/* Plobal array of descriptors, one for each physical pin */
->> +static DEFINE_SPINLOCK(pin_desc_lock);
->> +static struct pin_desc pin_desc[MACH_NR_PINS];
->
-> s/Plobal/Global/
->
-> Regards,
->
-> Tony
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+This is done by making the issue_rw_rq() none blocking.
+The increase in throughput is proportional to the time it takes to
+prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+a request and how fast the memory is. The faster the MMC/SD is
+the more significant the prepare request time becomes. Measurements on U5500
+and Panda on eMMC and SD shows significant performance gain for for large
+reads when running DMA mode. In the PIO case the performance is unchanged.
 
+There are two optional hooks pre_req() and post_req() that the host driver
+may implement in order to move work to before and after the actual mmc_request
+function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+the dma descriptor and post_req runs the dma_unmap_sg.
 
+Details on measurements from IOZone and mmc_test:
+https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+
+Under consideration:
+ * Make pre_req and post_req private to core.c.
+ * Generalize implementation and make it available for SDIO. 
+
+Changes since v2:
+ * Fix compile warnings in core.c and block.c
+ * Simplify max transfer size in mmc_test
+ * set TASK_RUNNING in queue.c before issue_req()
+
+Per Forlin (12):
+  mmc: add none blocking mmc request function
+  mmc: mmc_test: add debugfs file to list all tests
+  mmc: mmc_test: add test for none blocking transfers
+  mmc: add member in mmc queue struct to hold request data
+  mmc: add a block request prepare function
+  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
+  mmc: add a second mmc queue request member
+  mmc: add handling for two parallel block requests in issue_rw_rq
+  mmc: test: add random fault injection in core.c
+  omap_hsmmc: use original sg_len for dma_unmap_sg
+  omap_hsmmc: add support for pre_req and post_req
+  mmci: implement pre_req() and post_req()
+
+ drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
+ drivers/mmc/card/mmc_test.c   |  340 +++++++++++++++++++++++++++-
+ drivers/mmc/card/queue.c      |  180 ++++++++++------
+ drivers/mmc/card/queue.h      |   31 ++-
+ drivers/mmc/core/core.c       |  132 ++++++++++-
+ drivers/mmc/core/debugfs.c    |    5 +
+ drivers/mmc/host/mmci.c       |  146 +++++++++++-
+ drivers/mmc/host/mmci.h       |    8 +
+ drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
+ include/linux/mmc/core.h      |    9 +-
+ include/linux/mmc/host.h      |   13 +-
+ lib/Kconfig.debug             |   11 +
+ 12 files changed, 1174 insertions(+), 284 deletions(-)
 
 -- 
-    Sincerely Yours,
-        Mike.
+1.7.4.1
+
