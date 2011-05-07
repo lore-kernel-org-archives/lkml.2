@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab1EGUOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 16:14:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38713 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab1EGUOx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 16:14:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YyxxB3RoAA6/dyL/12YXo1fcO9kf4fpD7sSE5GCWwHdtWNGGtxmnVWqCU3HrzGSiDs
-         hxetuJv7KKkR4WXkIWSoS+yebHODT/0PJpGWRRIiwy0b3WxDDl+vPTeNpz6WtCLq3QYa
-         LVq9/we4KXgJFwemPqS9xFlzmtjln9PxsTmXo=
+	id S1753673Ab1EGUWt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 16:22:49 -0400
+Received: from smtpout05.highway.telekom.at ([195.3.96.77]:60847 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752067Ab1EGUWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 16:22:48 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+To: linux-kernel@vger.kernel.org, tiwai@suse.de
+Subject: Re: i915/kms/backlight-combo mode problem
+Date: Sat, 7 May 2011 22:22:40 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.5; KDE/4.6.2; x86_64; ; )
+Cc: "Joey Lee" <jlee@novell.com>, chris@chris-wilson.co.uk,
+        dri-devel@lists.freedesktop.org
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <4DC47937020000230002C446@novprvlin0050.provo.novell.com> <201105061823.07083@rk-nord.at>
+In-Reply-To: <201105061823.07083@rk-nord.at>
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
 MIME-Version: 1.0
-In-Reply-To: <1304771519.2227.6.camel@x61.thuisdomein>
-References: <1304771519.2227.6.camel@x61.thuisdomein>
-Date: Sat, 7 May 2011 21:14:52 +0100
-Message-ID: <BANLkTinE4zDXE6VDS=yc1SmCCEbAn70Rcw@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND] iwl4965: drop a lone pr_err()
-From: julie Sullivan <kernelmail.jms@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105072222.41807@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> iwl4965_rate_control_register() prints a message at KERN_ERR level.
+* Melchior FRANZ -- Friday 06 May 2011:
+> last patch prevents the backlight from being turned off, but it also
+> breaks the brightness adjustment keys at runtime with acpi_osi=Linux.
 
-> -       pr_err("Registering 4965 rate control operations\n");
+It has turned out that acpi key events seem to be handled correctly
+and even the state of /sys/class/backlight/acer-wmi/brightness is
+updated accordingly. The only problem is that this maintained
+brightness state isn't applied to the actual backlight. It remains
+at highest level. Google pointed me to this workaround for another
+Acer notebook:
 
-Yes, I noticed this message on boot too and found it a tad confusing...
-('Rate control operations'?? 4,965 of them?)
-:-)  At least I know what it is now. Thanks, Paul.
+  https://help.ubuntu.com/community/AspireTimeline/Fixes#Alternative%20fix%20for%2010.10
 
-Julie
+This uses the acpid to write the brightness value to the display
+using setpci. And this works on my notebook as well (Acer Travelmate
+5735Z-452G32Mnss). Not pretty but better than nothing. Is Acer
+not able to build proper notebooks? Or is it a kernel bug?
+
+m.
