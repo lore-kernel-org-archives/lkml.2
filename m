@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1EGBVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:21:10 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:42972 "EHLO e2.ny.us.ibm.com"
+	id S1754832Ab1EGBXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:23:43 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:53745 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab1EGBVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753330Ab1EGBVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 May 2011 21:21:06 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Subject: [PATCH 07/11] rtc: max8998: Initialize drvdata before registering device
-Date: Fri,  6 May 2011 18:20:50 -0700
-Message-Id: <1304731254-3238-8-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 08/11] rtc: msm6242: Initialize drvdata before registering device
+Date: Fri,  6 May 2011 18:20:51 -0700
+Message-Id: <1304731254-3238-9-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
 References: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
@@ -38,39 +38,33 @@ CC: Thomas Gleixner <tglx@linutronix.de>
 CC: rtc-linux@googlegroups.com
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/rtc/rtc-max8998.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-msm6242.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
-index 3f7bc6b..2e48aa6 100644
---- a/drivers/rtc/rtc-max8998.c
-+++ b/drivers/rtc/rtc-max8998.c
-@@ -265,6 +265,8 @@ static int __devinit max8998_rtc_probe(struct platform_device *pdev)
- 	info->rtc = max8998->rtc;
- 	info->irq = max8998->irq_base + MAX8998_IRQ_ALARM0;
+diff --git a/drivers/rtc/rtc-msm6242.c b/drivers/rtc/rtc-msm6242.c
+index 6782062..fcb113c 100644
+--- a/drivers/rtc/rtc-msm6242.c
++++ b/drivers/rtc/rtc-msm6242.c
+@@ -214,6 +214,7 @@ static int __init msm6242_rtc_probe(struct platform_device *dev)
+ 		error = -ENOMEM;
+ 		goto out_free_priv;
+ 	}
++	platform_set_drvdata(dev, priv);
  
-+	platform_set_drvdata(pdev, info);
-+
- 	info->rtc_dev = rtc_device_register("max8998-rtc", &pdev->dev,
- 			&max8998_rtc_ops, THIS_MODULE);
- 
-@@ -274,8 +276,6 @@ static int __devinit max8998_rtc_probe(struct platform_device *pdev)
- 		goto out_rtc;
+ 	rtc = rtc_device_register("rtc-msm6242", &dev->dev, &msm6242_rtc_ops,
+ 				  THIS_MODULE);
+@@ -223,10 +224,10 @@ static int __init msm6242_rtc_probe(struct platform_device *dev)
  	}
  
--	platform_set_drvdata(pdev, info);
--
- 	ret = request_threaded_irq(info->irq, NULL, max8998_rtc_alarm_irq, 0,
- 			"rtc-alarm0", info);
- 
-@@ -293,6 +293,7 @@ static int __devinit max8998_rtc_probe(struct platform_device *pdev)
+ 	priv->rtc = rtc;
+-	platform_set_drvdata(dev, priv);
  	return 0;
  
- out_rtc:
-+	platform_set_drvdata(pdev, NULL);
- 	kfree(info);
- 	return ret;
- }
+ out_unmap:
++	platform_set_drvdata(dev, NULL);
+ 	iounmap(priv->regs);
+ out_free_priv:
+ 	kfree(priv);
 -- 
 1.7.3.2.146.gca209
 
