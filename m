@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1EGJqk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 05:46:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40190 "EHLO hera.kernel.org"
+	id S1754267Ab1EGJrC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 05:47:02 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40211 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab1EGJqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 05:46:37 -0400
-Date: Sat, 7 May 2011 09:46:05 GMT
-From: "tip-bot for Luis R. Rodriguez" <lrodriguez@atheros.com>
-Message-ID: <tip-8fab6af2156c0100f953fd61f4e0b2f82c9776dc@git.kernel.org>
+	id S1753663Ab1EGJrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 05:47:00 -0400
+Date: Sat, 7 May 2011 09:46:30 GMT
+From: tip-bot for Lin Ming <ming.m.lin@intel.com>
+Message-ID: <tip-174a7b1f9692acad7f0ca2b02f696894201a6d94@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joonas.viskari@atheros.com, lrodriguez@atheros.com,
-        allen.kao@atheros.com, alan@lxorguk.ukuu.org.uk,
-        roman.gezikov@atheros.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joonas.viskari@atheros.com, lrodriguez@atheros.com,
-        alan@lxorguk.ukuu.org.uk, allen.kao@atheros.com,
-        akpm@linux-foundation.org, roman.gezikov@atheros.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1304719209-26913-1-git-send-email-lrodriguez@atheros.com>
-References: <1304719209-26913-1-git-send-email-lrodriguez@atheros.com>
+        a.p.zijlstra@chello.nl, riccardo.magliocchetti@gmail.com,
+        acme@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: riccardo.magliocchetti@gmail.com, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1304743274.3132.17.camel@localhost>
+References: <1304743274.3132.17.camel@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: Fix mrst sparse complaints
-Git-Commit-ID: 8fab6af2156c0100f953fd61f4e0b2f82c9776dc
+Subject: [tip:perf/urgent] perf tools: Makefile: Use gcc to determine ARCH
+Git-Commit-ID: 174a7b1f9692acad7f0ca2b02f696894201a6d94
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 07 May 2011 09:46:07 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 07 May 2011 09:46:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8fab6af2156c0100f953fd61f4e0b2f82c9776dc
-Gitweb:     http://git.kernel.org/tip/8fab6af2156c0100f953fd61f4e0b2f82c9776dc
-Author:     Luis R. Rodriguez <lrodriguez@atheros.com>
-AuthorDate: Fri, 6 May 2011 15:00:09 -0700
+Commit-ID:  174a7b1f9692acad7f0ca2b02f696894201a6d94
+Gitweb:     http://git.kernel.org/tip/174a7b1f9692acad7f0ca2b02f696894201a6d94
+Author:     Lin Ming <ming.m.lin@intel.com>
+AuthorDate: Sat, 7 May 2011 12:41:14 +0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 7 May 2011 10:52:30 +0200
+CommitDate: Sat, 7 May 2011 11:40:59 +0200
 
-x86: Fix mrst sparse complaints
+perf tools: Makefile: Use gcc to determine ARCH
 
-Fix these Sparse complaints:
+The original Makefile uses "uname -m" to determine ARCH.
+This causes problem on x86 when compile perf tool on 32 bit
+userspace with a 64 bit kernel.
 
-  CHECK   arch/x86/platform/mrst/mrst.c
-  arch/x86/platform/mrst/mrst.c:197:13: warning: symbol 'mrst_time_init' was not declared. Should it be static?
-  arch/x86/platform/mrst/mrst.c:219:16: warning: symbol 'mrst_arch_setup' was not declared. Should it be static?
+ bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+ bench/../../../arch/x86/lib/memcpy_64.S:28: Error: bad register name `%rdi'
 
-Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Roman Gezikov <roman.gezikov@atheros.com>
-Cc: Joonas Viskari <joonas.viskari@atheros.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Allen Kao <allen.kao@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Link: http://lkml.kernel.org/r/1304719209-26913-1-git-send-email-lrodriguez@atheros.com
+This is because "uname -m" returns x86_64 and memcpy_64.S is
+included in 32 bit build.
+
+Reported-by: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Link: http://lkml.kernel.org/r/1304743274.3132.17.camel@localhost
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/platform/mrst/mrst.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/Makefile |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 275dbc1..7000e74 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -194,7 +194,7 @@ static unsigned long __init mrst_calibrate_tsc(void)
- 	return 0;
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 207dee5..0c54256 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -35,15 +35,21 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+ 				  -e s/sh[234].*/sh/ )
  
--void __init mrst_time_init(void)
-+static void __init mrst_time_init(void)
- {
- 	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
- 	switch (mrst_timer_options) {
-@@ -216,7 +216,7 @@ void __init mrst_time_init(void)
- 	apbt_time_init();
- }
++CC = $(CROSS_COMPILE)gcc
++AR = $(CROSS_COMPILE)ar
++
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),i386)
+         ARCH := x86
+ endif
+ ifeq ($(ARCH),x86_64)
+-	RAW_ARCH := x86_64
+-        ARCH := x86
+-	ARCH_CFLAGS := -DARCH_X86_64
+-	ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S
++	ARCH := x86
++	IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++	ifeq (${IS_X86_64}, 1)
++		RAW_ARCH := x86_64
++		ARCH_CFLAGS := -DARCH_X86_64
++		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S
++	endif
+ endif
  
--void __cpuinit mrst_arch_setup(void)
-+static void __cpuinit mrst_arch_setup(void)
- {
- 	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
- 		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
+ #
+@@ -119,8 +125,6 @@ lib = lib
+ 
+ export prefix bindir sharedir sysconfdir
+ 
+-CC = $(CROSS_COMPILE)gcc
+-AR = $(CROSS_COMPILE)ar
+ RM = rm -f
+ MKDIR = mkdir
+ FIND = find
