@@ -1,74 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab1EGF4w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 01:56:52 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:34885 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1EGF4t (ORCPT
+	id S1752422Ab1EGF5V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 01:57:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:8391 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab1EGF5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 01:56:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ULQ0UlSOmZebuS7O+LXdy9V445lRFL6ZdJk0KVhuOWAPeeTv92arUtWGkNXdu/6e3b
-         GCjiehErCivQMa8SRJPIaYzvWRZr1b6XlwC8Pa01r4AT3usiHwyHlke5GDmMERv9ELPX
-         sD3RA46qXYAUvPzfDNFEhE0nyBrXCKxfbRFII=
-Date: Fri, 6 May 2011 22:56:42 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: riyer@nvidia.com
-Cc: rydberg@euromail.se, amartin@nvidia.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [v1] Input: tegra-kbc - modify keypress wakeup logic.
-Message-ID: <20110507055641.GA5291@core.coreip.homeip.net>
-References: <1304382188-29530-1-git-send-email-riyer@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304382188-29530-1-git-send-email-riyer@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 7 May 2011 01:57:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6338"; a="89861682"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-m32r@ml.linux-m32r.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        user-mode-linux-devel@lists.sourceforge.net, x86@kernel.org
+Subject: [PATCH] lib: Consolidate DEBUG_STACK_USAGE option
+Date: Fri,  6 May 2011 22:57:11 -0700
+Message-Id: <1304747831-2098-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.185.g0b9dee
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rakesh,
+Most arches define CONFIG_DEBUG_STACK_USAGE exactly the same way.
+Move it to lib/Kconfig.debug so each arch doesn't have to define
+it. This obviously makes the option generic, but that's fine
+because the config is already used in generic code.
 
-On Mon, May 02, 2011 at 05:23:08PM -0700, riyer@nvidia.com wrote:
-> From: Rakesh Iyer <riyer@nvidia.com>
-> 
-> Modify wakeup logic so either all keypresses wake the system or none do.
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
-> ---
-> v1: Modify wakeup logic so either all keypresses wake the system or none do.
-> 
->  arch/arm/mach-tegra/include/mach/kbc.h |    4 +---
->  drivers/input/keyboard/tegra-kbc.c     |   28 ++++------------------------
->  2 files changed, 5 insertions(+), 27 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
-> index bd99744..6b8e934 100644
-> --- a/arch/arm/mach-tegra/include/mach/kbc.h
-> +++ b/arch/arm/mach-tegra/include/mach/kbc.h
-> @@ -50,14 +50,12 @@ struct tegra_kbc_platform_data {
->  	unsigned int debounce_cnt;
->  	unsigned int repeat_cnt;
->  
-> -	unsigned int wake_cnt; /* 0:wake on any key >1:wake on wake_cfg */
-> -	const struct tegra_kbc_wake_key *wake_cfg;
-> -
->  	struct tegra_kbc_pin_cfg pin_cfg[KBC_MAX_GPIO];
->  	const struct matrix_keymap_data *keymap_data;
->  
->  	bool wakeup;
->  	bool use_fn_map;
->  	bool use_ghost_filter;
-> +	bool wake_on_keypress;
+It's not obvious to me that sysrq-P actually does anything
+different with this option enabled, but I erred on the side of
+caution by keeping the most inclusive wording.
 
-Why do we need new wake_on_keypress flag if we already have 'wakeup'?
-What besides a keypress can be used as a wakeup source with this device?
+Cc: linux-arch@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: uclinux-dist-devel@blackfin.uclinux.org
+Cc: linux-m32r@ml.linux-m32r.org
+Cc: linux-mips@linux-mips.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-sh@vger.kernel.org
+Cc: sparclinux@vger.kernel.org
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: user-mode-linux-devel@lists.sourceforge.net
+Cc: x86@kernel.org
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Thanks.
+This is on top of mmotm's lib-conslidate-debug_per_cpu_maps patch.
 
+ arch/arm/Kconfig.debug       |    7 -------
+ arch/blackfin/Kconfig.debug  |    9 ---------
+ arch/m32r/Kconfig.debug      |    9 ---------
+ arch/mips/Kconfig.debug      |    9 ---------
+ arch/powerpc/Kconfig.debug   |    9 ---------
+ arch/score/Kconfig.debug     |    9 ---------
+ arch/sh/Kconfig.debug        |    9 ---------
+ arch/sparc/Kconfig.debug     |    9 ---------
+ arch/tile/Kconfig.debug      |    9 ---------
+ arch/um/Kconfig.debug        |    9 ---------
+ arch/unicore32/Kconfig.debug |    7 -------
+ arch/x86/Kconfig.debug       |    9 ---------
+ lib/Kconfig.debug            |    9 +++++++++
+ 13 files changed, 9 insertions(+), 104 deletions(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 03d01d7..81cbe40 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -63,13 +63,6 @@ config DEBUG_USER
+ 	      8 - SIGSEGV faults
+ 	     16 - SIGBUS faults
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Enable stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T output.
+-
+ # These options are only for real kernel hackers who want to get their hands dirty.
+ config DEBUG_LL
+ 	bool "Kernel low-level debugging functions"
+diff --git a/arch/blackfin/Kconfig.debug b/arch/blackfin/Kconfig.debug
+index 2641731..19ccfb3 100644
+--- a/arch/blackfin/Kconfig.debug
++++ b/arch/blackfin/Kconfig.debug
+@@ -9,15 +9,6 @@ config DEBUG_STACKOVERFLOW
+ 	  This option will cause messages to be printed if free stack space
+ 	  drops below a certain limit.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Enable stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config DEBUG_VERBOSE
+ 	bool "Verbose fault messages"
+ 	default y
+diff --git a/arch/m32r/Kconfig.debug b/arch/m32r/Kconfig.debug
+index 2e1019d..bb1afc1 100644
+--- a/arch/m32r/Kconfig.debug
++++ b/arch/m32r/Kconfig.debug
+@@ -9,15 +9,6 @@ config DEBUG_STACKOVERFLOW
+ 	  This option will cause messages to be printed if free stack space
+ 	  drops below a certain limit.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config DEBUG_PAGEALLOC
+ 	bool "Debug page memory allocations"
+ 	depends on DEBUG_KERNEL && BROKEN
+diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
+index 5358f90..83ed00a 100644
+--- a/arch/mips/Kconfig.debug
++++ b/arch/mips/Kconfig.debug
+@@ -76,15 +76,6 @@ config DEBUG_STACKOVERFLOW
+ 	  provides another way to check stack overflow happened on kernel mode
+ 	  stack usually caused by nested interruption.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Enable stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config SMTC_IDLE_HOOK_DEBUG
+ 	bool "Enable additional debug checks before going into CPU idle loop"
+ 	depends on DEBUG_KERNEL && MIPS_MT_SMTC
+diff --git a/arch/powerpc/Kconfig.debug b/arch/powerpc/Kconfig.debug
+index 12a8d18..f862fc0 100644
+--- a/arch/powerpc/Kconfig.debug
++++ b/arch/powerpc/Kconfig.debug
+@@ -35,15 +35,6 @@ config DEBUG_STACKOVERFLOW
+ 	  This option will cause messages to be printed if free stack space
+ 	  drops below a certain limit.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config HCALL_STATS
+ 	bool "Hypervisor call instrumentation"
+ 	depends on PPC_PSERIES && DEBUG_FS && TRACEPOINTS
+diff --git a/arch/score/Kconfig.debug b/arch/score/Kconfig.debug
+index 451ed54..a1f346d 100644
+--- a/arch/score/Kconfig.debug
++++ b/arch/score/Kconfig.debug
+@@ -16,15 +16,6 @@ config CMDLINE
+ 	  other cases you can specify kernel args so that you don't have
+ 	  to set them up in board prom initialization routines.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Enable stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config RUNTIME_DEBUG
+ 	bool "Enable run-time debugging"
+ 	depends on DEBUG_KERNEL
+diff --git a/arch/sh/Kconfig.debug b/arch/sh/Kconfig.debug
+index 1553d56..c1d5a82 100644
+--- a/arch/sh/Kconfig.debug
++++ b/arch/sh/Kconfig.debug
+@@ -28,15 +28,6 @@ config STACK_DEBUG
+ 	  every function call and will therefore incur a major
+ 	  performance hit. Most users should say N.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config 4KSTACKS
+ 	bool "Use 4Kb for kernel stacks instead of 8Kb"
+ 	depends on DEBUG_KERNEL && (MMU || BROKEN) && !PAGE_SIZE_64KB
+diff --git a/arch/sparc/Kconfig.debug b/arch/sparc/Kconfig.debug
+index d9a795e..6db35fb 100644
+--- a/arch/sparc/Kconfig.debug
++++ b/arch/sparc/Kconfig.debug
+@@ -6,15 +6,6 @@ config TRACE_IRQFLAGS_SUPPORT
+ 
+ source "lib/Kconfig.debug"
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Enable stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config DEBUG_DCFLUSH
+ 	bool "D-cache flush debugging"
+ 	depends on SPARC64 && DEBUG_KERNEL
+diff --git a/arch/tile/Kconfig.debug b/arch/tile/Kconfig.debug
+index 9bc161a..ddbfc33 100644
+--- a/arch/tile/Kconfig.debug
++++ b/arch/tile/Kconfig.debug
+@@ -21,15 +21,6 @@ config DEBUG_STACKOVERFLOW
+ 	  This option will cause messages to be printed if free stack space
+ 	  drops below a certain limit.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config DEBUG_EXTRA_FLAGS
+ 	string "Additional compiler arguments when building with '-g'"
+ 	depends on DEBUG_INFO
+diff --git a/arch/um/Kconfig.debug b/arch/um/Kconfig.debug
+index 8fce5e5..34ac57f 100644
+--- a/arch/um/Kconfig.debug
++++ b/arch/um/Kconfig.debug
+@@ -28,13 +28,4 @@ config GCOV
+ 	  If you're involved in UML kernel development and want to use gcov,
+ 	  say Y.  If you're unsure, say N.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Stack utilization instrumentation"
+-	default N
+-	help
+-	  Track the maximum kernel stack usage - this will look at each
+-	  kernel stack at process exit and log it if it's the deepest
+-	  stack seen so far.
+-
+-	  This option will slow down process creation and destruction somewhat.
+ endmenu
+diff --git a/arch/unicore32/Kconfig.debug b/arch/unicore32/Kconfig.debug
+index 3140151..ae2ec33 100644
+--- a/arch/unicore32/Kconfig.debug
++++ b/arch/unicore32/Kconfig.debug
+@@ -27,13 +27,6 @@ config EARLY_PRINTK
+ 	  with klogd/syslogd or the X server. You should normally N here,
+ 	  unless you want to debug such a crash.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Enable stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T output.
+-
+ # These options are only for real kernel hackers who want to get their hands dirty.
+ config DEBUG_LL
+ 	bool "Kernel low-level debugging functions"
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 1bf8839..c0f8a5c 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -66,15 +66,6 @@ config DEBUG_STACKOVERFLOW
+ 	  This option will cause messages to be printed if free stack space
+ 	  drops below a certain limit.
+ 
+-config DEBUG_STACK_USAGE
+-	bool "Stack utilization instrumentation"
+-	depends on DEBUG_KERNEL
+-	---help---
+-	  Enables the display of the minimum amount of free stack which each
+-	  task has ever had available in the sysrq-T and sysrq-P debug output.
+-
+-	  This option will slow down process creation somewhat.
+-
+ config X86_PTDUMP
+ 	bool "Export kernel pagetable layout to userspace via debugfs"
+ 	depends on DEBUG_KERNEL
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index c0872ee..37fae12 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -654,6 +654,15 @@ config STACKTRACE
+ 	bool
+ 	depends on STACKTRACE_SUPPORT
+ 
++config DEBUG_STACK_USAGE
++	bool "Stack utilization instrumentation"
++	depends on DEBUG_KERNEL
++	help
++	  Enables the display of the minimum amount of free stack which each
++	  task has ever had available in the sysrq-T and sysrq-P debug output.
++
++	  This option will slow down process creation somewhat.
++
+ config DEBUG_KOBJECT
+ 	bool "kobject debugging"
+ 	depends on DEBUG_KERNEL
 -- 
-Dmitry
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
