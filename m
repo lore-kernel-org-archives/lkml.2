@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab1EGQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 12:30:59 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39325 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755790Ab1EGQa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 12:30:58 -0400
-Date: Sat, 7 May 2011 12:30:50 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] comm: ext4: Protect task->comm access by using
- get_task_comm()
-Message-ID: <20110507163050.GA6046@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	John Stultz <john.stultz@linaro.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Rientjes <rientjes@google.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org
-References: <1303963411-2064-1-git-send-email-john.stultz@linaro.org>
- <1303963411-2064-4-git-send-email-john.stultz@linaro.org>
- <alpine.DEB.2.00.1104281426210.21665@chino.kir.corp.google.com>
- <20110504163657.52dca3fc.akpm@linux-foundation.org>
- <1304553310.2943.18.camel@work-vm>
+	id S1755890Ab1EGQcq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 12:32:46 -0400
+Received: from server19320154104.serverpool.info ([193.201.54.104]:43654 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755790Ab1EGQcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 12:32:45 -0400
+Message-ID: <4DC57425.30206@hauke-m.de>
+Date: Sat, 07 May 2011 18:32:37 +0200
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304553310.2943.18.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+CC: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        =?UTF-8?B?TWljaGFl?= =?UTF-8?B?bCBCw7xzY2g=?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>	<4DC56FB9.5000208@hauke-m.de> <BANLkTi=FfjK7obq0hj4TjYZc-GgzTuUC6g@mail.gmail.com>
+In-Reply-To: <BANLkTi=FfjK7obq0hj4TjYZc-GgzTuUC6g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 04:55:10PM -0700, John Stultz wrote:
-> > I'm suspecting that approximately 100% of the get_task_comm() callsites
-> > are using it for a printk, so how about we add a %p thingy for it then
-> > zap lots of code?
+On 05/07/2011 06:23 PM, Rafał Miłecki wrote:
+> 2011/5/7 Hauke Mehrtens <hauke@hauke-m.de>:
+>> On 05/05/2011 11:59 PM, Rafał Miłecki wrote:
+>>> Cc: Greg KH <greg@kroah.com>
+>>> Cc: Michael Büsch <mb@bu3sch.de>
+>>> Cc: Larry Finger <Larry.Finger@lwfinger.net>
+>>> Cc: George Kashperko <george@znau.edu.ua>
+>>> Cc: Arend van Spriel <arend@broadcom.com>
+>>> Cc: linux-arm-kernel@lists.infradead.org
+>>> Cc: Russell King <rmk@arm.linux.org.uk>
+>>> Cc: Arnd Bergmann <arnd@arndb.de>
+>>> Cc: Andy Botting <andy@andybotting.com>
+>>> Cc: linuxdriverproject <devel@linuxdriverproject.org>
+>>> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+>>> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+>>> ---
+>>> V2: Rename to axi
+>>>     Use DEFINE_PCI_DEVICE_TABLE in bridge
+>>>     Make use of pr_fmt and pr_*
+>>>     Store core class
+>>>     Rename bridge to not b43 specific
+>>>     Replace magic 0x1000 with BCMAI_CORE_SIZE
+>>>     Remove some old "ssb" names and defines
+>>>     Move BCMAI_ADDR_BASE def
+>>>     Add drvdata field
+>>> V3: Fix reloading (kfree issue)
+>>>     Add 14e4:0x4331
+>>>     Fix non-initialized struct issue
+>>>     Drop useless inline functions wrappers for pci core drv
+>>>     Proper pr_* usage
+>>> V3.1: Include forgotten changes (pr_* and include related)
+>>>     Explain why we dare to implement empty release function
+>>> V4: Add ABI documentation
+>>>     Move struct device to wrapper and alloc it dynamically
+>>>     checkpatch.pl pointed fixes
+>>> V5: Rename to bcma, AXI was really bad name
+>>>     Use EXPORT_SYMBOL_GPL
+>>>     Set pci driver fields in one place
+>>>     Drop unlikely
+>>>     Use BCMA_CORE_SIZE for calc in awrite32
+>>>     Add README
+>>>     Fix compilation (delay.h)
+>>> ---
+>>>  Documentation/ABI/testing/sysfs-bus-bcma    |   31 ++
+>>>  drivers/Kconfig                             |    2 +
+>>>  drivers/Makefile                            |    1 +
+>>>  drivers/bcma/Kconfig                        |   33 +++
+>>>  drivers/bcma/Makefile                       |    7 +
+>>>  drivers/bcma/README                         |   18 ++
+>>>  drivers/bcma/TODO                           |    3 +
+>>>  drivers/bcma/bcma_private.h                 |   31 ++
+>>>  drivers/bcma/core.c                         |   51 ++++
+>>>  drivers/bcma/driver_chipcommon.c            |   87 ++++++
+>>>  drivers/bcma/driver_chipcommon_pmu.c        |  134 +++++++++
+>>>  drivers/bcma/driver_pci.c                   |  163 +++++++++++
+>>>  drivers/bcma/host_pci.c                     |  196 +++++++++++++
+>>>  drivers/bcma/main.c                         |  271 ++++++++++++++++++
+>>>  drivers/bcma/scan.c                         |  392 +++++++++++++++++++++++++++
+>>>  drivers/bcma/scan.h                         |   56 ++++
+>>>  include/linux/bcma/bcma.h                   |  232 ++++++++++++++++
+>>>  include/linux/bcma/bcma_driver_chipcommon.h |  297 ++++++++++++++++++++
+>>>  include/linux/bcma/bcma_driver_pci.h        |   89 ++++++
+>>>  include/linux/bcma/bcma_regs.h              |   34 +++
+>>>  include/linux/mod_devicetable.h             |   17 ++
+>>>  scripts/mod/file2alias.c                    |   22 ++
+>>>  22 files changed, 2167 insertions(+), 0 deletions(-)
+>>>  create mode 100644 Documentation/ABI/testing/sysfs-bus-bcma
+>>>  create mode 100644 drivers/bcma/Kconfig
+>>>  create mode 100644 drivers/bcma/Makefile
+>>>  create mode 100644 drivers/bcma/README
+>>>  create mode 100644 drivers/bcma/TODO
+>>>  create mode 100644 drivers/bcma/bcma_private.h
+>>>  create mode 100644 drivers/bcma/core.c
+>>>  create mode 100644 drivers/bcma/driver_chipcommon.c
+>>>  create mode 100644 drivers/bcma/driver_chipcommon_pmu.c
+>>>  create mode 100644 drivers/bcma/driver_pci.c
+>>>  create mode 100644 drivers/bcma/host_pci.c
+>>>  create mode 100644 drivers/bcma/main.c
+>>>  create mode 100644 drivers/bcma/scan.c
+>>>  create mode 100644 drivers/bcma/scan.h
+>>>  create mode 100644 include/linux/bcma/bcma.h
+>>>  create mode 100644 include/linux/bcma/bcma_driver_chipcommon.h
+>>>  create mode 100644 include/linux/bcma/bcma_driver_pci.h
+>>>  create mode 100644 include/linux/bcma/bcma_regs.h
+>>>
+>> Hi,
+>>
+>> An entry in the MAINTAINERS file would be nice to find the right
+>> addresses to send patches to.
 > 
-> DaveH suggested the same, actually. And that would work with the
-> seqlocking pretty easily to avoid DavidR's issue.
+> Will do, thanks. Should I put some ML for this driver?
+> netdev@vger.kernel.org? linux-wireless@vger.kernel.org? So far there
+> are no net drivers for BCMA. Probably b43 will be the first (or
+> brcm80211).
+> 
+There is a Ethernet core used on embedded devices with this bus and
+George wrote a driver for the first version of this bus implementation,
+he send to the ML. Most user will use this with some wireless devices so
+I would add linux-wireless@vger.kernel.org. Why does ssb uses netdev ML?
 
-+1 for a %p thingy for printk's; although the other potential use case
-that we should think about is for tracepoints.  Getting something that
-works for ftrace as well as perf would be a really good thing.
-
-I suspect what we would want to do though (since people have been
-trying very hard to keep the trace records as small as possible, so we
-can include as much as possible) is to only record the pid, and have a
-tracepoint which reports when process's comm value has been set to a
-new value.  So any objections to adding a tracepoint in
-set_task_comm()?
-
-And would you like me to send the patch, or do you want to do it since
-you're putting a patch series together anyway?
-
-    	      	      	      	  	    - Ted
-
+Hauke
