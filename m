@@ -1,29 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab1EGBMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:12:03 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:55556 "EHLO
+	id S1753878Ab1EGBOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:14:12 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:31357 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab1EGBMA (ORCPT
+	with ESMTP id S1753330Ab1EGBOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 21:12:00 -0400
+	Fri, 6 May 2011 21:14:11 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsEAKaaxE1bdWOb/2dsb2JhbACnFcYkhgkEj1iIOoYc
+X-IronPort-Anti-Spam-Result: ApsEAJKbxE1bdWOb/2dsb2JhbACnFcYihgkEj1iIOoYc
 X-IronPort-AV: E=Sophos;i="4.64,329,1301868000"; 
-   d="scan'208";a="759061432"
-From: "Javier M. Mellid" <jmunhoz@igalia.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        "Javier M. Mellid" <jmunhoz@igalia.com>
-Subject: [PATCH RESEND 1/1] staging: sm7xx: Use kernel framebuffer mode setting
-Date: Sat,  7 May 2011 03:11:58 +0200
-Message-Id: <1304730718-12378-1-git-send-email-jmunhoz@igalia.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
-References: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com>
+   d="scan'208,223";a="838036954"
+Message-ID: <4DC49D7E.6060905@igalia.com>
+Date: Sat, 07 May 2011 03:16:46 +0200
+From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
+References: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com> <20110506212207.GA3222@kroah.com> <4DC475A9.8070701@igalia.com> <20110506235544.GC22803@suse.de>
+In-Reply-To: <20110506235544.GC22803@suse.de>
+Content-Type: multipart/mixed;
+ boundary="------------080901090701090300030801"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+This is a multi-part message in MIME format.
+--------------080901090701090300030801
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+
+On 05/07/2011 01:55 AM, Greg KH wrote:
+> On Sat, May 07, 2011 at 12:26:49AM +0200, Javier Muñoz wrote:
+>> On 05/06/2011 11:22 PM, Greg KH wrote:
+>>> On Fri, May 06, 2011 at 07:24:56PM +0200, Javier M. Mellid wrote:
+>>>> This patch implements dynamic framebuffer mode setting.
+[...]
+>>>
+>>> This applies with fuzz, this leads me to believe that you didn't test
+>>> this on the latest linux-next tree, right?
+>>>
+>>> What did you make this patch against?
+>>
+>> Sorry, I didn't know. I made this patch against
+>> linux-2.6 (bfd412db9e7b0d8f7b9c09d12d07aa2ac785f1d0) as I did with
+>> previous patches.
+>>
+>> Testing was about creating, applying, compiling and running patch
+>> with kernel built from linux-2.6
+>>
+>> Do you need a new patch against linux-next's master? I can redo this patch.
+>
+> Yes, please always make patches against linux-next as it includes any
+> other pending patches that are in my tree.
+
+OK, just resending a new patch made against linux-next. Please, let me 
+know if it applies seamless.
+
+Thanks!
+
+javi
+
+--------------080901090701090300030801
+Content-Type: text/x-diff;
+ name="0001-staging-sm7xx-Use-kernel-framebuffer-mode-setting.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-staging-sm7xx-Use-kernel-framebuffer-mode-setting.patch"
+
+>From 544f73e7e6f5e4e42f4384f82ee9b4bffe889efb Mon Sep 17 00:00:00 2001
+From: Javier M. Mellid <jmunhoz@igalia.com>
+Date: Sat, 7 May 2011 01:57:43 +0200
+Subject: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
 
 This patch implements dynamic framebuffer mode setting.
 
@@ -234,3 +284,5 @@ index c0d943f..94cb4e8 100644
 -- 
 1.7.4.1
 
+
+--------------080901090701090300030801--
