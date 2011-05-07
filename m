@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1EGAia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 20:38:30 -0400
-Received: from kroah.org ([198.145.64.141]:55984 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892Ab1EGAi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 20:38:29 -0400
-Date: Fri, 6 May 2011 17:38:18 -0700
-From: Greg KH <greg@kroah.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: akpm@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, allen.kao@atheros.com,
-        roman.gezikov@atheros.com, joonas.viskari@atheros.com
-Subject: Re: [RFC 0/2] x86: Add support for Atheros AR1520 GPS devices
-Message-ID: <20110507003818.GA23997@kroah.com>
-References: <1304719780-27347-1-git-send-email-lrodriguez@atheros.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304719780-27347-1-git-send-email-lrodriguez@atheros.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753477Ab1EGAk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 20:40:28 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16894 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab1EGAk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 20:40:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 06 May 2011 17:40:26 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: olof@lixom.net, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH] add support for rfkill gpio devices
+Date: Fri,  6 May 2011 17:40:00 -0700
+Message-Id: <1304728801-21331-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 03:09:38PM -0700, Luis R. Rodriguez wrote:
-> These two patches adds support for the Atheros AR1520 GPS device,
-> currently only pegged onto an mrst platform. This creates a character
-> device called ar1520 and lets userspace talk to it through it. My only
-> concern against this approach is that it this requires a custom userspace
-> application for reseting the device, waking it up and for blocking reads
-> through ioctl. The character device can be used to read/write data to it
-> as well.
+This is a rewrite of the bt_rfkill driver that Anantha first sent out
+in mid April. I tried to take into account all comments, and ended up with
+what I hope to be a simple yet useful base generic gpio rfkill driver.
 
-I really don't like using a character device for this, what's wrong with
-a tty device instead like other GPS devices are using today (i.e. a
-number of USB GPS devices)?
+Please feel free to point out areas that could use changes as I am new to
+the rfkill subsystem and rfkill devices in general.
 
-I don't understand what these ioctls are supposed to be doing, can't
-they map to standard tty ioctls that we already have for flow control so
-that userspace doesn't have to write a whole new application just to
-talk to yet-another-gps-device?
+Rhyland Klein (1):
+  net: rfkill: add generic gpio rfkill driver
 
-thanks,
+ include/linux/rfkill-gpio.h |   45 ++++++++++
+ net/rfkill/Kconfig          |    7 ++
+ net/rfkill/Makefile         |    1 +
+ net/rfkill/rfkill-gpio.c    |  199 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 252 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/rfkill-gpio.h
+ create mode 100644 net/rfkill/rfkill-gpio.c
 
-greg k-h
+-- 
+1.7.5
+
