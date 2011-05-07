@@ -1,325 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab1EGF5V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 01:57:21 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:8391 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab1EGF5N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 01:57:13 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6338"; a="89861682"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-m32r@ml.linux-m32r.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        user-mode-linux-devel@lists.sourceforge.net, x86@kernel.org
-Subject: [PATCH] lib: Consolidate DEBUG_STACK_USAGE option
-Date: Fri,  6 May 2011 22:57:11 -0700
-Message-Id: <1304747831-2098-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.185.g0b9dee
+	id S1752267Ab1EGF7p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 01:59:45 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.182]:21894
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751908Ab1EGF7n convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 01:59:43 -0400
+X-SpamScore: -30
+X-BigFish: VS-30(zz9371O179dN168aJ542M1432N98dK111aL853kzz1202hzz8275dh8275chz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Kushwaha Prabhakar-B32579 <B32579@freescale.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: Zang Roy-R61911 <R61911@freescale.com>,
+        Gala Kumar-B11780 <B11780@freescale.com>,
+        Gupta Maneesh-B18878 <B18878@freescale.com>,
+        Aggrwal Poonam-B10812 <B10812@freescale.com>,
+        Kalra Ashish-B00888 <B00888@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
+Subject: RE: [RFC v2] virtio: add virtio-over-PCI driver
+Thread-Topic: [RFC v2] virtio: add virtio-over-PCI driver
+Thread-Index: AQHMC+KpxpHRMtOFm0y8bk2Pqd9fE5R/rjKAgAAAUUCAAJykgIAAkmJA
+Date: Sat, 7 May 2011 05:59:36 +0000
+Message-ID: <071A08F2C6A57E4E94D980ECA553F8741A6056@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <071A08F2C6A57E4E94D980ECA553F8741A54D4@039-SN1MPN1-004.039d.mgd.msft.net>
+ <20110506160627.GB14069@ovro.caltech.edu>
+In-Reply-To: <20110506160627.GB14069@ovro.caltech.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.57]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most arches define CONFIG_DEBUG_STACK_USAGE exactly the same way.
-Move it to lib/Kconfig.debug so each arch doesn't have to define
-it. This obviously makes the option generic, but that's fine
-because the config is already used in generic code.
+Thanks Ira for your kind reply.
+I will look for the mentioned pointers :) 
 
-It's not obvious to me that sysrq-P actually does anything
-different with this option enabled, but I erred on the side of
-caution by keeping the most inclusive wording.
 
-Cc: linux-arch@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Cc: linux-m32r@ml.linux-m32r.org
-Cc: linux-mips@linux-mips.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-sh@vger.kernel.org
-Cc: sparclinux@vger.kernel.org
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: user-mode-linux-devel@lists.sourceforge.net
-Cc: x86@kernel.org
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+Prabhakar 
 
-This is on top of mmotm's lib-conslidate-debug_per_cpu_maps patch.
+> -----Original Message-----
+> From: Ira W. Snyder [mailto:iws@ovro.caltech.edu]
+> Sent: Friday, May 06, 2011 9:36 PM
+> To: Kushwaha Prabhakar-B32579
+> Cc: Zang Roy-R61911; Gala Kumar-B11780; Gupta Maneesh-B18878; Aggrwal
+> Poonam-B10812; Kalra Ashish-B00888; linux-kernel@vger.kernel.org;
+> linuxppc-dev@ozlabs.org; netdev@vger.kernel.org
+> Subject: Re: [RFC v2] virtio: add virtio-over-PCI driver
+> 
+> On Fri, May 06, 2011 at 12:00:34PM +0000, Kushwaha Prabhakar-B32579
+> wrote:
+> > Hi,
+> >
+> > I want to use this patch as base patch for "FSL 85xx platform" to
+> support PCIe Agent.
+> > The work looks to be little old now. So wanted to understand if any
+> development has happened further on it.
+> >
+> > In case no, I would take this work forward for PCIe Agent.
+> >
+> > Any help/suggestions are most appreciated in this regard.
+> >
+> 
+> Hi Prabhakar,
+> 
+> I use PCI agent mode on an mpc8349emds board. All of the important setup
+> is done very early in the boot process, by U-Boot. Search the U-Boot
+> source for CONFIG_PCISLAVE. I hunch that the setup needed for 85xx boards
+> are similar.
+> 
+> This virtio-over-PCI work is now very old. It was intended to provide a
+> communication mechanism between a PCI Master and many PCI Agents
+> (slaves).
+> Dave Miller (networking maintainer) suggested to use virtio for this so
+> that many different devices could be used. Such as:
+> - network interface
+> - serial port (for serial console)
+> 
+> I am aware of other ongoing work in this area. Specifically, some ARM
+> developers are working on a virtio API using their message registers.
+> This work is much newer, and will be a much better starting place for
+> you.
+> 
+> Search the virtualization mailing list for:
+> "[PATCH 00/02] virtio: Virtio platform driver"
+> 
+> Here is a link to some of their code:
+> http://www.spinics.net/lists/linux-sh/msg07188.html
+> 
+> I am currently using a custom driver to provide a network device on my
+> PCI agents. Searching the mailing list archives for "PCINet", you will
+> find early versions of the driver. I am happy to provide you a current
+> copy. It does not use virtio at all, and is unlikely to be accepted into
+> mainline Linux.
+> 
+> I am happy to provide any of my code if you think it would help you get
+> started. Specifically, the current version of "PCINet" show how to use
+> the DMA controller in order to get good network performance. I am also
+> happy to help port code to 83xx, as well as test on 83xx. Please ask any
+> questions you may have.
+> 
+> I have people ask about this code about once every two months. There is
+> plenty of interest in a mainline Linux solution to this problem. :) I
+> will be moving to 85xx someday, and I hope there is an accepted mainline
+> solution by then.
+> 
+> I hope it helps,
+> Ira
+> 
+> > -----Original Message-----
+> > From: linux-kernel-owner@vger.kernel.org
+> > [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Ira Snyder
+> > Sent: Friday, 27 February, 2009 3:19 AM
+> > To: Arnd Bergmann
+> > Cc: linux-kernel@vger.kernel.org; Rusty Russell; Jan-Bernd Themann;
+> > linuxppc-dev@ozlabs.org; netdev@vger.kernel.org
+> > Subject: Re: [RFC v2] virtio: add virtio-over-PCI driver
+> >
+> > On Thu, Feb 26, 2009 at 09:37:14PM +0100, Arnd Bergmann wrote:
+> > > On Thursday 26 February 2009, Ira Snyder wrote:
+> > > > On Thu, Feb 26, 2009 at 05:15:27PM +0100, Arnd Bergmann wrote:
+> > > >
+> > > > I think so too. I was just getting something working, and thought
+> > > > it would be better to have it "out there" rather than be working
+> > > > on it forever. I'll try to break things up as I have time.
+> > >
+> > > Ok, perfect!
+> > >
+> > > > For the "libraries", would you suggest breaking things into
+> > > > seperate code files, and using EXPORT_SYMBOL_GPL()? I'm not very
+> > > > familiar with doing that, I've mostly been writing code within the
+> > > > existing device driver frameworks. Or do I need export symbol at
+> all? I'm not sure...
+> > >
+> > > You have both options. When you list each file as a separate module
+> > > in the Makefile, you use EXPORT_SYMBOL_GPL to mark functions that
+> > > get called by dependent modules, but this will work only in one way.
+> > >
+> > > You can also link multiple files together into one module, although
+> > > it is less common to link a single source file into multiple modules.
+> > >
+> >
+> > Ok. I'm more familiar with the EXPORT_SYMBOL_GPL interface, so I'll do
+> that. If we decide it sucks later, we'll change it.
+> >
+> > > > I always thought you were supposed to use packed for data
+> > > > structures that are external to the system. I purposely designed
+> > > > the structures so they wouldn't need padding.
+> > >
+> > > That would only make sense for structures that are explicitly
+> > > unaligned, like a register layout using
+> > >
+> > > struct my_registers {
+> > > 	__le16 first;
+> > > 	__le32 second __attribute__((packed));
+> > > 	__le16 third;
+> > > };
+> > >
+> > > Even here, I'd recommend listing the individual members as packed
+> > > rather than the entire struct. Obviously if you layout the members
+> > > in a sane way, you don't need either.
+> > >
+> >
+> > Ok. I'll drop the __attribute__((packed)) and make sure there aren't
+> problems. I don't suspect any, though.
+> >
+> > > > I mostly don't need it. In fact, the only place I'm using
+> > > > registers not specific to the messaging unit is in the probe
+> > > > routine, where I setup the 1GB window into host memory and setting
+> > > > up access to the guest memory on the PCI bus.
+> > >
+> > > You could add the registers you need for this to the "reg" property
+> > > of your device, to be mapped with of_iomap.
+> > >
+> > > If the registers for setting up this window don't logically fit into
+> > > the same device as the one you already use, the cleanest solution
+> > > would be to have another device just for this and then make a
+> > > function call into that driver to set up the window.
+> > >
+> >
+> > The registers are part of the board control registers. They don't fit
+> at all in the message unit. Doing this in the bootloader seems like a
+> logical place, but that would require any testers to flash a new U-Boot
+> image into their mpc8349emds boards.
+> >
+> > The first set of access is used to set up a 1GB region in the memory
+> map that accesses the host's memory. Any reads/writes to addresses
+> 0x80000000-0xc0000000 actually hit the host's memory.
+> >
+> > The last access sets up PCI BAR1 to hit the memory from
+> dma_alloc_coherent(). The bootloader already sets up the window as 16K,
+> it just doesn't point it anywhere. Maybe this /should/ go into the
+> bootloader. Like above, it would require testers to flash a new U-Boot
+> image into their mpc8349emds boards.
+> >
+> > > > Now, I wouldn't need to access these registers at all if the
+> > > > bootloader could handle it. I just don't know if it is possible to
+> > > > have Linux not use some memory that the bootloader allocated,
+> > > > other than with the mem=XXX trick, which I'm sure wouldn't be
+> acceptable.
+> > > > I've just used regular RAM so this is portable to my custom board
+> > > > (mpc8349emds based) and a regular mpc8349emds. I didn't want to
+> > > > change anything board specific.
+> > > >
+> > > > I would love to have the bootloader allocate (or reserve somewhere
+> > > > in the memory map) 16K of RAM, and not be required to allocate it
+> > > > with dma_alloc_coherent(). It would save me plenty of headaches.
+> > >
+> > > I believe you can do that through the "memory" devices in the device
+> > > tree, by leaving out a small part of the description of main memory,
+> > > at putting it into the "reg" property of your own device.
+> > >
+> >
+> > I'll explore this option. I didn't even know you could do this.  Is a
+> driver that requires the trick acceptable for mainline inclusion? Just
+> like setting up the 16K PCI window, this is very platform specific.
+> >
+> > This limits the guest driver to systems which are able to change
+> Linux's view of their memory somehow. Maybe this isn't a problem.
+> >
+> > > > Code complexity only. Also, it was easier to write 80-char lines
+> > > > with something like:
+> > > >
+> > > > vop_get_desc(vq, idx, &desc);
+> > > > if (desc.flags & VOP_DESC_F_NEXT) {
+> > > > 	/* do something */
+> > > > }
+> > > >
+> > > > Instead of:
+> > > > if (le16_to_cpu(vq->desc[idx].flags) & VOP_DESC_F_NEXT) {
+> > > > 	/* do something */
+> > > > }
+> > > >
+> > > > Plus, I didn't have to remember how many bits were in each field.
+> > > > I just thought it made everything simpler to understand.
+> Suggestions?
+> > >
+> > > hmm, in this particular case, you could change the definition of
+> > > VOP_DESC_F_NEXT to
+> > >
+> > > #define VOP_DESC_F_NEXT cpu_to_le16(1)
+> > >
+> > > and then do the code as the even simpler (source and object code
+> > > wise)
+> > >
+> > > if (vq->desc[idx].flags) & VOP_DESC_F_NEXT)
+> > >
+> > > I'm not sure if you can do something along these lines for the other
+> > > cases as well though.
+> > >
+> >
+> > That's a good idea. It wouldn't fix the addresses, lengths, and next
+> fields, though. I'll make the change and see how bad it is, then report
+> back. It may not be so bad after all.
+> >
+> > > > I used 3 so they would would align to 1024 byte boundaries within
+> > > > a 4K page. Then the layout was 16K on the bus, each 4K page is a
+> > > > single virtio-device, and each 1K block is a single virtqueue. The
+> > > > first 1K is for virtio-device status and feature bits, etc.
+> > > >
+> > > > Packing them differently isn't a problem. It was just easier to
+> > > > code because setting up a window with the correct size is so
+> > > > platform specific.
+> > >
+> > > Ok. I guess the important question is what part of the code makes
+> > > this decision. Ideally, the virtio-net glue would instantiate the
+> > > device with the right number of queues.
+> > >
+> >
+> > Yeah, virtio doesn't work that way.
+> >
+> > The virtio drivers just call find_vq() with a different index for each
+> queue they want to use. You have no way of knowing how many queues each
+> virtio driver will want, unless you go read their source code.
+> >
+> > virtio-net currently uses 3 queues, but we only support the first two.
+> > The third is optional (for now...), and non-symmetric.
+> >
+> > Thanks again,
+> > Ira
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> >
+> >
+> >
 
- arch/arm/Kconfig.debug       |    7 -------
- arch/blackfin/Kconfig.debug  |    9 ---------
- arch/m32r/Kconfig.debug      |    9 ---------
- arch/mips/Kconfig.debug      |    9 ---------
- arch/powerpc/Kconfig.debug   |    9 ---------
- arch/score/Kconfig.debug     |    9 ---------
- arch/sh/Kconfig.debug        |    9 ---------
- arch/sparc/Kconfig.debug     |    9 ---------
- arch/tile/Kconfig.debug      |    9 ---------
- arch/um/Kconfig.debug        |    9 ---------
- arch/unicore32/Kconfig.debug |    7 -------
- arch/x86/Kconfig.debug       |    9 ---------
- lib/Kconfig.debug            |    9 +++++++++
- 13 files changed, 9 insertions(+), 104 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 03d01d7..81cbe40 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -63,13 +63,6 @@ config DEBUG_USER
- 	      8 - SIGSEGV faults
- 	     16 - SIGBUS faults
- 
--config DEBUG_STACK_USAGE
--	bool "Enable stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T output.
--
- # These options are only for real kernel hackers who want to get their hands dirty.
- config DEBUG_LL
- 	bool "Kernel low-level debugging functions"
-diff --git a/arch/blackfin/Kconfig.debug b/arch/blackfin/Kconfig.debug
-index 2641731..19ccfb3 100644
---- a/arch/blackfin/Kconfig.debug
-+++ b/arch/blackfin/Kconfig.debug
-@@ -9,15 +9,6 @@ config DEBUG_STACKOVERFLOW
- 	  This option will cause messages to be printed if free stack space
- 	  drops below a certain limit.
- 
--config DEBUG_STACK_USAGE
--	bool "Enable stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T output.
--
--	  This option will slow down process creation somewhat.
--
- config DEBUG_VERBOSE
- 	bool "Verbose fault messages"
- 	default y
-diff --git a/arch/m32r/Kconfig.debug b/arch/m32r/Kconfig.debug
-index 2e1019d..bb1afc1 100644
---- a/arch/m32r/Kconfig.debug
-+++ b/arch/m32r/Kconfig.debug
-@@ -9,15 +9,6 @@ config DEBUG_STACKOVERFLOW
- 	  This option will cause messages to be printed if free stack space
- 	  drops below a certain limit.
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config DEBUG_PAGEALLOC
- 	bool "Debug page memory allocations"
- 	depends on DEBUG_KERNEL && BROKEN
-diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
-index 5358f90..83ed00a 100644
---- a/arch/mips/Kconfig.debug
-+++ b/arch/mips/Kconfig.debug
-@@ -76,15 +76,6 @@ config DEBUG_STACKOVERFLOW
- 	  provides another way to check stack overflow happened on kernel mode
- 	  stack usually caused by nested interruption.
- 
--config DEBUG_STACK_USAGE
--	bool "Enable stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config SMTC_IDLE_HOOK_DEBUG
- 	bool "Enable additional debug checks before going into CPU idle loop"
- 	depends on DEBUG_KERNEL && MIPS_MT_SMTC
-diff --git a/arch/powerpc/Kconfig.debug b/arch/powerpc/Kconfig.debug
-index 12a8d18..f862fc0 100644
---- a/arch/powerpc/Kconfig.debug
-+++ b/arch/powerpc/Kconfig.debug
-@@ -35,15 +35,6 @@ config DEBUG_STACKOVERFLOW
- 	  This option will cause messages to be printed if free stack space
- 	  drops below a certain limit.
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config HCALL_STATS
- 	bool "Hypervisor call instrumentation"
- 	depends on PPC_PSERIES && DEBUG_FS && TRACEPOINTS
-diff --git a/arch/score/Kconfig.debug b/arch/score/Kconfig.debug
-index 451ed54..a1f346d 100644
---- a/arch/score/Kconfig.debug
-+++ b/arch/score/Kconfig.debug
-@@ -16,15 +16,6 @@ config CMDLINE
- 	  other cases you can specify kernel args so that you don't have
- 	  to set them up in board prom initialization routines.
- 
--config DEBUG_STACK_USAGE
--	bool "Enable stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config RUNTIME_DEBUG
- 	bool "Enable run-time debugging"
- 	depends on DEBUG_KERNEL
-diff --git a/arch/sh/Kconfig.debug b/arch/sh/Kconfig.debug
-index 1553d56..c1d5a82 100644
---- a/arch/sh/Kconfig.debug
-+++ b/arch/sh/Kconfig.debug
-@@ -28,15 +28,6 @@ config STACK_DEBUG
- 	  every function call and will therefore incur a major
- 	  performance hit. Most users should say N.
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config 4KSTACKS
- 	bool "Use 4Kb for kernel stacks instead of 8Kb"
- 	depends on DEBUG_KERNEL && (MMU || BROKEN) && !PAGE_SIZE_64KB
-diff --git a/arch/sparc/Kconfig.debug b/arch/sparc/Kconfig.debug
-index d9a795e..6db35fb 100644
---- a/arch/sparc/Kconfig.debug
-+++ b/arch/sparc/Kconfig.debug
-@@ -6,15 +6,6 @@ config TRACE_IRQFLAGS_SUPPORT
- 
- source "lib/Kconfig.debug"
- 
--config DEBUG_STACK_USAGE
--	bool "Enable stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config DEBUG_DCFLUSH
- 	bool "D-cache flush debugging"
- 	depends on SPARC64 && DEBUG_KERNEL
-diff --git a/arch/tile/Kconfig.debug b/arch/tile/Kconfig.debug
-index 9bc161a..ddbfc33 100644
---- a/arch/tile/Kconfig.debug
-+++ b/arch/tile/Kconfig.debug
-@@ -21,15 +21,6 @@ config DEBUG_STACKOVERFLOW
- 	  This option will cause messages to be printed if free stack space
- 	  drops below a certain limit.
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config DEBUG_EXTRA_FLAGS
- 	string "Additional compiler arguments when building with '-g'"
- 	depends on DEBUG_INFO
-diff --git a/arch/um/Kconfig.debug b/arch/um/Kconfig.debug
-index 8fce5e5..34ac57f 100644
---- a/arch/um/Kconfig.debug
-+++ b/arch/um/Kconfig.debug
-@@ -28,13 +28,4 @@ config GCOV
- 	  If you're involved in UML kernel development and want to use gcov,
- 	  say Y.  If you're unsure, say N.
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	default N
--	help
--	  Track the maximum kernel stack usage - this will look at each
--	  kernel stack at process exit and log it if it's the deepest
--	  stack seen so far.
--
--	  This option will slow down process creation and destruction somewhat.
- endmenu
-diff --git a/arch/unicore32/Kconfig.debug b/arch/unicore32/Kconfig.debug
-index 3140151..ae2ec33 100644
---- a/arch/unicore32/Kconfig.debug
-+++ b/arch/unicore32/Kconfig.debug
-@@ -27,13 +27,6 @@ config EARLY_PRINTK
- 	  with klogd/syslogd or the X server. You should normally N here,
- 	  unless you want to debug such a crash.
- 
--config DEBUG_STACK_USAGE
--	bool "Enable stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T output.
--
- # These options are only for real kernel hackers who want to get their hands dirty.
- config DEBUG_LL
- 	bool "Kernel low-level debugging functions"
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 1bf8839..c0f8a5c 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -66,15 +66,6 @@ config DEBUG_STACKOVERFLOW
- 	  This option will cause messages to be printed if free stack space
- 	  drops below a certain limit.
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL
--	---help---
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
--
--	  This option will slow down process creation somewhat.
--
- config X86_PTDUMP
- 	bool "Export kernel pagetable layout to userspace via debugfs"
- 	depends on DEBUG_KERNEL
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c0872ee..37fae12 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -654,6 +654,15 @@ config STACKTRACE
- 	bool
- 	depends on STACKTRACE_SUPPORT
- 
-+config DEBUG_STACK_USAGE
-+	bool "Stack utilization instrumentation"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enables the display of the minimum amount of free stack which each
-+	  task has ever had available in the sysrq-T and sysrq-P debug output.
-+
-+	  This option will slow down process creation somewhat.
-+
- config DEBUG_KOBJECT
- 	bool "kobject debugging"
- 	depends on DEBUG_KERNEL
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
