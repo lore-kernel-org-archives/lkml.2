@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab1EGPYN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 11:24:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44432 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755272Ab1EGPYK (ORCPT
+	id S1755554Ab1EGPhv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 11:37:51 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53725 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab1EGPht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 11:24:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=PVP6Eip58NVzDGdiocHNPjaeViU9DvRwc1Ji1XVkHexdVJnJ45d8Tc08IuYGVAHwFi
-         HqIMM+IqmognPkWMSrTeKPwGTiyPqTtPa1UukIEzZymshdIdyFPqpUpYqLn4+oeQk7rh
-         YdJCUt7mnXZWwEC+TNX5jNkA3a/hT+EYfHuz8=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikF5YL8tJ_f5510yy1Ywm69rOUK2A@mail.gmail.com>
-References: <BANLkTi=8U3=E0=j8MJ-r70O_aO8Pxvv9Nw@mail.gmail.com>
-	<BANLkTi=F8u7oZM+=W+5vzmvf1b0YiN0fQg@mail.gmail.com>
-	<20110420080535.3edd11ac@pluto.restena.lu>
-	<20110420105631.70695dfa@lxorguk.ukuu.org.uk>
-	<BANLkTikF5YL8tJ_f5510yy1Ywm69rOUK2A@mail.gmail.com>
-Date: Sat, 7 May 2011 18:24:09 +0300
-Message-ID: <BANLkTi=x76zkTpZxaHUnSUeP+_O0SsK0Zw@mail.gmail.com>
-Subject: Re: [2.6.39-rc2, framebuffer] use after free oops
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 7 May 2011 11:37:49 -0400
+X-Nat-Received: from [202.181.97.72]:62114 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1304782658.29789
+To: akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH 1/1] coredump: use task comm instead of (unknown)
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20110505150601.a4457970.akpm@linux-foundation.org>
+	<201105062126.DIE34311.OJHtFMFFSQLVOO@I-love.SAKURA.ne.jp>
+	<20110506123328.d0a707b7.akpm@linux-foundation.org>
+	<201105071114.CJH64556.FOOVFHOQJSFLtM@I-love.SAKURA.ne.jp>
+	<20110506202826.68850d88.akpm@linux-foundation.org>
+In-Reply-To: <20110506202826.68850d88.akpm@linux-foundation.org>
+Message-Id: <201105080037.GFD90166.HFMQVLOSFOtFJO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 8 May 2011 00:37:34 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 07052011 #5385913, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Daniel J Blueman.
+Andrew Morton wrote:
+> PR_SET_NAME uses set_task_comm() which has appropriate locking to
+> protect against get_task_comm().  
+> 
+> If kernel code directly accesses task->comm without taking task_lock()
+> then yes, it's racy.
 
-Did you test https://lkml.org/lkml/2011/5/5/208 ? And it works for you ?
-Then please reply with your error and an Tested-by.
+I see. Well,
 
-And CC: "Dave Airlie" <airlied@redhat.com>
+  grep -r -- '->comm[,;)]' .
+
+in 2.6.39-rc6 shows so many users directly reading/updating, including
+
+	case 'e':
+		err = cn_printf(cn, "%s", current->comm);
+		break;
+
+in format_corename().
+
+> Hopefully John Stultz will soon be presenting us with a %p modifier for
+> displaying task_struct.comm.
+
+That will be nice. But caller might by error call printk() with that modifier
+between task_lock() and task_unlock().
