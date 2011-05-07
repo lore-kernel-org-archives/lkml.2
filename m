@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab1EGCO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 22:14:27 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:65343 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab1EGCO0 (ORCPT
+	id S1754809Ab1EGCXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 22:23:39 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34074 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab1EGCXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 22:14:26 -0400
-X-Nat-Received: from [202.181.97.72]:65384 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1304734458.22347
-To: akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org
-Subject: Re: [PATCH 1/1] coredump: use task comm instead of (unknown)
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <4DC0FFAB.1000805@gmail.com>
-	<1304494354-21487-1-git-send-email-jslaby@suse.cz>
-	<20110505150601.a4457970.akpm@linux-foundation.org>
-	<201105062126.DIE34311.OJHtFMFFSQLVOO@I-love.SAKURA.ne.jp>
-	<20110506123328.d0a707b7.akpm@linux-foundation.org>
-In-Reply-To: <20110506123328.d0a707b7.akpm@linux-foundation.org>
-Message-Id: <201105071114.CJH64556.FOOVFHOQJSFLtM@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 7 May 2011 11:14:14 +0900
-Mime-Version: 1.0
+	Fri, 6 May 2011 22:23:37 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: <linux-arch@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, jamal <hadi@cyberus.ca>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Subject: [PATCH 0/7] Network namespace manipulation with file descriptors
+Date: Fri, 06 May 2011 19:23:29 -0700
+Message-ID: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06052011 #5384387, status: clean
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+H8uMe2kAx6snZESPZNatP322IcfNY/ks=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> > char *strncpy(char *dest, const char *src, size_t n)
-> > {
-> > 	size_t len = __strnend(src, n) - src;
 
-If src was overwritten by prctl(PR_SET_NAME) at this moment (i.e. after len was
-calculated),
+Today there are something things you can use namespaces to implement but
+the userspace code is unnecessarily complex and fragile because of
+limitations of the kernel interfaces.
 
-> > 	__builtin_memset(dest + len, 0, n - len);
-> > 	__builtin_memcpy(dest, src, len);
+This patchset addresses the user interface limitations by introducing
+proc files you can open to get file descriptors that keep alive and
+refer to your a tasks namespaces.  Those file descriptors can be passed
+to the new setns system call or the NET_NS_FD argument in netlink
+messages.
 
-won't this result in inconsistent copying of src when length of src has changed
-by prctl(PR_SET_NAME)?
+This patchset is sufficient to implement linux support for named network
+namespaces in iproute allowing vpns to be isolated in a network
+namespace where you don't have to worry about them conflicting with the
+rest of your network.
 
-> > 	return dest;
-> > }
+This patchset is almost sufficient to remove the need for a daemon in a
+container to allow you to log in.  Unfortunately a few of the namespaces
+are not ready to merge yet so I have left them out.
 
-This strncpy() assumes that length of src won't change within the function.
-I thought prctl(PR_SET_NAME) might break such assumption.
+Arch maintainers could you look over patch 7 and verify I have wired
+up this new system call correctly.
+
+These changes are also available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/linux-2.6-nsfd.git
+
