@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677Ab1EGFE7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 01:04:59 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46066 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab1EGFE6 (ORCPT
+	id S1751797Ab1EGFUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 01:20:25 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:6668 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab1EGFUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 01:04:58 -0400
-Message-ID: <4DC4D2F1.7080301@canonical.com>
-Date: Fri, 06 May 2011 22:04:49 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Anca Emanuel <anca.emanuel@gmail.com>
-CC: kernel-team@lists.ubuntu.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Patch not upstream: fix race between open and removal of	framebuffers
-References: <BANLkTikAc66kTknEKCX4Mbg7_9CGw+qDfQ@mail.gmail.com>	<4D9DC39A.2080207@canonical.com> <BANLkTikcbGVemWrs+3ZeAvLFafM339CP9w@mail.gmail.com>
-In-Reply-To: <BANLkTikcbGVemWrs+3ZeAvLFafM339CP9w@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 7 May 2011 01:20:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=u/tGkqRmDrZBp+DhZa3Lh5XaitloS56iTqNCNLD4usEnZzUXMrMwYVFDa63inETbs
+	l3g5Kr6mWboiIJnz+1pqg==
+From: Nat Gurumoorthy <natg@google.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Cc: mikew@google.com, Nat Gurumoorthy <natg@google.com>
+Subject: [PATCH v9 0/2] Make all it87 drivers SMP safe
+Date: Fri,  6 May 2011 22:19:24 -0700
+Message-Id: <1304745564-13003-1-git-send-email-natg@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2011 09:54 AM, Anca Emanuel wrote:
-> On Thu, Apr 7, 2011 at 5:00 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
->> On 04/02/2011 09:37 AM, Anca Emanuel wrote:
+There are 3 different drivers that touch the it87 hardware registers.
+The 3 drivers have been written independently and access the it87 hardware
+registers assuming they are the only driver accessing it. This change
+attempts to serialize access to the hardware by using
+"request_muxed_region" macro defined by Alan Cox. Call to this macro
+will hold off the requestor if the resource is currently busy.
+The use of the above macro makes it possible to get rid of
+spinlocks in it8712f_wdt.c and it87_wdt.c watchdog drivers.
+This also greatly simplifies the implementation of it87_wdt.c driver.
 
-<< snip >>
+01 - Changes to it87 watchdog driver to use "request_muxed_region"
+ drivers/watchdog/it8712f_wdt.c
+ drivers/watchdog/it87_wdt.c
 
-> I can use de PC, but when it wake up from S3, hangs.
-> full dmesg at: http://pastebin.com/rhMJrF2x
-> uname -a
-> Linux ubuntu 2.6.39-rc6 #7 SMP Wed May 4 12:26:39 EEST 2011 x86_64
-> x86_64 x86_64 GNU/Linux
-> 
-> I read that Ubuntu have something like 150 patches NOT upstreamed. Why ?
-> And other guys complaining about the hard work they do to maintain
-> stable and mainline.
-> 
-> If you not upstream your work, then what is the ideea ? Keep it only
-> for Ubuntu users ?
-> 
-No, it a diff of about 150 patches for natty from the base 2.6.38 kernel.
-We upstream our patches.  Sometimes some patches will slip through for a
-while, but they will go up.
+02 - Chages to hwmon it87 driver to use "request_muxed_region"
+ drivers/hwmon/it87.c
 
-Of the 150 or so patches not "upstream" there are only a few that are
-ubuntu specific.  Some of the patches are backports from patches upstream
-for 2.6.39, some are from linux-next or other development branches,
-and some are from projects that aren't upstream for one reason or another
-(eg. aufs).
+ drivers/hwmon/it87.c           |   31 +++++---
+ drivers/watchdog/it8712f_wdt.c |   62 +++++++++++----
+ drivers/watchdog/it87_wdt.c    |  165 +++++++++++++++++++++++----------------
+ 3 files changed, 161 insertions(+), 97 deletions(-)
 
-Our delta is public, well documented and available to be examined any
-time.  Just pull our kernels from
+Signed-off-by: Nat Gurumoorthy <natg@google.com>
 
-git://kernel.ubuntu.com/ubuntu/ubuntu-oneiric.git
-git://kernel.ubuntu.com/ubuntu/ubuntu-natty.git
-..
+Patch History:
+v9:
+- More clean up in drivers/hwmon/it87.c. More fixes that of
+  the type in V8 that got missed in drivers/watchdog/it8712f_wdt.c.
 
+v8:
+- Return the error actually returned by superio_enter and not -EBUSY.
+  Notifier routines return NOTIFY_DONE even if underlying calls from
+  notifier to routines that invoke superio_enter return with error.
+  Make sure release routines returns do proper clean up even if calls to
+  superio_enter fail.
+
+v7:
+- superio_enter return error if call to "request_muxed_region" fails. Rest
+  of the changes deal with error returns from superio_enter. Changes to
+  it87_wdt.c are untested.
+
+v6:
+- Pay attention to value returned by request_muxed_region. The first call to
+  request_muxed_region will attempt 10 times to reserve the region before it
+  gives up. This will typically get called from the driver init routines. If this
+  succeeds then subsequent calls wait forever for the resource to be available.
+
+v5:
+- Remove unnecessary while from superio_enter.
+
+v4:
+- Remove extra braces in superio_enter routines.
+
+v3:
+- Totally abandon the spinlock based approach and use "request_muxed_region" to
+  hold off requestors if the resource is busy.
+
+v2:
+- More verbose patch headers. Add In-Reply-To: field.
 
