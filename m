@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab1EGJeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 05:34:17 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61431 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737Ab1EGJeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 05:34:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=mgV2bLMx3VUAdB+8XUTU0H9RJ/WP+1TEAnuSBJ1vFVpKOTcIDroyKjWIMjqrc7nflU
-         0Y/UqcBlwgdKW0qhCcmexDYGUxopDjq2pM6PXuFMiLLogwXE56geGoe4Qbauz23ExPEX
-         qWap9e9El189yStq2x45uRgQ2aOiQTjJq9s+w=
+	id S1753914Ab1EGJkW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 05:40:22 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55247 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753163Ab1EGJkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 05:40:21 -0400
+Date: Sat, 7 May 2011 11:40:06 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Makefile: Use gcc to determine ARCH
+Message-ID: <20110507094006.GH27657@elte.hu>
+References: <1304743274.3132.17.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1304747831-2098-1-git-send-email-sboyd@codeaurora.org>
-References: <1304747831-2098-1-git-send-email-sboyd@codeaurora.org>
-Date: Sat, 7 May 2011 11:34:13 +0200
-Message-ID: <BANLkTi=h-151_cMPpii6O+kowvc=0WxKjQ@mail.gmail.com>
-Subject: Re: [PATCH] lib: Consolidate DEBUG_STACK_USAGE option
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-m32r@ml.linux-m32r.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        user-mode-linux-devel@lists.sourceforge.net, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304743274.3132.17.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 7, 2011 at 7:57 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Most arches define CONFIG_DEBUG_STACK_USAGE exactly the same way.
-> Move it to lib/Kconfig.debug so each arch doesn't have to define
-> it. This obviously makes the option generic, but that's fine
-> because the config is already used in generic code.
->
-> It's not obvious to me that sysrq-P actually does anything
-> different with this option enabled, but I erred on the side of
-> caution by keeping the most inclusive wording.
->
-> Cc: linux-arch@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: uclinux-dist-devel@blackfin.uclinux.org
-> Cc: linux-m32r@ml.linux-m32r.org
-> Cc: linux-mips@linux-mips.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-sh@vger.kernel.org
-> Cc: sparclinux@vger.kernel.org
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: user-mode-linux-devel@lists.sourceforge.net
-> Cc: x86@kernel.org
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
 
-Acked-by: Richard Weinberger <richard@nod.at>
+* Lin Ming <ming.m.lin@intel.com> wrote:
 
--- 
+> The original Makefile uses "uname -m" to determine ARCH.
+> This causes problem on x86 when compile perf tool on 32 bit userspace
+> with a 64 bit kernel.
+> 
+> bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+> bench/../../../arch/x86/lib/memcpy_64.S:28: Error: bad register name `%rdi'
+> 
+> This is because "uname -m" returns x86_64 and memcpy_64.S is included in 32 bit build.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+
+this changelog is missing an important line:
+
+ Reported-by: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+
+I've added it.
+
 Thanks,
-//richard
+
+	Ingo
