@@ -1,207 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab1EGHBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 03:01:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57055 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab1EGHBj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 03:01:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=bauX+Iy08lyR0dXyXJtRiTwS07n4V/KnMBHU1NkF45QuYQEBFnSqpDmrwuJM9T7YBl
-         QCfkUJamYbqxMhudLjS6C3QIsku4NHnpMt9MOfGdm0Yr6pi/oeHrek3/SyDDJxwtu2ge
-         icGfvMQCqh13DPsqJiLiwulMtzra9mAOscIuQ=
+	id S1753849Ab1EGHC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 03:02:56 -0400
+Received: from eriks.xs4all.nl ([83.160.41.216]:60107 "EHLO eriks.xs4all.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753083Ab1EGHCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 03:02:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=slagter.name; h=message-id
+	:date:from:mime-version:to:subject:references:in-reply-to
+	:content-type; q=dns; s=2007072601; b=TFVVRuiHzsqciQr6dOVvX1UGnc
+	QqO+hZ8X6kj1PA/Oo5JD9WpAlJdqS8meivMZ4GMwEEfOdG255ZJomJAuMlUTtQOQ
+	LEJli0IrOvP6GxKVKH3xkudqbuGkKvS235uHhhFNIe7h4cyL1kDVOLPfZhyPTI2k
+	Eg4bDhsjfKivtePXQ=
+Message-ID: <4DC4EE99.1090205@slagter.name>
+Date: Sat, 07 May 2011 09:02:49 +0200
+From: Erik Slagter <erik@slagter.name>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Mnenhy/0.8.3 Thunderbird/3.1.10 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-Date: Sat, 7 May 2011 00:01:38 -0700
-Message-ID: <BANLkTikwT=00Rnk=Z=-7ZbeRXtH3mbNaOw@mail.gmail.com>
-Subject: Re: Oops with Kernel 2.6.38.5
-From: Connor H <cmdkhh@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: Maxin John <maxin.john@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: OOPS after connection Droids MuIn USB display
+References: <4DC3B0E3.7010008@slagter.name>	<4DC3D296.9060707@slagter.name>	<BANLkTimcWN3=qvurDzyMUs8f5+uFPNumaw@mail.gmail.com>	<4DC42897.3000300@slagter.name> <BANLkTinGydyuG58zwVG43VnDz845BOw1Tg@mail.gmail.com>
+In-Reply-To: <BANLkTinGydyuG58zwVG43VnDz845BOw1Tg@mail.gmail.com>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms090006000800080901060507"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am pretty new to kernel development in general, so I  decided to try
-to track down this kernel oops. https://lkml.org/lkml/2011/5/4/540
+This is a cryptographically signed message in MIME format.
 
-Anyway, this is what I have so far.....
+--------------ms090006000800080901060507
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-RIP at oops was at
-*ata_eh_recover+0x9a1
+> Congratulations and thanks for explaining the details.
 
-gdb offset listed:
-(gdb) list *ata_eh_recover+0x9a1
-0xffffffff813465f6 is in ata_scsi_port_error_handler
-(drivers/ata/libata-eh.c:785).
-785      ata_port_printk(ap, KERN_ERR, "EH pending after %d "
-                      "tries, giving up\n", ATA_EH_MAX_TRIES);
-which didnt make sense because the only think that could fail is ap
-which is checked before its called and is under spinlock
+And now my big question is, can this be fixed upstream? ;-)
 
-I tried to disassemble the oops Code:
-Dump of assembler code for function str:
-   0x0000000000601040 <+0>:      8b 95 70 ff ff ff      mov    -0x90(%rbp),%edx
-   0x0000000000601046 <+6>:      b8 00 00 00 00 mov    $0x0,%eax
-   0x000000000060104b <+11>:     48 3b 9a 10 2e 00 00   cmp    0x2e10(%rdx),%rbx
-   0x0000000000601052 <+18>:     48 0f 44 c2    cmove  %rdx,%rax
-   0x0000000000601056 <+22>:     48 89 85 70 ff ff ff   mov    %rax,-0x90(%rbp)
-   0x000000000060105d <+29>:     48 8b 8d 70 ff ff ff   mov    -0x90(%rbp),%rcx
-   0x0000000000601064 <+36>:     f6 83 69 02 00 00 01   testb  $0x1,0x269(%rbx)
-   0x000000000060106b <+43>:     <48> 8b 41 18    mov    0x18(%rcx),%rax
-   0x000000000060106f <+47>:     0f 85 48 01 00 00      jne    0x6011bd
-   0x0000000000601075 <+53>:     48 85 c9       test   %rcx,%rcx
-   0x0000000000601078 <+56>:     74 12  je     0x60108c
-   0x000000000060107a <+58>:     48 8b 51 08    mov    0x8(%rcx),%rdx
-   0x000000000060107e <+62>:     48 83 00 00    addq   $0x0,(%rax)
-
-And marked in bold the instruction pointer at the oops
-
-assembly
-Starting at +0
-+0 move -0x90(rbp) to edx
-+6 move 0 to eax
-+11 compare some rdx value to rbx (not really enough in the code debug
-to tell what this is doing)
-+18 conditional move rdx and rax if equal rdx = rax = 0 (assume no,
-rdx came from stack)
-+22 move 0(rax) to some stack at -0x90(rbp)
-+29 move 0( -0x90(rbp) was just set to 0) to rcx
-+36 test if 1 = some rbx value (again not really useful)
-+43 move 0x18(rcx is 0 here), rax    null pointer dereference when
-trying to access rcx, his kernel log show both rax and rdx as 0
-
-I am having some trouble from here. I'm not sure I am even on the
-right path, but what better way to swim than to jump, included the
-kernel oops below,
-Connor
+Cheers,
+Erik.
 
 
-On Wed, May 04, 2011 at 08:27:57PM -0400, Nathan A. Mourey II wrote:
-> I am resending this to the kernel mailing list.  I sent it before
+--------------ms090006000800080901060507
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
 
-> as an attachment.  I have just included the bare essentials this time.
-> Hope it helps.
->
->
-> Kernel Oops for v 2.6.38.5
->
->
-> May  2 19:00:11 localhost kernel: [   47.919691] EXT4-fs (sda6): re-mounted. Opts: commit=0
-
-> May  2 19:00:12 localhost kernel: [   48.451802] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-> May  2 19:00:12 localhost kernel: [   48.451808] IP: [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
-
-> May  2 19:00:12 localhost kernel: [   48.451815] PGD 0
-> May  2 19:00:12 localhost kernel: [   48.451817] Oops: 0000 [#1] SMP
-> May  2 19:00:12 localhost kernel: [   48.451819] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host4/scsi_host/host4/link_power_management_policy
-
-> May  2 19:00:12 localhost kernel: [   48.451823] CPU 1
-> May  2 19:00:12 localhost kernel: [   48.451824] Modules linked in: binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep nvidia(P) arc4 snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy usblp snd_seq_oss snd_seq_midi iwlagn snd_rawmidi snd_seq_midi_event uvcvideo videodev v4l2_compat_ioctl32 iwlcore snd_seq snd_timer mac80211 snd_seq_device joydev cfg80211 snd psmouse soundcore serio_raw snd_page_alloc jmb38x_ms memstick video lp parport usbhid hid ahci r8169 libahci sdhci_pci sdhci firewire_ohci firewire_core crc_itu_t btrfs zlib_deflate libcrc32c
-
-> May  2 19:00:12 localhost kernel: [   48.451859]
-> May  2 19:00:12 localhost kernel: [   48.451861] Pid: 295, comm: scsi_eh_4 Tainted: P            2.6.38.5-core2 #1 System76, Inc. Serval Professional/Serval Professional
-
-> May  2 19:00:12 localhost kernel: [   48.451867] RIP: 0010:[<ffffffff813f98e1>]  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
-> May  2 19:00:12 localhost kernel: [   48.451870] RSP: 0018:ffff880132defbf0  EFLAGS: 00010246
-
-> May  2 19:00:12 localhost kernel: [   48.451872] RAX: 0000000000000000 RBX: ffff880132f40000 RCX: 0000000000000000
-> May  2 19:00:12 localhost kernel: [   48.451874] RDX: ffff88013377c000 RSI: ffff880132f40000 RDI: 0000000000000000
-
-> May  2 19:00:12 localhost kernel: [   48.451876] RBP: ffff880132defce0 R08: ffff88013377dc58 R09: ffff880132defd98
-> May  2 19:00:12 localhost kernel: [   48.451878] R10: 0000000000000000 R11: 00000000ffffffff R12: 0000000000000000
-
-> May  2 19:00:12 localhost kernel: [   48.451880] R13: 0000000000000000 R14: ffff88013377c000 R15: 0000000000000000
-> May  2 19:00:12 localhost kernel: [   48.451882] FS:  0000000000000000(0000) GS:ffff8800bf700000(0000) knlGS:0000000000000000
-
-> May  2 19:00:12 localhost kernel: [   48.451884] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> May  2 19:00:12 localhost kernel: [   48.451886] CR2: 0000000000000018 CR3: 0000000001a03000 CR4: 00000000000406e0
-
-> May  2 19:00:12 localhost kernel: [   48.451888] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> May  2 19:00:12 localhost kernel: [   48.451890] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-
-> May  2 19:00:12 localhost kernel: [   48.451892] Process scsi_eh_4 (pid: 295, threadinfo ffff880132dee000, task ffff880133b416c0)
-> May  2 19:00:12 localhost kernel: [   48.451894] Stack:
-> May  2 19:00:12 localhost kernel: [   48.451895]  0000000000000000 ffff880132defcc0 0000000000000000 ffff880132f42738
-
-> May  2 19:00:12 localhost kernel: [   48.451899]  ffffffff813ee8f0 ffffffff813eefe0 ffff880132defd98 ffff88013377f190
-> May  2 19:00:12 localhost kernel: [   48.451903]  ffffffffa00b3e30 ffffffff813ef030 0000000032defc60 ffff880100000000
-
-> May  2 19:00:12 localhost kernel: [   48.451906] Call Trace:
-> May  2 19:00:12 localhost kernel: [   48.451910]  [<ffffffff813ee8f0>] ? ata_std_postreset+0x0/0x190
-> May  2 19:00:12 localhost kernel: [   48.451913]  [<ffffffff813eefe0>] ? sata_std_hardreset+0x0/0x50
-
-> May  2 19:00:12 localhost kernel: [   48.451919]  [<ffffffffa00b3e30>] ? ahci_softreset+0x0/0x1d0 [libahci]
-> May  2 19:00:12 localhost kernel: [   48.451922]  [<ffffffff813ef030>] ? ata_std_prereset+0x0/0xd0
-
-> May  2 19:00:12 localhost kernel: [   48.451925]  [<ffffffff81400867>] sata_pmp_error_handler+0x607/0xc30
-> May  2 19:00:12 localhost kernel: [   48.451928]  [<ffffffff813ef030>] ? ata_std_prereset+0x0/0xd0
-
-> May  2 19:00:12 localhost kernel: [   48.451931]  [<ffffffffa00b3e30>] ? ahci_softreset+0x0/0x1d0 [libahci]
-> May  2 19:00:12 localhost kernel: [   48.451935]  [<ffffffffa00b3970>] ? ahci_hardreset+0x0/0x110 [libahci]
-
-> May  2 19:00:12 localhost kernel: [   48.451939]  [<ffffffffa00b2790>] ? ahci_postreset+0x0/0x60 [libahci]
-> May  2 19:00:12 localhost kernel: [   48.451943]  [<ffffffff813e86a9>] ? ata_wait_register+0x49/0xc0
-
-> May  2 19:00:12 localhost kernel: [   48.451947]  [<ffffffffa00b273f>] ahci_error_handler+0x1f/0x70 [libahci]
-> May  2 19:00:12 localhost kernel: [   48.451950]  [<ffffffff813faade>] ata_scsi_error+0x5be/0x900
-
-> May  2 19:00:12 localhost kernel: [   48.451953]  [<ffffffff813cf724>] scsi_error_handler+0x124/0x650
-> May  2 19:00:12 localhost kernel: [   48.451956]  [<ffffffff813cf600>] ? scsi_error_handler+0x0/0x650
-
-> May  2 19:00:12 localhost kernel: [   48.451960]  [<ffffffff810834b6>] kthread+0x96/0xa0
-> May  2 19:00:12 localhost kernel: [   48.451963]  [<ffffffff8100cd64>] kernel_thread_helper+0x4/0x10
-> May  2 19:00:12 localhost kernel: [   48.451966]  [<ffffffff81083420>] ? kthread+0x0/0xa0
-
-> May  2 19:00:12 localhost kernel: [   48.451968]  [<ffffffff8100cd60>] ? kernel_thread_helper+0x0/0x10
-> May  2 19:00:12 localhost kernel: [   48.451970] Code: 8b 95 70 ff ff ff b8 00 00 00 00 48 3b 9a 10 2e 00 00 48 0f 44 c2 48 89 85 70 ff ff ff 48 8b 8d 70 ff ff ff f6 83 69 02 00 00 01 <48> 8b 41 18 0f 85 48 01 00 00 48 85 c9 74 12 48 8b 51 08 48 83
-
-> May  2 19:00:12 localhost kernel: [   48.451998] RIP  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
-> May  2 19:00:12 localhost kernel: [   48.452001]  RSP <ffff880132defbf0>
-> May  2 19:00:12 localhost kernel: [   48.452002] CR2: 0000000000000018
-
-> May  2 19:00:12 localhost kernel: [   48.452005] ---[ end trace 87b7b160e066e854 ]---
-> May  2 19:04:10 localhost kernel: imklog 4.6.4, log source = /proc/kmsg started.
-> May  2 19:04:10 localhost kernel: [    0.000000] Initializing cgroup subsys cpuset
-
->
->
-> Linux bean 2.6.38.4-core2 #2 SMP Fri Apr 22 02:58:16 EDT 2011 x86_64 x86_64 x86_64 GNU/Linux
->
-> Gnu C                  4.5.2
-> Gnu make               3.81
-> binutils               2.21.0.20110327
-
-> util-linux             2.17.2
-> mount                  support
-> module-init-tools      3.12
-> e2fsprogs              1.41.14
-> pcmciautils            015
-> PPP                    2.4.5
-
-> Linux C Library        2.13
-> Dynamic linker (ldd)   2.13
-> Procps                 3.2.8
-> Net-tools              1.60
-> Kbd                    1.15
-> Sh-utils               8.5
-> wireless-tools         30
-
-> Modules Loaded         binfmt_misc vboxnetadp vboxnetflt vboxdrv parport_pc ppdev snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep nvidia snd_pcm arc4 snd_seq_midi snd_rawmidi snd_seq_midi_event uvcvideo videodev v4l2_compat_ioctl32 snd_seq snd_timer snd_seq_device iwlagn iwlcore snd joydev mac80211 soundcore snd_page_alloc jmb38x_ms memstick psmouse serio_raw cfg80211 video lp parport ahci sdhci_pci firewire_ohci firewire_core libahci crc_itu_t sdhci r8169
-
->
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-> Please read the FAQ at  http://www.tux.org/lkml/
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPWDCC
+BIowggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UE
+BhMCU0UxFDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5h
+bCBUVFAgTmV0d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0w
+NTA2MDcwODA5MTBaFw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMC
+VVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5l
+dHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVRO
+LVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmFpPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVN
+NRm5pELlzkniii8efNIxB8dOtINknS4p1aJkxIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQy
+lbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2qL+usobNqqrcuZzWLeeEeaYji5kbNoKXq
+vgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAsvIKKjqQOpdeJQ/wWWq8dcdcRWdq6
+hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMeoYV+9Udly/hNVyh00jT/MLbu
+9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3+sQmVO8DveAky1QaMB0G
+A1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/
+BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9BZGRU
+cnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8ubmV0L0Fk
+ZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyispgCi
+54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
+g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHd
+WTBK322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftz
+Mizpm4QkLdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsy
+XEFs/vVdoOr/0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFYTCCBEmgAwIBAgIRAIg14yiGxBLB
+Nd3nEhie2VcwDQYJKoZIhvcNAQEFBQAwga4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJVVDEX
+MBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRoZSBVU0VSVFJVU1QgTmV0d29y
+azEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29tMTYwNAYDVQQDEy1VVE4tVVNF
+UkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1haWwwHhcNMTAxMDE5MDAwMDAw
+WhcNMTExMDE5MjM1OTU5WjBGMQswCQYDVQQGEwJOTDEVMBMGA1UEAxMMRXJpayBTbGFndGVy
+MSAwHgYJKoZIhvcNAQkBFhFlcmlrQHNsYWd0ZXIubmFtZTCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBANbriwH0w2kwn4b2BwVAtiZ0OkHIiwcscx1XIOzD/bp+Sv4tVdjc2bBF
+tXTyEpDzP5cLs5V3g1hTxI5V40lgmsiKrDMp8XR6fDwqv0cdoS3ABS/gvlxhwvbJaeR7tjkM
+Ni4ofKgEfSWi7hzFyijuwM/SrwJVlpTO7Xah+FKDLVh8FWUHRVxtnFuLaHcZR+4y0c0Zi2AE
+gp3CLZQzXCsu/Nsi+0fclP4lbhg+XgAgTKDI2WIm7JuQgMSgoevQ6HFggreTj03tUoKjD4l4
+JIoDb5tc/IutLhwXZTZsrdmW2SE29xhRWauNGs9DnJAcmpUJkXHGGL8cgmqWb1Mlh9JBaN8C
+AwEAAaOCAd8wggHbMB8GA1UdIwQYMBaAFImCZ33EnSZwAEu0UEh83j2uBG59MB0GA1UdDgQW
+BBTK4wFgfa4mmdF0XOGvj3dgyG8ePzAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAd
+BgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIB
+AwUwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwgaUGA1Ud
+HwSBnTCBmjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5jb20vVVROLVVTRVJGaXJzdC1D
+bGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDBKoEigRoZEaHR0cDovL2NybC5jb21v
+ZG8ubmV0L1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRFbWFpbC5jcmww
+bAYIKwYBBQUHAQEEYDBeMDYGCCsGAQUFBzAChipodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9V
+VE5BQUFDbGllbnRDQS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNv
+bTANBgkqhkiG9w0BAQUFAAOCAQEAALQg8UqA2KoLGSmq8SsJTddYzpglJrW3mcd55qDBKLBM
+J5klHPPWoqdV2dA9X0yV4WlaS/eQHfgmQCjvJ42HDNJW6YBw1MrPFPxXFJsbpY0OlIeLY5oh
+VZjuQeI3YfwOB1ZceU4QTkdF636Ljyz3D++PmSw6ww6mm8R8LX18JIYe6vhWZs93sSMQct3R
+2s9kGB94lCKbapyq9lBhT/swM51wWTmnrIxrmFzm0+fFnNu9QwoazTn7hwg7G0Tiv2Zqz+Ba
+x318aG+gZm1OnQQRPn1hiK5C6GiKrWu9/jTV3UaGePBGslkpopMdLrwQ43P/eHmJJGyXHBLx
+87J7yN8HMzCCBWEwggRJoAMCAQICEQCINeMohsQSwTXd5xIYntlXMA0GCSqGSIb3DQEBBQUA
+MIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5
+MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cu
+dXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGlj
+YXRpb24gYW5kIEVtYWlsMB4XDTEwMTAxOTAwMDAwMFoXDTExMTAxOTIzNTk1OVowRjELMAkG
+A1UEBhMCTkwxFTATBgNVBAMTDEVyaWsgU2xhZ3RlcjEgMB4GCSqGSIb3DQEJARYRZXJpa0Bz
+bGFndGVyLm5hbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDW64sB9MNpMJ+G
+9gcFQLYmdDpByIsHLHMdVyDsw/26fkr+LVXY3NmwRbV08hKQ8z+XC7OVd4NYU8SOVeNJYJrI
+iqwzKfF0enw8Kr9HHaEtwAUv4L5cYcL2yWnke7Y5DDYuKHyoBH0lou4cxcoo7sDP0q8CVZaU
+zu12ofhSgy1YfBVlB0VcbZxbi2h3GUfuMtHNGYtgBIKdwi2UM1wrLvzbIvtH3JT+JW4YPl4A
+IEygyNliJuybkIDEoKHr0OhxYIK3k49N7VKCow+JeCSKA2+bXPyLrS4cF2U2bK3ZltkhNvcY
+UVmrjRrPQ5yQHJqVCZFxxhi/HIJqlm9TJYfSQWjfAgMBAAGjggHfMIIB2zAfBgNVHSMEGDAW
+gBSJgmd9xJ0mcABLtFBIfN49rgRufTAdBgNVHQ4EFgQUyuMBYH2uJpnRdFzhr493YMhvHj8w
+DgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsG
+AQUFBwMCMEYGA1UdIAQ/MD0wOwYMKwYBBAGyMQECAQMFMCswKQYIKwYBBQUHAgEWHWh0dHBz
+Oi8vc2VjdXJlLmNvbW9kby5uZXQvQ1BTMIGlBgNVHR8EgZ0wgZowTKBKoEiGRmh0dHA6Ly9j
+cmwuY29tb2RvY2EuY29tL1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRF
+bWFpbC5jcmwwSqBIoEaGRGh0dHA6Ly9jcmwuY29tb2RvLm5ldC9VVE4tVVNFUkZpcnN0LUNs
+aWVudEF1dGhlbnRpY2F0aW9uYW5kRW1haWwuY3JsMGwGCCsGAQUFBwEBBGAwXjA2BggrBgEF
+BQcwAoYqaHR0cDovL2NydC5jb21vZG9jYS5jb20vVVROQUFBQ2xpZW50Q0EuY3J0MCQGCCsG
+AQUFBzABhhhodHRwOi8vb2NzcC5jb21vZG9jYS5jb20wDQYJKoZIhvcNAQEFBQADggEBAAC0
+IPFKgNiqCxkpqvErCU3XWM6YJSa1t5nHeeagwSiwTCeZJRzz1qKnVdnQPV9MleFpWkv3kB34
+JkAo7yeNhwzSVumAcNTKzxT8VxSbG6WNDpSHi2OaIVWY7kHiN2H8DgdWXHlOEE5HRet+i48s
+9w/vj5ksOsMOppvEfC19fCSGHur4VmbPd7EjEHLd0drPZBgfeJQim2qcqvZQYU/7MDOdcFk5
+p6yMa5hc5tPnxZzbvUMKGs05+4cIOxtE4r9mas/gWsd9fGhvoGZtTp0EET59YYiuQuhoiq1r
+vf401d1GhnjwRrJZKaKTHS68EONz/3h5iSRslxwS8fOye8jfBzMxggRgMIIEXAIBATCBxDCB
+rjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEe
+MBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVz
+ZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0
+aW9uIGFuZCBFbWFpbAIRAIg14yiGxBLBNd3nEhie2VcwCQYFKw4DAhoFAKCCAnAwGAYJKoZI
+hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTEwNTA3MDcwMjQ5WjAjBgkq
+hkiG9w0BCQQxFgQUfrgB0v9j+pCtBRBQDkQ6ivZB+O0wXwYJKoZIhvcNAQkPMVIwUDALBglg
+hkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcG
+BSsOAwIHMA0GCCqGSIb3DQMCAgEoMIHVBgkrBgEEAYI3EAQxgccwgcQwga4xCzAJBgNVBAYT
+AlVTMQswCQYDVQQIEwJVVDEXMBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRo
+ZSBVU0VSVFJVU1QgTmV0d29yazEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29t
+MTYwNAYDVQQDEy1VVE4tVVNFUkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1h
+aWwCEQCINeMohsQSwTXd5xIYntlXMIHXBgsqhkiG9w0BCRACCzGBx6CBxDCBrjELMAkGA1UE
+BhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMV
+VGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5j
+b20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBF
+bWFpbAIRAIg14yiGxBLBNd3nEhie2VcwDQYJKoZIhvcNAQEBBQAEggEAGS2J98GU9ldzcI0+
+iWk/qwvf8msKE41kTadHKrGo453Cg51j+e6aMw/NQnhaMNQ8rJPwNGL/OuD5/OLJxvVXNF5H
+i5/x0tnufPnB6SGCXEl0P+yKo5FoBr/6kooGKJuw64rKWbvj2Qv8nqfPwZXhGW1QUU3gsfi3
+gP+3Sw9vJI91oi+sA1ECo9HzZu7gyFNlcTEAWIRVyPXmgOUNvRtGtf1qZ+TAqjftHLT0Y9yK
+iiysKCjgs5oYWnEfnjLY9xop67o54PqDavUL1nXz7nJf6wFEfoqzGxoDKLuKwivL1ONApvXc
+HWvckRmMStD1r5IJPG85hkk4Ua8OekRZMCxnqwAAAAAAAA==
+--------------ms090006000800080901060507--
