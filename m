@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab1EGP5q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 11:57:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50998 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755426Ab1EGP5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 11:57:45 -0400
-Date: Sat, 7 May 2011 17:57:50 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: -longterm kernels
-Message-ID: <20110507155749.GC2276@redhat.com>
-References: <201105030110.p431A5W0005426@hera.kernel.org>
- <20110504223605.GA5967@kroah.com>
- <20110505145854.GA4670@redhat.com>
- <20110505152501.GA14146@kroah.com>
- <20110507145503.GA2276@redhat.com>
- <20110507154040.GC23672@kroah.com>
+	id S1755798Ab1EGQGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 12:06:32 -0400
+Received: from jensen.inet.no ([195.139.68.2]:8509 "HELO jensen.inet.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755712Ab1EGQGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 12:06:30 -0400
+Date: Sat, 7 May 2011 18:06:28 +0200
+From: Michael Shuldman <michaels@inet.no>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        karls@inet.no, netdev <netdev@vger.kernel.org>
+Subject: Re: bug in select(2) regarding non-blocking connect(2) completion?
+Message-ID: <20110507160628.GA11163@jensen.inet.no>
+References: <20110507105152.GA13459@jensen.inet.no>
+ <1304770358.2821.1139.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110507154040.GC23672@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1304770358.2821.1139.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 07, 2011 at 08:40:40AM -0700, Greg KH wrote:
-> Nope, I'm not making such a rule, as you are trying to tell others what
-> to do here.  And I'm not going to do that.
+Eric Dumazet wrote,
+> Well, if you missed the original error report, all next getpeername()
+> and SO_ERROR will do the same, and select() says fd is ready for 'write'
 
-That was only a proposition, telling you what to do was not my intention.
+Many thanks for that.  I was not aware that SO_ERROR would not get
+set if the connect(2) failed "permanently" immediately, but have
+now tested that it does.  The other "strangeness" might very well
+be caused by bugs related to this, so apologies for the noise and
+many thanks for the help.
 
-Regards
-Stanislaw
+With kind regards,
+
+-- 
+  _ // 
+  \X/ -- Michael Shuldman 
 
