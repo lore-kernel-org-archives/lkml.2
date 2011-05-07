@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab1EGTB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 15:01:56 -0400
-Received: from kroah.org ([198.145.64.141]:38556 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab1EGTBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 15:01:55 -0400
-Date: Sat, 7 May 2011 12:01:24 -0700
-From: Greg KH <greg@kroah.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: -longterm kernels
-Message-ID: <20110507190124.GA18913@kroah.com>
-References: <201105030110.p431A5W0005426@hera.kernel.org>
- <20110504223605.GA5967@kroah.com>
- <20110505145854.GA4670@redhat.com>
- <20110505152501.GA14146@kroah.com>
- <20110507145503.GA2276@redhat.com>
- <20110507154040.GC23672@kroah.com>
- <20110507155749.GC2276@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110507155749.GC2276@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756033Ab1EGTIc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 15:08:32 -0400
+Received: from mail.academy.zt.ua ([82.207.120.245]:43419 "EHLO
+	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab1EGTIb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 15:08:31 -0400
+X-Spam-Processed: mail.academy.zt.ua, Sat, 07 May 2011 22:08:19 +0300
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: george@academy.zt.ua
+X-HashCash: 1:20:110507:md50000002750::Q0wzixBK3kY/B9Bp:000078BP
+X-Return-Path: prvs=110837b279=george@znau.edu.ua
+X-Envelope-From: george@znau.edu.ua
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
+	driver
+From: George Kashperko <george@znau.edu.ua>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+	 <201105061605.31625.arnd@arndb.de>
+	 <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
+	 <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
+	 <1304790665.13983.10.camel@dev.znau.edu.ua>
+	 <BANLkTikLFff_86Fvg+jSty9vGLENiELF2Q@mail.gmail.com>
+	 <1304792795.13983.28.camel@dev.znau.edu.ua>
+	 <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
+Content-Type: text/plain
+Date: Sat, 07 May 2011 22:02:11 +0300
+Message-Id: <1304794931.13983.44.camel@dev.znau.edu.ua>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 07, 2011 at 05:57:50PM +0200, Stanislaw Gruszka wrote:
-> On Sat, May 07, 2011 at 08:40:40AM -0700, Greg KH wrote:
-> > Nope, I'm not making such a rule, as you are trying to tell others what
-> > to do here.  And I'm not going to do that.
+> >>
+> >> The purpose is ridiculously trivial. Print user-friendly names on
+> >> scanning. Why not do that?
+> > Output like
+> > Core 0: ChipCommon (id 0x800, rev 18, vendor 0x14e4)
+> > and
+> > Core 0: id 0x800, rev 18, vendor 0x14e4
+> > both give to 99% of linux systems' end-users exactly the same consistent
+> > information. Its more than enough for diagnostic purposes (I guess
+> > scanning code does outputs this for diagnostic purposes by those less
+> > than 1% of people who are aware wth is actually that ChipCommon is, not
+> > to be just user friendly?).
 > 
-> That was only a proposition, telling you what to do was not my intention.
+> Really, what's wrong with that? Does it kill anyone's pet we print
+> this? We also do:
+> pr_err("Scanning failed because of wrong CID\n");
+> return -1;
+> While we could drop pr_err. Why to do this? Advanced used can always
+> check what -1 means.
+> 
+> I just like this. I find situations when it's useful, while I don't
+> see real negatives. I want to keep this. Can we leave this that way?
+> Unless someone finds some really bad effects of this?
+Nothing wrong except it makes kernel larger while gives _absolutely_ no
+benefit to end users. Regardless bus code prints core name or not it
+(core name) have absolutely no impact on driver matching.
 
-Ah, but that's the main issue here.
+Imagine yourself an end-user who haven't got his 80211 core matched with
+driver and therefore he haven't got WiFi working.
+If bus driver code outputs
+Core X: id 0x812, rev. 8, vendor 0x4BF
+you (as end user) will look where is 0x4BF/0x812 driver supporting
+rev.8.
+But if bus driver code outputs
+Core X: MAC 802.11 (core id 0x812, rev. 8, vendor 0x4BF)
+you (as end user) empowered with MAC 802.11 name knowledge will still
+look where is 0x4BF/0x812 driver supporting rev.8.
 
-It's a matter of people stepping up and doing things, not setting rules
-for what others are to maintain, right?
+Really, there will be more and more core codes/types/name. Why hardcode
+those into kernel for some e. g. memory-constraint system while you
+still can (and in most cases also will) have them in dedicated drivers?
 
-Back to one of your points, is Red Hat somehow not aware of the current
-stable/longterm situation and wishes to have things change here?  Last
-time I discussed this with the kernel maintainers there, they were fine
-with how things are working, has this now changed?
+Btw, have you ever suffered hardly from PCI naming devices xxxx.xx.xx.x
+but not "Network device" ?
 
-thanks,
+Have nice day,
+George
 
-greg k-h
+
