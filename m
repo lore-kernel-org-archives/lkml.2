@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab1EGMcl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 08:32:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63506 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115Ab1EGMcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 08:32:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=G9OstgzB81nhAXDvhUG8StJiHN/fYSZQ4OBj/XCOBNzGoHr+o6qQPjLzscDwRFkeWA
-         t0/zoVWM5Mc2lTTliRWmrM6WNEmYz6R19mRqGWGelzv+UPBqTNiCERYlJQkemJ9qz7F6
-         OrzvzYMt/hANl2ohEQ+b6sYo1B3CEfYwKgZTg=
-Subject: Re: [PATCH] fs: add FD_CLOFORK and O_CLOFORK
-From: Eric Dumazet <eric.dumazet@gmail.com>
+	id S1753299Ab1EGNQp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 09:16:45 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:10928 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967Ab1EGNQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 09:16:43 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19909.17976.119505.890308@pilspetsen.it.uu.se>
+Date: Sat, 7 May 2011 15:16:40 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
 To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Changli Gao <xiaosuo@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <BANLkTiktdStx1e5vHk7AqO+pYVXm-PjsQg@mail.gmail.com>
-References: <1304743740-3405-1-git-send-email-xiaosuo@gmail.com>
-	 <1304748394.2821.654.camel@edumazet-laptop>
-	 <BANLkTi=tZf1uQig8A-WiXUpSWcuqaqV=fg@mail.gmail.com>
-	 <1304749754.2821.712.camel@edumazet-laptop>
-	 <BANLkTiktdStx1e5vHk7AqO+pYVXm-PjsQg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 May 2011 14:32:05 +0200
-Message-ID: <1304771525.2821.1173.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Cc: Mikael Pettersson <mikpe@it.uu.se>, Arnd Bergmann <arnd@arndb.de>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>
+Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
+In-Reply-To: <BANLkTinssNTc_+=F4CA1Znb3bdv=c30OPw@mail.gmail.com>
+References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
+	<201105050824.34056.arnd@arndb.de>
+	<alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
+	<19907.2804.330120.193924@pilspetsen.it.uu.se>
+	<BANLkTinssNTc_+=F4CA1Znb3bdv=c30OPw@mail.gmail.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 07 mai 2011 à 13:41 +0200, Geert Uytterhoeven a écrit :
-> On Sat, May 7, 2011 at 08:29, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > I am sure the following idea already was discussed in the past :
+On Sat, 7 May 2011 10:34:25 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Thu, May 5, 2011 at 22:39, Mikael Pettersson <mikpe@it.uu.se> wrote:
+> > Geert Uytterhoeven writes:
+> > =C2=A0> On Thu, 5 May 2011, Arnd Bergmann wrote:
+> > =C2=A0> > Did you check the macros in unistd to see if they match the
+> > =C2=A0> > actual table? I guess it would be a good time to comment out
+> > =C2=A0> > the ones that are not implemented in either of the two ABIs.
+> > =C2=A0>
+> > =C2=A0> Like this?
+> > =C2=A0>
+> > =C2=A0> warning: #warning syscall pselect6 not implemented
+> > =C2=A0> warning: #warning syscall ppoll not implemented
+> > =C2=A0> warning: #warning syscall recvmmsg not implemented
+> > =C2=A0>
+> > =C2=A0> Do we need pselect6 and ppoll? I have vague memories not requirin=
+> g it.
 > >
-> > Embed the close_on_exec / close_on_close bits in the low order bits of
-> > file pointers.
+> > They close user-space race conditions, so you want them.
 > 
-> How many low order bits do you expect to have in file pointers?
-> Are files allocated using kmalloc(), or do they just obey the alignment of the
-> individual members of a file struct? In the latter case, you'll have onlyv1 low
-> order bit to play with on m68k.
+> So do you recommend to backport the wiring up of pselect6/ppoll to -stable?
+> We always had their _NR_* defines, so I guess glibc was always compiled
+> with pselect6/ppoll support, and will use it if it's present.
 
-We should have two bits at a very minimum.
+Any kernel with working TIF_RESTORE_SIGMASK should ideally also
+wire up pselect6/ppoll.  But their omission is not a regression
+so backporting to 2.6.38 is probably sufficient.
 
-clone_on_exec & clone_on_fork would fit.
-
-filp are allocated with a kmem_cachep with cache line alignement.
-
-filp_cachep = kmem_cache_create("filp", sizeof(struct file), 0,
-	SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
-
-So in practice we should have more than two bits ;)
-
-
-
+/Mikael
