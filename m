@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab1EGIvn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 04:51:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753335Ab1EGIvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 04:51:42 -0400
-Date: Sat, 7 May 2011 04:46:57 -0400
-From: Chuck Ebbert <cebbert@redhat.com>
+	id S1754018Ab1EGJ2B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 05:28:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55440 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab1EGJ17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 05:27:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=IAwpU8j6O1hJ++H3U51vSPjx5IqpXBGGKVXIx6GYnXb5LjVRwmtXTXsx0TBEHzt0F8
+         ulKH9e6zHmEjRUNa9oJHPD0LT41Xb1DvnvXaoyyYU9HHD2jj8bv2YXnP81LA0tAd7Mdj
+         mvdcdz1ji0Mq4El41Mij25VAYv7whcXezmMTM=
+MIME-Version: 1.0
+In-Reply-To: <20110507010927.GA32142@kroah.com>
+References: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
+	<op.vuynsdh13l0zgt@mnazarewicz-glaptop>
+	<BANLkTinxvtMUcFz9T7L1iq9pFUx8ocQnRQ@mail.gmail.com>
+	<20110507010927.GA32142@kroah.com>
+Date: Sat, 7 May 2011 12:27:58 +0300
+Message-ID: <BANLkTikPgm7kpaoofVSkJCBXYyea4HeB8A@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which
+ is always true
+From: Maxin John <maxin.john@gmail.com>
 To: Greg KH <greg@kroah.com>
-Cc: Jim Schutt <jaschut@sandia.gov>, James Bottomley <James.Bottomley@suse.de>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [stable] [patch 04/38] [SCSI] put stricter
- guards on queue dead checks
-Message-ID: <20110507044657.171b0573@katamari>
-In-Reply-To: <20110506161754.GA31472@kroah.com>
-References: <20110506001207.658271797@clark.kroah.org>
-	<4DC40B94.9060903@sandia.gov>
-	<20110506161754.GA31472@kroah.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Michal Nazarewicz <mina86@mina86.com>, gregkh@suse.de,
+        stern@rowland.harvard.edu, m-sonasath@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        roger.quadros@nokia.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 May 2011 09:17:54 -0700
-Greg KH <greg@kroah.com> wrote:
+Hi Greg,
 
-> On Fri, May 06, 2011 at 08:54:12AM -0600, Jim Schutt wrote:
-> > Hi Greg,
-> > 
-> > Greg KH wrote:
-> > >2.6.38-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > You probably don't want to add this patch to stable kernels
-> > until commit c055f5b2614b4f from
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6
-> > shows up in Linus' tree.
-> > 
-> > See details in http://www.spinics.net/lists/kernel/msg1181665.html.
-> 
-> James, do you agree with this?
-> 
+>> Please find the patch for "file_storage.c" below. Should I merge these
+>> two patches and re-submit as a single one?
+>
+> Yes please.
 
-That patch is upstream in Linus's tree now:
+As per your suggestion, please find the merged patch below:
 
-commit c055f5b2614b4f758ae6cc86733f31fa4c2c5844
-"[SCSI] fix oops in scsi_run_queue()"
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+diff --git a/drivers/usb/gadget/f_mass_storage.c
+b/drivers/usb/gadget/f_mass_storage.c
+index 6d8e533..cade79e 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -1910,7 +1910,7 @@ static int check_command(struct fsg_common
+*common, int cmnd_size,
+                    common->lun, lun);
 
-So you can add that instead of dropping Patch 04.
+        /* Check the LUN */
+-       if (common->lun >= 0 && common->lun < common->nluns) {
++       if (common->lun < common->nluns) {
+                curlun = &common->luns[common->lun];
+                common->curlun = curlun;
+                if (common->cmnd[0] != REQUEST_SENSE) {
+diff --git a/drivers/usb/gadget/file_storage.c
+b/drivers/usb/gadget/file_storage.c
+index a6eacb5..a9c5177 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -2314,7 +2314,7 @@ static int check_command(struct fsg_dev *fsg,
+int cmnd_size,
+                fsg->lun = lun;         // Use LUN from the command
+
+        /* Check the LUN */
+-       if (fsg->lun >= 0 && fsg->lun < fsg->nluns) {
++       if (fsg->lun < fsg->nluns) {
+                fsg->curlun = curlun = &fsg->luns[fsg->lun];
+                if (fsg->cmnd[0] != REQUEST_SENSE) {
+                        curlun->sense_data = SS_NO_SENSE;
