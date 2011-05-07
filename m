@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab1EGG3W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 02:29:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:32835 "EHLO
+	id S1752907Ab1EGGaK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 02:30:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44642 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab1EGG3U (ORCPT
+	with ESMTP id S1752200Ab1EGGaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 02:29:20 -0400
+	Sat, 7 May 2011 02:30:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hpwZxP0pClN9Ls3BIf57z/kwqWEkCJ9rtmJLuZ65x9G1O7MLwRAsxdgQx7kHr31fki
-         Z9lue9CrMOh+mFswnRpqJb0yI62jBYeroo8JqeBCFktWGhRY7DANaiOVoQOmKTpS/jk9
-         29cRXv+npPRISIYGS37EtyXa0W42GXUqPgrUQ=
-Subject: Re: [PATCH] fs: add FD_CLOFORK and O_CLOFORK
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=FzaV7hP4+gQx4hbN8qh8Ipzi10u0/M4U3k/m++d8DWyIBUuMMcQOU9G60Se9BDtLb/
+         8zD/5STB1JlRyB+PTPDM/k29DtGcnHzCVqkYJFrH1vWxfHE1C+jCZLHZjsRXJSxSm4Yd
+         UxtpTozAg5pkUzm98M4Bmn4Gxsv7DrnBLQVCc=
+Subject: [PATCH] fs: avoid unecessary smp_wmb() in dup_fd()
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <BANLkTi=tZf1uQig8A-WiXUpSWcuqaqV=fg@mail.gmail.com>
-References: <1304743740-3405-1-git-send-email-xiaosuo@gmail.com>
-	 <1304748394.2821.654.camel@edumazet-laptop>
-	 <BANLkTi=tZf1uQig8A-WiXUpSWcuqaqV=fg@mail.gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Changli Gao <xiaosuo@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 May 2011 08:29:14 +0200
-Message-ID: <1304749754.2821.712.camel@edumazet-laptop>
+Date: Sat, 07 May 2011 08:30:01 +0200
+Message-ID: <1304749801.2821.716.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 07 mai 2011 à 14:22 +0800, Changli Gao a écrit :
+While copying old_fds array to new_fds, we dont need
+rcu_assign_pointer() and its smp_wmb(), since we are the only thread
+populating new_fds at this point.
 
-> It seems more clear. Thanks.
-> 
-> BTW: I will work on F_CLOSFD after this patch accepted. It is useful
-> to close all the opened file descriptors when programing a daemon.
-> 
+A bit later, rcu_assign_pointer(newf->fdt, new_fdt) makes sure
+our writes are committed to memory before new_fds content is visible to
+other threads.
 
-I am sure the following idea already was discussed in the past :
+This removes following sparse warning :
 
-Embed the close_on_exec / close_on_close bits in the low order bits of
-file pointers.
+fs/file.c:371:3: warning: incorrect type in assignment (different
+address spaces)
+fs/file.c:371:3:    expected struct file *<noident>
+fs/file.c:371:3:    got struct file [noderef] <asn:4>*<noident>
 
-Might be interesting to raise it again.
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Matthew Wilcox <matthew@wil.cx>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Changli Gao <xiaosuo@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ fs/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
+diff --git a/fs/file.c b/fs/file.c
+index 4c6992d..8320a8e 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -368,7 +368,7 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 			 */
+ 			FD_CLR(open_files - i, new_fdt->open_fds);
+ 		}
+-		rcu_assign_pointer(*new_fds++, f);
++		*new_fds++ = f;
+ 	}
+ 	spin_unlock(&oldf->file_lock);
+ 
 
 
