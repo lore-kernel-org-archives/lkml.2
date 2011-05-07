@@ -1,186 +1,742 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1EGKjX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 06:39:23 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:54975 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751636Ab1EGKjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 06:39:20 -0400
-Date: Sat, 7 May 2011 12:39:07 +0200
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: linux-kernel@vger.kernel.org
-Cc: nikola.ciprich@linuxbox.cz, stable@kernel.org, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org
-Subject: 2.6.32.28 - md resync + pvmove - crash
-Message-ID: <20110507103907.GA2712@nik-comp.lan>
+	id S1754812Ab1EGKlY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 06:41:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62079 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1EGKlV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 06:41:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Up0tzpt8+X4pFSdI/cb3EJ2PArZb0jgJghRgfWhmlVFvnw+eC2Y9pVQHhw06Jtimr1
+         GJjUGLBI6hgNnLfahdney5yb1sR3KPpX1H7QRaUyL6KoOjOW9ZhP/+wUy6K2W1a5XxxW
+         J9byo2gil3p91dPrUi5va+DuhmCXiJ1zG9Ddc=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
-Content-Disposition: inline
-"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 5092150 records (last update: 20110507)
-X-Spam-Score: N/A (trusted relay)
+In-Reply-To: <1303742568.18763.7.camel@gandalf.stny.rr.com>
+References: <BANLkTinOwu+MazHDhJLtsSZVkJHLBtWSzw@mail.gmail.com> <1303742568.18763.7.camel@gandalf.stny.rr.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Sat, 7 May 2011 18:41:00 +0800
+Message-ID: <BANLkTi=qgMFFfrL0V2GjArfbfOG_Yo+_rA@mail.gmail.com>
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20110424 release
+To: Steven Rostedt <rostedt@goodmis.org>, Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for your help, Steven and Randy.
 
---huq684BweRXVnRxX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I update doc according to your mail in
+https://code.google.com/p/kgtp/source/detail?r=306
+They will be included in next release.
 
-Hi,
-first, I'm sorry for crossposting and also CCing stable@, if that's not OK,=
- please let me knows.
-Anyways, we've experienced hang of system running 2.6.32.28.
-After upgrading to 2.6.32 and replacing failed disk, md resync has started.=
- Then when the technician started pvmove, dome deadlock must have occured, =
-because all disk requests started to hang and the whole system had to be re=
-booted...
+Best,
+Hui
 
-here's the backtrace:
-
-[ 1229.645028] alg: No test for stdrng (krng)
-[ 1229.668172] alg: No test for authenc(hmac(sha1),cbc(des3_ede)) (authenc(=
-hmac(sha1-generic),cbc(des3_ede-generic)))
-[ 1531.585167] md: bind<sda2>
-[ 1531.927846] raid1: raid set md2 active with 1 out of 2 mirrors
-[ 1531.934613] md2: detected capacity change from 0 to 2000133029888
-[ 1549.850444] md1: bitmap file is out of date (0 < 439231) -- forcing full=
- recovery
-[ 1549.858719] md1: bitmap file is out of date, doing full recovery
-[ 1550.068105] md1: bitmap initialized from disk: read 11/11 pages, set 357=
-576 bits
-[ 1550.076054] created bitmap (175 pages) for device md1
-[ 1561.449841]  md2: unknown partition table
-[ 1561.501645] md2: bitmap file is out of date (0 < 4) -- forcing full reco=
-very
-[ 1561.509999] md2: bitmap file is out of date, doing full recovery
-[ 1562.158515] md2: bitmap initialized from disk: read 15/15 pages, set 476=
-869 bits
-[ 1562.167764] created bitmap (233 pages) for device md2
-[ 2400.956019] INFO: task kjournald:1038 blocked for more than 120 seconds.
-[ 2400.963280] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[ 2400.971356] kjournald     D ffff8800016ac400     0  1038      2 0x000000=
-00
-[ 2400.978621]  ffff88003cc33c60 0000000000000046 ffff88003cc33bd0 ffffffff=
-8119ba6f
-[ 2400.986513]  0000000000013780 ffff88003f9746b0 ffff88003f9745f0 ffff8800=
-3ea2c5f0
-[ 2400.994426]  ffff88003f9749a0 ffff88003cc33fd8 ffff88003d65b000 ffff8800=
-35600a00
-[ 2401.002415] Call Trace:
-[ 2401.005024]  [<ffffffff8119ba6f>] ? blk_unplug+0x2f/0xa0
-[ 2401.010530]  [<ffffffff81076bb4>] ? ktime_get_ts+0xa4/0xd0
-[ 2401.016182]  [<ffffffff8133773e>] io_schedule+0x6e/0xc0
-[ 2401.021643]  [<ffffffff81136afe>] sync_buffer+0x3e/0x50
-[ 2401.027029]  [<ffffffff81337c75>] __wait_on_bit+0x55/0x80
-[ 2401.032638]  [<ffffffff81136ac0>] ? sync_buffer+0x0/0x50
-[ 2401.038177]  [<ffffffff81136ac0>] ? sync_buffer+0x0/0x50
-[ 2401.043659]  [<ffffffff81337d18>] out_of_line_wait_on_bit+0x78/0x90
-[ 2401.050129]  [<ffffffff8106e070>] ? wake_bit_function+0x0/0x30
-[ 2401.056143]  [<ffffffff81136a36>] __wait_on_buffer+0x26/0x30
-[ 2401.062077]  [<ffffffffa002a097>] journal_commit_transaction+0x657/0x13c=
-0 [jbd]
-[ 2401.069693]  [<ffffffff8105e104>] ? try_to_del_timer_sync+0x44/0x110
-[ 2401.076212]  [<ffffffff81339ddd>] ? _spin_unlock_irqrestore+0x1d/0x50
-[ 2401.082831]  [<ffffffffa002e893>] kjournald+0xe3/0x260 [jbd]
-[ 2401.088708]  [<ffffffff8106e030>] ? autoremove_wake_function+0x0/0x40
-[ 2401.095369]  [<ffffffffa002e7b0>] ? kjournald+0x0/0x260 [jbd]
-[ 2401.101337]  [<ffffffff8106deee>] kthread+0x8e/0xa0
-[ 2401.106354]  [<ffffffff8100c30a>] child_rip+0xa/0x20
-[ 2401.111477]  [<ffffffff8106de60>] ? kthread+0x0/0xa0
-[ 2401.116598]  [<ffffffff8100c300>] ? child_rip+0x0/0x20
-[ 2401.121893] INFO: task flush-253:2:3168 blocked for more than 120 second=
-s.
-[ 2401.128983] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[ 2401.137114] flush-253:2   D 0000000000000002     0  3168      2 0x000000=
-00
-[ 2401.144318]  ffff88002c245a40 0000000000000046 ffff880035601600 ffff8800=
-2f621840
-[ 2401.152248]  0000000000013780 ffff88003ceb9810 ffff88003ceb9750 ffff8800=
-3ea2c5f0
-[ 2401.160169]  ffff88003ceb9b00 ffff88002c245fd8 ffff88002c245a00 ffff8800=
-35601600
-[ 2401.168048] Call Trace:
-[ 2401.170608]  [<ffffffff81076bb4>] ? ktime_get_ts+0xa4/0xd0
-[ 2401.176303]  [<ffffffff8133773e>] io_schedule+0x6e/0xc0
-[ 2401.181723]  [<ffffffff810ccb56>] sync_page+0x36/0x50
-[ 2401.186970]  [<ffffffff81337b3e>] __wait_on_bit_lock+0x4e/0xa0
-[ 2401.192991]  [<ffffffff810ccb20>] ? sync_page+0x0/0x50
-[ 2401.198287]  [<ffffffff810ccb05>] __lock_page+0x65/0x70
-[ 2401.203687]  [<ffffffff8106e070>] ? wake_bit_function+0x0/0x30
-[ 2401.209687]  [<ffffffff810d4366>] write_cache_pages+0x3d6/0x490
-[ 2401.215802]  [<ffffffff810d3da0>] ? __writepage+0x0/0x40
-[ 2401.221291]  [<ffffffff810d4442>] generic_writepages+0x22/0x30
-[ 2401.227327]  [<ffffffff810d4476>] do_writepages+0x26/0x30
-[ 2401.232965]  [<ffffffff8112fa24>] writeback_single_inode+0xa4/0x290
-[ 2401.239412]  [<ffffffff811304e2>] writeback_inodes_wb+0x2d2/0x420
-[ 2401.245715]  [<ffffffff81130756>] wb_writeback+0x126/0x1e0
-[ 2401.251360]  [<ffffffff81130a84>] wb_do_writeback+0x1a4/0x1c0
-[ 2401.257287]  [<ffffffff81130ad5>] bdi_writeback_task+0x35/0xd0
-[ 2401.263317]  [<ffffffff810e5cf0>] ? bdi_start_fn+0x0/0xf0
-[ 2401.268886]  [<ffffffff810e5d71>] bdi_start_fn+0x81/0xf0
-[ 2401.274370]  [<ffffffff810e5cf0>] ? bdi_start_fn+0x0/0xf0
-[ 2401.279947]  [<ffffffff8106deee>] kthread+0x8e/0xa0
-[ 2401.285000]  [<ffffffff8100c30a>] child_rip+0xa/0x20
-[ 2401.290120]  [<ffffffff8106de60>] ? kthread+0x0/0xa0
-[ 2401.295247]  [<ffffffff8100c300>] ? child_rip+0x0/0x20
-[ 2401.300586] INFO: task reiserfs/0:3204 blocked for more than 120 seconds.
-[ 2401.307590] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[ 2401.315682] reiserfs/0    D ffff880016fdad48     0  3204      2 0x000000=
-00
-[ 2401.322884]  ffff88002f1b1d10 0000000000000046 ffff88000180dda0 ffff8800=
-0180dec0
-[ 2401.330754]  0000000000013780 ffff88003ea180c0 ffff88003ea18000 ffff8800=
-2f43aea0
-[ 2401.338683]  ffff88003ea183b0 ffff88002f1b1fd8 ffff88002f1b1cd0 ffffffff=
-81048960
-[ 2401.346684] Call Trace:
-[ 2401.349252]  [<ffffffff81048960>] ? update_curr+0xb0/0x170
-[ 2401.354983]  [<ffffffff813384f7>] __mutex_lock_slowpath+0x107/0x310
-[ 2401.361480]  [<ffffffff81338727>] mutex_lock+0x27/0x50
-[ 2401.366791]  [<ffffffffa0358b27>] flush_commit_list+0x137/0x6d0
-
-I can't 100% separate out some hardware problem, but this system has been r=
-unning 2.6.27.x rock solid for years till then..
-Can somebody see something interesting in those backtraces?
-If I can provide further information, I'll be glad to assist...
-BR
-nik
-
-
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
-
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---huq684BweRXVnRxX
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk3FIUsACgkQ3xdJJrLygV6+twCfWE+92qK/CCSR+mmDCvSrHvfL
-3hcAoL93OACppARVrlXuDIIuGdsvnUGV
-=EfAI
------END PGP SIGNATURE-----
-
---huq684BweRXVnRxX--
+On Mon, Apr 25, 2011 at 22:42, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sun, 2011-04-24 at 22:28 +0800, Hui Zhu wrote:
+>
+>
+> There is several grammar mistakes, I'll correct those here that caused
+> me to have trouble understanding what you were saying. There's more
+> mistakes that I'm not correcting because I still understand what you
+> meant. I'll let Randy correct those, as he can come up with better
+> sentences than I can.
+>
+> Do not take this as an insult, I have an utmost respect for those that
+> communicate on LKML in a language that is not their own mother tongue.
+> And I also understand that the Asian languages are even more different
+> than English that it makes it 10 times more difficult to get it right
+> (as suppose to those that speak German).
+>> --- /dev/null
+>> +++ b/Documentation/trace/gtp.txt
+>> @@ -0,0 +1,873 @@
+>> +             Linux Kernel GDB tracepoint module (KGTP)
+>> +             =========================================
+>> +             By Hui Zhu <teawater@gmail.com>
+>> +             https://code.google.com/p/kgtp/wiki/HOWTO
+>> +             2011-04-24
+>> +
+>> +Table of contents
+>> +-----------------
+>> +
+>> +What is KGTP
+>> +Report issue about KGTP
+>> +Get info about GDB tracepoint
+>> +Get KGTP through http
+>> +Get KGTP through svn
+>> +Config KGTP
+>> +Compile KGTP
+>> +Install KGTP
+>> +Uninstall KGTP
+>> +Howto use
+>> +     Exec it
+>> +     Make GDB connect to gtp
+>> +     Add module symbols to GDB
+>> +     Get GDB tracepoint commands
+>> +     Get registers info from Kernel
+>> +     Get the value of variable from Kernel
+>> +     How to use use tracepoint condition
+>> +     How to use trace state variables
+>> +             Simple trace state variables
+>> +             Special trace state variables $current_task,
+>> +                 $current_thread_info, $cpu_id, $dump_stack, $printk_level,
+>> +                 $printk_format, $printk_tmp and $clock
+>> +     Show all the traced data of current frame
+>> +     Get backtrace info from Kernel
+>> +     Howto let tracepoint output value directly
+>> +             Output stack dump directly
+>> +             Switch collect to output the value directly
+>> +             Use printf command in actions
+>> +     Get status of KGTP from Kernel
+>> +     Set the trace buffer into a circular buffer
+>> +     Do not stop tracepoint when the GDB disconnect
+>> +     Howto show the variable that value of it is optimized
+>> +             Linux kernel "Compile with almost no optimization" patch
+>> +             Update your GCC
+>> +     Offline debug
+>> +
+>> +
+>> +
+>> +
+>> +What is KGTP
+>> +------------
+>> +
+>> +KGTP is a realtime and lightweight Linux Kernel GDB debugger and tracer that
+>> +use Kprobe.
+>
+> "uses Kprobes."
+>
+>> +
+>> +It make Linux Kernel supply a GDB remote debug interface. Then GDB in current
+>
+> It supplies the Linux Kernel with a GDB remote debug interface. ...
+>
+>> +machine or remote machine(see "Make GDB connect to gtp") can debug Linux
+>> +through GDB tracepoint without stop the Linux Kernel.
+>
+> without stopping the Linux Kernel.
+>
+>> +And even if the board doesn't have GDB on it and doesn't have interface for
+>> +remote debug. It can debug the Linux Kernel use offline debug (See "Offline
+>
+> using offline debug.
+>
+>> +debug").
+>> +It support X86-32, X86-64, MIPS and ARM.
+>> +http://www.tudou.com/programs/view/_p6VTgxmCRA/ This is a video(in Chinese)
+>> +to show how to use it.
+>> +
+>> +
+>> +
+>> +
+>> +Report issue about KGTP
+>
+> Report an issues about KGTP
+>
+>> +-----------------------
+>> +You can post it in https://code.google.com/p/kgtp/issues/list or write Email
+>
+> or write an email to ...
+>
+>> +to teawater@gmail.com.
+>> +
+>> +
+>> +
+>> +
+>> +Get info about GDB tracepoint
+>> +-----------------------------
+>> +Please goto http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html
+>> +
+>> +
+>> +
+>> +
+>> +Get KGTP through http
+>> +---------------------
+>> +Please goto http://code.google.com/p/kgtp/downloads/list OR UPDATE to down
+>
+> to download the package (?)
+>
+>> +the package.
+>> +
+>> +
+>> +
+>> +
+>> +Get KGTP through svn
+>> +--------------------
+>> +Some people have trouble with access to KGTP website. You can access kgtp
+>> +through svn:
+>> +
+>> +------------------------------------------------------------
+>> +svn checkout http://kgtp.googlecode.com/svn/ kgtp-read-only
+>> +------------------------------------------------------------
+>> +
+>> +kgtp-read-only/tags/ There is the each release of KGTP.
+>
+> This has each release of KGTP (?)
+>
+>> +kgtp-read-only/trunk/ There is the main trunk of KGTP.
+>
+> This is the main code repository of KGTP (?)
+>
+>> +
+>> +
+>> +
+>> +
+>> +Config KGTP
+>> +-----------
+>> +
+>> +Before compile KGTP, you can choice which Kernel you want build with and
+>
+> Before compiling KGTP, you can choose which kernel you want to build
+> with and
+>
+>> +which compiler you want through change the Makefile. For example:
+>
+> which compiler you want by changing the Makefile in your KGTP
+> repository. (?)
+>
+>
+>> +
+>> +-------------------------------------------
+>> +KERNELDIR := /lib/modules/`uname -r`/build
+>> +CROSS_COMPILE :=
+>> +-------------------------------------------
+>> +
+>> +KERNELDIR is set the directory which Kernel you want build for. Now it set to
+>
+> KERELDIR is set to the directory which holds the kernel you want to
+> build for. By default, it is set to the kernel that you are running.
+>
+>> +the current kernel that you use.
+>
+>> +CROSS_COMPILE is set the compiler that you want to build the KGTP. Empty mean
+>> +use current compiler.
+>
+> CROSS_COMPILE is set to the compiler you want to build KGTP. Leave empty
+> to compile with your default compiler.
+>
+>> +ARCH is the architecture.
+>> +
+>> +------------------------------------------
+>> +KERNELDIR := /home/teawater/kernel/bamd64
+>> +CROSS_COMPILE :=x86_64-glibc_std-
+>> +ARCH := x86_64
+>> +------------------------------------------
+>> +
+>> +KERNELDIR is set to /home/teawater/kernel/bamd64. Compiler will
+>> +use x86_64-glibc_std-gcc.
+>> +
+>> +
+>> +
+>> +
+>> +Compile KGTP
+>> +------------
+>> +
+>> +For normal use:
+>> +
+>> +---------
+>> +cd kgtp/
+>> +make
+>> +---------
+>> +
+>> +If you want KGTP out the debug message,please use following (It is available
+>> +after 20100825):
+>
+>
+> I'm not sure what you mean by the above. Do you mean:
+>
+> If you want KGTP to output debug messages, then us the following (....)
+>
+>> +
+>> +---------
+>> +cd kgtp/
+>> +make D=1
+>> +---------
+>> +
+>> +
+>> +
+>> +
+>> +Install KGTP
+>> +------------
+>> +
+>> +------------------
+>> +cd kgtp/
+>> +sudo make install
+>> +------------------
+>> +
+>> +
+>> +
+>> +
+>> +Uninstall KGTP
+>> +--------------
+>> +
+>> +--------------------
+>> +cd kgtp/
+>> +sudo make uninstall
+>> +--------------------
+>> +
+>> +
+>> +
+>> +
+>> +Howto use
+>> +---------
+>> +
+>> +Exec it
+>> +-------
+>> +
+>> +If you had installed the KGTP in your system, you can:
+>> +
+>> +------------------
+>> +sudo modprobe gtp
+>> +------------------
+>> +
+>> +Or you can use the kgtp module in the directory.
+>> +
+>> +-------------------
+>> +cd kgtp/
+>> +sudo insmod gtp.ko
+>> +-------------------
+>> +
+>> +
+>> +
+>> +Make GDB connect to gtp
+>> +-----------------------
+>> +
+>> +In current machine:
+>
+> On current machine.
+>
+> Now it may be better to use "server" instead of current machine. I guess
+> you mean the man box the user is using.
+>
+>> +
+>> +---------------------------------
+>> +sudo gdb ./vmlinux
+>> +(gdb) target remote /sys/kernel/debug/gtp
+>> +Remote debugging using /sys/kernel/debug/gtp
+>> +0x0000000000000000 in ?? ()
+>> +---------------------------------
+>> +
+>> +In remote machine:
+>
+> On remote machine:
+>
+> "target" may also be better, but I'm fine with "remote".
+>
+>> +
+>> +---------------------------------------------
+>> +#Open the KGTP interface in current machine.
+>
+> Now do you mean current == remote? I'm confused here. It is best to stay
+> consistent. Always use "remote" and always use "server".
+>
+>> +sudo su
+>> +nc -l 1234 </sys/kernel/debug/gtp >/sys/kernel/debug/gtp
+>> +(nc -l -p 1234 </sys/kernel/debug/gtp >/sys/kernel/debug/gtp for old version
+>> +netcat.)
+>> +#Let gdb connect to the port 1234
+>> +gdb ./vmlinux
+>> +(gdb) target remote xxx.xxx.xxx.xxx:1234
+>
+> You run gdb on the remote machine too?
+>
+>> +---------------------------------------------
+>> +
+>> +
+>> +
+>> +Add module symbols to GDB
+>> +-------------------------
+>> +
+>> +Sometime, you need add the Linux Kernel module(lkm) symbols to GDB to debug it.
+>> +Following a example howto add ext3.ko's symbols to GDB:
+>
+> The following example howto adds ext3.ko symbols to GDB:
+>
+>> +
+>> +--------------------------------------------------------------------------------
+>> +cat /proc/modules  | grep ext
+>> +ext3 116512 3 - Live 0xf9083000
+>> +#Get the address 0xf9083000.
+>> +modinfo ext3
+>> +filename:       /lib/modules/2.6.36-rc2+/kernel/fs/ext3/ext3.ko
+>> +#Get the directory name of ext3.
+>> +(gdb) add-symbol-file /lib/modules/2.6.36-rc2+/kernel/fs/ext3/ext3.ko
+>> 0xf9083000
+>> +#Then, GDB get the symbols of ext3.
+>
+> Now GDB has the symbols for ext3 (?)
+>
+>> +--------------------------------------------------------------------------------
+>> +
+>> +You will see that it just add the text section info to GDB, sometime you need
+> just adds the ..., sometimes you need to add the info section of another
+> section. For example:
+>
+>> +add another section info of other section, for example:
+>> +
+>> +--------------------------------------------------------------------------------
+>> +cat /sys/module/ext3/sections/.bss
+>> +0xf908170c
+>> +#Get the bss address 0xf908170c.
+>> +(gdb) add-symbol-file /lib/modules/2.6.36-rc2+/kernel/fs/ext3/ext3.ko
+>> 0xf9083000 -s .bss 0xf908170c
+>> +#Then, GDB get the symbols of ext3.
+>
+> Now GDB has the .bss symbols for ext3 (?)
+>
+>> +--------------------------------------------------------------------------------
+>> +
+>> +
+>> +
+>> +Get GDB tracepoint commands
+>> +---------------------------
+>> +
+>> +Please goto http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html
+>> +
+>> +
+>> +Get registers info from Kernel
+>> +------------------------------
+>> +
+>> +Following part is an example that record the value of all registers when Linux
+>> +Kernel call function "vfs_readdir".
+>
+> The following is an example that records the value of all registers when
+> "vfs_readdir" is called.
+>
+>> +
+>> +--------------------------------------------------------------------------------
+>> +(gdb) trace vfs_readdir
+>
+> Is this on the server or remote? Or do you mean that you can do this
+> from either one or the other.
+>
+> Again, I'm a bit confused ;)
+>
+>
+>> +Tracepoint 1 at 0xc01a1ac0: file
+>> +/home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
+>> +(gdb) actions
+>> +Enter actions for tracepoint 1, one per line.
+>> +End with a line saying just "end".
+>> +>collect $reg
+>> +>end
+>> +(gdb) tstart
+>> +(gdb) shell ls
+>
+> I take it that this is run on the remote (target) box. I don't think
+> this would work on the server, would it?
+>
+>> +(gdb) tstop
+>> +(gdb) tfind
+>> +Found trace frame 0, tracepoint 1
+>> +#0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900 <filldir64>,
+>> +   buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+>> +23      /home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or
+>> directory.
+>> +       in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>> +(gdb) info reg
+>> +eax            0xc5528d00       -984445696
+>> +ecx            0xc0d09f90       -1060069488
+>> +edx            0xc01a1900       -1072031488
+>> +ebx            0xfffffff7       -9
+>> +esp            0xc0d09f8c       0xc0d09f8c
+>> +ebp            0x0      0x0
+>> +esi            0x8061480        134616192
+>> +edi            0xc5528d00       -984445696
+>> +eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
+>> +eflags         0x286    [ PF SF IF ]
+>> +cs             0x60     96
+>> +ss             0x8061480        134616192
+>> +ds             0x7b     123
+>> +es             0x7b     123
+>> +fs             0x0      0
+>> +gs             0x0      0
+>> +(gdb) tfind
+>> +Found trace frame 1, tracepoint 1
+>> +0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>> +(gdb) info reg
+>> +eax            0xc5528d00       -984445696
+>> +ecx            0xc0d09f90       -1060069488
+>> +edx            0xc01a1900       -1072031488
+>> +ebx            0xfffffff7       -9
+>> +esp            0xc0d09f8c       0xc0d09f8c
+>> +ebp            0x0      0x0
+>> +esi            0x8061480        134616192
+>> +edi            0xc5528d00       -984445696
+>> +eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
+>> +eflags         0x286    [ PF SF IF ]
+>> +cs             0x60     96
+>> +ss             0x8061480        134616192
+>> +ds             0x7b     123
+>> +es             0x7b     123
+>> +fs             0x0      0
+>> +gs             0x0      0
+>> +--------------------------------------------------------------------------------
+>> +
+>> +
+>> +
+>> +Get the value of variable from Kernel
+>> +-------------------------------------
+>> +
+>> +Following part is an example that record the value of "jiffies_64" when Linux
+>> +Kernel call function "vfs_readdir".
+>
+> The following is an example that records the value of "jiffies_64" when
+> the function "vfs_readdir" is called:
+>
+>> +
+>> +--------------------------------------------------------------------------------
+>> +(gdb) trace vfs_readdir
+>> +Tracepoint 1 at 0xc01ed740: file
+>> /home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
+>> +(gdb) actions
+>> +Enter actions for tracepoint 1, one per line.
+>> +End with a line saying just "end".
+>> +>collect jiffies_64
+>> +>collect file->f_path.dentry->d_iname
+>> +>end
+>> +(gdb) tstart
+>> +(gdb) shell ls
+>> +arch    drivers   include  kernel    mm               Module.symvers
+>> security  System.map  virt
+>> +block   firmware  init     lib       modules.builtin  net
+>> sound     t           vmlinux
+>> +crypto  fs        ipc      Makefile  modules.order    scripts
+>> source    usr         vmlinux.o
+>> +(gdb) tstop
+>> +(gdb) tfind
+>> +Found trace frame 0, tracepoint 1
+>> +#0  0xc01ed741 in vfs_readdir (file=0xf4063000, filler=0xc01ed580
+>> <filldir64>, buf=0xd6dfdf90)
+>> +    at /home/teawater/kernel/linux-2.6/fs/readdir.c:24
+>> +24      {
+>> +(gdb) p jiffies_64
+>> +$1 = 4297248706
+>> +(gdb) p file->f_path.dentry->d_iname
+>> +$1 = "b26", '\000' <repeats 28 times>
+>> +--------------------------------------------------------------------------------
+>> +
+>> +
+>> +
+>> +How to use use tracepoint condition
+>> +-----------------------------------
+>> +
+>> +http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoint-Conditions.html
+>> +Like the breakpoint, we can set condition to tracepoint. But it speed is more
+>> +fast than breakpoint's condition because KGTP do all the condition check.
+>
+> Like breakpoints, conditions can be set to tracepoints. The speed of
+> tracepoints is faster than breakpoints because KGTP can do all the
+> condition checks.
+>
+>> +For example:
+>> +
+>> +------------------------------
+>> +(gdb) trace handle_irq
+>> +(gdb) condition 1 (irq == 47)
+>> +------------------------------
+>> +
+>> +This action of tracepoint 1 will work only when irq number is 47.
+>> +
+>> +
+>> +
+>> +How to use trace state variables
+>> +--------------------------------
+>> +
+>> +http://sourceware.org/gdb/current/onlinedocs/gdb/Trace-State-Variables.html
+>> +Tracepoint have special variables. You can trace it or use it in tracepoint
+>> +condition.
+>
+> Tracepoints have special variables. The variables can be traced
+> directly, or used in tracepoint conditions.
+>
+>> +Note that only GDB 7.2.1 and later version support use trace state variables
+>
+> Note that only GDB versions 7.2.1 and later support the sue of trace
+> state variables directly,..
+>
+>> +directly, the old version GDB just can show the value of trace state variables
+>
+> , the old version of GDB can show the value of trace ...
+>
+>> +through command "info tvariables".
+>> +
+>> +
+>> +Simple trace state variables
+>> +----------------------------
+>> +
+>> +Define a trace state variable $c.
+>> +
+>> +-------------------
+>> +(gdb) tvariable $c
+>> +-------------------
+>> +
+>> +Trace state variable $c created, with initial value 0.
+>
+> ... variable $c is created with initial value 0.
+>
+>> +Use it in the action. Follow action will use $c to count how much irq happen
+>> +in Kernel.
+>
+> The following action uses $c to count how many irqs happened in the
+> Kernel.
+>
+>> +
+>> +-----------------------------------------------------------------------
+>> +(gdb) trace handle_irq
+>> +(gdb) actions
+>> +Enter actions for tracepoint 3, one per line.
+>> +End with a line saying just "end".
+>> +>collect $c     #Save current value of $c to the trace frame buffer.
+>> +>teval $c=$c+1  #Increase the $c.
+>> +>end
+>> +-----------------------------------------------------------------------
+>> +
+>> +You can get the current value of $c when the trace is running or stop.
+>
+> ... of $c while the trace is running or stopped.
+>
+>> +
+>> +----------------------------------
+>> +(gdb) tstart
+>> +(gdb) info tvariables
+>> +$c              0           31554
+>> +(gdb) p $c
+>> +$5 = 33652
+>> +(gdb) tstop
+>> +(gdb) p $c
+>> +$9 = 105559
+>> +----------------------------------
+>> +
+>> +When use the tfind parse the trace frame buffer, if the value of trace state
+>> +variable is collect. You can use it.
+>
+> I do not understand the above at all.
+>
+>> +
+>> +------------------------------
+>> +(gdb) tstop
+>> +(gdb) tfind
+>> +(gdb) info tvariables
+>> +$c              0           0
+>> +(gdb) p $c
+>> +$6 = 0
+>> +(gdb) tfind 100
+>> +(gdb) p $c
+>> +$7 = 100
+>> +------------------------------
+>
+> Nor do I understand the above example.
+>
+>
+>> +
+>> +
+>> +Special trace state variables $current_task, $current_thread_info, $cpu_id,
+>> +$dump_stack, $printk_level, $printk_format, $printk_tmp and $clock
+>> +--------------------------------------------------------------------------
+>> +
+>> +KGTP have special trace state variables $current_task, $current_thread_info,
+>
+> KGTP has special ...
+>
+>> +$cpu_id and $clock can very easy to access to some special value. You can see
+>
+> ... $clock that can be used to access their special values. (?)
+>
+>> +them when GDB connect to the KGTP. You can use them in tracepoint condition
+>
+>                 connects                                           conditions
+>
+>> +or actions.
+>> +Access $current_task in tracepoint condition and action will get the return
+>> +of get_current().
+>
+> The use of $current_task in tracepoint conditions will return the action
+> of get_current().
+>
+>> +Access $current_thread_info in tracepoint condition and action will get the
+>> +return of current_thread_info().
+>
+> Same
+>
+>> +Access $cpu_id in tracepoint condition and action will get the return of
+>> +smp_processor_id().
+>
+> Same
+>
+>> +Access $clock in tracepoint condition and action will get the return of
+>> +local_clock() that return the timestamp in nanoseconds.
+>
+> Same
+>
+>> +
+>> +And KGTP have other special trace state variables $dump_stack, $printk_level,
+>
+> KGTP has other special trace state variables ...
+>
+>> +$printk_format and $printk_tmp, all of them are for output value directly that
+>
+>                      $print_tmp. Their output is explained in
+> "Howto ..."
+>
+>> +will introduce in "Howto let tracepoint output value directly".
+>> +
+>> +Following example will count process 16663 call how many sys_read in $c
+>> +and collect the struct thread_info of current task:
+>
+> I'm confused by what $c is to give it a proper translation.
+>
+>> +
+>> +--------------------------------------------------------------------------------
+>> +(gdb) trace vfs_read if ((*(struct task_struct *)$current_task)->pid == 16663)
+>> +(gdb) tvariable $c
+>> +(gdb) actions
+>> +Enter actions for tracepoint 4, one per line.
+>> +End with a line saying just "end".
+>> +>teval $c=$c+1
+>> +>collect (*(struct thread_info *)$current_thread_info)
+>> +>end
+>> +(gdb) tstart
+>> +(gdb) info tvariables
+>> +Name            Initial     Current
+>> +$c              0           184
+>> +$current_task   0           <unknown>
+>> +$current_thread_info 0           <unknown>
+>> +$cpu_id         0           <unknown>
+>> +(gdb) tstop
+>> +(gdb) tfind
+>> +(gdb) p *(struct thread_info *)$current_thread_info
+>> +$10 = {task = 0xf0ac6580, exec_domain = 0xc07b1400, flags = 0, status
+>> = 0, cpu = 1, preempt_count = 2, addr_limit = {
+>> +    seg = 4294967295}, restart_block = {fn = 0xc0159fb0
+>> <do_no_restart_syscall>, {{arg0 = 138300720, arg1 = 11,
+>> +        arg2 = 1, arg3 = 78}, futex = {uaddr = 0x83e4d30, val = 11,
+>> flags = 1, bitset = 78, time = 977063750,
+>> +        uaddr2 = 0x0}, nanosleep = {index = 138300720, rmtp = 0xb,
+>> expires = 335007449089}, poll = {
+>> +        ufds = 0x83e4d30, nfds = 11, has_timeout = 1, tv_sec = 78,
+>> tv_nsec = 977063750}}},
+>> +  sysenter_return = 0xb77ce424, previous_esp = 0, supervisor_stack =
+>> 0xef340044 "", uaccess_err = 0}
+>> +--------------------------------------------------------------------------------
+>
+>
+> This is all I have time for this now, but this work looks very
+> promising. When I get some more time, I will have to start playing with
+> it.
+>
+> Thanks!
+>
+> -- Steve
+>
+>
+>
