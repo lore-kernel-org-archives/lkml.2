@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab1EGQaP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 12:30:15 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1900 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755783Ab1EGQaL convert rfc822-to-8bit (ORCPT
+	id S1755897Ab1EGQaR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 12:30:17 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:52423 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790Ab1EGQaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 12:30:11 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4DC57383.3050903@broadcom.com>
-Date: Sat, 7 May 2011 18:29:55 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
+	Sat, 7 May 2011 12:30:12 -0400
+Message-ID: <4DC57392.8010902@xs4all.nl>
+Date: Sat, 07 May 2011 18:30:10 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <m@bues.ch>
-cc: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "Greg KH" <greg@kroah.com>,
-        =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <mb@bu3sch.de>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "George Kashperko" <george@znau.edu.ua>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "Andy Botting" <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
- driver
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
- <201105061605.31625.arnd@arndb.de>
- <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
- <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
- <1304776555.16344.2.camel@maggie>
-In-Reply-To: <1304776555.16344.2.camel@maggie>
-X-WSS-ID: 61DBABDF4NS2872883-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: Re: AMD C1E issue?   2.6.38.4
+References: <4DC54CE5.6050307@xs4all.nl> <20110507162130.GA13307@liondog.tnic>
+In-Reply-To: <20110507162130.GA13307@liondog.tnic>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2011 03:55 PM, Michael Büsch wrote:
->
->> Arnd: did you have a look at defines at all?
+On 2011-05-07 18:21, Borislav Petkov wrote:
+>> Saw these in my messages after enabling C1E on my new Jetway Mini-ITX board:
 >>
->> Most of the defines have values in range 0x800 → 0x837. Converting
->> this to array means loosing 0x800 u16 entries. We can not use 0x800
->> offset, because there are also some defined between 0x000 and 0x800:
->> #define BCMA_CORE_OOB_ROUTER           0x367   /* Out of band */
->> #define BCMA_CORE_INVALID              0x700
-Please be aware that the core identifier itself is not unique (in the 
-current list they are). In the scan the BCMA_CORE_OOB_ROUTER will always 
-show BCMA_MANUF_ARM (did not look up the proper manufacturer define but 
-you get the idea, i hope).
+>> # microcode_ctl -u
+>> microcode_ctl: writing microcode (length: 430080)
+>> microcode_ctl: error writing to '/dev/cpu/microcode' errno=22 (Invalid
+>> argument)
+>> microcode_ctl: there may be messages from the driver in your system log.
+>>
+>> microcode: AMD microcode update via /dev/cpu/microcode not supported
+>> microcode: AMD microcode update via /dev/cpu/microcode not supported
+> 
+> no, the message is correct - the AMD ucode driver doesn't support
+> ucode loading method through the /dev node, only through the firmware
+> loader. I.e., you should simply put the microcode image into
+> /lib/firmware/amd-ucode/ and compile the kernel microcode driver as a
+> module - then it'll load automatically.
 
-Gr. AvS
+Wel, yes/no.
+It works that way on my other boxes.
+On this specific box microcode_ctl is not activated automagically during
+startup of the machine.
 
+> This doesn't have anything to do with C1E.
+
+OK, that helps. Thanks.
+
+What else could be the cause of microcode_ctl not updating?
+Situation is:
+microcode: CPU0: patch_level=0x10000b7
+microcode: CPU1: patch_level=0x10000b7
+Is that new enough so that there is just no newer code to be uploaded
+for AMD Athlon(tm) II X2 235e Processor ?
+
+Udo
