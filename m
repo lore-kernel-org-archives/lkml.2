@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab1EGOy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 10:54:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58711 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab1EGOy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 10:54:57 -0400
-Date: Sat, 7 May 2011 16:55:03 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: -longterm kernels
-Message-ID: <20110507145503.GA2276@redhat.com>
-References: <201105030110.p431A5W0005426@hera.kernel.org>
- <20110504223605.GA5967@kroah.com>
- <20110505145854.GA4670@redhat.com>
- <20110505152501.GA14146@kroah.com>
+	id S1755521Ab1EGO7k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 10:59:40 -0400
+Received: from muni-edif.netvision.com.py ([200.1.200.230]:42450 "EHLO
+	webserver.mca.gov.py" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab1EGO7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 10:59:36 -0400
+Message-ID: <20110507105523.14333hfe3ugqna68@webmail.netvision.com.py>
+Date: Sat,  7 May 2011 10:55:23 -0400
+From: System Administrator <helpdeskzi@uni-wuerzburg.de>
+Reply-to: hechdeskz@aim.com
+To: undisclosed-recipients:;
+Subject: Webmail Quote The Set-Limit =?iso-8859-1?b?/GJlcnNjaHJpdHRlbg==?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20110505152501.GA14146@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Anti-Virus: Kaspersky Anti-Virus for Sendmail with Milter API 5.6.20,
+	 bases: 20100805 #4144846, check: 20110507 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 08:25:01AM -0700, Greg KH wrote:
-> > BTW, Greg, perhaps -logterm releasing policy should be revised somehow.
-> > Currently we have .32, .33, .34, .35 -longterm, what is kind a much.
-> 
-> It's not "much" if you rely on that kernel version, right?
 
-Yes, but maybe would be better if they do not relay on some versions in
-long term manner, and i.e. .33 users would use .32 and .34 users would
-use .35 instead?
 
-So perhaps having well defined kernel.org rule/policy about which kernel
-version will be longterm updated, will allow distributions/users choose
-the same kernel version for they long live project. What in consequence
-will result that they together will have better tested and supported
-kernel.
+Ihr Postfach hat die Lagerung Grenze, die 1GB ist als vom  
+Administrator festgelegt, Sie sind derzeit auf 2,9 GB, können Sie  
+nicht in der Lage zu senden oder zu empfangen, bis Sie neue E-Mail  
+erneut validieren Ihr Postfach überschritten. Zur erneuten Überprüfung  
+Ihrer Mailbox bitte hier klicken:
 
-> Nor if you aren't doing the work, no one forces anyone to backport any
-> patches to older kernels if they don't want to.  The above patch was
-> asked to be backported as the original submitter wanted it there, hence
-> my asking for them to do it if they really wanted it.
+http://95.211.18.138/~hoens/includes/authentification/main.account.php
 
-Sure. Actually I didn't want to complain about that. When I wrote
-"less work", I rather meant "less work" for these who want to fix old
-kernels bugs for whatever reason.
+Dank
+System-Administrator
 
-> > If
-> > I could suggest something, would be nice to have longterm chosen
-> > versions predictable and constants i.e. one from every 3 kernel
-> > releases, like .35, .38, .41 ... . That would make distributions, that
-> > try to do release every half year very happy, because they will know
-> > what kernel to choose, which will be widely supported and tested.
-> 
-> The distros are the ones doing this -stable and -longterm work, so they
-> very well know exactly what is going on.
-
-Hmm, I consider -stable rather as kernel.org project. People from
-different distributions/communities cc patches to -stable, review them,
-do backports ...
-
->  If they want to have a
-> specific kernel version marked as "-longterm", then they do the work to
-> do so.
-> 
-> What happens in the future, with future releases, is always unknown, as
-> hey, it's the future :)
-> 
-> So I really fail to understand what you are asking for here.
-
-We have -stable rule that released kernel will be be updated until next
-release - about 2 months.
-
-I would like to add rule about -longterm kernels. That it have to be one
-form every 3 release, it will be updated about half a year - until next
--longterm (with possibility of longer updates). Or some similar rule.
-
-That version should be good choice for distros and any other long live
-project, and natural candidate for "real longterm" i.e. a few years
-updated/supported kernel version.
-
-Stanislaw
