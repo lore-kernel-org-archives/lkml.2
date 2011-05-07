@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab1EGBVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:21:45 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45175 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab1EGBVI (ORCPT
+	id S1754613Ab1EGBVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:21:49 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44133 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab1EGBVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 21:21:08 -0400
+	Fri, 6 May 2011 21:21:10 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Subject: [PATCH 09/11] rtc: pcap: Initialize drvdata before registering device
-Date: Fri,  6 May 2011 18:20:52 -0700
-Message-Id: <1304731254-3238-10-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 10/11] rtc: rp5c01: Initialize drvdata before registering device
+Date: Fri,  6 May 2011 18:20:53 -0700
+Message-Id: <1304731254-3238-11-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
 References: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
@@ -39,38 +39,39 @@ CC: Thomas Gleixner <tglx@linutronix.de>
 CC: rtc-linux@googlegroups.com
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/rtc/rtc-pcap.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/rtc/rtc-rp5c01.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-pcap.c b/drivers/rtc/rtc-pcap.c
-index a633abc..cd4f198 100644
---- a/drivers/rtc/rtc-pcap.c
-+++ b/drivers/rtc/rtc-pcap.c
-@@ -151,6 +151,8 @@ static int __devinit pcap_rtc_probe(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-rp5c01.c b/drivers/rtc/rtc-rp5c01.c
+index 694da39..359da6d 100644
+--- a/drivers/rtc/rtc-rp5c01.c
++++ b/drivers/rtc/rtc-rp5c01.c
+@@ -249,15 +249,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
  
- 	pcap_rtc->pcap = dev_get_drvdata(pdev->dev.parent);
+ 	spin_lock_init(&priv->lock);
  
-+	platform_set_drvdata(pdev, pcap_rtc);
++	platform_set_drvdata(dev, priv);
 +
- 	pcap_rtc->rtc = rtc_device_register("pcap", &pdev->dev,
- 				  &pcap_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(pcap_rtc->rtc)) {
-@@ -158,7 +160,6 @@ static int __devinit pcap_rtc_probe(struct platform_device *pdev)
- 		goto fail_rtc;
+ 	rtc = rtc_device_register("rtc-rp5c01", &dev->dev, &rp5c01_rtc_ops,
+ 				  THIS_MODULE);
+ 	if (IS_ERR(rtc)) {
+ 		error = PTR_ERR(rtc);
+ 		goto out_unmap;
  	}
+-
+ 	priv->rtc = rtc;
+-	platform_set_drvdata(dev, priv);
  
--	platform_set_drvdata(pdev, pcap_rtc);
- 
- 	timer_irq = pcap_to_irq(pcap_rtc->pcap, PCAP_IRQ_1HZ);
- 	alarm_irq = pcap_to_irq(pcap_rtc->pcap, PCAP_IRQ_TODA);
-@@ -177,6 +178,7 @@ fail_alarm:
- fail_timer:
- 	rtc_device_unregister(pcap_rtc->rtc);
- fail_rtc:
-+	platform_set_drvdata(pdev, NULL);
- 	kfree(pcap_rtc);
- 	return err;
- }
+ 	error = sysfs_create_bin_file(&dev->dev.kobj, &priv->nvram_attr);
+ 	if (error)
+@@ -268,6 +268,7 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
+ out_unregister:
+ 	rtc_device_unregister(rtc);
+ out_unmap:
++	platform_set_drvdata(dev, NULL);
+ 	iounmap(priv->regs);
+ out_free_priv:
+ 	kfree(priv);
 -- 
 1.7.3.2.146.gca209
 
