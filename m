@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab1EGUJA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 16:09:00 -0400
-Received: from kroah.org ([198.145.64.141]:38172 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756168Ab1EGUI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 16:08:58 -0400
-Date: Sat, 7 May 2011 13:09:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/4] drivers: create a pinmux subsystem
-Message-ID: <20110507200948.GB19753@kroah.com>
-References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
+	id S1756168Ab1EGUOy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 16:14:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38713 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756029Ab1EGUOx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 16:14:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YyxxB3RoAA6/dyL/12YXo1fcO9kf4fpD7sSE5GCWwHdtWNGGtxmnVWqCU3HrzGSiDs
+         hxetuJv7KKkR4WXkIWSoS+yebHODT/0PJpGWRRIiwy0b3WxDDl+vPTeNpz6WtCLq3QYa
+         LVq9/we4KXgJFwemPqS9xFlzmtjln9PxsTmXo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304771519.2227.6.camel@x61.thuisdomein>
+References: <1304771519.2227.6.camel@x61.thuisdomein>
+Date: Sat, 7 May 2011 21:14:52 +0100
+Message-ID: <BANLkTinE4zDXE6VDS=yc1SmCCEbAn70Rcw@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] iwl4965: drop a lone pr_err()
+From: julie Sullivan <kernelmail.jms@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 02, 2011 at 09:16:26PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This creates a subsystem for handling of pinmux devices. These are
-> devices that enable and disable groups of pins on primarily PGA and
-> BGA type of chip packages and common in embedded systems.
-> 
-> This is being done to depopulate the arch/arm/* directory of such
-> custom drivers and try to abstract the infrastructure they all
-> need. See the Documentation/pinmux.txt file that is part of this
-> patch for more details.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  Documentation/ABI/testing/sysfs-class-pinmux |   11 +
->  Documentation/pinmux.txt                     |  306 +++++++++++
->  MAINTAINERS                                  |    5 +
->  drivers/Kconfig                              |    4 +
->  drivers/Makefile                             |    2 +
->  drivers/pinmux/Kconfig                       |   26 +
->  drivers/pinmux/Makefile                      |    5 +
->  drivers/pinmux/core.c                        |  740 ++++++++++++++++++++++++++
->  include/linux/pinmux.h                       |  224 ++++++++
->  9 files changed, 1323 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-class-pinmux
+> iwl4965_rate_control_register() prints a message at KERN_ERR level.
 
-As someone who constantly has to harp on adding documentation for sysfs
-files that are added to the kernel tree, it's nice to see this done
-correctly.
+> -       pr_err("Registering 4965 rate control operations\n");
 
-Good job,
+Yes, I noticed this message on boot too and found it a tad confusing...
+('Rate control operations'?? 4,965 of them?)
+:-)  At least I know what it is now. Thanks, Paul.
 
-greg k-h
+Julie
