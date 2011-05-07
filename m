@@ -1,104 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab1EGXRp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 19:17:45 -0400
-Received: from server19320154104.serverpool.info ([193.201.54.104]:39318 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173Ab1EGXRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 19:17:44 -0400
-Message-ID: <4DC5D310.8050604@hauke-m.de>
-Date: Sun, 08 May 2011 01:17:36 +0200
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1756375Ab1EGXTw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 19:19:52 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:3370 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab1EGXTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 19:19:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=MYyYBLI3hKPK3eAIskCzR8SsV8ZJdCi8YwBnQychQXPPyHfMOxJI2f3Ojz4E458BH6
+         RVFNyIkhydW2F0nZwAVg==
+Date: Sat, 7 May 2011 16:19:44 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] mm: make expand_downwards symmetrical to
+ expand_upwards
+In-Reply-To: <20110506075027.GB32495@tiehlicka.suse.cz>
+Message-ID: <alpine.LSU.2.00.1105071617310.3645@sister.anvils>
+References: <20110506075027.GB32495@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Henry Ptasinski <henryp@broadcom.com>
-CC: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        Greg KH <greg@kroah.com>,
-        =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        Arend Van Spriel <arend@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com> <4DC56FB9.5000208@hauke-m.de> <BANLkTi=FfjK7obq0hj4TjYZc-GgzTuUC6g@mail.gmail.com> <4DC57425.30206@hauke-m.de> <BANLkTikTarvigU-xZNZikhLyvUWse448Tg@mail.gmail.com> <4DC5805C.2010202@hauke-m.de> <20110507224223.GA2537@broadcom.com>
-In-Reply-To: <20110507224223.GA2537@broadcom.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2011 12:42 AM, Henry Ptasinski wrote:
-> On Sat, May 07, 2011 at 10:24:44AM -0700, Hauke Mehrtens wrote:
->> On 05/07/2011 06:51 PM, Rafał Miłecki wrote:
->>> 2011/5/7 Hauke Mehrtens <hauke@hauke-m.de>:
->>>> There is a Ethernet core used on embedded devices with this bus and
->>>> George wrote a driver for the first version of this bus implementation,
->>>> he send to the ML. Most user will use this with some wireless devices so
->>>> I would add linux-wireless@vger.kernel.org. Why does ssb uses netdev ML?
->>>
->>> Thanks, I didn't know about this ethernet driver. Have to check it!
->>> Where was this published? Do you have a thread name?
->>
->> I think he haven't send it to the mailing list, there is a link [0] in
->> some Ticket [1] at OpenWrt. This driver was derived from source code
->> Braodcom have published, but not under a GPL compatible license. It will
->> be nice if Braodcom would allow us to publish a driver under the terms
->> of the GPL for the Ethernet core based on their driver, without writing
->> a full spec of the driver like it was done for b43.
+On Fri, 6 May 2011, Michal Hocko wrote:
+
+> Hi Andrew,
+> I am sorry to repost this kind of trivial cleanup for the 4th time,
+> but after recent discussion (https://lkml.org/lkml/2011/5/3/323)
+> with Hugh I think that it makes sense to keep the original
+> expand_{upwards,downwards} without being explicit about the stack in the
+> name. As Hugh pointed out, IA64 uses expand_upwards for something that
+> is not really a stack (it is a backing storage for registers).
+> The following patch reworks the original one so it is not incremental.
+> If you prefer incremental one I can send that one instead. 
+> Just for record this patch obsoletes:
+> 	mm-make-expand_downwards-symmetrical-with-expand_upwards.patch
+> 	mm-make-expand_downwards-symmetrical-with-expand_upwards-v3.patch
+> in your current (2011-04-29-16-25) mm tree.
 > 
-> ...
->>
->> [0] http://www.znau.edu.ua/temp/asus-rt-n16/openwrt-bcm4716-README.txt
->> [1] https://dev.openwrt.org/ticket/6580#comment
+> ---
+> From 1b679558f464530c59c93930b958a3436a250c25 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Fri, 15 Apr 2011 14:56:26 +0200
+> Subject: [PATCH] mm: make expand_downwards symmetrical to expand_upwards
 > 
-> All of of the patches listed in [0] appear to contain GPL-licensed code.  Can
-> you provide a pointer to the ethernet driver that you think is not under a
-> GPL-compatible license?
+> Currently we have expand_upwards exported while expand_downwards is
+> accessible only via expand_stack or expand_stack_downwards.
+> 
+> check_stack_guard_page is a nice example of the asymmetry. It uses
+> expand_stack for VM_GROWSDOWN while expand_upwards is called for
+> VM_GROWSUP case.
+> 
+> Let's clean this up by exporting both functions and make those names
+> consistent. Let's use expand_{upwards,downwards} because expanding
+> doesn't always involve stack manipulation (an example is
+> ia64_do_page_fault which uses expand_upwards for registers backing store
+> expansion).
+> expand_downwards has to be defined for both CONFIG_STACK_GROWS{UP,DOWN}
+> because get_arg_page calls the downwards version in the early process
+> initialization phase for growsup configuration.
+> 
+> CC: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-I was only able to find the driver George build based on the et driver
-as a patch in a patch version. It is patch
-999-openwrt4716-ssb-bgmac-mak-driver.patch in
-http://www.znau.edu.ua/temp/asus-rt-n16/2011-02-13T23-17/001-openwrt4716-TARGET_brcm4716.patch
+Thanks, Michal: yes, I much prefer it done this way:
+Acked-by: Hugh Dickins <hughd@google.com>
 
-This driver is based on the Broadcom et driver from the GPL source
-package of the Asus RT-N16. One of the files has this header [0]. This
-license does not seam to be compatible with the GPL. Netgear provides
-the et driver just in binary format without any source code.
-
-It will be nice if Broadcom is fine when we build and release an
-Ethernet driver like 999-openwrt4716-ssb-bgmac-mak-driver.patch using
-bcma under the terms of the GPL and using et as a reference. The best
-thing would be if you could release the Broadcom et driver under a GPL
-compatible license, so we are able to use it as a reference
-implementation without any problems.
-
-If you relicense your driver you will probably get a Ethernet driver
-based on the bcma bus without any costs. I do not see any problems with
-the FCC, if your release this code. Every one how wants to see the
-source code already did so, as it is freely available for years now.
-
-Hauke
-
-[0] RT-N16/src/et/sys/etcgmac.c header:
----
-Broadcom Gigabit Ethernet MAC (Unimac) core.
-
-This file implements the chip-specific routines for the GMAC core.
-
-Copyright (C) 2009, Broadcom Corporation
-All Rights Reserved.
-
-This is UNPUBLISHED PROPRIETARY SOURCE CODE of Broadcom Corporation;
-the contents of this file may not be disclosed to third parties, copied
-or duplicated in any form, in whole or in part, without the prior
-written permission of Broadcom Corporation.
----
+> ---
+>  fs/exec.c          |    2 +-
+>  include/linux/mm.h |    8 +++++---
+>  mm/memory.c        |    2 +-
+>  mm/mmap.c          |    7 +------
+>  4 files changed, 8 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 5e62d26..c2668ff 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -194,7 +194,7 @@ struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+>  
+>  #ifdef CONFIG_STACK_GROWSUP
+>  	if (write) {
+> -		ret = expand_stack_downwards(bprm->vma, pos);
+> +		ret = expand_downwards(bprm->vma, pos);
+>  		if (ret < 0)
+>  			return NULL;
+>  	}
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 692dbae..2d4f62b 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1494,15 +1494,17 @@ unsigned long ra_submit(struct file_ra_state *ra,
+>  			struct address_space *mapping,
+>  			struct file *filp);
+>  
+> -/* Do stack extension */
+> +/* Generic expand stack which grows the stack according to GROWS{UP,DOWN} */
+>  extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+> +
+> +/* CONFIG_STACK_GROWSUP still needs to to grow downwards at some places */
+> +extern int expand_downwards(struct vm_area_struct *vma,
+> +		unsigned long address);
+>  #if VM_GROWSUP
+>  extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
+>  #else
+>    #define expand_upwards(vma, address) do { } while (0)
+>  #endif
+> -extern int expand_stack_downwards(struct vm_area_struct *vma,
+> -				  unsigned long address);
+>  
+>  /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+>  extern struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr);
+> diff --git a/mm/memory.c b/mm/memory.c
+> index ce22a25..f404fb6 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2969,7 +2969,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
+>  		if (prev && prev->vm_end == address)
+>  			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
+>  
+> -		expand_stack(vma, address - PAGE_SIZE);
+> +		expand_downwards(vma, address - PAGE_SIZE);
+>  	}
+>  	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
+>  		struct vm_area_struct *next = vma->vm_next;
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index e27e0cf..4c10287 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1782,7 +1782,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+>  /*
+>   * vma is the first one with address < vma->vm_start.  Have to extend vma.
+>   */
+> -static int expand_downwards(struct vm_area_struct *vma,
+> +int expand_downwards(struct vm_area_struct *vma,
+>  				   unsigned long address)
+>  {
+>  	int error;
+> @@ -1829,11 +1829,6 @@ static int expand_downwards(struct vm_area_struct *vma,
+>  	return error;
+>  }
+>  
+> -int expand_stack_downwards(struct vm_area_struct *vma, unsigned long address)
+> -{
+> -	return expand_downwards(vma, address);
+> -}
+> -
+>  #ifdef CONFIG_STACK_GROWSUP
+>  int expand_stack(struct vm_area_struct *vma, unsigned long address)
+>  {
+> -- 
+> 1.7.4.4
+> 
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9    
+> Czech Republic
+> 
