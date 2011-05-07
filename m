@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab1EGOqu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 10:46:50 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44548 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289Ab1EGOqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 10:46:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=jIjCMmfs5oG05Fjh6Y+PNfX3ZDZO8a6eJSHkdvrVtw/E2XG87fpCj5yBYIZpy7xgr7
-         s8nqAEuDRNPuCBeThEheoNlOAOLppTp2pum2LFYckQh8cj+/v96yMaVk8NRrtOfLDeDV
-         O54W95YE7MnHZRSlnefMeXX/KIp8XNFkarb2o=
-Message-ID: <4DC55B50.1030108@gmail.com>
-Date: Sat, 07 May 2011 16:46:40 +0200
-From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
+	id S1755464Ab1EGOy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 10:54:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158Ab1EGOy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 10:54:57 -0400
+Date: Sat, 7 May 2011 16:55:03 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: -longterm kernels
+Message-ID: <20110507145503.GA2276@redhat.com>
+References: <201105030110.p431A5W0005426@hera.kernel.org>
+ <20110504223605.GA5967@kroah.com>
+ <20110505145854.GA4670@redhat.com>
+ <20110505152501.GA14146@kroah.com>
 MIME-Version: 1.0
-To: Lin Ming <minggr@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: compiling of tools/perf fail on x86 64bit kernel and 32bit userspace
-References: <4DC427D4.7030903@gmail.com> <BANLkTikvtJex=fGYw0f6v8pMKhkWmaM2sA@mail.gmail.com>
-In-Reply-To: <BANLkTikvtJex=fGYw0f6v8pMKhkWmaM2sA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110505152501.GA14146@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On Thu, May 05, 2011 at 08:25:01AM -0700, Greg KH wrote:
+> > BTW, Greg, perhaps -logterm releasing policy should be revised somehow.
+> > Currently we have .32, .33, .34, .35 -longterm, what is kind a much.
+> 
+> It's not "much" if you rely on that kernel version, right?
 
-Il 07/05/2011 06:55, Lin Ming ha scritto:
-> On Sat, May 7, 2011 at 12:54 AM, Riccardo Magliocchetti
-> <riccardo.magliocchetti@gmail.com>  wrote:
->> Hi,
->>
->> with latest git, i cannot compile perf on 32 bit userspace with a 64 bit
->> kernel.
->>
->> ~/src/linux-2.6/tools/perf$ make
->> PERF_VERSION = 2.6.39.rc6.224.g06d006f
->>     GEN common-cmds.h
->>     * new build flags or prefix
->>     CC perf.o
->>     CC builtin-annotate.o
->>     CC builtin-bench.o
->>     CC bench/sched-messaging.o
->>     CC bench/sched-pipe.o
->>     CC bench/mem-memcpy-x86-64-asm.o
->> bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
->> bench/../../../arch/x86/lib/memcpy_64.S:28: Error: bad register name `%rdi'
->> bench/../../../arch/x86/lib/memcpy_64.S:33: Error: invalid instruction
->> suffix for `movs'
->
-> Hi,
->
-> I just send out a patch to fix this.
-> https://lkml.org/lkml/2011/5/7/4
->
-> Could you have a try it?
+Yes, but maybe would be better if they do not relay on some versions in
+long term manner, and i.e. .33 users would use .32 and .34 users would
+use .35 instead?
 
-Works fine, thanks!
+So perhaps having well defined kernel.org rule/policy about which kernel
+version will be longterm updated, will allow distributions/users choose
+the same kernel version for they long live project. What in consequence
+will result that they together will have better tested and supported
+kernel.
 
-riccardo
+> Nor if you aren't doing the work, no one forces anyone to backport any
+> patches to older kernels if they don't want to.  The above patch was
+> asked to be backported as the original submitter wanted it there, hence
+> my asking for them to do it if they really wanted it.
+
+Sure. Actually I didn't want to complain about that. When I wrote
+"less work", I rather meant "less work" for these who want to fix old
+kernels bugs for whatever reason.
+
+> > If
+> > I could suggest something, would be nice to have longterm chosen
+> > versions predictable and constants i.e. one from every 3 kernel
+> > releases, like .35, .38, .41 ... . That would make distributions, that
+> > try to do release every half year very happy, because they will know
+> > what kernel to choose, which will be widely supported and tested.
+> 
+> The distros are the ones doing this -stable and -longterm work, so they
+> very well know exactly what is going on.
+
+Hmm, I consider -stable rather as kernel.org project. People from
+different distributions/communities cc patches to -stable, review them,
+do backports ...
+
+>  If they want to have a
+> specific kernel version marked as "-longterm", then they do the work to
+> do so.
+> 
+> What happens in the future, with future releases, is always unknown, as
+> hey, it's the future :)
+> 
+> So I really fail to understand what you are asking for here.
+
+We have -stable rule that released kernel will be be updated until next
+release - about 2 months.
+
+I would like to add rule about -longterm kernels. That it have to be one
+form every 3 release, it will be updated about half a year - until next
+-longterm (with possibility of longer updates). Or some similar rule.
+
+That version should be good choice for distros and any other long live
+project, and natural candidate for "real longterm" i.e. a few years
+updated/supported kernel version.
+
+Stanislaw
