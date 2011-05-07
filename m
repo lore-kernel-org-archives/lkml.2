@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab1EGQJt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 12:09:49 -0400
-Received: from lucidpixels.com ([75.144.35.66]:37444 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755709Ab1EGQJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 12:09:47 -0400
-Date: Sat, 7 May 2011 12:09:46 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: xfs@oss.sgi.com
-cc: linux-kernel@vger.kernel.org
-Subject: 2.6.38.4: xfs speed problem?
-Message-ID: <alpine.DEB.2.02.1105071042210.20162@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755833Ab1EGQOC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 12:14:02 -0400
+Received: from server19320154104.serverpool.info ([193.201.54.104]:40805 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755712Ab1EGQN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 12:13:58 -0400
+Message-ID: <4DC56FB9.5000208@hauke-m.de>
+Date: Sat, 07 May 2011 18:13:45 +0200
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+CC: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        =?UTF-8?B?TWljaGFl?= =?UTF-8?B?bCBCw7xzY2g=?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+In-Reply-To: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 05/05/2011 11:59 PM, Rafał Miłecki wrote:
+> Cc: Greg KH <greg@kroah.com>
+> Cc: Michael Büsch <mb@bu3sch.de>
+> Cc: Larry Finger <Larry.Finger@lwfinger.net>
+> Cc: George Kashperko <george@znau.edu.ua>
+> Cc: Arend van Spriel <arend@broadcom.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Russell King <rmk@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Andy Botting <andy@andybotting.com>
+> Cc: linuxdriverproject <devel@linuxdriverproject.org>
+> Cc: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+> Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+> ---
+> V2: Rename to axi
+>     Use DEFINE_PCI_DEVICE_TABLE in bridge
+>     Make use of pr_fmt and pr_*
+>     Store core class
+>     Rename bridge to not b43 specific
+>     Replace magic 0x1000 with BCMAI_CORE_SIZE
+>     Remove some old "ssb" names and defines
+>     Move BCMAI_ADDR_BASE def
+>     Add drvdata field
+> V3: Fix reloading (kfree issue)
+>     Add 14e4:0x4331
+>     Fix non-initialized struct issue
+>     Drop useless inline functions wrappers for pci core drv
+>     Proper pr_* usage
+> V3.1: Include forgotten changes (pr_* and include related)
+>     Explain why we dare to implement empty release function
+> V4: Add ABI documentation
+>     Move struct device to wrapper and alloc it dynamically
+>     checkpatch.pl pointed fixes
+> V5: Rename to bcma, AXI was really bad name
+>     Use EXPORT_SYMBOL_GPL
+>     Set pci driver fields in one place
+>     Drop unlikely
+>     Use BCMA_CORE_SIZE for calc in awrite32
+>     Add README
+>     Fix compilation (delay.h)
+> ---
+>  Documentation/ABI/testing/sysfs-bus-bcma    |   31 ++
+>  drivers/Kconfig                             |    2 +
+>  drivers/Makefile                            |    1 +
+>  drivers/bcma/Kconfig                        |   33 +++
+>  drivers/bcma/Makefile                       |    7 +
+>  drivers/bcma/README                         |   18 ++
+>  drivers/bcma/TODO                           |    3 +
+>  drivers/bcma/bcma_private.h                 |   31 ++
+>  drivers/bcma/core.c                         |   51 ++++
+>  drivers/bcma/driver_chipcommon.c            |   87 ++++++
+>  drivers/bcma/driver_chipcommon_pmu.c        |  134 +++++++++
+>  drivers/bcma/driver_pci.c                   |  163 +++++++++++
+>  drivers/bcma/host_pci.c                     |  196 +++++++++++++
+>  drivers/bcma/main.c                         |  271 ++++++++++++++++++
+>  drivers/bcma/scan.c                         |  392 +++++++++++++++++++++++++++
+>  drivers/bcma/scan.h                         |   56 ++++
+>  include/linux/bcma/bcma.h                   |  232 ++++++++++++++++
+>  include/linux/bcma/bcma_driver_chipcommon.h |  297 ++++++++++++++++++++
+>  include/linux/bcma/bcma_driver_pci.h        |   89 ++++++
+>  include/linux/bcma/bcma_regs.h              |   34 +++
+>  include/linux/mod_devicetable.h             |   17 ++
+>  scripts/mod/file2alias.c                    |   22 ++
+>  22 files changed, 2167 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-bcma
+>  create mode 100644 drivers/bcma/Kconfig
+>  create mode 100644 drivers/bcma/Makefile
+>  create mode 100644 drivers/bcma/README
+>  create mode 100644 drivers/bcma/TODO
+>  create mode 100644 drivers/bcma/bcma_private.h
+>  create mode 100644 drivers/bcma/core.c
+>  create mode 100644 drivers/bcma/driver_chipcommon.c
+>  create mode 100644 drivers/bcma/driver_chipcommon_pmu.c
+>  create mode 100644 drivers/bcma/driver_pci.c
+>  create mode 100644 drivers/bcma/host_pci.c
+>  create mode 100644 drivers/bcma/main.c
+>  create mode 100644 drivers/bcma/scan.c
+>  create mode 100644 drivers/bcma/scan.h
+>  create mode 100644 include/linux/bcma/bcma.h
+>  create mode 100644 include/linux/bcma/bcma_driver_chipcommon.h
+>  create mode 100644 include/linux/bcma/bcma_driver_pci.h
+>  create mode 100644 include/linux/bcma/bcma_regs.h
+> 
+Hi,
 
-Using 2.6.38.4 on two hosts:
+An entry in the MAINTAINERS file would be nice to find the right
+addresses to send patches to.
 
-Host 1:
-$ /usr/bin/time find geocities.data 1> /dev/null
-80.92user 417.93system 2:19:07elapsed 5%CPU (0avgtext+0avgdata 105520maxresident)k
-0inputs+0outputs (0major+73373minor)pagefaults 0swaps
-
-# xfs_db -c frag -f /dev/sda1
-actual 40203982, ideal 40088075, fragmentation factor 0.29%
-
-meta-data=/dev/sda1              isize=256    agcount=44, agsize=268435455 blks
-          =                       sectsz=512   attr=2
-data     =                       bsize=4096   blocks=11718704640, imaxpct=5
-          =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0
-log      =internal               bsize=4096   blocks=521728, version=2
-          =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-
---
-
-Host 2:
-$ /usr/bin/time find geocities.data 1>/dev/null
-54.60user 337.20system 48:42.71elapsed 13%CPU (0avgtext+0avgdata 105632maxresident)k
-0inputs+0outputs (1major+72981minor)pagefaults 0swaps
-
-# xfs_db -c frag -f /dev/sdb1
-actual 37998306, ideal 37939331, fragmentation factor 0.16%
-
-meta-data=/dev/sdb1              isize=256    agcount=10, agsize=268435455 blks
-          =                       sectsz=512   attr=2
-data     =                       bsize=4096   blocks=2441379328, imaxpct=5
-          =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0
-log      =internal               bsize=4096   blocks=521728, version=2
-          =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-
-
---
-
-Host 1: RAID-6 (7200 RPM Drives, 18+1 hot spare)
-Host 2: RAID-6 (7200 RPM Drives, 12)
-
-Each system uses a 3ware 9750-24i4e controller, same settings.
-
-Any thoughts why one is > 2x faster than the other?
-
-Justin.
-
+Hauke
