@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab1EGNix (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 09:38:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63530 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416Ab1EGNit (ORCPT
+	id S1755018Ab1EGNpR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 09:45:17 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:56132 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618Ab1EGNpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 09:38:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=G15xj2HnUJ8ZD4vQfCpzspVqBn/u22Wwx8PgmoOJZuPBObnElkGMgogyaGtjQMpmVk
-         9f/Zqk7qozrRXY4U2KlU0iYTz425Dog9MT0lR5HNzteti6ukFAInC4+mnHA3zTGLmAbf
-         khwwHy7TyCLcg7KsSNi2kvXbYLQwwBsdEQOoQ=
-Subject: Re: How to disable TCP checksum calculation?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexander Clouter <alex@digriz.org.uk>, "Wu, Xia" <xia.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-In-Reply-To: <ut8f98-hoj.ln1@chipmunk.wormnet.eu>
-References: <A24AE1FFE7AEC5489F83450EE98351BF35079BA24F@shsmsx502.ccr.corp.intel.com>
-	 <ut8f98-hoj.ln1@chipmunk.wormnet.eu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 May 2011 15:38:36 +0200
-Message-ID: <1304775516.2821.1253.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sat, 7 May 2011 09:45:12 -0400
+Message-ID: <4DC54CE5.6050307@xs4all.nl>
+Date: Sat, 07 May 2011 15:45:09 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: AMD C1E issue?   2.6.38.4
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 07 mai 2011 à 08:28 +0100, Alexander Clouter a écrit :
+Hello,
+
+Saw these in my messages after enabling C1E on my new Jetway Mini-ITX board:
+
+# microcode_ctl -u
+microcode_ctl: writing microcode (length: 430080)
+microcode_ctl: error writing to '/dev/cpu/microcode' errno=22 (Invalid
+argument)
+microcode_ctl: there may be messages from the driver in your system log.
+
+microcode: AMD microcode update via /dev/cpu/microcode not supported
+microcode: AMD microcode update via /dev/cpu/microcode not supported
+
+This is on kernel.org 2.6.38.4 on AMD Athlon II X2 235e on JNC84E-LF
+board, Fedora 14 for most of the rest of the stuff.
+
+Anybody can tell why the update cannot work?
+The previous board (JNC81) did not show these but also did not have C1E
+in BIOS as far as I recall.
 
 
-> Wu, Xia <xia.wu@intel.com> wrote:
-> >
-> > I'm studying TCP transporting efficiency. Now I want to disable TCP 
-> > checksum calculation, but I cannot find the right way to disable it. 
-> > Who can give me a help on how to disable TCP checksum on Linux?
-> > 
-> Look at using TCP checksum offloading to see the effects:
-> 
-> http://en.wikipedia.org/wiki/TCP_Offload_Engine
-> 
-> ----
-> berk:/home/alex# ethtool -k eth0
-> Offload parameters for eth0:
-...
+Please explain.
 
-
-Not sure what We meant here. TCP standard requires checksums to be set,
-you cannot 'disable it'. Only possible thing in linux stack is to
-offload tcp checksum computation to network card, if hardware permits
-it.
-
-By the way, the loopback interface (lo) pretends to support this
-feature, so we dont compute tcp checksums for loopback.
-
-
-
+Kind regards,
+Udo
