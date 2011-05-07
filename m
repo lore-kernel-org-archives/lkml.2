@@ -1,288 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1EGBOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:14:12 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:31357 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab1EGBOL (ORCPT
+	id S1754660Ab1EGBVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:21:50 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:56061 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab1EGBVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 21:14:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsEAJKbxE1bdWOb/2dsb2JhbACnFcYihgkEj1iIOoYc
-X-IronPort-AV: E=Sophos;i="4.64,329,1301868000"; 
-   d="scan'208,223";a="838036954"
-Message-ID: <4DC49D7E.6060905@igalia.com>
-Date: Sat, 07 May 2011 03:16:46 +0200
-From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+	Fri, 6 May 2011 21:21:08 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
+Subject: [PATCH 00/11] rtc: Fix rtc breakage found by commit f44f7f96a20
+Date: Fri,  6 May 2011 18:20:43 -0700
+Message-Id: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
-References: <1304702696-9403-1-git-send-email-jmunhoz@igalia.com> <20110506212207.GA3222@kroah.com> <4DC475A9.8070701@igalia.com> <20110506235544.GC22803@suse.de>
-In-Reply-To: <20110506235544.GC22803@suse.de>
-Content-Type: multipart/mixed;
- boundary="------------080901090701090300030801"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080901090701090300030801
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Since commit f44f7f96a20 ("RTC: Initialize kernel state from RTC")
+landed in 2.6.39-rc1, we've seen a few reports of boot time hangs
+cropping up. It ends up that the problematic rtc drivers were
+calling rtc_device_register before it finished initializing critical
+data for the rtc driver to function.
 
-On 05/07/2011 01:55 AM, Greg KH wrote:
-> On Sat, May 07, 2011 at 12:26:49AM +0200, Javier Muñoz wrote:
->> On 05/06/2011 11:22 PM, Greg KH wrote:
->>> On Fri, May 06, 2011 at 07:24:56PM +0200, Javier M. Mellid wrote:
->>>> This patch implements dynamic framebuffer mode setting.
-[...]
->>>
->>> This applies with fuzz, this leads me to believe that you didn't test
->>> this on the latest linux-next tree, right?
->>>
->>> What did you make this patch against?
->>
->> Sorry, I didn't know. I made this patch against
->> linux-2.6 (bfd412db9e7b0d8f7b9c09d12d07aa2ac785f1d0) as I did with
->> previous patches.
->>
->> Testing was about creating, applying, compiling and running patch
->> with kernel built from linux-2.6
->>
->> Do you need a new patch against linux-next's master? I can redo this patch.
->
-> Yes, please always make patches against linux-next as it includes any
-> other pending patches that are in my tree.
+Wolfram Sang noticed that this issue was actually more common then
+just the few reports seen, and motivated me to do a complete audit
+of all the RTC drivers to ensure they were not being registered
+before any critical drvdata was initialized.
 
-OK, just resending a new patch made against linux-next. Please, let me 
-know if it applies seamless.
+This patchset is the result of that audit, along with earlier
+noted fixes from Wolfram's and Uwe.
 
-Thanks!
+Thanks again to Wolfram and Uwe for the patches and helping make
+these issues a priority.
 
-javi
+CC: Alessandro Zummo <a.zummo@towertech.it>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: rtc-linux@googlegroups.com
 
---------------080901090701090300030801
-Content-Type: text/x-diff;
- name="0001-staging-sm7xx-Use-kernel-framebuffer-mode-setting.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-staging-sm7xx-Use-kernel-framebuffer-mode-setting.patch"
 
->From 544f73e7e6f5e4e42f4384f82ee9b4bffe889efb Mon Sep 17 00:00:00 2001
-From: Javier M. Mellid <jmunhoz@igalia.com>
-Date: Sat, 7 May 2011 01:57:43 +0200
-Subject: [PATCH] staging: sm7xx: Use kernel framebuffer mode setting
+John Stultz (7):
+  rtc: ds1286: Initialize drvdata before registering device
+  rtc: m41t80: Initialize clientdata before registering device
+  rtc: max8925: Initialize drvdata before registering device
+  rtc: max8998: Initialize drvdata before registering device
+  rtc: msm6242: Initialize drvdata before registering device
+  rtc: pcap: Initialize drvdata before registering device
+  rtc: rp5c01: Initialize drvdata before registering device
 
-This patch implements dynamic framebuffer mode setting.
+Uwe Kleine-KÃ¶nig (1):
+  rtc: mc13xxx: Don't call rtc_device_register while holding lock
 
-Previous code works with mode setting in a hard code way. Previous hard
-code configuration is used as default configuration if dynamic mode
-setting or boot mode setting (via sm712vga_setup) is not used.
+Wolfram Sang (3):
+  rtc: mxc: Initialize drvdata before registering device
+  rtc: davinci: Initialize drvdata before registering device
+  rtc: ep93xx: Initialize drvdata before registering device
 
-Tested with SM712 supporting 1024x600x16 as default hardware resolution.
+ drivers/rtc/rtc-davinci.c |    5 +++--
+ drivers/rtc/rtc-ds1286.c  |    2 +-
+ drivers/rtc/rtc-ep93xx.c  |    5 ++---
+ drivers/rtc/rtc-m41t80.c  |    5 +++--
+ drivers/rtc/rtc-max8925.c |    5 +++--
+ drivers/rtc/rtc-max8998.c |    5 +++--
+ drivers/rtc/rtc-mc13xxx.c |    8 ++++++--
+ drivers/rtc/rtc-msm6242.c |    3 ++-
+ drivers/rtc/rtc-mxc.c     |   19 +++++++++++--------
+ drivers/rtc/rtc-pcap.c    |    4 +++-
+ drivers/rtc/rtc-rp5c01.c  |    5 +++--
+ 11 files changed, 40 insertions(+), 26 deletions(-)
 
-Changes:
-
-- Implement fb_check_var and fb_set_par callbacks
-- Remove __maybe_unused decorator in function being used (sm712vga_setup)
-- Minor cleanup on initialization structs related with mode settings
-- Updated author copyright
-- Updated TODO file
-
-Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
----
- drivers/staging/sm7xx/TODO     |    1 -
- drivers/staging/sm7xx/smtcfb.c |  112 +++++++++++++++++++++++++---------------
- 2 files changed, 71 insertions(+), 42 deletions(-)
-
-diff --git a/drivers/staging/sm7xx/TODO b/drivers/staging/sm7xx/TODO
-index b0f5318..7304021 100644
---- a/drivers/staging/sm7xx/TODO
-+++ b/drivers/staging/sm7xx/TODO
-@@ -3,7 +3,6 @@ TODO:
- - 2D acceleration support
- - use kernel coding style
- - refine the code and remove unused code
--- use kernel framebuffer mode setting instead of hard code
- - move it to drivers/video/sm7xx/ or make it be drivers/video/sm7xxfb.c
- 
- Please send any patches to Greg Kroah-Hartman <greg@kroah.com> and
-diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
-index c0d943f..94cb4e8 100644
---- a/drivers/staging/sm7xx/smtcfb.c
-+++ b/drivers/staging/sm7xx/smtcfb.c
-@@ -8,6 +8,9 @@
-  * Copyright (C) 2009 Lemote, Inc.
-  * Author: Wu Zhangjin, wuzhangjin@gmail.com
-  *
-+ * Copyright (C) 2011 Igalia, S.L.
-+ * Author: Javier M. Mellid <jmunhoz@igalia.com>
-+ *
-  *  This file is subject to the terms and conditions of the GNU General Public
-  *  License. See the file COPYING in the main directory of this archive for
-  *  more details.
-@@ -39,16 +42,16 @@
- #include <linux/pm.h>
- #endif
- 
--struct screen_info smtc_screen_info;
--
- #include "smtcfb.h"
- 
- #ifdef DEBUG
--#define smdbg(format, arg...)	printk(KERN_DEBUG format , ## arg)
-+#define smdbg(format, arg...) printk(KERN_DEBUG format , ## arg)
- #else
- #define smdbg(format, arg...)
- #endif
- 
-+struct screen_info smtc_screen_info;
-+
- /*
- * Private structure
- */
-@@ -127,6 +130,29 @@ u16 smtc_ChipIDs[] = {
- 
- #define numSMTCchipIDs (sizeof(smtc_ChipIDs) / sizeof(u16))
- 
-+static struct fb_var_screeninfo smtcfb_var = {
-+	.xres           = 1024,
-+	.yres           = 600,
-+	.xres_virtual   = 1024,
-+	.yres_virtual   = 600,
-+	.bits_per_pixel = 16,
-+	.red            = {16, 8, 0},
-+	.green          = {8, 8, 0},
-+	.blue           = {0, 8, 0},
-+	.activate       = FB_ACTIVATE_NOW,
-+	.height         = -1,
-+	.width          = -1,
-+	.vmode          = FB_VMODE_NONINTERLACED,
-+};
-+
-+static struct fb_fix_screeninfo smtcfb_fix = {
-+	.id             = "sm712fb",
-+	.type           = FB_TYPE_PACKED_PIXELS,
-+	.visual         = FB_VISUAL_TRUECOLOR,
-+	.line_length    = 800 * 3,
-+	.accel          = FB_ACCEL_SMI_LYNX,
-+};
-+
- static void sm712_set_timing(struct smtcfb_info *sfb,
- 			     struct par_info *ppar_info)
- {
-@@ -268,29 +294,6 @@ static void smtc_set_timing(struct smtcfb_info *sfb, struct par_info
- 	}
- }
- 
--static struct fb_var_screeninfo smtcfb_var = {
--	.xres = 1024,
--	.yres = 600,
--	.xres_virtual = 1024,
--	.yres_virtual = 600,
--	.bits_per_pixel = 16,
--	.red = {16, 8, 0},
--	.green = {8, 8, 0},
--	.blue = {0, 8, 0},
--	.activate = FB_ACTIVATE_NOW,
--	.height = -1,
--	.width = -1,
--	.vmode = FB_VMODE_NONINTERLACED,
--};
--
--static struct fb_fix_screeninfo smtcfb_fix = {
--	.id = "sm712fb",
--	.type = FB_TYPE_PACKED_PIXELS,
--	.visual = FB_VISUAL_TRUECOLOR,
--	.line_length = 800 * 3,
--	.accel = FB_ACCEL_SMI_LYNX,
--};
--
- /* chan_to_field
-  *
-  * convert a colour value into a field position
-@@ -604,20 +607,6 @@ smtcfb_write(struct fb_info *info, const char __user *buf, size_t count,
- }
- #endif	/* ! __BIG_ENDIAN */
- 
--static struct fb_ops smtcfb_ops = {
--	.owner = THIS_MODULE,
--	.fb_setcolreg = smtc_setcolreg,
--	.fb_blank = cfb_blank,
--	.fb_fillrect = cfb_fillrect,
--	.fb_imageblit = cfb_imageblit,
--	.fb_copyarea = cfb_copyarea,
--#ifdef __BIG_ENDIAN
--	.fb_read = smtcfb_read,
--	.fb_write = smtcfb_write,
--#endif
--
--};
--
- void smtcfb_setmode(struct smtcfb_info *sfb)
- {
- 	switch (sfb->fb.var.bits_per_pixel) {
-@@ -676,6 +665,47 @@ void smtcfb_setmode(struct smtcfb_info *sfb)
- 	smtc_set_timing(sfb, &hw);
- }
- 
-+static int smtc_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
-+{
-+	/* sanity checks */
-+	if (var->xres_virtual < var->xres)
-+		var->xres_virtual = var->xres;
-+
-+	if (var->yres_virtual < var->yres)
-+		var->yres_virtual = var->yres;
-+
-+	/* set valid default bpp */
-+	if ((var->bits_per_pixel != 8)  && (var->bits_per_pixel != 16) &&
-+	    (var->bits_per_pixel != 24) && (var->bits_per_pixel != 32))
-+		var->bits_per_pixel = 16;
-+
-+	return 0;
-+}
-+
-+static int smtc_set_par(struct fb_info *info)
-+{
-+	struct smtcfb_info *sfb = (struct smtcfb_info *)info;
-+
-+	smtcfb_setmode(sfb);
-+
-+	return 0;
-+}
-+
-+static struct fb_ops smtcfb_ops = {
-+	.owner        = THIS_MODULE,
-+	.fb_check_var = smtc_check_var,
-+	.fb_set_par   = smtc_set_par,
-+	.fb_setcolreg = smtc_setcolreg,
-+	.fb_blank     = cfb_blank,
-+	.fb_fillrect  = cfb_fillrect,
-+	.fb_imageblit = cfb_imageblit,
-+	.fb_copyarea  = cfb_copyarea,
-+#ifdef __BIG_ENDIAN
-+	.fb_read      = smtcfb_read,
-+	.fb_write     = smtcfb_write,
-+#endif
-+};
-+
- /*
-  * Alloc struct smtcfb_info and assign the default value
-  */
-@@ -796,7 +826,7 @@ static void smtc_free_fb_info(struct smtcfb_info *sfb)
-  *	Returns zero.
-  *
-  */
--static int __init __maybe_unused sm712vga_setup(char *options)
-+static int __init sm712vga_setup(char *options)
- {
- 	int index;
- 
 -- 
-1.7.4.1
+1.7.3.2.146.gca209
 
-
---------------080901090701090300030801--
