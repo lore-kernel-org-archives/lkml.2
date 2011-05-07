@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1EGG6W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 02:58:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48365 "EHLO mx3.mail.elte.hu"
+	id S1754476Ab1EGHFW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 03:05:22 -0400
+Received: from mail.avalus.com ([89.16.176.221]:34655 "EHLO mail.avalus.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab1EGG6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 02:58:21 -0400
-Date: Sat, 7 May 2011 08:58:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Fix powerTOP regression with 2.6.39-rc5
-Message-ID: <20110507065803.GA23414@elte.hu>
-References: <4DC45537.6070609@linux.intel.com>
- <1304713252.25414.2532.camel@gandalf.stny.rr.com>
- <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+	id S1753297Ab1EGHFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 03:05:20 -0400
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 May 2011 03:05:20 EDT
+Date: Sat, 07 May 2011 07:58:28 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>, linux-arch@vger.kernel.org
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-fsdevel@vger.kernel.org, Alex Bligh <alex@alex.org.uk>
+Subject: Re: [PATCH 0/7] Network namespace manipulation with file
+ descriptors
+Message-ID: <3A54AB469A0294933EAC2257@nimrod.local>
+In-Reply-To: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> On Fri, May 6, 2011 at 1:20 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > I strongly NACK this!
-> 
-> Doesn't matter.
-> 
-> Binary compatibility is more important.
+--On 6 May 2011 19:23:29 -0700 "Eric W. Biederman" <ebiederm@xmission.com> 
+wrote:
 
-Yes, absolutely, violently agreed.
+> This patchset addresses the user interface limitations by introducing
+> proc files you can open to get file descriptors that keep alive and
+> refer to your a tasks namespaces.  Those file descriptors can be passed
+> to the new setns system call or the NET_NS_FD argument in netlink
+> messages.
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+This is conceptually very interesting. I am one of those people you
+describe with a routing daemon (or more accurately a wrapper around
+existing daemons) that does the unshare() and keeps the network
+alive. It also has a control socket etc.
 
-Steve, we had this argument again and again internally, and you still do not 
-seem to understand it: viable tooling is *way* more important than the 
-short-term, marginal cleanliness interests of kernel developers. We wont be 
-able to merge ftrace into perf until you understand this principle ...
+You say:
+> This addresses three specific problems that can make namespaces hard to
+> work with.
+> - Namespaces require a dedicated process to pin them in memory.
+> - It is not possible to use a namespace unless you are the child
+>   of the original creator.
+> - Namespaces don't have names that userspace can use to talk about
+>   them.
 
-Arjan, Steve, i think we need to create a 'perf test' testcase for ftrace 
-events as well, to catch such ABI breakages faster, hm? It took a couple of 
-months for this breakage to surface and that's clearly too slow.
+At least for me, the best way to solve the second blob would be to
+be able to unshare to an existing namespace. That way I would be able
+to run a daemon (without modification) in a pre-existing namespace.
+The user interface here would just be an option to 'unshare'. I
+don't think your patch allows this, does it? Right now I'm effectively
+doing that by causing the pid concerned to fork() and do my bidding,
+but that is far from perfect.
 
-> And if binaries don't use the interface to parse the format (or just parse it 
-> wrongly - see the fairly recent example of adding uuid's to 
-> /proc/self/mountinfo), then it's a regression.
-> 
-> And regressions get reverted, unless there are security issues or similar 
-> that makes us go "Oh Gods, we really have to break things".
-> 
-> I don't understand why this simple logic is so hard for some kernel 
-> developers to understand. Reality matters. Your personal wishes matter NOT AT 
-> ALL.
+As a secondary issue, ever without your patch, it would be really
+useful to be able to read from userspace the current network namespace.
+(i.e. the pid concerned, or 1 if not unshared). I would like to
+simply modify a routing daemon's init script so it doesn't start
+if in the host, e.g. at the top:
+  [ `cat /proc/.../networknamespace` eq 1 ] && exit 0
 
-You have just summed up the main philosophical difference between perf and 
-ftrace: with perf we have a "sane tooling first" approach, while ftrace is 
-still the old "kernel developers first" approach.
-
-In the past 10 years i pushed tons of instrumentation code upstream and for a 
-long time the kernel-integrated ftrace approach looked like the technical best 
-solution to me, but after 2 years of sane instrumentation tooling via a proper 
-user-space ABI and tools/perf/ i'm not looking back.
-
-I am strongly convinced that we need to bite the bullet and unify the two 
-approaches to enable even better tooling: expose the remaining bits of tracing 
-functionality not available via perf yet via the perf ABI and move it under a 
-single umbrella, slowly phase out the ABI-unstable /debug/tracing/ debugfs crap 
-for new features and use the strict perf ABI approach. Steve?
-
-Thanks,
-
-	Ingo
+-- 
+Alex Bligh
