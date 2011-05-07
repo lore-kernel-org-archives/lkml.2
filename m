@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab1EGIXQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 04:23:16 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39443 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab1EGIXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 04:23:14 -0400
-Date: Sat, 7 May 2011 10:22:57 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefan Hellermann <stefan@the2masters.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PATCH] mm: Use alloc_bootmem_node_nopanic on really needed path
-Message-ID: <20110507082257.GD25065@elte.hu>
-References: <4DC30251.9040902@the2masters.de>
- <4DC31D5F.8070209@the2masters.de>
- <4DC31F72.5050206@kernel.org>
- <4DC328AC.1060906@the2masters.de>
- <4DC3958F.1090800@kernel.org>
- <4DC3B6C6.7000704@the2masters.de>
- <4DC47655.5040201@kernel.org>
- <20110506153914.b1bceb51.akpm@linux-foundation.org>
- <4DC47AA6.3080302@kernel.org>
+	id S1753496Ab1EGI1W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 04:27:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33720 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab1EGI1T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 04:27:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Z3nnXOIjpNOMBaGgAgXvNmOLhJS55ah1uRMN3yBExk33GbuN749dswTAFqT8njdaPP
+         7vi9YRRkpAU0H9W1fy+nNykxY1sAU1gRFllPVQbuzwOX3YF0yz8JwNVlt8FGr75pJ4fr
+         I/fChPKpQK7UKW5Y+RID1tXVbhSHnkaLFvtGA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC47AA6.3080302@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1304735101-1824-7-git-send-email-ebiederm@xmission.com>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+	<1304735101-1824-7-git-send-email-ebiederm@xmission.com>
+Date: Sat, 7 May 2011 10:27:17 +0200
+X-Google-Sender-Auth: 5pMbtnqV1au3lnx9sxDZFgePrgg
+Message-ID: <BANLkTi=G-uViB6=8bQ0dRGbw3Gg8V10CRw@mail.gmail.com>
+Subject: Re: [PATCH 7/7] ns: Wire up the setns system call
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 7, 2011 at 04:25, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>  arch/m68k/include/asm/unistd.h         |    3 ++-
+>  arch/m68k/kernel/syscalltable.S        |    1 +
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+As the unified syscalltable for m68k/m68knommu is not yet in mainline
+(planned for
+2.6.40), you should also add it to arch/m68k/kernel/entry_mm.S.
 
-> On 05/06/2011 03:39 PM, Andrew Morton wrote:
-> > On Fri, 06 May 2011 15:29:41 -0700
-> > Yinghai Lu <yinghai@kernel.org> wrote:
-> > 
-> >> Stefan found nobootmem does not work on his system that only have 8M ram.
-> > 
-> > What does "does not work" mean?  From the patch, it appears that the
-> > machine paniced?
-> 
-> yes, early panic.
+Gr{oetje,eeting}s,
 
-Why the heck did you not share this information in the original changelog 
-itself? Do you think maintainers enjoy having to waste time asking you again 
-and again to clarify your changelogs?
+                        Geert
 
-Changelogs need specificity. "does not work" is 10 times worse than "we saw an 
-early crash" or "the system booted up with only 10% of the physical RAM 
-visible". There are many degrees of "does not work".
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Thanks,
-
-	Ingo
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
