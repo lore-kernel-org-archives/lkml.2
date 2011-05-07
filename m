@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab1EGTJt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 15:09:49 -0400
-Received: from mail.academy.zt.ua ([82.207.120.245]:43495 "EHLO
-	mail.academy.zt.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973Ab1EGTJs (ORCPT
+	id S1756031Ab1EGTGw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 15:06:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40271 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab1EGTGt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 15:09:48 -0400
-X-Spam-Processed: mail.academy.zt.ua, Sat, 07 May 2011 22:09:38 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-HashCash: 1:20:110507:md50000002752::7WfUm/cm1VR8lZas:00006R7R
-X-Return-Path: prvs=110837b279=george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
-	driver
-From: George Kashperko <george@znau.edu.ua>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
-	 <201105061605.31625.arnd@arndb.de>
-	 <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
-	 <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
-	 <1304790665.13983.10.camel@dev.znau.edu.ua>
-	 <BANLkTikLFff_86Fvg+jSty9vGLENiELF2Q@mail.gmail.com>
-	 <1304792795.13983.28.camel@dev.znau.edu.ua>
-	 <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
-Content-Type: text/plain
-Date: Sat, 07 May 2011 22:03:31 +0300
-Message-Id: <1304795011.13983.46.camel@dev.znau.edu.ua>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 7bit
+	Sat, 7 May 2011 15:06:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=meFwHa8v7FIWjvPcP070qAna5KZi28uAXZG0bKbzPHhT0w4+C+FcMGhp8ojyDZ9Ku0
+         1CQRH46t2FoN1ui1v0jo+tY9QqF1fIVRxbtRGIDyUx4JUTwmCpDtbCc+f90JFDiwFDkb
+         5ZDUfaxWBCLMaXNhGP8Apq+Kktnb++j9I/77A=
+MIME-Version: 1.0
+In-Reply-To: <20110504092219.GW2092@atomide.com>
+References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF0497F1B201@HQMAIL01.nvidia.com>
+	<BANLkTimKU-=GXzrn8=MQn-GAmKHOvKmuNQ@mail.gmail.com>
+	<20110504092219.GW2092@atomide.com>
+Date: Sat, 7 May 2011 22:06:47 +0300
+Message-ID: <BANLkTin9-aKZjEGdBeZqDwHwADXCYERErg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] drivers: create a pinmux subsystem
+From: Mike Rapoport <mike.rapoport@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Colin Cross <ccross@google.com>, Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Erik Gilling <konkers@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is constructive, I'll fix this, thanks.
-Makes me think I was not constructive all this time :)
+On Wed, May 4, 2011 at 12:22 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Colin Cross <ccross@google.com> [110502 14:26]:
+>> On Mon, May 2, 2011 at 1:52 PM, Stephen Warren <swarren@nvidia.com> wrote:
+>>
+>> * Drive strength is also controlled through groups of pins, but
+>> different groups than pinmux.  Most of the drive strength groups are
+>> collections of pad mux groups, but there are a few pins that are in
+>> the same pad mux group but a different drive strength group.
+>> * Setting a pin as a GPIO overrides its group's mux setting, except
+>> for the group's tristate.  You must untristate the entire group to use
+>> a single pin as a GPIO.
+>> * Each group has a "safe mode", but which mux id to select to enter
+>> the safe mode is completely random.
+>
+> Just posted something in this thread regarding using standard data and
+> standard read and write functions, then allow setting platform specific
+> custom flags as needed. Care to see if that works for you too?
 
-Have nide day,
-George
+Tegra does not allow pin muxing on the pin by pin basis. And,
+registers that define mux config differ from those that define flags
+(pull, driver strength, safe mode etc).
+
+>> In the end, we determined that there was no way to sanely handle
+>> setting up Tegra's pinmux programatically, and instead required each
+>> board to pass in a table of pinmux settings.
+>
+> Eventually we should get the package specific table of available pins
+> and the board specific settings in devicetree data. And then it's
+> easy to set the pins as desired while being able to debug it.
+>
+> Regards,
+>
+> Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
 
+
+-- 
+    Sincerely Yours,
+        Mike.
