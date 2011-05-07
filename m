@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab1EGBXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:23:43 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:53745 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab1EGBVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 21:21:06 -0400
+	id S1754449Ab1EGBVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:21:45 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45175 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176Ab1EGBVI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 21:21:08 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Subject: [PATCH 08/11] rtc: msm6242: Initialize drvdata before registering device
-Date: Fri,  6 May 2011 18:20:51 -0700
-Message-Id: <1304731254-3238-9-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 09/11] rtc: pcap: Initialize drvdata before registering device
+Date: Fri,  6 May 2011 18:20:52 -0700
+Message-Id: <1304731254-3238-10-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
 References: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
@@ -38,33 +39,38 @@ CC: Thomas Gleixner <tglx@linutronix.de>
 CC: rtc-linux@googlegroups.com
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/rtc/rtc-msm6242.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/rtc/rtc-pcap.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-msm6242.c b/drivers/rtc/rtc-msm6242.c
-index 6782062..fcb113c 100644
---- a/drivers/rtc/rtc-msm6242.c
-+++ b/drivers/rtc/rtc-msm6242.c
-@@ -214,6 +214,7 @@ static int __init msm6242_rtc_probe(struct platform_device *dev)
- 		error = -ENOMEM;
- 		goto out_free_priv;
+diff --git a/drivers/rtc/rtc-pcap.c b/drivers/rtc/rtc-pcap.c
+index a633abc..cd4f198 100644
+--- a/drivers/rtc/rtc-pcap.c
++++ b/drivers/rtc/rtc-pcap.c
+@@ -151,6 +151,8 @@ static int __devinit pcap_rtc_probe(struct platform_device *pdev)
+ 
+ 	pcap_rtc->pcap = dev_get_drvdata(pdev->dev.parent);
+ 
++	platform_set_drvdata(pdev, pcap_rtc);
++
+ 	pcap_rtc->rtc = rtc_device_register("pcap", &pdev->dev,
+ 				  &pcap_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(pcap_rtc->rtc)) {
+@@ -158,7 +160,6 @@ static int __devinit pcap_rtc_probe(struct platform_device *pdev)
+ 		goto fail_rtc;
  	}
-+	platform_set_drvdata(dev, priv);
  
- 	rtc = rtc_device_register("rtc-msm6242", &dev->dev, &msm6242_rtc_ops,
- 				  THIS_MODULE);
-@@ -223,10 +224,10 @@ static int __init msm6242_rtc_probe(struct platform_device *dev)
- 	}
+-	platform_set_drvdata(pdev, pcap_rtc);
  
- 	priv->rtc = rtc;
--	platform_set_drvdata(dev, priv);
- 	return 0;
- 
- out_unmap:
-+	platform_set_drvdata(dev, NULL);
- 	iounmap(priv->regs);
- out_free_priv:
- 	kfree(priv);
+ 	timer_irq = pcap_to_irq(pcap_rtc->pcap, PCAP_IRQ_1HZ);
+ 	alarm_irq = pcap_to_irq(pcap_rtc->pcap, PCAP_IRQ_TODA);
+@@ -177,6 +178,7 @@ fail_alarm:
+ fail_timer:
+ 	rtc_device_unregister(pcap_rtc->rtc);
+ fail_rtc:
++	platform_set_drvdata(pdev, NULL);
+ 	kfree(pcap_rtc);
+ 	return err;
+ }
 -- 
 1.7.3.2.146.gca209
 
