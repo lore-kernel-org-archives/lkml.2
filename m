@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab1EGQGc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 12:06:32 -0400
-Received: from jensen.inet.no ([195.139.68.2]:8509 "HELO jensen.inet.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755712Ab1EGQGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 12:06:30 -0400
-Date: Sat, 7 May 2011 18:06:28 +0200
-From: Michael Shuldman <michaels@inet.no>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        karls@inet.no, netdev <netdev@vger.kernel.org>
-Subject: Re: bug in select(2) regarding non-blocking connect(2) completion?
-Message-ID: <20110507160628.GA11163@jensen.inet.no>
-References: <20110507105152.GA13459@jensen.inet.no>
- <1304770358.2821.1139.camel@edumazet-laptop>
+	id S1755792Ab1EGQJt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 12:09:49 -0400
+Received: from lucidpixels.com ([75.144.35.66]:37444 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755709Ab1EGQJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 12:09:47 -0400
+Date: Sat, 7 May 2011 12:09:46 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: xfs@oss.sgi.com
+cc: linux-kernel@vger.kernel.org
+Subject: 2.6.38.4: xfs speed problem?
+Message-ID: <alpine.DEB.2.02.1105071042210.20162@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304770358.2821.1139.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet wrote,
-> Well, if you missed the original error report, all next getpeername()
-> and SO_ERROR will do the same, and select() says fd is ready for 'write'
+Hello,
 
-Many thanks for that.  I was not aware that SO_ERROR would not get
-set if the connect(2) failed "permanently" immediately, but have
-now tested that it does.  The other "strangeness" might very well
-be caused by bugs related to this, so apologies for the noise and
-many thanks for the help.
+Using 2.6.38.4 on two hosts:
 
-With kind regards,
+Host 1:
+$ /usr/bin/time find geocities.data 1> /dev/null
+80.92user 417.93system 2:19:07elapsed 5%CPU (0avgtext+0avgdata 105520maxresident)k
+0inputs+0outputs (0major+73373minor)pagefaults 0swaps
 
--- 
-  _ // 
-  \X/ -- Michael Shuldman 
+# xfs_db -c frag -f /dev/sda1
+actual 40203982, ideal 40088075, fragmentation factor 0.29%
+
+meta-data=/dev/sda1              isize=256    agcount=44, agsize=268435455 blks
+          =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=11718704640, imaxpct=5
+          =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal               bsize=4096   blocks=521728, version=2
+          =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+--
+
+Host 2:
+$ /usr/bin/time find geocities.data 1>/dev/null
+54.60user 337.20system 48:42.71elapsed 13%CPU (0avgtext+0avgdata 105632maxresident)k
+0inputs+0outputs (1major+72981minor)pagefaults 0swaps
+
+# xfs_db -c frag -f /dev/sdb1
+actual 37998306, ideal 37939331, fragmentation factor 0.16%
+
+meta-data=/dev/sdb1              isize=256    agcount=10, agsize=268435455 blks
+          =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=2441379328, imaxpct=5
+          =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal               bsize=4096   blocks=521728, version=2
+          =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+
+--
+
+Host 1: RAID-6 (7200 RPM Drives, 18+1 hot spare)
+Host 2: RAID-6 (7200 RPM Drives, 12)
+
+Each system uses a 3ware 9750-24i4e controller, same settings.
+
+Any thoughts why one is > 2x faster than the other?
+
+Justin.
 
