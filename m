@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1EGBVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:21:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41421 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab1EGBVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 21:21:04 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 11/11] rtc: mc13xxx: Don't call rtc_device_register while holding lock
-Date: Fri,  6 May 2011 18:20:54 -0700
-Message-Id: <1304731254-3238-12-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
-References: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
+	id S1754386Ab1EGBXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:23:20 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:44352 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754022Ab1EGBXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 21:23:16 -0400
+X-ASG-Debug-ID: 1304731394-03d6a50f2b3d2a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DC49F01.8090405@fusionio.com>
+Date: Fri, 6 May 2011 19:23:13 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Lukas Czerner <lczerner@redhat.com>
+CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Monakhov <dmonakhov@openvz.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in   blkdev_issue_discard()
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com> <4DBEDA78.7020502@fusionio.com> <alpine.LFD.2.00.1105031128390.4250@dhcp-27-109.brq.redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in   blkdev_issue_discard()
+In-Reply-To: <alpine.LFD.2.00.1105031128390.4250@dhcp-27-109.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1304731394
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.62993
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On 2011-05-03 03:30, Lukas Czerner wrote:
+> On Mon, 2 May 2011, Jens Axboe wrote:
+> 
+>> On 2011-05-02 08:17, Lukas Czerner wrote:
+>>> Currently we are waiting for every submitted REQ_DISCARD bio separately,
+>>> but it can have unwanted consequences of repeatedly flushing the queue,
+>>> so we rather submit bios in batches and wait for the entire batch, hence
+>>> narrowing the window of other ios going in.
+>>>
+>>> Use bio_batch_end_io() and struct bio_batch for that purpose, the same
+>>> is used by blkdev_issue_zeroout(). Also change bio_batch_end_io() so we
+>>> always set !BIO_UPTODATE in the case of error and remove the check for
+>>> bb, since we are the only user of this function and we always set this.
+>>>
+>>> Remove bio_get()/bio_put() from the blkdev_issue_discard() since
+>>> bio_alloc() and bio_batch_end_io() is doing the same thing, hence it is
+>>> not needed anymore.
+>>>
+>>> I have done simple dd testing with surprising results. The script I have
+>>> used is:
+>>>
+>>> for i in $(seq 10); do
+>>>         echo $i
+>>>         dd if=/dev/sdb1 of=/dev/sdc1 bs=4k &
+>>>         sleep 5
+>>> done
+>>> /usr/bin/time -f %e ./blkdiscard /dev/sdc1
+>>>
+>>> Running time of BLKDISCARD on the whole device:
+>>> with patch              without patch
+>>> 0.95                    15.58
+>>>
+>>> So we can see that in this artificial test the kernel with the patch
+>>> applied is approx 16x faster in discarding the device.
+>>
+>> Good results. It'd be more efficient to add the vectored discard support
+>> and use it for this too though, and it would get rid of the need to wait
+>> on the batches since there'd be just one discard bio for the ranges.
+>>
+> 
+> I know that you and Christoph were working on adding support for
+> vectored discard, but I do not know what is the status of it ?
 
-Since commit f44f7f9 (RTC: Initialize kernel state from RTC)
-rtc_device_register reads the programmed alarm. As reading the alarm
-needs to take the mc13xxx lock, release it before calling
-rtc_device_register.
+No new status. I sent a test patch to Christoph and that's about it on
+that end for now. But it could be expedited, if need be.
 
-This fixes a deadlock during boot:
-
-	INFO: task swapper:1 blocked for more than 120 seconds.
-	"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-	swapper         D c02b175c     0     1      0 0x00000000
-	[<c02b175c>] (schedule+0x304/0x4f4) from [<c02b25a8>] (__mutex_lock_slowpath+0x7c/0x110)
-	[<c02b25a8>] (__mutex_lock_slowpath+0x7c/0x110) from [<c020b4cc>] (mc13xxx_rtc_read_time+0x1c/0x118)
-	[<c020b4cc>] (mc13xxx_rtc_read_time+0x1c/0x118) from [<c0208f04>] (__rtc_read_time+0x58/0x5c)
-	[<c0208f04>] (__rtc_read_time+0x58/0x5c) from [<c0209508>] (rtc_read_time+0x30/0x48)
-	[<c0209508>] (rtc_read_time+0x30/0x48) from [<c0209dd4>] (__rtc_read_alarm+0x1c/0x290)
-	[<c0209dd4>] (__rtc_read_alarm+0x1c/0x290) from [<c0208d58>] (rtc_device_register+0x150/0x27c)
-	[<c0208d58>] (rtc_device_register+0x150/0x27c) from [<c02b0b74>] (mc13xxx_rtc_probe+0x128/0x17c)
-	[<c02b0b74>] (mc13xxx_rtc_probe+0x128/0x17c) from [<c01d5280>] (platform_drv_probe+0x1c/0x24)
-	[<c01d5280>] (platform_drv_probe+0x1c/0x24) from [<c01d3e58>] (driver_probe_device+0x80/0x1a8)
-	[<c01d3e58>] (driver_probe_device+0x80/0x1a8) from [<c01d400c>] (__driver_attach+0x8c/0x90)
-	[<c01d400c>] (__driver_attach+0x8c/0x90) from [<c01d3654>] (bus_for_each_dev+0x60/0x8c)
-	[<c01d3654>] (bus_for_each_dev+0x60/0x8c) from [<c01d2f6c>] (bus_add_driver+0x180/0x248)
-	[<c01d2f6c>] (bus_add_driver+0x180/0x248) from [<c01d4664>] (driver_register+0x70/0x15c)
-	[<c01d4664>] (driver_register+0x70/0x15c) from [<c01d5700>] (platform_driver_probe+0x18/0x98)
-	[<c01d5700>] (platform_driver_probe+0x18/0x98) from [<c00273a8>] (do_one_initcall+0x2c/0x168)
-	[<c00273a8>] (do_one_initcall+0x2c/0x168) from [<c00083ac>] (kernel_init+0xa0/0x150)
-	[<c00083ac>] (kernel_init+0xa0/0x150) from [<c0033ff8>] (kernel_thread_exit+0x0/0x8)
-
-Reported-by: Vagrant Cascadian <vagrant@debian.org>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Closes: http://bugs.debian.org/625804
-[Tweaked commit log -jstultz]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/rtc/rtc-mc13xxx.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
-index c5ac037..a1a278b 100644
---- a/drivers/rtc/rtc-mc13xxx.c
-+++ b/drivers/rtc/rtc-mc13xxx.c
-@@ -349,11 +349,15 @@ static int __devinit mc13xxx_rtc_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto err_alarm_irq_request;
- 
-+	mc13xxx_unlock(mc13xxx);
-+
- 	priv->rtc = rtc_device_register(pdev->name,
- 			&pdev->dev, &mc13xxx_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(priv->rtc)) {
- 		ret = PTR_ERR(priv->rtc);
- 
-+		mc13xxx_lock(mc13xxx);
-+
- 		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_TODA, priv);
- err_alarm_irq_request:
- 
-@@ -365,12 +369,12 @@ err_reset_irq_status:
- 		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_RTCRST, priv);
- err_reset_irq_request:
- 
-+		mc13xxx_unlock(mc13xxx);
-+
- 		platform_set_drvdata(pdev, NULL);
- 		kfree(priv);
- 	}
- 
--	mc13xxx_unlock(mc13xxx);
--
- 	return ret;
- }
- 
 -- 
-1.7.3.2.146.gca209
+Jens Axboe
 
