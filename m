@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab1EGFCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 01:02:39 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47544 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab1EGFCi (ORCPT
+	id S1751677Ab1EGFE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 01:04:59 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46066 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1EGFE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 01:02:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LpoDtU8awoa1boCMtUvg/Sua3q59s+nciKNtLsLOq7A3Wm0FXG24TQxd7SoZp5pVit
-         arJlW6ZbrWcmyQlT5D88d952FOE+6RBqw4CPRk3zczVgqDvfzVTcL8oiivvK3auQu39V
-         LnHieWWjTJmuGrJipLbQLP9UyITgmV6wLR7JA=
-Subject: Re: [RFC] time: xtime_lock is held too long
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1304724519.20980.139.camel@work-vm>
-References: <1304574244.32152.666.camel@edumazet-laptop>
-	 <1304576495.2943.40.camel@work-vm>
-	 <1304604284.3032.78.camel@edumazet-laptop>
-	 <alpine.LFD.2.02.1105051630390.3005@ionos>
-	 <1304608095.3032.95.camel@edumazet-laptop>
-	 <alpine.LFD.2.02.1105051750540.3005@ionos>
-	 <20110505210118.GI2925@one.firstfloor.org>
-	 <alpine.LFD.2.02.1105061117220.3005@ionos>
-	 <20110506165913.GF11636@one.firstfloor.org>
-	 <1304703767.3066.211.camel@edumazet-laptop>
-	 <20110506175051.GL11636@one.firstfloor.org>
-	 <1304710003.2821.0.camel@edumazet-laptop>
-	 <1304712267.2821.29.camel@edumazet-laptop>
-	 <1304713443.20980.124.camel@work-vm>
-	 <1304721004.2821.148.camel@edumazet-laptop>
-	 <1304722000.20980.130.camel@work-vm>
-	 <1304722835.2821.192.camel@edumazet-laptop>
-	 <1304724519.20980.139.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 May 2011 07:02:32 +0200
-Message-ID: <1304744552.2821.571.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sat, 7 May 2011 01:04:58 -0400
+Message-ID: <4DC4D2F1.7080301@canonical.com>
+Date: Fri, 06 May 2011 22:04:49 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Anca Emanuel <anca.emanuel@gmail.com>
+CC: kernel-team@lists.ubuntu.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Patch not upstream: fix race between open and removal of	framebuffers
+References: <BANLkTikAc66kTknEKCX4Mbg7_9CGw+qDfQ@mail.gmail.com>	<4D9DC39A.2080207@canonical.com> <BANLkTikcbGVemWrs+3ZeAvLFafM339CP9w@mail.gmail.com>
+In-Reply-To: <BANLkTikcbGVemWrs+3ZeAvLFafM339CP9w@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 06 mai 2011 à 16:28 -0700, john stultz a écrit :
+On 05/05/2011 09:54 AM, Anca Emanuel wrote:
+> On Thu, Apr 7, 2011 at 5:00 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
+>> On 04/02/2011 09:37 AM, Anca Emanuel wrote:
 
-> Defeating seqlock power? My thoughts are that seqlocks are nice
-> lightweight reader/writer locks that avoid writer starvation. You seem
-> to be trying to redefine or extend them to be something else which is
-> more subtle. 
+<< snip >>
+
+> I can use de PC, but when it wake up from S3, hangs.
+> full dmesg at: http://pastebin.com/rhMJrF2x
+> uname -a
+> Linux ubuntu 2.6.39-rc6 #7 SMP Wed May 4 12:26:39 EEST 2011 x86_64
+> x86_64 x86_64 GNU/Linux
 > 
-
-All I am trying to explain is that a seqlock is a compound of two
-things : One spinlock to synchronize writers among themselves, one
-seqcount to synchronize readers with a writer.
-
-But the API provides only a compound one. Writer uses the whole locking,
-while it would be nice to be able to separate the two steps. Note that
-because write_seqlock() and write_sequnlock() are inlined, this would
-not increase text size.
-
-One another problem is that spinlock is in same cache line than
-seqcount, while a reader doesnt need the spinlock.
-
-
-> I agree, the code is complex!  I'm just not sure adding more
-> complicated/subtle locking mechanisms is a good solution. Instead I'd
-> suggest simply splitting up the locks (by using new locks) to reduce the
-> amount of data that is being protected by a single lock.
+> I read that Ubuntu have something like 150 patches NOT upstreamed. Why ?
+> And other guys complaining about the hard work they do to maintain
+> stable and mainline.
 > 
-> But again, maybe I'm misunderstanding you?
+> If you not upstream your work, then what is the ideea ? Keep it only
+> for Ubuntu users ?
+> 
+No, it a diff of about 150 patches for natty from the base 2.6.38 kernel.
+We upstream our patches.  Sometimes some patches will slip through for a
+while, but they will go up.
 
-Adding locks might be fine, I really dont know yet. Its adding yet
-another pieces of memory to be dirtied. And total number of cache lines
-to be dirtied gives the latency.
+Of the 150 or so patches not "upstream" there are only a few that are
+ubuntu specific.  Some of the patches are backports from patches upstream
+for 2.6.39, some are from linux-next or other development branches,
+and some are from projects that aren't upstream for one reason or another
+(eg. aufs).
 
-I would like to have a ktime_get() service as fast as possible, with
-guarded latencies.
+Our delta is public, well documented and available to be examined any
+time.  Just pull our kernels from
 
-Typical workloads need to call it hundred of thousands times per second.
-
+git://kernel.ubuntu.com/ubuntu/ubuntu-oneiric.git
+git://kernel.ubuntu.com/ubuntu/ubuntu-natty.git
+..
 
 
