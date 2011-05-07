@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab1EGBVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:21:47 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:44134 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab1EGBVK (ORCPT
+	id S1754693Ab1EGBVw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 21:21:52 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41962 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072Ab1EGBVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 21:21:10 -0400
+	Fri, 6 May 2011 21:21:07 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Wolfram Sang <w.sang@pengutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 02/11] rtc: davinci: Initialize drvdata before registering device
-Date: Fri,  6 May 2011 18:20:45 -0700
-Message-Id: <1304731254-3238-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 03/11] rtc: ep93xx: Initialize drvdata before registering device
+Date: Fri,  6 May 2011 18:20:46 -0700
+Message-Id: <1304731254-3238-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
 References: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
@@ -40,42 +40,44 @@ CC: Alessandro Zummo <a.zummo@towertech.it>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: rtc-linux@googlegroups.com
 Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-[fixed up commit log -jstultz]
+[Fixed up commit log -jstultz]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/rtc/rtc-davinci.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-ep93xx.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index 8d46838..755e1fe 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -524,6 +524,8 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 		goto fail2;
+diff --git a/drivers/rtc/rtc-ep93xx.c b/drivers/rtc/rtc-ep93xx.c
+index 11ae64d..335551d 100644
+--- a/drivers/rtc/rtc-ep93xx.c
++++ b/drivers/rtc/rtc-ep93xx.c
+@@ -151,6 +151,7 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 
+ 	pdev->dev.platform_data = ep93xx_rtc;
++	platform_set_drvdata(pdev, rtc);
+ 
+ 	rtc = rtc_device_register(pdev->name,
+ 				&pdev->dev, &ep93xx_rtc_ops, THIS_MODULE);
+@@ -159,8 +160,6 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
+ 		goto exit;
  	}
  
-+	platform_set_drvdata(pdev, davinci_rtc);
-+
- 	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
- 				    &davinci_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(davinci_rtc->rtc)) {
-@@ -553,8 +555,6 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 
- 	rtcss_write(davinci_rtc, PRTCSS_RTC_CCTRL_CAEN, PRTCSS_RTC_CCTRL);
- 
--	platform_set_drvdata(pdev, davinci_rtc);
+-	platform_set_drvdata(pdev, rtc);
 -
- 	device_init_wakeup(&pdev->dev, 0);
- 
+ 	err = sysfs_create_group(&pdev->dev.kobj, &ep93xx_rtc_sysfs_files);
+ 	if (err)
+ 		goto fail;
+@@ -168,9 +167,9 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
  	return 0;
-@@ -562,6 +562,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- fail4:
- 	rtc_device_unregister(davinci_rtc->rtc);
- fail3:
+ 
+ fail:
+-	platform_set_drvdata(pdev, NULL);
+ 	rtc_device_unregister(rtc);
+ exit:
 +	platform_set_drvdata(pdev, NULL);
- 	iounmap(davinci_rtc->base);
- fail2:
- 	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+ 	pdev->dev.platform_data = NULL;
+ 	return err;
+ }
 -- 
 1.7.3.2.146.gca209
 
