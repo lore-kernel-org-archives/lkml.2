@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab1EGCLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 22:11:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37838 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422Ab1EGCLo convert rfc822-to-8bit (ORCPT
+	id S1754679Ab1EGCO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 22:14:27 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:65343 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab1EGCO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 22:11:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1304699437.10692.78.camel@localhost.localdomain>
-References: <20110428070636.GC952@elte.hu>
-	<1304002571.2101.38.camel@localhost.localdomain>
-	<BANLkTi=5NYTM5T2LthVL+8kjQvYWwHSVPg@mail.gmail.com>
-	<20110429131845.GA1768@nowhere>
-	<BANLkTimhWZURqgAXG45=3CG-bNhv+g-Ftg@mail.gmail.com>
-	<20110503012857.GA8399@nowhere>
-	<BANLkTimhugGCnMQ4f2T2HOvwVLrGTREPkg@mail.gmail.com>
-	<BANLkTimPFHwJfqXHShnOt7mBp84NQQNWDw@mail.gmail.com>
-	<20110504175229.GB1804@nowhere>
-	<1304533382.25414.2447.camel@gandalf.stny.rr.com>
-	<20110504183052.GD1804@nowhere>
-	<1304534785.25414.2452.camel@gandalf.stny.rr.com>
-	<BANLkTin2ZS8DCLGZXxV7EN+S-aNRK=B8Sw@mail.gmail.com>
-	<1304699437.10692.78.camel@localhost.localdomain>
-Date: Fri, 6 May 2011 19:11:42 -0700
-Message-ID: <BANLkTi==w7b7w2e0p2TeQqwomuRdw6zTSQ@mail.gmail.com>
-Subject: Re: [PATCH 5/7] seccomp_filter: Document what seccomp_filter is and
- how it works.
-From: Will Drewry <wad@chromium.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, kees.cook@canonical.com,
-        agl@chromium.org, jmorris@namei.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 May 2011 22:14:26 -0400
+X-Nat-Received: from [202.181.97.72]:65384 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1304734458.22347
+To: akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH 1/1] coredump: use task comm instead of (unknown)
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <4DC0FFAB.1000805@gmail.com>
+	<1304494354-21487-1-git-send-email-jslaby@suse.cz>
+	<20110505150601.a4457970.akpm@linux-foundation.org>
+	<201105062126.DIE34311.OJHtFMFFSQLVOO@I-love.SAKURA.ne.jp>
+	<20110506123328.d0a707b7.akpm@linux-foundation.org>
+In-Reply-To: <20110506123328.d0a707b7.akpm@linux-foundation.org>
+Message-Id: <201105071114.CJH64556.FOOVFHOQJSFLtM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 7 May 2011 11:14:14 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06052011 #5384387, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 6, 2011 at 6:35 AM, Eric Paris <eparis@redhat.com> wrote:
-> I'm also starting to think a userspace library is a good idea as well.
-> Everything in the kernel is an && with nothing but SET and APPLY.  We
-> provide interfaces to build the strings as we go along including UNSET
-> and stuff like that if there are users....
+Andrew Morton wrote:
+> > char *strncpy(char *dest, const char *src, size_t n)
+> > {
+> > 	size_t len = __strnend(src, n) - src;
 
-That sounds ideal to me. I think it'll be worth tagging this config
-option as EXPERIMENTAL to begin with so that there's a chance to see
-those of us who want it using it more widely and find out if there are
-missing pieces or dumb limitations.  Hopefully by starting minimal, it
-won't be a huge departure to evolve it if needed.
+If src was overwritten by prctl(PR_SET_NAME) at this moment (i.e. after len was
+calculated),
 
-On Fri, May 6, 2011 at 9:30 AM, Eric Paris <eparis@redhat.com> wrote:
+> > 	__builtin_memset(dest + len, 0, n - len);
+> > 	__builtin_memcpy(dest, src, len);
 
-> On Thu, 2011-05-05 at 02:21 -0700, Will Drewry wrote:
->> On Wed, May 4, 2011 at 11:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
->> In particular, if the userspace code wants to stage some filters and
->> apply them all at once, when ready, I'm not sure that it makes sense
->> to me to put that complexity in the kernel itself.  For instance,
->> Eric's second sample showed a call that took an array of ints and
->> coalesced them into "fd == %d || ...".  That simple example shows that
->> we could easily get by with a pretty minimal kernel-supported
->> interface as long as the richer behavior could live userspace side --
->> even if just in a simple helper library.  It'd be pretty easy to
->> implement a userspace library that exposed add_filter(syscall_nr,
->> filter) and apply_filters() such that it could manage building the
->> final filter string for a given syscall and pushing it to prctl on
->> apply.
->
-> Had a few minutes this morning so I started writing something that looks
-> sorta like a userspace library.  It dosn't have unset yet but I don't
-> think it'll be that hard for me to implement.  You can build some pretty
-> complex filters easily.  Not sure when I'll get to work on it more, but
-> it at least shows the idea of doing the complex work in a library and
-> keeping a simple kernel interface....  Any thoughts?
+won't this result in inconsistent copying of src when length of src has changed
+by prctl(PR_SET_NAME)?
 
-Cool! I was thrown a little bit by spelling out the operations (eq,
-ne, ..), but I can see how it might be useful for being able to
-synthesize good filters before passing them off to the kernel.
+> > 	return dest;
+> > }
 
-It sounds like we might be moving towards a good starting point.  I'll
-start playing with the interface some (and start on the kernel support
-too :).
-
-thanks!
+This strncpy() assumes that length of src won't change within the function.
+I thought prctl(PR_SET_NAME) might break such assumption.
