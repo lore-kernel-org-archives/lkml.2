@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab1EGKpP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 06:45:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50020 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab1EGKpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 06:45:13 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Z4Rwk6OoAAAA:8 a=1KNPB-2n3HXIAnwKeQ0A:9 a=PUjeQqilurYA:10 a=jbrJJM5MRmoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Fix powerTOP regression with 2.6.39-rc5
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110507065803.GA23414@elte.hu>
-References: <4DC45537.6070609@linux.intel.com>
-	 <1304713252.25414.2532.camel@gandalf.stny.rr.com>
-	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
-	 <20110507065803.GA23414@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sat, 07 May 2011 06:45:10 -0400
-Message-ID: <1304765110.25414.2564.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754893Ab1EGK6g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 06:58:36 -0400
+Received: from [195.139.68.2] ([195.139.68.2]:47720 "HELO jensen.inet.no"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1754796Ab1EGK6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 06:58:35 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 May 2011 06:58:34 EDT
+Date: Sat, 7 May 2011 12:51:52 +0200
+From: Michael Shuldman <michaels@inet.no>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, karls@inet.no
+Subject: bug in select(2) regarding non-blocking connect(2) completion?
+Message-ID: <20110507105152.GA13459@jensen.inet.no>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-07 at 08:58 +0200, Ingo Molnar wrote:
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> You have just summed up the main philosophical difference between perf and 
-> ftrace: with perf we have a "sane tooling first" approach, while ftrace is 
-> still the old "kernel developers first" approach.
+Hello, I am occasionally encountering what I belive is a bug in the
+kernel.
 
-I actually believe that the opposite is true.
-
-> 
-> In the past 10 years i pushed tons of instrumentation code upstream and for a 
-> long time the kernel-integrated ftrace approach looked like the technical best 
-> solution to me, but after 2 years of sane instrumentation tooling via a proper 
-> user-space ABI and tools/perf/ i'm not looking back.
-> 
-
-I would like to point out that the problem with the ABI breakage came
-through perf and not ftrace. From what I gathered from Linus's response,
-is that, although I made a robust interface (the format of the events)
-for tools to use, but it was possible for the tools to use another
-interface to directly interact with the raw binary data. Since it was
-easier to just map the raw binary data instead of using the exported
-format, they did that instead, even though a library already existed to
-parse the format and keep the events robust. And the "reality" is that
-the raw binary format became the ABI.
-
-With ftrace, there was no easy way to get at that raw format. It was
-perf that exposed the raw binary formats that tools like powerTop used.
-The "easy" way was just to use the raw binary format as perf made it
-easy to access. Thus, instead of spending the time to use the proper
-robust format, tools just mapped the raw binary format instead. Peter
-Zijlstra, wisely saw this problem and asked me to randomize the fields
-to prevent the raw mappings. But that would have broken the ease of use
-of TRACE_EVENTS() for kernel developers, or would have drastically
-slowed down the trace recording. We both reluctantly kept the fields the
-same. Once again, I feel burned because I didn't listen to Peter ;)
-
-Now the end of Linus's email, he gave a slight "but". It seems as though
-not many tools are currently accessing the raw data, if all those tools
-agree to convert to the proper format before too many others start, then
-he may allow this change to take place. I already discussed this with
-Arjan, and he agreed to use the libparsevent.so if I can get it packaged
-with Fedora and Ubuntu. This is a robust solution, so that we do not get
-stuck with things like recording for every single event, the pid,
-preempt count, interrupt flags and other things in the kernel forever.
+Below is a strace that I believe shows how the bug manifests itself,
+with my comments.
 
 
-> I am strongly convinced that we need to bite the bullet and unify the two 
-> approaches to enable even better tooling: expose the remaining bits of tracing 
-> functionality not available via perf yet via the perf ABI and move it under a 
-> single umbrella, slowly phase out the ABI-unstable /debug/tracing/ debugfs crap 
-> for new features and use the strict perf ABI approach. Steve?
+# first select.  All fd's in the write set ([15 17 ... 51 55]) are 
+# non-blocking sockets that have had a connect(2) previously issued on
+# them, and which have yet to finish connecting as far as we know
+# at the time we call select(2).
+03:55:31.808548 select(58, [4 8 11 12 13 14 16 18 19 20 21 22 23 24 26 27 30 31
+32 33 34 35 36 37 39 40 41 43 44 46 48 49 50 52 53 54 57], [15 17 25 29 45 47 51
+ 55], [11 12 13 14 16 18 19 20 21 22 23 24 26 27 30 31 32 33 34 35 36 37 39 40 4
+1 43 44 46 48 49 50 52 53 54 57], {1, 0}) = 3 (in [16 26], out [51], left {1, 0}
+)
 
-Actually, I now want to separate ftrace from perf even more. This
-problem is not a ftrace problem but a perf one. The raw abi that tools
-uses is from perf. Thus, that "padding" can be added to perf directly
-instead of using the ftrace code, and powertop will still work, and
-ftrace can change on the fly as all its tools use the libparsevent
-libary.
+# As indicated by the results returned by the above select(2), fd 51 should
+# have finished the connect attempt, but when we try to find out whether 
+# the connect(2) succeeded or failed, the results are conflicting.
 
-Here's the choices then:
+03:55:31.808622 getpeername(51, 0x7fff5d2eaa8c, [0]) = -1 ENOTCONN (Transport en
+dpoint is not connected)
+03:55:31.808900 getsockopt(51, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
 
-1) we get libparsevent.so out into the world and all tools can use it,
-and the raw formats of the trace events will no longer be an issue as
-long as the names of events and fields stay the same.
+# getpeername(2) failing on a socket that has finished connecting should 
+# indicate that the connect(2) failed.  Yet when we try to fetch the
+# SO_ERROR of the socket, it says no error is currently set.
+# We then loop around with select(2) again, and again the same thing
+# happens:
 
-2) we separate perf from ftrace and keep the "stable" ABI for perf, and
-let ftrace advance into a more efficient tracer.
+03:55:31.809259 select(58, [4 8 11 12 13 14 16 18 19 20 21 22 23 24 26 27 30 31
+32 33 34 35 36 37 39 40 41 43 44 46 48 49 50 52 53 54 57], [15 17 25 29 45 47 51
+ 55], [11 12 13 14 16 18 19 20 21 22 23 24 26 27 30 31 32 33 34 35 36 37 39 40 4
+1 43 44 46 48 49 50 52 53 54 57], {1, 0}) = 3 (in [16 26], out [51], left {1, 0}
+)
+03:55:31.809329 getpeername(51, 0x7fff5d2eaa8c, [0]) = -1 ENOTCONN (Transport en
+dpoint is not connected)
+03:55:31.809640 getsockopt(51, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
 
--- Steve
+...
 
+# finally, getsockopt(2) returns that the connect(2) failed.
+03:55:32.521146 getpeername(51, 0x7fff5d2eaa8c, [0]) = -1 ENOTCONN (Transport en
+dpoint is not connected)
+03:55:32.521614 getsockopt(51, SOL_SOCKET, SO_ERROR, [101], [4]) = 0
+
+In other words, select(2) says the socket has finished connecting,
+getpeername(2) neither confirms nor denies this (it can only confirm
+if the connect finished successfully).  getsockopt(2) and SO_ERROR
+however says there is no error on the socket, which coupled
+with getpeername(2) failing, indicates that the connect(2) has
+not yet finished
+
+
+
+This does not happen all the time.  E.g., I watched the system for
+an hour yesterday, as things were staring up and the number of
+concurrent tcp clients gradually increased from zero to around 700,
+with no observable problems.  However after a while, the problem
+starts occurring, related to an increasing number of clients or
+something else, I do not know.
+
+Currently the system has a little over 3,000 clients and the problem
+occurs now and then, sometimes several times a minute, while sometimes
+it can take dozens of minutes between each time.  At the moment,
+the last time the problem was detected was 40 minutes ago.
+
+The software the above strace is related to is a proxy server, and
+if there are 3000 clients (incoming TCP sessions), there would
+normally be 3000 outgoing TCP sessions also.  
+
+uname -a on the system in question reports 
+2.6.18-238.9.1.el5 #1 SMP Tue Apr 12 18:10:13 EDT 2011 x86_64 x86_64
+x86_64 GNU/Linux
+
+Thankful for any hints or pointers related to this problem.
+With kind regards,
+
+-- 
+  _ // 
+  \X/ -- Michael Shuldman 
 
