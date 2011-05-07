@@ -1,160 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1EGCYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 22:24:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37947 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754480Ab1EGCYT (ORCPT
+	id S1755002Ab1EGC0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 May 2011 22:26:00 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:35740 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab1EGCZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 May 2011 22:24:19 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Timo Warns <warns@pre-sense.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>, Richard Russon <rich@flatcap.org>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk,
-        Harvey Harrison <harvey.harrison@gmail.com>, Greg KH <gregkh@suse.de>
-In-Reply-To: <20110506001210.724927797@clark.kroah.org>
-References: <20110506001210.724927797@clark.kroah.org>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-Z1+hf+SIs0SNbWI35kPb"
-Date: Sat, 07 May 2011 03:24:11 +0100
-Message-ID: <1304735051.3203.87.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [patch 35/38] fs/partitions/ldm.c: fix oops
- caused by corrupted partition table
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+	Fri, 6 May 2011 22:25:56 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-arch@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, jamal <hadi@cyberus.ca>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 1/7] ns: proc files for namespace naming policy.
+Date: Fri,  6 May 2011 19:24:55 -0700
+Message-Id: <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.1.217.g4e3aa
+In-Reply-To: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19VsyEui90biEdUn+iEGGe3aJMQGWFqx0o=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Create files under /proc/<pid>/ns/ to allow controlling the
+namespaces of a process.
 
---=-Z1+hf+SIs0SNbWI35kPb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This addresses three specific problems that can make namespaces hard to
+work with.
+- Namespaces require a dedicated process to pin them in memory.
+- It is not possible to use a namespace unless you are the child
+  of the original creator.
+- Namespaces don't have names that userspace can use to talk about
+  them.
 
-On Thu, 2011-05-05 at 17:11 -0700, Greg KH wrote:
-> 2.6.38-stable review patch.  If anyone has any objections, please let us =
-know.
->=20
-> ------------------
->=20
-> From: Timo Warns <Warns@pre-sense.de>
->=20
-> commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
->=20
-> The kernel automatically evaluates partition tables of storage devices.
-> The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
-> a bug that causes a kernel oops on certain corrupted LDM partitions.
-> A kernel subsystem seems to crash, because, after the oops, the kernel no
-> longer recognizes newly connected storage devices.
->=20
-> The patch validates the value of vblk_size.
+The namespace files under /proc/<pid>/ns/ can be opened and the
+file descriptor can be used to talk about a specific namespace, and
+to keep the specified namespace alive.
 
-I don't think this actually fixes the vulnerability, and I don't think
-this code works at all.
+A namespace can be kept alive by either holding the file descriptor
+open or bind mounting the file someplace else.  aka:
+mount --bind /proc/self/ns/net /some/filesystem/path
+mount --bind /proc/self/fd/<N> /some/filesystem/path
 
-> [akpm@linux-foundation.org: coding-style fixes]
-> Signed-off-by: Timo Warns <warns@pre-sense.de>
-> Cc: Eugene Teo <eugeneteo@kernel.sg>
-> Cc: Harvey Harrison <harvey.harrison@gmail.com>
-> Cc: Richard Russon <rich@flatcap.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->=20
-> ---
->  fs/partitions/ldm.c |   16 ++++++++++++----
->  1 file changed, 12 insertions(+), 4 deletions(-)
->=20
-> --- a/fs/partitions/ldm.c
-> +++ b/fs/partitions/ldm.c
-> @@ -1299,6 +1299,11 @@ static bool ldm_frag_add (const u8 *data
-> =20
->  	BUG_ON (!data || !frags);
-> =20
-> +	if (size < 2 * VBLK_SIZE_HEAD) {
-> +		ldm_error("Value of size is to small.");
-> +		return false;
-> +	}
-> +
->  	group =3D get_unaligned_be32(data + 0x08);
->  	rec   =3D get_unaligned_be16(data + 0x0C);
->  	num   =3D get_unaligned_be16(data + 0x0E);
-> @@ -1306,6 +1311,10 @@ static bool ldm_frag_add (const u8 *data
->  		ldm_error ("A VBLK claims to have %d parts.", num);
->  		return false;
->  	}
-> +	if (rec >=3D num) {
-> +		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
-> +		return false;
-> +	}
+This allows namespaces to be named with userspace policy.
 
-This is fine for the first fragment we find, when we allocate memory
-based on 'num'.  However, when we add another fragment, we need to
-compare with f->num.  So there still seems to be the possibility of a
-buffer overflow.
+It requires additional support to make use of these filedescriptors
+and that will be comming in the following patches.
 
->  	list_for_each (item, frags) {
->  		f =3D list_entry (item, struct frag, list);
-> @@ -1334,10 +1343,9 @@ found:
-> =20
->  	f->map |=3D (1 << rec);
-> =20
-> -	if (num > 0) {
-> -		data +=3D VBLK_SIZE_HEAD;
-> -		size -=3D VBLK_SIZE_HEAD;
-> -	}
-> +	data +=3D VBLK_SIZE_HEAD;
-> +	size -=3D VBLK_SIZE_HEAD;
-> +
->
->  	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
->=20
->  	return true;
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ fs/proc/Makefile        |    1 +
+ fs/proc/base.c          |   20 ++---
+ fs/proc/inode.c         |    7 ++
+ fs/proc/internal.h      |   18 +++++
+ fs/proc/namespaces.c    |  188 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/proc_fs.h |   18 +++++
+ 6 files changed, 241 insertions(+), 11 deletions(-)
+ create mode 100644 fs/proc/namespaces.c
 
-The offset used for the destination means that the first VBLK_SIZE_HEAD
-bytes of f->data are never initialised!
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index df434c5..c1c7293 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -20,6 +20,7 @@ proc-y	+= stat.o
+ proc-y	+= uptime.o
+ proc-y	+= version.o
+ proc-y	+= softirqs.o
++proc-y	+= namespaces.o
+ proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
+ proc-$(CONFIG_NET)		+= proc_net.o
+ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index dfa5327..dc8bca7 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -600,7 +600,7 @@ static int proc_fd_access_allowed(struct inode *inode)
+ 	return allowed;
+ }
+ 
+-static int proc_setattr(struct dentry *dentry, struct iattr *attr)
++int proc_setattr(struct dentry *dentry, struct iattr *attr)
+ {
+ 	int error;
+ 	struct inode *inode = dentry->d_inode;
+@@ -1736,8 +1736,7 @@ static int task_dumpable(struct task_struct *task)
+ 	return 0;
+ }
+ 
+-
+-static struct inode *proc_pid_make_inode(struct super_block * sb, struct task_struct *task)
++struct inode *proc_pid_make_inode(struct super_block * sb, struct task_struct *task)
+ {
+ 	struct inode * inode;
+ 	struct proc_inode *ei;
+@@ -1779,7 +1778,7 @@ out_unlock:
+ 	return NULL;
+ }
+ 
+-static int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
++int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	struct task_struct *task;
+@@ -1820,7 +1819,7 @@ static int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat
+  * made this apply to all per process world readable and executable
+  * directories.
+  */
+-static int pid_revalidate(struct dentry *dentry, struct nameidata *nd)
++int pid_revalidate(struct dentry *dentry, struct nameidata *nd)
+ {
+ 	struct inode *inode;
+ 	struct task_struct *task;
+@@ -1862,7 +1861,7 @@ static int pid_delete_dentry(const struct dentry * dentry)
+ 	return !proc_pid(dentry->d_inode)->tasks[PIDTYPE_PID].first;
+ }
+ 
+-static const struct dentry_operations pid_dentry_operations =
++const struct dentry_operations pid_dentry_operations =
+ {
+ 	.d_revalidate	= pid_revalidate,
+ 	.d_delete	= pid_delete_dentry,
+@@ -1870,9 +1869,6 @@ static const struct dentry_operations pid_dentry_operations =
+ 
+ /* Lookups */
+ 
+-typedef struct dentry *instantiate_t(struct inode *, struct dentry *,
+-				struct task_struct *, const void *);
+-
+ /*
+  * Fill a directory entry.
+  *
+@@ -1885,8 +1881,8 @@ typedef struct dentry *instantiate_t(struct inode *, struct dentry *,
+  * reported by readdir in sync with the inode numbers reported
+  * by stat.
+  */
+-static int proc_fill_cache(struct file *filp, void *dirent, filldir_t filldir,
+-	char *name, int len,
++int proc_fill_cache(struct file *filp, void *dirent, filldir_t filldir,
++	const char *name, int len,
+ 	instantiate_t instantiate, struct task_struct *task, const void *ptr)
+ {
+ 	struct dentry *child, *dir = filp->f_path.dentry;
+@@ -2820,6 +2816,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
+ 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
+ 	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
++	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+ #ifdef CONFIG_NET
+ 	DIR("net",        S_IRUGO|S_IXUGO, proc_net_inode_operations, proc_net_operations),
+ #endif
+@@ -3168,6 +3165,7 @@ out_no_task:
+ static const struct pid_entry tid_base_stuff[] = {
+ 	DIR("fd",        S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
+ 	DIR("fdinfo",    S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
++	DIR("ns",	 S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+ 	REG("environ",   S_IRUSR, proc_environ_operations),
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index d15aa1b..74b48cf 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -28,6 +28,7 @@ static void proc_evict_inode(struct inode *inode)
+ {
+ 	struct proc_dir_entry *de;
+ 	struct ctl_table_header *head;
++	const struct proc_ns_operations *ns_ops;
+ 
+ 	truncate_inode_pages(&inode->i_data, 0);
+ 	end_writeback(inode);
+@@ -44,6 +45,10 @@ static void proc_evict_inode(struct inode *inode)
+ 		rcu_assign_pointer(PROC_I(inode)->sysctl, NULL);
+ 		sysctl_head_put(head);
+ 	}
++	/* Release any associated namespace */
++	ns_ops = PROC_I(inode)->ns_ops;
++	if (ns_ops && ns_ops->put)
++		ns_ops->put(PROC_I(inode)->ns);
+ }
+ 
+ static struct kmem_cache * proc_inode_cachep;
+@@ -62,6 +67,8 @@ static struct inode *proc_alloc_inode(struct super_block *sb)
+ 	ei->pde = NULL;
+ 	ei->sysctl = NULL;
+ 	ei->sysctl_entry = NULL;
++	ei->ns = NULL;
++	ei->ns_ops = NULL;
+ 	inode = &ei->vfs_inode;
+ 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 	return inode;
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index c03e8d3..96245a1 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -119,3 +119,21 @@ struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
+  */
+ int proc_readdir(struct file *, void *, filldir_t);
+ struct dentry *proc_lookup(struct inode *, struct dentry *, struct nameidata *);
++
++
++
++/* Lookups */
++typedef struct dentry *instantiate_t(struct inode *, struct dentry *,
++				struct task_struct *, const void *);
++int proc_fill_cache(struct file *filp, void *dirent, filldir_t filldir,
++	const char *name, int len,
++	instantiate_t instantiate, struct task_struct *task, const void *ptr);
++int pid_revalidate(struct dentry *dentry, struct nameidata *nd);
++struct inode *proc_pid_make_inode(struct super_block * sb, struct task_struct *task);
++extern const struct dentry_operations pid_dentry_operations;
++int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat);
++int proc_setattr(struct dentry *dentry, struct iattr *attr);
++
++extern const struct inode_operations proc_ns_dir_inode_operations;
++extern const struct file_operations proc_ns_dir_operations;
++
+diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+new file mode 100644
+index 0000000..6ae9f07
+--- /dev/null
++++ b/fs/proc/namespaces.c
+@@ -0,0 +1,188 @@
++#include <linux/proc_fs.h>
++#include <linux/nsproxy.h>
++#include <linux/sched.h>
++#include <linux/ptrace.h>
++#include <linux/fs_struct.h>
++#include <linux/mount.h>
++#include <linux/path.h>
++#include <linux/namei.h>
++#include <linux/file.h>
++#include <linux/utsname.h>
++#include <net/net_namespace.h>
++#include <linux/mnt_namespace.h>
++#include <linux/ipc_namespace.h>
++#include <linux/pid_namespace.h>
++#include "internal.h"
++
++
++static const struct proc_ns_operations *ns_entries[] = {
++};
++
++static const struct file_operations ns_file_operations = {
++	.llseek		= no_llseek,
++};
++
++static struct dentry *proc_ns_instantiate(struct inode *dir,
++	struct dentry *dentry, struct task_struct *task, const void *ptr)
++{
++	const struct proc_ns_operations *ns_ops = ptr;
++	struct inode *inode;
++	struct proc_inode *ei;
++	struct dentry *error = ERR_PTR(-ENOENT);
++
++	inode = proc_pid_make_inode(dir->i_sb, task);
++	if (!inode)
++		goto out;
++
++	ei = PROC_I(inode);
++	inode->i_mode = S_IFREG|S_IRUSR;
++	inode->i_fop  = &ns_file_operations;
++	ei->ns_ops    = ns_ops;
++	ei->ns	      = ns_ops->get(task);
++	if (!ei->ns)
++		goto out_iput;
++
++	dentry->d_op = &pid_dentry_operations;
++	d_add(dentry, inode);
++	/* Close the race of the process dying before we return the dentry */
++	if (pid_revalidate(dentry, NULL))
++		error = NULL;
++out:
++	return error;
++out_iput:
++	iput(inode);
++	goto out;
++}
++
++static int proc_ns_fill_cache(struct file *filp, void *dirent,
++	filldir_t filldir, struct task_struct *task,
++	const struct proc_ns_operations *ops)
++{
++	return proc_fill_cache(filp, dirent, filldir,
++				ops->name, strlen(ops->name),
++				proc_ns_instantiate, task, ops);
++}
++
++static int proc_ns_dir_readdir(struct file *filp, void *dirent,
++				filldir_t filldir)
++{
++	int i;
++	struct dentry *dentry = filp->f_path.dentry;
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *task = get_proc_task(inode);
++	const struct proc_ns_operations **entry, **last;
++	ino_t ino;
++	int ret;
++
++	ret = -ENOENT;
++	if (!task)
++		goto out_no_task;
++
++	ret = -EPERM;
++	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++		goto out;
++
++	ret = 0;
++	i = filp->f_pos;
++	switch (i) {
++	case 0:
++		ino = inode->i_ino;
++		if (filldir(dirent, ".", 1, i, ino, DT_DIR) < 0)
++			goto out;
++		i++;
++		filp->f_pos++;
++		/* fall through */
++	case 1:
++		ino = parent_ino(dentry);
++		if (filldir(dirent, "..", 2, i, ino, DT_DIR) < 0)
++			goto out;
++		i++;
++		filp->f_pos++;
++		/* fall through */
++	default:
++		i -= 2;
++		if (i >= ARRAY_SIZE(ns_entries)) {
++			ret = 1;
++			goto out;
++		}
++		entry = ns_entries + i;
++		last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
++		while (entry <= last) {
++			if (proc_ns_fill_cache(filp, dirent, filldir,
++						task, *entry) < 0)
++				goto out;
++			filp->f_pos++;
++			entry++;
++		}
++	}
++
++	ret = 1;
++out:
++	put_task_struct(task);
++out_no_task:
++	return ret;
++}
++
++const struct file_operations proc_ns_dir_operations = {
++	.read		= generic_read_dir,
++	.readdir	= proc_ns_dir_readdir,
++};
++
++static struct dentry *proc_ns_dir_lookup(struct inode *dir,
++				struct dentry *dentry, struct nameidata *nd)
++{
++	struct dentry *error;
++	struct task_struct *task = get_proc_task(dir);
++	const struct proc_ns_operations **entry, **last;
++	unsigned int len = dentry->d_name.len;
++
++	error = ERR_PTR(-ENOENT);
++
++	if (!task)
++		goto out_no_task;
++
++	error = ERR_PTR(-EPERM);
++	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++		goto out;
++
++	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
++	for (entry = ns_entries; entry <= last; entry++) {
++		if (strlen((*entry)->name) != len)
++			continue;
++		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
++			break;
++	}
++	if (entry > last)
++		goto out;
++
++	error = proc_ns_instantiate(dir, dentry, task, *entry);
++out:
++	put_task_struct(task);
++out_no_task:
++	return error;
++}
++
++const struct inode_operations proc_ns_dir_inode_operations = {
++	.lookup		= proc_ns_dir_lookup,
++	.getattr	= pid_getattr,
++	.setattr	= proc_setattr,
++};
++
++struct file *proc_ns_fget(int fd)
++{
++	struct file *file;
++
++	file = fget(fd);
++	if (!file)
++		return ERR_PTR(-EBADF);
++
++	if (file->f_op != &ns_file_operations)
++		goto out_invalid;
++
++	return file;
++
++out_invalid:
++	fput(file);
++	return ERR_PTR(-EINVAL);
++}
++
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 838c114..a6d2c6d 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -179,6 +179,8 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
+ extern struct file *get_mm_exe_file(struct mm_struct *mm);
+ extern void dup_mm_exe_file(struct mm_struct *oldmm, struct mm_struct *newmm);
+ 
++extern struct file *proc_ns_fget(int fd);
++
+ #else
+ 
+ #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
+@@ -239,6 +241,11 @@ static inline void dup_mm_exe_file(struct mm_struct *oldmm,
+ 	       			   struct mm_struct *newmm)
+ {}
+ 
++static inline struct file *proc_ns_fget(int fd)
++{
++	return ERR_PTR(-EINVAL);
++}
++
+ #endif /* CONFIG_PROC_FS */
+ 
+ #if !defined(CONFIG_PROC_KCORE)
+@@ -250,6 +257,15 @@ kclist_add(struct kcore_list *new, void *addr, size_t size, int type)
+ extern void kclist_add(struct kcore_list *, void *, size_t, int type);
+ #endif
+ 
++struct nsproxy;
++struct proc_ns_operations {
++	const char *name;
++	int type;
++	void *(*get)(struct task_struct *task);
++	void (*put)(void *ns);
++	int (*install)(struct nsproxy *nsproxy, void *ns);
++};
++
+ union proc_op {
+ 	int (*proc_get_link)(struct inode *, struct path *);
+ 	int (*proc_read)(struct task_struct *task, char *page);
+@@ -268,6 +284,8 @@ struct proc_inode {
+ 	struct proc_dir_entry *pde;
+ 	struct ctl_table_header *sysctl;
+ 	struct ctl_table *sysctl_entry;
++	void *ns;
++	const struct proc_ns_operations *ns_ops;
+ 	struct inode vfs_inode;
+ };
+ 
+-- 
+1.6.5.2.143.g8cc62
 
-I suspect (without any knowledge of LDM) that the intent was to use the
-header from the first fragment and drop it from the subsequent
-fragments, like this:
-
-	if (rec =3D=3D 0)
-		memcpy(f->data, data, VBLK_SIZE_HEAD);
-	data +=3D VBLK_SIZE_HEAD;
-	size -=3D VBLK_SIZE_HEAD;
-	memcpy(f->data + VBLK_SIZE_HEAD + rec * size, data, size);
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-Z1+hf+SIs0SNbWI35kPb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATcStS+e/yOyVhhEJAQoWqxAAp51CjaHfWxL1cFGRsG34++IKrl5D4eNw
-6QAW4Ezgshu001mb5L5gQHJWYuOWuXEv0rP6P/luaYXYUzVa5zk8zguYTd391MYL
-xRAHpRp9L3DHgwRExS0R1bypORwMyS3J8+ZSzuWN97lpRLO+8xy/XYYHL2TTaEGG
-a2QJSC+CyRiwBSvYn5am/pzY+eG1qznjHGKAqOOwTB1eO/k1ni6+5uO2JdV8b7wk
-+WsId70+BB4CvVS9gwPCcwww8x4J2t5gUPibQtZFHXtSVK52WxQ/iiiz+wFagYT7
-RsOXaVTavf4EfjNmGGytFFPn7lBnVTUzRQGJoTo2DW5/WXiOtNew/F7szToMTbsA
-czr2vpPphD+dDDWHopaNXqFRb97ZJ13v52AxWtOVaETgqOkIkQx2bcL0yFP0hcok
-otZDuXinaBMm6ZJsp0eZ6wolrGMmUu3ocFwz3duKZI1nQEyMAO0bbfKpsIb1TW/1
-h9CJHaE9Hx8SpK+PwrF+MUJWi+PdKUJGb+K/MXjpYpTE+g8DeR+GdGwqvqVYT95z
-0ZGIOgDInfOquktoznMEX9gi2hImG9hRA00ZNcRnkBfF/+saB5miqJAdErB70P8g
-RADSJcg7MQ3hUrA+9p/7k+s6RA0xwjAavkwFCrBajKs3fpmPUQ9igRyQYF+EjwBo
-9CTCu3KsHWs=
-=BE9V
------END PGP SIGNATURE-----
-
---=-Z1+hf+SIs0SNbWI35kPb--
