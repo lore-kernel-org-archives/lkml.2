@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1EGBVu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 May 2011 21:21:50 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:56061 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab1EGBVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754151Ab1EGBVI (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 May 2011 21:21:08 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41423 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab1EGBVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 May 2011 21:21:05 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Subject: [PATCH 00/11] rtc: Fix rtc breakage found by commit f44f7f96a20
-Date: Fri,  6 May 2011 18:20:43 -0700
-Message-Id: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 01/11] rtc: mxc: Initialize drvdata before registering device
+Date: Fri,  6 May 2011 18:20:44 -0700
+Message-Id: <1304731254-3238-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
+References: <1304731254-3238-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit f44f7f96a20 ("RTC: Initialize kernel state from RTC")
-landed in 2.6.39-rc1, we've seen a few reports of boot time hangs
-cropping up. It ends up that the problematic rtc drivers were
-calling rtc_device_register before it finished initializing critical
-data for the rtc driver to function.
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-Wolfram Sang noticed that this issue was actually more common then
-just the few reports seen, and motivated me to do a complete audit
-of all the RTC drivers to ensure they were not being registered
-before any critical drvdata was initialized.
+Commit f44f7f96a20 ("RTC: Initialize kernel state from RTC") uncovered
+an issue in a number of RTC drivers, where the drivers call
+rtc_device_register before initializing the device or platform drvdata.
 
-This patchset is the result of that audit, along with earlier
-noted fixes from Wolfram's and Uwe.
+This frequently results in null pointer dereferences when the
+rtc_device_register immediately makes use of the rtc device, calling
+rtc_read_alarm.
 
-Thanks again to Wolfram and Uwe for the patches and helping make
-these issues a priority.
+The solution is to ensure the drvdata is initialized prior to registering
+the rtc device.
 
 CC: Alessandro Zummo <a.zummo@towertech.it>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: rtc-linux@googlegroups.com
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+[fixed up commit log -jstultz]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/rtc/rtc-mxc.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-
-John Stultz (7):
-  rtc: ds1286: Initialize drvdata before registering device
-  rtc: m41t80: Initialize clientdata before registering device
-  rtc: max8925: Initialize drvdata before registering device
-  rtc: max8998: Initialize drvdata before registering device
-  rtc: msm6242: Initialize drvdata before registering device
-  rtc: pcap: Initialize drvdata before registering device
-  rtc: rp5c01: Initialize drvdata before registering device
-
-Uwe Kleine-König (1):
-  rtc: mc13xxx: Don't call rtc_device_register while holding lock
-
-Wolfram Sang (3):
-  rtc: mxc: Initialize drvdata before registering device
-  rtc: davinci: Initialize drvdata before registering device
-  rtc: ep93xx: Initialize drvdata before registering device
-
- drivers/rtc/rtc-davinci.c |    5 +++--
- drivers/rtc/rtc-ds1286.c  |    2 +-
- drivers/rtc/rtc-ep93xx.c  |    5 ++---
- drivers/rtc/rtc-m41t80.c  |    5 +++--
- drivers/rtc/rtc-max8925.c |    5 +++--
- drivers/rtc/rtc-max8998.c |    5 +++--
- drivers/rtc/rtc-mc13xxx.c |    8 ++++++--
- drivers/rtc/rtc-msm6242.c |    3 ++-
- drivers/rtc/rtc-mxc.c     |   19 +++++++++++--------
- drivers/rtc/rtc-pcap.c    |    4 +++-
- drivers/rtc/rtc-rp5c01.c  |    5 +++--
- 11 files changed, 40 insertions(+), 26 deletions(-)
-
+diff --git a/drivers/rtc/rtc-mxc.c b/drivers/rtc/rtc-mxc.c
+index 826ab64..d814417 100644
+--- a/drivers/rtc/rtc-mxc.c
++++ b/drivers/rtc/rtc-mxc.c
+@@ -418,14 +418,6 @@ static int __init mxc_rtc_probe(struct platform_device *pdev)
+ 		goto exit_put_clk;
+ 	}
+ 
+-	rtc = rtc_device_register(pdev->name, &pdev->dev, &mxc_rtc_ops,
+-				  THIS_MODULE);
+-	if (IS_ERR(rtc)) {
+-		ret = PTR_ERR(rtc);
+-		goto exit_put_clk;
+-	}
+-
+-	pdata->rtc = rtc;
+ 	platform_set_drvdata(pdev, pdata);
+ 
+ 	/* Configure and enable the RTC */
+@@ -438,8 +430,19 @@ static int __init mxc_rtc_probe(struct platform_device *pdev)
+ 		pdata->irq = -1;
+ 	}
+ 
++	rtc = rtc_device_register(pdev->name, &pdev->dev, &mxc_rtc_ops,
++				  THIS_MODULE);
++	if (IS_ERR(rtc)) {
++		ret = PTR_ERR(rtc);
++		goto exit_clr_drvdata;
++	}
++
++	pdata->rtc = rtc;
++
+ 	return 0;
+ 
++exit_clr_drvdata:
++	platform_set_drvdata(pdev, NULL);
+ exit_put_clk:
+ 	clk_disable(pdata->clk);
+ 	clk_put(pdata->clk);
 -- 
 1.7.3.2.146.gca209
 
