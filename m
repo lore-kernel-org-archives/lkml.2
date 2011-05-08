@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab1EHMwH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:52:07 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:42768 "HELO
+	id S1753798Ab1EHMwE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:52:04 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:42795 "HELO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753340Ab1EHMv5 (ORCPT
+	with SMTP id S1753497Ab1EHMv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:51:57 -0400
+	Sun, 8 May 2011 08:51:58 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v5 04/19] ARM: LPAE: Make TTBR1 always point to swapper_pg_dir on ARMv7
-Date: Sun,  8 May 2011 13:51:23 +0100
-Message-Id: <1304859098-10760-5-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v5 05/19] ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*
+Date: Sun,  8 May 2011 13:51:24 +0100
+Message-Id: <1304859098-10760-6-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
 References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 08 May 2011 12:51:49.0007 (UTC) FILETIME=[B1FCB1F0:01CC0D7E]
-X-MC-Unique: 111050813515402701
+X-OriginalArrivalTime: 08 May 2011 12:51:49.0475 (UTC) FILETIME=[B2441B30:01CC0D7E]
+X-MC-Unique: 111050813515502501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p48CqSfA020044
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p48CqR4j020040
 
-On the secondary CPUs, TTBR1 points to the temporary pgd set up in
-__cpu_up() which is later removed. With LPAE, TTBR1 is used for the
-kernel mappings.
+PGDIR_SHIFT and PMD_SHIFT for the classic 2-level page table format have
+the same value (21). This patch converts the PGDIR_* uses in the kernel
+to the PMD_* equivalent so that LPAE builds can reuse the same code.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/smp.h |    1 +
- arch/arm/kernel/head.S     |    7 +++++--
- arch/arm/kernel/smp.c      |    1 +
- arch/arm/mm/proc-v7.S      |    4 +++-
- 4 files changed, 10 insertions(+), 3 deletions(-)
+ arch/arm/kernel/module.c  |    2 +-
+ arch/arm/mm/dma-mapping.c |    6 +++---
+ arch/arm/mm/mmu.c         |   10 +++++-----
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index afea1b1..d924cf8 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -76,6 +76,7 @@ extern void platform_smp_prepare_cpus(unsigned int);
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index fee7c36..116016d 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -33,7 +33,7 @@
+  * recompiling the whole kernel when CONFIG_XIP_KERNEL is turned on/off.
   */
- struct secondary_data {
- 	unsigned long pgdir;
-+	unsigned long swapper_pg_dir;
- 	void *stack;
- };
- extern struct secondary_data secondary_data;
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index ea8fae7..ac368e6 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -113,6 +113,7 @@ ENTRY(stext)
- 	ldr	r13, =__mmap_switched		@ address to jump to after
- 						@ mmu has been enabled
- 	adr	lr, BSYM(1f)			@ return (PIC) address
-+	mov	r8, r4				@ set TTBR1 to swapper_pg_dir
-  ARM(	add	pc, r10, #PROCINFO_INITFUNC	)
-  THUMB(	add	r12, r10, #PROCINFO_INITFUNC	)
-  THUMB(	mov	pc, r12				)
-@@ -302,8 +303,10 @@ ENTRY(secondary_startup)
- 	 */
- 	adr	r4, __secondary_data
- 	ldmia	r4, {r5, r7, r12}		@ address to jump to after
--	sub	r4, r4, r5			@ mmu has been enabled
--	ldr	r4, [r7, r4]			@ get secondary_data.pgdir
-+	sub	r13, r4, r5			@ mmu has been enabled
-+	ldr	r4, [r7, r13]			@ get secondary_data.pgdir
-+	add	r7, r7, #4
-+	ldr	r8, [r7, r13]			@ get secondary_data.swapper_pg_dir
- 	adr	lr, BSYM(__enable_mmu)		@ return address
- 	mov	r13, r12			@ __secondary_switched address
-  ARM(	add	pc, r10, #PROCINFO_INITFUNC	) @ initialise processor
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 556bd54..e2ea1bf 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -105,6 +105,7 @@ int __cpuinit __cpu_up(unsigned int cpu)
- 	 */
- 	secondary_data.stack = task_stack_page(idle) + THREAD_START_SP;
- 	secondary_data.pgdir = virt_to_phys(pgd);
-+	secondary_data.swapper_pg_dir = virt_to_phys(swapper_pg_dir);
- 	__cpuc_flush_dcache_area(&secondary_data, sizeof(secondary_data));
- 	outer_clean_range(__pa(&secondary_data), __pa(&secondary_data + 1));
+ #undef MODULES_VADDR
+-#define MODULES_VADDR	(((unsigned long)_etext + ~PGDIR_MASK) & PGDIR_MASK)
++#define MODULES_VADDR	(((unsigned long)_etext + ~PMD_MASK) & PMD_MASK)
+ #endif
  
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index 5fd5bc0..864a5c9 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -375,7 +375,9 @@ __v7_setup:
- 	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
- 	ALT_SMP(orr	r4, r4, #TTB_FLAGS_SMP)
- 	ALT_UP(orr	r4, r4, #TTB_FLAGS_UP)
--	mcr	p15, 0, r4, c2, c0, 1		@ load TTB1
-+	ALT_SMP(orr	r8, r8, #TTB_FLAGS_SMP)
-+	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
-+	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
- 	ldr	r5, =PRRR			@ PRRR
- 	ldr	r6, =NMRR			@ NMRR
- 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
+ #ifdef CONFIG_MMU
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 82a093c..334e9af 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -121,8 +121,8 @@ static void __dma_free_buffer(struct page *page, size_t size)
+ #endif
+ 
+ #define CONSISTENT_OFFSET(x)	(((unsigned long)(x) - CONSISTENT_BASE) >> PAGE_SHIFT)
+-#define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - CONSISTENT_BASE) >> PGDIR_SHIFT)
+-#define NUM_CONSISTENT_PTES (CONSISTENT_DMA_SIZE >> PGDIR_SHIFT)
++#define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - CONSISTENT_BASE) >> PMD_SHIFT)
++#define NUM_CONSISTENT_PTES (CONSISTENT_DMA_SIZE >> PMD_SHIFT)
+ 
+ /*
+  * These are the page tables (2MB each) covering uncached, DMA consistent allocations
+@@ -181,7 +181,7 @@ static int __init consistent_init(void)
+ 		}
+ 
+ 		consistent_pte[i++] = pte;
+-		base += (1 << PGDIR_SHIFT);
++		base += (1 << PMD_SHIFT);
+ 	} while (base < CONSISTENT_END);
+ 
+ 	return ret;
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 6cf76b3..a855648 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -864,14 +864,14 @@ static inline void prepare_page_table(void)
+ 	/*
+ 	 * Clear out all the mappings below the kernel image.
+ 	 */
+-	for (addr = 0; addr < MODULES_VADDR; addr += PGDIR_SIZE)
++	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ #ifdef CONFIG_XIP_KERNEL
+ 	/* The XIP kernel is mapped in the module area -- skip over it */
+-	addr = ((unsigned long)_etext + PGDIR_SIZE - 1) & PGDIR_MASK;
++	addr = ((unsigned long)_etext + PMD_SIZE - 1) & PMD_MASK;
+ #endif
+-	for ( ; addr < PAGE_OFFSET; addr += PGDIR_SIZE)
++	for ( ; addr < PAGE_OFFSET; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ 	/*
+@@ -886,7 +886,7 @@ static inline void prepare_page_table(void)
+ 	 * memory bank, up to the end of the vmalloc region.
+ 	 */
+ 	for (addr = __phys_to_virt(end);
+-	     addr < VMALLOC_END; addr += PGDIR_SIZE)
++	     addr < VMALLOC_END; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ }
+ 
+@@ -927,7 +927,7 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
+ 	 */
+ 	vectors_page = early_alloc(PAGE_SIZE);
+ 
+-	for (addr = VMALLOC_END; addr; addr += PGDIR_SIZE)
++	for (addr = VMALLOC_END; addr; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ 	/*
 
