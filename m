@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1EHUaC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 16:30:02 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53542 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750753Ab1EHU37 (ORCPT
+	id S1753103Ab1EHUcj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 16:32:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52921 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab1EHUci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 16:29:59 -0400
-Subject: Re: [PATCH] sym53c8xx_2: avoid data corruption when disk rejects
- commands with QUEUE FULL
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Cc: Matthew Wilcox <matthew@wil.cx>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1105082057460.15552@artax.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1105082057460.15552@artax.karlin.mff.cuni.cz>
+	Sun, 8 May 2011 16:32:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=i0wXwPDPZLz5EnBwVZFPh0QTugQ+dykwvOj5w4gksLlsW1CjUsmmfLcQmR/eET1QTg
+         ynBJGWfZ0tfpIGFKoNT0BuyPwz3t6UWtgwvKC1vt09CY78gQ3rp1ihTbEqCftT8exGvz
+         MxeqaYOQXnBCsnXJFgUzqHgnUJxqCX5/MI4Os=
+Subject: Re: [PATCH 1/4] MFD: TWL6025: add phoenix lite support to twl6030
+From: Liam Girdwood <lrg@kernel.org>
+To: balbi@ti.com
+Cc: Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com
+In-Reply-To: <20110427104001.GX13227@legolas.emea.dhcp.ti.com>
+References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
+	 <1303897191-14792-2-git-send-email-gg@slimlogic.co.uk>
+	 <20110427104001.GX13227@legolas.emea.dhcp.ti.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 08 May 2011 15:29:55 -0500
-Message-ID: <1304886595.4865.3.camel@mulgrave.site>
+Date: Sun, 08 May 2011 21:32:33 +0100
+Message-ID: <1304886753.3246.22.camel@odin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-08 at 21:00 +0200, Mikulas Patocka wrote:
-> [ the maintainer is not responding, so I'm sending this to other people ]
-> 
-> sym53c8xx_2: avoid data corruption when disk rejects commands with QUEUE 
-> FULL
+On Wed, 2011-04-27 at 13:40 +0300, Felipe Balbi wrote: 
+> On Wed, Apr 27, 2011 at 10:39:48AM +0100, Graeme Gregory wrote:
 
-Could you describe the corruption, with logs?  The behaviour you list
-below should may cause disk errors to the filesystem, but it shouldn't
-cause corruption.
 
-> When the controller encounters an error (including QUEUE FULL or BUSY 
-> status), it aborts all not yet submitted requests in the function 
-> sym_dequeue_from_squeue.
+> > +	/* TWL6025 LDO regulators */
+> > +	struct regulator_init_data		*ldo1;
+> > +	struct regulator_init_data		*ldo2;
+> > +	struct regulator_init_data		*ldo3;
+> > +	struct regulator_init_data		*ldo4;
+> > +	struct regulator_init_data		*ldo5;
+> > +	struct regulator_init_data		*ldo6;
+> > +	struct regulator_init_data		*ldo7;
+> > +	struct regulator_init_data		*ldoln;
+> > +	struct regulator_init_data		*ldousb;
+> > +	/* TWL6025 DCDC regulators */
+> > +	struct regulator_init_data		*smps3;
+> > +	struct regulator_init_data		*smps4;
+> > +	struct regulator_init_data		*vio6025;
+> 
+> this is just becoming really really ugly. You need a more clever way of
+> handling this. Maybe passing an array of regulators and the array size
+> instead of continuously adding fields to this structure.
+> 
 
-This would be a driver bug: QUEUE_FULL or BUSY should never cause aborts
-of outstanding commands.
+Ok, I agree that optimising the platform data here is desirable, but I
+think we will have to stick with this atm as the twl driver has some
+rather annoying limitations that make optimising things like this a pita
+atm.
 
-> This function aborts them with DID_SOFT_ERROR.
-> 
-> If the disk has a full tag queue, the request that caused the overflow is
-> aborted with QUEUE FULL status (and the scsi midlayer properly retries it
-> until it is accepted by the disk), but other requests are aborted with
-> DID_SOFT_ERROR --- for them, the midlayer does just a few retries and then
-> signals the error up to sd.
-> 
-> The result is that disk returning QUEUE FULL causes request failures.
-> 
-> The error was reproduced on 53c895 with COMPAQ BD03685A24 disk (rebranded
-> ST336607LC) with command queue 48 or 64 tags. The disk has 64 tags, but
-> under some access patterns it return QUEUE FULL when there are less than
-> 64 pending tags. The SCSI specification allows returning QUEUE FULL
-> anytime and it is up to the host to retry.
-> 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> 
-> ---
->  drivers/scsi/sym53c8xx_2/sym_hipd.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> Index: linux-2.6.36-rc5-fast/drivers/scsi/sym53c8xx_2/sym_hipd.c
-> ===================================================================
-> --- linux-2.6.36-rc5-fast.orig/drivers/scsi/sym53c8xx_2/sym_hipd.c	2010-09-27 10:25:59.000000000 +0200
-> +++ linux-2.6.36-rc5-fast/drivers/scsi/sym53c8xx_2/sym_hipd.c	2010-09-27 10:26:27.000000000 +0200
-> @@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *
->  		if ((target == -1 || cp->target == target) &&
->  		    (lun    == -1 || cp->lun    == lun)    &&
->  		    (task   == -1 || cp->tag    == task)) {
-> +#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
->  			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
-> +#else
-> +			sym_set_cam_status(cp->cmd, DID_REQUEUE);
-> +#endif
+I guess we should look at fixing the twl driver within TI in order to
+make it more adaptable (i.e. support future twl ICs) and also a non
+singleton device.
 
-This isn't a good idea ... that return code causes retries for ever.  I
-think the correct fix is just to make the QUEUE_FULL handling in the
-driver work.
-
-James
-
+Liam
 
