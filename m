@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab1EHMz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:55:57 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:56217 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab1EHMzz convert rfc822-to-8bit (ORCPT
+	id S1754548Ab1EHM4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:56:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46573 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab1EHM4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:55:55 -0400
+	Sun, 8 May 2011 08:56:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Afk819qwfHp2ePySeM3e30+UW+dXpQ4fj0cCFbRtqFfnCTex7pPZDIHxHdko2Wl7Mx
-         JL6kWxbd2v6tNZA3LPBqriJsJSb5JRmpijDi4Dww+8nvB2NIcNI3mSZXnUMvoSow4WLU
-         V/jvKFoDJnvcokYGn2ufWLwj4UNtsvnirFh4E=
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=JCM4axIq6LfYS4iyyq9Flrk6aMn6wOA9FSVxvYXWB8S1atKjiemIh+nbC14OsJPZbs
+         Ovul9HZU2BaINrzC+ppNbnl27PdqLogDhlF/vPVWDE6Vl6DJE9FMczstE0rPftca6JU/
+         59JC25jUHldIvllS+r51H4izvjWpkVl1OBwgE=
+Date: Sun, 8 May 2011 15:56:17 +0300
+From: Maxin B John <maxin.john@gmail.com>
+To: greg@kroah.com
+Cc: mina86@mina86.com, stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [RESEND] usb: gadget: Remove the LUN checks which are
+ always true
+Message-ID: <20110508125616.GA7153@maxin>
 MIME-Version: 1.0
-In-Reply-To: <4DC6910F.2020008@hauke-m.de>
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
-	<4DC6910F.2020008@hauke-m.de>
-Date: Sun, 8 May 2011 14:55:54 +0200
-Message-ID: <BANLkTi=wtxH6suf8D=nzYKrBjWV9-yAQLw@mail.gmail.com>
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/8 Hauke Mehrtens <hauke@hauke-m.de>:
-> On 05/05/2011 11:59 PM, Rafał Miłecki wrote:
-> .....
->> --- /dev/null
->> +++ b/drivers/bcma/bcma_private.h
-> .....
->> +
->> +#define BCMA_ADDR_BASE               0x18000000
->> +#define BCMA_WRAP_BASE               0x18100000
->> +
-> ......
->> --- /dev/null
->> +++ b/drivers/bcma/scan.h
->> @@ -0,0 +1,56 @@
->> +#ifndef BCMA_SCAN_H_
->> +#define BCMA_SCAN_H_
->> +
->> +#define BCMA_ADDR_BASE               0x18000000
->> +#define BCMA_WRAP_BASE               0x18100000
->> +
-> .....
->
-> While graping through the code I found this. BCMA_ADDR_BASE and
-> BCMA_WRAP_BASE are defined twice.
-
-Will fix, thx.
+Comparing an unsigned integer with greater than or equal to zero is
+always true.  So, it is safe to remove similar checks from 
+'f_mass_storage.c' and 'file_storage.c'
 
 
-> Why are some constants defined in purpose specific headers in
-> drivers/bcma/*.h like drivers/bcma/scan.h and some in
-> drivers/bcma/bcma_private.h and other in include/linux/bcma/bcma_regs.h ?
-
-What is unclear to you in this split? It says everything. scan.h for
-scanning, regs for registers, private for internal functions.
-
--- 
-Rafał
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 6d8e533..cade79e 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -1910,7 +1910,7 @@ static int check_command(struct fsg_common *common, int cmnd_size,
+ 		    common->lun, lun);
+ 
+ 	/* Check the LUN */
+-	if (common->lun >= 0 && common->lun < common->nluns) {
++	if (common->lun < common->nluns) {
+ 		curlun = &common->luns[common->lun];
+ 		common->curlun = curlun;
+ 		if (common->cmnd[0] != REQUEST_SENSE) {
+diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+index a6eacb5..a9c5177 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -2314,7 +2314,7 @@ static int check_command(struct fsg_dev *fsg, int cmnd_size,
+ 		fsg->lun = lun;		// Use LUN from the command
+ 
+ 	/* Check the LUN */
+-	if (fsg->lun >= 0 && fsg->lun < fsg->nluns) {
++	if (fsg->lun < fsg->nluns) {
+ 		fsg->curlun = curlun = &fsg->luns[fsg->lun];
+ 		if (fsg->cmnd[0] != REQUEST_SENSE) {
+ 			curlun->sense_data = SS_NO_SENSE;
