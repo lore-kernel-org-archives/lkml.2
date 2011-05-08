@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab1EHWrs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:47:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53450 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932614Ab1EHWmB (ORCPT
+	id S932790Ab1EHWrB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:47:01 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45747 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932618Ab1EHWmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:42:01 -0400
+	Sun, 8 May 2011 18:42:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BIr+pKXcPWy+xNFSZr36lluDW+Zfof9mXqCf4o8HM9GqcN3Eap1IqsRypBhpL6fp+0
-         tWoIsQO1yde0Z4sXUWZj1v37GAIt64IWUAUUp88/EcoIdT6NuN6Zai6lb/UjqEMOHutq
-         geauOXIZ5Il660/YgMYVvQ2A/IGV6Y4Ngm8do=
+        b=VHt4tVCdSLyl8lFscsaNQdcX1v+XbxHzUAit5mFJboCcWeY+5D/OvBtVbshfOmn9s/
+         rfKi32LPmcI7YZQUowA6S+4E8uyKsyZmeyablaPljXUZLldNeVV7ttxuoLal2L5SSf6N
+         z80/2nO/Vok/UwhEutTaL6W0Ecz8yXbKQEplY=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 078/115] sysctl: alloc ctl_table_header with kmem_cache
-Date: Mon,  9 May 2011 00:39:30 +0200
-Message-Id: <1304894407-32201-79-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 079/115] sysctl: single subheader path: optimisation for paths used only once
+Date: Mon,  9 May 2011 00:39:31 +0200
+Message-Id: <1304894407-32201-80-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -26,148 +26,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because now ctl_table_header objects are allocated with a fixed size
-buffer (sizeof(struct ctl_table_header)) we can do the allocations
-with kmem_cache.
+This is an optimisation for registering paths that you know will be
+used to register a single table. Because such directories will be used
+only once, sysctl will always create an entry for it when it sees it.
 
-Also, by making sure that the objects that are returned to the cache
-are in a sane state we don't waste time reinitializing every field
-after kmem_cache_alloc. We only initialize fields that were not left
-with a sane value before returning an object to the cache.
+When sysctl registers a table, for each directory that may be used
+while registering other tables we do a linear search to see if it's
+already added, and, if not, add it ourselves.
+
+For example: each netdevice will register a single table under
+    	  /proc/sys/net/ipv4/conf/DEVNAME/.
+
+The 'DEVNAME' component of the path is not used to register other
+headers, and we can optimise adding that directory: we don't have to
+check if it's already registered.
+
+This will have a positive performance impact when registering many
+such directories because we're doing a O(nr of sibling directories)
+search. With @has_just_one_subheader=1 set we skip that search and add
+the directory directly because we know no other sibling directory with
+the same name was registered.
+
+NOTE: in this example setting @has_just_one_subheader=1 for the 'conf'
+ctl_path would be wrong because it's used when registering other
+subheaders too (e.g. subheaders for other netdevices).
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- kernel/sysctl.c |   48 +++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 39 insertions(+), 9 deletions(-)
+ include/linux/sysctl.h |   31 +++++++++++++++++++++++++++++++
+ kernel/sysctl.c        |   12 +++++++-----
+ 2 files changed, 38 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 22b6eb8..bdc8c97 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -1083,6 +1083,37 @@ struct ctl_table_header {
+ /* struct ctl_path describes where in the hierarchy a table is added */
+ struct ctl_path {
+ 	const char *procname;
++
++
++	/* This is an optimisation for registering paths that you know
++	 * will be used to register a single table. Because such
++	 * directories will be used only once, sysctl will always
++	 * create an entry for it when it sees it.
++	 *
++	 * When sysctl registers a table, for each directory that may
++	 * be used while registering other tables we do a linear
++	 * search to see if it's already added, and, if not, add it
++	 * ourselves.
++	 *
++	 * For example: each netdevice will register a single table
++	 * under /proc/sys/net/ipv4/conf/DEVNAME/.
++	 *
++	 * The 'DEVNAME' component of the path is not used to register
++	 * other headers, and we can optimise adding that directory:
++	 * we don't have to check if it's already registered.
++	 *
++	 * This will have a positive performance impact when
++	 * registering many such directories because we're doing a
++	 * O(nr of sibling directories) search. With
++	 * @has_just_one_subheader=1 set we skip that search and add
++	 * the directory directly because we know no other sibling
++	 * directory with the same name was registered.
++	 *
++	 * NOTE: in this example setting @has_just_one_subheader=1 for
++	 * the 'conf' ctl_path would be wrong because it's used when
++	 * registering other subheaders too (e.g. subheaders for other
++	 * netdevices). */
++	int has_just_one_subheader;
+ };
+ 
+ extern struct ctl_table_header *__register_sysctl_paths(struct ctl_table_group *g,
 diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index d777e89..c207c19 100644
+index c207c19..9b2c05a 100644
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
-@@ -198,6 +198,9 @@ static int sysrq_sysctl_handler(ctl_table *table, int write,
+@@ -1906,11 +1906,13 @@ static struct ctl_table_header *sysctl_mkdirs(struct ctl_table_header *parent,
+ 	retry:
+ 		sysctl_write_lock_head(parent);
  
- #endif
+-		h = mkdir_existing_dir(parent, dirs[i]->ctl_dirname);
+-		if (h != NULL) {
+-			sysctl_write_unlock_head(parent);
+-			parent = h;
+-			continue;
++		if (!path[i].has_just_one_subheader) {
++			h = mkdir_existing_dir(parent, dirs[i]->ctl_dirname);
++			if (h != NULL) {
++				sysctl_write_unlock_head(parent);
++				parent = h;
++				continue;
++			}
+ 		}
  
-+/* cache for ctl_table_header objects */
-+static struct kmem_cache *sysctl_header_cachep;
-+
- /* uses default ops */
- static const struct ctl_table_group_ops root_table_group_ops = { };
- 
-@@ -1553,7 +1556,9 @@ void sysctl_proc_inode_get(struct ctl_table_header *head)
- 
- static void free_head(struct rcu_head *rcu)
- {
--	kfree(container_of(rcu, struct ctl_table_header, rcu));
-+	struct ctl_table_header *header;
-+	header = container_of(rcu, struct ctl_table_header, rcu);
-+	kmem_cache_free(sysctl_header_cachep, header);
- }
- 
- void sysctl_proc_inode_put(struct ctl_table_header *head)
-@@ -1664,6 +1669,8 @@ int sysctl_perm(struct ctl_table_group *group, struct ctl_table *table, int op)
- 	return test_perm(mode, op);
- }
- 
-+static void sysctl_header_ctor(void *data);
-+
- __init int sysctl_init(void)
- {
- 	struct ctl_table_header *kern_header, *vm_header, *fs_header,
-@@ -1672,6 +1679,12 @@ __init int sysctl_init(void)
- 	struct ctl_table_header *binfmt_misc_header;
- #endif
- 
-+	sysctl_header_cachep = kmem_cache_create("sysctl_header_cachep",
-+					       sizeof(struct ctl_table_header),
-+					       0, 0, &sysctl_header_ctor);
-+	if (!sysctl_header_cachep)
-+		goto fail_alloc_cachep;
-+
- 	kern_header = register_sysctl_paths(kern_path, kern_table);
- 	if (kern_header == NULL)
- 		goto fail_register_kern;
-@@ -1715,6 +1728,8 @@ fail_register_fs:
- fail_register_vm:
- 	unregister_sysctl_table(kern_header);
- fail_register_kern:
-+	kmem_cache_destroy(sysctl_header_cachep);
-+fail_alloc_cachep:
- 	return -ENOMEM;
- }
- 
-@@ -1735,19 +1750,34 @@ static int ctl_path_items(const struct ctl_path *path)
- 	return n;
- }
- 
-+static void sysctl_header_ctor(void *data)
-+{
-+	struct ctl_table_header *h = data;
-+
-+	h->ctl_use_refs = 0;
-+	h->ctl_procfs_refs = 0;
-+	h->ctl_header_refs = 0;
-+
-+	INIT_LIST_HEAD(&h->ctl_entry);
-+	INIT_LIST_HEAD(&h->ctl_subdirs);
-+	INIT_LIST_HEAD(&h->ctl_tables);
-+}
- 
- static struct ctl_table_header *alloc_sysctl_header(struct ctl_table_group *group)
- {
- 	struct ctl_table_header *h;
- 
--	h = kzalloc(sizeof(*h), GFP_KERNEL);
-+	h = kmem_cache_alloc(sysctl_header_cachep, GFP_KERNEL);
- 	if (!h)
- 		return NULL;
- 
-+	/* - all _refs members are zero before freeing
-+	 * - all list_head members point to themselves (empty lists) */
-+
-+	h->ctl_table_arg = NULL;
-+	h->unregistering = NULL;
- 	h->ctl_group = group;
--	INIT_LIST_HEAD(&h->ctl_entry);
--	INIT_LIST_HEAD(&h->ctl_subdirs);
--	INIT_LIST_HEAD(&h->ctl_tables);
-+
- 	return h;
- }
- 
-@@ -1905,12 +1935,12 @@ static struct ctl_table_header *sysctl_mkdirs(struct ctl_table_header *parent,
- 		parent = mkdir_netns_corresp(parent, group, &__netns_corresp);
- 
- 	if (__netns_corresp)
--		kfree(__netns_corresp);
-+		kmem_cache_free(sysctl_header_cachep, __netns_corresp);
- 
- 	/* free unused pre-allocated entries */
- 	for (i = 0; i < nr_dirs; i++)
- 		if (dirs[i])
--			kfree(dirs[i]);
-+			kmem_cache_free(sysctl_header_cachep, dirs[i]);
- 
- 	return parent;
- 
-@@ -1918,7 +1948,7 @@ err_alloc_coresp:
- 	i = nr_dirs;
- err_alloc_dir:
- 	for (i--; i >= 0; i--)
--		kfree(dirs[i]);
-+		kmem_cache_free(sysctl_header_cachep, dirs[i]);
- 	return NULL;
- 
- }
-@@ -1991,7 +2021,7 @@ struct ctl_table_header *__register_sysctl_paths(struct ctl_table_group *group,
- 
- 	header->parent = sysctl_mkdirs(&root_table_header, group, path, nr_dirs);
- 	if (!header->parent) {
--		kfree(header);
-+		kmem_cache_free(sysctl_header_cachep, header);
- 		return NULL;
- 	}
- 
+ 		if (likely(!create_first_netns_corresp)) {
 -- 
 1.7.5.134.g1c08b
 
