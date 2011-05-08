@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab1EHWls (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:41:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53450 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab1EHWlb (ORCPT
+	id S932580Ab1EHWlv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:41:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45747 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab1EHWlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:41:31 -0400
+	Sun, 8 May 2011 18:41:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=NYO93Eh9fpL7CGbdDewnssZRrA02SCw2DkvdbVWX1qqZWpAmLVEuAZZUPCEL79kl5P
-         Q2RwoiigQLbbZZAXXP4WBmvn8U2LVJl44EOl7HmeJlMM4FvUKMfZbET+ztfgGKIc0dsf
-         9ClQLaqfmuuoj8l+VyPXHiceQdwF0+aHE8UEQ=
+        b=ZE+ZNTMVFHZpQPP+1mD6h6X6P3tb7GiyA77dhiSew8nJCDDQmLdJ1m5YkSt8R1b4M0
+         sy7Z8DPrjY3eaICNQvuv/et1uLZGjmrs7257uSR3UlucggQTvB09j/C1F/tdOhWhMLK/
+         6C0DXkz/blITIXMRhCL382LuFEYkXQ48zbcss=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 054/115] sysctl: remove .child from net/llc tables
-Date: Mon,  9 May 2011 00:39:06 +0200
-Message-Id: <1304894407-32201-55-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 055/115] sysctl: call sysctl_init before the first sysctl registration
+Date: Mon,  9 May 2011 00:39:07 +0200
+Message-Id: <1304894407-32201-56-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -26,92 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the next patch key_init() will be changed to register a sysctl
+table. In preparation, we call sysctl_init() before it.
+
+Also, rename net/sysctl_net.c's sysctl_init so the two don't clash.
+
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- net/llc/sysctl_net_llc.c |   55 +++++++++++++++++++++++----------------------
- 1 files changed, 28 insertions(+), 27 deletions(-)
+ include/linux/sysctl.h |    2 ++
+ init/main.c            |    1 +
+ kernel/sysctl.c        |    4 +---
+ net/sysctl_net.c       |    4 ++--
+ 4 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/net/llc/sysctl_net_llc.c b/net/llc/sysctl_net_llc.c
-index e2ebe35..8977307 100644
---- a/net/llc/sysctl_net_llc.c
-+++ b/net/llc/sysctl_net_llc.c
-@@ -56,48 +56,49 @@ static struct ctl_table llc_station_table[] = {
- 	{ },
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 470e06a..095df3a 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -943,6 +943,8 @@ struct ctl_table_set {
+ 	int (*is_seen)(struct ctl_table_set *);
  };
  
--static struct ctl_table llc2_dir_timeout_table[] = {
--	{
--		.procname	= "timeout",
--		.mode		= 0555,
--		.child		= llc2_timeout_table,
--	},
--	{ },
--};
- 
--static struct ctl_table llc_table[] = {
--	{
--		.procname	= "llc2",
--		.mode		= 0555,
--		.child		= llc2_dir_timeout_table,
--	},
--	{
--		.procname       = "station",
--		.mode           = 0555,
--		.child          = llc_station_table,
--	},
--	{ },
-+static const __initdata struct ctl_path llc2_timeout_path[] = {
-+	{ .procname = "net", },
-+	{ .procname = "llc", },
-+	{ .procname = "llc2", },
-+	{ .procname = "timeout", },
-+	{ }
- };
- 
--static struct ctl_path llc_path[] = {
-+static const __initdata struct ctl_path llc_station_path[] = {
- 	{ .procname = "net", },
- 	{ .procname = "llc", },
-+	{ .procname = "station", },
- 	{ }
- };
- 
--static struct ctl_table_header *llc_table_header;
-+static struct ctl_table_header *llc_station_hdr;
-+static struct ctl_table_header *llc2_timeout_hdr;
- 
- int __init llc_sysctl_init(void)
- {
--	llc_table_header = register_sysctl_paths(llc_path, llc_table);
-+	llc_station_hdr = register_sysctl_paths(llc_station_path, llc_station_table);
-+	if (!llc_station_hdr)
-+		return -ENOMEM;
- 
--	return llc_table_header ? 0 : -ENOMEM;
-+	llc2_timeout_hdr = register_sysctl_paths(llc2_timeout_path, llc2_timeout_table);
-+	if (!llc2_timeout_hdr) {
-+		unregister_sysctl_table(llc_station_hdr);
-+		llc_station_hdr = NULL;
-+		return -ENOMEM;
-+	}
++extern __init int sysctl_init(void);
 +
-+	return 0;
- }
- 
- void llc_sysctl_exit(void)
- {
--	if (llc_table_header) {
--		unregister_sysctl_table(llc_table_header);
--		llc_table_header = NULL;
-+	if (llc2_timeout_hdr) {
-+		unregister_sysctl_table(llc2_timeout_hdr);
-+		llc2_timeout_hdr = NULL;
-+	}
-+	if (llc_station_hdr) {
-+		unregister_sysctl_table(llc_station_hdr);
-+		llc_station_hdr = NULL;
+ extern void setup_sysctl_set(struct ctl_table_set *p,
+ 	struct ctl_table_set *parent,
+ 	int (*is_seen)(struct ctl_table_set *));
+diff --git a/init/main.c b/init/main.c
+index 4a9479e..d52a89a 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -599,6 +599,7 @@ asmlinkage void __init start_kernel(void)
+ 	fork_init(totalram_pages);
+ 	proc_caches_init();
+ 	buffer_init();
++	sysctl_init();
+ 	key_init();
+ 	security_init();
+ 	dbg_late_init();
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b813724..6167daa 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1716,7 +1716,7 @@ static void sysctl_set_parent(struct ctl_table *parent, struct ctl_table *table)
  	}
  }
+ 
+-static __init int sysctl_init(void)
++__init int sysctl_init(void)
+ {
+ 	sysctl_set_parent(NULL, root_table);
+ #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
+@@ -1725,8 +1725,6 @@ static __init int sysctl_init(void)
+ 	return 0;
+ }
+ 
+-core_initcall(sysctl_init);
+-
+ static struct ctl_table *is_branch_in(struct ctl_table *branch,
+ 				      struct ctl_table *table)
+ {
+diff --git a/net/sysctl_net.c b/net/sysctl_net.c
+index ca84212..1197d9c 100644
+--- a/net/sysctl_net.c
++++ b/net/sysctl_net.c
+@@ -89,7 +89,7 @@ static struct pernet_operations sysctl_pernet_ops = {
+ 	.exit = sysctl_net_exit,
+ };
+ 
+-static __init int sysctl_init(void)
++static __init int net_sysctl_init(void)
+ {
+ 	int ret;
+ 	ret = register_pernet_subsys(&sysctl_pernet_ops);
+@@ -101,7 +101,7 @@ static __init int sysctl_init(void)
+ out:
+ 	return ret;
+ }
+-subsys_initcall(sysctl_init);
++subsys_initcall(net_sysctl_init);
+ 
+ struct ctl_table_header *register_net_sysctl_table(struct net *net,
+ 	const struct ctl_path *path, struct ctl_table *table)
 -- 
 1.7.5.134.g1c08b
 
