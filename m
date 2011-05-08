@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1EHVio (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 17:38:44 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:41041 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1EHVin (ORCPT
+	id S1753939Ab1EHVlr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 17:41:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34077 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab1EHVlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 17:38:43 -0400
-Date: Sun, 8 May 2011 17:38:37 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Randy Dunlap <rdunlap@xenotime.net>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: any objection to my updating Doc/driver-model/bus.txt?
-In-Reply-To: <20110508132902.63f96952.rdunlap@xenotime.net>
-Message-ID: <alpine.DEB.2.00.1105081738150.6529@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1105081430380.3288@localhost6.localdomain6> <20110508132902.63f96952.rdunlap@xenotime.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 8 May 2011 17:41:46 -0400
+Date: Sun, 8 May 2011 22:41:01 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v5 02/19] ARM: LPAE: add ISBs around MMU enabling code
+Message-ID: <20110508214101.GO27807@n2100.arm.linux.org.uk>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com> <1304859098-10760-3-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304859098-10760-3-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011, Randy Dunlap wrote:
+On Sun, May 08, 2011 at 01:51:21PM +0100, Catalin Marinas wrote:
+> From: Will Deacon <will.deacon@arm.com>
+> 
+> Before we enable the MMU, we must ensure that the TTBR registers contain
+> sane values. After the MMU has been enabled, we jump to the *virtual*
+> address of the following function, so we also need to ensure that the
+> SCTLR write has taken effect.
+> 
+> This patch adds ISB instructions around the SCTLR write to ensure the
+> visibility of the above.
 
-> On Sun, 8 May 2011 14:31:37 -0400 (EDT) Robert P. J. Day wrote:
->
-> >
-> >   that particular documentation file is clearly out of date.  i can
-> > take a shot at bringing it up to date unless someone is already
-> > working on that.
->
-> First look at patches posted on linux-doc mailing list:
->
-> http://marc.info/?l=linux-doc&m=130455335625331&w=2
-> http://marc.info/?l=linux-doc&m=130455337025346&w=2
-> http://marc.info/?l=linux-doc&m=130455338425367&w=2
+Maybe this should be extended to the arch/arm/kernel/sleep.S code too?
 
-  ah, and most of that matches pretty much what i was thinking of.
-problem solved.
+>  __turn_mmu_on:
+>  	mov	r0, r0
+> +	instr_sync
+>  	mcr	p15, 0, r0, c1, c0, 0		@ write control reg
+>  	mrc	p15, 0, r3, c0, c0, 0		@ read id reg
+> +	instr_sync
+>  	mov	r3, r3
+>  	mov	r3, r13
+>  	mov	pc, r3
 
-rday
+Could we avoid the second isb by doing something like this instead:
 
--- 
+	mrc	p15, 0, r3, c0, c0, 0		@ read id reg
+	and	r3, r3, r13
+	orr	r3, r3, r13
+	mov	pc, r3
 
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
+The read from the ID register must complete before the branch can be
+taken as the value is involved in computing the address to jump to
+(even though that value has no actual effect on that address.)  This
+assumes that the read from CP15 can't complete until the previous
+write has completed.
 
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+What I'm concerned about is adding additional code to this path - we
+know it has some strict alignment requirements on some CPUs which
+otherwise misbehave, normally by faulting in some way.
