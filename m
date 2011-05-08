@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab1EHMbL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:31:11 -0400
-Received: from mail.avalus.com ([89.16.176.221]:55150 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab1EHMbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:31:07 -0400
-Date: Sun, 08 May 2011 13:31:01 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-fsdevel@vger.kernel.org, Alex Bligh <alex@alex.org.uk>
-Subject: Re: [PATCH 0/7] Network namespace manipulation with file
- descriptors
-Message-ID: <974CF8842C14240ADB10AD9C@nimrod.local>
-In-Reply-To: <m1fwoqoapn.fsf@fess.ebiederm.org>
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
- 	<3A54AB469A0294933EAC2257@nimrod.local> <m1fwoqoapn.fsf@fess.ebiederm.org>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
+	id S1753829Ab1EHMfz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:35:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35457 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297Ab1EHMfw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 08:35:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:content-type;
+        b=MKHgtSwO+9TJo+T5d3s9LHBxWFvPvQBWNjqqfVON3lhWxvZx9TMJdubl3FZDv7kMx/
+         h9aPrnSoFUjyUpSDKOeho3ydhuf/GHpD/lU/UHmvwBsMdH+TtshctiZ1vVuKD2sKEz9m
+         Fd3dt3Mw060/AQM+dSiCJvW7RDMTJ8qGuUWsc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 8 May 2011 08:35:32 -0400
+X-Google-Sender-Auth: AWVDrlGC7u5VBHd_z8pZ-KqdY5M
+Message-ID: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+Subject: [RFC] Controlling the ThinkPad battery charger
+To: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
+I've figured out how the ThinkPad SMAPI charge control works (at least
+well enough to program thresholds on some models), and I'd like to get
+this functionality into mainline.  (This is inspired by, and borrows
+magic numbers from, tp_smapi, but it has no code at all from tp_smapi
+and therefore shouldn't have the lack-of-authorship issue.)  My
+question is: what's the best way to expose this functionality?
 
---On 7 May 2011 07:18:44 -0700 "Eric W. Biederman" <ebiederm@xmission.com> 
-wrote:
+Currently, I have a little driver (not yet in mergeable shape) that
+creates a platform device and sticks some sysfs attributes in it
+depending on which thresholds it can figure out how to program.  It's
+here:
 
-> You are essentially describing my setns system call.
+https://gitorious.org/linux-test-utils/tp_charge/blobs/master/kmod/tp_charge.c
 
-Great - thanks.
+I'd like to find a better way, though.  Some quick Googling suggests
+that some Vaio laptops can do this, but I'm afraid that all my laptops
+are ThinkPads.  Two ideas:
 
->> As a secondary issue, ever without your patch, it would be really
->> useful to be able to read from userspace the current network namespace.
->> (i.e. the pid concerned, or 1 if not unshared). I would like to
->> simply modify a routing daemon's init script so it doesn't start
->> if in the host, e.g. at the top:
->>  [ `cat /proc/.../networknamespace` eq 1 ] && exit 0
->
-> You can read the processes network namespace by opening
-> /proc/<pid>/ns/net.  Unfortunately comparing the network
-> namespaces for identity is another matter.  You will probably
-> be better off simply forcing the routing daemon to start
-> in the desired network namespace in it's initscript.
+1. Integrate this with thinkpad_acpi and keep exposing it as a
+thinkpad-specific thing (device?  new class_device?) in sysfs.
 
-It's solely a minor convenience issue. The network namespace is
-unshared by the filing system namespace isn't. So there's an
-/etc/init.d/bird, which I would like to remain there so I
-can call it from the network namespace concerned (which
-doesn't exist at boot time). But I'd also like it not to run
-at boot time. So it would be useful to me if the script could
-check whether it is running in the default namespace and
-refuse to launch if so.
+2. Integrate it with power_supply.
 
-I note the /proc/ file you mention is not present in the main tree at
-the moment.
+I like option 2 better, since it means that a userspace tool (like
+GNOME) could learn how to operate a battery charge controller once and
+then other laptops and devices could reuse the same interface.  The
+problem is that the ACPI battery driver can't see the charge control.
+So either it would need a hook to allow per-vendor control like this
+or the power_supply class would need to recognize separate charge
+controllers.
 
-> For purposes of clarity please have a look at my work in
-> progress patch for iproute2.  This demonstrates how I expect
-> userspace to work in a multi-network namespace world.
+I have no intention of creating a kitchen sink like tp_smapi.  But I
+might want to add things like forced discharge or outright disabling
+of charging.  On possible added complication: on ThinkPads, the charge
+thresholds stay in effect until reprogrammed or until the battery is
+removed, even if the computer is off.
 
-Will do
+Any thoughts?  I've never touched the driver model before.
 
--- 
-Alex Bligh
+--Andy
