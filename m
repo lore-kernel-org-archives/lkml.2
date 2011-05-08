@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab1EHVpE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 17:45:04 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:63159 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab1EHVpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 17:45:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=nhW0MqeIwfzNWmwBlKjUkYkIFjDiLXgohhCPGcebsGfO1lrBjuR8hBv7Lb0qJOURY1
-         zpXgOXZnYInLVImx3KlJOlKc7JPmjTEAjLC83AVae4ojEXLQQyaPq3RUgYxS8cXJZ4bH
-         hznWHkl5EJjXDShbGv6Pn4N53Ea6IlOyywUWs=
+	id S1754489Ab1EHVsB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 17:48:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44624 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753655Ab1EHVr6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 17:47:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <4DC70B45.3020503@redhat.com>
-References: <20110508211834.GA4410@maxin>
-	<4DC70B45.3020503@redhat.com>
-Date: Mon, 9 May 2011 00:44:58 +0300
-Message-ID: <BANLkTi=ksGXYBYx39xxQ51VZVT6u4ANq0g@mail.gmail.com>
-Subject: Re: [PATCH] mm: memory: remove unreachable code
-From: Maxin John <maxin.john@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, walken@google.com,
-        aarcange@redhat.com, hughd@google.com, linux-mm@kvack.org
+In-Reply-To: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 8 May 2011 14:47:33 -0700
+Message-ID: <BANLkTikEpaRZK3X4YReeQAwgcv3HAGUwSw@mail.gmail.com>
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
+On Sun, May 8, 2011 at 11:55 AM, Mikulas Patocka
+<mikulas@artax.karlin.mff.cuni.cz> wrote:
 >
-> Is it really impossible for vma->vm_ops->access to return a
-> positive value?
->
+> This patch fixes lvm2 on PA-RISC (and possibly other architectures with
+> up-growing stack). lvm2 calculates the number of used pages when locking
+> and when unlocking and reports an internal error if the numbers mismatch.
 
-Got it .. Thank you very much for pointing it out.
+This patch won't apply on current kernels (including stable) because
+of commit a1fde08c74e9 that changed the test of "pages" to instead
+just test "flags & FOLL_MLOCK".
 
-Best Regards,
-Maxin
+That should be trivial to fix up.
+
+However, I really don't much like this complex test:
+
+>  static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
+>  {
+> -       return (vma->vm_flags & VM_GROWSDOWN) &&
+> +       return ((vma->vm_flags & VM_GROWSDOWN) &&
+>                (vma->vm_start == addr) &&
+> -               !vma_stack_continue(vma->vm_prev, addr);
+> +               !vma_stack_continue(vma->vm_prev, addr)) ||
+> +              ((vma->vm_flags & VM_GROWSUP) &&
+> +               (vma->vm_end == addr + PAGE_SIZE) &&
+> +               !vma_stack_growsup_continue(vma->vm_next, addr + PAGE_SIZE));
+>  }
+
+in that format. It gets really hard to read, and I think you'd be
+better off writing it as two helper functions (or macros) for the two
+cases, and then have
+
+  static inline int stack_guard_page(struct vm_area_struct *vma,
+unsigned long addr)
+  {
+    return stack_guard_page_growsdown(vma, addr) ||
+      stack_guard_page_growsup(vma, addr);
+  }
+
+I'd also like to verify that it doesn't actually generate any extra
+code for the common case (iirc VM_GROWSUP is 0 for the architectures
+that don't need it, and so the compiler shouldn't generate any extra
+code, but I'd like that mentioned and verified explicitly).
+
+Hmm?
+
+Other than that it looks ok to me.
+
+That said, could we please fix LVM to not do that crazy sh*t in the
+first place? The STACK_GROWSUP case is never going to have a lot of
+testing, this is just sad.
+
+                   Linus
