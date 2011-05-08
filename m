@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1EHS4B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 14:56:01 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:59558 "EHLO
-	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229Ab1EHSz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 14:55:57 -0400
-Date: Sun, 8 May 2011 20:55:56 +0200 (CEST)
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] Don't mlock guardpage if the stack is growing up
-Message-ID: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Personality-Disorder: Schizoid
+	id S932247Ab1EHTAX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 15:00:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46959 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab1EHTAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 15:00:22 -0400
+Date: Sun, 8 May 2011 21:00:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: AMD C1E issue?   2.6.38.4
+Message-ID: <20110508190015.GA29389@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org
+References: <4DC54CE5.6050307@xs4all.nl>
+ <20110507162130.GA13307@liondog.tnic>
+ <4DC57392.8010902@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4DC57392.8010902@xs4all.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't mlock guardpage if the stack is growing up
+(you've dropped the cc list, please hit "reply-to-all" when replying to
+those mails.
 
-Linux kernel excludes guard page when performing mlock on a VMA with 
-down-growing stack. However, some architectures have up-growing stack and 
-locking the guard page should be excluded in this case too.
+On Sat, May 07, 2011 at 06:30:10PM +0200, Udo van den Heuvel wrote:
+> On 2011-05-07 18:21, Borislav Petkov wrote:
+> >> Saw these in my messages after enabling C1E on my new Jetway Mini-ITX board:
+> >>
+> >> # microcode_ctl -u
+> >> microcode_ctl: writing microcode (length: 430080)
+> >> microcode_ctl: error writing to '/dev/cpu/microcode' errno=22 (Invalid
+> >> argument)
+> >> microcode_ctl: there may be messages from the driver in your system log.
+> >>
+> >> microcode: AMD microcode update via /dev/cpu/microcode not supported
+> >> microcode: AMD microcode update via /dev/cpu/microcode not supported
+> > 
+> > no, the message is correct - the AMD ucode driver doesn't support
+> > ucode loading method through the /dev node, only through the firmware
+> > loader. I.e., you should simply put the microcode image into
+> > /lib/firmware/amd-ucode/ and compile the kernel microcode driver as a
+> > module - then it'll load automatically.
+> 
+> Wel, yes/no.
+> It works that way on my other boxes.
+> On this specific box microcode_ctl is not activated automagically during
+> startup of the machine.
 
-This patch fixes lvm2 on PA-RISC (and possibly other architectures with 
-up-growing stack). lvm2 calculates the number of used pages when locking 
-and when unlocking and reports an internal error if the numbers mismatch. 
-On PA-RISC, the kernel would incorrectly attempt to mlock the stack guard 
-page, this causes allocation of one more page and internal error in lvm2.
+As I said earlier, microcode_ctl cannot load the microcode on AMD -
+this happens upon module load with no need for userspace support except
+enabling loading of the microcode.ko module (you have to check how
+exactly Fedora does that).
 
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+> What else could be the cause of microcode_ctl not updating?
+> Situation is:
+> microcode: CPU0: patch_level=0x10000b7
+> microcode: CPU1: patch_level=0x10000b7
+> Is that new enough so that there is just no newer code to be uploaded
+> for AMD Athlon(tm) II X2 235e Processor ?
 
----
- include/linux/mm.h |    6 ++++++
- mm/memory.c        |   21 ++++++++++++---------
- 2 files changed, 18 insertions(+), 9 deletions(-)
+Exactly, this says that you have the latest ucode for your CPU.
 
-Index: linux-2.6.39-rc6-fast/include/linux/mm.h
-===================================================================
---- linux-2.6.39-rc6-fast.orig/include/linux/mm.h	2011-05-07 05:59:51.000000000 +0200
-+++ linux-2.6.39-rc6-fast/include/linux/mm.h	2011-05-07 05:59:52.000000000 +0200
-@@ -1016,6 +1016,12 @@ static inline int vma_stack_continue(str
- 	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
- }
- 
-+/* Is the vma a continuation of the stack vma below it? */
-+static inline int vma_stack_growsup_continue(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_start == addr) && (vma->vm_flags & VM_GROWSUP);
-+}
-+
- extern unsigned long move_page_tables(struct vm_area_struct *vma,
- 		unsigned long old_addr, struct vm_area_struct *new_vma,
- 		unsigned long new_addr, unsigned long len);
-Index: linux-2.6.39-rc6-fast/mm/memory.c
-===================================================================
---- linux-2.6.39-rc6-fast.orig/mm/memory.c	2011-05-07 05:59:51.000000000 +0200
-+++ linux-2.6.39-rc6-fast/mm/memory.c	2011-05-07 05:59:52.000000000 +0200
-@@ -1412,9 +1412,12 @@ no_page_table:
- 
- static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
- {
--	return (vma->vm_flags & VM_GROWSDOWN) &&
-+	return ((vma->vm_flags & VM_GROWSDOWN) &&
- 		(vma->vm_start == addr) &&
--		!vma_stack_continue(vma->vm_prev, addr);
-+		!vma_stack_continue(vma->vm_prev, addr)) ||
-+	       ((vma->vm_flags & VM_GROWSUP) &&
-+		(vma->vm_end == addr + PAGE_SIZE) &&
-+		!vma_stack_growsup_continue(vma->vm_next, addr + PAGE_SIZE));
- }
- 
- /**
-@@ -1551,18 +1554,18 @@ int __get_user_pages(struct task_struct 
- 			continue;
- 		}
- 
--		/*
--		 * If we don't actually want the page itself,
--		 * and it's the stack guard page, just skip it.
--		 */
--		if (!pages && stack_guard_page(vma, start))
--			goto next_page;
--
- 		do {
- 			struct page *page;
- 			unsigned int foll_flags = gup_flags;
- 
- 			/*
-+			 * If we don't actually want the page itself,
-+			 * and it's the stack guard page, just skip it.
-+			 */
-+			if (!pages && stack_guard_page(vma, start))
-+				goto next_page;
-+
-+			/*
- 			 * If we have a pending SIGKILL, don't keep faulting
- 			 * pages and potentially allocating memory.
- 			 */
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
