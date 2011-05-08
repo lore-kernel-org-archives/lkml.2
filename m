@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1EHNeT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 09:34:19 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:33445 "EHLO e7.ny.us.ibm.com"
+	id S1754077Ab1EHNeW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 09:34:22 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:58253 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab1EHNeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753619Ab1EHNeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 May 2011 09:34:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 1/3] rcu: get rid of signed overflow in check_cpu_stall()
-Date: Sun,  8 May 2011 06:34:08 -0700
-Message-Id: <1304861650-18475-1-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, Gleb Natapov <gleb@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/3] rcu: provide rcu_virt_note_context_switch() function.
+Date: Sun,  8 May 2011 06:34:09 -0700
+Message-Id: <1304861650-18475-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110508133343.GA18287@linux.vnet.ibm.com>
 References: <20110508133343.GA18287@linux.vnet.ibm.com>
@@ -24,48 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed integer overflow is undefined by the C standard, so move
-calculations to unsigned.
+From: Gleb Natapov <gleb@redhat.com>
 
+Provide rcu_virt_note_context_switch() for vitalization use to note
+quiescent state during guest entry.
+
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ include/linux/rcutiny.h |    8 ++++++++
+ include/linux/rcutree.h |   10 ++++++++++
+ kernel/rcutree.c        |    1 +
+ 3 files changed, 19 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index 30ebd7c..52b3e02 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -100,6 +100,14 @@ static inline void rcu_note_context_switch(int cpu)
+ }
+ 
+ /*
++ * Take advantage of the fact that there is only one CPU, which
++ * allows us to ignore virtualization-based context switches.
++ */
++static inline void rcu_virt_note_context_switch(int cpu)
++{
++}
++
++/*
+  * Return the number of grace periods.
+  */
+ static inline long rcu_batches_completed(void)
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 284dad1..e65d066 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -35,6 +35,16 @@ extern void rcu_note_context_switch(int cpu);
+ extern int rcu_needs_cpu(int cpu);
+ extern void rcu_cpu_stall_reset(void);
+ 
++/*
++ * Note a virtualization-based context switch.  This is simply a
++ * wrapper around rcu_note_context_switch(), which allows TINY_RCU
++ * to save a few bytes.
++ */
++static inline void rcu_virt_note_context_switch(int cpu)
++{
++	rcu_note_context_switch(cpu);
++}
++
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+ extern void exit_rcu(void);
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 78923a5..b2fe2a2 100644
+index b2fe2a2..54ff7eb 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -581,21 +581,24 @@ static void print_cpu_stall(struct rcu_state *rsp)
- 
- static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
- {
--	long delta;
-+	unsigned long j;
-+	unsigned long js;
- 	struct rcu_node *rnp;
- 
- 	if (rcu_cpu_stall_suppress)
- 		return;
--	delta = jiffies - ACCESS_ONCE(rsp->jiffies_stall);
-+	j = ACCESS_ONCE(jiffies);
-+	js = ACCESS_ONCE(rsp->jiffies_stall);
- 	rnp = rdp->mynode;
--	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && delta >= 0) {
-+	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && ULONG_CMP_GE(j, js)) {
- 
- 		/* We haven't checked in, so go dump stack. */
- 		print_cpu_stall(rsp);
- 
--	} else if (rcu_gp_in_progress(rsp) && delta >= RCU_STALL_RAT_DELAY) {
-+	} else if (rcu_gp_in_progress(rsp) &&
-+		   ULONG_CMP_GE(j, js + RCU_STALL_RAT_DELAY)) {
- 
--		/* They had two time units to dump stack, so complain. */
-+		/* They had a few time units to dump stack, so complain. */
- 		print_other_cpu_stall(rsp);
- 	}
+@@ -157,6 +157,7 @@ void rcu_note_context_switch(int cpu)
+ 	rcu_sched_qs(cpu);
+ 	rcu_preempt_note_context_switch(cpu);
  }
++EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ 
+ #ifdef CONFIG_NO_HZ
+ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
 -- 
 1.7.3.2
 
