@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab1EHPuO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 11:50:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53351 "EHLO
+	id S932072Ab1EHPti (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 11:49:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41864 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754906Ab1EHPta (ORCPT
+	with ESMTP id S1754711Ab1EHPtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 11:49:30 -0400
+	Sun, 8 May 2011 11:49:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=LqOzqKwk20B5Nu7lny6V2axm4Vz5CNe7N/anKJ6lDciYdjj6Q/g7PKFrcH2gxR570r
-         Wh44FXN35Ott8MqufdmY3DGQHFfjiwApYJEcoHH7Dlf1OewXxb5xfmrQJ2VW67qLYR7Y
-         u7gSmsZENyjFiF/ZvCjND/iX+SrAd0QLt9EUI=
+        b=WlxQkykr09LSqYTm68EhWOxg+k0prj9+BmYvDDhXimgR6eLg/RvQjCBH003/MWu7Eu
+         4Bymf5xiixJpt/kYAHtOrgtSCWpQ8tQll5Fw28oGVz0L+6Fb/Vy0PCHGElONnQoHy0oG
+         /gjMmc6j+uj7Tqi1s7h5eyjC8fv7rAL0OwoAw=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/11] ptrace: move fallback JOBCTL_TRAPPING clearing to get_signal_to_deliver()
-Date: Sun,  8 May 2011 17:49:02 +0200
-Message-Id: <1304869745-1073-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/11] job control: reorganize wait_task_stopped()
+Date: Sun,  8 May 2011 17:49:03 +0200
+Message-Id: <1304869745-1073-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1304869745-1073-1-git-send-email-tj@kernel.org>
 References: <1304869745-1073-1-git-send-email-tj@kernel.org>
@@ -28,70 +28,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-JOBCTL_TRAPPING is currently used to hide TASK_STOPPED -> TASK_TRACED
-transition on ptrace attach/seize.  As such, it is set only while
-tracee is inside do_signal_stop() and gets cleread by entering
-TASK_TRACED in ptrace_stop(); however, if attach races with kill,
-ptrace_stop() can be skipped.  To make sure the tracer is woken up in
-this case, task_clear_jobctl_trapping() is always called before
-leaving do_signal_stop().
+wait_task_stopped() tested task_stopped_code() without acquiring
+siglock and, if stop condition existed, called wait_task_stopped() and
+directly returned the result.  This patch moves the initial
+task_stopped_code() testing into wait_task_stopped() and make
+wait_consider_task() fall through to wait_task_continue() on 0 return.
 
-To-be-added end of group stop notification will extend the use of
-JOBCTL_TRAPPING to move tracee from group stop trap to INTERRUPT trap
-or repeat INTERRUPT trap.  This requires TASK_TRAPPING to be
-maintained inside signal delivery path.
+This is for the following two reasons.
 
-Move the fallback clearing to the end of get_signal_to_deliver() so
-that TRAPPING is maintained while tracee is inside signal delivery
-path.  When killed, tracee is guaranteed to leave signal delivery path
-in finite amount of time and thus TRAPPING is still guaranteed to be
-cleared on kill.
+* Because the initial task_stopped_code() test is done without
+  acquiring siglock, it may race against SIGCONT generation.  The
+  stopped condition might have been replaced by continued state by the
+  time wait_task_stopped() acquired siglock.  This may lead to
+  unexpected failure of WNOHANG waits.
+
+  This reorganization addresses this single race case but there are
+  other cases - TASK_RUNNING -> TASK_STOPPED transition and EXIT_*
+  transitions.
+
+  It seems that WNOHANG wait correctness has never been guaranteed and
+  everybody has been happy with it for very long time.  As such,
+  although this reorganization improves the situation a bit, I don't
+  consider this to be a bug fix.
+
+* Scheduled ptrace updates require changes to the initial test which
+  would fit better inside wait_task_stopped().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/signal.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ kernel/exit.c |   30 +++++++++++++++++++++++-------
+ 1 files changed, 23 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 208f061..a7f65a6 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -227,7 +227,10 @@ static inline void print_dropped_signal(int sig)
-  * task_clear_jobctl_trapping - clear jobctl trapping bit
-  * @task: target task
-  *
-- * If JOBCTL_TRAPPING is set, a ptracer is waiting for us to enter TRACED.
-+ * If %JOBCTL_TRAPPING is set, ptracer is waiting for us to enter
-+ * %TASK_TRACED.  It can be set only while we're inside do_signal_stop()
-+ * and must be cleared before leaving signal delivery path.
-+ *
-  * Clear it and wake up the ptracer.  Note that we don't need any further
-  * locking.  @task->siglock guarantees that @task->parent points to the
-  * ptracer.
-@@ -1978,9 +1981,6 @@ retry:
- 		goto retry;
- 	}
- 
--	/* PTRACE_ATTACH might have raced with task killing, clear trapping */
--	task_clear_jobctl_trapping(current);
--
- 	spin_unlock_irq(&current->sighand->siglock);
- 
- 	tracehook_finish_jctl();
-@@ -2226,6 +2226,13 @@ relock:
- 		do_group_exit(info->si_signo);
- 		/* NOTREACHED */
- 	}
-+
-+	/*
-+	 * PTRACE_ATTACH might have raced with task killing.  Make sure
-+	 * trapping is clear before leaving signal delivery path.
-+	 */
-+	task_clear_jobctl_trapping(current);
-+
- 	spin_unlock_irq(&sighand->siglock);
- 	return signr;
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 5cbc83e..3383793 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1377,11 +1377,23 @@ static int *task_stopped_code(struct task_struct *p, bool ptrace)
+ 	return NULL;
  }
+ 
+-/*
+- * Handle sys_wait4 work for one task in state TASK_STOPPED.  We hold
+- * read_lock(&tasklist_lock) on entry.  If we return zero, we still hold
+- * the lock and this task is uninteresting.  If we return nonzero, we have
+- * released the lock and the system call should return.
++/**
++ * wait_task_stopped - Wait for %TASK_STOPPED or %TASK_TRACED
++ * @wo: wait options
++ * @ptrace: is the wait for ptrace
++ * @p: task to wait for
++ *
++ * Handle sys_wait4() work for %p in state %TASK_STOPPED or %TASK_TRACED.
++ *
++ * CONTEXT:
++ * read_lock(&tasklist_lock), which is released if return value is
++ * non-zero.  Also, grabs and releases @p->sighand->siglock.
++ *
++ * RETURNS:
++ * 0 if wait condition didn't exist and search for other wait conditions
++ * should continue.  Non-zero return, -errno on failure and @p's pid on
++ * success, implies that tasklist_lock is released and wait condition
++ * search should terminate.
+  */
+ static int wait_task_stopped(struct wait_opts *wo,
+ 				int ptrace, struct task_struct *p)
+@@ -1397,6 +1409,9 @@ static int wait_task_stopped(struct wait_opts *wo,
+ 	if (!ptrace && !(wo->wo_flags & WUNTRACED))
+ 		return 0;
+ 
++	if (!task_stopped_code(p, ptrace))
++		return 0;
++
+ 	exit_code = 0;
+ 	spin_lock_irq(&p->sighand->siglock);
+ 
+@@ -1607,8 +1622,9 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 	 * Wait for stopped.  Depending on @ptrace, different stopped state
+ 	 * is used and the two don't interact with each other.
+ 	 */
+-	if (task_stopped_code(p, ptrace))
+-		return wait_task_stopped(wo, ptrace, p);
++	ret = wait_task_stopped(wo, ptrace, p);
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * Wait for continued.  There's only one continued state and the
 -- 
 1.7.1
 
