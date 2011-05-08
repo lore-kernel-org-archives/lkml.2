@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab1EHDns (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 23:43:48 -0400
-Received: from que11.charter.net ([209.225.8.21]:53043 "EHLO que11.charter.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab1EHDnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 23:43:47 -0400
-X-Authority-Analysis: v=1.1 cv=gc/P+WrVRtedj6PMvZ6mDc68C/6j+WqWb169mGdAQGo=
- c=1 sm=1 a=Gql2hI2DjhoA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=P-uzt6Qb_GO9aR6tmGwA:9 a=p-m43PMWjNqU6fa-06sA:7
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-To: gregkh@suse.de
-Cc: mfuzzey@gmail.com, tom.leiming@gmail.com, ak@linux.intel.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Dietsche <gregory.dietsche@cuw.edu>
-Subject: [PATCH] usb: fix warning in usbtest module
-Date: Sat,  7 May 2011 22:27:44 -0500
-Message-Id: <1304825264-26853-1-git-send-email-gregory.dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.2.5
+	id S1752991Ab1EHDvV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 23:51:21 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37091 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab1EHDvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 23:51:17 -0400
+Date: Sat, 7 May 2011 20:51:09 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/7] ns: Introduce the setns syscall
+Message-ID: <20110508035109.GG12920@count0.beaverton.ibm.com>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+ <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+ <1304735101-1824-2-git-send-email-ebiederm@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304735101-1824-2-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On amd64 unsigned is not as wide as pointer and this causes
-a compiler warning. Switching to uintptr_t fixes the problem
-in an arch independent manner.
+On Fri, May 06, 2011 at 07:24:56PM -0700, Eric W. Biederman wrote:
+> With the networking stack today there is demand to handle
+> multiple network stacks at a time.  Not in the context
+> of containers but in the context of people doing interesting
+> things with routing.
+> 
+> There is also demand in the context of containers to have
+> an efficient way to execute some code in the container itself.
+> If nothing else it is very useful ad a debugging technique.
+> 
+> Both problems can be solved by starting some form of login
+> daemon in the namespaces people want access to, or you
+> can play games by ptracing a process and getting the
+> traced process to do things you want it to do. However
+> it turns out that a login daemon or a ptrace puppet
+> controller are more code, they are more prone to
+> failure, and generally they are less efficient than
+> simply changing the namespace of a process to a
+> specified one.
+> 
+> Pieces of this puzzle can also be solved by instead of
+> coming up with a general purpose system call coming up
+> with targed system calls perhaps socketat that solve
+> a subset of the larger problem.  Overall that appears
+> to be more work for less reward.
+> 
+> int setns(int fd, int nstype);
+> 
+> The fd argument is a file descriptor referring to a proc
+> file of the namespace you want to switch the process to.
+> 
+> In the setns system call the nstype is 0 or specifies
+> an clone flag of the namespace you intend to change
+> to prevent changing a namespace unintentionally.
+> 
+> v2: Most of the architecture support added by Daniel Lezcano <dlezcano@fr.ibm.com>
+> v3: ported to v2.6.36-rc4 by: Eric W. Biederman <ebiederm@xmission.com>
+> v4: Moved wiring up of the system call to another patch
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  kernel/nsproxy.c |   37 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 37 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index a05d191..96059d8 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -22,6 +22,9 @@
+>  #include <linux/pid_namespace.h>
+>  #include <net/net_namespace.h>
+>  #include <linux/ipc_namespace.h>
+> +#include <linux/proc_fs.h>
+> +#include <linux/file.h>
+> +#include <linux/syscalls.h>
+> 
+>  static struct kmem_cache *nsproxy_cachep;
+> 
+> @@ -233,6 +236,40 @@ void exit_task_namespaces(struct task_struct *p)
+>  	switch_task_namespaces(p, NULL);
+>  }
+> 
+> +SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+> +{
+> +	const struct proc_ns_operations *ops;
+> +	struct task_struct *tsk = current;
+> +	struct nsproxy *new_nsproxy;
+> +	struct proc_inode *ei;
+> +	struct file *file;
+> +	int err;
+> +
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EPERM;
+> +
+> +	file = proc_ns_fget(fd);
+> +	if (IS_ERR(file))
+> +		return PTR_ERR(file);
+> +
+> +	err = -EINVAL;
+> +	ei = PROC_I(file->f_dentry->d_inode);
+> +	ops = ei->ns_ops;
+> +	if (nstype && (ops->type != nstype))
+> +		goto out;
+> +
+> +	new_nsproxy = create_new_namespaces(0, tsk, tsk->fs);
 
-Signed-off-by: Greg Dietsche <gregory.dietsche@cuw.edu>
----
- drivers/usb/misc/usbtest.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Doesn't this need some error checking like:
 
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index 388cc12..c6b2082 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -268,9 +268,9 @@ static inline void simple_fill_buf(struct urb *urb)
- 	}
- }
- 
--static inline unsigned buffer_offset(void *buf)
-+static inline uintptr_t buffer_offset(void *buf)
- {
--	return (unsigned)buf & (ARCH_KMALLOC_MINALIGN - 1);
-+	return (uintptr_t)buf & (ARCH_KMALLOC_MINALIGN - 1);
- }
- 
- static int check_guard_bytes(struct usbtest_dev *tdev, struct urb *urb)
-@@ -329,7 +329,7 @@ static int simple_check_buf(struct usbtest_dev *tdev, struct urb *urb)
- 
- static void simple_free_urb(struct urb *urb)
- {
--	unsigned offset = buffer_offset(urb->transfer_buffer);
-+	uintptr_t offset = buffer_offset(urb->transfer_buffer);
- 
- 	if (urb->transfer_flags & URB_NO_TRANSFER_DMA_MAP)
- 		usb_free_coherent(
--- 
-1.7.2.5
+	if (IS_ERR(new_nsproxy)) {
+		err = PTR_ERR(new_nsproxy);
+		goto out;
+	}
 
+
+> +	err = ops->install(new_nsproxy, ei->ns);
+> +	if (err) {
+> +		free_nsproxy(new_nsproxy);
+> +		goto out;
+> +	}
+> +	switch_task_namespaces(tsk, new_nsproxy);
+> +out:
+> +	fput(file);
+> +	return err;
+> +}
+> +
+>  static int __init nsproxy_cache_init(void)
+>  {
+>  	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
+> -- 
+> 1.6.5.2.143.g8cc62
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
