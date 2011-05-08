@@ -1,48 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab1EHVaU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 17:30:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340Ab1EHVaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 17:30:19 -0400
-Message-ID: <4DC70B45.3020503@redhat.com>
-Date: Sun, 08 May 2011 17:29:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Maxin B John <maxin.john@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, walken@google.com,
-        aarcange@redhat.com, hughd@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: memory: remove unreachable code
-References: <20110508211834.GA4410@maxin>
-In-Reply-To: <20110508211834.GA4410@maxin>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756347Ab1EHXa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 19:30:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34096 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751163Ab1EHXaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 19:30:55 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Remove supply_regulator_dev from machine configuration
+Date: Sun,  8 May 2011 22:30:18 +0100
+Message-Id: <1304890218-19332-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2011 05:18 PM, Maxin B John wrote:
-> Remove the unreachable code found in mm/memory.c
->
-> Signed-off-by: Maxin B. John<maxin.john@gmail.com>
-> ---
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 27f4253..d3b30af 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3695,7 +3695,6 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
->   			if (ret<= 0)
->   #endif
->   				break;
-> -			bytes = ret;
->   		} else {
->   			bytes = len;
->   			offset = addr&  (PAGE_SIZE-1);
+supply_regulator_dev (using a struct pointer) has been deprecated in favour
+of supply_regulator (using a regulator name) for quite a few releases
+now with a warning generated if it is used and there are no current in tree
+users so just remove the code.
 
-Is it really impossible for vma->vm_ops->access to return a
-positive value?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ Documentation/power/regulator/machine.txt |    4 ++--
+ drivers/regulator/core.c                  |   16 ----------------
+ include/linux/regulator/machine.h         |    3 ---
+ 3 files changed, 2 insertions(+), 21 deletions(-)
 
+diff --git a/Documentation/power/regulator/machine.txt b/Documentation/power/regulator/machine.txt
+index bdec39b..b42419b 100644
+--- a/Documentation/power/regulator/machine.txt
++++ b/Documentation/power/regulator/machine.txt
+@@ -53,11 +53,11 @@ static struct regulator_init_data regulator1_data = {
+ 
+ Regulator-1 supplies power to Regulator-2. This relationship must be registered
+ with the core so that Regulator-1 is also enabled when Consumer A enables its
+-supply (Regulator-2). The supply regulator is set by the supply_regulator_dev
++supply (Regulator-2). The supply regulator is set by the supply_regulator
+ field below:-
+ 
+ static struct regulator_init_data regulator2_data = {
+-	.supply_regulator_dev = &platform_regulator1_device.dev,
++	.supply_regulator = "regulator_name",
+ 	.constraints = {
+ 		.min_uV = 1800000,
+ 		.max_uV = 2000000,
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index b483efa..c5b3c50 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2604,14 +2604,6 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ 	if (ret < 0)
+ 		goto scrub;
+ 
+-	/* set supply regulator if it exists */
+-	if (init_data->supply_regulator && init_data->supply_regulator_dev) {
+-		dev_err(dev,
+-			"Supply regulator specified by both name and dev\n");
+-		ret = -EINVAL;
+-		goto scrub;
+-	}
+-
+ 	if (init_data->supply_regulator) {
+ 		struct regulator_dev *r;
+ 		int found = 0;
+@@ -2636,14 +2628,6 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ 			goto scrub;
+ 	}
+ 
+-	if (init_data->supply_regulator_dev) {
+-		dev_warn(dev, "Uses supply_regulator_dev instead of regulator_supply\n");
+-		ret = set_supply(rdev,
+-			dev_get_drvdata(init_data->supply_regulator_dev));
+-		if (ret < 0)
+-			goto scrub;
+-	}
+-
+ 	/* add consumers devices */
+ 	for (i = 0; i < init_data->num_consumer_supplies; i++) {
+ 		ret = set_consumer_device_supply(rdev,
+diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
+index 598e08b..ce3127a 100644
+--- a/include/linux/regulator/machine.h
++++ b/include/linux/regulator/machine.h
+@@ -164,8 +164,6 @@ struct regulator_consumer_supply {
+  * @supply_regulator: Parent regulator.  Specified using the regulator name
+  *                    as it appears in the name field in sysfs, which can
+  *                    be explicitly set using the constraints field 'name'.
+- * @supply_regulator_dev: Parent regulator (if any) - DEPRECATED in favour
+- *                        of supply_regulator.
+  *
+  * @constraints: Constraints.  These must be specified for the regulator to
+  *               be usable.
+@@ -177,7 +175,6 @@ struct regulator_consumer_supply {
+  */
+ struct regulator_init_data {
+ 	const char *supply_regulator;        /* or NULL for system supply */
+-	struct device *supply_regulator_dev; /* or NULL for system supply */
+ 
+ 	struct regulation_constraints constraints;
+ 
 -- 
-All rights reversed
+1.7.4.1
+
