@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab1EHMfz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:35:55 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35457 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab1EHMfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:35:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=MKHgtSwO+9TJo+T5d3s9LHBxWFvPvQBWNjqqfVON3lhWxvZx9TMJdubl3FZDv7kMx/
-         h9aPrnSoFUjyUpSDKOeho3ydhuf/GHpD/lU/UHmvwBsMdH+TtshctiZ1vVuKD2sKEz9m
-         Fd3dt3Mw060/AQM+dSiCJvW7RDMTJ8qGuUWsc=
+	id S1752716Ab1EHMs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:48:29 -0400
+Received: from server19320154104.serverpool.info ([193.201.54.104]:36273 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325Ab1EHMsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 08:48:24 -0400
+Message-ID: <4DC6910F.2020008@hauke-m.de>
+Date: Sun, 08 May 2011 14:48:15 +0200
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 8 May 2011 08:35:32 -0400
-X-Google-Sender-Auth: AWVDrlGC7u5VBHd_z8pZ-KqdY5M
-Message-ID: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
-Subject: [RFC] Controlling the ThinkPad battery charger
-To: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+CC: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        =?UTF-8?B?TWljaGFl?= =?UTF-8?B?bCBCw7xzY2g=?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+In-Reply-To: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've figured out how the ThinkPad SMAPI charge control works (at least
-well enough to program thresholds on some models), and I'd like to get
-this functionality into mainline.  (This is inspired by, and borrows
-magic numbers from, tp_smapi, but it has no code at all from tp_smapi
-and therefore shouldn't have the lack-of-authorship issue.)  My
-question is: what's the best way to expose this functionality?
+On 05/05/2011 11:59 PM, Rafał Miłecki wrote:
+.....
+> --- /dev/null
+> +++ b/drivers/bcma/bcma_private.h
+.....
+> +
+> +#define BCMA_ADDR_BASE		0x18000000
+> +#define BCMA_WRAP_BASE		0x18100000
+> +
+......
+> --- /dev/null
+> +++ b/drivers/bcma/scan.h
+> @@ -0,0 +1,56 @@
+> +#ifndef BCMA_SCAN_H_
+> +#define BCMA_SCAN_H_
+> +
+> +#define BCMA_ADDR_BASE		0x18000000
+> +#define BCMA_WRAP_BASE		0x18100000
+> +
+.....
 
-Currently, I have a little driver (not yet in mergeable shape) that
-creates a platform device and sticks some sysfs attributes in it
-depending on which thresholds it can figure out how to program.  It's
-here:
+While graping through the code I found this. BCMA_ADDR_BASE and
+BCMA_WRAP_BASE are defined twice.
 
-https://gitorious.org/linux-test-utils/tp_charge/blobs/master/kmod/tp_charge.c
+Why are some constants defined in purpose specific headers in
+drivers/bcma/*.h like drivers/bcma/scan.h and some in
+drivers/bcma/bcma_private.h and other in include/linux/bcma/bcma_regs.h ?
 
-I'd like to find a better way, though.  Some quick Googling suggests
-that some Vaio laptops can do this, but I'm afraid that all my laptops
-are ThinkPads.  Two ideas:
-
-1. Integrate this with thinkpad_acpi and keep exposing it as a
-thinkpad-specific thing (device?  new class_device?) in sysfs.
-
-2. Integrate it with power_supply.
-
-I like option 2 better, since it means that a userspace tool (like
-GNOME) could learn how to operate a battery charge controller once and
-then other laptops and devices could reuse the same interface.  The
-problem is that the ACPI battery driver can't see the charge control.
-So either it would need a hook to allow per-vendor control like this
-or the power_supply class would need to recognize separate charge
-controllers.
-
-I have no intention of creating a kitchen sink like tp_smapi.  But I
-might want to add things like forced discharge or outright disabling
-of charging.  On possible added complication: on ThinkPads, the charge
-thresholds stay in effect until reprogrammed or until the battery is
-removed, even if the computer is off.
-
-Any thoughts?  I've never touched the driver model before.
-
---Andy
+Hauke
