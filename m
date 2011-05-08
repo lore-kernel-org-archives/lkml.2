@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab1EHWkm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:40:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47346 "EHLO
+	id S1756528Ab1EHXGf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 19:06:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49055 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab1EHWke (ORCPT
+	with ESMTP id S1755876Ab1EHWkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:40:34 -0400
+	Sun, 8 May 2011 18:40:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=MwEcZ6qzleDt0MRHNuSfLAO3/LQbox+Rj/0wJ+ltwIUapfq6nHUAOJzoCDHBM3sxau
-         I/TEiWKMU4rQaEqCJ/5EFwyVdul/rfxLuHqMjXzFU3mXgj0TpomSWwrL470sM3zuHWXp
-         r/Xh1sJgxOOz1JAExI1iugbnJWDHyPETPQM14=
+        b=IEaervM9KJSQ1sQ4qgxdXL4vhokA0ntFodpeV1wLcHzxNcNKfCnRoDVtjFoWshymbT
+         lhvm1kbyY0j/KV96N4kB+8G/MWYYyQl8e4qvt70tofRsgJ8JqAJp/fsHZesWL/9jss6z
+         wHrhNelJu3n5GcIFyxukbnoWJ20BvQkYJ0bzM=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 005/115] sysctl: remove .child from dev/parport/PORT/devices/
-Date: Mon,  9 May 2011 00:38:17 +0200
-Message-Id: <1304894407-32201-6-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 006/115] sysctl: remove .child from kernel/vsyscall64 (x86)
+Date: Mon,  9 May 2011 00:38:18 +0200
+Message-Id: <1304894407-32201-7-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,95 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- drivers/parport/procfs.c |   42 ++++++++++++++++++++++++++++--------------
- 1 files changed, 28 insertions(+), 14 deletions(-)
+ arch/x86/kernel/vsyscall_64.c |   25 ++++++++++++++-----------
+ 1 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/parport/procfs.c b/drivers/parport/procfs.c
-index e55b9b6..3bb5bed 100644
---- a/drivers/parport/procfs.c
-+++ b/drivers/parport/procfs.c
-@@ -248,6 +248,7 @@ PARPORT_MAX_SPINTIME_VALUE;
- 
- struct parport_sysctl_table {
- 	struct ctl_table_header *sysctl_header;
-+	struct ctl_table_header *devices_sysctl_header;
- 	ctl_table vars[12];
- 	ctl_table device_dir[2];
- };
-@@ -291,11 +292,6 @@ static const struct parport_sysctl_table parport_sysctl_template = {
- 			.mode		= 0444,
- 			.proc_handler	= do_hardware_modes
- 		},
--		{
--			.procname = "devices",
--			.mode = 0555,
--			.child = NULL, /* child will point to .device_dir */
--		},
- #ifdef CONFIG_PARPORT_1284
- 		{
- 			.procname	= "autoprobe",
-@@ -378,6 +374,14 @@ int parport_proc_register(struct parport *port)
- 		{ .procname = port->name },
- 		{  },
- 	};
-+	struct ctl_path parport_port_devices_path[] = {
-+		{ .procname = "dev" },
-+		{ .procname = "parport" },
-+		{ .procname = port->name },
-+		{ .procname = "devices" },
-+		{  },
-+	};
-+
- 	struct parport_sysctl_table *t;
- 	int i;
- 
-@@ -392,20 +396,29 @@ int parport_proc_register(struct parport *port)
- 		t->vars[i].extra1 = port;
- 
- 	t->vars[0].data = &port->spintime;
--	
--	for (i = 0; i < 5; i++)
--		t->vars[6 + i].extra2 = &port->probe_info[i];
- 
--	t->vars[5].child = t->device_dir;
--	/* vars[5].procname is the 'devices' dir entry */
-+#ifdef CONFIG_PARPORT_1284
-+	for (i = 0; i < 5; i++)
-+		t->vars[5 + i].extra2 = &port->probe_info[i];
-+#endif /* CONFIG_PARPORT_1284 */
- 
- 	t->sysctl_header = register_sysctl_paths(parport_port_path, t->vars);
--	if (t->sysctl_header == NULL) {
--		kfree(t);
--		t = NULL;
--	}
-+	if (t->sysctl_header == NULL)
-+		goto fail_register_port;
-+
-+	t->devices_sysctl_header = register_sysctl_paths(parport_port_devices_path,
-+							 t->device_dir);
-+	if (t->devices_sysctl_header == NULL)
-+		goto fail_register_devices;
- 	port->sysctl_table = t;
- 	return 0;
-+
-+fail_register_devices:
-+	unregister_sysctl_table(t->sysctl_header);
-+fail_register_port:
-+	kfree(t);
-+
-+	return -ENOMEM;
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index dcbb28c..7d8b83d 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -234,18 +234,21 @@ static long __vsyscall(3) venosys_1(void)
  }
  
- int parport_proc_unregister(struct parport *port)
-@@ -413,6 +426,7 @@ int parport_proc_unregister(struct parport *port)
- 	if (port->sysctl_table) {
- 		struct parport_sysctl_table *t = port->sysctl_table;
- 		port->sysctl_table = NULL;
-+		unregister_sysctl_table(t->devices_sysctl_header);
- 		unregister_sysctl_table(t->sysctl_header);
- 		kfree(t);
- 	}
+ #ifdef CONFIG_SYSCTL
+-static ctl_table kernel_table2[] = {
+-	{ .procname = "vsyscall64",
+-	  .data = &vsyscall_gtod_data.sysctl_enabled, .maxlen = sizeof(int),
+-	  .mode = 0644,
+-	  .proc_handler = proc_dointvec },
+-	{}
++static ctl_table vsyscall64_table[] = {
++	{
++		.procname = "vsyscall64",
++		.data     = &vsyscall_gtod_data.sysctl_enabled,
++		.maxlen   = sizeof(int),
++		.mode     = 0644,
++		.proc_handler = proc_dointvec,
++	},
++	{ }
+ };
+ 
+-static ctl_table kernel_root_table2[] = {
+-	{ .procname = "kernel", .mode = 0555,
+-	  .child = kernel_table2 },
+-	{}
++
++static struct ctl_path kernel_root_path[] = {
++	{ .procname = "kernel" },
++	{ }
+ };
+ #endif
+ 
+@@ -303,7 +306,7 @@ static int __init vsyscall_init(void)
+ 	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
+ 	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
+ #ifdef CONFIG_SYSCTL
+-	register_sysctl_table(kernel_root_table2);
++	register_sysctl_paths(kernel_root_path, vsyscall64_table);
+ #endif
+ 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
+ 	/* notifier priority > KVM */
 -- 
 1.7.5.134.g1c08b
 
