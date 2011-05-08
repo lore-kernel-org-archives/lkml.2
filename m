@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab1EHOC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 10:02:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35323 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab1EHOC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 10:02:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DGeh2n6zunnOP+Iv1o/6C8pK+Xu2Nb0TCUeNHYRm5hjJzjITEGN++g0GlMCgo5T/VR
-         chVZ4Vz5oK6zAK8kiiVkvfrFjPKgATUT+szjr7NKx0HaSRB0apZz2AIEB5oUcBF4ZQq3
-         CrDtQOw84tCwarMiMT34vVmxrhlCKOFhlxqQk=
-Date: Sun, 8 May 2011 16:02:21 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH ptrace] ptrace: fix signal->wait_chldexit usage in
- task_clear_group_stop_trapping()
-Message-ID: <20110508140221.GA29783@htj.dyndns.org>
-References: <20110506095222.GB8824@htj.dyndns.org>
- <20110508133543.GA4820@redhat.com>
+	id S1753364Ab1EHOFv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 10:05:51 -0400
+Received: from smtpout05.highway.telekom.at ([195.3.96.77]:29209 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751109Ab1EHOFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 10:05:50 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+To: "Joey Lee" <jlee@novell.com>
+Subject: Re: i915/kms/backlight-combo mode problem
+Date: Sun, 8 May 2011 16:05:46 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.5; KDE/4.6.2; x86_64; ; )
+Cc: chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org, tiwai@suse.de,
+        linux-kernel@vger.kernel.org
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <201105072222.41807@rk-nord.at> <4DC72A34020000230002C541@novprvlin0050.provo.novell.com>
+In-Reply-To: <4DC72A34020000230002C541@novprvlin0050.provo.novell.com>
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110508133543.GA4820@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201105081605.46617@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
-
-On Sun, May 08, 2011 at 03:35:43PM +0200, Oleg Nesterov wrote:
-> > Given the relative low frequency of ptrace use, we would be much
-> > better off leaving already complex wait_chldexit alone and using bit
-> > waitqueue.
+* Joey Lee -- Sunday 08 May 2011:
+> 於 六，2011-05-07 於 22:22 +0200，Melchior FRANZ 提到：
+> > It has turned out that acpi key events seem to be handled correctly
+> > and even the state of /sys/class/backlight/acer-wmi/brightness is
 > 
-> Well, I don't think so. wait_on_bit() looks as unnecessary complication
-> to me. See below.
+> That's interesting for acer-wmi generated brightness interface when this
+> machine declare acpi brightness interface in DSDT.
 
-Why is wait_on_bit() a complication?  It's a well defined event
-construct.
+I'm sorry to give contradicting info. Yesterday I saw a subdir acer-wmi
+(or acer_wmi) in /sys/class/backlight/ during one of my tests (with/without
+acer_wmi, with/without acpi_osi=Linux). Now I left acpi_osi=Linux
+away and allow acer_wmi, and it's subdir acpi_video0. Next time I'll
+make notes.
 
-> But. Why do we need signal->wait_chldexit or bit waitqueue at all?
-> Previously this was needed because wait_event(!GROUP_STOP_TRAPPING)
-> was called from ptrace_check_attach(), and the tracer can do anything
-> after ptrace_attach() which sets GROUP_STOP_TRAPPING.
->
-> With the current code we know that GROUP_STOP_TRAPPING means: the
-> tracer can't go away from ptrace_attach() until we clear this bit.
 
-Several reasons.
 
-* Because I'm gonna use TRAPPING for end of group stop notification
-  too and move TRAPPING waiting to ptrace_check_attach() and
-  wait_task_stopped().
+> Does it work to you direct control brightness by access
+> by /sys/class/backlight/acer-wmi/brightness ?
 
-* I dislike adding unqualified wake_up_process() unless the
-  interlocked behavior with the waiter is very obvious.  The waiter is
-  waiting for an event to happen and the waker is generating the
-  event.  It's much more clear and robust to describe that
-  relationship explicitly rather than depending on "on yeah, if the
-  waiter wasn't expecting this event yet, other sleeping places are
-  supposed to be safe against spurious wakeups so we're all good".
+No. A number written to this virtual file is accepted and remembered,
+but it doesn't actually change the brightness. It takes setpci to do
+that. 
 
-* I think it's a bad idea to design such tightly coupled waiter/waker
-  relationship as in "because the waiter is not gonna do anything
-  else, just waking up is safe".  It's way too fragile and prone to
-  error when code gets updated later and it's not like we gain
-  anything from it.  Let's make waiter wait for a well defined event
-  and waker generate that event.  We have pretty good facilities for
-  that kind of things.
 
-> Hmm. This is minor and off-topic, but perhaps it makes sense to move
-> the code which sets/waits GROUP_STOP_TRAPPING from ptrace_attach() to
-> the separate function, it can be called outside of tasklist_lock and
-> cred_guard_mutex.
+ 
+> As I remember, use setpci to control brightness is not recommended
+> because BIOS or ACPI will also touch brightness level. That will be
+> better control brightness by the function that was provided by BIOS. 
+> e.g. ACPI or WMI interface, or direct control by EC.
 
-I'm confused.  It should be set while siglock is held.  Which place
-are you suggesting?
+Well, sounds plausible. And I wouldn't do it if it weren't the only
+way at the moment.  :-)
 
-> And. Could you remind why ptrace_attach() does signal_wake_up() instead
-> of wake_up_state(TASK_STOPPED) ? OK, in general we shouldn't set
-> GROUP_STOP_PENDING without TIF_SIGPENDING, but in this case?
 
-I don't know.  I can't find any good reason there.  Feel free to
-change it to wake_up_state(TASK_STOPPED) but leaving it as
-signal_wake_up() would look prettier after SEIZE addition, and I think
-using the same @resume abstraction for all ptrace wakeups make things
-easier to understand too.  I'll soon post the patchset.
 
-Thanks.
+> That means that will be better fix your Fn key control brightness like
+> before, you just need press Fn key to change brightness and don't need
+> have any workaround.
 
--- 
-tejun
+OK. I have added a lot of debug messages to intel_panel.c yesterday.
+All it told me was that it seems to work correctly wiht acpi_osi=Linux.
+Except that it doesn't actually change the brightness. Without acpi_osi
+the functions aren't called at all and none of my messages showed up.
+
+
+
+> Looks like current status is we try to fix bko#31522 but the patch
+> causes your brightness no work by press Fn key even with acpi_osi=Linux.
+> Does it right?
+
+The history is: with acpi_osi=Linux everything worked with 2.6.38-rc8.
+With 2.6.38 the screen stayed black. The patch that only ignored lbpc=0
+worked (IIRC) including key adjustment. Later patches broke keys.
+
+
+
+> 	replace acpi_osi=Linux by acpi_osi="!Windows 2006"
+> 
+> Does it also works to you for backlight control?
+
+No, doesn't work.
+
+m.
