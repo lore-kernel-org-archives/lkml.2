@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1EHV6Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 17:58:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42853 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab1EHV6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 17:58:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=S9t0sUAcXPfNgusgBaovVdO1DRn8hXUgmYK1ODIdnPZ5qWwRTEhvBodrQKxX3EdDql
-         yLC9VeH9fsj+ZXEL8pEE745th00SbDAVYLaW08Y+Rqxz3bHA+6/yki0XJfu4+zYt+/Ci
-         STt5LDQCeMhBnyNnu1qOQW4p6CyPetOzQaSUk=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
-Date: Sun, 8 May 2011 23:58:20 +0200
-User-Agent: KMail/1.8.2
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-5-git-send-email-tj@kernel.org>
-In-Reply-To: <1304869745-1073-5-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105082358.20159.vda.linux@googlemail.com>
+	id S1754957Ab1EHWBN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:01:13 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:35024 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754398Ab1EHWBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 18:01:05 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: user-mode-linux-devel@lists.sourceforge.net,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/4] um: fix UML_LIB_PATH
+Date: Sun,  8 May 2011 23:59:42 +0200
+Message-Id: <1304891985-11569-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 08 May 2011 17:48, Tejun Heo wrote:
-> Currently, there's no way to trap a running ptracee short of sending a
-> signal which has various side effects.  This patch implements
-> PTRACE_INTERRUPT which traps ptracee without any signal or job control
-> related side effect.
+UML_LIB_PATH is hardcoded to /usr/lib/uml/,
+on 64bit systems UML_LIB_PATH needs to be /usr/lib64/uml/.
 
-What are the rules for the userspace? You said about PTRACE_SEIZE:
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/drivers/xterm.c     |    2 +-
+ arch/um/include/shared/os.h |    7 +++++++
+ arch/um/os-Linux/main.c     |    2 +-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-> After PTRACE_SEIZE, tracee will trap.  Which trap will happen isn't
-> fixed.  If other trap conditions exist (signal delivery or group
-> stop), they might be taken; otherwise, a trap with exit_code SIGTRAP |
-> (PTRACE_EVENT_INTERRUPT << 8) is taken.  The followings are
-> guaranteed.
-> 
-> * A trap will happen in finite amount of userland time.
-> 
-> * The trap can be PTRACE_EVENT_INTERRUPT which doesn't have any side
->   effect.  If a different trap is taken, no INTERRUPT trap is pending.
-> 
-> IOW, no matter what, one trap will happen, which might be INTERRUPT.
-
-Are rules for PTRACE_INTERRUPT the same? That is, what happens
-if a different trap is taken?
-
-Can you add API notes in the header, above corresponding defines? -
-
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -48,6 +48,7 @@
- #define PTRACE_SETREGSET       0x4205
+diff --git a/arch/um/drivers/xterm.c b/arch/um/drivers/xterm.c
+index da2caa5..8ac7146 100644
+--- a/arch/um/drivers/xterm.c
++++ b/arch/um/drivers/xterm.c
+@@ -90,7 +90,7 @@ static int xterm_open(int input, int output, int primary, void *d,
+ 	int pid, fd, new, err;
+ 	char title[256], file[] = "/tmp/xterm-pipeXXXXXX";
+ 	char *argv[] = { terminal_emulator, title_switch, title, exec_switch,
+-			 "/usr/lib/uml/port-helper", "-uml-socket",
++			 OS_LIB_PATH "/uml/port-helper", "-uml-socket",
+ 			 file, NULL };
  
-<============================================ ADD COMMENT HERE
- #define PTRACE_SEIZE           0x4206
-<============================================ ADD COMMENT HERE
-+#define PTRACE_INTERRUPT       0x4207
-
-
-They will be much more visible and up-to-date there than in Documentation,
-git logs etc...
-
-And finally, thanks for working on the long-needed evolutionary fixes to ptrace!
-
+ 	if (access(argv[4], X_OK) < 0)
+diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
+index c4617ba..83c7c2e 100644
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -29,6 +29,12 @@
+ #define OS_ACC_R_OK    4       /* Test for read permission.  */
+ #define OS_ACC_RW_OK   (OS_ACC_W_OK | OS_ACC_R_OK) /* Test for RW permission */
+ 
++#ifdef CONFIG_64BIT
++#define OS_LIB_PATH	"/usr/lib64/"
++#else
++#define OS_LIB_PATH	"/usr/lib/"
++#endif
++
+ /*
+  * types taken from stat_file() in hostfs_user.c
+  * (if they are wrong here, they are wrong there...).
+@@ -238,6 +244,7 @@ extern int raw(int fd);
+ extern void setup_machinename(char *machine_out);
+ extern void setup_hostinfo(char *buf, int len);
+ extern void os_dump_core(void) __attribute__ ((noreturn));
++extern void um_early_printk(const char *s, unsigned int n);
+ 
+ /* time.c */
+ extern void idle_sleep(unsigned long long nsecs);
+diff --git a/arch/um/os-Linux/main.c b/arch/um/os-Linux/main.c
+index eee69b9..39613ea 100644
+--- a/arch/um/os-Linux/main.c
++++ b/arch/um/os-Linux/main.c
+@@ -78,7 +78,7 @@ static void install_fatal_handler(int sig)
+ 	}
+ }
+ 
+-#define UML_LIB_PATH	":/usr/lib/uml"
++#define UML_LIB_PATH	":" OS_LIB_PATH "/uml"
+ 
+ static void setup_env_path(void)
+ {
 -- 
-vda
+1.7.4.2
+
