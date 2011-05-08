@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab1EHXBe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 19:01:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47346 "EHLO
+	id S932366Ab1EHWlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:41:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45747 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab1EHWk4 (ORCPT
+	with ESMTP id S932269Ab1EHWk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:40:56 -0400
+	Sun, 8 May 2011 18:40:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=u4cqjUY7NJ4aKnp+1jqeFOrNbCE6WQUPMxJABxEf+AB3qDICKZQDjLyNrQis0bzp9F
-         F+ogqbBVtPUGLVVpcbLIZy5wydN/KrkIS1VlghWlg3PHAl4YHvutSPpUHW6JztAVnNw+
-         dvUEQG12cQ/VH3eX5C8K8xkYhqwqQjaknbsLs=
+        b=YWuG+oW/OgC/gvQEthpnE2o52fAD9ylhZntSOouxwObMsnYG06tdTb0l9BZ+kU2oUN
+         AvTryadu11E12Xk/Qr7elHfzaG12qBZ/AqESpCe2WGGelHEBWd82RvQRowdIHKPRt12m
+         sIBvyiWVCBiSUFEr2rGCJhqlVOw1QCutzUz5o=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 024/115] sysctl: remove .child from fs/ntfs-debug
-Date: Mon,  9 May 2011 00:38:36 +0200
-Message-Id: <1304894407-32201-25-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 025/115] sysctl: remove .child from fs/ocfs2/nm/
+Date: Mon,  9 May 2011 00:38:37 +0200
+Message-Id: <1304894407-32201-26-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,49 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- fs/ntfs/sysctl.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ fs/ocfs2/stackglue.c |   36 +++++-------------------------------
+ 1 files changed, 5 insertions(+), 31 deletions(-)
 
-diff --git a/fs/ntfs/sysctl.c b/fs/ntfs/sysctl.c
-index 79a8918..da1293d 100644
---- a/fs/ntfs/sysctl.c
-+++ b/fs/ntfs/sysctl.c
-@@ -34,7 +34,7 @@
- #include "debug.h"
- 
- /* Definition of the ntfs sysctl. */
--static ctl_table ntfs_sysctls[] = {
-+static ctl_table ntfs_table[] = {
- 	{
- 		.procname	= "ntfs-debug",
- 		.data		= &debug_msgs,		/* Data pointer and size. */
-@@ -45,14 +45,9 @@ static ctl_table ntfs_sysctls[] = {
- 	{}
+diff --git a/fs/ocfs2/stackglue.c b/fs/ocfs2/stackglue.c
+index 39abf89..3cb738a 100644
+--- a/fs/ocfs2/stackglue.c
++++ b/fs/ocfs2/stackglue.c
+@@ -654,36 +654,10 @@ static ctl_table ocfs2_nm_table[] = {
+ 	{ }
  };
  
--/* Define the parent directory /proc/sys/fs. */
--static ctl_table sysctls_root[] = {
+-static ctl_table ocfs2_mod_table[] = {
+-	{
+-		.procname	= "nm",
+-		.data		= NULL,
+-		.maxlen		= 0,
+-		.mode		= 0555,
+-		.child		= ocfs2_nm_table
+-	},
+-	{ }
+-};
+-
+-static ctl_table ocfs2_kern_table[] = {
+-	{
+-		.procname	= "ocfs2",
+-		.data		= NULL,
+-		.maxlen		= 0,
+-		.mode		= 0555,
+-		.child		= ocfs2_mod_table
+-	},
+-	{ }
+-};
+-
+-static ctl_table ocfs2_root_table[] = {
 -	{
 -		.procname	= "fs",
+-		.data		= NULL,
+-		.maxlen		= 0,
 -		.mode		= 0555,
--		.child		= ntfs_sysctls
+-		.child		= ocfs2_kern_table
 -	},
--	{}
-+static const __initdata struct ctl_path ntfs_path[] = {
++static const __initdata struct ctl_path ocfs2_nm_path[] = {
 +	{ .procname = "fs" },
-+	{ }
++	{ .procname = "ocfs2" },
++	{ .procname = "nm" },
+ 	{ }
  };
  
- /* Storage for the sysctls header. */
-@@ -68,7 +63,7 @@ int ntfs_sysctl(int add)
+@@ -698,7 +672,7 @@ static int __init ocfs2_stack_glue_init(void)
  {
- 	if (add) {
- 		BUG_ON(sysctls_root_table);
--		sysctls_root_table = register_sysctl_table(sysctls_root);
-+		sysctls_root_table = register_sysctl_paths(ntfs_path, ntfs_table);
- 		if (!sysctls_root_table)
- 			return -ENOMEM;
- 	} else {
+ 	strcpy(cluster_stack_name, OCFS2_STACK_PLUGIN_O2CB);
+ 
+-	ocfs2_table_header = register_sysctl_table(ocfs2_root_table);
++	ocfs2_table_header = register_sysctl_paths(ocfs2_nm_path, ocfs2_nm_table);
+ 	if (!ocfs2_table_header) {
+ 		printk(KERN_ERR
+ 		       "ocfs2 stack glue: unable to register sysctl\n");
 -- 
 1.7.5.134.g1c08b
 
