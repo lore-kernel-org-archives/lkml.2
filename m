@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab1EHMyV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:54:21 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:42858 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753526Ab1EHMwA (ORCPT
+	id S1752803Ab1EHMvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:51:32 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46578 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1EHMva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:52:00 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v5 08/19] ARM: LPAE: Use a mask for physical addresses in page table entries
-Date: Sun,  8 May 2011 13:51:27 +0100
-Message-Id: <1304859098-10760-9-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 08 May 2011 12:51:50.0585 (UTC) FILETIME=[B2ED7A90:01CC0D7E]
-X-MC-Unique: 111050813515801001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Sun, 8 May 2011 08:51:30 -0400
+Message-ID: <4DC691D0.6050104@parallels.com>
+Date: Sun, 8 May 2011 16:51:28 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] tmpfs: fix race between umount and writepage
+References: <4DAFD0B1.9090603@parallels.com> <20110421064150.6431.84511.stgit@localhost6> <20110421124424.0a10ed0c.akpm@linux-foundation.org> <4DB0FE8F.9070407@parallels.com> <alpine.LSU.2.00.1105031223120.9845@sister.anvils> <4DC4D9A6.9070103@parallels.com> <alpine.LSU.2.00.1105071621330.3668@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1105071621330.3668@sister.anvils>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p48Csj9c020095
 
-With LPAE, the physical address mask is 40-bit while the page table
-entry is 64-bit. This patch introduces PHYS_MASK for the 2-level page
-table format, defined as ~0UL.
+Hugh Dickins wrote:
+> On Sat, 7 May 2011, Konstantin Khlebnikov wrote:
+>> Hugh Dickins wrote:
+>>
+>>> Here's the patch I was testing last night, but I do want to test it
+>>> some more (I've not even tried your unmounting case yet), and I do want
+>>> to make some changes to it (some comments, and see if I can move the
+>>> mem_cgroup_cache_charge outside of the mutex, making it GFP_KERNEL
+>>> rather than GFP_NOFS - at the time that mem_cgroup charging went in,
+>>> we did not know here if it was actually a shmem swap page, whereas
+>>> nowadays we can be sure, since that's noted in the swap_map).
+>>>
+>>> In shmem_unuse_inode I'm widening the shmem_swaplist_mutex to protect
+>>> against shmem_evict_inode; and in shmem_writepage adding to the list
+>>> earlier, while holding lock on page still in pagecache to protect it.
+>>>
+>>> But testing last night showed corruption on this laptop (no problem
+>>> on other machines): I'm guessing it's unrelated, but I can't be sure
+>>> of that without more extended testing.
+>>
+>> This patch fixed my problem, I didn't catch any crashes on my test-case:
+>> swapout-unmount.
+>
+> Thank you, Konstantin, for testing that and reporting back.
+>
+> I tried using your script on Thursday, but couldn't get the tuning right
+> for this machine: with numbers too big everything would go OOM, with
+> numbers too small it wouldn't even go to swap, with numbers on the edge
+> it would soon settle into a steady state with almost nothing in swap.
+>
+> Just once, without the patch, I did get to "Self-destruct in 5 seconds",
+> but that was not reproducible enough for me to test that the patch would
+> be fixing anything.
+>
+> I was going to try today on other machines with more cpus and more memory,
+> though not as much as yours; but now I'll let your report save me the time,
+> and just add your Tested-by.  Big thank you for that!
+>
+> Besides adding comments, I have changed the patch around since then, at
+> the shmem_unuse_inode end: to avoid any memory allocation while holding
+> the mutex (and then we no longer need to drop and retake info->lock,
+> so it gets a little simpler).  It would be dishonest of me to claim your
+> Tested-by for the changed code (and your mount/write/umount loop would
+> not have been testing swapoff): since it is an independent fix with a
+> different justification, I'll split that part off into a 2/3.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/include/asm/pgtable-2level-hwdef.h |    2 ++
- arch/arm/include/asm/pgtable.h              |    6 +++---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+Ok, I can test final patch-set on the next week.
+Also I can try to add some swapoff test-cases.
 
-diff --git a/arch/arm/include/asm/pgtable-2level-hwdef.h b/arch/arm/include/asm/pgtable-2level-hwdef.h
-index 2b52c40..5cfba15 100644
---- a/arch/arm/include/asm/pgtable-2level-hwdef.h
-+++ b/arch/arm/include/asm/pgtable-2level-hwdef.h
-@@ -88,4 +88,6 @@
- #define PTE_SMALL_AP_URO_SRW	(_AT(pteval_t, 0xaa) << 4)
- #define PTE_SMALL_AP_URW_SRW	(_AT(pteval_t, 0xff) << 4)
- 
-+#define PHYS_MASK		(~0UL)
-+
- #endif
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index 9618052..8f9e1dd 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -199,10 +199,10 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
- 
- static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- {
--	return __va(pmd_val(pmd) & PAGE_MASK);
-+	return __va(pmd_val(pmd) & PHYS_MASK & (s32)PAGE_MASK);
- }
- 
--#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd)))
-+#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
- 
- /* we don't need complex calculations here as the pmd is folded into the pgd */
- #define pmd_addr_end(addr,end)	(end)
-@@ -223,7 +223,7 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- #define pte_offset_map(pmd,addr)	(__pte_map(pmd) + pte_index(addr))
- #define pte_unmap(pte)			__pte_unmap(pte)
- 
--#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
-+#define pte_pfn(pte)		((pte_val(pte) & PHYS_MASK) >> PAGE_SHIFT)
- #define pfn_pte(pfn,prot)	__pte(__pfn_to_phys(pfn) | pgprot_val(prot))
- 
- #define pte_page(pte)		pfn_to_page(pte_pfn(pte))
+>
+> 3/3 being the fix to the "corruption" I noticed while testing, corruption
+> being on the filesystem I had on /dev/loop0, over a tmpfs file filling its
+> filesystem: when I wrote, I'd missed the "I/O" errors in /var/log/messages.
+>
+> It was another case of a long-standing but largely theoretical race,
+> now made easily reproducible by recent changes (the preallocation in
+> between find_lock_page and taking info->lock): when the filesystem is
+> full, you could get ENOSPC from a race in bringing back a previously
+> allocated page from swap.
+>
+> I'll write these three up now and send off to Andrew.
+>
+> Hugh
 
