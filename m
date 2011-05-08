@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab1EHMwY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:52:24 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:43029 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753950Ab1EHMwI (ORCPT
+	id S1754375Ab1EHMz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:55:57 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:56217 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab1EHMzz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:52:08 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v5 19/19] ARM: LPAE: Add the Kconfig entries
-Date: Sun,  8 May 2011 13:51:38 +0100
-Message-Id: <1304859098-10760-20-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 08 May 2011 12:51:54.0538 (UTC) FILETIME=[B548A8A0:01CC0D7E]
-X-MC-Unique: 111050813520502201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Sun, 8 May 2011 08:55:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Afk819qwfHp2ePySeM3e30+UW+dXpQ4fj0cCFbRtqFfnCTex7pPZDIHxHdko2Wl7Mx
+         JL6kWxbd2v6tNZA3LPBqriJsJSb5JRmpijDi4Dww+8nvB2NIcNI3mSZXnUMvoSow4WLU
+         V/jvKFoDJnvcokYGn2ufWLwj4UNtsvnirFh4E=
+MIME-Version: 1.0
+In-Reply-To: <4DC6910F.2020008@hauke-m.de>
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+	<4DC6910F.2020008@hauke-m.de>
+Date: Sun, 8 May 2011 14:55:54 +0200
+Message-ID: <BANLkTi=wtxH6suf8D=nzYKrBjWV9-yAQLw@mail.gmail.com>
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus driver
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Hauke Mehrtens <hauke@hauke-m.de>
+Cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        George Kashperko <george@znau.edu.ua>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p48CqVfF020051
 
-This patch adds the ARM_LPAE and ARCH_PHYS_ADDR_T_64BIT Kconfig entries
-allowing LPAE support to be compiled into the kernel.
+2011/5/8 Hauke Mehrtens <hauke@hauke-m.de>:
+> On 05/05/2011 11:59 PM, Rafał Miłecki wrote:
+> .....
+>> --- /dev/null
+>> +++ b/drivers/bcma/bcma_private.h
+> .....
+>> +
+>> +#define BCMA_ADDR_BASE               0x18000000
+>> +#define BCMA_WRAP_BASE               0x18100000
+>> +
+> ......
+>> --- /dev/null
+>> +++ b/drivers/bcma/scan.h
+>> @@ -0,0 +1,56 @@
+>> +#ifndef BCMA_SCAN_H_
+>> +#define BCMA_SCAN_H_
+>> +
+>> +#define BCMA_ADDR_BASE               0x18000000
+>> +#define BCMA_WRAP_BASE               0x18100000
+>> +
+> .....
+>
+> While graping through the code I found this. BCMA_ADDR_BASE and
+> BCMA_WRAP_BASE are defined twice.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/Kconfig    |    2 +-
- arch/arm/mm/Kconfig |   13 +++++++++++++
- 2 files changed, 14 insertions(+), 1 deletions(-)
+Will fix, thx.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index b7f5f2f..4f91988 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1762,7 +1762,7 @@ config CMDLINE_FORCE
- 
- config XIP_KERNEL
- 	bool "Kernel Execute-In-Place from ROM"
--	depends on !ZBOOT_ROM
-+	depends on !ZBOOT_ROM && !ARM_LPAE
- 	help
- 	  Execute-In-Place allows the kernel to run from non-volatile storage
- 	  directly addressable by the CPU, such as NOR flash. This saves RAM
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index d4cc7ff..fa70bbd 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -629,6 +629,19 @@ config IO_36
- 
- comment "Processor Features"
- 
-+config ARM_LPAE
-+	bool "Support for the Large Physical Address Extension"
-+	depends on MMU && CPU_V7
-+	help
-+	  Say Y if you have an ARMv7 processor supporting the LPAE page table
-+	  format and you would like to access memory beyond the 4GB limit.
-+
-+config ARCH_PHYS_ADDR_T_64BIT
-+	def_bool ARM_LPAE
-+
-+config ARCH_DMA_ADDR_T_64BIT
-+	def_bool ARM_LPAE
-+
- config ARM_THUMB
- 	bool "Support Thumb user binaries"
- 	depends on CPU_ARM720T || CPU_ARM740T || CPU_ARM920T || CPU_ARM922T || CPU_ARM925T || CPU_ARM926T || CPU_ARM940T || CPU_ARM946E || CPU_ARM1020 || CPU_ARM1020E || CPU_ARM1022 || CPU_ARM1026 || CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_V6 || CPU_V6K || CPU_V7 || CPU_FEROCEON
 
+> Why are some constants defined in purpose specific headers in
+> drivers/bcma/*.h like drivers/bcma/scan.h and some in
+> drivers/bcma/bcma_private.h and other in include/linux/bcma/bcma_regs.h ?
+
+What is unclear to you in this split? It says everything. scan.h for
+scanning, regs for registers, private for internal functions.
+
+-- 
+Rafał
