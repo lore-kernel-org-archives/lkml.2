@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab1EHOX4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 10:23:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63963 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab1EHOXx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 10:23:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH] fs: kill default_llseek
-Date: Sun, 8 May 2011 16:23:39 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hch@infradead.org
-References: <1304605677-1882-1-git-send-email-josef@redhat.com>
-In-Reply-To: <1304605677-1882-1-git-send-email-josef@redhat.com>
+	id S1754090Ab1EHO03 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 10:26:29 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:43030 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751206Ab1EHO00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 10:26:26 -0400
+Date: Sun, 8 May 2011 07:26:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Changli Gao <xiaosuo@gmail.com>
+Subject: Re: [PATCH] fs: avoid unecessary smp_wmb() in dup_fd()
+Message-ID: <20110508142623.GO2641@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1304749801.2821.716.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105081623.39876.arnd@arndb.de>
-X-Provags-ID: V02:K0:cqhAxCMloxL8rL2yWv2iPZbBWcex86GAfuwAyU9pdbP
- IHp6mqBnYXo7wKGsNSeW1GXy7pHgzZF17PIb+lE6ZISnQQgZhj
- 3ecb8g8aVFNy+YwrvTcxhiO6b2pH8FFJAT/diPCQAHbyfM33YK
- MVxnb1+68ar7zNPkYut9KTp/SQ8HVAREDrAYKd3c39JcAWlKJY
- RiitPqj6N4lci2V306vQg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304749801.2821.716.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 05 May 2011 16:27:57 Josef Bacik wrote:
-> Looking at this llseek stuff I noticed that default_llseek is the exact same as
-> generic_file_llseek, so kill default_llseek.  I patched this using spatch with
-> just a simple
+On Sat, May 07, 2011 at 08:30:01AM +0200, Eric Dumazet wrote:
+> While copying old_fds array to new_fds, we dont need
+> rcu_assign_pointer() and its smp_wmb(), since we are the only thread
+> populating new_fds at this point.
 > 
-> @@
-> @@
+> A bit later, rcu_assign_pointer(newf->fdt, new_fdt) makes sure
+> our writes are committed to memory before new_fds content is visible to
+> other threads.
 > 
-> - default_llseek
-> + generic_file_llseek
+> This removes following sparse warning :
 > 
-> and then I manually removed the default_llseek definitions.  I've built and
-> booted this and it works fine.  Thanks,
+> fs/file.c:371:3: warning: incorrect type in assignment (different
+> address spaces)
+> fs/file.c:371:3:    expected struct file *<noident>
+> fs/file.c:371:3:    got struct file [noderef] <asn:4>*<noident>
+
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Matthew Wilcox <matthew@wil.cx>
+> Cc: linux-fsdevel@vger.kernel.org
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Changli Gao <xiaosuo@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  fs/file.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-
-Good idea in principle, but you missed the fact that generic_file_llseek
-checks (offset > inode->i_sb->s_maxbytes), which default_llseek
-does not.
-
-This makes a huge difference on file systems that do not initialize
-s_maxbytes, leaving it at zero. In particular, it doesn't work for
-character devices, IIRC they will use whatever s_maxbytes is set for
-the file system that stores the dentry and for debugfs and other
-virtual file systems, it is not set at all.
-
-The proper fix should be to make sure all file systems set an appropriate
-s_maxbytes, and then add a special case for character devices to
-generic_file_llseek. The main reason I didn't do it last year was to
-avoid possible regressions when missing some other special cases, but
-please continue to push this once you are sure to have a correct version
-of the patch.
-
-	Arnd
+> diff --git a/fs/file.c b/fs/file.c
+> index 4c6992d..8320a8e 100644
+> --- a/fs/file.c
+> +++ b/fs/file.c
+> @@ -368,7 +368,7 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+>  			 */
+>  			FD_CLR(open_files - i, new_fdt->open_fds);
+>  		}
+> -		rcu_assign_pointer(*new_fds++, f);
+> +		*new_fds++ = f;
+>  	}
+>  	spin_unlock(&oldf->file_lock);
+> 
+> 
+> 
