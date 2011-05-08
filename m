@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1EHM4Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:56:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46573 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab1EHM4X (ORCPT
+	id S1753928Ab1EHNMu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 09:12:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52100 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab1EHNMr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:56:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=JCM4axIq6LfYS4iyyq9Flrk6aMn6wOA9FSVxvYXWB8S1atKjiemIh+nbC14OsJPZbs
-         Ovul9HZU2BaINrzC+ppNbnl27PdqLogDhlF/vPVWDE6Vl6DJE9FMczstE0rPftca6JU/
-         59JC25jUHldIvllS+r51H4izvjWpkVl1OBwgE=
-Date: Sun, 8 May 2011 15:56:17 +0300
-From: Maxin B John <maxin.john@gmail.com>
-To: greg@kroah.com
-Cc: mina86@mina86.com, stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [RESEND] usb: gadget: Remove the LUN checks which are
- always true
-Message-ID: <20110508125616.GA7153@maxin>
+	Sun, 8 May 2011 09:12:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTim2k_hb0Bw_cYeTUv-dMzyWVPO+gA@mail.gmail.com>
+References: <1304795706-27308-1-git-send-email-per.forlin@linaro.org>
+	<1304795706-27308-3-git-send-email-per.forlin@linaro.org>
+	<BANLkTim2k_hb0Bw_cYeTUv-dMzyWVPO+gA@mail.gmail.com>
+Date: Sun, 8 May 2011 15:12:46 +0200
+Message-ID: <BANLkTindMsH4ozajW3E3ifBnrsS=gpOaOQ@mail.gmail.com>
+Subject: Re: [PATCH v3 02/12] mmc: mmc_test: add debugfs file to list all tests
+From: Per Forlin <per.forlin@linaro.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comparing an unsigned integer with greater than or equal to zero is
-always true.  So, it is safe to remove similar checks from 
-'f_mass_storage.c' and 'file_storage.c'
+On 8 May 2011 00:18, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+> On Sat, May 7, 2011 at 10:14 PM, Per Forlin <per.forlin@linaro.org> wrote:
+>> Add a debugfs file "testlist" to print all available tests
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> ---
+>>  drivers/mmc/card/mmc_test.c |   30 ++++++++++++++++++++++++++++++
+>>  1 files changed, 30 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
+>> index abc1a63..c1c3c5a 100644
+>> --- a/drivers/mmc/card/mmc_test.c
+>> +++ b/drivers/mmc/card/mmc_test.c
+>
+>
+>> @@ -2476,6 +2502,10 @@ static int mmc_test_register_file_test(struct mmc_card *card)
+>>                file = debugfs_create_file("test", S_IWUSR | S_IRUGO,
+>>                        card->debugfs_root, card, &mmc_test_fops_test);
+>>
+>> +       if (card->debugfs_root)
+>> +               file = debugfs_create_file("testlist", S_IRUGO,
+>> +                       card->debugfs_root, card, &mmc_test_fops_testlist);
+>> +
+>>        if (IS_ERR_OR_NULL(file)) {
+>>                dev_err(&card->dev,
+>>                        "Can't create file. Perhaps debugfs is disabled.\n");
+> I think you also need to use similar error path for both files: test
+> and testlist.
+Thanks, I'll fix that and add this check for both.
 
-
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 6d8e533..cade79e 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -1910,7 +1910,7 @@ static int check_command(struct fsg_common *common, int cmnd_size,
- 		    common->lun, lun);
- 
- 	/* Check the LUN */
--	if (common->lun >= 0 && common->lun < common->nluns) {
-+	if (common->lun < common->nluns) {
- 		curlun = &common->luns[common->lun];
- 		common->curlun = curlun;
- 		if (common->cmnd[0] != REQUEST_SENSE) {
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index a6eacb5..a9c5177 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -2314,7 +2314,7 @@ static int check_command(struct fsg_dev *fsg, int cmnd_size,
- 		fsg->lun = lun;		// Use LUN from the command
- 
- 	/* Check the LUN */
--	if (fsg->lun >= 0 && fsg->lun < fsg->nluns) {
-+	if (fsg->lun < fsg->nluns) {
- 		fsg->curlun = curlun = &fsg->luns[fsg->lun];
- 		if (fsg->cmnd[0] != REQUEST_SENSE) {
- 			curlun->sense_data = SS_NO_SENSE;
+>
+>
+> --
+> With Best Regards,
+> Andy Shevchenko
+>
+Regards,
+Per
