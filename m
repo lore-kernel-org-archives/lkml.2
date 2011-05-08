@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1EHOh4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 10:37:56 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:53590 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752310Ab1EHOhy (ORCPT
+	id S1754518Ab1EHO6O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 10:58:14 -0400
+Received: from mailfilter10.ihug.co.nz ([203.109.136.10]:33897 "EHLO
+	mailfilter10.ihug.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab1EHO6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 10:37:54 -0400
-Date: Sun, 8 May 2011 10:37:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-cc: gregkh@suse.de, <mfuzzey@gmail.com>, <tom.leiming@gmail.com>,
-        <ak@linux.intel.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: fix warning in usbtest module
-In-Reply-To: <1304825264-26853-1-git-send-email-gregory.dietsche@cuw.edu>
-Message-ID: <Pine.LNX.4.44L0.1105081033140.30441-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 8 May 2011 10:58:12 -0400
+X-Greylist: delayed 1065 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 May 2011 10:58:12 EDT
+Message-Id: <9j1jim$3mbeeg@cust.filter7.content.vf.net.nz>
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Als/AC2qxk3I222P/2dsb2JhbACEC0eTVI0MZXimdY4fkSuDYIECBIY6mAs
+X-IronPort-AV: E=Sophos;i="4.64,335,1301832000"; 
+   d="scan'208";a="124107216"
+From: "Jaross Vladislavs" <nnikol@ihug.co.nz>
+Subject: Apliec rokas ap =?UTF-8?B?YXBhxLx1bWllbQ==?= puspilkai sievietei
+To: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+Reply-To: "Jaross Vladislavs" <nnikol@ihug.co.nz>
+Date: Sun, 8 May 2011 17:40:39 +0300
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 May 2011, Greg Dietsche wrote:
+Saliec rokas uz apaļumiem puspilkai meičai, 
 
-> On amd64 unsigned is not as wide as pointer and this causes
-> a compiler warning. Switching to uintptr_t fixes the problem
-> in an arch independent manner.
+nopērc izcilu dzērienu pie bāra un noskaties lielisku šovu.. 
 
-People tend to prefer to see non-typedef'ed type names, whenever 
-possible.  In this case, it would be enough to change the type to 
-unsigned long.
+Tikko atvērts un izaicinošs klubs gaida tevi - mēs nešķirojam viesus, mums katrs ir svarīgs: vai no Latvijas, vai Berlīnes.
 
-Lots of code throughout the kernel stores pointer values in unsigned 
-long variables.  I've never heard any recommendation for using 
-uintptr_t instead.
-
-Alan Stern
+Noteiktas cenas, vācu menedžeri - sīkāk noskaidro t.e: http://tinyurl.com/3un2osc
 
