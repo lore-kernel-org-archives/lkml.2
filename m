@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1EHWve (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:51:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45747 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932532Ab1EHWln (ORCPT
+	id S932609Ab1EHWl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:41:58 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53450 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544Ab1EHWlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:41:43 -0400
+	Sun, 8 May 2011 18:41:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=RSiaiGxfv7eCBJSOmOcFGZPZ/5vM2Q8cH/uZQbQi7D9cgXedWtsNKJc18Pjq4nhhmL
-         YFy8UZEy0yAhHdMMzcWxtEY4BUSfbxEaR0ta3SxiDshhFlh81asljuxJ2VMm4QTXAHe6
-         Zc6B+ujy0Bp8vcrETj13zJAA0D8+F+9x3/Ge0=
+        b=screUJC2u0e3V3fh8Coha1Y2dEsXvMcDeeyuza1VeNgQBxWrgiQFasq1VdkXXkgeBQ
+         pjn9RpMFY/TdyxBGYJSLVeGYxgyRRVpsUiTd4cXun6T9/rBi1hwTBu7802A0Bi056wTB
+         U6m2IGtM+LBmQy8fVJqQ6aBvCUvXcmyDDasTk=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 065/115] sysctl: delete useless grab_header function
-Date: Mon,  9 May 2011 00:39:17 +0200
-Message-Id: <1304894407-32201-66-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 066/115] sysctl: rename ->used to ->ctl_use_refs
+Date: Mon,  9 May 2011 00:39:18 +0200
+Message-Id: <1304894407-32201-67-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -26,72 +26,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are lots of header grabbing/getting functions around. We'll
-start changing them later on and this one will just make conversions
-harder. It doesn't help much, so kill it!
+In a later patch I will split the 'count' counter. We need to have a
+clear distinction between the three counters to be able to understand
+the code.
+
+This counts the number of references to this object from places that
+can tinker with it's internals (e.g. ctl_table, ctl_entry,
+attached_to, attached_by, etc.).
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- fs/proc/proc_sysctl.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ include/linux/sysctl.h |    4 +++-
+ kernel/sysctl.c        |    9 ++++-----
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 93962b0..64665e0 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -62,15 +62,10 @@ static struct ctl_table *find_in_table(struct ctl_table *p, struct qstr *name)
- 	return NULL;
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 1c41dbd..fe13067 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -1043,7 +1043,9 @@ struct ctl_table_header
+ 		struct {
+ 			struct ctl_table *ctl_table;
+ 			struct list_head ctl_entry;
+-			int used;
++			/* references to this header from contexts that
++			 * can access fields of this header */
++			int ctl_use_refs;
+ 			int count;
+ 		};
+ 		struct rcu_head rcu;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 8b56695..ab242b4 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1494,14 +1494,14 @@ static int use_table(struct ctl_table_header *p)
+ {
+ 	if (unlikely(p->unregistering))
+ 		return 0;
+-	p->used++;
++	p->ctl_use_refs++;
+ 	return 1;
  }
  
--static struct ctl_table_header *grab_header(struct inode *inode)
--{
--	return sysctl_head_grab(PROC_I(inode)->sysctl);
--}
--
- static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
- 					struct nameidata *nd)
+ /* called under sysctl_lock */
+ static void unuse_table(struct ctl_table_header *p)
  {
--	struct ctl_table_header *head = grab_header(dir);
-+	struct ctl_table_header *head = sysctl_head_grab(PROC_I(dir)->sysctl);
- 	struct ctl_table *table = PROC_I(dir)->sysctl_entry;
- 	struct ctl_table_header *h = NULL;
- 	struct qstr *name = &dentry->d_name;
-@@ -123,7 +118,7 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
- 		size_t count, loff_t *ppos, int write)
+-	if (!--p->used)
++	if (!--p->ctl_use_refs)
+ 		if (unlikely(p->unregistering))
+ 			complete(p->unregistering);
+ }
+@@ -1510,10 +1510,10 @@ static void unuse_table(struct ctl_table_header *p)
+ static void start_unregistering(struct ctl_table_header *p)
  {
- 	struct inode *inode = filp->f_path.dentry->d_inode;
--	struct ctl_table_header *head = grab_header(inode);
-+	struct ctl_table_header *head = sysctl_head_grab(PROC_I(inode)->sysctl);
- 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
- 	ssize_t error;
- 	size_t res;
-@@ -234,7 +229,7 @@ static int proc_sys_readdir(struct file *filp, void *dirent, filldir_t filldir)
- {
- 	struct dentry *dentry = filp->f_path.dentry;
- 	struct inode *inode = dentry->d_inode;
--	struct ctl_table_header *head = grab_header(inode);
-+	struct ctl_table_header *head = sysctl_head_grab(PROC_I(inode)->sysctl);
- 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
- 	struct ctl_table_header *h = NULL;
- 	unsigned long pos;
-@@ -302,7 +297,7 @@ static int proc_sys_permission(struct inode *inode, int mask,unsigned int flags)
- 	if ((mask & MAY_EXEC) && S_ISREG(inode->i_mode))
- 		return -EACCES;
+ 	/*
+-	 * if p->used is 0, nobody will ever touch that entry again;
++	 * if p->ctl_use_refs is 0, nobody will ever touch that entry again;
+ 	 * we'll eliminate all paths to it before dropping sysctl_lock
+ 	 */
+-	if (unlikely(p->used)) {
++	if (unlikely(p->ctl_use_refs)) {
+ 		struct completion wait;
+ 		init_completion(&wait);
+ 		p->unregistering = &wait;
+@@ -1875,7 +1875,6 @@ struct ctl_table_header *__register_sysctl_paths(
+ 	header->ctl_table_arg = table;
  
--	head = grab_header(inode);
-+	head = sysctl_head_grab(PROC_I(inode)->sysctl);
- 	if (IS_ERR(head))
- 		return PTR_ERR(head);
- 
-@@ -343,7 +338,7 @@ static int proc_sys_setattr(struct dentry *dentry, struct iattr *attr)
- static int proc_sys_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- {
- 	struct inode *inode = dentry->d_inode;
--	struct ctl_table_header *head = grab_header(inode);
-+	struct ctl_table_header *head = sysctl_head_grab(PROC_I(inode)->sysctl);
- 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
- 
- 	if (IS_ERR(head))
+ 	INIT_LIST_HEAD(&header->ctl_entry);
+-	header->used = 0;
+ 	header->unregistering = NULL;
+ 	header->root = root;
+ 	header->count = 1;
 -- 
 1.7.5.134.g1c08b
 
