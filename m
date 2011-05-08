@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab1EHXAx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 19:00:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40833 "EHLO
+	id S932394Ab1EHWlP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:41:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51704 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755645Ab1EHWlB (ORCPT
+	with ESMTP id S932195Ab1EHWlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:41:01 -0400
+	Sun, 8 May 2011 18:41:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bBrcfv3CiVsbz9+XIpJEq/7ekuzQIuqw34yKoQ2fND+4/e8RtqnMbqV5AIJxQedluT
-         LozNYUnQlyR+UO07D2jY/jcq5cF6JojeuJkglDxwdYIa3rnXKHWBdiR0WqfBpOYJWbXj
-         qWTalSEAaMMKDzIdKm1dBxdBm+y1/u31pY/Lk=
+        b=YvY8w4xhnr/QbMmIFtiU7LykjvHDk6/9FhR4sjSqYuepkIOcPYUnBeYGNEvCbfXobY
+         5fUc0uISW62nF0YnUplqxWTihPJqOrV2sclUsucmEK1JLrHySbk9nxu66ehEOkCFFUhv
+         9zW1TsKOCQyP5MdxUfyOWOMakNaDcSgjhceO8=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 029/115] sysctl: remove .child from fs/mqueue
-Date: Mon,  9 May 2011 00:38:41 +0200
-Message-Id: <1304894407-32201-30-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 030/115] sysctl: sched: add sd_table_template
+Date: Mon,  9 May 2011 00:38:42 +0200
+Message-Id: <1304894407-32201-31-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -26,54 +26,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is just a cleanup patch, it doesn't change any functionality.
+
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- ipc/mq_sysctl.c |   24 ++++++------------------
- 1 files changed, 6 insertions(+), 18 deletions(-)
+ kernel/sched.c |  144 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 103 insertions(+), 41 deletions(-)
 
-diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
-index 0c09366..007164b 100644
---- a/ipc/mq_sysctl.c
-+++ b/ipc/mq_sysctl.c
-@@ -62,7 +62,7 @@ static int msg_max_limit_max = MAX_MSGMAX;
- static int msg_maxsize_limit_min = MIN_MSGSIZEMAX;
- static int msg_maxsize_limit_max = MAX_MSGSIZEMAX;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 312f8b9..23a980c 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6092,6 +6092,95 @@ static void migrate_tasks(unsigned int dead_cpu)
  
--static ctl_table mq_sysctls[] = {
-+static ctl_table mq_table[] = {
- 	{
- 		.procname	= "queues_max",
- 		.data		= &init_ipc_ns.mq_queues_max,
-@@ -91,25 +91,13 @@ static ctl_table mq_sysctls[] = {
- 	{}
- };
+ #if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_SYSCTL)
  
--static ctl_table mq_sysctl_dir[] = {
--	{
--		.procname	= "mqueue",
--		.mode		= 0555,
--		.child		= mq_sysctls,
--	},
--	{}
--};
--
--static ctl_table mq_sysctl_root[] = {
--	{
--		.procname	= "fs",
--		.mode		= 0555,
--		.child		= mq_sysctl_dir,
--	},
--	{}
-+static const struct ctl_path mq_path[] = {
-+	{ .procname = "fs" },
-+	{ .procname = "mqueue" },
++
++static struct ctl_table sd_table_template[] = {
++	{
++		.procname	= "min_interval",
++		/* .data 	= &sd->min_interval, */
++		.maxlen		= sizeof(long),
++		.mode		= 0644,
++		.proc_handler	= proc_doulongvec_minmax,
++	},
++	{
++		.procname	= "max_interval",
++		/* .data 	= &sd->max_interval, */
++		.maxlen		= sizeof(long),
++		.mode		= 0644,
++		.proc_handler	= proc_doulongvec_minmax,
++	},
++	{
++		.procname	= "busy_idx",
++		/* .data 	= &sd->busy_idx, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "idle_idx",
++		/* .data 	= &sd->idle_idx, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "newidle_idx",
++		/* .data 	= &sd->newidle_idx, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "wake_idx",
++		/* .data 	= &sd->wake_idx, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "forkexec_idx",
++		/* .data 	= &sd->forkexec_idx, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "busy_factor",
++		/* .data 	= &sd->busy_factor, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "imbalance_pct",
++		/* .data 	= &sd->imbalance_pct, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "cache_nice_tries",
++		/* .data 	= &sd->cache_nice_tries, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "flags",
++		/* .data 	= &sd->flags, */
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++	},
++	{
++		.procname	= "name",
++		/* .data 	= sd->name, */
++		.maxlen		= CORENAME_MAX_SIZE,
++		.mode		= 0444,
++		.proc_handler	= proc_dostring,
++	},
 +	{ }
- };
++};
++
+ static struct ctl_table sd_ctl_dir[] = {
+ 	{
+ 		.procname	= "sched_domain",
+@@ -6138,52 +6227,25 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
+ 	*tablep = NULL;
+ }
  
- struct ctl_table_header *mq_register_sysctl_table(void)
+-static void
+-set_table_entry(struct ctl_table *entry,
+-		const char *procname, void *data, int maxlen,
+-		mode_t mode, proc_handler *proc_handler)
+-{
+-	entry->procname = procname;
+-	entry->data = data;
+-	entry->maxlen = maxlen;
+-	entry->mode = mode;
+-	entry->proc_handler = proc_handler;
+-}
+-
+ static struct ctl_table *
+ sd_alloc_ctl_domain_table(struct sched_domain *sd)
  {
--	return register_sysctl_table(mq_sysctl_root);
-+	return register_sysctl_paths(mq_path, mq_table);
+-	struct ctl_table *table = sd_alloc_ctl_entry(13);
+-
++	struct ctl_table *table = kmemdup(&sd_table_template,
++			  sizeof(sd_table_template), GFP_KERNEL);
+ 	if (table == NULL)
+ 		return NULL;
+-
+-	set_table_entry(&table[0], "min_interval", &sd->min_interval,
+-		sizeof(long), 0644, proc_doulongvec_minmax);
+-	set_table_entry(&table[1], "max_interval", &sd->max_interval,
+-		sizeof(long), 0644, proc_doulongvec_minmax);
+-	set_table_entry(&table[2], "busy_idx", &sd->busy_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[3], "idle_idx", &sd->idle_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[4], "newidle_idx", &sd->newidle_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[5], "wake_idx", &sd->wake_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[6], "forkexec_idx", &sd->forkexec_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[7], "busy_factor", &sd->busy_factor,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[8], "imbalance_pct", &sd->imbalance_pct,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[9], "cache_nice_tries",
+-		&sd->cache_nice_tries,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[10], "flags", &sd->flags,
+-		sizeof(int), 0644, proc_dointvec_minmax);
+-	set_table_entry(&table[11], "name", sd->name,
+-		CORENAME_MAX_SIZE, 0444, proc_dostring);
+-	/* &table[12] is terminator */
++	table[ 0].data = &sd->min_interval;
++	table[ 1].data = &sd->max_interval;
++	table[ 2].data = &sd->busy_idx;
++	table[ 3].data = &sd->idle_idx;
++	table[ 4].data = &sd->newidle_idx;
++	table[ 5].data = &sd->wake_idx;
++	table[ 6].data = &sd->forkexec_idx;
++	table[ 7].data = &sd->busy_factor;
++	table[ 8].data = &sd->imbalance_pct;
++	table[ 9].data = &sd->cache_nice_tries;
++	table[10].data = &sd->flags;
++	table[11].data =  sd->name;
+ 
+ 	return table;
  }
 -- 
 1.7.5.134.g1c08b
