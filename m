@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1EHO03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 10:26:29 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:43030 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751206Ab1EHO00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 10:26:26 -0400
-Date: Sun, 8 May 2011 07:26:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Changli Gao <xiaosuo@gmail.com>
-Subject: Re: [PATCH] fs: avoid unecessary smp_wmb() in dup_fd()
-Message-ID: <20110508142623.GO2641@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1304749801.2821.716.camel@edumazet-laptop>
+	id S1754106Ab1EHOel (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 10:34:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44008 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751206Ab1EHOej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 10:34:39 -0400
+Date: Sun, 8 May 2011 15:34:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: tiwai@suse.de, perex@perex.cz, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
+Subject: Re: [PATCH] SOC: UDA134x: Remove POWER_OFF_ON_STANDBY define.
+Message-ID: <20110508143446.GD15968@opensource.wolfsonmicro.com>
+References: <1304426792-23540-1-git-send-email-marek.belisko@open-nandra.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304749801.2821.716.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1304426792-23540-1-git-send-email-marek.belisko@open-nandra.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 07, 2011 at 08:30:01AM +0200, Eric Dumazet wrote:
-> While copying old_fds array to new_fds, we dont need
-> rcu_assign_pointer() and its smp_wmb(), since we are the only thread
-> populating new_fds at this point.
-> 
-> A bit later, rcu_assign_pointer(newf->fdt, new_fdt) makes sure
-> our writes are committed to memory before new_fds content is visible to
-> other threads.
-> 
-> This removes following sparse warning :
-> 
-> fs/file.c:371:3: warning: incorrect type in assignment (different
-> address spaces)
-> fs/file.c:371:3:    expected struct file *<noident>
-> fs/file.c:371:3:    got struct file [noderef] <asn:4>*<noident>
+On Tue, May 03, 2011 at 02:46:32PM +0200, Marek Belisko wrote:
+> Define POWER_OFF_ON_STANDBY cause trobles when trying to get some
+> sound from codec because code for bias setup was not compiled
+> (define wasn't defined). This define was removed in commit:
+> cc3202f5 but again introduced by commit: f0fba2ad1 which then
+> completely break codec functionality so remove it again.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Matthew Wilcox <matthew@wil.cx>
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Changli Gao <xiaosuo@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  fs/file.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/file.c b/fs/file.c
-> index 4c6992d..8320a8e 100644
-> --- a/fs/file.c
-> +++ b/fs/file.c
-> @@ -368,7 +368,7 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
->  			 */
->  			FD_CLR(open_files - i, new_fdt->open_fds);
->  		}
-> -		rcu_assign_pointer(*new_fds++, f);
-> +		*new_fds++ = f;
->  	}
->  	spin_unlock(&oldf->file_lock);
-> 
-> 
-> 
+Applied, thanks.
