@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab1EHPtk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 11:49:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42994 "EHLO
+	id S932122Ab1EHPt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 11:49:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53351 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab1EHPte (ORCPT
+	with ESMTP id S1755012Ab1EHPtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 11:49:34 -0400
+	Sun, 8 May 2011 11:49:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=ISfcQaK5zYdEMlU35vdYc7+KOFiUatz4lnbZtUUy8zgKCncweP69WrXAnzkY/VDFqs
-         iakpSm9DZZuRKPTX3OLw4hqlqxS/VzbntDROc/tnTK+xvHEdlPleKmhpfffESFXPJApn
-         qjs6oURXQj4+5OZNxcTLmLB5sc6FX5F92bzd0=
+        b=AVqOCYbcYo/f+tFOFV8bfE4DYf3un0JhGYL3Z1fXdx4/Yg5gxC+TGaqF+qpZKoq4nx
+         /ab4NQFBP9eXQhLfKy2JKfy1S41jIAYU0Rma89N74qgXQE4RqW9jGJWODtAppmQO29ZY
+         4G6u1IKqA7JEJs/XsJ5rjSWQc91ueUDURBbu8=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and ptrace_check_attach()
-Date: Sun,  8 May 2011 17:49:04 +0200
-Message-Id: <1304869745-1073-11-git-send-email-tj@kernel.org>
+Subject: [PATCH 11/11] ptrace: implement group stop notification for ptracer
+Date: Sun,  8 May 2011 17:49:05 +0200
+Message-Id: <1304869745-1073-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1304869745-1073-1-git-send-email-tj@kernel.org>
 References: <1304869745-1073-1-git-send-email-tj@kernel.org>
@@ -28,212 +28,302 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, JOBCTL_TRAPPING is used by PTRACE_ATTACH and SEIZE to hide
-TASK_STOPPED -> TRACED transition from ptracer.  If tracee is in group
-stop, TRAPPING is set, tracee is kicked and tracer waits for the
-transition to complete before completing attach.  This prevents tracer
-from seeing tracee during transition.
+Currently there's no way for ptracer to find out whether group stop
+that tracee was in finished other than polling with PTRACE_GETSIGINFO.
+Also, tracer can't detect new group stop started by an untraced thread
+if tracee is already trapped.  This patch implements group stop
+notification for ptracer using INTERRUPT traps.
 
-The transition is visible only through wait(2) and following ptrace(2)
-requests.  Without TRAPPING, WNOHANG which should succeed right after
-attach (when tracer knows tracee was stopped) might fail and likewise
-for the following ptrace requests.
+When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
+is set, which triggers INTERRUPT trap but is sticky until the next
+PTRACE_GETSIGINFO.  As GETSIGINFO exports the current group stop
+state, this guarantees that tracer checks the current group stop state
+at least once after group stop state change.  Stickiness is necessary
+because notification trap may race with PTRACE_CONT for other traps
+and get lost.
 
-TRAPPING will also be used to implement end of group stop retrapping,
-which can be initiated by tasks other than tracer.  To allow this,
-this patch moves TRAPPING wait from attach completion path to
-operations which are actually affected by the transition - wait(2) and
-following ptrace(2) requests.
+-EINVAL return from GETSIGINFO also clears the sticky trap.  This is
+because -EINVAL clearly indicates that tracee is in group stop.  To
+avoid unnecessarily taking INTERRUPT trap on the way to group stop, if
+JOBCTL_STOP_PENDING is set, INTERRUPT trap is not taken.
 
-As reliably checking and modifying TASK_STOPPED/TRACED transition
-together with JOBCTL_TRAPPING require siglock and both ptrace and wait
-paths are holding tasklist_lock and siglock where TRAPPING check is
-needed, ptrace_wait_trapping() assumes both locks to be held on entry
-and releases them if it actually had to wait for TRAPPING.
+Note that simply scheduling such trap isn't enough.  If tracee is
+running (PTRACE_CONT'd from group stop trap), the usual trapping -
+setting NOTIFY followed by the usual signal_wake_up() - is enough;
+however, if tracee is trapped, the scheduled trap won't happen until
+the trap is continued.
 
-Both wait and ptrace paths are updated to retry the operation after
-TRAPPING wait.  Note that wait_task_stopped() now always grabs siglock
-for ptrace waits.  This can be avoided with "task_stopped_code() ->
-rmb() -> TRAPPING -> rmb() -> task_stopped_code()" sequence but given
-that ptrace isn't particularly sensitive to performance or
-scalability, choosing simpler implementation seems better.
+This is solved by re-trapping if tracee is in group stop or INTERRUPT
+trap.  Along with JOBCTL_TRAP_NOTIFY, JOBCTL_TRAPPING is set and
+tracee is woken up from TASK_TRACED.  Tracee then (re-)enters
+INTERRUPT trap generating notification for tracer.  TRAPPING hides the
+TRACED -> RUNNING -> TRACED transition from tracer.
+
+Re-trapping is used only for group stop and INTERRUPT traps.  If
+tracer wants to get notified about group stop, it either leaves tracee
+in the initial group stop trap or puts it into INTERRUPT trap.  When
+INTERRUPT trap is scheduled while tracee is already in a trap, it's
+guaranteed that tracee will enter INTERRUPT trap without returning to
+userland, so tracer doesn't lose any control over tracee execution for
+group stop notification.
+
+This exclusion is intentional as enabling re-trapping on all traps may
+make using ptrace(2) more confusing than necessary and confining
+re-trapping to group stop and INTERRUPT doesn't lose any
+functionality.  It also simplifies implementation.
+
+An example program follows.
+
+  #define PTRACE_SEIZE		0x4206
+  #define PTRACE_INTERRUPT	0x4207
+
+  #define PTRACE_SEIZE_DEVEL	0x80000000
+
+  static const struct timespec ts1s = { .tv_sec = 1 };
+
+  int main(int argc, char **argv)
+  {
+	  pid_t tracee, tracer;
+	  int i;
+
+	  tracee = fork();
+	  if (!tracee)
+		  while (1)
+			  pause();
+
+	  tracer = fork();
+	  if (!tracer) {
+		  int last_stopped = 0, stopped;
+		  siginfo_t si;
+
+		  ptrace(PTRACE_SEIZE, tracee, NULL,
+			 (void *)(unsigned long)PTRACE_SEIZE_DEVEL);
+	  repeat:
+		  waitid(P_PID, tracee, NULL, WSTOPPED);
+
+		  if (!ptrace(PTRACE_GETSIGINFO, tracee, NULL, &si)) {
+			  if (!si.si_code) {
+				  printf("tracer: SIG %d\n", si.si_signo);
+				  ptrace(PTRACE_CONT, tracee, NULL,
+					 (void *)(unsigned long)si.si_signo);
+				  goto repeat;
+			  }
+			  stopped = !!si.si_status;
+		  } else
+			  stopped = 1;
+
+		  if (stopped != last_stopped)
+			  printf("tracer: stopped=%d\n", stopped);
+		  last_stopped = stopped;
+
+		  if (!stopped)
+			  ptrace(PTRACE_CONT, tracee, NULL, NULL);
+		  goto repeat;
+	  }
+
+	  for (i = 0; i < 3; i++) {
+		  nanosleep(&ts1s, NULL);
+		  printf("mother: SIGSTOP\n");
+		  kill(tracee, SIGSTOP);
+		  nanosleep(&ts1s, NULL);
+		  printf("mother: SIGCONT\n");
+		  kill(tracee, SIGCONT);
+	  }
+	  nanosleep(&ts1s, NULL);
+
+	  kill(tracer, SIGKILL);
+	  kill(tracee, SIGKILL);
+	  return 0;
+  }
+
+In the above program, tracer gets notification of group stop state
+changes and can track stopped state without polling PTRACE_GETSIGINFO.
+
+  # ./test-gstop-notify
+  mother: SIGSTOP
+  tracer: SIG 19
+  tracer: stopped=1
+  mother: SIGCONT
+  tracer: stopped=0
+  tracer: SIG 18
+  mother: SIGSTOP
+  tracer: SIG 19
+  tracer: stopped=1
+  mother: SIGCONT
+  tracer: stopped=0
+  tracer: SIG 18
+  mother: SIGSTOP
+  tracer: SIG 19
+  tracer: stopped=1
+  mother: SIGCONT
+  tracer: stopped=0
+  tracer: SIG 18
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/ptrace.h |    1 +
- include/linux/sched.h  |    2 +-
- kernel/exit.c          |   21 +++++++++++++++++++--
- kernel/ptrace.c        |   48 +++++++++++++++++++++++++++++++++++++++++++++---
- kernel/signal.c        |    5 +++--
- 5 files changed, 69 insertions(+), 8 deletions(-)
+ include/linux/sched.h |    4 ++-
+ kernel/ptrace.c       |   13 +++++++++-
+ kernel/signal.c       |   66 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 78 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 567e189..4b42a15 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -116,6 +116,7 @@ extern long arch_ptrace(struct task_struct *child, long request,
- extern int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len);
- extern int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long dst, int len);
- extern void ptrace_disable(struct task_struct *);
-+extern bool ptrace_wait_trapping(struct task_struct *child);
- extern int ptrace_check_attach(struct task_struct *task, bool ignore_state);
- extern int ptrace_request(struct task_struct *child, long request,
- 			  unsigned long addr, unsigned long data);
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 9d92444..972f1db 100644
+index 972f1db..e3d4e3d 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1786,7 +1786,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+@@ -1786,10 +1786,12 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
  #define JOBCTL_STOP_CONSUME	(1 << 18) /* consume group stop count */
  #define JOBCTL_TRAP_SEIZE	(1 << 19) /* trap for seize */
  #define JOBCTL_TRAP_INTERRUPT	(1 << 20) /* trap for interrupt */
--#define JOBCTL_TRAPPING		(1 << 22) /* switching to TRACED */
-+#define JOBCTL_TRAPPING		(1 << 22) /* switching to TRACED/STOPPED */
++#define JOBCTL_TRAP_NOTIFY	(1 << 21) /* sticky trap for notifications */
+ #define JOBCTL_TRAPPING		(1 << 22) /* switching to TRACED/STOPPED */
  #define JOBCTL_TRAPPED		(1 << 23) /* trapped for group stop */
  
- #define JOBCTL_TRAP_MASK	(JOBCTL_TRAP_SEIZE | JOBCTL_TRAP_INTERRUPT)
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 3383793..a43af3a 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1409,15 +1409,29 @@ static int wait_task_stopped(struct wait_opts *wo,
- 	if (!ptrace && !(wo->wo_flags & WUNTRACED))
- 		return 0;
+-#define JOBCTL_TRAP_MASK	(JOBCTL_TRAP_SEIZE | JOBCTL_TRAP_INTERRUPT)
++#define JOBCTL_TRAP_MASK	(JOBCTL_TRAP_SEIZE | JOBCTL_TRAP_INTERRUPT | \
++				 JOBCTL_TRAP_NOTIFY)
+ #define JOBCTL_PENDING_MASK	(JOBCTL_STOP_PENDING | JOBCTL_TRAP_MASK)
  
--	if (!task_stopped_code(p, ptrace))
-+	/*
-+	 * For ptrace waits, we can't reliably check whether wait condition
-+	 * exists without grabbing siglock due to JOBCTL_TRAPPING
-+	 * transitions.  A task might be temporarily in TASK_RUNNING while
-+	 * trapping which should be transparent to the ptracer.
-+	 *
-+	 * Note that we can avoid unconditionally grabbing siglock with by
-+	 * wrapping TRAPPING test with two rmb's; however, let's stick with
-+	 * simpler implementation for now.
-+	 */
-+	if (!ptrace && !(p->signal->flags & SIGNAL_STOP_STOPPED))
- 		return 0;
- 
- 	exit_code = 0;
- 	spin_lock_irq(&p->sighand->siglock);
- 
- 	p_code = task_stopped_code(p, ptrace);
--	if (unlikely(!p_code))
-+	if (unlikely(!p_code)) {
-+		/* if trapping, wait for it and restart the whole process */
-+		if (ptrace && ptrace_wait_trapping(p))
-+			return -EAGAIN;
- 		goto unlock_sig;
-+	}
- 
- 	exit_code = *p_code;
- 	if (!exit_code)
-@@ -1740,6 +1754,9 @@ notask:
- 		}
- 	}
- end:
-+	/* -EAGAIN if we hit trapping ptracee and slept - retry */
-+	if (unlikely(retval == -EAGAIN))
-+		goto repeat;
- 	__set_current_state(TASK_RUNNING);
- 	remove_wait_queue(&current->signal->wait_chldexit, &wo->child_wait);
- 	return retval;
+ extern void task_clear_jobctl_stop_pending(struct task_struct *task);
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index b18a9b3..7411eb2 100644
+index 7411eb2..4e9473b 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
-@@ -103,6 +103,48 @@ void __ptrace_unlink(struct task_struct *child)
- }
+@@ -570,6 +570,7 @@ static int ptrace_setoptions(struct task_struct *child, unsigned long data)
  
- /**
-+ * ptrace_wait_trapping - wait ptracee to finish %TASK_TRACED/STOPPED transition
-+ * @child: child to wait for
-+ *
-+ * There are cases where ptracer needs to ask the ptracee to [re]enter
-+ * %TASK_TRACED or %TASK_STOPPED which involves the tracee going through
-+ * %TASK_RUNNING briefly, which could affect operation of ptrace(2) and
-+ * wait(2).
-+ *
-+ * %JOBCTL_TRAPPING is used to hide such transitions from the ptracer.
-+ * It's set when such transition is initiated by the ptracer and cleared on
-+ * completion.  Operations which may be affected should call this function
-+ * to make sure no transition is in progress before proceeding.
-+ *
-+ * This function checks whether @child is trapping and if so waits for the
-+ * transition to complete.
-+ *
-+ * CONTEXT:
-+ * read_lock(&tasklist_lock) and spin_lock_irq(&child->sighand->siglock).
-+ * On %true return, both locks are released and the function might have
-+ * slept.
-+ *
-+ * RETURNS:
-+ * %false if @child wasn't trapping and nothing happened.  %true if waited
-+ * for trapping transition and released both locks.
-+ */
-+bool ptrace_wait_trapping(struct task_struct *child)
-+	__releases(&child->sighand->siglock)
-+	__releases(&tasklist_lock)
-+{
-+	if (likely(!(child->jobctl & JOBCTL_TRAPPING)))
-+		return false;
-+
-+	spin_unlock_irq(&child->sighand->siglock);
-+	get_task_struct(child);
-+	read_unlock(&tasklist_lock);
-+	wait_event(current->signal->wait_chldexit,
-+		   !(child->jobctl & JOBCTL_TRAPPING));
-+	put_task_struct(child);
-+	return true;
-+}
-+
-+/**
-  * ptrace_check_attach - check whether ptracee is ready for ptrace operation
-  * @child: ptracee to check for
-  * @ignore_state: don't check whether @child is currently %TASK_TRACED
-@@ -122,7 +164,7 @@ void __ptrace_unlink(struct task_struct *child)
- int ptrace_check_attach(struct task_struct *child, bool ignore_state)
+ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
  {
- 	int ret = -ESRCH;
--
-+retry:
- 	/*
- 	 * We take the read lock around doing both checks to close a
- 	 * possible race where someone else was tracing our child and
-@@ -140,6 +182,8 @@ int ptrace_check_attach(struct task_struct *child, bool ignore_state)
- 		WARN_ON_ONCE(task_is_stopped(child));
- 		if (task_is_traced(child) || ignore_state)
- 			ret = 0;
-+		else if (ptrace_wait_trapping(child))
-+			goto retry;
- 		spin_unlock_irq(&child->sighand->siglock);
- 	}
- 	read_unlock(&tasklist_lock);
-@@ -304,8 +348,6 @@ unlock_tasklist:
- unlock_creds:
- 	mutex_unlock(&task->signal->cred_guard_mutex);
- out:
--	wait_event(current->signal->wait_chldexit,
--			   !(task->jobctl & JOBCTL_TRAPPING));
- 	return retval;
- }
++	bool clear_notify = false;
+ 	struct signal_struct *sig;
+ 	unsigned long flags;
+ 	int error;
+@@ -579,8 +580,14 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
+ 	sig = child->signal;
  
+ 	error = -EINVAL;
+-	if (!child->last_siginfo)
++	if (!child->last_siginfo) {
++		/*
++		 * Clear notification trap on NULL siginfo too.  It clearly
++		 * indicates group stop trap.
++		 */
++		clear_notify = true;
+ 		goto out_unlock;
++	}
+ 
+ 	error = 0;
+ 	*info = *child->last_siginfo;
+@@ -594,8 +601,12 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
+ 		/* report whether group stop is in effect w/ SI_STOPPED */
+ 		if (sig->group_stop_count || (sig->flags & SIGNAL_STOP_STOPPED))
+ 			info->si_pt_flags |= PTRACE_SI_STOPPED;
++		/* tracer got siginfo, clear the sticky trap */
++		clear_notify = true;
+ 	}
+ out_unlock:
++	if (clear_notify)
++		child->jobctl &= ~JOBCTL_TRAP_NOTIFY;
+ 	unlock_task_sighand(child, &flags);
+ 	return error;
+ }
 diff --git a/kernel/signal.c b/kernel/signal.c
-index a7f65a6..dce2961 100644
+index dce2961..271788d 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -228,8 +228,9 @@ static inline void print_dropped_signal(int sig)
-  * @task: target task
-  *
-  * If %JOBCTL_TRAPPING is set, ptracer is waiting for us to enter
-- * %TASK_TRACED.  It can be set only while we're inside do_signal_stop()
-- * and must be cleared before leaving signal delivery path.
-+ * %TASK_TRACED or %TASK_STOPPED.  It can be set only while we're inside
-+ * do_signal_stop() and must be cleared before leaving signal delivery
-+ * path.
-  *
-  * Clear it and wake up the ptracer.  Note that we don't need any further
-  * locking.  @task->siglock guarantees that @task->parent points to the
+@@ -778,6 +778,54 @@ static int check_kill_permission(int sig, struct siginfo *info,
+ 	return security_task_kill(t, info, sig, 0);
+ }
+ 
++/**
++ * ptrace_trap_notify - schedule trap to notify ptracer
++ * @t: tracee wanting to notify tracer
++ *
++ * This function schedules sticky ptrace trap which is cleared on
++ * PTRACE_GETSIGINFO to notify ptracer of an event.  @t must have been
++ * seized by ptracer.
++ *
++ * If @t is running, INTERRUPT trap will be taken.  If trapped for group
++ * stop or INTERRUPT, it will re-trap into INTERRUPT.  If trapped for other
++ * traps, INTERRUPT trap will be eventually taken without returning to
++ * userland after the existing traps are finished by PTRACE_CONT.
++ *
++ * CONTEXT:
++ * Must be called with @task->sighand->siglock held.
++ */
++static void ptrace_trap_notify(struct task_struct *t)
++{
++	WARN_ON_ONCE(!(t->ptrace & PT_SEIZED));
++	assert_spin_locked(&t->sighand->siglock);
++
++	/*
++	 * @t is being ptraced and new SEIZE behavior is in effect.
++	 * Schedule sticky trap which will clear on the next GETSIGINFO.
++	 */
++	t->jobctl |= JOBCTL_TRAP_NOTIFY;
++
++	/*
++	 * If @t is currently trapped for group stop or INTERRUPT
++	 * (JOBCTL_TRAPPED set), it should re-trap with new exit_code
++	 * indicating continuation so that the ptracer can notice the
++	 * event; otherwise, use normal signal delivery wake up.
++	 *
++	 * The re-trapping sets JOBCTL_TRAPPING such that the transition is
++	 * hidden from the ptracer.
++	 *
++	 * This means that if @t is trapped for other reasons than group
++	 * stop or INTERRUPT, the notification trap won't be delievered
++	 * until the current one is complete.  This is the intended
++	 * behavior.
++	 */
++	if (task_is_traced(t) && (t->jobctl & JOBCTL_TRAPPED)) {
++		t->jobctl |= JOBCTL_TRAPPING;
++		signal_wake_up(t, true);
++	} else
++		signal_wake_up(t, false);
++}
++
+ /*
+  * Handle magic process-wide effects of stop/continue signals. Unlike
+  * the signal actions, these happen immediately at signal-generation
+@@ -816,7 +864,10 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
+ 		do {
+ 			task_clear_jobctl_stop_pending(t);
+ 			rm_from_queue(SIG_KERNEL_STOP_MASK, &t->pending);
+-			wake_up_state(t, __TASK_STOPPED);
++			if (likely(!(t->ptrace & PT_SEIZED)))
++				wake_up_state(t, __TASK_STOPPED);
++			else
++				ptrace_trap_notify(t);
+ 		} while_each_thread(p, t);
+ 
+ 		/*
+@@ -1928,7 +1979,10 @@ static int do_signal_stop(int signr)
+ 			if (!(t->flags & PF_EXITING) && !task_is_stopped(t)) {
+ 				t->jobctl |= signr | gstop;
+ 				sig->group_stop_count++;
+-				signal_wake_up(t, 0);
++				if (likely(!(t->ptrace & PT_SEIZED)))
++					signal_wake_up(t, 0);
++				else
++					ptrace_trap_notify(t);
+ 			}
+ 		}
+ 	}
+@@ -2093,8 +2147,14 @@ relock:
+ 		 * Check for ptrace trap conditions.  Jobctl traps are used
+ 		 * to trap ptracee while staying transparent regarding
+ 		 * signal and job control.
++		 *
++		 * If group stop is pending, give it priority.  INTERRUPT
++		 * is used for job control notifications and giving the
++		 * actual group stop trap higher priority gives prettier
++		 * stream of traps.
+ 		 */
+-		if (unlikely(current->jobctl & JOBCTL_TRAP_MASK)) {
++		if (unlikely(current->jobctl & JOBCTL_TRAP_MASK) &&
++		    !(current->jobctl & JOBCTL_STOP_PENDING)) {
+ 			ptrace_notify_locked(SIGTRAP |
+ 					     (PTRACE_EVENT_INTERRUPT << 8));
+ 			continue;
 -- 
 1.7.1
 
