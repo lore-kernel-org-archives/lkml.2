@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab1EHWqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:46:23 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:18595 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932692Ab1EHWqU (ORCPT
+	id S932786Ab1EHWr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:47:28 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51177
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932638Ab1EHWqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:46:20 -0400
-Message-ID: <4DC71D1E.5030407@snapgear.com>
-Date: Mon, 9 May 2011 08:45:50 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Linux/m68k <linux-m68k@vger.kernel.org>,
-        uClinux list <uclinux-dev@uclinux.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k: Really wire up sys_pselect6 and sys_ppoll
-References: <alpine.DEB.2.00.1105062107290.23969@ayla.of.borg>
-In-Reply-To: <alpine.DEB.2.00.1105062107290.23969@ayla.of.borg>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Sun, 8 May 2011 18:46:55 -0400
+Date: Sun, 08 May 2011 15:46:22 -0700 (PDT)
+Message-Id: <20110508.154622.35028516.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: david.hill@ubisoft.com, agimenez@sysvalve.es, linux-kernel@vger.kernel.org,
+        dgiagio@gmail.com, dborca@yahoo.com, pmcenery@gmail.com,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH net-next-2.6] ipheth: Properly distinguish length and
+ alignment in URBs and skbs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1304444965.2873.11.camel@bwh-desktop>
+References: <20110503165751.GA6566@bart.evergreen.loc>
+	<710D4D6CE160654C87478D18385BB9971BE3FDCA46@MDC-MAIL-CMS01.ubisoft.org>
+	<1304444965.2873.11.camel@bwh-desktop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/11 05:08, Geert Uytterhoeven wrote:
-> We reserved the numbers a long time ago, but never wired them up in the
-> syscall table as they need TIF_RESTORE_SIGMASK, which we only got last year
-> in commit cb6831d5d3099e772a510eb3e1ed0760ccffb45e ("m68k: Switch to saner
-> sigsuspend()")
->
-> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Tue, 03 May 2011 18:49:25 +0100
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-
-
+> The USB protocol this driver implements appears to require 2 bytes of
+> padding in front of each received packet.  This used to be equal to
+> the value of NET_IP_ALIGN on x86, so the driver abused that constant
+> and mostly worked, but this is no longer the case.  The driver also
+> mixed up the URB and packet lengths, resulting in 2 bytes of junk at
+> the end of the skb.
+> 
+> Introduce a private constant for the 2 bytes of padding; fix this
+> confusion and check for the under-length case.
+> 
+> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 > ---
-> I'll move this before "m68k: unistd - Comment out definitions for unimplemented
-> syscalls", and will update the latter.
->
->   arch/m68k/kernel/syscalltable.S |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
-> index cb3bc1b..6f7b091 100644
-> --- a/arch/m68k/kernel/syscalltable.S
-> +++ b/arch/m68k/kernel/syscalltable.S
-> @@ -321,8 +321,8 @@ ENTRY(sys_call_table)
->   	.long sys_readlinkat
->   	.long sys_fchmodat
->   	.long sys_faccessat		/* 300 */
-> -	.long sys_ni_syscall		/* Reserved for pselect6 */
-> -	.long sys_ni_syscall		/* Reserved for ppoll */
-> +	.long sys_pselect6
-> +	.long sys_ppoll
->   	.long sys_unshare
->   	.long sys_set_robust_list
->   	.long sys_get_robust_list	/* 305 */
+> Compile-tested only, as I'm not cool enough for an iPhone either.
+> This is applicable to net-next-2.6 or v2.6.38.
 
+I've applied this to net-2.6 and will conditionally queue it up for
+-stable, if we need further fixups we can add relative patches.
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Thanks.
