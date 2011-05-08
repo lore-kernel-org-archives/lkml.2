@@ -1,151 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab1EHHpP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 03:45:15 -0400
-Received: from eriks.xs4all.nl ([83.160.41.216]:52771 "EHLO eriks.xs4all.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab1EHHpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 03:45:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=slagter.name; h=message-id
-	:date:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type; q=dns; s=2007072601; b=f+HNrQwlwNe7tvHSawgsZKeGyb
-	4P63bIqUCnme5m7RY01Pc7eedQ47lt8ScIWE3QyN3G00eGMdlK6Z9VunKn9LNo0X
-	sdckxAwj91P4QyUu7qAhhCvhxiiPygJa574MmjgZhXmNLIr840sSRIXERS4o/wvk
-	LZrWSG4rCj6veY+5U=
-Message-ID: <4DC64A03.2050107@slagter.name>
-Date: Sun, 08 May 2011 09:45:07 +0200
-From: Erik Slagter <erik@slagter.name>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Mnenhy/0.8.3 Thunderbird/3.1.10 ThunderBrowse/3.3.5
+	id S1752095Ab1EHHzy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 03:55:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26965 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab1EHHzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 03:55:38 -0400
+Message-ID: <4DC64C58.70203@kernel.org>
+Date: Sun, 08 May 2011 00:55:04 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Maxin John <maxin.john@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: OOPS after connection Droids MuIn USB display
-References: <4DC3B0E3.7010008@slagter.name> <4DC3D296.9060707@slagter.name> <BANLkTimcWN3=qvurDzyMUs8f5+uFPNumaw@mail.gmail.com> <4DC42897.3000300@slagter.name> <BANLkTinGydyuG58zwVG43VnDz845BOw1Tg@mail.gmail.com> <4DC4EE99.1090205@slagter.name> <20110507200252.GA19753@kroah.com>
-In-Reply-To: <20110507200252.GA19753@kroah.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms050503080807010103080104"
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Ram Pai <linuxram@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -v2] pci: Check bridge resources after resource allocation.
+References: <4DC250A6.9040802@kernel.org> <20110506081243.GF16782@ram-laptop> <4DC4586C.6020308@kernel.org> <20110507015240.GN16782@ram-laptop> <4DC4B059.3030502@kernel.org>
+In-Reply-To: <4DC4B059.3030502@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DC64C66.00D3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
 
---------------ms050503080807010103080104
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+During pci remove/rescan testing found:
 
-On 07-05-11 22:02, Greg KH wrote:
-> On Sat, May 07, 2011 at 09:02:49AM +0200, Erik Slagter wrote:
->> And now my big question is, can this be fixed upstream? ;-)
->
-> Yes, if someone sends us a patch :)
+[  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+[  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
+[  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+[  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+[  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+[  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
+[  541.199202] pci 0000:c0:03.0: enabling bus mastering
+[  541.199209] pci 0000:c0:03.0: setting latency timer to 64
+[  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+[  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
 
-Somehow I knew where this was going to :-/ I can happily make a clean=20
-patch that makes this device work, but as I am almost completely in the=20
-dark as whether what I am doing, it will probably break any other device =
+This bug was uncovered by commit
+| commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+| Author: Ram Pai <linuxram@us.ibm.com>
+| Date:   Mon Feb 14 17:43:20 2011 -0800
+|
+|    PCI: pre-allocate additional resources to devices only after successful allocation of essential resources.
 
-and also fix it in the wrong way as well. I've had patches rejected for=20
-the same reasons in the past...
+After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size.
+So it will not go through resource_size(res) != 0 path,  and will not be reset there.
+
+The root cause is: pci_bridge_check_ranges will set RESOURCE_IO flag for pci
+bridge, and later if children do not need IO resource. those bridge
+resources will not need to be allocated. but flags is still there. that will
+confuse the the pci_enable_bridges later.
+
+related code:
+| static void assign_requested_resources_sorted(struct resource_list *head,
+|                                  struct resource_list_x *fail_head)
+| {
+|         struct resource *res;
+|         struct resource_list *list;
+|         int idx;
+|
+|         for (list = head->next; list; list = list->next) {
+|                 res = list->res;
+|                 idx = res - &list->dev->resource[0];
+|                 if (resource_size(res) && pci_assign_resource(list->dev, idx)) {
+| ...
+|                         reset_resource(res);
+|                 }
+|         }
+| }
+
+We can not just reset resource there, because will still need to use flag for addition resource allocation afterwards.
+
+At last, We have to add pci_bridge_check_resources() to close the loop.
+
+after patch, will get right result:
+[  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+[  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
+[  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+[  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+[  621.247012] pci 0000:c0:03.0: enabling bus mastering
+[  621.247275] pci 0000:c0:03.0: setting latency timer to 64
+[  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
+[  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
+[  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
+[  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
+[  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
+[  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
+[  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
+
+-v2: update description.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 
---------------ms050503080807010103080104
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+---
+ drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPWDCC
-BIowggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UE
-BhMCU0UxFDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5h
-bCBUVFAgTmV0d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0w
-NTA2MDcwODA5MTBaFw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMC
-VVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5l
-dHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVRO
-LVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmFpPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVN
-NRm5pELlzkniii8efNIxB8dOtINknS4p1aJkxIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQy
-lbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2qL+usobNqqrcuZzWLeeEeaYji5kbNoKXq
-vgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAsvIKKjqQOpdeJQ/wWWq8dcdcRWdq6
-hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMeoYV+9Udly/hNVyh00jT/MLbu
-9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3+sQmVO8DveAky1QaMB0G
-A1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/
-BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9BZGRU
-cnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8ubmV0L0Fk
-ZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyispgCi
-54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
-g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHd
-WTBK322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftz
-Mizpm4QkLdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsy
-XEFs/vVdoOr/0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFYTCCBEmgAwIBAgIRAIg14yiGxBLB
-Nd3nEhie2VcwDQYJKoZIhvcNAQEFBQAwga4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJVVDEX
-MBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRoZSBVU0VSVFJVU1QgTmV0d29y
-azEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29tMTYwNAYDVQQDEy1VVE4tVVNF
-UkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1haWwwHhcNMTAxMDE5MDAwMDAw
-WhcNMTExMDE5MjM1OTU5WjBGMQswCQYDVQQGEwJOTDEVMBMGA1UEAxMMRXJpayBTbGFndGVy
-MSAwHgYJKoZIhvcNAQkBFhFlcmlrQHNsYWd0ZXIubmFtZTCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBANbriwH0w2kwn4b2BwVAtiZ0OkHIiwcscx1XIOzD/bp+Sv4tVdjc2bBF
-tXTyEpDzP5cLs5V3g1hTxI5V40lgmsiKrDMp8XR6fDwqv0cdoS3ABS/gvlxhwvbJaeR7tjkM
-Ni4ofKgEfSWi7hzFyijuwM/SrwJVlpTO7Xah+FKDLVh8FWUHRVxtnFuLaHcZR+4y0c0Zi2AE
-gp3CLZQzXCsu/Nsi+0fclP4lbhg+XgAgTKDI2WIm7JuQgMSgoevQ6HFggreTj03tUoKjD4l4
-JIoDb5tc/IutLhwXZTZsrdmW2SE29xhRWauNGs9DnJAcmpUJkXHGGL8cgmqWb1Mlh9JBaN8C
-AwEAAaOCAd8wggHbMB8GA1UdIwQYMBaAFImCZ33EnSZwAEu0UEh83j2uBG59MB0GA1UdDgQW
-BBTK4wFgfa4mmdF0XOGvj3dgyG8ePzAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAd
-BgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIB
-AwUwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwgaUGA1Ud
-HwSBnTCBmjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5jb20vVVROLVVTRVJGaXJzdC1D
-bGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDBKoEigRoZEaHR0cDovL2NybC5jb21v
-ZG8ubmV0L1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRFbWFpbC5jcmww
-bAYIKwYBBQUHAQEEYDBeMDYGCCsGAQUFBzAChipodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9V
-VE5BQUFDbGllbnRDQS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNv
-bTANBgkqhkiG9w0BAQUFAAOCAQEAALQg8UqA2KoLGSmq8SsJTddYzpglJrW3mcd55qDBKLBM
-J5klHPPWoqdV2dA9X0yV4WlaS/eQHfgmQCjvJ42HDNJW6YBw1MrPFPxXFJsbpY0OlIeLY5oh
-VZjuQeI3YfwOB1ZceU4QTkdF636Ljyz3D++PmSw6ww6mm8R8LX18JIYe6vhWZs93sSMQct3R
-2s9kGB94lCKbapyq9lBhT/swM51wWTmnrIxrmFzm0+fFnNu9QwoazTn7hwg7G0Tiv2Zqz+Ba
-x318aG+gZm1OnQQRPn1hiK5C6GiKrWu9/jTV3UaGePBGslkpopMdLrwQ43P/eHmJJGyXHBLx
-87J7yN8HMzCCBWEwggRJoAMCAQICEQCINeMohsQSwTXd5xIYntlXMA0GCSqGSIb3DQEBBQUA
-MIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5
-MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cu
-dXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIEVtYWlsMB4XDTEwMTAxOTAwMDAwMFoXDTExMTAxOTIzNTk1OVowRjELMAkG
-A1UEBhMCTkwxFTATBgNVBAMTDEVyaWsgU2xhZ3RlcjEgMB4GCSqGSIb3DQEJARYRZXJpa0Bz
-bGFndGVyLm5hbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDW64sB9MNpMJ+G
-9gcFQLYmdDpByIsHLHMdVyDsw/26fkr+LVXY3NmwRbV08hKQ8z+XC7OVd4NYU8SOVeNJYJrI
-iqwzKfF0enw8Kr9HHaEtwAUv4L5cYcL2yWnke7Y5DDYuKHyoBH0lou4cxcoo7sDP0q8CVZaU
-zu12ofhSgy1YfBVlB0VcbZxbi2h3GUfuMtHNGYtgBIKdwi2UM1wrLvzbIvtH3JT+JW4YPl4A
-IEygyNliJuybkIDEoKHr0OhxYIK3k49N7VKCow+JeCSKA2+bXPyLrS4cF2U2bK3ZltkhNvcY
-UVmrjRrPQ5yQHJqVCZFxxhi/HIJqlm9TJYfSQWjfAgMBAAGjggHfMIIB2zAfBgNVHSMEGDAW
-gBSJgmd9xJ0mcABLtFBIfN49rgRufTAdBgNVHQ4EFgQUyuMBYH2uJpnRdFzhr493YMhvHj8w
-DgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsG
-AQUFBwMCMEYGA1UdIAQ/MD0wOwYMKwYBBAGyMQECAQMFMCswKQYIKwYBBQUHAgEWHWh0dHBz
-Oi8vc2VjdXJlLmNvbW9kby5uZXQvQ1BTMIGlBgNVHR8EgZ0wgZowTKBKoEiGRmh0dHA6Ly9j
-cmwuY29tb2RvY2EuY29tL1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRF
-bWFpbC5jcmwwSqBIoEaGRGh0dHA6Ly9jcmwuY29tb2RvLm5ldC9VVE4tVVNFUkZpcnN0LUNs
-aWVudEF1dGhlbnRpY2F0aW9uYW5kRW1haWwuY3JsMGwGCCsGAQUFBwEBBGAwXjA2BggrBgEF
-BQcwAoYqaHR0cDovL2NydC5jb21vZG9jYS5jb20vVVROQUFBQ2xpZW50Q0EuY3J0MCQGCCsG
-AQUFBzABhhhodHRwOi8vb2NzcC5jb21vZG9jYS5jb20wDQYJKoZIhvcNAQEFBQADggEBAAC0
-IPFKgNiqCxkpqvErCU3XWM6YJSa1t5nHeeagwSiwTCeZJRzz1qKnVdnQPV9MleFpWkv3kB34
-JkAo7yeNhwzSVumAcNTKzxT8VxSbG6WNDpSHi2OaIVWY7kHiN2H8DgdWXHlOEE5HRet+i48s
-9w/vj5ksOsMOppvEfC19fCSGHur4VmbPd7EjEHLd0drPZBgfeJQim2qcqvZQYU/7MDOdcFk5
-p6yMa5hc5tPnxZzbvUMKGs05+4cIOxtE4r9mas/gWsd9fGhvoGZtTp0EET59YYiuQuhoiq1r
-vf401d1GhnjwRrJZKaKTHS68EONz/3h5iSRslxwS8fOye8jfBzMxggRgMIIEXAIBATCBxDCB
-rjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEe
-MBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVz
-ZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0
-aW9uIGFuZCBFbWFpbAIRAIg14yiGxBLBNd3nEhie2VcwCQYFKw4DAhoFAKCCAnAwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTEwNTA4MDc0NTA3WjAjBgkq
-hkiG9w0BCQQxFgQURvkM8+0cn449soqKWbK3xdpczc0wXwYJKoZIhvcNAQkPMVIwUDALBglg
-hkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcG
-BSsOAwIHMA0GCCqGSIb3DQMCAgEoMIHVBgkrBgEEAYI3EAQxgccwgcQwga4xCzAJBgNVBAYT
-AlVTMQswCQYDVQQIEwJVVDEXMBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRo
-ZSBVU0VSVFJVU1QgTmV0d29yazEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29t
-MTYwNAYDVQQDEy1VVE4tVVNFUkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1h
-aWwCEQCINeMohsQSwTXd5xIYntlXMIHXBgsqhkiG9w0BCRACCzGBx6CBxDCBrjELMAkGA1UE
-BhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMV
-VGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5j
-b20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBF
-bWFpbAIRAIg14yiGxBLBNd3nEhie2VcwDQYJKoZIhvcNAQEBBQAEggEAd+kPFdy9Mb1IQInx
-ynYtjj6QGAWLkdR+DC3Afy9uyBCI7Y/eHSIlkFoNPvXu87vqv76b7sWHln0IuOik1HNRGD8L
-8g7Ah4fnwnnuFvIVIh4vHn7mx3UDFlhgaNcg/TwfgqdigwETwEHF/p/pDOPKnY6LagOFVUPC
-qxE0cDk6eR+nD8paLRgC+AE22uOkTVOopIAGEu0W4ud7E8sgD8Hl7INKDlHEGCG7b1nBWcuO
-aFSZpUD0QmW/2qnh++U8UC/GAX8UW1c2M9OZBSLj08Ng5MQbmMLhGA1MuOusITjDLByvaGXq
-gjbge4OkNsxvFlbYluHZpVOt/xva/AGATI1V3wAAAAAAAA==
---------------ms050503080807010103080104--
+Index: linux-2.6/drivers/pci/setup-bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/setup-bus.c
++++ linux-2.6/drivers/pci/setup-bus.c
+@@ -811,6 +811,27 @@ void __ref pci_bus_size_bridges(struct p
+ }
+ EXPORT_SYMBOL(pci_bus_size_bridges);
+ 
++static void __ref pci_bridge_check_resources(struct pci_dev *bridge)
++{
++	struct resource *b_res;
++	int i;
++
++	b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
++
++	/*
++	 * We set resource flag in pci_bridge_check_ranges() for further
++	 *  allocation for children devices.
++	 * Then if children do not need some kind of resource (like IO), and
++	 *  bridge resource will not be allocated.
++	 * At last, those flags could be left set, that will confuse
++	 *  pci_setup_bridge() and pci_enable_bridge()
++	 * So use reset_resource to clear them.
++	 */
++	for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; i++)
++		if (!resource_size(&b_res[i]))
++			reset_resource(&b_res[i]);
++}
++
+ static void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
+ 					 struct resource_list_x *add_head,
+ 					 struct resource_list_x *fail_head)
+@@ -820,6 +841,9 @@ static void __ref __pci_bus_assign_resou
+ 
+ 	pbus_assign_resources_sorted(bus, add_head, fail_head);
+ 
++	if (bus->self)
++		pci_bridge_check_resources(bus->self);
++
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		b = dev->subordinate;
+ 		if (!b)
+@@ -862,6 +886,8 @@ static void __ref __pci_bridge_assign_re
+ 	if (!b)
+ 		return;
+ 
++	pci_bridge_check_resources((struct pci_dev *)bridge);
++
+ 	__pci_bus_assign_resources(b, NULL, fail_head);
+ 
+ 	switch (bridge->class >> 8) {
