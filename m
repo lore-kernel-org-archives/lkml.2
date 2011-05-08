@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab1EHC1L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 22:27:11 -0400
-Received: from relay3.ukrpost.ua ([82.207.79.23]:33700 "EHLO relay3.ukrpost.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab1EHC1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 22:27:07 -0400
-X-Greylist: delayed 1108 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 May 2011 22:27:07 EDT
-X-Spam-Processed: mail.academy.zt.ua, Sun, 08 May 2011 05:07:23 +0300
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: george@academy.zt.ua
-X-HashCash: 1:20:110508:md50000002783::4P3QTHZ42nUNCXlM:00000YFT
-X-Return-Path: prvs=110986adc1=george@znau.edu.ua
-X-Envelope-From: george@znau.edu.ua
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
-	driver
-From: George Kashperko <george@znau.edu.ua>
-To: Michael =?ISO-8859-1?Q?B=FCsch?= <m@bues.ch>
-Cc: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1304819081.21680.6.camel@maggie>
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
-	 <201105061605.31625.arnd@arndb.de>
-	 <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
-	 <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
-	 <1304790665.13983.10.camel@dev.znau.edu.ua>
-	 <BANLkTikLFff_86Fvg+jSty9vGLENiELF2Q@mail.gmail.com>
-	 <1304792795.13983.28.camel@dev.znau.edu.ua>
-	 <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
-	 <1304794931.13983.44.camel@dev.znau.edu.ua>
-	 <BANLkTik9FWgzpNWuMXXRjOj-rDvPNY_nCA@mail.gmail.com>
-	 <1304796956.13983.65.camel@dev.znau.edu.ua>
-	 <1304819081.21680.6.camel@maggie>
-Content-Type: text/plain
-Date: Sun, 08 May 2011 05:01:09 +0300
-Message-Id: <1304820069.13983.82.camel@dev.znau.edu.ua>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 7bit
+	id S1752203Ab1EHCTs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 22:19:48 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:55307 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1EHCTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 22:19:46 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Subject: Re: [PATCH 7/7] ns: Wire up the setns system call
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+	<1304735101-1824-7-git-send-email-ebiederm@xmission.com>
+	<1304798775.6123.18.camel@mulgrave.site>
+Date: Sat, 07 May 2011 19:19:37 -0700
+In-Reply-To: <1304798775.6123.18.camel@mulgrave.site> (James Bottomley's
+	message of "Sat, 07 May 2011 15:06:15 -0500")
+Message-ID: <m162pm53ye.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX184uexCFTW17bqJ8IZrCGl1KQaVh+PwAk0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, 2011-05-07 at 22:35 +0300, George Kashperko wrote: 
-> > dbg_bcma_device_name
-> > {
-> > #ifdef DEBUG
-> > 		case/switch/if/else stuff
-> > #endif
-> > 		return NULL;
-> > }
-> > But I don't see here much sense to hardcode names other than those of
-> > buscommons/buscores for debugging purposes.
-> 
-> Would you please read and understand the code before discussing this?
-> That would help the discussion on the technical side.
-> 
-> Those names are hardcoded by definition. And just like 14e4 is the PCI
-> ID for Broadcom devices, 800 is the AXI ID for Broadcom Chipcommon.
-> 
-> And building an #ifdef mess around this stuff is not better than having
-> a few bytes of _helpful_ information messages.
-> You are absolutely right that those messages only help 1% of the people.
-> Just as _any_ other kernel message.
-> 
+James Bottomley <James.Bottomley@HansenPartnership.com> writes:
 
-Following is first part of my comment with "case/switch/if/else stuff"
-which you didn't quoted and which I was actually commented at:
-> > How do you see relation between bcma_device_name and:
-> > int zd_ioread32v_locked(...) {
-> >       if (r) {
-> >               dev_dbg_f(zd_chip_dev(chip),
-> >                         "error: zd_ioread16v_locked. Error number %d\n", r);
-> >               return r;
-> >       }
-> }
-> No relation at all. It like comparing warm and soft. It will be if you
-> do something like
+> On Fri, 2011-05-06 at 19:25 -0700, Eric W. Biederman wrote:
+>> v2: Most of the architecture support added by Daniel Lezcano <dlezcano@fr.ibm.com>
+>> v3: ported to v2.6.36-rc4 by: Eric W. Biederman <ebiederm@xmission.com>
+>> v4: Moved wiring up of the system call to another patch
+>> v5: ported to v2.6.39-rc6
+>> 
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>
+> We already have several syscalls queued up for parisc:
+>
+> http://git.kernel.org/?p=linux/kernel/git/jejb/parisc-2.6.git;a=shortlog;h=refs/heads/misc
+>
+> So if you could make this patch over them (or over linux-next), that
+> would help the merge process.
 
-Original discussion on the bcma_device_name was started by Arend
-pointing that there can be cores with same id but different vendor code.
-As one among ways to deal with this I've proposed to remove
-bcma_device_name and let drivers supply core name.
+I will take a look. I was rather pleasantly surprised that no other
+system call conflicts had shown up before now.
 
-Have nice day,
-George
+This is unfortunately one of those areas where it is almost impossible
+to avoid conflicts.
 
+Do you know if there is any chance that the parisc tree might get
+rebased or anything horrible like that?
+
+If not I think I will just pull the hunk of the parisc tree with the syscalls
+e38f5b745075828ac51b12c8c95c85a7be4a3ec7...2e7bad5f34b5beed47542490c760ed26574e38ba
+into my tree so I don't have to worry about merge order.
+
+Eric
 
