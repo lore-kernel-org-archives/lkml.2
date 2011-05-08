@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab1EHWyD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:54:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49055 "EHLO
+	id S1756266Ab1EHWxr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:53:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47346 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932489Ab1EHWle (ORCPT
+	with ESMTP id S932492Ab1EHWlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:41:34 -0400
+	Sun, 8 May 2011 18:41:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PokqfSAsewGCBQVoqWMYqF9FK5xaHTN3mC0meRBpaN2sdevCsJuMylb4UmBkPONRPg
-         BhvfvE2fEeXdvdtAo/T6yzOjni4Bst1Rc7DA07YMWlUn4BCSkHLfPxuKw1aU1Tp7neOR
-         7+drg4jVU8py+NkSextAASIzwSPXT8RnHYZfc=
+        b=s8FXRHRAmRkVovFobz2sOB86U2r0zK1EvYabzA2nTI3xTuGfTuIwTEsBt9AGeiBAzT
+         mx8QworWGNgbD6J8WOU0Q2KvMuqooQfFaH4wfJsTQuSChVI2id6hDl2x43pXzMy8ab+h
+         hvDsuUuhcJnDOTf2LhPYXRuBTbcPD4J3hGv6w=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 057/115] sysctl: no-child: manually register kernel/keys
-Date: Mon,  9 May 2011 00:39:09 +0200
-Message-Id: <1304894407-32201-58-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 058/115] sysctl: no-child: manually register fs/inotify
+Date: Mon,  9 May 2011 00:39:10 +0200
+Message-Id: <1304894407-32201-59-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,90 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- include/linux/key.h    |    4 +++-
- kernel/sysctl.c        |    7 -------
- security/keys/key.c    |    1 +
- security/keys/sysctl.c |   18 +++++++++++++++++-
- 4 files changed, 21 insertions(+), 9 deletions(-)
+ fs/notify/inotify/inotify_user.c |   22 +++++++++++++++++++---
+ include/linux/inotify.h          |    2 --
+ kernel/sysctl.c                  |    7 -------
+ 3 files changed, 19 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index b2bb017..9b3df18 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -281,7 +281,9 @@ static inline key_serial_t key_serial(struct key *key)
- 				   rwsem_is_locked(&((struct key *)(KEY))->sem)))
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index 8445fbc..ba618c2 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -51,13 +51,13 @@ static int inotify_max_user_watches __read_mostly;
+ static struct kmem_cache *inotify_inode_mark_cachep __read_mostly;
+ struct kmem_cache *event_priv_cachep __read_mostly;
  
- #ifdef CONFIG_SYSCTL
--extern ctl_table key_sysctls[];
-+extern int __init key_register_sysctls(void);
-+#else
-+static int __init key_register_sysctls(void) { return 0; }
- #endif
+-#ifdef CONFIG_SYSCTL
++#if defined(CONFIG_SYSCTL) && defined(CONFIG_MMU)
  
- extern void key_replace_session_keyring(void);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b020156..33d5e2e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -905,13 +905,6 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dostring,
- 	},
--#ifdef CONFIG_KEYS
--	{
--		.procname	= "keys",
--		.mode		= 0555,
--		.child		= key_sysctls,
--	},
--#endif
- #ifdef CONFIG_RCU_TORTURE_TEST
+ #include <linux/sysctl.h>
+ 
+ static int zero;
+ 
+-ctl_table inotify_table[] = {
++static struct ctl_table inotify_table[] = {
  	{
- 		.procname       = "rcutorture_runnable",
-diff --git a/security/keys/key.c b/security/keys/key.c
-index f7f9d93..33903c2 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -1099,6 +1099,7 @@ EXPORT_SYMBOL(unregister_key_type);
-  */
- void __init key_init(void)
- {
-+	key_register_sysctls();
- 	/* allocate a slab in which we can store keys */
- 	key_jar = kmem_cache_create("key_jar", sizeof(struct key),
- 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
-diff --git a/security/keys/sysctl.c b/security/keys/sysctl.c
-index ee32d18..e079223 100644
---- a/security/keys/sysctl.c
-+++ b/security/keys/sysctl.c
-@@ -15,7 +15,7 @@
- 
- static const int zero, one = 1, max = INT_MAX;
- 
--ctl_table key_sysctls[] = {
-+static struct ctl_table key_table[] = {
- 	{
- 		.procname = "maxkeys",
- 		.data = &key_quota_maxkeys,
-@@ -63,3 +63,19 @@ ctl_table key_sysctls[] = {
+ 		.procname	= "max_user_instances",
+ 		.data		= &inotify_max_user_instances,
+@@ -84,7 +84,22 @@ ctl_table inotify_table[] = {
  	},
  	{ }
  };
-+
-+static const __initdata struct ctl_path key_path[] = {
-+	{ .procname = "kernel" },
-+	{ .procname = "keys" },
+-#endif /* CONFIG_SYSCTL */
++static const __initdata struct ctl_path inotify_path[] = {
++	{ .procname = "fs" },
++	{ .procname = "inotify" },
 +	{ }
 +};
-+
-+static struct ctl_table_header *key_header;
-+
-+int __init key_register_sysctls(void)
++static struct ctl_table_header *inotify_header;
++static int __init register_inotify_sysctls(void)
 +{
-+	key_header = register_sysctl_paths(key_path, key_table);
-+	if (key_header == NULL)
++	inotify_header = register_sysctl_paths(inotify_path, inotify_table);
++	if (inotify_header == NULL)
 +		return -ENOMEM;
 +	return 0;
 +}
++#else /* CONFIG_SYSCTL && CONFIG_MMU */
++static int __init register_inotify_sysctls(void) { return 0; }
++#endif /* CONFIG_SYSCTL && CONFIG_MMU */
+ 
+ static inline __u32 inotify_arg_to_mask(u32 arg)
+ {
+@@ -862,6 +877,7 @@ static int __init inotify_user_setup(void)
+ 	inotify_max_user_instances = 128;
+ 	inotify_max_user_watches = 8192;
+ 
++	register_inotify_sysctls();
+ 	return 0;
+ }
+ module_init(inotify_user_setup);
+diff --git a/include/linux/inotify.h b/include/linux/inotify.h
+index d33041e..89b3bfe 100644
+--- a/include/linux/inotify.h
++++ b/include/linux/inotify.h
+@@ -71,8 +71,6 @@ struct inotify_event {
+ #define IN_NONBLOCK O_NONBLOCK
+ 
+ #ifdef __KERNEL__
+-#include <linux/sysctl.h>
+-extern struct ctl_table inotify_table[]; /* for sysctl */
+ 
+ #define ALL_INOTIFY_BITS (IN_ACCESS | IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE | \
+ 			  IN_CLOSE_NOWRITE | IN_OPEN | IN_MOVED_FROM | \
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 33d5e2e..9520e2b 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1439,13 +1439,6 @@ static struct ctl_table fs_table[] = {
+ 		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ #endif /* CONFIG_AIO */
+-#ifdef CONFIG_INOTIFY_USER
+-	{
+-		.procname	= "inotify",
+-		.mode		= 0555,
+-		.child		= inotify_table,
+-	},
+-#endif	
+ #ifdef CONFIG_EPOLL
+ 	{
+ 		.procname	= "epoll",
 -- 
 1.7.5.134.g1c08b
 
