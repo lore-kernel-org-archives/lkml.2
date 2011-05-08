@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab1EHWlz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:41:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40833 "EHLO
+	id S1756263Ab1EHWwr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:52:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53450 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932506Ab1EHWli (ORCPT
+	with ESMTP id S932513Ab1EHWlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:41:38 -0400
+	Sun, 8 May 2011 18:41:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=A63q+UGsszWUWozmVFPOdhNg+qX1SqircPyHaBgAACVBryptzZKGuw9JN1xyYPJo3M
-         CMNpR/LthrmpFVCeID+WMQCEzh1/Fdk+3/wQG/Zfs3hbJ+m0iTTkj8UdbNvdHZ2B8aJh
-         RfTXgF8fuKqa6gMy2QX9vr4qo0eMiANP6qqKY=
+        b=Is+/EVVCyoU0NW1i1MV+sYd/XeRaNDWFdNnwTzLRMYxiNqaRCaTa9ACOqlgB1qJXiR
+         gvKeIIZMW7Fj7XugaoAIgH2xbkknjf9EVMbzXrbKcrKdMFZF2BnVkOaLkIpgxm4CYhTq
+         3kHEqC93WddwPCmkTKkR0FCkba8S9n5NehdKo=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 060/115] sysctl: no-child: manually register root tables
-Date: Mon,  9 May 2011 00:39:12 +0200
-Message-Id: <1304894407-32201-61-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 061/115] sysctl: faster reimplementation of sysctl_check_table
+Date: Mon,  9 May 2011 00:39:13 +0200
+Message-Id: <1304894407-32201-62-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -26,209 +26,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Determining the parent of a node at depth d
+- previous implementation: O(d)
+- current  implementation: O(1)
+
+Printing the path to a node at depth d
+- previous implementation: O(d^2)
+- current  implementation: O(d)
+
+This comes with a small cost: we use an array ('parents') holding as many
+pointers as there can be sysctl levels (currently CTL_MAXNAME=10).
+
+The 'parents' array of pointers holds the same values as the
+ctl_table->parents field because the function that updates ->parents
+(sysctl_set_parent) is called with either NULL (for root nodes) or
+with sysctl_set_parent(table, table->child).
+
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- kernel/sysctl.c |  121 +++++++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 83 insertions(+), 38 deletions(-)
+ kernel/sysctl_check.c |  118 ++++++++++++++++++++++++++-----------------------
+ 1 files changed, 62 insertions(+), 56 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 1797c01..edacbdc 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -211,12 +211,6 @@ static struct ctl_table_root sysctl_table_root = {
- 	.default_set.list = LIST_HEAD_INIT(root_table_header.ctl_entry),
- };
+diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
+index 4e4932a..cc26490 100644
+--- a/kernel/sysctl_check.c
++++ b/kernel/sysctl_check.c
+@@ -6,58 +6,34 @@
+ #include <net/ip_vs.h>
  
--static struct ctl_table kern_table[];
--static struct ctl_table vm_table[];
--static struct ctl_table fs_table[];
--static struct ctl_table debug_table[];
--static struct ctl_table dev_table[];
+ 
+-static int sysctl_depth(struct ctl_table *table)
+-{
+-	struct ctl_table *tmp;
+-	int depth;
 -
- #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
- int sysctl_legacy_va_layout;
- #endif
-@@ -224,31 +218,6 @@ int sysctl_legacy_va_layout;
- /* The default sysctl tables: */
- 
- static struct ctl_table root_table[] = {
--	{
--		.procname	= "kernel",
--		.mode		= 0555,
--		.child		= kern_table,
--	},
--	{
--		.procname	= "vm",
--		.mode		= 0555,
--		.child		= vm_table,
--	},
--	{
--		.procname	= "fs",
--		.mode		= 0555,
--		.child		= fs_table,
--	},
--	{
--		.procname	= "debug",
--		.mode		= 0555,
--		.child		= debug_table,
--	},
--	{
--		.procname	= "dev",
--		.mode		= 0555,
--		.child		= dev_table,
--	},
- 	{ }
- };
- 
-@@ -266,6 +235,11 @@ static int min_extfrag_threshold;
- static int max_extfrag_threshold = 1000;
- #endif
- 
-+static const __initdata struct ctl_path kern_path [] = {
-+	{ .procname = "kernel" },
-+	{ },
-+};
-+
- static struct ctl_table kern_table[] = {
- 	{
- 		.procname	= "sched_child_runs_first",
-@@ -955,6 +929,11 @@ static struct ctl_table kern_table[] = {
- 	{ }
- };
- 
-+static const __initdata struct ctl_path vm_path [] = {
-+	{ .procname = "vm" },
-+	{ },
-+};
-+
- static struct ctl_table vm_table[] = {
- 	{
- 		.procname	= "overcommit_memory",
-@@ -1324,11 +1303,23 @@ static struct ctl_table vm_table[] = {
- };
- 
- #if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
-+
-+static const __initdata struct ctl_path binfmt_misc_path [] = {
-+	{ .procname = "fs" },
-+	{ .procname = "binfmt_misc" },
-+	{ },
-+};
-+
- static struct ctl_table binfmt_misc_table[] = {
- 	{ }
- };
- #endif
- 
-+static const __initdata struct ctl_path fs_path [] = {
-+	{ .procname = "fs" },
-+	{ },
-+};
-+
- static struct ctl_table fs_table[] = {
- 	{
- 		.procname	= "inode-nr",
-@@ -1446,13 +1437,6 @@ static struct ctl_table fs_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &two,
- 	},
--#if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
--	{
--		.procname	= "binfmt_misc",
--		.mode		= 0555,
--		.child		= binfmt_misc_table,
--	},
--#endif
- 	{
- 		.procname	= "pipe-max-size",
- 		.data		= &pipe_max_size,
-@@ -1464,6 +1448,11 @@ static struct ctl_table fs_table[] = {
- 	{ }
- };
- 
-+static const __initdata struct ctl_path debug_path [] = {
-+	{ .procname = "debug" },
-+	{ },
-+};
-+
- static struct ctl_table debug_table[] = {
- #if defined(CONFIG_X86) || defined(CONFIG_PPC) || defined(CONFIG_SPARC) || \
-     defined(CONFIG_S390)
-@@ -1489,6 +1478,11 @@ static struct ctl_table debug_table[] = {
- 	{ }
- };
- 
-+static const __initdata struct ctl_path dev_path [] = {
-+	{ .procname = "dev" },
-+	{ },
-+};
-+
- static struct ctl_table dev_table[] = {
- 	{ }
- };
-@@ -1688,11 +1682,62 @@ static void sysctl_set_parent(struct ctl_table *parent, struct ctl_table *table)
- 
- __init int sysctl_init(void)
+-	depth = 0;
+-	for (tmp = table; tmp->parent; tmp = tmp->parent)
+-		depth++;
+-
+-	return depth;
+-}
+-
+-static struct ctl_table *sysctl_parent(struct ctl_table *table, int n)
++static void sysctl_print_path(struct ctl_table *table,
++			      struct ctl_table **parents, int depth)
  {
-+	struct ctl_table_header *kern_header, *vm_header, *fs_header,
-+		*debug_header, *dev_header;
-+#if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
-+	struct ctl_table_header *binfmt_misc_header;
-+#endif
-+
- 	sysctl_set_parent(NULL, root_table);
-+
-+	kern_header = register_sysctl_paths(kern_path, kern_table);
-+	if (kern_header == NULL)
-+		goto fail_register_kern;
-+
-+	vm_header = register_sysctl_paths(vm_path, vm_table);
-+	if (vm_header == NULL)
-+		goto fail_register_vm;
-+
-+	fs_header = register_sysctl_paths(fs_path, fs_table);
-+	if (fs_header == NULL)
-+		goto fail_register_fs;
-+
-+	debug_header = register_sysctl_paths(debug_path, debug_table);
-+	if (debug_header == NULL)
-+		goto fail_register_debug;
-+
-+	dev_header = register_sysctl_paths(dev_path, dev_table);
-+	if (dev_header == NULL)
-+		goto fail_register_dev;
-+
-+#if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
-+	binfmt_misc_header = register_sysctl_paths(binfmt_misc_path, binfmt_misc_table);
-+	if (binfmt_misc_header == NULL)
-+		goto fail_register_binfmt_misc;
-+#endif
-+
-+
- #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
- 	sysctl_check_table(current->nsproxy, root_table);
- #endif
- 	return 0;
-+
-+
-+#if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
-+fail_register_binfmt_misc:
-+	unregister_sysctl_table(dev_header);
-+#endif
-+
-+fail_register_dev:
-+	unregister_sysctl_table(debug_header);
-+fail_register_debug:
-+	unregister_sysctl_table(fs_header);
-+fail_register_fs:
-+	unregister_sysctl_table(vm_header);
-+fail_register_vm:
-+	unregister_sysctl_table(kern_header);
-+fail_register_kern:
-+	return -ENOMEM;
++	struct ctl_table *p;
+ 	int i;
+-
+-	for (i = 0; table && i < n; i++)
+-		table = table->parent;
+-
+-	return table;
+-}
+-
+-
+-static void sysctl_print_path(struct ctl_table *table)
+-{
+-	struct ctl_table *tmp;
+-	int depth, i;
+-	depth = sysctl_depth(table);
+ 	if (table->procname) {
+-		for (i = depth; i >= 0; i--) {
+-			tmp = sysctl_parent(table, i);
+-			printk("/%s", tmp->procname?tmp->procname:"");
++		for (i = 0; i < depth; i++) {
++			p = parents[i];
++			printk("/%s", p->procname ? p->procname : "");
+ 		}
++		printk("/%s", table->procname);
+ 	}
+ 	printk(" ");
  }
  
- static struct ctl_table *is_branch_in(struct ctl_table *branch,
+ static struct ctl_table *sysctl_check_lookup(struct nsproxy *namespaces,
+-						struct ctl_table *table)
++	     struct ctl_table *table, struct ctl_table **parents, int depth)
+ {
+ 	struct ctl_table_header *head;
+ 	struct ctl_table *ref, *test;
+-	int depth, cur_depth;
+-
+-	depth = sysctl_depth(table);
++	int cur_depth;
+ 
+ 	for (head = __sysctl_head_next(namespaces, NULL); head;
+ 	     head = __sysctl_head_next(namespaces, head)) {
+ 		cur_depth = depth;
+ 		ref = head->ctl_table;
+ repeat:
+-		test = sysctl_parent(table, cur_depth);
++		test = parents[depth - cur_depth];
+ 		for (; ref->procname; ref++) {
+ 			int match = 0;
+ 			if (cur_depth && !ref->child)
+@@ -83,11 +59,12 @@ out:
+ 	return ref;
+ }
+ 
+-static void set_fail(const char **fail, struct ctl_table *table, const char *str)
++static void set_fail(const char **fail, struct ctl_table *table,
++	     const char *str, struct ctl_table **parents, int depth)
+ {
+ 	if (*fail) {
+ 		printk(KERN_ERR "sysctl table check failed: ");
+-		sysctl_print_path(table);
++		sysctl_print_path(table, parents, depth);
+ 		printk(" %s\n", *fail);
+ 		dump_stack();
+ 	}
+@@ -95,38 +72,51 @@ static void set_fail(const char **fail, struct ctl_table *table, const char *str
+ }
+ 
+ static void sysctl_check_leaf(struct nsproxy *namespaces,
+-				struct ctl_table *table, const char **fail)
++			      struct ctl_table *table, const char **fail,
++			      struct ctl_table **parents, int depth)
+ {
+ 	struct ctl_table *ref;
+ 
+-	ref = sysctl_check_lookup(namespaces, table);
++	ref = sysctl_check_lookup(namespaces, table, parents, depth);
+ 	if (ref && (ref != table))
+-		set_fail(fail, table, "Sysctl already exists");
++		set_fail(fail, table, "Sysctl already exists", parents, depth);
+ }
+ 
+-int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
++
++
++#define SET_FAIL(str) set_fail(&fail, table, str, parents, depth)
++
++static int __sysctl_check_table(struct nsproxy *namespaces,
++	struct ctl_table *table, struct ctl_table **parents, int depth)
+ {
++	const char *fail = NULL;
+ 	int error = 0;
++
++	if (depth >= CTL_MAXNAME) {
++		SET_FAIL("Sysctl tree too deep");
++		return -EINVAL;
++	}
++
+ 	for (; table->procname; table++) {
+-		const char *fail = NULL;
++		fail = NULL;
+ 
+ 		if (table->parent) {
+ 			if (!table->parent->procname)
+-				set_fail(&fail, table, "Parent without procname");
++				SET_FAIL("Parent without procname");
+ 		}
+ 		if (table->child) {
+ 			if (table->data)
+-				set_fail(&fail, table, "Directory with data?");
++				SET_FAIL("Directory with data?");
+ 			if (table->maxlen)
+-				set_fail(&fail, table, "Directory with maxlen?");
++				SET_FAIL("Directory with maxlen?");
+ 			if ((table->mode & (S_IRUGO|S_IXUGO)) != table->mode)
+-				set_fail(&fail, table, "Writable sysctl directory");
++				SET_FAIL("Writable sysctl directory");
+ 			if (table->proc_handler)
+-				set_fail(&fail, table, "Directory with proc_handler");
++				SET_FAIL("Directory with proc_handler");
+ 			if (table->extra1)
+-				set_fail(&fail, table, "Directory with extra1");
++				SET_FAIL("Directory with extra1");
+ 			if (table->extra2)
+-				set_fail(&fail, table, "Directory with extra2");
++				SET_FAIL("Directory with extra2");
+ 		} else {
+ 			if ((table->proc_handler == proc_dostring) ||
+ 			    (table->proc_handler == proc_dointvec) ||
+@@ -137,24 +127,40 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+ 			    (table->proc_handler == proc_doulongvec_minmax) ||
+ 			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
+ 				if (!table->data)
+-					set_fail(&fail, table, "No data");
++					SET_FAIL("No data");
+ 				if (!table->maxlen)
+-					set_fail(&fail, table, "No maxlen");
++					SET_FAIL("No maxlen");
+ 			}
+ #ifdef CONFIG_PROC_SYSCTL
+ 			if (!table->proc_handler)
+-				set_fail(&fail, table, "No proc_handler");
++				SET_FAIL("No proc_handler");
+ #endif
+-			sysctl_check_leaf(namespaces, table, &fail);
++			parents[depth] = table;
++			sysctl_check_leaf(namespaces, table, &fail,
++					  parents, depth);
+ 		}
+ 		if (table->mode > 0777)
+-			set_fail(&fail, table, "bogus .mode");
++			SET_FAIL("bogus .mode");
+ 		if (fail) {
+-			set_fail(&fail, table, NULL);
++			SET_FAIL(NULL);
+ 			error = -EINVAL;
+ 		}
+-		if (table->child)
+-			error |= sysctl_check_table(namespaces, table->child);
++		if (table->child) {
++			parents[depth] = table;
++			error |= __sysctl_check_table(namespaces, table->child,
++						      parents, depth + 1);
++		}
+ 	}
+ 	return error;
+ }
++
++
++int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
++{
++	struct ctl_table *parents[CTL_MAXNAME];
++	/* Keep track of parents as we go down into the tree:
++	 * - the node at depth 'd' will have the parent at parents[d-1].
++	 * - the root node (depth=0) has no parent in this array.
++	 */
++	return __sysctl_check_table(namespaces, table, parents, 0);
++}
 -- 
 1.7.5.134.g1c08b
 
