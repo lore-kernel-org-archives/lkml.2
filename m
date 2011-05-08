@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab1EHWm3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:42:29 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41043 "EHLO
+	id S932738Ab1EHWol (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:44:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53450 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932668Ab1EHWmQ (ORCPT
+	with ESMTP id S932518Ab1EHWmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:42:16 -0400
+	Sun, 8 May 2011 18:42:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=RU7B56StQPi4HtRQiea6YjsV38JiuFZxOGDEMvf+eVepBAqa+wDN3UrpNp8O6hcckK
-         y4ey8YJgE/JRRoGkMQHxCqtE/1tTdA1tgqOdthxGAaybfU6utbqdL2+AdoCVLcGe9+jO
-         YuACFFVaxl8Wb74mZC7qeiYRhM3LFzNQVP7b4=
+        b=Vy0JXCUsWtDpu/Ol/m8cmOoS1B/gCOSMIXOzYWfavuy1+vVvop5pNW0KdmKJNRAYEk
+         MoA2CFvEde25FD1nrRPDu+gZdkzsKzHrLslOz8jZTkT0TZLqURffLxyLwNT1c1R/+ZgY
+         ANbfFXcreqMT0XeMAiSNOH47+I36vBH8lrDDI=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 091/115] sysctl: add register_sysctl_dir: register an empty sysctl directory
-Date: Mon,  9 May 2011 00:39:43 +0200
-Message-Id: <1304894407-32201-92-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 092/115] sysctl: sched: create empty dir with register_sysctl_dir
+Date: Mon,  9 May 2011 00:39:44 +0200
+Message-Id: <1304894407-32201-93-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,123 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- include/linux/sysctl.h |    5 +++--
- kernel/sysctl.c        |   37 +++++++++++++++++++++++++++++++++++++
- kernel/sysctl_check.c  |   15 +++++++++++----
- 3 files changed, 51 insertions(+), 6 deletions(-)
+ kernel/sched.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 322246d..03842cc 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -1133,11 +1133,12 @@ extern struct ctl_table_header *__register_sysctl_paths(struct ctl_table_group *
- 							struct ctl_table *table);
- extern struct ctl_table_header *register_sysctl_paths(const struct ctl_path *path,
- 						      struct ctl_table *table);
-+struct ctl_table_header *register_sysctl_dir(const struct ctl_path *path);
- extern void unregister_sysctl_table(struct ctl_table_header *table);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 8320365..5cda526 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6302,16 +6302,11 @@ static void register_sched_domain_sysctl(void)
  
- #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
--extern int sysctl_check_table(const struct ctl_path *path,
--			      int nr_dirs,
-+extern int sysctl_check_path(const struct ctl_path *path, int nr_dirs);
-+extern int sysctl_check_table(const struct ctl_path *path, int nr_dirs,
- 			      struct ctl_table *table);
- extern int sysctl_check_duplicates(struct ctl_table_header *header);
- extern int sysctl_check_netns_correspondents(struct ctl_table_header *header,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 94fff4e..7cf0242 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -2045,6 +2045,9 @@ struct ctl_table_header *__register_sysctl_paths(struct ctl_table_group *group,
- 	int dirs_created = 0;
+ 	i = 0;
+ 	for_each_possible_cpu(cpu) {
+-		struct ctl_table *empty = kzalloc(sizeof(*empty), GFP_KERNEL);
+-		if (empty == NULL)
+-			goto unregister_sd_cpudir_headers;
+ 		sd_path[SD_PATH_CPU].procname = sd_cpu_names[cpu];
+ 		sd_path[SD_PATH_DOM].procname = NULL; /* end of array sentinel */
+-		sd_cpudir_headers[i] = register_sysctl_paths(sd_path, empty);
+-		if (sd_cpudir_headers[i] == NULL) {
+-			kfree(empty);
++		sd_cpudir_headers[i] = register_sysctl_dir(sd_path);
++		if (sd_cpudir_headers[i] == NULL)
+ 			goto unregister_sd_cpudir_headers;
+-		}
+ 		i++;
+ 	}
  
- #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
-+	if (sysctl_check_path(path, nr_dirs))
-+		return NULL;
-+
- 	if (sysctl_check_table(path, nr_dirs, table))
- 		return NULL;
- #endif
-@@ -2098,6 +2101,39 @@ struct ctl_table_header *register_sysctl_paths(const struct ctl_path *path,
- 	return __register_sysctl_paths(&root_table_group, path, table);
- }
- 
-+/* Register an empty sysctl directory. */
-+static struct ctl_table_header *__register_sysctl_dir(
-+	struct ctl_table_group *group, const struct ctl_path *path)
-+{
-+	struct ctl_table_header *dir;
-+	int nr_dirs = ctl_path_items(path);
-+	int dirs_created = 0;
-+
-+#ifdef CONFIG_SYSCTL_SYSCALL_CHECK
-+	if (sysctl_check_path(path, nr_dirs))
-+		return NULL;
-+#endif
-+
-+	dir = sysctl_mkdirs(&root_table_header, group, path,
-+			    nr_dirs, &dirs_created);
-+	if (!dir)
-+		return NULL;
-+
-+	/* -1 because we don't want to count ourselves in the list of
-+         * directory headers owned by @dir. NOTE: if all of the dirs
-+         * in the path are already registered dirs_created will be 0. */
-+	if (dirs_created > 0)
-+		dir->ctl_owned_dirs_refs = dirs_created - 1;
-+	else
-+		dir->ctl_owned_dirs_refs = 0;
-+	return dir;
-+}
-+
-+struct ctl_table_header *register_sysctl_dir(const struct ctl_path *path)
-+{
-+	return __register_sysctl_dir(&root_table_group, path);
-+}
-+
- /**
-  * unregister_sysctl_table - unregister a sysctl table hierarchy
-  * @header: the header returned from __register_sysctl_paths
-@@ -3193,4 +3229,5 @@ EXPORT_SYMBOL(proc_dostring);
- EXPORT_SYMBOL(proc_doulongvec_minmax);
- EXPORT_SYMBOL(proc_doulongvec_ms_jiffies_minmax);
- EXPORT_SYMBOL(register_sysctl_paths);
-+EXPORT_SYMBOL(register_sysctl_dir);
- EXPORT_SYMBOL(unregister_sysctl_table);
-diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
-index 205f721..20c1948 100644
---- a/kernel/sysctl_check.c
-+++ b/kernel/sysctl_check.c
-@@ -24,6 +24,17 @@ static void fail(const struct ctl_path *path,
- 
- #define FAIL(str) do { fail(path, t->procname, str); error = -EINVAL;} while (0)
- 
-+
-+int sysctl_check_path(const struct ctl_path *path,
-+		      int nr_dirs)
-+{
-+	if (nr_dirs <= CTL_MAXNAME - 1)
-+		return 0;
-+	fail(path, NULL, "tree too deep");
-+	return -EINVAL;
-+}
-+
-+
- int sysctl_check_table(const struct ctl_path *path,
- 		       int nr_dirs,
- 		       struct ctl_table *table)
-@@ -33,10 +44,6 @@ int sysctl_check_table(const struct ctl_path *path,
- 	unsigned int nr_files = 0;
- 	int error = 0;
- 
--	if (nr_dirs > CTL_MAXNAME - 1) {
--		fail(path, NULL, "tree too deep");
--		error = -EINVAL;
+@@ -6347,11 +6342,8 @@ unregister_sd_domain_headers:
+ 	i = sd_cpudir_headers_num;
+ unregister_sd_cpudir_headers:
+ 	i--;
+-	for(; i >= 0; i--) {
+-		struct ctl_table *table = sd_cpudir_headers[i]->ctl_table_arg;
++	for(; i >= 0; i--)
+ 		unregister_sysctl_table(sd_cpudir_headers[i]);
+-		kfree(table);
 -	}
  
- 	for(t = table; t->procname; t++) {
- 		nr_files ++;
+ 	kfree(sd_domain_headers);
+ fail_alloc_sd_domain_headers:
+@@ -6391,11 +6383,8 @@ static void unregister_sched_domain_sysctl(void)
+ 		kfree(table);
+ 	}
+ 
+-	for(i = sd_cpudir_headers_num - 1; i >= 0; i--) {
+-		struct ctl_table *table = sd_cpudir_headers[i]->ctl_table_arg;
++	for(i = sd_cpudir_headers_num - 1; i >= 0; i--)
+ 		unregister_sysctl_table(sd_cpudir_headers[i]);
+-		kfree(table);
+-	}
+ 
+ 	kfree(sd_domain_headers);
+ 	kfree(sd_cpudir_headers);
 -- 
 1.7.5.134.g1c08b
 
