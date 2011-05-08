@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab1EHU3I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 16:29:08 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40043 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750753Ab1EHU3G (ORCPT
+	id S1753306Ab1EHUaC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 16:30:02 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53542 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750753Ab1EHU37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 16:29:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=cgnvtKOG0BQ8OL5i1WYK16c3yYq4cksua3dfINvnR38niJ5bzjS7TRK0YcA7xJxBNUvIvgttWgj3+oYzzNRAHTJymjxB/V0flH/xu4Ah1pptN/WUoYHWkOOIEv6JvYa1;
-Date: Sun, 8 May 2011 13:29:02 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: any objection to my updating Doc/driver-model/bus.txt?
-Message-Id: <20110508132902.63f96952.rdunlap@xenotime.net>
-In-Reply-To: <alpine.DEB.2.00.1105081430380.3288@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1105081430380.3288@localhost6.localdomain6>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Sun, 8 May 2011 16:29:59 -0400
+Subject: Re: [PATCH] sym53c8xx_2: avoid data corruption when disk rejects
+ commands with QUEUE FULL
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: Matthew Wilcox <matthew@wil.cx>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1105082057460.15552@artax.karlin.mff.cuni.cz>
+References: <alpine.DEB.2.00.1105082057460.15552@artax.karlin.mff.cuni.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 May 2011 15:29:55 -0500
+Message-ID: <1304886595.4865.3.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011 14:31:37 -0400 (EDT) Robert P. J. Day wrote:
-
+On Sun, 2011-05-08 at 21:00 +0200, Mikulas Patocka wrote:
+> [ the maintainer is not responding, so I'm sending this to other people ]
 > 
->   that particular documentation file is clearly out of date.  i can
-> take a shot at bringing it up to date unless someone is already
-> working on that.
+> sym53c8xx_2: avoid data corruption when disk rejects commands with QUEUE 
+> FULL
 
-First look at patches posted on linux-doc mailing list:
+Could you describe the corruption, with logs?  The behaviour you list
+below should may cause disk errors to the filesystem, but it shouldn't
+cause corruption.
 
-http://marc.info/?l=linux-doc&m=130455335625331&w=2
-http://marc.info/?l=linux-doc&m=130455337025346&w=2
-http://marc.info/?l=linux-doc&m=130455338425367&w=2
+> When the controller encounters an error (including QUEUE FULL or BUSY 
+> status), it aborts all not yet submitted requests in the function 
+> sym_dequeue_from_squeue.
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+This would be a driver bug: QUEUE_FULL or BUSY should never cause aborts
+of outstanding commands.
+
+> This function aborts them with DID_SOFT_ERROR.
+> 
+> If the disk has a full tag queue, the request that caused the overflow is
+> aborted with QUEUE FULL status (and the scsi midlayer properly retries it
+> until it is accepted by the disk), but other requests are aborted with
+> DID_SOFT_ERROR --- for them, the midlayer does just a few retries and then
+> signals the error up to sd.
+> 
+> The result is that disk returning QUEUE FULL causes request failures.
+> 
+> The error was reproduced on 53c895 with COMPAQ BD03685A24 disk (rebranded
+> ST336607LC) with command queue 48 or 64 tags. The disk has 64 tags, but
+> under some access patterns it return QUEUE FULL when there are less than
+> 64 pending tags. The SCSI specification allows returning QUEUE FULL
+> anytime and it is up to the host to retry.
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> 
+> ---
+>  drivers/scsi/sym53c8xx_2/sym_hipd.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> Index: linux-2.6.36-rc5-fast/drivers/scsi/sym53c8xx_2/sym_hipd.c
+> ===================================================================
+> --- linux-2.6.36-rc5-fast.orig/drivers/scsi/sym53c8xx_2/sym_hipd.c	2010-09-27 10:25:59.000000000 +0200
+> +++ linux-2.6.36-rc5-fast/drivers/scsi/sym53c8xx_2/sym_hipd.c	2010-09-27 10:26:27.000000000 +0200
+> @@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *
+>  		if ((target == -1 || cp->target == target) &&
+>  		    (lun    == -1 || cp->lun    == lun)    &&
+>  		    (task   == -1 || cp->tag    == task)) {
+> +#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
+>  			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
+> +#else
+> +			sym_set_cam_status(cp->cmd, DID_REQUEUE);
+> +#endif
+
+This isn't a good idea ... that return code causes retries for ever.  I
+think the correct fix is just to make the QUEUE_FULL handling in the
+driver work.
+
+James
+
+
