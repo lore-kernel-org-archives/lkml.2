@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab1EHXCL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 19:02:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40833 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234Ab1EHWkw (ORCPT
+	id S1756503Ab1EHXCO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 19:02:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47346 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932245Ab1EHWkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:40:52 -0400
+	Sun, 8 May 2011 18:40:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=K2mpB/GrYmWC7+2SGf3MJZpi1qZNpuEPF8ahLimSSC38QNE3GFQbKWGyZsPwgoXMt/
-         jxO2XJ3JKK0fpDvvFj1rD3MWyLWqM1HLPMtDXhBRcWdCC5JLbBr7KOY85+h+mwFduJRC
-         OdhA5Jsv3Aw+1ksBaa55YSqN0jretq01onGBE=
+        b=yG3Ac0Y9qms10ECs/v5NCiDCaNX40kpggQsLkZeGDcFkU0NF1u1UReEaXwUoATrlcf
+         b6MQjfQKQTWivoOm7YnACjGNvE7B0j2/xu3JL8obSdrPQFzJzYm03fxKR1jz1fDd3oyN
+         Zr5lknvdtRMG0EgA5BGQ3sz+mSPAAkgG89d8Y=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 020/115] sysctl: remove .child from coda/
-Date: Mon,  9 May 2011 00:38:32 +0200
-Message-Id: <1304894407-32201-21-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 021/115] sysctl: remove .child from fscache/
+Date: Mon,  9 May 2011 00:38:33 +0200
+Message-Id: <1304894407-32201-22-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,37 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- fs/coda/sysctl.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ fs/fscache/main.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/fs/coda/sysctl.c b/fs/coda/sysctl.c
-index af56ad5..8c328c9 100644
---- a/fs/coda/sysctl.c
-+++ b/fs/coda/sysctl.c
-@@ -39,19 +39,15 @@ static ctl_table coda_table[] = {
+diff --git a/fs/fscache/main.c b/fs/fscache/main.c
+index f9d8567..7f9c055 100644
+--- a/fs/fscache/main.c
++++ b/fs/fscache/main.c
+@@ -67,7 +67,7 @@ static int fscache_max_active_sysctl(struct ctl_table *table, int write,
+ 	return ret;
+ }
+ 
+-ctl_table fscache_sysctls[] = {
++static ctl_table fscache_table[] = {
+ 	{
+ 		.procname	= "object_max_active",
+ 		.data		= &fscache_object_max_active,
+@@ -87,14 +87,11 @@ ctl_table fscache_sysctls[] = {
  	{}
  };
  
--static ctl_table fs_table[] = {
+-ctl_table fscache_sysctls_root[] = {
 -	{
--		.procname	= "coda",
+-		.procname	= "fscache",
 -		.mode		= 0555,
--		.child		= coda_table
+-		.child		= fscache_sysctls,
 -	},
 -	{}
-+static const __initdata struct ctl_path coda_path[] = {
-+	{ .procname = "coda" },
++static const __initdata struct ctl_path fscache_path[] = {
++	{ .procname = "fscache" },
 +	{ }
  };
++
+ #endif
  
- void coda_sysctl_init(void)
- {
- 	if ( !fs_table_header )
--		fs_table_header = register_sysctl_table(fs_table);
-+		fs_table_header = register_sysctl_paths(coda_path, coda_table);
- }
+ /*
+@@ -135,7 +132,7 @@ static int __init fscache_init(void)
  
- void coda_sysctl_clean(void)
+ #ifdef CONFIG_SYSCTL
+ 	ret = -ENOMEM;
+-	fscache_sysctl_header = register_sysctl_table(fscache_sysctls_root);
++	fscache_sysctl_header = register_sysctl_paths(fscache_path, fscache_table);
+ 	if (!fscache_sysctl_header)
+ 		goto error_sysctl;
+ #endif
 -- 
 1.7.5.134.g1c08b
 
