@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab1EHLv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 07:51:58 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:64788 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab1EHLvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 07:51:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qHDFVt4qtg3ErIRXVodIGH1fKEcq3tpftp0C2T1vzOPU8KUlfmJHyaySQ4JN+KwWjN
-         tPvysEK6teBS2H3XI/adXHijCsyPQKNrgf5q3oD8PIpRmUEWY9LMiaGU206CVsuzupeT
-         BUdDlSH2TdPcejNpe0YC59D1DZNeC1PR1kUQE=
+	id S1753894Ab1EHMbL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:31:11 -0400
+Received: from mail.avalus.com ([89.16.176.221]:55150 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752559Ab1EHMbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 08:31:07 -0400
+Date: Sun, 08 May 2011 13:31:01 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-fsdevel@vger.kernel.org, Alex Bligh <alex@alex.org.uk>
+Subject: Re: [PATCH 0/7] Network namespace manipulation with file
+ descriptors
+Message-ID: <974CF8842C14240ADB10AD9C@nimrod.local>
+In-Reply-To: <m1fwoqoapn.fsf@fess.ebiederm.org>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+ 	<3A54AB469A0294933EAC2257@nimrod.local> <m1fwoqoapn.fsf@fess.ebiederm.org>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-In-Reply-To: <20110507154307.GE23672@kroah.com>
-References: <BANLkTik9e5it5vTMxvFUnZGpoO8N0ida8Q@mail.gmail.com>
-	<op.vuynsdh13l0zgt@mnazarewicz-glaptop>
-	<BANLkTinxvtMUcFz9T7L1iq9pFUx8ocQnRQ@mail.gmail.com>
-	<20110507010927.GA32142@kroah.com>
-	<BANLkTikPgm7kpaoofVSkJCBXYyea4HeB8A@mail.gmail.com>
-	<20110507154307.GE23672@kroah.com>
-Date: Sun, 8 May 2011 14:51:53 +0300
-Message-ID: <BANLkTikzqykV-TxmTb-wVAVxEj-_MBqx9g@mail.gmail.com>
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: Remove the LUN check which
- is always true
-From: Maxin John <maxin.john@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>, gregkh@suse.de,
-        stern@rowland.harvard.edu, m-sonasath@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        roger.quadros@nokia.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Eric,
 
-On Sat, May 7, 2011 at 6:43 PM, Greg KH <greg@kroah.com> wrote:
-> On Sat, May 07, 2011 at 12:27:58PM +0300, Maxin John wrote:
->> Hi Greg,
+--On 7 May 2011 07:18:44 -0700 "Eric W. Biederman" <ebiederm@xmission.com> 
+wrote:
+
+> You are essentially describing my setns system call.
+
+Great - thanks.
+
+>> As a secondary issue, ever without your patch, it would be really
+>> useful to be able to read from userspace the current network namespace.
+>> (i.e. the pid concerned, or 1 if not unshared). I would like to
+>> simply modify a routing daemon's init script so it doesn't start
+>> if in the host, e.g. at the top:
+>>  [ `cat /proc/.../networknamespace` eq 1 ] && exit 0
 >
-> Ok, but you forgot a changelog entry and a good subject line.
+> You can read the processes network namespace by opening
+> /proc/<pid>/ns/net.  Unfortunately comparing the network
+> namespaces for identity is another matter.  You will probably
+> be better off simply forcing the routing daemon to start
+> in the desired network namespace in it's initscript.
 
-Oh.. my mistake. I forgot to update it.. Sorry.
+It's solely a minor convenience issue. The network namespace is
+unshared by the filing system namespace isn't. So there's an
+/etc/init.d/bird, which I would like to remain there so I
+can call it from the network namespace concerned (which
+doesn't exist at boot time). But I'd also like it not to run
+at boot time. So it would be useful to me if the script could
+check whether it is running in the default namespace and
+refuse to launch if so.
 
-> Care to redo this in a format that I don't have to edit it in order to
-> be able to apply it properly?
+I note the /proc/ file you mention is not present in the main tree at
+the moment.
 
-I think, I should blame Gmail for this.  I have switched to "mutt" as
-it seems to work fine for me now. I will re-send the merged patch based
-on your suggestions.
+> For purposes of clarity please have a look at my work in
+> progress patch for iproute2.  This demonstrates how I expect
+> userspace to work in a multi-network namespace world.
 
-Thanks,
-Maxin
+Will do
+
+-- 
+Alex Bligh
