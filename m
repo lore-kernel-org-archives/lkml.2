@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab1EHAd1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 20:33:27 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36282 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751284Ab1EHAd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 20:33:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap8DAMnhxU15LBzagWdsb2JhbACmGxUBARYmJYhxuWwOhX4EnlQ
-Date: Sun, 8 May 2011 10:33:22 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38.4: xfs speed problem?
-Message-ID: <20110508003321.GI26837@dastard>
-References: <alpine.DEB.2.02.1105071042210.20162@p34.internal.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1105071042210.20162@p34.internal.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755136Ab1EHBpk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 21:45:40 -0400
+Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:32927 "EHLO bues.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753746Ab1EHBpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 21:45:20 -0400
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
+ driver
+From: Michael =?ISO-8859-1?Q?B=FCsch?= <m@bues.ch>
+To: George Kashperko <george@znau.edu.ua>
+Cc: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
+        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Andy Botting <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1304796956.13983.65.camel@dev.znau.edu.ua>
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+	 <201105061605.31625.arnd@arndb.de>
+	 <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
+	 <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
+	 <1304790665.13983.10.camel@dev.znau.edu.ua>
+	 <BANLkTikLFff_86Fvg+jSty9vGLENiELF2Q@mail.gmail.com>
+	 <1304792795.13983.28.camel@dev.znau.edu.ua>
+	 <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
+	 <1304794931.13983.44.camel@dev.znau.edu.ua>
+	 <BANLkTik9FWgzpNWuMXXRjOj-rDvPNY_nCA@mail.gmail.com>
+	 <1304796956.13983.65.camel@dev.znau.edu.ua>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 May 2011 03:44:41 +0200
+Message-ID: <1304819081.21680.6.camel@maggie>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 07, 2011 at 12:09:46PM -0400, Justin Piszcz wrote:
-> Hello,
-> 
-> Using 2.6.38.4 on two hosts:
-> 
-> Host 1:
-> $ /usr/bin/time find geocities.data 1> /dev/null
-> 80.92user 417.93system 2:19:07elapsed 5%CPU (0avgtext+0avgdata 105520maxresident)k
-> 0inputs+0outputs (0major+73373minor)pagefaults 0swaps
-> 
-> # xfs_db -c frag -f /dev/sda1
-> actual 40203982, ideal 40088075, fragmentation factor 0.29%
-> 
-> meta-data=/dev/sda1              isize=256    agcount=44, agsize=268435455 blks
->          =                       sectsz=512   attr=2
-> data     =                       bsize=4096   blocks=11718704640, imaxpct=5
->          =                       sunit=0      swidth=0 blks
-> naming   =version 2              bsize=4096   ascii-ci=0
-> log      =internal               bsize=4096   blocks=521728, version=2
->          =                       sectsz=512   sunit=0 blks, lazy-count=1
-> realtime =none                   extsz=4096   blocks=0, rtextents=0
-> 
-> --
-> 
-> Host 2:
-> $ /usr/bin/time find geocities.data 1>/dev/null
-> 54.60user 337.20system 48:42.71elapsed 13%CPU (0avgtext+0avgdata 105632maxresident)k
-> 0inputs+0outputs (1major+72981minor)pagefaults 0swaps
-> 
-> # xfs_db -c frag -f /dev/sdb1
-> actual 37998306, ideal 37939331, fragmentation factor 0.16%
-> 
-> meta-data=/dev/sdb1              isize=256    agcount=10, agsize=268435455 blks
->          =                       sectsz=512   attr=2
-> data     =                       bsize=4096   blocks=2441379328, imaxpct=5
->          =                       sunit=0      swidth=0 blks
-> naming   =version 2              bsize=4096   ascii-ci=0
-> log      =internal               bsize=4096   blocks=521728, version=2
->          =                       sectsz=512   sunit=0 blks, lazy-count=1
-> realtime =none                   extsz=4096   blocks=0, rtextents=0
-> 
-> 
-> --
-> 
-> Host 1: RAID-6 (7200 RPM Drives, 18+1 hot spare)
+On Sat, 2011-05-07 at 22:35 +0300, George Kashperko wrote: 
+> dbg_bcma_device_name
+> {
+> #ifdef DEBUG
+> 		case/switch/if/else stuff
+> #endif
+> 		return NULL;
+> }
+> But I don't see here much sense to hardcode names other than those of
+> buscommons/buscores for debugging purposes.
 
-Those will be 3TB drives
+Would you please read and understand the code before discussing this?
+That would help the discussion on the technical side.
 
-> Host 2: RAID-6 (7200 RPM Drives, 12)
+Those names are hardcoded by definition. And just like 14e4 is the PCI
+ID for Broadcom devices, 800 is the AXI ID for Broadcom Chipcommon.
 
-and those are 1TB drives.
+And building an #ifdef mess around this stuff is not better than having
+a few bytes of _helpful_ information messages.
+You are absolutely right that those messages only help 1% of the people.
+Just as _any_ other kernel message.
 
-Different hardware is guaranteed to give you different performance,
-especially from a seek capability perspective.
-
-> Each system uses a 3ware 9750-24i4e controller, same settings.
-> 
-> Any thoughts why one is > 2x faster than the other?
-
-Different filesystem sizes mean different directory, inode and data
-layouts, especially if you are using inode64.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Greetings Michael.
+
