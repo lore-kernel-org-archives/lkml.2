@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab1EHVe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 17:34:27 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53936 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1EHVeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 17:34:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wSZHmrL6qrupsmgtYh+6TzdBatvtmo3wM5VQkDiF5zdAIT1wG1xiwELuBkXg8hRQq9
-         uycwgYDr0/iWfSl+h91nOP6NEaBSwXX+8j8N8o+Yx5zd8mNUPB8JGI6GLuFqtTbtB//W
-         UOj6/X2OnRfrpedTcvJjfTx3vkvyby72aBUdU=
-Date: Sun, 8 May 2011 23:26:15 +0200
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: "Adi J. Sieker" <adi@core.adi.io>
-Cc: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-input@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: USB keyboard recognized as HID keyboard but doesn't work
-Message-ID: <20110508212615.GA4193@lovely.krouter>
-References: <Pine.LNX.4.44L0.1105030945410.2085-100000@iolanthe.rowland.org>
- <alpine.LNX.2.00.1105061456320.28291@pobox.suse.cz>
- <4DC3FEC7.6050503@sieker.io>
- <1304807093.5891.45.camel@mars>
- <4DC6F44E.1000703@sieker.io>
+	id S1753563Ab1EHVaU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 17:30:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37618 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751340Ab1EHVaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 17:30:19 -0400
+Message-ID: <4DC70B45.3020503@redhat.com>
+Date: Sun, 08 May 2011 17:29:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC6F44E.1000703@sieker.io>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Maxin B John <maxin.john@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, walken@google.com,
+        aarcange@redhat.com, hughd@google.com, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: memory: remove unreachable code
+References: <20110508211834.GA4410@maxin>
+In-Reply-To: <20110508211834.GA4410@maxin>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 08, 2011 at 09:51:42PM +0200, Adi J. Sieker wrote:
-> On 08/05/11 00:24, Christoph Fritz wrote:
-> >
-> >  I'm not sure about my patch below because of interface one, maybe you
-> >can give it a try.
-> >
-> What kernel version do I need? I'm running Ubuntu 10.04, so can I
-> apply this to a 2.6.32 Ubuntu kernel or do I need a current 2.6.39?
+On 05/08/2011 05:18 PM, Maxin B John wrote:
+> Remove the unreachable code found in mm/memory.c
+>
+> Signed-off-by: Maxin B. John<maxin.john@gmail.com>
+> ---
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 27f4253..d3b30af 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3695,7 +3695,6 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
+>   			if (ret<= 0)
+>   #endif
+>   				break;
+> -			bytes = ret;
+>   		} else {
+>   			bytes = len;
+>   			offset = addr&  (PAGE_SIZE-1);
 
-A current kernel is recommended.
+Is it really impossible for vma->vm_ops->access to return a
+positive value?
 
-
-bye,
- -- chf
+-- 
+All rights reversed
