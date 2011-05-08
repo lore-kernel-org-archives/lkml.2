@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab1EHSwv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 14:52:51 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:58405 "EHLO
-	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab1EHSuU (ORCPT
+	id S932192Ab1EHSoA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 14:44:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56087 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab1EHSn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 14:50:20 -0400
-Date: Sun, 8 May 2011 20:43:41 +0200 (CEST)
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 7/14] HPFS: When marking or clearing the dirty bit, sync the
- filesystem
-Message-ID: <alpine.DEB.2.00.1105082028000.7013@artax.karlin.mff.cuni.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Personality-Disorder: Schizoid
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 8 May 2011 14:43:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sIngrW3MWKRtlvv5Er2rRqTmqWP3oudgzc/GWm7Cvbt65H54aEMpEyb41rP45NPZvl
+         l9LC8pRltNgF/XKTXxNw0CCQfCyKkzOry0SWDljTtfodLg25O+wTprRQaxxKCueEI9rM
+         x5ym/QkEGdeSScL+/xEwkuZQPQowuf1UY/O2g=
+Subject: Re: [PATCH] checkpatch: add __rcu as a sparse modifier
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sven Eckelmann <sven@narfation.org>
+Cc: apw@canonical.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1304848485-14219-1-git-send-email-sven@narfation.org>
+References: <1304848485-14219-1-git-send-email-sven@narfation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 May 2011 20:43:55 +0200
+Message-ID: <1304880235.3207.46.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When marking or clearing the dirty bit, sync the filesystem
+Le dimanche 08 mai 2011 à 11:54 +0200, Sven Eckelmann a écrit :
+> Signed-off-by: Sven Eckelmann <sven@narfation.org>
+> ---
+>  scripts/checkpatch.pl |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index d867081..9dc3800 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -145,7 +145,8 @@ our $Sparse	= qr{
+>  			__must_check|
+>  			__init_refok|
+>  			__kprobes|
+> -			__ref
+> +			__ref|
+> +			__rcu
+>  		}x;
+>  
+>  # Notes to $Attribute:
 
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
----
- fs/hpfs/super.c |    3 +++
- 1 file changed, 3 insertions(+)
 
-Index: linux-2.6.39-rc5-fast/fs/hpfs/super.c
-===================================================================
---- linux-2.6.39-rc5-fast.orig/fs/hpfs/super.c	2011-05-05 01:02:47.000000000 +0200
-+++ linux-2.6.39-rc5-fast/fs/hpfs/super.c	2011-05-05 01:02:52.000000000 +0200
-@@ -27,6 +27,7 @@ static void mark_dirty(struct super_bloc
- 			sb->dirty = 1;
- 			sb->old_wrote = 0;
- 			mark_buffer_dirty(bh);
-+			sync_dirty_buffer(bh);
- 			brelse(bh);
- 		}
- 	}
-@@ -40,10 +41,12 @@ static void unmark_dirty(struct super_bl
- 	struct buffer_head *bh;
- 	struct hpfs_spare_block *sb;
- 	if (s->s_flags & MS_RDONLY) return;
-+	sync_blockdev(s->s_bdev);
- 	if ((sb = hpfs_map_sector(s, 17, &bh, 0))) {
- 		sb->dirty = hpfs_sb(s)->sb_chkdsk > 1 - hpfs_sb(s)->sb_was_error;
- 		sb->old_wrote = hpfs_sb(s)->sb_chkdsk >= 2 && !hpfs_sb(s)->sb_was_error;
- 		mark_buffer_dirty(bh);
-+		sync_dirty_buffer(bh);
- 		brelse(bh);
- 	}
- }
+
