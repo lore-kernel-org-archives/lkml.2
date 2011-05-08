@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab1EHXCI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 19:02:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45747 "EHLO
+	id S1756491Ab1EHXBh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 19:01:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49055 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab1EHWkx (ORCPT
+	with ESMTP id S932253Ab1EHWkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:40:53 -0400
+	Sun, 8 May 2011 18:40:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=aj2yeEzVDR5QigVlq+iwqeLmS2wgEVdV9vVc0zFH6zvpFHaBDfuaoEl0EVXJ/mwYXm
-         vGTevuy2pvFrp9+NKCIU0jw+YEtazoI6DTFpDAfA8IG/cTUr+4CCWSr83w+Ca1CoZOr5
-         Rp6YgYel6N8v9rmMnoVfztYXvsiBnWxhDdI/E=
+        b=d4fip/282GPzPxqX6aVi4DlcslIVBu0lT+yxAwfmchktgBdXSzOAfyyHbHEHEjGFBN
+         k46CStMHzPxYgHGKFg2BYLsNct3gbJANyAAVXuz2M/WZiwIsJkUL2l7d2HK1oChTqKNU
+         WyAAKSpQ92Uj0FhqBbSx8x5fwMmoPxSO5z4GY=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 022/115] sysctl: remove .child from fs/nfs/ nlm_table table
-Date: Mon,  9 May 2011 00:38:34 +0200
-Message-Id: <1304894407-32201-23-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 023/115] sysctl: remove .child from fs/nfs/ nfs_cb_table
+Date: Mon,  9 May 2011 00:38:35 +0200
+Message-Id: <1304894407-32201-24-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,55 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- fs/lockd/svc.c |   22 +++++-----------------
+ fs/nfs/sysctl.c |   22 +++++-----------------
  1 files changed, 5 insertions(+), 17 deletions(-)
 
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index abfff9d..6ab5932 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -355,7 +355,7 @@ EXPORT_SYMBOL_GPL(lockd_down);
-  * Sysctl parameters (same as module parameters, different interface).
-  */
+diff --git a/fs/nfs/sysctl.c b/fs/nfs/sysctl.c
+index 978aaeb..046fe19 100644
+--- a/fs/nfs/sysctl.c
++++ b/fs/nfs/sysctl.c
+@@ -21,7 +21,7 @@ static const int nfs_set_port_max = 65535;
+ #endif
+ static struct ctl_table_header *nfs_callback_sysctl_table;
  
--static ctl_table nlm_sysctls[] = {
-+static ctl_table nlm_table[] = {
+-static ctl_table nfs_cb_sysctls[] = {
++static ctl_table nfs_cb_table[] = {
+ #ifdef CONFIG_NFS_V4
  	{
- 		.procname	= "nlm_grace_period",
- 		.data		= &nlm_grace_period,
-@@ -409,21 +409,9 @@ static ctl_table nlm_sysctls[] = {
+ 		.procname = "nfs_callback_tcpport",
+@@ -59,27 +59,15 @@ static ctl_table nfs_cb_sysctls[] = {
  	{ }
  };
  
--static ctl_table nlm_sysctl_dir[] = {
+-static ctl_table nfs_cb_sysctl_dir[] = {
 -	{
--		.procname	= "nfs",
--		.mode		= 0555,
--		.child		= nlm_sysctls,
+-		.procname = "nfs",
+-		.mode = 0555,
+-		.child = nfs_cb_sysctls,
 -	},
 -	{ }
 -};
 -
--static ctl_table nlm_sysctl_root[] = {
+-static ctl_table nfs_cb_sysctl_root[] = {
 -	{
--		.procname	= "fs",
--		.mode		= 0555,
--		.child		= nlm_sysctl_dir,
+-		.procname = "fs",
+-		.mode = 0555,
+-		.child = nfs_cb_sysctl_dir,
 -	},
-+static const __initdata struct ctl_path nlm_path[] = {
++static const __initdata struct ctl_path nfs_cb_path[] = {
 +	{ .procname = "fs" },
 +	{ .procname = "nfs" },
  	{ }
  };
  
-@@ -504,7 +492,7 @@ module_param(nlm_max_connections, uint, 0644);
- static int __init init_nlm(void)
+ int nfs_register_sysctl(void)
  {
- #ifdef CONFIG_SYSCTL
--	nlm_sysctl_table = register_sysctl_table(nlm_sysctl_root);
-+	nlm_sysctl_table = register_sysctl_paths(nlm_path, nlm_table);
- 	return nlm_sysctl_table ? 0 : -ENOMEM;
- #else
+-	nfs_callback_sysctl_table = register_sysctl_table(nfs_cb_sysctl_root);
++	nfs_callback_sysctl_table = register_sysctl_paths(nfs_cb_path, nfs_cb_table);
+ 	if (nfs_callback_sysctl_table == NULL)
+ 		return -ENOMEM;
  	return 0;
 -- 
 1.7.5.134.g1c08b
