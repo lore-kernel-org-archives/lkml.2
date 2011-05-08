@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab1EHWr2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:47:28 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51177
+	id S1756297Ab1EHWwv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:52:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52518
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932638Ab1EHWqz (ORCPT
+	by vger.kernel.org with ESMTP id S1756266Ab1EHWwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:46:55 -0400
-Date: Sun, 08 May 2011 15:46:22 -0700 (PDT)
-Message-Id: <20110508.154622.35028516.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: david.hill@ubisoft.com, agimenez@sysvalve.es, linux-kernel@vger.kernel.org,
-        dgiagio@gmail.com, dborca@yahoo.com, pmcenery@gmail.com,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] ipheth: Properly distinguish length and
- alignment in URBs and skbs
+	Sun, 8 May 2011 18:52:47 -0400
+Date: Sun, 08 May 2011 15:52:15 -0700 (PDT)
+Message-Id: <20110508.155215.242144177.davem@davemloft.net>
+To: shemminger@vyatta.com
+Cc: sangtae.ha@gmail.com, injongrhee@gmail.com, Valdis.Kletnieks@vt.edu,
+        rdunlap@xenotime.net, lkml@techboom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp_cubic: limit delayed_ack ratio to prevent divide
+ error
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1304444965.2873.11.camel@bwh-desktop>
-References: <20110503165751.GA6566@bart.evergreen.loc>
-	<710D4D6CE160654C87478D18385BB9971BE3FDCA46@MDC-MAIL-CMS01.ubisoft.org>
-	<1304444965.2873.11.camel@bwh-desktop>
+In-Reply-To: <20110504130456.425dee68@nehalam>
+References: <20110504123738.7bb4d1ee@nehalam>
+	<20110504.124053.260068550.davem@davemloft.net>
+	<20110504130456.425dee68@nehalam>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -28,25 +28,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Tue, 03 May 2011 18:49:25 +0100
+From: Stephen Hemminger <shemminger@vyatta.com>
+Date: Wed, 4 May 2011 13:04:56 -0700
 
-> The USB protocol this driver implements appears to require 2 bytes of
-> padding in front of each received packet.  This used to be equal to
-> the value of NET_IP_ALIGN on x86, so the driver abused that constant
-> and mostly worked, but this is no longer the case.  The driver also
-> mixed up the URB and packet lengths, resulting in 2 bytes of junk at
-> the end of the skb.
+> TCP Cubic keeps a metric that estimates the amount of delayed
+> acknowledgements to use in adjusting the window. If an abnormally
+> large number of packets are acknowledged at once, then the update
+> could wrap and reach zero. This kind of ACK could only
+> happen when there was a large window and huge number of
+> ACK's were lost.
 > 
-> Introduce a private constant for the 2 bytes of padding; fix this
-> confusion and check for the under-length case.
+> This patch limits the value of delayed ack ratio. The choice of 32
+> is just a conservative value since normally it should be range of 
+> 1 to 4 packets.
 > 
-> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-> ---
-> Compile-tested only, as I'm not cool enough for an iPhone either.
-> This is applicable to net-next-2.6 or v2.6.38.
+> Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 
-I've applied this to net-2.6 and will conditionally queue it up for
--stable, if we need further fixups we can add relative patches.
-
-Thanks.
+Applied, thanks Stephen.
