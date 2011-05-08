@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab1EHXEX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 19:04:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45747 "EHLO
+	id S932504Ab1EHXEE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 19:04:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49055 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab1EHWko (ORCPT
+	with ESMTP id S1756069Ab1EHWkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 18:40:44 -0400
+	Sun, 8 May 2011 18:40:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=FFpSTtzGiPbpdxsJLtNCCMtx3eKdToiEL/7srT1eD+4wj8Hn2CMbMkac0gY6vuBhkm
-         ROv8IWfQ2EDp6qRphdM21eW+tWz+hRLfq/zYeLe4nQr4GzuqbMd6f0KJtxS7TBS/26Br
-         PXF7wiLChtqNoqo/+965XMlDGgISjkSUiyzus=
+        b=YprYa7Chdv0OJKzDjPKp6KiYHJvdnukUz6+2qzJXx6lOvCege7T+LnHi+tnWlR0z6Y
+         4KacOUqTD4MgOokamLaxMTWbRwLpUNEEPFu5QwLAHSNAjUIsmfrGgn/ALVsq5A5EvgVD
+         Z7NrIc4d0YirnBJ2HFBciaNHknLZMud3dI8ZA=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 013/115] sysctl: remove .child from dev/mac_hid/
-Date: Mon,  9 May 2011 00:38:25 +0200
-Message-Id: <1304894407-32201-14-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 014/115] sysctl: remove .child from dev/raid/
+Date: Mon,  9 May 2011 00:38:26 +0200
+Message-Id: <1304894407-32201-15-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -28,60 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- drivers/macintosh/mac_hid.c |   26 +++++---------------------
- 1 files changed, 5 insertions(+), 21 deletions(-)
+ drivers/md/md.c |   22 ++++------------------
+ 1 files changed, 4 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/macintosh/mac_hid.c b/drivers/macintosh/mac_hid.c
-index 6a82388..5eec7b7 100644
---- a/drivers/macintosh/mac_hid.c
-+++ b/drivers/macintosh/mac_hid.c
-@@ -214,7 +214,7 @@ static int mac_hid_toggle_emumouse(ctl_table *table, int write,
- }
- 
- /* file(s) in /proc/sys/dev/mac_hid */
--static ctl_table mac_hid_files[] = {
-+static ctl_table mac_hid_table[] = {
- 	{
- 		.procname	= "mouse_button_emulation",
- 		.data		= &mouse_emulate_buttons,
-@@ -239,25 +239,9 @@ static ctl_table mac_hid_files[] = {
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 7d6f7f1..3b54374 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -125,26 +125,12 @@ static ctl_table raid_table[] = {
  	{ }
  };
  
--/* dir in /proc/sys/dev */
--static ctl_table mac_hid_dir[] = {
+-static ctl_table raid_dir_table[] = {
 -	{
--		.procname	= "mac_hid",
+-		.procname	= "raid",
 -		.maxlen		= 0,
--		.mode		= 0555,
--		.child		= mac_hid_files,
+-		.mode		= S_IRUGO|S_IXUGO,
+-		.child		= raid_table,
 -	},
--	{ }
--};
--
--/* /proc/sys/dev itself, in case that is not there yet */
--static ctl_table mac_hid_root_dir[] = {
++static const __initdata struct ctl_path raid_path[] = {
++	{ .procname = "dev" },
++	{ .procname = "raid" },
+ 	{ }
+ };
+ 
+-static ctl_table raid_root_table[] = {
 -	{
 -		.procname	= "dev",
 -		.maxlen		= 0,
 -		.mode		= 0555,
--		.child		= mac_hid_dir,
+-		.child		= raid_dir_table,
 -	},
-+static const __initdata struct ctl_path mac_hid_path[] = {
-+	{ .procname = "dev" },
-+	{ .procname = "mac_hid" },
- 	{ }
- };
+-	{  }
+-};
+-
+ static const struct block_device_operations md_fops;
  
-@@ -265,7 +249,7 @@ static struct ctl_table_header *mac_hid_sysctl_header;
+ static int start_readonly;
+@@ -7380,7 +7366,7 @@ static int __init md_init(void)
+ 			    md_probe, NULL, NULL);
  
- static int __init mac_hid_init(void)
- {
--	mac_hid_sysctl_header = register_sysctl_table(mac_hid_root_dir);
-+	mac_hid_sysctl_header = register_sysctl_paths(mac_hid_path, mac_hid_table);
- 	if (!mac_hid_sysctl_header)
- 		return -ENOMEM;
+ 	register_reboot_notifier(&md_notifier);
+-	raid_table_header = register_sysctl_table(raid_root_table);
++	raid_table_header = register_sysctl_paths(raid_path, raid_table);
  
+ 	md_geninit();
+ 	return 0;
 -- 
 1.7.5.134.g1c08b
 
