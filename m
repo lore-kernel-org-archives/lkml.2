@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab1EHSuW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 14:50:22 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:49792 "EHLO
+	id S932369Ab1EHSvX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 14:51:23 -0400
+Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:46557 "EHLO
 	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217Ab1EHSuT (ORCPT
+	with ESMTP id S932233Ab1EHSuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 14:50:19 -0400
-Date: Sun, 8 May 2011 20:42:08 +0200 (CEST)
+	Sun, 8 May 2011 14:50:21 -0400
+Date: Sun, 8 May 2011 20:42:44 +0200 (CEST)
 From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 0/14] Fix HPFS
-Message-ID: <alpine.DEB.2.00.1105082019230.7013@artax.karlin.mff.cuni.cz>
+Subject: [PATCH 1/14] HPFS: Make HPFS compile on preempt and SMP
+Message-ID: <alpine.DEB.2.00.1105082024070.7013@artax.karlin.mff.cuni.cz>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 X-Personality-Disorder: Schizoid
 MIME-Version: 1.0
@@ -21,20 +21,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Make HPFS compile on preempt and SMP
 
-This series of patches fixes the HPFS filesystem in 2.6.39. HPFS was 
-broken in 2.6.39-rc1 due to big kernel lock removal. These patches also 
-make it portable, I tested it on big endian machines.
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
+---
+ fs/hpfs/Kconfig |    1 -
+ fs/hpfs/super.c |    5 -----
+ 2 files changed, 6 deletions(-)
 
-
-BTW. would you also like to commit my another filesystem (SpadFS) to the 
-Linux kernel? It is at 
-http://artax.karlin.mff.cuni.cz/~mikulas/spadfs/download/spadfs-0.9.12.tar.gz
-It is very small (300kB), it uses crash counts instead of journaling to 
-keep itself consistent, it stores inodes directly in directories, saving 
-one seek on opening files and it uses extendible hashing for directory 
-organization.
-
-Mikulas
+Index: linux-2.6.39-rc5-fast/fs/hpfs/Kconfig
+===================================================================
+--- linux-2.6.39-rc5-fast.orig/fs/hpfs/Kconfig	2011-05-05 01:01:58.000000000 +0200
++++ linux-2.6.39-rc5-fast/fs/hpfs/Kconfig	2011-05-05 01:02:36.000000000 +0200
+@@ -1,7 +1,6 @@
+ config HPFS_FS
+ 	tristate "OS/2 HPFS file system support"
+ 	depends on BLOCK
+-	depends on BROKEN || !PREEMPT
+ 	help
+ 	  OS/2 is IBM's operating system for PC's, the same as Warp, and HPFS
+ 	  is the file system used for organizing files on OS/2 hard disk
+Index: linux-2.6.39-rc5-fast/fs/hpfs/super.c
+===================================================================
+--- linux-2.6.39-rc5-fast.orig/fs/hpfs/super.c	2011-05-05 01:01:58.000000000 +0200
++++ linux-2.6.39-rc5-fast/fs/hpfs/super.c	2011-05-05 01:02:36.000000000 +0200
+@@ -479,11 +479,6 @@ static int hpfs_fill_super(struct super_
+ 
+ 	int o;
+ 
+-	if (num_possible_cpus() > 1) {
+-		printk(KERN_ERR "HPFS is not SMP safe\n");
+-		return -EINVAL;
+-	}
+-
+ 	save_mount_options(s, options);
+ 
+ 	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
