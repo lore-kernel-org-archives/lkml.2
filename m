@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab1EHIV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 04:21:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64955 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab1EHIVV convert rfc822-to-8bit (ORCPT
+	id S1752777Ab1EHInp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 04:43:45 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4691 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361Ab1EHInn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 04:21:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DYW0RDDj+VSFdj5sq82E86tI/w87K9l7QcHKwSprQ0dx94S+gmhzsb7aDaBsw7ghXp
-         UD7os79NJNrDR+9y/42etVTtvdc2ANLbnyr10bTYXSGkCxYKrVv2Ho/UCs1qiuVpXtHH
-         uZipIulUxwPpuMt6XCbsoIVY+QsSr1lT/uUwE=
+	Sun, 8 May 2011 04:43:43 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Message-ID: <4DC657A4.7020800@broadcom.com>
+Date: Sun, 8 May 2011 10:43:16 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105061547150.2451@chino.kir.corp.google.com>
-References: <BANLkTi=S_gSvnQimgqrMmq9eWJYDCDRVmA@mail.gmail.com>
-	<alpine.DEB.2.00.1105061547150.2451@chino.kir.corp.google.com>
-Date: Sun, 8 May 2011 16:21:20 +0800
-Message-ID: <BANLkTi=WORnf0PrQZQ79ZpqFv2NaC-dPUg@mail.gmail.com>
-Subject: Re: [Question] how to detect mm leaker and kill?
-From: Hillf Danton <dhillf@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+cc: "George Kashperko" <george@znau.edu.ua>, "Arnd Bergmann" <arnd@arndb.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
+        "Greg KH" <greg@kroah.com>,
+        =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <mb@bu3sch.de>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "Andy Botting" <andy@andybotting.com>,
+        linuxdriverproject <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
+ driver
+References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
+ <201105061605.31625.arnd@arndb.de>
+ <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
+ <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
+ <1304790665.13983.10.camel@dev.znau.edu.ua>
+ <BANLkTikLFff_86Fvg+jSty9vGLENiELF2Q@mail.gmail.com>
+ <1304792795.13983.28.camel@dev.znau.edu.ua>
+ <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
+In-Reply-To: <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
+X-WSS-ID: 61D887F24NS3279446-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 7, 2011 at 6:48 AM, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 6 May 2011, Hillf Danton wrote:
->
->> Hi
->>
->> In the scenario that 2GB  physical RAM is available, and there is a
->> database application that eats 1.4GB RAM without leakage already
->> running, another leaker who leaks 4KB an hour is also running, could
->> the leaker be detected and killed in mm/oom_kill.c with default
->> configure when oom happens?
->>
->
-> Yes, if you know the database application is going to use 70% of your
-> system RAM and you wish to discount that from its memory use when being
-> considered for oom kill, set its /proc/pid/oom_score_adj to -700.
->
-> This is only possible on 2.6.36 and later kernels when oom_score_adj was
-> introduced.
->
-> If you'd like to completely disable oom killing, set
-> /proc/pid/oom_score_adj to -1000.
->
+On 05/07/2011 08:48 PM, Rafał Miłecki wrote:
+> 2011/5/7 George Kashperko<george@znau.edu.ua>:
+>> I guess core id 0x800 by 0x04BF vendor and 0x800 by 0x043B vendor will
+>> both be reported as ChipCommon which most likely is wrong for second
+>> one. Btw, ChipCommon is 0x500 for 4706 and there will be more new core
+>> codes for new Broadcom devices. Don't think its right to build core
+>> names database into kernel while there will be at most few of them used
+>> on particular end system.
+> This is constructive, I'll fix this, thanks.
 
-Thank you very much, David, for cool answer to my question.
+Hi Rafał,
 
-Hillf
+Late response, but I tried to tell what George clarified by the example 
+above so you need nested switch.
+
+I tend to agree with George that having this id to name conversion in 
+the bus driver may be nice for debugging, but apart from memory usage it 
+also gives you additional maintenance work. Leave it up to you.
+
+Gr. AvS
+
