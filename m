@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1EHBpk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 May 2011 21:45:40 -0400
-Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:32927 "EHLO bues.ch"
+	id S1753581Ab1EHBo7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 May 2011 21:44:59 -0400
+Received: from claw.goop.org ([74.207.240.146]:38432 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753746Ab1EHBpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 May 2011 21:45:20 -0400
-Subject: Re: [PATCH][WAS:bcmai,axi] bcma: add Broadcom specific AMBA bus
- driver
-From: Michael =?ISO-8859-1?Q?B=FCsch?= <m@bues.ch>
-To: George Kashperko <george@znau.edu.ua>
-Cc: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        b43-dev@lists.infradead.org, Greg KH <greg@kroah.com>,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1304796956.13983.65.camel@dev.znau.edu.ua>
-References: <1304632783-8781-1-git-send-email-zajec5@gmail.com>
-	 <201105061605.31625.arnd@arndb.de>
-	 <BANLkTikjr0ZTNOu69F+iKhwufE9KKMg4Tg@mail.gmail.com>
-	 <BANLkTimGBNT4FkS4mO9ToLWft0bCEYcEgg@mail.gmail.com>
-	 <1304790665.13983.10.camel@dev.znau.edu.ua>
-	 <BANLkTikLFff_86Fvg+jSty9vGLENiELF2Q@mail.gmail.com>
-	 <1304792795.13983.28.camel@dev.znau.edu.ua>
-	 <BANLkTi=6BFD4OmtU1WPxjbFJQe36=mZKEA@mail.gmail.com>
-	 <1304794931.13983.44.camel@dev.znau.edu.ua>
-	 <BANLkTik9FWgzpNWuMXXRjOj-rDvPNY_nCA@mail.gmail.com>
-	 <1304796956.13983.65.camel@dev.znau.edu.ua>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 08 May 2011 03:44:41 +0200
-Message-ID: <1304819081.21680.6.camel@maggie>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753095Ab1EHBo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 May 2011 21:44:58 -0400
+Message-ID: <4DC5F596.4090303@goop.org>
+Date: Sun, 08 May 2011 11:44:54 +1000
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, "Tian, Kevin" <kevin.tian@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
+ them
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>	 <alpine.LFD.2.02.1105061149330.3005@ionos>	 <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>	 <alpine.LFD.2.02.1105061505010.3005@ionos> <1304690697.26692.176.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1304690697.26692.176.camel@zakaz.uk.xensource.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-07 at 22:35 +0300, George Kashperko wrote: 
-> dbg_bcma_device_name
-> {
-> #ifdef DEBUG
-> 		case/switch/if/else stuff
-> #endif
-> 		return NULL;
-> }
-> But I don't see here much sense to hardcode names other than those of
-> buscommons/buscores for debugging purposes.
+On 05/07/2011 12:04 AM, Ian Campbell wrote:
+> I'm not really sure why these can't just be an evtchn without an
+> associated IRQ since it doesn't really have any interrupt-like
+> semantics. Perhaps just a general desire to keep event channels
+> abstracted into the core Xen event subsystem with IRQs as the public
+> facing API? Jeremy?
 
-Would you please read and understand the code before discussing this?
-That would help the discussion on the technical side.
+It doesn't really need to be an irq.  The main reason was so that it
+would appear in /proc/interrupts so I could use the counter as a "number
+of times a spinlock was kicked" counter.  That could be exposed in some
+other way if being part of the interrupt infrastructure brings too much
+baggage with it.
 
-Those names are hardcoded by definition. And just like 14e4 is the PCI
-ID for Broadcom devices, 800 is the AXI ID for Broadcom Chipcommon.
-
-And building an #ifdef mess around this stuff is not better than having
-a few bytes of _helpful_ information messages.
-You are absolutely right that those messages only help 1% of the people.
-Just as _any_ other kernel message.
-
--- 
-Greetings Michael.
-
+    J
