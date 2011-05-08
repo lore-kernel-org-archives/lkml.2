@@ -1,211 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab1EHMyQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 08:54:16 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:42911 "HELO
+	id S1754023Ab1EHMxr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 08:53:47 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:42935 "HELO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753567Ab1EHMwC (ORCPT
+	with SMTP id S1753623Ab1EHMwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 08:52:02 -0400
+	Sun, 8 May 2011 08:52:03 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v5 12/19] ARM: LPAE: Add fault handling support
-Date: Sun,  8 May 2011 13:51:31 +0100
-Message-Id: <1304859098-10760-13-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v5 13/19] ARM: LPAE: Add context switching support
+Date: Sun,  8 May 2011 13:51:32 +0100
+Message-Id: <1304859098-10760-14-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
 References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 08 May 2011 12:51:52.0022 (UTC) FILETIME=[B3C8BF60:01CC0D7E]
-X-MC-Unique: 111050813520001601
+X-OriginalArrivalTime: 08 May 2011 12:51:52.0335 (UTC) FILETIME=[B3F881F0:01CC0D7E]
+X-MC-Unique: 111050813520101101
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p48CsMTo020087
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p48CsAXo020083
 
-The DFSR and IFSR register format is different when LPAE is enabled. In
-addition, DFSR and IFSR have the similar definitions for the fault type.
-This modifies modifies the fault code to correctly handle the new
-format.
+With LPAE, TTBRx registers are 64-bit. The ASID is stored in TTBR0
+rather than a separate Context ID register. This patch makes the
+necessary changes to handle context switching on LPAE.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/mm/alignment.c |    8 ++++-
- arch/arm/mm/fault.c     |   80 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 87 insertions(+), 1 deletions(-)
+ arch/arm/mm/context.c |   19 +++++++++++++++++--
+ arch/arm/mm/proc-v7.S |   10 ++++++++--
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 724ba3b..bc98a6e 100644
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -906,6 +906,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	return 0;
- }
+diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
+index b0ee9ba..fcdb101 100644
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -22,6 +22,21 @@ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+ DEFINE_PER_CPU(struct mm_struct *, current_mm);
+ #endif
  
 +#ifdef CONFIG_ARM_LPAE
-+#define ALIGNMENT_FAULT		33
++#define cpu_set_asid(asid) {						\
++	unsigned long ttbl, ttbh;					\
++	asm volatile(							\
++	"	mrrc	p15, 0, %0, %1, c2		@ read TTBR0\n"	\
++	"	mov	%1, %2, lsl #(48 - 32)		@ set ASID\n"	\
++	"	mcrr	p15, 0, %0, %1, c2		@ set TTBR0\n"	\
++	: "=&r" (ttbl), "=&r" (ttbh)					\
++	: "r" (asid & ~ASID_MASK));					\
++}
 +#else
-+#define ALIGNMENT_FAULT		1
++#define cpu_set_asid(asid) \
++	asm("	mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (asid))
 +#endif
 +
  /*
-  * This needs to be done after sysctl_init, otherwise sys/ will be
-  * overwritten.  Actually, this shouldn't be in sys/ at all since
-@@ -939,7 +945,7 @@ static int __init alignment_init(void)
- 		ai_usermode = UM_FIXUP;
- 	}
- 
--	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
-+	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
- 			"alignment exception");
- 
- 	/*
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index ee76923..e06918b 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -33,10 +33,15 @@
- #define FSR_WRITE		(1 << 11)
- #define FSR_FS4			(1 << 10)
- #define FSR_FS3_0		(15)
-+#define FSR_FS5_0		(0x3f)
- 
- static inline int fsr_fs(unsigned int fsr)
+  * We fork()ed a process, and we need a new context for the child
+  * to run in.  We reserve version 0 for initial tasks so we will
+@@ -37,7 +52,7 @@ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
+ static void flush_context(void)
  {
-+#ifdef CONFIG_ARM_LPAE
-+	return fsr & FSR_FS5_0;
-+#else
- 	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
-+#endif
+ 	/* set the reserved ASID before flushing the TLB */
+-	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (0));
++	cpu_set_asid(0);
+ 	isb();
+ 	local_flush_tlb_all();
+ 	if (icache_is_vivt_asid_tagged()) {
+@@ -99,7 +114,7 @@ static void reset_context(void *info)
+ 	set_mm_context(mm, asid);
+ 
+ 	/* set the new ASID */
+-	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (mm->context.id));
++	cpu_set_asid(mm->context.id);
+ 	isb();
  }
  
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index 0996713..ad22628 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -115,8 +115,13 @@ ENDPROC(cpu_v7_dcache_clean_area)
+  */
+ ENTRY(cpu_v7_switch_mm)
  #ifdef CONFIG_MMU
-@@ -122,8 +127,10 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
- 
- 		pte = pte_offset_map(pmd, addr);
- 		printk(", *pte=%08llx", (long long)pte_val(*pte));
-+#ifndef CONFIG_ARM_LPAE
- 		printk(", *ppte=%08llx",
- 		       (long long)pte_val(pte[PTE_HWTABLE_PTRS]));
-+#endif
- 		pte_unmap(pte);
- 	} while(0);
- 
-@@ -490,6 +497,72 @@ static struct fsr_info {
- 	int	code;
- 	const char *name;
- } fsr_info[] = {
+-	mov	r2, #0
+ 	ldr	r1, [r1, #MM_CONTEXT_ID]	@ get mm->context.id
++	mov	r2, #0
 +#ifdef CONFIG_ARM_LPAE
-+	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
-+	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
-+	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
-+	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
-+	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
-+	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
-+	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
-+	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
-+	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
-+	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
-+	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
-+	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
-+	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
-+	{ do_bad,		SIGBUS,  BUS_ADRALN,	"alignment fault"		},
-+	{ do_bad,		SIGBUS,  0,		"debug event"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
-+	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
-+	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
-+	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
-+	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
++	and	r3, r1, #0xff
++	mov	r3, r3, lsl #(48 - 32)		@ ASID
++	mcrr	p15, 0, r0, r3, c2		@ set TTB 0
 +#else	/* !CONFIG_ARM_LPAE */
- 	/*
- 	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
- 	 * defines these to be "precise" aborts.
-@@ -531,6 +604,7 @@ static struct fsr_info {
- 	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
+ 	ALT_SMP(orr	r0, r0, #TTB_FLAGS_SMP)
+ 	ALT_UP(orr	r0, r0, #TTB_FLAGS_UP)
+ #ifdef CONFIG_ARM_ERRATA_430973
+@@ -127,12 +132,13 @@ ENTRY(cpu_v7_switch_mm)
+ #endif
+ 	mcr	p15, 0, r2, c13, c0, 1		@ set reserved context ID
+ 	isb
+-1:	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
++	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
+ 	isb
+ #ifdef CONFIG_ARM_ERRATA_754322
+ 	dsb
+ #endif
+ 	mcr	p15, 0, r1, c13, c0, 1		@ set context ID
 +#endif	/* CONFIG_ARM_LPAE */
- };
- 
- void __init
-@@ -569,6 +643,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- }
- 
- 
-+#ifdef CONFIG_ARM_LPAE
-+#define ifsr_info	fsr_info
-+#else	/* !CONFIG_ARM_LPAE */
- static struct fsr_info ifsr_info[] = {
- 	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
-@@ -603,6 +680,7 @@ static struct fsr_info ifsr_info[] = {
- 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
- };
-+#endif	/* CONFIG_ARM_LPAE */
- 
- void __init
- hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
-@@ -638,6 +716,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
- 
- static int __init exceptions_init(void)
- {
-+#ifndef CONFIG_ARM_LPAE
- 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
- 		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
- 				"I-cache maintenance fault");
-@@ -653,6 +732,7 @@ static int __init exceptions_init(void)
- 		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
- 				"section access flag fault");
- 	}
-+#endif
- 
- 	return 0;
- }
+ 	isb
+ #endif
+ 	mov	pc, lr
 
