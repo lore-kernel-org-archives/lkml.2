@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab1EHWwN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 18:52:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51704 "EHLO
+	id S1756176Ab1EHWwK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 18:52:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40833 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab1EHWll (ORCPT
+	with ESMTP id S932527Ab1EHWll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 May 2011 18:41:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mgMG8z6ABbpacM/ZalVfVivliO/X1nKWsSAvwBO55/JintmDwrqXqLiAaVyVAva3kt
-         ncxC5ELjCPXtb3SkCS+PQb5xl+YJttGAvWMuei/q6WGsUf+UkYEeEok+Rsq7TtpPO3oW
-         ovx9O8zE+EooNdyi6+JKTAmFQjgKAFKYzEirI=
+        b=wv+EtkrIognQoxlEQwsHTo4E/DkjzVBXkjyCaHkn9VjYi0/e94GoB8x6h1+Tm/bWV3
+         X+f+oDtT7QNSkIdVRUm8ZoxMuLYkrUfgaknfJ1GsWSdi3PIc3vU7OvOBJV5TcWJpZrmM
+         KwKDkD2Kmh69zhNBcQWzXOU166pWbzaavsf0g=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [v2 062/115] sysctl: remove useless ctl_table->parent field
-Date: Mon,  9 May 2011 00:39:14 +0200
-Message-Id: <1304894407-32201-63-git-send-email-lucian.grijincu@gmail.com>
+Subject: [v2 063/115] sysctl: simplify find_in_table
+Date: Mon,  9 May 2011 00:39:15 +0200
+Message-Id: <1304894407-32201-64-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.5.134.g1c08b
 In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
@@ -26,86 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'parent' field was added for selinux in:
-    commit d912b0cc1a617d7c590d57b7ea971d50c7f02503
-    [PATCH] sysctl: add a parent entry to ctl_table and set the parent entry
-
-and then was used for sysctl_check_table.
-
-Both of the users have found other implementations.
+The if (!p->procname) check is useless because the loop condition
+prevents it from happening.
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- include/linux/sysctl.h |    1 -
- kernel/sysctl.c        |   12 ------------
- kernel/sysctl_check.c  |    5 +++--
- 3 files changed, 3 insertions(+), 15 deletions(-)
+ fs/proc/proc_sysctl.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 095df3a..1c41dbd 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -1021,7 +1021,6 @@ struct ctl_table
- 	int maxlen;
- 	mode_t mode;
- 	struct ctl_table *child;
--	struct ctl_table *parent;	/* Automatically set */
- 	proc_handler *proc_handler;	/* Callback for text formatting */
- 	void *extra1;
- 	void *extra2;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index edacbdc..0450d3d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1671,15 +1671,6 @@ int sysctl_perm(struct ctl_table_root *root, struct ctl_table *table, int op)
- 	return test_perm(mode, op);
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index f50133c..d1640bc 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -52,18 +52,12 @@ static struct ctl_table *find_in_table(struct ctl_table *p, struct qstr *name)
+ 	int len;
+ 	for ( ; p->procname; p++) {
+ 
+-		if (!p->procname)
+-			continue;
+-
+ 		len = strlen(p->procname);
+ 		if (len != name->len)
+ 			continue;
+ 
+-		if (memcmp(p->procname, name->name, len) != 0)
+-			continue;
+-
+-		/* I have a match */
+-		return p;
++		if (memcmp(p->procname, name->name, len) == 0)
++			return p;
+ 	}
+ 	return NULL;
  }
- 
--static void sysctl_set_parent(struct ctl_table *parent, struct ctl_table *table)
--{
--	for (; table->procname; table++) {
--		table->parent = parent;
--		if (table->child)
--			sysctl_set_parent(table, table->child);
--	}
--}
--
- __init int sysctl_init(void)
- {
- 	struct ctl_table_header *kern_header, *vm_header, *fs_header,
-@@ -1688,8 +1679,6 @@ __init int sysctl_init(void)
- 	struct ctl_table_header *binfmt_misc_header;
- #endif
- 
--	sysctl_set_parent(NULL, root_table);
--
- 	kern_header = register_sysctl_paths(kern_path, kern_table);
- 	if (kern_header == NULL)
- 		goto fail_register_kern;
-@@ -1889,7 +1878,6 @@ struct ctl_table_header *__register_sysctl_paths(
- 	header->used = 0;
- 	header->unregistering = NULL;
- 	header->root = root;
--	sysctl_set_parent(NULL, header->ctl_table);
- 	header->count = 1;
- #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
- 	if (sysctl_check_table(namespaces, header->ctl_table)) {
-diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
-index cc26490..52f4810 100644
---- a/kernel/sysctl_check.c
-+++ b/kernel/sysctl_check.c
-@@ -100,8 +100,9 @@ static int __sysctl_check_table(struct nsproxy *namespaces,
- 	for (; table->procname; table++) {
- 		fail = NULL;
- 
--		if (table->parent) {
--			if (!table->parent->procname)
-+
-+		if (depth != 0) { /* has parent */
-+			if (!parents[depth - 1]->procname)
- 				SET_FAIL("Parent without procname");
- 		}
- 		if (table->child) {
 -- 
 1.7.5.134.g1c08b
 
