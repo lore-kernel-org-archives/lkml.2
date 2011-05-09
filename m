@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1EIGyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 02:54:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57330 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab1EIGyh (ORCPT
+	id S1752577Ab1EIHBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 03:01:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54952 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab1EIHBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 02:54:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable()
-Cc: kosaki.motohiro@jp.fujitsu.com, avagin@gmail.com,
-        Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan.kim@gmail.com>
-In-Reply-To: <1593977838.225469.1304473119444.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-References: <4D72580D.4000208@gmail.com> <1593977838.225469.1304473119444.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Message-Id: <20110509155612.1648.A69D9226@jp.fujitsu.com>
+	Mon, 9 May 2011 03:01:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=unP0hL+74Wi80Ko0iZpNC6TIyP+nq94jm+zAT3+BcDtcqmnCgOHiVMWHhrGvYcJeBU
+         fmwzFISalN0zRByEE3hiMaZLOeBCMODmbKMYU+dHLS4mncKrmGxzI5/zVB3MQCa4djwr
+         joWpoKk6uKjOKiWeWE27at4VmHQVAmy2yabfE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon,  9 May 2011 15:54:34 +0900 (JST)
+In-Reply-To: <1304901131-7104-3-git-send-email-sameo@linux.intel.com>
+References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+	<1304901131-7104-3-git-send-email-sameo@linux.intel.com>
+Date: Mon, 9 May 2011 09:01:10 +0200
+X-Google-Sender-Auth: azAJl9iCaOHbxkWdu7PtiYAo1V4
+Message-ID: <BANLkTi=sAFxHbMvnH8BOr-BzZ=uhhx-qaA@mail.gmail.com>
+Subject: Re: [PATCH 02/19] mfd: Use mfd cell platform_data for ab3550 cells
+ platform bits
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> 
-> ----- Original Message -----
-> > On 03/05/2011 06:20 PM, Minchan Kim wrote:
-> > > On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
-> > >> Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
-> > >> kernel may hang up, because shrink_zones() will do nothing, but
-> > >> all_unreclaimable() will say, that zone has reclaimable pages.
-> > >>
-> > >> do_try_to_free_pages()
-> > >> 	shrink_zones()
-> > >> 		 for_each_zone
-> > >> 			if (zone->all_unreclaimable)
-> > >> 				continue
-> > >> 	if !all_unreclaimable(zonelist, sc)
-> > >> 		return 1
-> > >>
-> > >> __alloc_pages_slowpath()
-> > >> retry:
-> > >> 	did_some_progress = do_try_to_free_pages(page)
-> > >> 	...
-> > >> 	if (!page&& did_some_progress)
-> > >> 		retry;
-> > >>
-> > >> Signed-off-by: Andrey Vagin<avagin@openvz.org>
-> > >> ---
-> > >>   mm/vmscan.c | 2 ++
-> > >>   1 files changed, 2 insertions(+), 0 deletions(-)
-> > >>
-> > >> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > >> index 6771ea7..1c056f7 100644
-> > >> --- a/mm/vmscan.c
-> > >> +++ b/mm/vmscan.c
-> > >> @@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist
-> > >> *zonelist,
-> > >>
-> > >>   	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> > >>   			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> > >> + if (zone->all_unreclaimable)
-> > >> + continue;
-> > >>   		if (!populated_zone(zone))
-> > >>   			continue;
-> > >>   		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> > >
-> > > zone_reclaimable checks it. Isn't it enough?
-> > I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
-> > This two patches are enough.
-> > > Does the hang up really happen or see it by code review?
-> > Yes. You can reproduce it for help the attached python program. It's
-> > not
-> > very clever:)
-> > It make the following actions in loop:
-> > 1. fork
-> > 2. mmap
-> > 3. touch memory
-> > 4. read memory
-> > 5. munmmap
-> > 
-> > >> --
-> > >> 1.7.1
-> I have tested this for the latest mainline kernel using the reproducer
-> attached, the system just hung or deadlock after oom. The whole oom
-> trace is here.
-> http://people.redhat.com/qcai/oom.log
-> 
-> Did I miss anything?
+2011/5/9 Samuel Ortiz <sameo@linux.intel.com>:
 
-Can you please try commit 929bea7c714220fc76ce3f75bef9056477c28e74?
+> With the addition of a platform device mfd_cell pointer, MFD drivers
+> can go back to passing platform data back to their sub drivers.
+> This allows for an mfd_cell->mfd_data removal and thus keep the sub drivers
+> MFD agnostic. This is mostly needed for non MFD aware sub drivers.
+>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+I was always just puzzled by that stuff anyway...
 
-
+Thanks,
+Linus Walleij
