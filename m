@@ -1,173 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775Ab1EIKIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 06:08:17 -0400
-Received: from smtpout01.highway.telekom.at ([195.3.96.112]:47458 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751308Ab1EIKIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 06:08:16 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: "Joey Lee" <jlee@novell.com>
-Subject: Re: i915/kms/backlight-combo mode problem
-Date: Mon, 9 May 2011 12:08:09 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.5; KDE/4.6.2; x86_64; ; )
-Cc: chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org,
-        "Michael Chang" <MChang@novell.com>, tiwai@suse.de,
-        linux-kernel@vger.kernel.org
-References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <201105081605.46617@rk-nord.at> <4DC8378A020000230002C5A8@novprvlin0050.provo.novell.com>
-In-Reply-To: <4DC8378A020000230002C5A8@novprvlin0050.provo.novell.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1751800Ab1EIKJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 06:09:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48058 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab1EIKJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 06:09:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=i/RhitBYuVGmY/KrLXitL396sr7mbzYsDCeMXfpxVkN+vtiKJObNMfWL3TVnnSDsvG
+         cvM3BOgvLoctmhSJwmtD3Cf68wJey/grIJYl7/0cavyAB7r7kC2sHC7qKxi9wQcLnEhK
+         fuq3nqv7SV7OtNGlYwJ7Hi3AdjvOCC3nkkvvY=
+Date: Mon, 9 May 2011 12:09:31 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
+Message-ID: <20110509100931.GH1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-5-git-send-email-tj@kernel.org>
+ <201105082358.20159.vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105091208.10379@rk-nord.at>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105082358.20159.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joey Lee -- Monday 09 May 2011:
-> The following is debug patch, and please add kernel parameter
-> drm.debug=0x02 :
+Hello,
 
-The result is with acpi_osi=Linux:
+On Sun, May 08, 2011 at 11:58:20PM +0200, Denys Vlasenko wrote:
+> Are rules for PTRACE_INTERRUPT the same? That is, what happens
+> if a different trap is taken?
 
+Oh, PTRACE_INTERRUPT is different.  If it's scheduled, it will
+eventually happen.  Other traps may happen before but INTERRUPT trap
+will take place before control is returned to userland.
 
-boot phase:
-[    3.310274] [drm:intel_panel_get_backlight], get backlight val = 2890
-[    3.310280] [drm:intel_panel_get_backlight], get backlight PWM = 2890
-[    3.310615] [drm:intel_panel_get_backlight], get backlight val = 2890
-[    3.310617] [drm:intel_panel_get_backlight], get backlight PWM = 2890
-[    3.310619] [drm:intel_panel_set_backlight], set backlight PWM = 0
-[    3.310622] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401930
-[    3.310624] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[    3.310626] [drm:intel_panel_set_backlight], set backlight level = 0
+> Can you add API notes in the header, above corresponding defines? -
+> 
+> --- a/include/linux/ptrace.h
+> +++ b/include/linux/ptrace.h
+> @@ -48,6 +48,7 @@
+>  #define PTRACE_SETREGSET       0x4205
+>  
+> <============================================ ADD COMMENT HERE
+>  #define PTRACE_SEIZE           0x4206
+> <============================================ ADD COMMENT HERE
+> +#define PTRACE_INTERRUPT       0x4207
+> 
+> 
+> They will be much more visible and up-to-date there than in Documentation,
+> git logs etc...
 
-[    3.641522] [drm:intel_panel_set_backlight], set backlight PWM = 2890
-[    3.641525] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399040
-[    3.641527] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[    3.641529] [drm:intel_panel_set_backlight], set backlight level = 2890
+Hmmm... I was thinking about writing a proper ptrace API doc with
+example programs under Documentation/.  It's userland visible API so
+it shouldn't change all that much and the amount of necessary
+documentation would be too much for comments.
 
-[   11.410563] video LNXVIDEO:01: Restoring backlight state
+Thank you.
 
-
-
-brightness up:
-   [no output]
-
-
-
-brightness down:
-[  152.697127] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  152.697136] [drm:intel_panel_set_backlight], set backlight PWM = 283
-[  152.697141] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401930
-[  152.697146] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  152.697150] [drm:intel_panel_set_backlight], set backlight level = 283
-
-[  166.720631] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  166.720640] [drm:intel_panel_set_backlight], set backlight PWM = 578
-[  166.720645] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399323
-[  166.720649] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  166.720654] [drm:intel_panel_set_backlight], set backlight level = 578
-
-[  178.091776] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  178.091784] [drm:intel_panel_set_backlight], set backlight PWM = 861
-[  178.091789] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399618
-[  178.091793] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  178.091797] [drm:intel_panel_set_backlight], set backlight level = 861
-
-[  188.888370] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  188.888379] [drm:intel_panel_set_backlight], set backlight PWM = 1156
-[  188.888383] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399901
-[  188.888388] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  188.888392] [drm:intel_panel_set_backlight], set backlight level = 1156
-
-[  196.411657] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  196.411665] [drm:intel_panel_set_backlight], set backlight PWM = 1439
-[  196.411670] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189400196
-[  196.411674] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  196.411678] [drm:intel_panel_set_backlight], set backlight level = 1439
-
-[  201.256229] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  201.256238] [drm:intel_panel_set_backlight], set backlight PWM = 1734
-[  201.256243] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189400479
-[  201.256247] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  201.256252] [drm:intel_panel_set_backlight], set backlight level = 1734
-
-[  206.939838] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  206.939846] [drm:intel_panel_set_backlight], set backlight PWM = 2017
-[  206.939851] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189400774
-[  206.939856] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  206.939860] [drm:intel_panel_set_backlight], set backlight level = 2017
-
-[  213.779732] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  213.779740] [drm:intel_panel_set_backlight], set backlight PWM = 2312
-[  213.779744] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401057
-[  213.779749] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  213.779753] [drm:intel_panel_set_backlight], set backlight level = 2312
-
-[  222.583806] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  222.583814] [drm:intel_panel_set_backlight], set backlight PWM = 2595
-[  222.583819] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401352
-[  222.583824] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  222.583828] [drm:intel_panel_set_backlight], set backlight level = 2595
-
-[  229.345860] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  229.345870] [drm:intel_panel_set_backlight], set backlight PWM = 2595
-[  229.345874] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401635
-[  229.345879] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  229.345883] [drm:intel_panel_set_backlight], set backlight level = 2595
-
-
-
-brightness up:
-[  240.594464] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  240.594474] [drm:intel_panel_set_backlight], set backlight PWM = 2312
-[  240.594479] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401635
-[  240.594483] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  240.594487] [drm:intel_panel_set_backlight], set backlight level = 2312
-
-[  240.816722] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  240.816730] [drm:intel_panel_set_backlight], set backlight PWM = 2017
-[  240.816734] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401352
-[  240.816739] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  240.816743] [drm:intel_panel_set_backlight], set backlight level = 2017
-
-[  240.999973] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  240.999981] [drm:intel_panel_set_backlight], set backlight PWM = 1734
-[  240.999985] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401057
-[  240.999990] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  240.999994] [drm:intel_panel_set_backlight], set backlight level = 1734
-
-[  241.212456] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  241.212464] [drm:intel_panel_set_backlight], set backlight PWM = 1439
-[  241.212469] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189400774
-[  241.212473] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  241.212478] [drm:intel_panel_set_backlight], set backlight level = 1439
-
-[  241.395611] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  241.395619] [drm:intel_panel_set_backlight], set backlight PWM = 1156
-[  241.395624] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189400479
-[  241.395628] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  241.395633] [drm:intel_panel_set_backlight], set backlight level = 1156
-
-[  242.039460] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  242.039470] [drm:intel_panel_set_backlight], set backlight PWM = 283
-[  242.039475] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189400196
-[  242.039479] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  242.039484] [drm:intel_panel_set_backlight], set backlight level = 283
-
-[  242.044495] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  242.044502] [drm:intel_panel_set_backlight], set backlight PWM = 283
-[  242.044507] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399323
-[  242.044511] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  242.044515] [drm:intel_panel_set_backlight], set backlight level = 283
-
-[  242.077032] [drm:intel_panel_get_max_backlight], max backlight PWM = 2890
-[  242.077038] [drm:intel_panel_set_backlight], set backlight PWM = 0
-[  242.077043] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399323
-[  242.077047] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  242.077052] [drm:intel_panel_set_backlight], set backlight level = 0
-
-m.
+-- 
+tejun
