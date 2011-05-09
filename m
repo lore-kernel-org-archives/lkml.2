@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1EIN7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:59:37 -0400
-Received: from atl.turmel.org ([74.117.157.138]:50208 "EHLO atl.turmel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab1EIN7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:59:35 -0400
-X-Greylist: delayed 1124 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 May 2011 09:59:35 EDT
-Message-ID: <4DC7EEE2.7050101@turmel.org>
-Date: Mon, 09 May 2011 09:40:50 -0400
-From: Phil Turmel <philip@turmel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1753440Ab1EINoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:44:20 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:45192 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752924Ab1EINoT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:44:19 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: Per Forlin <per.forlin@linaro.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Date: Mon, 9 May 2011 06:44:05 -0700
+Subject: Re: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize
+ latency
+Thread-Topic: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize
+ latency
+Thread-Index: AcwOTyry7x47NjHzQVuj6vdCzjU2qQ==
+Message-ID: <5D6BC6C8-D3C6-4987-B8AF-523A500D8309@marvell.com>
+References: <1304795706-27308-1-git-send-email-per.forlin@linaro.org>
+ <0F831E97-0168-4CD5-985C-4965BFF816A0@marvell.com>
+ <BANLkTikid1yHh6AdgOeqy7NqS8D=W0SWTw@mail.gmail.com>
+In-Reply-To: <BANLkTikid1yHh6AdgOeqy7NqS8D=W0SWTw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: microcai <microcaicai@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Question] Where is the missing 384k? Please, I've searching
- for it years!
-References: <4DC6DE72.1000505@gmail.com>
-In-Reply-To: <4DC6DE72.1000505@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good morning, microcai,
 
-On 05/08/2011 02:18 PM, microcai wrote:
-> It's being too long since I got this question.
-> I have to ask, even with a chance that I am considered as spam, and be
-> banned by kernel.org, I have to ask.
-> Please CC me if any one is going to answer my questions, I'll be
-> appreciate if you solve my haze.
+On May 9, 2011, at 5:34 AM, Per Forlin wrote:
 
-I'll try.
+> On 9 May 2011 04:05, Philip Rakity <prakity@marvell.com> wrote:
+>> 
+>> Hi Per,
+>> 
+>> We noticed on some of our systems if we ADMA or SDMA and a bounce buffer it is significantly faster then SDMA.
+>> 
+> I have not done work with ADMA or SDMA. Where should I look to read
+> more about it?
+> Are these the right places. DMA iop-dma.c and imx-sdma.c, MMC: sdhci.c.
 
-> So, my question is really simple, where is the missing 384k RAM?
+sdhci.c for ADMA and SDMA
+
+spec is at
+http://www.sdcard.org/developers/tech/sdcard/pls/simplified_specs/
+
+version 3 discusses ADMA
+
 > 
-> When I read the books about PC, or see the output of dmesg, I've always
-> told that, 640k-1M is reserved for BIOS, and should not be used.
+>> I believe ADMA will do large transfers.  Another data point.
+>> 
+>> Philip
+> Thanks,
+> Per
 > 
-> 1)
-> 384k RAM is reserved because BIOS is there. But I've heard that BIOS is
-> really in a ROM, not in RAM. So, where is the RAM when CPU is addressing
-> the ROM? Does the ROM just override the RAM and makes the RAM completely
-> un-addressable? What if people just got 2MB RAM? 384k of 2MB RAM is a
-> lot of wast!
+>> 
+>> On May 7, 2011, at 12:14 PM, Per Forlin wrote:
+>> 
+>>> How significant is the cache maintenance over head?
+>>> It depends, the eMMC are much faster now
+>>> compared to a few years ago and cache maintenance cost more due to
+>>> multiple cache levels and speculative cache pre-fetch. In relation the
+>>> cost for handling the caches have increased and is now a bottle neck
+>>> dealing with fast eMMC together with DMA.
+>>> 
+>>> The intention for introducing none blocking mmc requests is to minimize the
+>>> time between a mmc request ends and another mmc request starts. In the
+>>> current implementation the MMC controller is idle when dma_map_sg and
+>>> dma_unmap_sg is processing. Introducing none blocking mmc request makes it
+>>> possible to prepare the caches for next job parallel with an active
+>>> mmc request.
+>>> 
+>>> This is done by making the issue_rw_rq() none blocking.
+>>> The increase in throughput is proportional to the time it takes to
+>>> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+>>> a request and how fast the memory is. The faster the MMC/SD is
+>>> the more significant the prepare request time becomes. Measurements on U5500
+>>> and Panda on eMMC and SD shows significant performance gain for for large
+>>> reads when running DMA mode. In the PIO case the performance is unchanged.
+>>> 
+>>> There are two optional hooks pre_req() and post_req() that the host driver
+>>> may implement in order to move work to before and after the actual mmc_request
+>>> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+>>> the dma descriptor and post_req runs the dma_unmap_sg.
+>>> 
+>>> Details on measurements from IOZone and mmc_test:
+>>> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+>>> 
+>>> Under consideration:
+>>> * Make pre_req and post_req private to core.c.
+>>> * Generalize implementation and make it available for SDIO.
+>>> 
+>>> Changes since v2:
+>>> * Fix compile warnings in core.c and block.c
+>>> * Simplify max transfer size in mmc_test
+>>> * set TASK_RUNNING in queue.c before issue_req()
+>>> 
+>>> Per Forlin (12):
+>>>  mmc: add none blocking mmc request function
+>>>  mmc: mmc_test: add debugfs file to list all tests
+>>>  mmc: mmc_test: add test for none blocking transfers
+>>>  mmc: add member in mmc queue struct to hold request data
+>>>  mmc: add a block request prepare function
+>>>  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
+>>>  mmc: add a second mmc queue request member
+>>>  mmc: add handling for two parallel block requests in issue_rw_rq
+>>>  mmc: test: add random fault injection in core.c
+>>>  omap_hsmmc: use original sg_len for dma_unmap_sg
+>>>  omap_hsmmc: add support for pre_req and post_req
+>>>  mmci: implement pre_req() and post_req()
+>>> 
+>>> drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
+>>> drivers/mmc/card/mmc_test.c   |  340 +++++++++++++++++++++++++++-
+>>> drivers/mmc/card/queue.c      |  180 ++++++++++------
+>>> drivers/mmc/card/queue.h      |   31 ++-
+>>> drivers/mmc/core/core.c       |  132 ++++++++++-
+>>> drivers/mmc/core/debugfs.c    |    5 +
+>>> drivers/mmc/host/mmci.c       |  146 +++++++++++-
+>>> drivers/mmc/host/mmci.h       |    8 +
+>>> drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
+>>> include/linux/mmc/core.h      |    9 +-
+>>> include/linux/mmc/host.h      |   13 +-
+>>> lib/Kconfig.debug             |   11 +
+>>> 12 files changed, 1174 insertions(+), 284 deletions(-)
+>>> 
+>>> --
+>>> 1.7.4.1
+>>> 
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> 
+>> 
 
-The ROM and the RAM can't share the same address.  Memory devices of any kind present themselves as a big chuck of bits, addressable from 0 to X.  All other manipulations must be done in address decoding logic in a memory controller chipset.  The chipset can then combine multiple memory chips into consecutive addresses, or interleave them in various ways for speed, or apply arithmetic adjustments to selected addresses.  The system BIOS start address would be offset so the BIOS filled the last addresses below 1M.
-
-In a classic DOS system, any address that didn't match one of the motherboard chipset's known blocks would be passed to the system bus (ISA) for add-on cards to respond to.  Add-on cards, with their own address decoders, had to use addresses that didn't conflict with the motherboard, or each other.  Early video card BIOS extensions were reached this way, along with network boot ROMs, and early SCSI controller ROMs.  It was fairly common to have DIP switches on these cards to set the ROM start address, so you could juggle multiple add-on cards.
-
-All of that is gone, now.  Modern systems use multiple levels of address decoding and remapping in hardware, with standardized configuration methods, such as PCI bus "BAR"s.
-
-> 2)
-> Is there a way to unmap the ROM and get back the RAM? or remap the 384k
-> RAM to upper address? If there is , why don't the kernel use this and
-> get my RAM(which is money) back?
-
-This is a hardware problem.  If the RAM is to be reached instead of the ROM, something must change in the memory controller chipset's address decoders.  If the chipset doesn't have configurable address decoders, it can't be done.
-
-> 3)
-> If there is not way to unmap the ROM or remap the RAM, why do they wast
-> 384k RAM there! Even if 4G RAM is common now, 2M RAM is common in the
-> old days. Why did they do that!
-
-Not all of the old motherboards wasted the space.  I can't identify specific ones, as I didn't keep any of that old hardware, but many chipsets would remap the 384K to above the last normal RAM address.  A 2MB machine would then "look" like 2432KB, but with a gap from 640KB to 1024KB.
-
-Another popular option was to set up "shadow" RAM to avoid accessing slow ROM chips.  The BIOS would copy the real ROM contents into the corresponding RAM, then mark that block as read-only with configurable chipset logic.  The "wasted" RAM would then be used to supply the ROM content, but at the much faster RAM speed.  (This would happen before the BIOS turned everything over to the boot loader.)
-
-I vaguely remember one BIOS that allowed me to choose between "shadow" and "remap".
-
-Bottom line: 1) Hardware problem, not software, and 2) The BIOS must set it up.
-
-> Please help me to erase the big big question mark in my hart, Thanks!
-
-I hope this helps.
-
-Phil
