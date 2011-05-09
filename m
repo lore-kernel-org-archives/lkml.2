@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab1EIOET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:04:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40263 "EHLO
+	id S1753932Ab1EIOHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:07:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42736 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab1EIOER (ORCPT
+	with ESMTP id S1753680Ab1EIOG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:04:17 -0400
+	Mon, 9 May 2011 10:06:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ckyCryVfqEeMuTmiGqBBoFWoB53gd7UmE13K4RKJU1KeULPsPZjz6heYInuxyqcOrl
-         JEPHlVpTvu5eyhzDHRU+AWe93iidAGzuI7FfFeNrKJ4JtCpE3Yr6Q6OwEbJG0cVVP1uu
-         Bvs1HwEbxFUGOOZYJeHcnpcFD7WrOcp/sB+bo=
-Date: Mon, 9 May 2011 16:04:11 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
-Cc: Kernel List <linux-kernel@vger.kernel.org>,
-        "Nathan A. Mourey II" <nmoureyii@ne.rr.com>,
-        Connor H <cmdkhh@gmail.com>
-Subject: [PATCH #upstream-fixes] libata: fix oops when LPM is used with PMP
-Message-ID: <20110509140411.GJ1661@htj.dyndns.org>
-References: <1304555277.2059.2.camel@localhost.localdomain>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=gWZZJpKHn3vem3I/7Wv7Ccicceed5VHK/9Yxjo94GGFfE7e+5UYCOR0n1DUiAAmBv5
+         v9yHXED7USy45OSq23q9MsM4V/1+mBl0c8+RXOlaIq4f1v7XeAmnwiylkCyuVcSvPOEl
+         yeWbKPQQCFxBStOdJgFgWf7JOU/dVKmCVpnX8=
+Message-ID: <4DC7F4AB.90607@gmail.com>
+Date: Mon, 09 May 2011 16:05:31 +0200
+From: Vladimir Motyka <vladimir.motyka@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304555277.2059.2.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: cjb@laptop.org
+CC: kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/mmc/card/block.c: fix potential null dereference
+ 'idata'
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ae01b2493c (libata: Implement ATA_FLAG_NO_DIPM and apply it to mcp65)
-added ATA_FLAG_NO_DIPM and made ata_eh_set_lpm() check the flag.
-However, @ap is NULL if @link points to a PMP link and thus the
-unconditional @ap->flags dereference leads to the following oops.
+When allocation of idata fails there was a null dereferece.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-  IP: [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
-  ...
-  Pid: 295, comm: scsi_eh_4 Tainted: P            2.6.38.5-core2 #1 System76, Inc. Serval Professional/Serval Professional
-  RIP: 0010:[<ffffffff813f98e1>]  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
-  RSP: 0018:ffff880132defbf0  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff880132f40000 RCX: 0000000000000000
-  RDX: ffff88013377c000 RSI: ffff880132f40000 RDI: 0000000000000000
-  RBP: ffff880132defce0 R08: ffff88013377dc58 R09: ffff880132defd98
-  R10: 0000000000000000 R11: 00000000ffffffff R12: 0000000000000000
-  R13: 0000000000000000 R14: ffff88013377c000 R15: 0000000000000000
-  FS:  0000000000000000(0000) GS:ffff8800bf700000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 0000000000000018 CR3: 0000000001a03000 CR4: 00000000000406e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process scsi_eh_4 (pid: 295, threadinfo ffff880132dee000, task ffff880133b416c0)
-  Stack:
-   0000000000000000 ffff880132defcc0 0000000000000000 ffff880132f42738
-   ffffffff813ee8f0 ffffffff813eefe0 ffff880132defd98 ffff88013377f190
-   ffffffffa00b3e30 ffffffff813ef030 0000000032defc60 ffff880100000000
-  Call Trace:
-   [<ffffffff81400867>] sata_pmp_error_handler+0x607/0xc30
-   [<ffffffffa00b273f>] ahci_error_handler+0x1f/0x70 [libahci]
-   [<ffffffff813faade>] ata_scsi_error+0x5be/0x900
-   [<ffffffff813cf724>] scsi_error_handler+0x124/0x650
-   [<ffffffff810834b6>] kthread+0x96/0xa0
-   [<ffffffff8100cd64>] kernel_thread_helper+0x4/0x10
-  Code: 8b 95 70 ff ff ff b8 00 00 00 00 48 3b 9a 10 2e 00 00 48 0f 44 c2 48 89 85 70 ff ff ff 48 8b 8d 70 ff ff ff f6 83 69 02 00 00 01 <48> 8b 41 18 0f 85 48 01 00 00 48 85 c9 74 12 48 8b 51 08 48 83
-  RIP  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
-   RSP <ffff880132defbf0>
-  CR2: 0000000000000018
+Signed-off-by: Vladimir Motyka <vladimir.motyka@gmail.com>
 
-Fix it by testing @link->ap->flags instead.
-
-stable: ATA_FLAG_NO_DIPM was added during 2.6.39 cycle but was
-        backported to 2.6.37 and 38.  This is a fix for that and thus
-        also applicable to 2.6.37 and 38.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
-LKML-Reference: <1304555277.2059.2.camel@localhost.localdomain>
-Cc: Connor H <cmdkhh@gmail.com>
-Cc: stable@kernel.org
 ---
-Nathan, thanks a lot for the report.  Connor, thanks for the analysis
-but it was a bit off.  :-)
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 407836d..3dec493 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -266,10 +266,10 @@ static struct mmc_blk_ioc_data
+*mmc_blk_ioctl_copy_from_user(
+ 	return idata;
 
- drivers/ata/libata-eh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ copy_err:
+-	kfree(idata->buf);
++	if(idata)
++		kfree(idata->buf);
+ 	kfree(idata);
+ 	return ERR_PTR(err);
+-
+ }
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index f26f2fe..dad9fd6 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -3316,7 +3316,7 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
- 	struct ata_eh_context *ehc = &link->eh_context;
- 	struct ata_device *dev, *link_dev = NULL, *lpm_dev = NULL;
- 	enum ata_lpm_policy old_policy = link->lpm_policy;
--	bool no_dipm = ap->flags & ATA_FLAG_NO_DIPM;
-+	bool no_dipm = link->ap->flags & ATA_FLAG_NO_DIPM;
- 	unsigned int hints = ATA_LPM_EMPTY | ATA_LPM_HIPM;
- 	unsigned int err_mask;
- 	int rc;
+ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
