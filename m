@@ -1,113 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1EILHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 07:07:40 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:52861 "EHLO
-	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab1EILHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 07:07:39 -0400
-Date: Mon, 9 May 2011 13:07:38 +0200 (CEST)
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Matthew Wilcox <matthew@wil.cx>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sym53c8xx_2: avoid data corruption when disk rejects
- commands with QUEUE FULL
-In-Reply-To: <1304886595.4865.3.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.00.1105091304000.32299@artax.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1105082057460.15552@artax.karlin.mff.cuni.cz> <1304886595.4865.3.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Personality-Disorder: Schizoid
+	id S1752501Ab1EILL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 07:11:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24489 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179Ab1EILL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 07:11:56 -0400
+Date: Mon, 9 May 2011 13:11:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: mingo@elte.hu
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH] kprobes,x86: disable irq durinr optimized callback
+Message-ID: <20110509111149.GB3981@jolsa.brq.redhat.com>
+References: <1303822891-8450-1-git-send-email-jolsa@redhat.com>
+ <20110426134625.GA21840@home.goodmis.org>
+ <20110426141903.GC1896@jolsa.brq.redhat.com>
+ <4DB7688B.7010503@hitachi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DB7688B.7010503@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 27, 2011 at 09:51:23AM +0900, Masami Hiramatsu wrote:
+> (2011/04/26 23:19), Jiri Olsa wrote:
+> > On Tue, Apr 26, 2011 at 09:46:25AM -0400, Steven Rostedt wrote:
+> >> On Tue, Apr 26, 2011 at 03:01:31PM +0200, Jiri Olsa wrote:
 
+SNIP
 
-On Sun, 8 May 2011, James Bottomley wrote:
-
-> On Sun, 2011-05-08 at 21:00 +0200, Mikulas Patocka wrote:
-> > [ the maintainer is not responding, so I'm sending this to other people ]
+> >>> hi,
 > > 
-> > sym53c8xx_2: avoid data corruption when disk rejects commands with QUEUE 
-> > FULL
+> > makes the optimized kprobes to be missed. None is missed
+> > if the kprobe optimatization is disabled.
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > 
-> Could you describe the corruption, with logs?
-
-sd 0:0:0:0: [sda] Unhandled error code
-sd 0:0:0:0: [sda] Result: hostbyte=DID_SOFT_ERROR driverbyte=DRIVER_OK
-sd 0:0:0:0: [sda] CDB: Write(10): 2a 00 00 01 37 9a 00 00 02 00
-lost page write due to I/O error on sda1
-sd 0:0:0:0: [sda] Unhandled error code
-sd 0:0:0:0: [sda] Result: hostbyte=DID_SOFT_ERROR driverbyte=DRIVER_OK
-sd 0:0:0:0: [sda] CDB: Write(10): 2a 00 00 01 38 10 00 00 10 00
-lost page write due to I/O error on sda1
-...
-
-> The behaviour you list below should may cause disk errors to the 
-> filesystem, but it shouldn't cause corruption.
-
-It causes disk write errors, and in most filesystems, write errors result 
-in data corruption --- i.e. some metadata are written, other metadata 
-aren't, and the result is a corrupted filesystem.
-
-> > When the controller encounters an error (including QUEUE FULL or BUSY 
-> > status), it aborts all not yet submitted requests in the function 
-> > sym_dequeue_from_squeue.
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > 
-> This would be a driver bug: QUEUE_FULL or BUSY should never cause aborts
-> of outstanding commands.
+> 
+> Ingo, could you pull this as a bugfix?
 
-Yes, it is a driver bug.
+hi,
+could this be pulled in?
 
-> > This function aborts them with DID_SOFT_ERROR.
-> > 
-> > If the disk has a full tag queue, the request that caused the overflow is
-> > aborted with QUEUE FULL status (and the scsi midlayer properly retries it
-> > until it is accepted by the disk), but other requests are aborted with
-> > DID_SOFT_ERROR --- for them, the midlayer does just a few retries and then
-> > signals the error up to sd.
-> > 
-> > The result is that disk returning QUEUE FULL causes request failures.
-> > 
-> > The error was reproduced on 53c895 with COMPAQ BD03685A24 disk (rebranded
-> > ST336607LC) with command queue 48 or 64 tags. The disk has 64 tags, but
-> > under some access patterns it return QUEUE FULL when there are less than
-> > 64 pending tags. The SCSI specification allows returning QUEUE FULL
-> > anytime and it is up to the host to retry.
-> > 
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> > 
+thanks,
+jirka
+
+> 
+> Thank you!
+> 
+> 
 > > ---
-> >  drivers/scsi/sym53c8xx_2/sym_hipd.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
+> >  arch/x86/kernel/kprobes.c |    5 +++--
+> >  1 files changed, 3 insertions(+), 2 deletions(-)
 > > 
-> > Index: linux-2.6.36-rc5-fast/drivers/scsi/sym53c8xx_2/sym_hipd.c
-> > ===================================================================
-> > --- linux-2.6.36-rc5-fast.orig/drivers/scsi/sym53c8xx_2/sym_hipd.c	2010-09-27 10:25:59.000000000 +0200
-> > +++ linux-2.6.36-rc5-fast/drivers/scsi/sym53c8xx_2/sym_hipd.c	2010-09-27 10:26:27.000000000 +0200
-> > @@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *
-> >  		if ((target == -1 || cp->target == target) &&
-> >  		    (lun    == -1 || cp->lun    == lun)    &&
-> >  		    (task   == -1 || cp->tag    == task)) {
-> > +#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
-> >  			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
-> > +#else
-> > +			sym_set_cam_status(cp->cmd, DID_REQUEUE);
-> > +#endif
+> > diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> > index c969fd9..f1a6244 100644
+> > --- a/arch/x86/kernel/kprobes.c
+> > +++ b/arch/x86/kernel/kprobes.c
+> > @@ -1183,12 +1183,13 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
+> >  					 struct pt_regs *regs)
+> >  {
+> >  	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+> > +	unsigned long flags;
+> >  
+> >  	/* This is possible if op is under delayed unoptimizing */
+> >  	if (kprobe_disabled(&op->kp))
+> >  		return;
+> >  
+> > -	preempt_disable();
+> > +	local_irq_save(flags);
+> >  	if (kprobe_running()) {
+> >  		kprobes_inc_nmissed_count(&op->kp);
+> >  	} else {
+> > @@ -1207,7 +1208,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
+> >  		opt_pre_handler(&op->kp, regs);
+> >  		__this_cpu_write(current_kprobe, NULL);
+> >  	}
+> > -	preempt_enable_no_resched();
+> > +	local_irq_restore(flags);
+> >  }
+> >  
+> >  static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
 > 
-> This isn't a good idea ... that return code causes retries for ever.
-
-If the disk returns QUEUE_FULL, we should retry forever.
-
-> I think the correct fix is just to make the QUEUE_FULL handling in the
-> driver work.
-
-When I enabled SYM_OPT_HANDLE_DEVICE_QUEUEING, I got crashes.
-
-> James
-
-Mikulas
+> 
+> -- 
+> Masami HIRAMATSU
+> Software Platform Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
