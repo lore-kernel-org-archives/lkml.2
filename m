@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab1EIGCB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 02:02:01 -0400
-Received: from mail.perches.com ([173.55.12.10]:1363 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab1EIGCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 02:02:00 -0400
-Subject: RE: [PATCH V2 5/5] pch_dma: Support new device ML7223 IOH
-From: Joe Perches <joe@perches.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: "'Dan Williams'" <dan.j.williams@intel.com>,
-        "'Vinod Koul'" <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-In-Reply-To: <E71198D0C22C4CA9A3A4BE42388E27D3@hacdom.okisemi.com>
-References: <1304912885-6747-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-	 <1304913941.19586.8.camel@Joe-Laptop>
-	 <E71198D0C22C4CA9A3A4BE42388E27D3@hacdom.okisemi.com>
+	id S1752726Ab1EIGDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 02:03:48 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:47937 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752084Ab1EIGDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 02:03:47 -0400
+Message-ID: <4DC783A9.5060802@st.com>
+Date: Mon, 9 May 2011 11:33:21 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH V4 3/5] dmaengine/dw_dmac: Divide one sg to many desc,
+ if sg len is greater than DWC_MAX_COUNT
+References: <cover.1304596524.git.viresh.kumar@st.com>	 <f3150fa0fb160c70760b95ac72423ebba354f188.1304596524.git.viresh.kumar@st.com> <1304918425.32447.20.camel@vkoul-udesk3>
+In-Reply-To: <1304918425.32447.20.camel@vkoul-udesk3>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 08 May 2011 23:01:59 -0700
-Message-ID: <1304920919.19586.23.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-09 at 14:33 +0900, Tomoya MORINAGA wrote:
-> Hi Joe, 
+On 05/09/2011 10:50 AM, Koul, Vinod wrote:
+>> > @@ -695,9 +695,15 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>> >  		reg = dws->tx_reg;
+>> >  		for_each_sg(sgl, sg, sg_len, i) {
+>> >  			struct dw_desc	*desc;
+>> > -			u32		len;
+>> > -			u32		mem;
+>> > +			u32		len, dlen, mem;
+>> >  
+>> > +			mem = sg_phys(sg);
+>> > +			len = sg_dma_len(sg);
+>> > +			mem_width = 2;
+> hardcoding mem_width doesn't make sense, you should take this from input
+> params
 
-Hi.
+Firstly, this change is not introduced in this patch, i have just rearranged this.
+So, will send separate patch if this change is required.
 
-> On Monday, May 09, 2011 1:06 PM, Joe Perches wrote:
-> > >  config PCH_DMA
-> > > -	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7213 
-> > IOH DMA support"
-> > > +	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR 
-> > IOH(ML7213/ML7223)"
-> > DMA support?
-> I will modify like below.
-> tristate "Intel EG20T PCH / OKI Semi ML7213 IOH DMA support
+Secondly, peripheral width is taken from chan->private. And by 2 for mem_width,
+we meant word-by-word here. Shouldn't we always try word-by-word here?
+How should we pass width for memory?
 
-Maybe ML72x3 IOH DMA support?
-
-
+-- 
+viresh
