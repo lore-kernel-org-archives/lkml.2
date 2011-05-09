@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1EIIAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:00:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47377 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab1EIIAQ (ORCPT
+	id S1753333Ab1EIIQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:16:16 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:40813 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750882Ab1EIIQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:00:16 -0400
-Date: Mon, 9 May 2011 10:00:02 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] leds: provide helper to register "leds-gpio" devices
-Message-ID: <20110509080002.GA29089@pengutronix.de>
-References: <1302097097.22904.41.camel@rex>
- <1302554157-24145-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20110412214848.GI7806@n2100.arm.linux.org.uk>
- <20110413062316.GH18850@pengutronix.de>
- <1304715802.30391.157.camel@rex>
+	Mon, 9 May 2011 04:16:14 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
+        <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH V5 0/5] dmaengine/dw_dmac updates
+Date: Mon, 9 May 2011 13:45:48 +0530
+Message-ID: <cover.1304928776.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1304715802.30391.157.camel@rex>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Richard,
+This patchset fixes few issues and extends its support.
 
-On Fri, May 06, 2011 at 10:03:22PM +0100, Richard Purdie wrote:
-> On Wed, 2011-04-13 at 08:23 +0200, Uwe Kleine-König wrote:
-> > On Tue, Apr 12, 2011 at 10:48:48PM +0100, Russell King - ARM Linux wrote:
-> > > On Mon, Apr 11, 2011 at 10:35:57PM +0200, Uwe Kleine-König wrote:
-> > > > +obj-y					+= led-register.o
-> > > 
-> > > Why not obj-$(CONFIG_LED_REGISTER_GPIO) += led-register.o
-> > > 
-> > > rather than wrapping the code of led-register.c with a #ifdef for the
-> > > same symbol?
-> > I thought that the registration for other led-devices could go into that
-> > file, too. That's why I choosed the name led-register and not
-> > leds-gpio-register.c. Agreed? I don't insist on that.
-> 
-> I'm not sure we want/need to put other registration functions in this
-> file? obj-$(CONFIG_LED_REGISTER_GPIO) probably therefore makes sense
-> until some other registration need arises.
-OK, then I will name the file leds-gpio-register.c. This can be renamed
-to led-register.c when/if other registrations follow.
+Changes in V5:
+ - [PATCH 1/5] rearranging code in dmaengine/dw_dmac: don't call callback
+   routine in case dmaengine_terminate_all() is called
 
-> Regardless, I'm happier with this patch than the previous ones. If you
-> change it to use obj-$(CONFIG_LED_REGISTER_GPIO), 
-> 
-> Acked-by: Richard Purdie <richard.purdie@linuxfoundation.org>
-Who will take the patch then? Andrew? Or is there someone else I need to
-Cc?
+Changes in V4:
+ - spin_locks are not taken anymore from parent routines. Now every routine
+   takes locks whenever required.
+ - 1 and 0 are replaced with true and false for bool parameters to routines.
+ - flags are not used uninitialized for spin_lock_irqsave
 
-Thanks
-Uwe
+Changes in V3:
+ - lflags is removed from dw_dma_chan and local flag variables are created.
+ - An extra argument is added to routines calling dwc_descriptor_complete()
+   directly or indirectly
+ - spin_lock() in tasklet is also changed to irqsave variants.
+
+Changes in V2:
+ - lflags added in dw_dma_chan instead of dw_dma
+ - Patch from Linus Walleij added for pause and resume functionality.
+
+Linus Walleij (1):
+  dmaengine/dw_dmac: implement pause and resume in dwc_control
+
+Viresh Kumar (4):
+  dmaengine/dw_dmac: don't call callback routine in case
+    dmaengine_terminate_all() is called
+  dmaengine/dw_dmac: set residue as total len in dwc_tx_status if
+    status is !DMA_SUCCESS
+  dmaengine/dw_dmac: Divide one sg to many desc, if sg len is greater
+    than DWC_MAX_COUNT
+  dmaengine/dw_dmac: Replace spin_lock* with irqsave variants and
+    enable submission from callback
+
+ drivers/dma/dw_dmac.c      |  267 +++++++++++++++++++++++++++++---------------
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 176 insertions(+), 92 deletions(-)
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.2.2
+
