@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1EIXRz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 19:17:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37976 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932437Ab1EIXRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 19:17:52 -0400
+	id S1755839Ab1EIXRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 19:17:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60098 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753540Ab1EIXRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 19:17:44 -0400
+Date: Mon, 9 May 2011 23:17:39 GMT
+From: tip-bot for Matthew Garrett <mjg@redhat.com>
+Message-ID: <tip-7cb00b72876ea2451eb79d468da0e8fb9134aa8a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1304623186-18261-4-git-send-email-mjg@redhat.com>
+References: <1304623186-18261-4-git-send-email-mjg@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/efi] x86, efi: Pass a minimal map to SetVirtualAddressMap()
+Git-Commit-ID: 7cb00b72876ea2451eb79d468da0e8fb9134aa8a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikLJPCc5ffobAb5uhdryRqjGhpVAQ@mail.gmail.com>
-References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
- <alpine.LSU.2.00.1105081303540.16151@sister.anvils> <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
- <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com> <BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
- <1304979549.4865.56.camel@mulgrave.site> <BANLkTim7ATRyJ2NvoCj4Sv=7CLizKMd_WA@mail.gmail.com>
- <BANLkTi=DCKmN_BafFckKHOMfjWpVLQPDFA@mail.gmail.com> <BANLkTikkA5H2D23u23FV0cTcL2bAT8BKWQ@mail.gmail.com>
- <BANLkTikLJPCc5ffobAb5uhdryRqjGhpVAQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 May 2011 16:17:29 -0700
-Message-ID: <BANLkTiksgtgviJGmq925OtLNU4QynVLVtg@mail.gmail.com>
-Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
-To: Tony Luck <tony.luck@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Fenghua Yu <fenghua.yu@intel.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-ia64@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 09 May 2011 23:17:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 4:08 PM, Tony Luck <tony.luck@gmail.com> wrote:
->
-> Definitely not for normal processes - I'm not sure how both stacks are
-> set up for threads.
+Commit-ID:  7cb00b72876ea2451eb79d468da0e8fb9134aa8a
+Gitweb:     http://git.kernel.org/tip/7cb00b72876ea2451eb79d468da0e8fb9134aa8a
+Author:     Matthew Garrett <mjg@redhat.com>
+AuthorDate: Thu, 5 May 2011 15:19:45 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 9 May 2011 12:14:39 -0700
 
-We don't actually allow user space to set the growsup/growsdown bits
-any more (we have PROT_GROWSUP and PROT_GROWSDOWN, but that is to
-allow mprotect to not give an exact range, but say "apply this to the
-end of a growsup/growsdown segment").
+x86, efi: Pass a minimal map to SetVirtualAddressMap()
 
-So the only thing that has those bits are things that the kernel sets
-explicitly at exec time. So if ia64 doesn't set it, we're all good.
+Experimentation with various EFI implementations has shown that functions
+outside runtime services will still update their pointers if
+SetVirtualAddressMap() is called with memory descriptors outside the
+runtime area. This is obviously insane, and therefore is unsurprising.
+Evidence from instrumenting another EFI implementation suggests that it
+only passes the set of descriptors covering runtime regions, so let's
+avoid any problems by doing the same. Runtime descriptors are copied to
+a separate memory map, and only that map is passed back to the firmware.
 
->> One thing I did want to verify: did the mlockall() actually change the
->> stack size without that patch? Just to double-check that the patch
->> actually did change semantics visibly.
->
-> On an unpatched system I see this (lots more than one page of growth -
-> pages are 64K on this config):
-> 6007fffffff50000-6007fffffff70000 rw-p 00000000 00:00 0
-> 6007fffffff50000-6008000000750000 rw-p 00000000 00:00 0
->
-> On a patched system I see (this one has 16K pages - no growth)
-> 600007ffff9d0000-600007ffff9d4000 rw-p 00000000 00:00 0
-> 600007ffff9d0000-600007ffff9d4000 rw-p 00000000 00:00 0
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Link: http://lkml.kernel.org/r/1304623186-18261-4-git-send-email-mjg@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/platform/efi/efi.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-Ok, I'll consider it tested. I'll commit it with Mikulas as author,
-but note that I edited it so he won't get the blame if there's some
-problem.
-
-                             Linus
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index a46a73e..b30aa26 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -502,7 +502,8 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_status_t status;
+ 	unsigned long size;
+ 	u64 end, systab, addr, npages, end_pfn;
+-	void *p, *va;
++	void *p, *va, *new_memmap = NULL;
++	int count = 0;
+ 
+ 	efi.systab = NULL;
+ 
+@@ -569,15 +570,21 @@ void __init efi_enter_virtual_mode(void)
+ 			systab += md->virt_addr - md->phys_addr;
+ 			efi.systab = (efi_system_table_t *) (unsigned long) systab;
+ 		}
++		new_memmap = krealloc(new_memmap,
++				      (count + 1) * memmap.desc_size,
++				      GFP_KERNEL);
++		memcpy(new_memmap + (count * memmap.desc_size), md,
++		       memmap.desc_size);
++		count++;
+ 	}
+ 
+ 	BUG_ON(!efi.systab);
+ 
+ 	status = phys_efi_set_virtual_address_map(
+-		memmap.desc_size * memmap.nr_map,
++		memmap.desc_size * count,
+ 		memmap.desc_size,
+ 		memmap.desc_version,
+-		memmap.phys_map);
++		(efi_memory_desc_t *)__pa(new_memmap));
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_ALERT "Unable to switch EFI into virtual mode "
+@@ -605,6 +612,7 @@ void __init efi_enter_virtual_mode(void)
+ 		runtime_code_page_mkexec();
+ 	early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
+ 	memmap.map = NULL;
++	kfree(new_memmap);
+ }
+ 
+ /*
