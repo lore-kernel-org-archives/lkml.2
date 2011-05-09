@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1EIN72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:59:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39146 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab1EIN70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:59:26 -0400
-Date: Mon, 9 May 2011 09:58:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "djwong@us.ibm.com" <djwong@us.ibm.com>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
-Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
- non-queueable flush drive
-Message-ID: <20110509135851.GD5975@redhat.com>
-References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
- <20110505020417.817084678@sli10-conroe.sh.intel.com>
- <20110505083853.GC30950@htj.dyndns.org>
- <20110509130316.GB5975@redhat.com>
- <20110509135046.GB29753@sli10-conroe.sh.intel.com>
+	id S1753881Ab1EIOET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:04:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40263 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab1EIOER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 10:04:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ckyCryVfqEeMuTmiGqBBoFWoB53gd7UmE13K4RKJU1KeULPsPZjz6heYInuxyqcOrl
+         JEPHlVpTvu5eyhzDHRU+AWe93iidAGzuI7FfFeNrKJ4JtCpE3Yr6Q6OwEbJG0cVVP1uu
+         Bvs1HwEbxFUGOOZYJeHcnpcFD7WrOcp/sB+bo=
+Date: Mon, 9 May 2011 16:04:11 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
+Cc: Kernel List <linux-kernel@vger.kernel.org>,
+        "Nathan A. Mourey II" <nmoureyii@ne.rr.com>,
+        Connor H <cmdkhh@gmail.com>
+Subject: [PATCH #upstream-fixes] libata: fix oops when LPM is used with PMP
+Message-ID: <20110509140411.GJ1661@htj.dyndns.org>
+References: <1304555277.2059.2.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509135046.GB29753@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304555277.2059.2.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 09:50:46PM +0800, Shaohua Li wrote:
-> On Mon, May 09, 2011 at 09:03:16PM +0800, Vivek Goyal wrote:
-> > On Thu, May 05, 2011 at 10:38:53AM +0200, Tejun Heo wrote:
-> > 
-> > [..]
-> > > Similarly, I'd like to suggest something like the following.
-> > > 
-> > > 		/*
-> > > 		 * Hold dispatching of regular requests if non-queueable
-> > > 		 * flush is in progress; otherwise, the low level driver
-> > > 		 * would keep dispatching IO requests just to requeue them
-> > > 		 * until the flush finishes, which not only adds
-> > > 		 * dispatching / requeueing overhead but may also
-> > > 		 * significantly affect throughput when multiple flushes
-> > > 		 * are issued back-to-back.  Please consider the following
-> > > 		 * scenario.
-> > > 		 *
-> > > 		 * - flush1 is dispatched with write1 in the elevator.
-> > > 		 *
-> > > 		 * - Driver dispatches write1 and requeues it.
-> > > 		 *
-> > > 		 * - flush2 is issued and appended to dispatch queue after
-> > > 		 *   the requeued write1.  As write1 has been requeued
-> > > 		 *   flush2 can't be put in front of it.
-> > > 		 *
-> > > 		 * - When flush1 finishes, the driver has to process write1
-> > > 		 *   before flush2 even though there's no fundamental
-> > > 		 *   reason flush2 can't be processed first and, when two
-> > > 		 *   flushes are issued back-to-back without intervening
-> > > 		 *   writes, the second one essentially becomes noop.
-> > > 		 *
-> > > 		 * This phenomena becomes quite visible under heavy
-> > > 		 * concurrent fsync workload and holding the queue while
-> > > 		 * flush is in progress leads to significant throughput
-> > > 		 * gain.
-> > > 		 */
-> > 
-> > Tejun,
-> > 
-> > I am assuming that these back-to-back flushes are independent of each
-> > other otherwise write request will anyway get between two flushes.
-> Hi,
-> yes, the flushes are independent.
->  
-> > If that's the case, then should we solve the problem by improving flush
-> > merge logic a bit better. (Say idle a bit before issuing a flush only
-> > if request queue is not empty).
-> I tried some ways to improve flush merge logic. The problem I observed is something like:
-> say we have 10 flushes, originally we dispatch 4 flush, write, 6 flush. doing more merge
-> we have 6 flush, write, 4 flush. the flush request number sent to drive isn't reduced.
+ae01b2493c (libata: Implement ATA_FLAG_NO_DIPM and apply it to mcp65)
+added ATA_FLAG_NO_DIPM and made ata_eh_set_lpm() check the flag.
+However, @ap is NULL if @link points to a PMP link and thus the
+unconditional @ap->flags dereference leads to the following oops.
 
-If we try to get rid of WRITE completely between these 10 flushes then we
-run the risk of starving other READS/WRITES as long as flushes are going on.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+  IP: [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+  ...
+  Pid: 295, comm: scsi_eh_4 Tainted: P            2.6.38.5-core2 #1 System76, Inc. Serval Professional/Serval Professional
+  RIP: 0010:[<ffffffff813f98e1>]  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+  RSP: 0018:ffff880132defbf0  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: ffff880132f40000 RCX: 0000000000000000
+  RDX: ffff88013377c000 RSI: ffff880132f40000 RDI: 0000000000000000
+  RBP: ffff880132defce0 R08: ffff88013377dc58 R09: ffff880132defd98
+  R10: 0000000000000000 R11: 00000000ffffffff R12: 0000000000000000
+  R13: 0000000000000000 R14: ffff88013377c000 R15: 0000000000000000
+  FS:  0000000000000000(0000) GS:ffff8800bf700000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000018 CR3: 0000000001a03000 CR4: 00000000000406e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process scsi_eh_4 (pid: 295, threadinfo ffff880132dee000, task ffff880133b416c0)
+  Stack:
+   0000000000000000 ffff880132defcc0 0000000000000000 ffff880132f42738
+   ffffffff813ee8f0 ffffffff813eefe0 ffff880132defd98 ffff88013377f190
+   ffffffffa00b3e30 ffffffff813ef030 0000000032defc60 ffff880100000000
+  Call Trace:
+   [<ffffffff81400867>] sata_pmp_error_handler+0x607/0xc30
+   [<ffffffffa00b273f>] ahci_error_handler+0x1f/0x70 [libahci]
+   [<ffffffff813faade>] ata_scsi_error+0x5be/0x900
+   [<ffffffff813cf724>] scsi_error_handler+0x124/0x650
+   [<ffffffff810834b6>] kthread+0x96/0xa0
+   [<ffffffff8100cd64>] kernel_thread_helper+0x4/0x10
+  Code: 8b 95 70 ff ff ff b8 00 00 00 00 48 3b 9a 10 2e 00 00 48 0f 44 c2 48 89 85 70 ff ff ff 48 8b 8d 70 ff ff ff f6 83 69 02 00 00 01 <48> 8b 41 18 0f 85 48 01 00 00 48 85 c9 74 12 48 8b 51 08 48 83
+  RIP  [<ffffffff813f98e1>] ata_eh_recover+0x9a1/0x1510
+   RSP <ffff880132defbf0>
+  CR2: 0000000000000018
 
-> Another reason I didn't see improvement with better back-to-back merge might be drive
-> already optimizes two adjacent flushes case well.
+Fix it by testing @link->ap->flags instead.
 
-I did not understand this one. With improved back to back merge logic 
-we have already optimized the flush case. So for 10 flush and one write
-we seem to be issuing following (as per your mail).
+stable: ATA_FLAG_NO_DIPM was added during 2.6.39 cycle but was
+        backported to 2.6.37 and 38.  This is a fix for that and thus
+        also applicable to 2.6.37 and 38.
 
-1 flush (6 flush merged)--> WRITE --> 1flush (4 flush merged).
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
+LKML-Reference: <1304555277.2059.2.camel@localhost.localdomain>
+Cc: Connor H <cmdkhh@gmail.com>
+Cc: stable@kernel.org
+---
+Nathan, thanks a lot for the report.  Connor, thanks for the analysis
+but it was a bit off.  :-)
 
-So where is the opprotinutiy for drive (non flush queuing drive) to optimize
-flush here?
+ drivers/ata/libata-eh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-IOW, if flush merging is already working well, do we really want to move
-in a direction where we can potentially starve other READ/WRITE happening
-in an attempt to improve throughput for a sepecific workload.
-
-Thanks
-Vivek
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index f26f2fe..dad9fd6 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -3316,7 +3316,7 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
+ 	struct ata_eh_context *ehc = &link->eh_context;
+ 	struct ata_device *dev, *link_dev = NULL, *lpm_dev = NULL;
+ 	enum ata_lpm_policy old_policy = link->lpm_policy;
+-	bool no_dipm = ap->flags & ATA_FLAG_NO_DIPM;
++	bool no_dipm = link->ap->flags & ATA_FLAG_NO_DIPM;
+ 	unsigned int hints = ATA_LPM_EMPTY | ATA_LPM_HIPM;
+ 	unsigned int err_mask;
+ 	int rc;
