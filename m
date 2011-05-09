@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab1EIUuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:50:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33617 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab1EIUuU (ORCPT
+	id S1754723Ab1EIUyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:54:50 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47779 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab1EIUyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:50:20 -0400
-Date: Mon, 9 May 2011 21:50:15 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCHv3] x86, mrst: share APB timer code with other platforms
-Message-ID: <20110509205015.GA3341@pulham.picochip.com>
-References: <1302606630-12459-1-git-send-email-jamie@jamieiles.com>
- <1304972542.2939.20.camel@work-vm>
+	Mon, 9 May 2011 16:54:49 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org, hadi@cyberus.ca,
+        daniel.lezcano@free.fr, containers@lists.osdl.org,
+        renatowestphal@gmail.com
+Subject: Re: [PATCH 0/7] Network namespace manipulation with file descriptors
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<20110509.120408.48494155.davem@davemloft.net>
+	<m1oc3btzk4.fsf@fess.ebiederm.org>
+	<20110509.134007.116389415.davem@davemloft.net>
+Date: Mon, 09 May 2011 13:54:37 -0700
+In-Reply-To: <20110509.134007.116389415.davem@davemloft.net> (David Miller's
+	message of "Mon, 09 May 2011 13:40:07 -0700 (PDT)")
+Message-ID: <m1bozbtx0y.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304972542.2939.20.camel@work-vm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+1Z9kAvgc8WpcreX5QDxnCchpX5tOwuXk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 01:22:22PM -0700, john stultz wrote:
-> On Tue, 2011-04-12 at 12:10 +0100, Jamie Iles wrote:
-> > The APB timers are an IP block from Synopsys (DesignWare APB timers)
-> > and are also found in other systems including ARM SoC's.  This patch
-> > adds functions for creating clock_event_devices and clocksources from
-> > APB timers but does not do the resource allocation.  This is handled
-> > in a higher layer to allow the timers to be created from multiple
-> > methods such as platform_devices.
-> > 
-> > Changes since v2:
-> > 	- Make eoi() for clock_event_device optional for x86 where eoi
-> > 	is handled in firmware.
-> > Changes since v1:
-> > 	- Use the correct timer for clocksource on x86
-> > 	- Select the correct timer rating for x86
-> > 	- Restore freerunning timer behaviour for oneshot event devices
-> > 	- Reenable event irq correctly for hotplug
-> 
-> Sorry for being slow to review this.
+David Miller <davem@davemloft.net> writes:
 
-No worries, appreciate the review.
+> From: ebiederm@xmission.com (Eric W. Biederman)
+> Date: Mon, 09 May 2011 12:59:55 -0700
+>
+>> David Miller <davem@davemloft.net> writes:
+>> 
+>>> The networking bits look OK to me:
+>>>
+>>> Acked-by: David S. Miller <davem@davemloft.net>
+>> 
+>> Are you merging sendmmsg through the netdev tree?
+>
+> Yes.
+>
+>> The conflicts on syscall syscall numbers are an unfortunate pain.
+>
+> The way we've solved this before is the tree that cares pulls in
+> the net-next-2.6 tree to resolve the conflict.
 
-> Just a minor nit below.
-> 
-> > +struct dw_apb_clocksource *
-> > +dw_apb_clocksource_init(unsigned rating, char *name, void __iomem *base,
-> > +			unsigned long freq)
-> > +{
-> > +	struct dw_apb_clocksource *dw_cs = kzalloc(sizeof(*dw_cs), GFP_KERNEL);
-> > +
-> > +	if (!dw_cs)
-> > +		return NULL;
-> > +
-> > +	dw_cs->timer.base = base;
-> > +	dw_cs->timer.freq = freq;
-> > +	dw_cs->cs.name = name;
-> > +	dw_cs->cs.rating = rating;
-> > +	dw_cs->cs.read = __apbt_read_clocksource;
-> > +	dw_cs->cs.mask = CLOCKSOURCE_MASK(32);
-> > +	dw_cs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
-> > +	dw_cs->cs.resume = apbt_restart_clocksource;
-> > +
-> > +	return dw_cs;
-> > +}
-> 
-> So I don't see anything that frees the dw_apb_clocksource structure
-> after it has been allocated. Should this instead be allocated by the
-> caller and passed in to be initialized here?
+If that is the precedent that then that makes sense.  You are good
+at not rewinding net-next so I don't expect there will be a problem
+there.
 
-Yeah, either that or I could add a dw_apb_clocksource_remove() that does 
-the clocksource_unregister() and kfree().  That's probably a little more 
-consistent with the rest of the driver.
+Do you know if there are any plans to support sendmmsg on parisc for
+2.6.40?  That could get sticky as the parisc tree has a bunch of syscall
+catchup support they are doing now.
 
-Jamie
+Eric
+
