@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab1EJIoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:44:14 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53135
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S932733Ab1EJIoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:44:13 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35393
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756043Ab1EJIau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756046Ab1EJIau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 May 2011 04:30:50 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 202/206] Staging: hv: Get rid of vmbus.h
-Date: Mon,  9 May 2011 14:58:04 -0700
-Message-Id: <1304978288-22999-202-git-send-email-kys@microsoft.com>
+Subject: [PATCH 203/206] Staging: hv: Get rid of vmbus_packet_format.h
+Date: Mon,  9 May 2011 14:58:05 -0700
+Message-Id: <1304978288-22999-203-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -25,23 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of vmbus.h.
+Now, get rid of vmbus_packet_format.h.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/vmbus.h |   51 --------------------------------------------
- 1 files changed, 0 insertions(+), 51 deletions(-)
- delete mode 100644 drivers/staging/hv/vmbus.h
+ drivers/staging/hv/vmbus_packet_format.h |  161 ------------------------------
+ 1 files changed, 0 insertions(+), 161 deletions(-)
+ delete mode 100644 drivers/staging/hv/vmbus_packet_format.h
 
-diff --git a/drivers/staging/hv/vmbus.h b/drivers/staging/hv/vmbus.h
+diff --git a/drivers/staging/hv/vmbus_packet_format.h b/drivers/staging/hv/vmbus_packet_format.h
 deleted file mode 100644
-index 73087f2..0000000
---- a/drivers/staging/hv/vmbus.h
+index c0b2c2b..0000000
+--- a/drivers/staging/hv/vmbus_packet_format.h
 +++ /dev/null
-@@ -1,51 +0,0 @@
+@@ -1,161 +0,0 @@
 -/*
 - *
 - * Copyright (c) 2009, Microsoft Corporation.
@@ -65,34 +65,144 @@ index 73087f2..0000000
 - *
 - */
 -
+-#ifndef _VMBUSPACKETFORMAT_H_
+-#define _VMBUSPACKETFORMAT_H_
 -
--#ifndef _VMBUS_H_
--#define _VMBUS_H_
+-struct vmpacket_descriptor {
+-	u16 type;
+-	u16 offset8;
+-	u16 len8;
+-	u16 flags;
+-	u64 trans_id;
+-} __packed;
 -
--#include <linux/device.h>
--#include "vmbus_api.h"
+-struct vmpacket_header {
+-	u32 prev_pkt_start_offset;
+-	struct vmpacket_descriptor descriptor;
+-} __packed;
 -
+-struct vmtransfer_page_range {
+-	u32 byte_count;
+-	u32 byte_offset;
+-} __packed;
 -
+-struct vmtransfer_page_packet_header {
+-	struct vmpacket_descriptor d;
+-	u16 xfer_pageset_id;
+-	bool sender_owns_set;
+-	u8 reserved;
+-	u32 range_cnt;
+-	struct vmtransfer_page_range ranges[1];
+-} __packed;
 -
+-struct vmgpadl_packet_header {
+-	struct vmpacket_descriptor d;
+-	u32 gpadl;
+-	u32 reserved;
+-} __packed;
 -
--static inline struct hv_device *device_to_hv_device(struct device *d)
--{
--	return container_of(d, struct hv_device, device);
--}
+-struct vmadd_remove_transfer_page_set {
+-	struct vmpacket_descriptor d;
+-	u32 gpadl;
+-	u16 xfer_pageset_id;
+-	u16 reserved;
+-} __packed;
 -
--static inline struct hv_driver *drv_to_hv_drv(struct device_driver *d)
--{
--	return container_of(d, struct hv_driver, driver);
--}
+-/*
+- * This structure defines a range in guest physical space that can be made to
+- * look virtually contiguous.
+- */
+-struct gpa_range {
+-	u32 byte_count;
+-	u32 byte_offset;
+-	u64 pfn_array[0];
+-};
 -
+-/*
+- * This is the format for an Establish Gpadl packet, which contains a handle by
+- * which this GPADL will be known and a set of GPA ranges associated with it.
+- * This can be converted to a MDL by the guest OS.  If there are multiple GPA
+- * ranges, then the resulting MDL will be "chained," representing multiple VA
+- * ranges.
+- */
+-struct vmestablish_gpadl {
+-	struct vmpacket_descriptor d;
+-	u32 gpadl;
+-	u32 range_cnt;
+-	struct gpa_range range[1];
+-} __packed;
 -
--/* Vmbus interface */
--int vmbus_child_driver_register(struct device_driver *drv);
--void vmbus_child_driver_unregister(struct device_driver *drv);
+-/*
+- * This is the format for a Teardown Gpadl packet, which indicates that the
+- * GPADL handle in the Establish Gpadl packet will never be referenced again.
+- */
+-struct vmteardown_gpadl {
+-	struct vmpacket_descriptor d;
+-	u32 gpadl;
+-	u32 reserved;	/* for alignment to a 8-byte boundary */
+-} __packed;
 -
--extern struct completion hv_channel_ready;
+-/*
+- * This is the format for a GPA-Direct packet, which contains a set of GPA
+- * ranges, in addition to commands and/or data.
+- */
+-struct vmdata_gpa_direct {
+-	struct vmpacket_descriptor d;
+-	u32 reserved;
+-	u32 range_cnt;
+-	struct gpa_range range[1];
+-} __packed;
 -
--#endif /* _VMBUS_H_ */
+-/* This is the format for a Additional Data Packet. */
+-struct vmadditional_data {
+-	struct vmpacket_descriptor d;
+-	u64 total_bytes;
+-	u32 offset;
+-	u32 byte_cnt;
+-	unsigned char data[1];
+-} __packed;
+-
+-union vmpacket_largest_possible_header {
+-	struct vmpacket_descriptor simple_hdr;
+-	struct vmtransfer_page_packet_header xfer_page_hdr;
+-	struct vmgpadl_packet_header gpadl_hdr;
+-	struct vmadd_remove_transfer_page_set add_rm_xfer_page_hdr;
+-	struct vmestablish_gpadl establish_gpadl_hdr;
+-	struct vmteardown_gpadl teardown_gpadl_hdr;
+-	struct vmdata_gpa_direct data_gpa_direct_hdr;
+-};
+-
+-#define VMPACKET_DATA_START_ADDRESS(__packet)	\
+-	(void *)(((unsigned char *)__packet) +	\
+-	 ((struct vmpacket_descriptor)__packet)->offset8 * 8)
+-
+-#define VMPACKET_DATA_LENGTH(__packet)		\
+-	((((struct vmpacket_descriptor)__packet)->len8 -	\
+-	  ((struct vmpacket_descriptor)__packet)->offset8) * 8)
+-
+-#define VMPACKET_TRANSFER_MODE(__packet)	\
+-	(((struct IMPACT)__packet)->type)
+-
+-enum vmbus_packet_type {
+-	VM_PKT_INVALID				= 0x0,
+-	VM_PKT_SYNCH				= 0x1,
+-	VM_PKT_ADD_XFER_PAGESET			= 0x2,
+-	VM_PKT_RM_XFER_PAGESET			= 0x3,
+-	VM_PKT_ESTABLISH_GPADL			= 0x4,
+-	VM_PKT_TEARDOWN_GPADL			= 0x5,
+-	VM_PKT_DATA_INBAND			= 0x6,
+-	VM_PKT_DATA_USING_XFER_PAGES		= 0x7,
+-	VM_PKT_DATA_USING_GPADL			= 0x8,
+-	VM_PKT_DATA_USING_GPA_DIRECT		= 0x9,
+-	VM_PKT_CANCEL_REQUEST			= 0xa,
+-	VM_PKT_COMP				= 0xb,
+-	VM_PKT_DATA_USING_ADDITIONAL_PKT	= 0xc,
+-	VM_PKT_ADDITIONAL_DATA			= 0xd
+-};
+-
+-#define VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED	1
+-
+-#endif
 -- 
 1.7.4.1
 
