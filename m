@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab1EIObj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:31:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42495 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab1EIObh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:31:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Uc4f26uo/g1pspa+04765+KH9DvSLhiTfGmdSK4m3LDrltolOkyK12VhXdjQYZaAJt
-         sVQ6JdLJI3Fmmu2yQrzbrCFqv42dXeHoDAVm27fRCz8/b1tb+L+u3TuhGRihwIrE2Ea6
-         98KTA/EExYGm6/ikB2aSQ6AyXQuIdMwj4EmxQ=
-Date: Mon, 9 May 2011 18:31:32 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Filip Palian <s3810@pjwstk.edu.pl>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [oss-security] Bluetooth: l2cap and rfcomm: fix 1 byte
- infoleak to userspace.
-Message-ID: <20110509143132.GA11358@albatros>
-References: <BANLkTik7WyQ977-+8XapTgBrVRMyexyHKg@mail.gmail.com>
+	id S1754002Ab1EIOct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:32:49 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40696 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752866Ab1EIOcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 10:32:48 -0400
+Date: Mon, 9 May 2011 16:32:41 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Vladimir Motyka <vladimir.motyka@gmail.com>
+Cc: cjb@laptop.org, kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/mmc/card/block.c: fix potential null dereference
+ 'idata'
+In-Reply-To: <4DC7F4AB.90607@gmail.com>
+Message-ID: <Pine.LNX.4.64.1105091631400.15483@pc-004.diku.dk>
+References: <4DC7F4AB.90607@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
-Content-Disposition: inline
-In-Reply-To: <BANLkTik7WyQ977-+8XapTgBrVRMyexyHKg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 9 May 2011, Vladimir Motyka wrote:
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> When allocation of idata fails there was a null dereferece.
 
-On Sun, May 08, 2011 at 21:57 +0200, Filip Palian wrote:
-> Structures "l2cap_conninfo" and "rfcomm_conninfo" have one padding
-> byte each. This byte in "cinfo" is copied to userspace uninitialized.
+Why not have a different label for the two cases?  That would make the 
+code easier to statically analyze, and perhaps be more understandable as 
+well.
 
-Your mail client mangles the patch, it should contain original
-identation tabs, not spaces.  Please see Documentation/email-clients.txt.
+julia
 
-> patch no.1:
 
-Don't send 2 patches as one email.  Either send 2 email or merge them
-into one patch (if they are similar changes).  You'll ease maintainers'
-work.
-
-> Found by Marek Kroemeke and Filip Palian.
-
-Please see Documentation/SubmittingPatches, chapter 12 to find out how
-to sign the patch.
-
-And please don't crosspost to oss-security and LKML - send a separate
-email to o-s with a short description of a bug and a link to the LKML
-thread.  LKML thread is a place to argue and discuss the solution, but
-o-s subscribers are probably not interested in such a discussion.
-
-Thanks,
-
---=20
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
-
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJNx/q+AAoJEBoUx9gkVaZcpjYQAJuzhv569QdU73l6oK4ROIod
-bj4VO0IoKr6KtbLN4sY/+X26zoGClCzKUxy9Rrar3kqBJPvG2W5L8VzghZz1XBDu
-VC8QuO5qRL8CJJc4SiUy/iLTQMcHA7HNZjiBU2EJ84qQGvxvm8TI6BKy1qAKF07T
-k5hlFGz5HBPw1k2yAo6T/FBO8qLzRB8fr3fP3yulhK4qseByMNW0H2jkkWz8eXg7
-dzFbEIF7TbHmBXyjSC87VT6s0XK3RRYce7RlrqTUkKSE9FTGTW1iYfDKKt6PPpPM
-guP/QkU0+BI4CRcdb10Fsp5PUb+kI4VE1mh8ok7uVsbVX3VC6r/FysKvjkO59dLy
-WwlbfF4VyXyVwkX8ONsukrzciTpbH/uWgDcGv91iVg7dr8sgjFSMglDw3j2KIwly
-j2CiBQfc6/tIU6GAzwxyUB2S1nKQGqR6emvq5KoCsG46vPqV4CLpW3ZIY9ifOZbU
-fVwzyFVFLYJvRgxSYiGrYT63YMtXetHp1WtLLl4L5QgWdlcHbMcG3O0dOXjd8Mnl
-9v9r1NNtNl7Fks2/tk/TIyzKo3NnXUW79ZfvL2AscTzPd3I6uR/kXs8dNosZ0vFH
-b/fGVmill8sQAQhcGbSmlbDzPn0wuds8keKoIFmvflhOif/NrpDPjC7dOZnpvSJV
-5hA3C/lpdiMuZJPiKh2f
-=aDZs
------END PGP SIGNATURE-----
-
---h31gzZEtNLTqOjlF--
+> Signed-off-by: Vladimir Motyka <vladimir.motyka@gmail.com>
+> 
+> ---
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 407836d..3dec493 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -266,10 +266,10 @@ static struct mmc_blk_ioc_data
+> *mmc_blk_ioctl_copy_from_user(
+>  	return idata;
+> 
+>  copy_err:
+> -	kfree(idata->buf);
+> +	if(idata)
+> +		kfree(idata->buf);
+>  	kfree(idata);
+>  	return ERR_PTR(err);
+> -
+>  }
+> 
+>  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
