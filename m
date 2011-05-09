@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab1EIHcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 03:32:51 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26251 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751796Ab1EIHcu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 03:32:50 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] i2c-eg20t: Support new device ML7223 IOH
-Date: Mon,  9 May 2011 16:32:31 +0900
-Message-Id: <1304926351-3431-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1753211Ab1EIHgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 03:36:49 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45917 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab1EIHgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 03:36:48 -0400
+Date: Mon, 9 May 2011 09:36:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110509073636.GA18247@elte.hu>
+References: <20110508151848.GA21906@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110508151848.GA21906@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new device OKI SEMICONDUCTOR ML7223 IOH(Input/Output Hub).
-The ML7223 IOH is for MP(Media Phone) use.
-The ML7223 is companion chip for Intel Atom E6xx series.
-The ML7223 is completely compatible for Intel EG20T PCH.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/i2c/busses/Kconfig     |   10 +++++++---
- drivers/i2c/busses/i2c-eg20t.c |    2 ++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 5b592df..9a2b9c7 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -639,15 +639,19 @@ config I2C_XILINX
- 	  will be called xilinx_i2c.
- 
- config I2C_EG20T
--	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH"
-+	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223)"
- 	depends on PCI
- 	help
- 	  This driver is for PCH(Platform controller Hub) I2C of EG20T which
- 	  is an IOH(Input/Output Hub) for x86 embedded processor.
- 	  This driver can access PCH I2C bus device.
- 
--	  This driver also supports the ML7213, a companion chip for the
--	  Atom E6xx series and compatible with the Intel EG20T PCH.
-+	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
-+	  Output Hub), ML7213 and ML7223.
-+	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
-+	  for MP(Media Phone) use.
-+	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
-+	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
- 
- comment "External I2C/SMBus adapter drivers"
- 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index c57c837..838c21f 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -181,10 +181,12 @@ static DEFINE_MUTEX(pch_mutex);
- /* Definition for ML7213 by OKI SEMICONDUCTOR */
- #define PCI_VENDOR_ID_ROHM		0x10DB
- #define PCI_DEVICE_ID_ML7213_I2C	0x802D
-+#define PCI_DEVICE_ID_ML7223_I2C	0x8010
- 
- static struct pci_device_id __devinitdata pch_pcidev_id[] = {
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_PCH_I2C),   1, },
- 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_I2C), 2, },
-+	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7223_I2C), 1, },
- 	{0,}
- };
- 
--- 
-1.7.4
+> Hello, Ingo,
+> 
+> This pull request covers RCU chnages for 2.6.40.  The major new features
+> are RCU priority boosting and the addition of kfree_rcu(), the latter
+> courtesy of Lai Jiangshan.  These two features cover well over half
+> of the commits.  There are a number of smaller features and bug fixes.
+> All have been sent to LKML in the following batches:
+> 
+> 0.	https://lkml.org/lkml/2011/2/22/660: RCU priority boosting preview
+> 1.	https://lkml.org/lkml/2011/5/1/19: RCU priority boosting, kfree_rcu()
+> 2.	https://lkml.org/lkml/2011/5/2/40: More uses of kfree_rcu()
+> 3.	https://lkml.org/lkml/2011/5/8/60: miscellaneous
+> 
+> The kfree_rcu() uses in the pull request have Acked-by:s from the
+> maintainers.  I have some additional kfree_rcu() requests that lack
+> Acked-by:s, and I will deal with these later.
+> 
+> These channges are available in the -rcu git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
 
+Pulled, thanks a lot Paul!
+
+	Ingo
