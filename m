@@ -1,175 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1EIOuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:50:09 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:41210 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab1EIOuG (ORCPT
+	id S1751280Ab1EIO4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:56:55 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:51487 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab1EIO4y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:50:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=pALRDev6WXcVneAX/+HnrB8y3IWRgTl+6r7lGSoqRDDiS81e4XaMpakeFX4nIvhwaG
-         Kg12z7cnyUNA4TCtt949e2u4prrK84g5vfW/kfsowTFyFMo8j9d2eHQ/l71/mVqZq8/P
-         qrt3Mh+RZwWiqtSyBZHIpG/ePFRwF7jHUU1DM=
+	Mon, 9 May 2011 10:56:54 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: various vmbus review comments
+Thread-Topic: various vmbus review comments
+Thread-Index: AQHMCdM/6BBvI53KVEebJyh4jiWUR5R8ywQggACIZQCAAm/aIIAFSqsA//+P6RA=
+Date: Mon, 9 May 2011 14:56:52 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481E95C6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <20110503204641.GA11132@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DFCFA@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110504163228.GA19754@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481E0694@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110509143352.GB29635@infradead.org>
+In-Reply-To: <20110509143352.GB29635@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Mon, 9 May 2011 22:50:03 +0800
-Message-ID: <BANLkTimU2X0p=wgFEbwg_J3z3rZXPAGntw@mail.gmail.com>
-Subject: [PATCH] highmem: optimize searching for an empty entry in pkmap_count
-From: jia zhang <jia.zhang2008@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does 2 things:
 
-1. Always use entry zero in the first search round.
-Entry zero of pkmap_count[] is not scanned for a searching empty entry during
-the first search round before flush_all_zero_pkmaps() gets called. This causes
-a leak in the utilization of empty entry. By moving last_pkmap_nr+1 to the end
-of map_new_virtual(), entry zero of pkmap_count[] can be used in first time.
 
-2. Optimize searching for an empty entry.
-To find out an empty entry depends on a good result of a linear search for
-pkmap_count[] with last_pkmap_nr as an index. By calling
-flush_all_zero_pkmaps(), more empty entries *may* be freed. Also,
-flush_all_zero_pkmaps() can give a hint of the lowest position of empty entry
-and thus make the search faster. Without this optimization, the search have
-to be continued, even though empty entry is not available at all. In addition,
-this optimization can delay the next moment of calling
-flush_all_zero_pkmaps(), unless no more empty entries are available. It is a
-case of performance improvement.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Monday, May 09, 2011 10:34 AM
+> To: KY Srinivasan
+> Cc: Greg KH; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: various vmbus review comments
+> 
+> On Fri, May 06, 2011 at 01:10:38PM +0000, KY Srinivasan wrote:
+> > I audited the block and the net drivers. As part of their exit routine,
+> > they invoke vmbus_child_driver_unregister() after properly cleaning
+> > up all the devices they are managing. Do you still see an issue with
+> > regards to module reference counting.
+> 
+> Which is not the correct thing to do as explained in my last round
+> of reviews.  Take a look at the PCI code - the functional driver only
+> does a foo_untegister_driver (which maps almost directly to
+> driver_unregister), which then causes the device core to unbind the
+> devices.  The function driver must never call device_unregister
+> directly as the device continues to exist even if no driver is bound to
+> it.
 
-Signed-off-by: Lans Zhang <jia.zhang@windriver.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: a.p.zijlstra@chello.nl
----
- mm/highmem.c |   80 +++++++++++++++++++++++++++++++++------------------------
- 1 files changed, 46 insertions(+), 34 deletions(-)
+I will address this. Greg had a concern about module reference counting
+and looking at the current code, it did not appear to be an issue. The
+change you are suggesting will not affect the vmbus core which is what I want
+to focus on. I will however, fix this issue in the current round of patches I will
+send out this week.
 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index 693394d..0961972 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -94,7 +94,10 @@ static DECLARE_WAIT_QUEUE_HEAD(pkmap_map_wait);
- 		do { spin_unlock(&kmap_lock); (void)(flags); } while (0)
- #endif
+Regards,
 
--static void flush_all_zero_pkmaps(void)
-+/*
-+ * Return true if we have at least one usable entry.
-+ */
-+static int flush_all_zero_pkmaps(void)
- {
- 	int i;
- 	int need_flush = 0;
-@@ -129,10 +132,19 @@ static void flush_all_zero_pkmaps(void)
- 			  &pkmap_page_table[i]);
+K. Y
 
- 		set_page_address(page, NULL);
--		need_flush = 1;
-+		/*
-+		 * Record the first or lowest usable entry to speed up
-+		 * the searching for an usable entry in map_new_virtual().
-+		 */
-+		if (!need_flush) {
-+			if (i < last_pkmap_nr || pkmap_count[last_pkmap_nr])
-+				last_pkmap_nr = i;
-+			need_flush = 1;
-+		}
- 	}
- 	if (need_flush)
- 		flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
-+	return need_flush;
- }
 
- /**
-@@ -148,50 +160,50 @@ void kmap_flush_unused(void)
- static inline unsigned long map_new_virtual(struct page *page)
- {
- 	unsigned long vaddr;
--	int count;
-+	int nr;
-
- start:
--	count = LAST_PKMAP;
- 	/* Find an empty entry */
--	for (;;) {
--		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
--		if (!last_pkmap_nr) {
--			flush_all_zero_pkmaps();
--			count = LAST_PKMAP;
--		}
--		if (!pkmap_count[last_pkmap_nr])
--			break;	/* Found a usable entry */
--		if (--count)
--			continue;
-+	for (nr = last_pkmap_nr; nr < LAST_PKMAP; nr++) {
-+		if (!pkmap_count[nr])
-+			goto found;
-+	}
-+	last_pkmap_nr = nr;
-
-+	/* Try to get an empty entry to avoid sleep */
-+	if (!flush_all_zero_pkmaps()) {
- 		/*
- 		 * Sleep for somebody else to unmap their entries
- 		 */
--		{
--			DECLARE_WAITQUEUE(wait, current);
--
--			__set_current_state(TASK_UNINTERRUPTIBLE);
--			add_wait_queue(&pkmap_map_wait, &wait);
--			unlock_kmap();
--			schedule();
--			remove_wait_queue(&pkmap_map_wait, &wait);
--			lock_kmap();
--
--			/* Somebody else might have mapped it while we slept */
--			if (page_address(page))
--				return (unsigned long)page_address(page);
--
--			/* Re-start */
--			goto start;
--		}
-+		DECLARE_WAITQUEUE(wait, current);
-+
-+		__set_current_state(TASK_UNINTERRUPTIBLE);
-+		add_wait_queue(&pkmap_map_wait, &wait);
-+		unlock_kmap();
-+		schedule();
-+		remove_wait_queue(&pkmap_map_wait, &wait);
-+		lock_kmap();
-+
-+		/* Somebody else might have mapped it while we slept */
-+		if (!page_address(page))
-+			return (unsigned long)page_address(page);
-+
-+		/* Re-start */
-+		goto start;
- 	}
--	vaddr = PKMAP_ADDR(last_pkmap_nr);
-+	/* Really get it */
-+	nr = last_pkmap_nr;
-+
-+found:
-+	vaddr = PKMAP_ADDR(nr);
- 	set_pte_at(&init_mm, vaddr,
--		   &(pkmap_page_table[last_pkmap_nr]), mk_pte(page, kmap_prot));
-+		   &(pkmap_page_table[nr]), mk_pte(page, kmap_prot));
-
--	pkmap_count[last_pkmap_nr] = 1;
-+	pkmap_count[nr] = 1;
- 	set_page_address(page, (void *)vaddr);
-
-+	last_pkmap_nr = (nr + 1) & LAST_PKMAP_MASK;
-+
- 	return vaddr;
- }
-
--- 
-1.6.6
