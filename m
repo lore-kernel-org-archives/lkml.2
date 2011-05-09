@@ -1,92 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1EIOHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:07:21 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:40683 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab1EIOHT (ORCPT
+	id S1753649Ab1EIOW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:22:27 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:61679 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab1EIOW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:07:19 -0400
+	Mon, 9 May 2011 10:22:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gwF+1oA/q5mnReEMkAZob0WWEf/9aR8B1IDloyUgDSVtbsIZl6jd1L3expsfnvJqMA
-         0kHHTlYlsJD5oow0PIeWdCrO3W7BR3TsATImIIkSIU7v6cn8c4mrpIrBQlsva0ih24YS
-         gipQ/YcNF6AWYZ2UJw3LsU7wh0gP0ph0uuJfE=
-Date: Mon, 9 May 2011 22:07:05 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: shorten setting the allowed cpu mask of task
-Message-ID: <20110509140705.GA2219@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
- <BANLkTimjkK-q63x5DrEj+9=pF8zbW7mJ2g@mail.gmail.com>
- <BANLkTimrHnX5BcK5Q6eJgCAzP+j7azAqow@mail.gmail.com>
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=gO87izmwGd1c8qXcTUPLI4bAGc71iaKGvM4XNTlBx4pbXcN2sJuj+2CPSzVPnI3Apd
+         sLVLPXuIbR91gcmVGA+FF8TSj4ZuQvLv8YXucy5VblBuFZrayg+FJirlQ5Vh1j0jPxbU
+         h/0k3Lj+WIdhu2s6PpYlMZzN7jVbIbB2MQea0=
+Date: Mon, 9 May 2011 22:16:30 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, davem@davemloft.net, joe@perches.com,
+        greg@kroah.com
+Subject: [PATCH]Take orders for MAINTAINERS file
+Message-ID: <20110509141626.GA6174@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+	davem@davemloft.net, joe@perches.com, greg@kroah.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=gb2312
 Content-Disposition: inline
-In-Reply-To: <BANLkTimrHnX5BcK5Q6eJgCAzP+j7azAqow@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 08:52:53PM +0800, Hillf Danton wrote:
-> On Mon, May 9, 2011 at 12:39 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > On Fri, May 6, 2011 at 8:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> >> When setting the allowed cpu mask for a given task, if the task is
-> >> already bound to certain cpu, after checking the validity of the new
-> >
-> > Maybe we don't need to restrict it only on task bound to certain cpu.
-> >
-> Hi Yong
-> 
-> The original code guards, I guess, casual change in the mask of
-> allowed CPUs, if bounded,
-> for tasks such as the workers of work queue. So the restriction looks necessary.
+From: Harry Wei <harryxiyou@gmail.com>
 
-Yeah, that is true; but I don't think we need to go ahead for
-unbounded task if cpu_allowed will not be changed.
+Take alphabetical orders for MAINTAINERS file.
 
-My thought is like below:
-
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
-Subject: [PATCH] sched: avoid going ahead if cpu_allowed will not be changed
+ MAINTAINERS |   80 +++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 40 insertions(+), 40 deletions(-)
 
-If cpumask_equal(&p->cpus_allowed, new_mask) is true, seems
-there is no reason to prevent set_cpus_allowed_ptr() return
-directly.
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- kernel/sched.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index da93381..56bc1fa 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5946,13 +5946,15 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 2199ba1..73b0d50 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2813,38 +2813,19 @@ F:	Documentation/gpio.txt
+ F:	drivers/gpio/
+ F:	include/linux/gpio*
  
- 	rq = task_rq_lock(p, &flags);
- 
-+	if (cpumask_equal(&p->cpus_allowed, new_mask))
-+		goto out;
++GRE DEMULTIPLEXER DRIVER
++M:	Dmitry Kozlov <xeb@mail.ru>
++L:	netdev@vger.kernel.org
++S:	Maintained
++F:	net/ipv4/gre.c
++F:	include/net/gre.h
 +
- 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
+ GRETH 10/100/1G Ethernet MAC device driver
+ M:	Kristoffer Glembo <kristoffer@gaisler.com>
+ L:	netdev@vger.kernel.org
+ S:	Maintained
+ F:	drivers/net/greth*
  
--	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
--		     !cpumask_equal(&p->cpus_allowed, new_mask))) {
-+	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current)) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
+-HARD DRIVE ACTIVE PROTECTION SYSTEM (HDAPS) DRIVER
+-M:	Frank Seidel <frank@f-seidel.de>
+-L:	platform-driver-x86@vger.kernel.org
+-W:	http://www.kernel.org/pub/linux/kernel/people/fseidel/hdaps/
+-S:	Maintained
+-F:	drivers/platform/x86/hdaps.c
+-
+-HWPOISON MEMORY FAILURE HANDLING
+-M:	Andi Kleen <andi@firstfloor.org>
+-L:	linux-mm@kvack.org
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git hwpoison
+-S:	Maintained
+-F:	mm/memory-failure.c
+-F:	mm/hwpoison-inject.c
+-
+-HYPERVISOR VIRTUAL CONSOLE DRIVER
+-L:	linuxppc-dev@lists.ozlabs.org
+-S:	Odd Fixes
+-F:	drivers/tty/hvc/
+-
+-iSCSI BOOT FIRMWARE TABLE (iBFT) DRIVER
+-M:	Peter Jones <pjones@redhat.com>
+-M:	Konrad Rzeszutek Wilk <konrad@kernel.org>
+-S:	Maintained
+-F:	drivers/firmware/iscsi_ibft*
+-
+ GSPCA FINEPIX SUBDRIVER
+ M:	Frank Zago <frank@zago.net>
+ L:	linux-media@vger.kernel.org
+@@ -2895,6 +2876,26 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
+ S:	Maintained
+ F:	drivers/media/video/gspca/
+ 
++HARD DRIVE ACTIVE PROTECTION SYSTEM (HDAPS) DRIVER
++M:	Frank Seidel <frank@f-seidel.de>
++L:	platform-driver-x86@vger.kernel.org
++W:	http://www.kernel.org/pub/linux/kernel/people/fseidel/hdaps/
++S:	Maintained
++F:	drivers/platform/x86/hdaps.c
++
++HWPOISON MEMORY FAILURE HANDLING
++M:	Andi Kleen <andi@firstfloor.org>
++L:	linux-mm@kvack.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git hwpoison
++S:	Maintained
++F:	mm/memory-failure.c
++F:	mm/hwpoison-inject.c
++
++HYPERVISOR VIRTUAL CONSOLE DRIVER
++L:	linuxppc-dev@lists.ozlabs.org
++S:	Odd Fixes
++F:	drivers/tty/hvc/
++
+ HARDWARE MONITORING
+ M:	Jean Delvare <khali@linux-fr.org>
+ M:	Guenter Roeck <guenter.roeck@ericsson.com>
+@@ -3478,6 +3479,12 @@ F:	Documentation/isapnp.txt
+ F:	drivers/pnp/isapnp/
+ F:	include/linux/isapnp.h
+ 
++iSCSI BOOT FIRMWARE TABLE (iBFT) DRIVER
++M:	Peter Jones <pjones@redhat.com>
++M:	Konrad Rzeszutek Wilk <konrad@kernel.org>
++S:	Maintained
++F:	drivers/firmware/iscsi_ibft*
++
+ ISCSI
+ M:	Mike Christie <michaelc@cs.wisc.edu>
+ L:	open-iscsi@googlegroups.com
+@@ -4989,6 +4996,13 @@ F:	Documentation/pps/
+ F:	drivers/pps/
+ F:	include/linux/pps*.h
+ 
++PPTP DRIVER
++M:	Dmitry Kozlov <xeb@mail.ru>
++L:	netdev@vger.kernel.org
++S:	Maintained
++F:	drivers/net/pptp.c
++W:	http://sourceforge.net/projects/accel-pptp
++
+ PREEMPTIBLE KERNEL
+ M:	Robert Love <rml@tech9.net>
+ L:	kpreempt-tech@lists.sourceforge.net
+@@ -7024,20 +7038,6 @@ M:	"Maciej W. Rozycki" <macro@linux-mips.org>
+ S:	Maintained
+ F:	drivers/tty/serial/zs.*
+ 
+-GRE DEMULTIPLEXER DRIVER
+-M:	Dmitry Kozlov <xeb@mail.ru>
+-L:	netdev@vger.kernel.org
+-S:	Maintained
+-F:	net/ipv4/gre.c
+-F:	include/net/gre.h
+-
+-PPTP DRIVER
+-M:	Dmitry Kozlov <xeb@mail.ru>
+-L:	netdev@vger.kernel.org
+-S:	Maintained
+-F:	drivers/net/pptp.c
+-W:	http://sourceforge.net/projects/accel-pptp
+-
+ THE REST
+ M:	Linus Torvalds <torvalds@linux-foundation.org>
+ L:	linux-kernel@vger.kernel.org
 -- 
-1.7.1
+1.7.0.4
 
