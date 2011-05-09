@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1EIPv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:51:26 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:35276 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752105Ab1EIPvZ (ORCPT
+	id S1752972Ab1EIP6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 11:58:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40022 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752319Ab1EIP6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:51:25 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Y5dUSAV7AWe7YnQcxWHVXbZlmmT4v7xRxKW7UywqbGBACPZKin13RAebMO2yumBXkMEfsuEbkAMyrypfAQ+UYw72rTu39BxzZcNlyEvYXpz9F8tYjkedVSP4JYy6w5Bf;
-Date: Mon, 9 May 2011 08:51:22 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Esben Haabendal <eha@doredevelopment.dk>
-Cc: akpm@linux-foundation.org, Richard Purdie <rpurdie@rpsys.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] leds: fix build with CONFIG_LEDS_TRIGGERS disabled
-Message-Id: <20110509085122.cc5ec6e5.rdunlap@xenotime.net>
-In-Reply-To: <1304932578-14501-1-git-send-email-eha@doredevelopment.dk>
-References: <20110506182341.d2cd8a19.rdunlap@xenotime.net>
-	<1304932578-14501-1-git-send-email-eha@doredevelopment.dk>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 9 May 2011 11:58:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
+ <alpine.LSU.2.00.1105081303540.16151@sister.anvils> <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 May 2011 08:57:56 -0700
+Message-ID: <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com>
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  9 May 2011 11:16:18 +0200 Esben Haabendal wrote:
+On Mon, May 9, 2011 at 4:12 AM, Mikulas Patocka
+<mikulas@artax.karlin.mff.cuni.cz> wrote:
+>
+> See ./lib/mm/memlock.c in LVM2. It reads /proc/self/maps, parses the file
+> and locks each map with mlock, except for glibc locale file.
 
-> Add led_get_trigger_data() function for stubbing out access to trigger_data
-> when CONFIG_LEDS_TRIGGERS is disabled.  This fixes builds with
-> CONFIG_LEDS_CLASS enabled, which were broken by
-> leds-support-automatic-start-of-blinking-with-ledtrig-timer.patch
-> 
-> Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
+Hmm. One thing that strikes me is this problem also implies that the
+/proc/self/maps file is wrong for the GROWSUP case, isn't it?
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+So I think we should not just apply your lock fix, but then *also*
+apply something like this:
 
+    diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+    index 2e7addfd9803..080980880c7f 100644
+    --- a/fs/proc/task_mmu.c
+    +++ b/fs/proc/task_mmu.c
+    @@ -214,7 +214,7 @@ static void show_map_vma(struct seq_file *m,
+struct vm_area_struct *vma)
+     	int flags = vma->vm_flags;
+     	unsigned long ino = 0;
+     	unsigned long long pgoff = 0;
+    -	unsigned long start;
+    +	unsigned long start, end;
+     	dev_t dev = 0;
+     	int len;
 
-Thanks.
+    @@ -227,13 +227,16 @@ static void show_map_vma(struct seq_file *m,
+struct vm_area_struct *vma)
 
+     	/* We don't show the stack guard page in /proc/maps */
+     	start = vma->vm_start;
+    -	if (vma->vm_flags & VM_GROWSDOWN)
+    -		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
+    -			start += PAGE_SIZE;
+    +	if (stack_guard_page_growsdown(vma, start))
+    +		start += PAGE_SIZE;
+    +	end = vma->vm_end;
+    +	if (stack_guard_page_growsup(vma, end))
+    +		end -= PAGE_SIZE;
+    +
 
-> ---
->  drivers/leds/led-class.c |    2 +-
->  drivers/leds/leds.h      |    7 +++++++
->  2 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-> index d7bdef8..dc3d3d8 100644
-> --- a/drivers/leds/led-class.c
-> +++ b/drivers/leds/led-class.c
-> @@ -131,7 +131,7 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
->  	if (!led_cdev->blink_brightness)
->  		led_cdev->blink_brightness = led_cdev->max_brightness;
->  
-> -	if (led_cdev->trigger_data &&
-> +	if (led_get_trigger_data(led_cdev) &&
->  	    delay_on == led_cdev->blink_delay_on &&
->  	    delay_off == led_cdev->blink_delay_off)
->  		return;
-> diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
-> index 2dd8ecb..e77c7f8 100644
-> --- a/drivers/leds/leds.h
-> +++ b/drivers/leds/leds.h
-> @@ -40,10 +40,17 @@ void led_trigger_set_default(struct led_classdev *led_cdev);
->  void led_trigger_set(struct led_classdev *led_cdev,
->  			struct led_trigger *trigger);
->  void led_trigger_remove(struct led_classdev *led_cdev);
-> +
-> +static inline void *led_get_trigger_data(struct led_classdev *led_cdev)
-> +{
-> +	return led_cdev->trigger_data;
-> +}
-> +
->  #else
->  #define led_trigger_set_default(x) do {} while (0)
->  #define led_trigger_set(x, y) do {} while (0)
->  #define led_trigger_remove(x) do {} while (0)
-> +#define led_get_trigger_data(x) (NULL)
->  #endif
->  
->  ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
-> -- 
+     	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+     			start,
+    -			vma->vm_end,
+    +			end,
+     			flags & VM_READ ? 'r' : '-',
+     			flags & VM_WRITE ? 'w' : '-',
+     			flags & VM_EXEC ? 'x' : '-',
 
+NOTE! The above actually assumes that your
+"stack_guard_page_growsup()" has been changed to actually take the
+"next page" value, which I think makes more sense (ie it's the "end of
+stack", the same way "stack_guard_page_growsdown()" address is).
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Hmm? I don't have any growsup machine to test with, can you do that?
+
+                        Linus
