@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1EITax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 15:30:53 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:56343 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753555Ab1EITav (ORCPT
+	id S1754182Ab1EITba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 15:31:30 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:60960 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754088Ab1EITb3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 15:30:51 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=bCyykSRVYyzYtj8OjYqdmPu7TIdp0i5lHxPFtPB26/FSL3bqCGvUjlDNrDE/qOMq96+QNzfMuSGODHxacfaJrJWtHOTWDXYT8x+VIPV/HzoCjQgvjcYp7YrePsJxWpeF;
-Date: Mon, 9 May 2011 12:30:36 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH] PCI / ACPI: Report _OSC control mask returned on
- failure to get control
-Message-ID: <20110509123036.170bfbd1@jbarnes-desktop>
-In-Reply-To: <201104300021.38386.rjw@sisk.pl>
-References: <201104300021.38386.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Mon, 9 May 2011 15:31:29 -0400
+Subject: Re: [PATCHv2 0/5] Add TPS65911 device
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+In-Reply-To: <4DC6C88A.5000601@ti.com>
+Date: Mon, 9 May 2011 14:31:24 -0500
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3E30D2F0-145C-44BD-A52D-FC668EC19C4D@slimlogic.co.uk>
+References: <6ECACA2B-DAAB-4321-9A5C-CA05521F1E81@slimlogic.co.uk> <4DC6C88A.5000601@ti.com>
+To: Liam Girdwood <lrg@ti.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Apr 2011 00:21:38 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+On May 8, 2011, at 11:44 AM, Liam Girdwood wrote:
+
+> On 05/05/11 01:21, Jorge Eduardo Candelaria wrote:
+>> This is the initial version of the TPS65911 PMIC. This is a power management IC
+>> for multimedia products.
+>> 
+>> The driver is depends on the TPS65910 PMIC and provides the same functionality:
+>> Regulators, GPIO controller, RTC, etc. It also adds new functionality that was
+>> not present in TPS65910 chip.
+>> 
+>> Support for subsequent versions of this PMIC can be easily added after this set
+>> of patches.
+>> 
+>> Changes from v1:
+>> - Changed several if statements to switch-case for future-proofing.
+>> - Declared only on Comparator voltage table for COMP1 and COMP2.
+>> 
+>> GIT: [PATCHv2 1/5] MFD: TPS65910: Add support for TPS65911 device
+>> GIT: [PATCHv2 2/5] regulator: tps65911: Add new chip version
+>> GIT: [PATCHv2 3/5] TPS65911: Add new irq definitions
+>> GIT: [PATCHv2 4/5] TPS65911: Add support for added GPIO lines
+>> GIT: [PATCHv2 5/5] TPS65911: Comparator: Add comparator driver
 > 
-> If an attempt to get _OSC control of the PCIe native features from
-> the BIOS fails, report the resulting mask of control flags the BIOS
-> was willing to grant in the error message.  Moreover, if the _OSC
-> support mask is insufficient for requesting control of the PCIe
-> native features or pcie_ports_disabled is set, print a diagnostic
-> message containing the _OSC support mask.  This helps to diagnose
-> obscure _OSC-related problems on a number machines.
+> Samuel, if you are happy enough with the MFD changes I can take through regulator again ?
 
-Applied, thanks.
+Samuel, any update on the MFD changes above?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Thanks,
+Jorge
+> 
+> Thanks
+> 
+> Liam
+
