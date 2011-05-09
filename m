@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1EIGnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 02:43:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28203 "EHLO mga02.intel.com"
+	id S1752282Ab1EIGLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 02:11:48 -0400
+Received: from mail.perches.com ([173.55.12.10]:1367 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab1EIGnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 02:43:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,339,1301900400"; 
-   d="scan'208";a="639944906"
-Subject: Re: [PATCH V4 3/5] dmaengine/dw_dmac: Divide one sg to many desc,
- if sg len is greater than DWC_MAX_COUNT
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-In-Reply-To: <4DC78ABB.2030800@st.com>
-References: <cover.1304596524.git.viresh.kumar@st.com>
-	 <f3150fa0fb160c70760b95ac72423ebba354f188.1304596524.git.viresh.kumar@st.com>
-	 <1304918425.32447.20.camel@vkoul-udesk3>  <4DC783A9.5060802@st.com>
-	 <1304920041.32447.33.camel@vkoul-udesk3>  <4DC78ABB.2030800@st.com>
+	id S1750860Ab1EIGLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 02:11:47 -0400
+Subject: [PATCH] mpt2sas: Fix memset using sizeof(ptr) not sizeof(*ptr)
+From: Joe Perches <joe@perches.com>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 May 2011 11:41:02 +0530
-Message-ID: <1304921462.32447.35.camel@vkoul-udesk3>
+Date: Sun, 08 May 2011 23:11:45 -0700
+Message-ID: <1304921505.19586.26.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-09 at 12:03 +0530, viresh kumar wrote:
-> On 05/09/2011 11:17 AM, Koul, Vinod wrote:
-> > Ah, then there is another todo for this driver. Move from chan->private
-> > to DMA_SLAVE_CONFIG.
-> > 
-> > struct dma_slave_config has dedicated fields for both source and
-> > destination widths, src_addr_width & dst_addr_width please use them...
-> > You should pass this structure to device control API as:
-> > dmaengine_device_control(
-> > 	chan, DMA_SLAVE_CONFIG, (unsigned long)&slave_config);
-> 
-> As soon as i get some time, will study & implement this.
-> For now, please push this patchset (if it looks fine).
-> 
-rest looks OK. Please fix the patch1.
+Found via coccinelle script
 
+@@
+type T;
+T* ptr;
+expression E1;
+@@
 
--- 
-~Vinod
+* memset(E1, 0, sizeof(ptr));
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_transport.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index cb1cdec..9e86708 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -163,7 +163,7 @@ _transport_set_identify(struct MPT2SAS_ADAPTER *ioc, u16 handle,
+ 		return -EIO;
+ 	}
+ 
+-	memset(identify, 0, sizeof(identify));
++	memset(identify, 0, sizeof(*identify));
+ 	device_info = le32_to_cpu(sas_device_pg0.DeviceInfo);
+ 
+ 	/* sas_address */
+
 
