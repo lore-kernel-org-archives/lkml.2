@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750929Ab1EIECQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 00:02:16 -0400
-Received: from mta31.charter.net ([216.33.127.82]:48813 "EHLO
-	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1EIECJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 00:02:09 -0400
-X-Greylist: delayed 31736 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 May 2011 00:02:08 EDT
-X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
- c=1 sm=1 a=51Irx3Jbk-AA:10 a=DyMOC9dMV3IA:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=so9t2-1jSI87Cw2gUg8A:9
- a=cCuTdpuqj1GKR6y409EA:7 a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DC76739.4000302@cuw.edu>
-Date: Sun, 08 May 2011 23:02:01 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	id S1750863Ab1EIEDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 00:03:14 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:49843 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab1EIEDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 00:03:10 -0400
+From: gene heskett <gheskett@wdtv.com>
+To: Connor H <cmdkhh@gmail.com>
+Subject: Re: trying to build 2.6.38.5?
+Date: Mon, 9 May 2011 00:03:05 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.38.5-pclos1.pae.bfs; KDE/4.6.3; i686; ; )
+References: <201105082023.09878.gene.heskett@gmail.com> <201105082112.14959.gheskett@wdtv.com> <BANLkTik5uTMRpg5mj2MtnW+MZDgWwOgyUQ@mail.gmail.com>
+In-Reply-To: <BANLkTik5uTMRpg5mj2MtnW+MZDgWwOgyUQ@mail.gmail.com>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Alan Stern <stern@rowland.harvard.edu>, mfuzzey@gmail.com,
-        tom.leiming@gmail.com, ak@linux.intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: fix warning in usbtest module
-References: <Pine.LNX.4.44L0.1105081033140.30441-100000@netrider.rowland.org> <4DC6EB3B.8070604@cuw.edu> <20110508225847.GA12750@suse.de>
-In-Reply-To: <20110508225847.GA12750@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201105090003.05756.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 05/08/2011 05:58 PM, Greg KH wrote:
-> Sorry, but no, use 'unsigned long' please. In the kernel, it's
-> guaranteed to hold the size of a pointer, that is one of the
-> requirements of Linux.
+On Sunday, May 08, 2011, Connor H wrote:
+>unable to reproduce using the included config file,
 >
-> And as for C99, those types don't make any sense in the kernel, only in
-> userspace.  See Linus's posts on this a few years back on lkml if you
-> want all of the details.
->    
-Thank-you for the explanation! I will go and look up Linus's post. Since 
-I'm new around here, please let me know if there are things I can do 
-better and/or differently.
+>Connor
 
-Thanks,
-Greg
+Thanks for looking, Conner.  I suspect I am missing some -devel file, but 
+didn't really want to shotgun in everything in the pclos repos.
 
+The reason for the push to do it is of course the nvidia blob, it will not 
+install if the kernel headers don't match the running kernel.  I'll keep 
+poking at it though.
+ 
+>On Sun, May 8, 2011 at 6:12 PM, gene heskett <gheskett@wdtv.com> wrote:
+>> On Sunday, May 08, 2011, Randy Dunlap wrote:
+>>>On Sun, 8 May 2011 20:23:09 -0400 Gene Heskett wrote:
+>>>> At the end of a make -j2 all:
+>>>> 
+>>>> /home/gene/src/linux-2.6.38.5-gene/include/linux/Kbuild:25: ***
+>>>> commands commence before first target. �Stop.
+>>>> make[2]: *** [linux] Error 2
+>>>> make[2]: *** Waiting for unfinished jobs....
+>>>> make[1]: *** [headers_install] Error 2
+>>>> make: *** [vmlinux] Error 2
+>>>> 
+>>>> What am I missing?
+>>>
+>>>I can't reproduce this problem. �Please post your kernel .config file.
+>>>
+>> Attached, thanks Randy.
+>> 
+>> --
+>> Cheers, Gene
+>> "There are four boxes to be used in defense of liberty:
+>> �soap, ballot, jury, and ammo. Please use in that order."
+>> -Ed Howdershelt (Author)
+>> <http://tinyurl.com/ddg5bz>
+>> <http://www.cantrip.org/gatto.html>
+>> Paranoia is heightened awareness.
+>> 
+>> --
+>> Cheers, Gene
+>> "There are four boxes to be used in defense of liberty:
+>> �soap, ballot, jury, and ammo. Please use in that order."
+>> -Ed Howdershelt (Author)
+>> <http://tinyurl.com/ddg5bz>
+>> <http://www.cantrip.org/gatto.html>
+>> All I ask of life is a constant and exaggerated sense of my own
+>> importance.
+
+
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+<http://tinyurl.com/ddg5bz>
+<http://www.cantrip.org/gatto.html>
+<JHM> Somehow I have more respect for 14 year old Debian developers than
+     14 year old Certified Microsoft Serfs.
