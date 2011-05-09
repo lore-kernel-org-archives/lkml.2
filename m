@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab1EIJF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 05:05:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50505 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab1EIJF1 (ORCPT
+	id S1751388Ab1EIJQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 05:16:23 -0400
+Received: from [77.233.226.4] ([77.233.226.4]:57653 "EHLO
+	mail.doredevelopment.dk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751051Ab1EIJQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 05:05:27 -0400
-Date: Mon, 9 May 2011 11:05:55 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: AMD C1E issue?   2.6.38.4
-Message-ID: <20110509090555.GA9184@fancy-poultry.org>
-References: <4DC54CE5.6050307@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC54CE5.6050307@xs4all.nl>
-Organization: private site
-X-OpenPGP-KeyID: 0xE9002778
-X-OpenPGP-Fingerprint: C661 CE20 7105 B0DB 49B5  CDB2 298C 801B E900 2778
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+22 (8d0281f79b21) (2010-12-30) (GNU/Linux)
-X-Provags-ID: V02:K0:nTIdXpDPtXZ4yK+m44r+9AJ7XgrojkTy0dZ5QvlebYZ
- SCMKBeLF44eShogLPsQqjIds8WUtzZ6CHTJOCaphxSCEIUsGt1
- kZC6beN+v/NH07bFEq47vhcy2u4dn1jQHgxGSuswx35dBzX2h2
- pB4LQqRwQSEosZR2btWhoBMV0A3Ft95Ykmx7HnQ8bw+R7Dgmow
- MVayGiakXyKJK4z20sq6A==
+	Mon, 9 May 2011 05:16:22 -0400
+X-Quarantine-ID: <mkIvOZX+37N4>
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "To"
+From: Esben Haabendal <eha@doredevelopment.dk>
+Cc: Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] leds: fix build with CONFIG_LEDS_TRIGGERS disabled
+Date: Mon,  9 May 2011 11:16:18 +0200
+Message-Id: <1304932578-14501-1-git-send-email-eha@doredevelopment.dk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20110506182341.d2cd8a19.rdunlap@xenotime.net>
+References: <20110506182341.d2cd8a19.rdunlap@xenotime.net>
+To: Randy Dunlap <rdunlap@xenotime.net>, akpm@linux-foundation.org,
+        Richard Purdie <rpurdie@rpsys.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.05.2011, Udo van den Heuvel wrote: 
+Add led_get_trigger_data() function for stubbing out access to trigger_data
+when CONFIG_LEDS_TRIGGERS is disabled.  This fixes builds with
+CONFIG_LEDS_CLASS enabled, which were broken by
+leds-support-automatic-start-of-blinking-with-ledtrig-timer.patch
 
-> Anybody can tell why the update cannot work?
-> The previous board (JNC81) did not show these but also did not have C1E
-> in BIOS as far as I recall.
+Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
+---
+ drivers/leds/led-class.c |    2 +-
+ drivers/leds/leds.h      |    7 +++++++
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
-If you have C1E problems besides of the microcode thing, which isn't
-related, you could try to boot with acpi_skip_timer_override. That
-works in my case.
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index d7bdef8..dc3d3d8 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -131,7 +131,7 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
+ 	if (!led_cdev->blink_brightness)
+ 		led_cdev->blink_brightness = led_cdev->max_brightness;
+ 
+-	if (led_cdev->trigger_data &&
++	if (led_get_trigger_data(led_cdev) &&
+ 	    delay_on == led_cdev->blink_delay_on &&
+ 	    delay_off == led_cdev->blink_delay_off)
+ 		return;
+diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
+index 2dd8ecb..e77c7f8 100644
+--- a/drivers/leds/leds.h
++++ b/drivers/leds/leds.h
+@@ -40,10 +40,17 @@ void led_trigger_set_default(struct led_classdev *led_cdev);
+ void led_trigger_set(struct led_classdev *led_cdev,
+ 			struct led_trigger *trigger);
+ void led_trigger_remove(struct led_classdev *led_cdev);
++
++static inline void *led_get_trigger_data(struct led_classdev *led_cdev)
++{
++	return led_cdev->trigger_data;
++}
++
+ #else
+ #define led_trigger_set_default(x) do {} while (0)
+ #define led_trigger_set(x, y) do {} while (0)
+ #define led_trigger_remove(x) do {} while (0)
++#define led_get_trigger_data(x) (NULL)
+ #endif
+ 
+ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
+-- 
+1.7.1
 
