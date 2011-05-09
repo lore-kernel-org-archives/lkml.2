@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab1EIIQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:16:51 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:60067 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753581Ab1EIIQr (ORCPT
+	id S1753513Ab1EIIWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:22:10 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:38203 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753379Ab1EIIWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:16:47 -0400
-Message-ID: <4DC7A2DB.3040601@st.com>
-Date: Mon, 9 May 2011 13:46:27 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 9 May 2011 04:22:05 -0400
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Richard Purdie <rpurdie@rpsys.net>
+Date: Mon, 9 May 2011 01:21:30 -0700
+Subject: RE: [PATCH 17/19] mfd: Use mfd cell platform_data for 88pm860x
+ cells platform bits
+Thread-Topic: [PATCH 17/19] mfd: Use mfd cell platform_data for 88pm860x
+ cells platform bits
+Thread-Index: AcwN4MZ062aeKcRISPqK9BNWcTGnGwAQTtLA
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05D178BDD2@SC-VEXCH1.marvell.com>
+References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+ <1304901131-7104-18-git-send-email-sameo@linux.intel.com>
+In-Reply-To: <1304901131-7104-18-git-send-email-sameo@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V4 3/5] dmaengine/dw_dmac: Divide one sg to many desc,
- if sg len is greater than DWC_MAX_COUNT
-References: <cover.1304596524.git.viresh.kumar@st.com>	 <f3150fa0fb160c70760b95ac72423ebba354f188.1304596524.git.viresh.kumar@st.com>	 <1304918425.32447.20.camel@vkoul-udesk3>  <4DC783A9.5060802@st.com>	 <1304920041.32447.33.camel@vkoul-udesk3>  <4DC78ABB.2030800@st.com> <1304921462.32447.35.camel@vkoul-udesk3>
-In-Reply-To: <1304921462.32447.35.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498MLsk023735
 
-On 05/09/2011 11:41 AM, Koul, Vinod wrote:
-> On Mon, 2011-05-09 at 12:03 +0530, viresh kumar wrote:
->> On 05/09/2011 11:17 AM, Koul, Vinod wrote:
->>> Ah, then there is another todo for this driver. Move from chan->private
->>> to DMA_SLAVE_CONFIG.
->>>
->>> struct dma_slave_config has dedicated fields for both source and
->>> destination widths, src_addr_width & dst_addr_width please use them...
->>> You should pass this structure to device control API as:
->>> dmaengine_device_control(
->>> 	chan, DMA_SLAVE_CONFIG, (unsigned long)&slave_config);
->>
->> As soon as i get some time, will study & implement this.
->> For now, please push this patchset (if it looks fine).
->>
-> rest looks OK. Please fix the patch1.
-> 
-> 
 
-I am resending all 5 patches, so that they get rebased cleanly.
 
--- 
-viresh
+>-----Original Message-----
+>From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+>Sent: 2011Äê5ÔÂ9ÈÕ 8:32 AM
+>To: linux-kernel
+>Cc: Samuel Ortiz; Haojian Zhuang; Mark Brown; Liam Girdwood; Richard
+>Purdie
+>Subject: [PATCH 17/19] mfd: Use mfd cell platform_data for 88pm860x
+>cells platform bits
+>
+>With the addition of a platform device mfd_cell pointer, MFD drivers
+>can go back to passing platform back to their sub drivers.
+>This allows for an mfd_cell->mfd_data removal and thus keep the
+>sub drivers MFD agnostic. This is mostly needed for non MFD aware
+>sub drivers.
+>
+>Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+>Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+>Cc: Richard Purdie <rpurdie@rpsys.net>
+>Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+>---
+> drivers/leds/leds-88pm860x.c          |    7 +------
+> drivers/mfd/88pm860x-core.c           |   18 ++++++++++++------
+> drivers/regulator/88pm8607.c          |    7 +------
+> drivers/video/backlight/88pm860x_bl.c |    7 +------
+> 4 files changed, 15 insertions(+), 24 deletions(-)
+>
+Tested. It's OK.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
