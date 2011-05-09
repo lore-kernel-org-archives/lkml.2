@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab1EIVo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:44:58 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54355
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S932129Ab1EIVuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:50:08 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:48769
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755045Ab1EIVow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:44:52 -0400
+	id S1755063Ab1EIVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 17:44:53 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 099/206] Staging: hv: Rename ringbuffer_read
-Date: Mon,  9 May 2011 14:56:21 -0700
-Message-Id: <1304978288-22999-99-git-send-email-kys@microsoft.com>
+Subject: [PATCH 100/206] Staging: hv: Rename get_ringbuffer_interrupt_mask
+Date: Mon,  9 May 2011 14:56:22 -0700
+Message-Id: <1304978288-22999-100-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,66 +32,75 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/channel.c     |    4 ++--
+ drivers/staging/hv/channel.c     |    6 +++---
  drivers/staging/hv/ring_buffer.c |    4 ++--
  drivers/staging/hv/ring_buffer.h |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
-index d625517..9f8bed2 100644
+index 9f8bed2..3274b29 100644
 --- a/drivers/staging/hv/channel.c
 +++ b/drivers/staging/hv/channel.c
-@@ -911,7 +911,7 @@ int vmbus_recvpacket(struct vmbus_channel *channel, void *buffer,
- 	*requestid = desc.trans_id;
+@@ -721,7 +721,7 @@ int vmbus_sendpacket(struct vmbus_channel *channel, const void *buffer,
+ 	ret = hv_ringbuffer_write(&channel->outbound, bufferlist, 3);
  
- 	/* Copy over the packet to the user buffer */
--	ret = ringbuffer_read(&channel->inbound, buffer, userlen,
-+	ret = hv_ringbuffer_read(&channel->inbound, buffer, userlen,
- 			     (desc.offset8 << 3));
+ 	/* TODO: We should determine if this is optional */
+-	if (ret == 0 && !get_ringbuffer_interrupt_mask(&channel->outbound))
++	if (ret == 0 && !hv_get_ringbuffer_interrupt_mask(&channel->outbound))
+ 		vmbus_setevent(channel);
  
- 	spin_unlock_irqrestore(&channel->inbound_lock, flags);
-@@ -964,7 +964,7 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
- 	*requestid = desc.trans_id;
+ 	return ret;
+@@ -786,7 +786,7 @@ int vmbus_sendpacket_pagebuffer(struct vmbus_channel *channel,
+ 	ret = hv_ringbuffer_write(&channel->outbound, bufferlist, 3);
  
- 	/* Copy over the entire packet to the user buffer */
--	ret = ringbuffer_read(&channel->inbound, buffer, packetlen, 0);
-+	ret = hv_ringbuffer_read(&channel->inbound, buffer, packetlen, 0);
+ 	/* TODO: We should determine if this is optional */
+-	if (ret == 0 && !get_ringbuffer_interrupt_mask(&channel->outbound))
++	if (ret == 0 && !hv_get_ringbuffer_interrupt_mask(&channel->outbound))
+ 		vmbus_setevent(channel);
  
- 	spin_unlock_irqrestore(&channel->inbound_lock, flags);
- 	return 0;
+ 	return ret;
+@@ -851,7 +851,7 @@ int vmbus_sendpacket_multipagebuffer(struct vmbus_channel *channel,
+ 	ret = hv_ringbuffer_write(&channel->outbound, bufferlist, 3);
+ 
+ 	/* TODO: We should determine if this is optional */
+-	if (ret == 0 && !get_ringbuffer_interrupt_mask(&channel->outbound))
++	if (ret == 0 && !hv_get_ringbuffer_interrupt_mask(&channel->outbound))
+ 		vmbus_setevent(channel);
+ 
+ 	return ret;
 diff --git a/drivers/staging/hv/ring_buffer.c b/drivers/staging/hv/ring_buffer.c
-index bf04397..2a05059 100644
+index 2a05059..013b7a5 100644
 --- a/drivers/staging/hv/ring_buffer.c
 +++ b/drivers/staging/hv/ring_buffer.c
-@@ -468,13 +468,13 @@ int hv_ringbuffer_peek(struct hv_ring_buffer_info *Inring_info,
+@@ -285,13 +285,13 @@ void ringbuffer_get_debuginfo(struct hv_ring_buffer_info *ring_info,
  /*++
  
  Name:
--	ringbuffer_read()
-+	hv_ringbuffer_read()
+-	get_ringbuffer_interrupt_mask()
++	hv_get_ringbuffer_interrupt_mask()
  
  Description:
- 	Read and advance the read index
+ 	Get the interrupt mask for the specified ring buffer
  
  --*/
--int ringbuffer_read(struct hv_ring_buffer_info *inring_info, void *buffer,
-+int hv_ringbuffer_read(struct hv_ring_buffer_info *inring_info, void *buffer,
- 		   u32 buflen, u32 offset)
+-u32 get_ringbuffer_interrupt_mask(struct hv_ring_buffer_info *rbi)
++u32 hv_get_ringbuffer_interrupt_mask(struct hv_ring_buffer_info *rbi)
  {
- 	u32 bytes_avail_towrite;
+ 	return rbi->ring_buffer->interrupt_mask;
+ }
 diff --git a/drivers/staging/hv/ring_buffer.h b/drivers/staging/hv/ring_buffer.h
-index c684d97..0ebf3be 100644
+index 0ebf3be..6454105 100644
 --- a/drivers/staging/hv/ring_buffer.h
 +++ b/drivers/staging/hv/ring_buffer.h
-@@ -88,7 +88,7 @@ int hv_ringbuffer_write(struct hv_ring_buffer_info *ring_info,
- int hv_ringbuffer_peek(struct hv_ring_buffer_info *ring_info, void *buffer,
- 		   u32 buflen);
- 
--int ringbuffer_read(struct hv_ring_buffer_info *ring_info,
-+int hv_ringbuffer_read(struct hv_ring_buffer_info *ring_info,
- 		   void *buffer,
+@@ -93,7 +93,7 @@ int hv_ringbuffer_read(struct hv_ring_buffer_info *ring_info,
  		   u32 buflen,
  		   u32 offset);
+ 
+-u32 get_ringbuffer_interrupt_mask(struct hv_ring_buffer_info *ring_info);
++u32 hv_get_ringbuffer_interrupt_mask(struct hv_ring_buffer_info *ring_info);
+ 
+ void dump_ring_info(struct hv_ring_buffer_info *ring_info, char *prefix);
+ 
 -- 
 1.7.4.1
 
