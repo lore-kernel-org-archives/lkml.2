@@ -1,147 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab1EINoU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:44:20 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:45192 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752924Ab1EINoT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:44:19 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: Per Forlin <per.forlin@linaro.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Date: Mon, 9 May 2011 06:44:05 -0700
-Subject: Re: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize
- latency
-Thread-Topic: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize
- latency
-Thread-Index: AcwOTyry7x47NjHzQVuj6vdCzjU2qQ==
-Message-ID: <5D6BC6C8-D3C6-4987-B8AF-523A500D8309@marvell.com>
-References: <1304795706-27308-1-git-send-email-per.forlin@linaro.org>
- <0F831E97-0168-4CD5-985C-4965BFF816A0@marvell.com>
- <BANLkTikid1yHh6AdgOeqy7NqS8D=W0SWTw@mail.gmail.com>
-In-Reply-To: <BANLkTikid1yHh6AdgOeqy7NqS8D=W0SWTw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753453Ab1EINpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:45:21 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51102 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752856Ab1EINpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:45:20 -0400
+Date: Mon, 9 May 2011 14:46:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
+        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
+        "Andrew Morton \(commit_signer:1/4=25%\)" <akpm@linux-foundation.org>,
+        "Randy Dunlap \(commit_signer:1/4=25%\)" <randy.dunlap@oracle.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
+Message-ID: <20110509144610.6b4f7090@lxorguk.ukuu.org.uk>
+In-Reply-To: <034A6447E0D54737B5CEE009A4D20B37@subhasishg>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
+	<1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
+	<034A6447E0D54737B5CEE009A4D20B37@subhasishg>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> I then modified this function to as follows and the error is not observed 
+> anymore.
 
-On May 9, 2011, at 5:34 AM, Per Forlin wrote:
+That looks like you are somehow calling uart_carrier_raised somewhere
+with interrupts disabled ?
 
-> On 9 May 2011 04:05, Philip Rakity <prakity@marvell.com> wrote:
->> 
->> Hi Per,
->> 
->> We noticed on some of our systems if we ADMA or SDMA and a bounce buffer it is significantly faster then SDMA.
->> 
-> I have not done work with ADMA or SDMA. Where should I look to read
-> more about it?
-> Are these the right places. DMA iop-dma.c and imx-sdma.c, MMC: sdhci.c.
-
-sdhci.c for ADMA and SDMA
-
-spec is at
-http://www.sdcard.org/developers/tech/sdcard/pls/simplified_specs/
-
-version 3 discusses ADMA
-
-> 
->> I believe ADMA will do large transfers.  Another data point.
->> 
->> Philip
-> Thanks,
-> Per
-> 
->> 
->> On May 7, 2011, at 12:14 PM, Per Forlin wrote:
->> 
->>> How significant is the cache maintenance over head?
->>> It depends, the eMMC are much faster now
->>> compared to a few years ago and cache maintenance cost more due to
->>> multiple cache levels and speculative cache pre-fetch. In relation the
->>> cost for handling the caches have increased and is now a bottle neck
->>> dealing with fast eMMC together with DMA.
->>> 
->>> The intention for introducing none blocking mmc requests is to minimize the
->>> time between a mmc request ends and another mmc request starts. In the
->>> current implementation the MMC controller is idle when dma_map_sg and
->>> dma_unmap_sg is processing. Introducing none blocking mmc request makes it
->>> possible to prepare the caches for next job parallel with an active
->>> mmc request.
->>> 
->>> This is done by making the issue_rw_rq() none blocking.
->>> The increase in throughput is proportional to the time it takes to
->>> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
->>> a request and how fast the memory is. The faster the MMC/SD is
->>> the more significant the prepare request time becomes. Measurements on U5500
->>> and Panda on eMMC and SD shows significant performance gain for for large
->>> reads when running DMA mode. In the PIO case the performance is unchanged.
->>> 
->>> There are two optional hooks pre_req() and post_req() that the host driver
->>> may implement in order to move work to before and after the actual mmc_request
->>> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
->>> the dma descriptor and post_req runs the dma_unmap_sg.
->>> 
->>> Details on measurements from IOZone and mmc_test:
->>> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
->>> 
->>> Under consideration:
->>> * Make pre_req and post_req private to core.c.
->>> * Generalize implementation and make it available for SDIO.
->>> 
->>> Changes since v2:
->>> * Fix compile warnings in core.c and block.c
->>> * Simplify max transfer size in mmc_test
->>> * set TASK_RUNNING in queue.c before issue_req()
->>> 
->>> Per Forlin (12):
->>>  mmc: add none blocking mmc request function
->>>  mmc: mmc_test: add debugfs file to list all tests
->>>  mmc: mmc_test: add test for none blocking transfers
->>>  mmc: add member in mmc queue struct to hold request data
->>>  mmc: add a block request prepare function
->>>  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
->>>  mmc: add a second mmc queue request member
->>>  mmc: add handling for two parallel block requests in issue_rw_rq
->>>  mmc: test: add random fault injection in core.c
->>>  omap_hsmmc: use original sg_len for dma_unmap_sg
->>>  omap_hsmmc: add support for pre_req and post_req
->>>  mmci: implement pre_req() and post_req()
->>> 
->>> drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
->>> drivers/mmc/card/mmc_test.c   |  340 +++++++++++++++++++++++++++-
->>> drivers/mmc/card/queue.c      |  180 ++++++++++------
->>> drivers/mmc/card/queue.h      |   31 ++-
->>> drivers/mmc/core/core.c       |  132 ++++++++++-
->>> drivers/mmc/core/debugfs.c    |    5 +
->>> drivers/mmc/host/mmci.c       |  146 +++++++++++-
->>> drivers/mmc/host/mmci.h       |    8 +
->>> drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
->>> include/linux/mmc/core.h      |    9 +-
->>> include/linux/mmc/host.h      |   13 +-
->>> lib/Kconfig.debug             |   11 +
->>> 12 files changed, 1174 insertions(+), 284 deletions(-)
->>> 
->>> --
->>> 1.7.4.1
->>> 
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> 
->> 
-
+Alan
