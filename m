@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab1EIFd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 01:33:57 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14029 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750808Ab1EIFdz (ORCPT
+	id S1751783Ab1EIFkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 01:40:32 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46126 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab1EIFka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 01:33:55 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Joe Perches'" <joe@perches.com>
-Cc: "'Dan Williams'" <dan.j.williams@intel.com>,
-        "'Vinod Koul'" <vinod.koul@intel.com>, <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <toshiharu-linux@dsn.okisemi.com>
-References: <1304912885-6747-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1304913941.19586.8.camel@Joe-Laptop>
-Subject: RE: [PATCH V2 5/5] pch_dma: Support new device ML7223 IOH
-Date: Mon, 9 May 2011 14:33:53 +0900
-Message-ID: <E71198D0C22C4CA9A3A4BE42388E27D3@hacdom.okisemi.com>
+	Mon, 9 May 2011 01:40:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] getdelays: show average CPU/IO/SWAP/RECLAIM delays
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Mel Gorman <mel@linux.vnet.ibm.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Dave Chinner <david@fromorbit.com>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <20110502140257.GA12780@localhost>
+References: <20110502140257.GA12780@localhost>
+Message-Id: <20110509144202.163D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-In-Reply-To: <1304913941.19586.8.camel@Joe-Laptop>
-Thread-Index: AcwN/l2Yigodds/cRSWVztzvuPtGkAAC4W5w
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon,  9 May 2011 14:40:27 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe, 
-
-On Monday, May 09, 2011 1:06 PM, Joe Perches wrote:
-> >  config PCH_DMA
-> > -	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7213 
-> IOH DMA support"
-> > +	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR 
-> IOH(ML7213/ML7223)"
+> I find it very handy to show the average delays in milliseconds.
 > 
-> DMA support?
-I will modify like below.
-tristate "Intel EG20T PCH / OKI Semi ML7213 IOH DMA support
-
-> >  
-> >  static const struct pci_device_id pch_dma_id_table[] = {
+> Example output (on 100 concurrent dd reading sparse files):
 > 
-> DEFINE_PCI_DEVICE_TABLE(pch_dma_id_table) = {
+> CPU             count     real total  virtual total    delay total  delay average
+>                   986     3223509952     3207643301    38863410579         39.415ms
+> IO              count    delay total  delay average
+>                     0              0              0ms
+> SWAP            count    delay total  delay average
+>                     0              0              0ms
+> RECLAIM         count    delay total  delay average
+>                  1059     5131834899              4ms
+> dd: read=0, write=0, cancelled_write=0
 > 
-I will modify like above.
+> CC: Mel Gorman <mel@linux.vnet.ibm.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  Documentation/accounting/getdelays.c |   33 +++++++++++++++----------
+>  1 file changed, 20 insertions(+), 13 deletions(-)
+
+Cool.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
 
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+
 
