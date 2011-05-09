@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab1EIWEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:04:47 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54154
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S932264Ab1EIWDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:03:16 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47441
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754726Ab1EIVop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:44:45 -0400
+	id S1754788Ab1EIVoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 17:44:46 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 045/206] Staging: hv: Get rid of the forward declaration of copy_from_bounce_buffer()
-Date: Mon,  9 May 2011 14:55:27 -0700
-Message-Id: <1304978288-22999-45-git-send-email-kys@microsoft.com>
+Subject: [PATCH 046/206] Staging: hv: Get rid of the forward declaration for copy_to_bounce_buffer()
+Date: Mon,  9 May 2011 14:55:28 -0700
+Message-Id: <1304978288-22999-46-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,22 +32,22 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |  129 +++++++++++++++++++-------------------
- 1 files changed, 65 insertions(+), 64 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |  132 +++++++++++++++++++-------------------
+ 1 files changed, 66 insertions(+), 66 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 551c48c..4e3e9ca 100644
+index 4e3e9ca..807ba89 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -219,15 +219,77 @@ cleanup:
- 	return NULL;
+@@ -284,16 +284,78 @@ static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
+ 	return total_copied;
  }
  
 +
-+/* Assume the original sgl has enough room */
-+static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
-+					    struct scatterlist *bounce_sgl,
-+					    unsigned int orig_sgl_count)
++/* Assume the bounce_sgl has enough room ie using the create_bounce_buffer() */
++static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
++					  struct scatterlist *bounce_sgl,
++					  unsigned int orig_sgl_count)
 +{
 +	int i;
 +	int j = 0;
@@ -55,52 +55,53 @@ index 551c48c..4e3e9ca 100644
 +	unsigned int srclen, destlen, copylen;
 +	unsigned int total_copied = 0;
 +	unsigned long bounce_addr = 0;
-+	unsigned long dest_addr = 0;
++	unsigned long src_addr = 0;
 +	unsigned long flags;
 +
 +	local_irq_save(flags);
 +
 +	for (i = 0; i < orig_sgl_count; i++) {
-+		dest_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
-+					KM_IRQ0) + orig_sgl[i].offset;
-+		dest = dest_addr;
-+		destlen = orig_sgl[i].length;
++		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
++				KM_IRQ0) + orig_sgl[i].offset;
++		src = src_addr;
++		srclen = orig_sgl[i].length;
 +
 +		if (bounce_addr == 0)
 +			bounce_addr =
 +			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
-+							KM_IRQ0);
++						KM_IRQ0);
 +
-+		while (destlen) {
-+			src = bounce_addr + bounce_sgl[j].offset;
-+			srclen = bounce_sgl[j].length - bounce_sgl[j].offset;
++		while (srclen) {
++			/* assume bounce offset always == 0 */
++			dest = bounce_addr + bounce_sgl[j].length;
++			destlen = PAGE_SIZE - bounce_sgl[j].length;
 +
 +			copylen = min(srclen, destlen);
 +			memcpy((void *)dest, (void *)src, copylen);
 +
 +			total_copied += copylen;
-+			bounce_sgl[j].offset += copylen;
-+			destlen -= copylen;
-+			dest += copylen;
++			bounce_sgl[j].length += copylen;
++			srclen -= copylen;
++			src += copylen;
 +
-+			if (bounce_sgl[j].offset == bounce_sgl[j].length) {
-+				/* full */
++			if (bounce_sgl[j].length == PAGE_SIZE) {
++				/* full..move to next entry */
 +				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
 +				j++;
 +
 +				/* if we need to use another bounce buffer */
-+				if (destlen || i != orig_sgl_count - 1)
++				if (srclen || i != orig_sgl_count - 1)
 +					bounce_addr =
 +					(unsigned long)kmap_atomic(
 +					sg_page((&bounce_sgl[j])), KM_IRQ0);
-+			} else if (destlen == 0 && i == orig_sgl_count - 1) {
++
++			} else if (srclen == 0 && i == orig_sgl_count - 1) {
 +				/* unmap the last bounce that is < PAGE_SIZE */
 +				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
 +			}
 +		}
 +
-+		kunmap_atomic((void *)(dest_addr - orig_sgl[i].offset),
-+			      KM_IRQ0);
++		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
 +	}
 +
 +	local_irq_restore(flags);
@@ -114,20 +115,21 @@ index 551c48c..4e3e9ca 100644
  static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd);
  static int storvsc_remove(struct hv_device *dev);
  
--static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
--					    struct scatterlist *bounce_sgl,
--					    unsigned int orig_sgl_count);
- static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
- 					  struct scatterlist *bounce_sgl,
- 					  unsigned int orig_sgl_count);
-@@ -613,67 +675,6 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
- 	return total_copied;
+-static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
+-					  struct scatterlist *bounce_sgl,
+-					  unsigned int orig_sgl_count);
+-
+ static int storvsc_get_chs(struct scsi_device *sdev, struct block_device *bdev,
+ 			   sector_t capacity, int *info);
+ 
+@@ -613,68 +675,6 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
+ 	kmem_cache_free(host_dev->request_pool, cmd_request);
  }
  
--/* Assume the original sgl has enough room */
--static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
--					    struct scatterlist *bounce_sgl,
--					    unsigned int orig_sgl_count)
+-/* Assume the bounce_sgl has enough room ie using the create_bounce_buffer() */
+-static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
+-					  struct scatterlist *bounce_sgl,
+-					  unsigned int orig_sgl_count)
 -{
 -	int i;
 -	int j = 0;
@@ -135,49 +137,50 @@ index 551c48c..4e3e9ca 100644
 -	unsigned int srclen, destlen, copylen;
 -	unsigned int total_copied = 0;
 -	unsigned long bounce_addr = 0;
--	unsigned long dest_addr = 0;
+-	unsigned long src_addr = 0;
 -	unsigned long flags;
 -
 -	local_irq_save(flags);
 -
 -	for (i = 0; i < orig_sgl_count; i++) {
--		dest_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
--					KM_IRQ0) + orig_sgl[i].offset;
--		dest = dest_addr;
--		destlen = orig_sgl[i].length;
+-		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
+-				KM_IRQ0) + orig_sgl[i].offset;
+-		src = src_addr;
+-		srclen = orig_sgl[i].length;
+-
 -		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
 -
 -		if (bounce_addr == 0)
 -			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
 -
--		while (destlen) {
--			src = bounce_addr + bounce_sgl[j].offset;
--			srclen = bounce_sgl[j].length - bounce_sgl[j].offset;
+-		while (srclen) {
+-			/* assume bounce offset always == 0 */
+-			dest = bounce_addr + bounce_sgl[j].length;
+-			destlen = PAGE_SIZE - bounce_sgl[j].length;
 -
 -			copylen = min(srclen, destlen);
 -			memcpy((void *)dest, (void *)src, copylen);
 -
 -			total_copied += copylen;
--			bounce_sgl[j].offset += copylen;
--			destlen -= copylen;
--			dest += copylen;
+-			bounce_sgl[j].length += copylen;
+-			srclen -= copylen;
+-			src += copylen;
 -
--			if (bounce_sgl[j].offset == bounce_sgl[j].length) {
--				/* full */
+-			if (bounce_sgl[j].length == PAGE_SIZE) {
+-				/* full..move to next entry */
 -				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
 -				j++;
 -
 -				/* if we need to use another bounce buffer */
--				if (destlen || i != orig_sgl_count - 1)
+-				if (srclen || i != orig_sgl_count - 1)
 -					bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
--			} else if (destlen == 0 && i == orig_sgl_count - 1) {
+-			} else if (srclen == 0 && i == orig_sgl_count - 1) {
 -				/* unmap the last bounce that is < PAGE_SIZE */
 -				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
 -			}
 -		}
 -
--		kunmap_atomic((void *)(dest_addr - orig_sgl[i].offset),
--			      KM_IRQ0);
+-		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
 -	}
 -
 -	local_irq_restore(flags);
