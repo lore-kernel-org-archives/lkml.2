@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab1EILUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 07:20:03 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11237 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751080Ab1EILUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 07:20:01 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Jon Mason <jon.mason@exar.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_gbe: support ML7223 IOH
-Date: Mon,  9 May 2011 20:19:37 +0900
-Message-Id: <1304939977-11728-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752637Ab1EILU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 07:20:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22804 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752525Ab1EILUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 07:20:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,340,1301900400"; 
+   d="scan'208";a="919897486"
+Date: Mon, 9 May 2011 13:20:21 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/19] mfd: mfd_data removal
+Message-ID: <20110509112020.GB8071@sortiz-mobl>
+References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new device OKI SEMICONDUCTOR ML7223 IOH(Input/Output Hub).
-The ML7223 IOH is for MP(Media Phone) use.
-The ML7223 is companion chip for Intel Atom E6xx series.
-The ML7223 is completely compatible for Intel EG20T PCH.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+This patchset is using the newly added platform_device mfd_cell pointer to get
+rid of the mfd_data cell pointer.
+Drivers willing to access their parent MFD cell will do so through the
+mfd_get_cell accessor. Other drivers (and in particular the non MFD ones) will
+get their platform data bits from the cell's platform_data pointer. This
+allows for non MFD sub drivers to not depend on the MFD core APIs if they
+don't need to.
+
+Cc: Andres Salomon <dilinger@queued.net>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Ian Molton <spyro@f2s.com>
+Cc: Ira W. Snyder <iws@ovro.caltech.edu>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Matti Aaltonen <matti.j.aaltonen@nokia.com>
+Cc: Matt Reimer <mreimer@vpop.net>
+Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Richard Röjfors <richard.rojfors@pelagicore.com>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+
 ---
- drivers/net/Kconfig                |    8 +++++++-
- drivers/net/pch_gbe/pch_gbe_main.c |   11 +++++++++++
- 2 files changed, 18 insertions(+), 1 deletions(-)
+Samuel Ortiz (19):
+  mfd: Add platform data pointer back
+  mfd: Use mfd cell platform_data for ab3550 cells platform bits
+  mfd: Use mfd cell platform_data for ab3100 cells platform bits
+  mmc: Use device platform_data to retrieve tmio_mmc platform bits
+  w1: Use device platform_data to retrieve ds1wm platform bits
+  mfd: Pass htc-pasic3 led platform data through the cell platform_data
+  mfd: Use mfd cell platform_data for wl1273 cells platform bits
+  fb: Use platform_data to retrieve tmiofb platform bits
+  mtd: Use platform_data to retrieve tmio_nand platform bits
+  mfd: Use mfd cell platform_data for timberdale cells platform bits
+  mfd: Use mfd cell platform_data for rdc321x cells platform bits
+  mfd: Use mfd cell platform_data for wm8400 cells platform bits
+  mfd: Use mfd cell platform_data for mc13xxx cells platform bits
+  mfd: Use mfd cell platform_data for janz cells platform bits
+  mfd: Use mfd cell platform_data for twl4030 codec cells platform bits
+  mfd: Use mfd cell platform_data for tps6105x cells platform bits
+  mfd: Use mfd cell platform_data for 88pm860x cells platform bits
+  mfd: Use mfd cell platform_data for davinci cells platform bits
+  mfd: Remove mfd_data
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index dc280bc..6c884ef 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -2536,7 +2536,7 @@ config S6GMAC
- source "drivers/net/stmmac/Kconfig"
- 
- config PCH_GBE
--	tristate "PCH Gigabit Ethernet"
-+	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GbE"
- 	depends on PCI
- 	select MII
- 	---help---
-@@ -2548,6 +2548,12 @@ config PCH_GBE
- 	  to Gigabit Ethernet.
- 	  This driver enables Gigabit Ethernet function.
- 
-+	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
-+	  Output Hub), ML7223.
-+	  ML7223 IOH is for MP(Media Phone) use.
-+	  ML7223 is companion chip for Intel Atom E6xx series.
-+	  ML7223 is completely compatible for Intel EG20T PCH.
-+
- endif # NETDEV_1000
- 
- #
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index 2ef2f9c..bd27e1d 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -34,6 +34,10 @@ const char pch_driver_version[] = DRV_VERSION;
- #define PCH_GBE_COPYBREAK_DEFAULT	256
- #define PCH_GBE_PCI_BAR			1
- 
-+/* Macros for ML7223 */
-+#define PCI_VENDOR_ID_ROHM			0x10db
-+#define PCI_DEVICE_ID_ROHM_ML7223_GBE		0x8013
-+
- #define PCH_GBE_TX_WEIGHT         64
- #define PCH_GBE_RX_WEIGHT         64
- #define PCH_GBE_RX_BUFFER_WRITE   16
-@@ -2420,6 +2424,13 @@ static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
- 	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
- 	 .class_mask = (0xFFFF00)
- 	 },
-+	{.vendor = PCI_VENDOR_ID_ROHM,
-+	 .device = PCI_DEVICE_ID_ROHM_ML7223_GBE,
-+	 .subvendor = PCI_ANY_ID,
-+	 .subdevice = PCI_ANY_ID,
-+	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
-+	 .class_mask = (0xFFFF00)
-+	 },
- 	/* required last entry */
- 	{0}
- };
+ drivers/dma/timb_dma.c                 |    3 +-
+ drivers/gpio/janz-ttl.c                |    3 +-
+ drivers/gpio/rdc321x-gpio.c            |    3 +-
+ drivers/gpio/timbgpio.c                |    6 +-
+ drivers/i2c/busses/i2c-ocores.c        |    3 +-
+ drivers/i2c/busses/i2c-xiic.c          |    3 +-
+ drivers/input/misc/twl4030-vibra.c     |    3 +-
+ drivers/leds/leds-88pm860x.c           |    7 +--
+ drivers/leds/leds-mc13783.c            |    7 +--
+ drivers/media/radio/radio-timb.c       |    3 +-
+ drivers/media/radio/radio-wl1273.c     |    2 +-
+ drivers/media/video/timblogiw.c        |    3 +-
+ drivers/mfd/88pm860x-core.c            |   18 +++++--
+ drivers/mfd/ab3100-core.c              |    6 ++-
+ drivers/mfd/ab3550-core.c              |    6 ++-
+ drivers/mfd/asic3.c                    |    6 ++-
+ drivers/mfd/davinci_voicecodec.c       |    6 ++-
+ drivers/mfd/htc-pasic3.c               |    5 ++-
+ drivers/mfd/janz-cmodio.c              |    3 +-
+ drivers/mfd/mc13xxx-core.c             |   12 +++--
+ drivers/mfd/mfd-core.c                 |    7 +++
+ drivers/mfd/rdc321x-southbridge.c      |    6 ++-
+ drivers/mfd/t7l66xb.c                  |    6 ++-
+ drivers/mfd/tc6387xb.c                 |    3 +-
+ drivers/mfd/tc6393xb.c                 |   10 +++-
+ drivers/mfd/timberdale.c               |   81 +++++++++++++++++++++-----------
+ drivers/mfd/tps6105x.c                 |    3 +-
+ drivers/mfd/twl4030-codec.c            |    6 ++-
+ drivers/mfd/wl1273-core.c              |    6 ++-
+ drivers/mfd/wm8400-core.c              |    3 +-
+ drivers/mmc/host/tmio_mmc.c            |    2 +-
+ drivers/mtd/nand/tmio_nand.c           |    2 +-
+ drivers/net/can/janz-ican3.c           |    3 +-
+ drivers/net/ks8842.c                   |    3 +-
+ drivers/regulator/88pm8607.c           |    7 +--
+ drivers/regulator/ab3100.c             |    3 +-
+ drivers/regulator/mc13783-regulator.c  |    7 ++-
+ drivers/regulator/mc13892-regulator.c  |    7 ++-
+ drivers/regulator/tps6105x-regulator.c |    4 +-
+ drivers/spi/xilinx_spi.c               |    3 +-
+ drivers/video/backlight/88pm860x_bl.c  |    7 +--
+ drivers/video/tmiofb.c                 |   12 ++---
+ drivers/w1/masters/ds1wm.c             |   12 ++++-
+ drivers/watchdog/rdc321x_wdt.c         |    3 +-
+ include/linux/mfd/abx500.h             |    1 +
+ include/linux/mfd/core.h               |   23 +--------
+ sound/soc/codecs/cq93vc.c              |    3 +-
+ sound/soc/codecs/twl4030.c             |    6 +--
+ sound/soc/codecs/wl1273.c              |    3 +-
+ sound/soc/codecs/wm8400.c              |    2 +-
+ sound/soc/davinci/davinci-vcif.c       |    2 +-
+ 51 files changed, 191 insertions(+), 163 deletions(-)
+
 -- 
-1.7.4
+1.7.2.3
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
