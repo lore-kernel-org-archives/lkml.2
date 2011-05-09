@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1EIDVS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 23:21:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39760 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1EIDVR (ORCPT
+	id S1756164Ab1EIDkx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 23:40:53 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5624 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755647Ab1EIDk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 23:21:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [RFC 6/8] In order putback lru core
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <BANLkTikHf+3vhnXFu3ubWXOXkCkD4j206Q@mail.gmail.com>
-References: <20110501224844.75EC.A69D9226@jp.fujitsu.com> <BANLkTikHf+3vhnXFu3ubWXOXkCkD4j206Q@mail.gmail.com>
-Message-Id: <20110509122255.3AD5.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
-Date: Mon,  9 May 2011 12:21:11 +0900 (JST)
+	Sun, 8 May 2011 23:40:27 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH V2 1/5] pch_dma: fix dma direction issue for ML7213 IOH video-in
+Date: Mon,  9 May 2011 12:40:02 +0900
+Message-Id: <1304912406-6531-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, May 1, 2011 at 10:47 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >> > +/* This structure is used for keeping LRU ordering of isolated page */
-> >> > +struct pages_lru {
-> >> > +        struct page *page;      /* isolated page */
-> >> > +        struct page *prev_page; /* previous page of isolate page as LRU order */
-> >> > +        struct page *next_page; /* next page of isolate page as LRU order */
-> >> > +        struct list_head lru;
-> >> > +};
-> >> >  /*
-> >>
-> >> So this thing has to be allocated from somewhere. We can't put it
-> >> on the stack as we're already in danger there so we must be using
-> >> kmalloc. In the reclaim paths, this should be avoided obviously.
-> >> For compaction, we might hurt the compaction success rates if pages
-> >> are pinned with control structures. It's something to be wary of.
-> >>
-> >> At LSF/MM, I stated a preference for swapping the source and
-> >> destination pages in the LRU. This unfortunately means that the LRU
-> >> now contains a page in the process of being migrated to and the backout
-> >> paths for migration failure become a lot more complex. Reclaim should
-> >> be ok as it'll should fail to lock the page and recycle it in the list.
-> >> This avoids allocations but I freely admit that I'm not in the position
-> >> to implement such a thing right now :(
-> >
-> > I like swaping to fake page. one way pointer might become dangerous. vmscan can
-> > detect fake page and ignore it.
-> 
-> 
-> I guess it means swapping between migrated-from page and migrated-to page.
-> Right? 
+Currently, even-channel number is set as tx direction and odd is set as rx.
+However, though video-in uses ch6, the direction is not tx but rx.
+This patch sets video-in's DMA direction correctly.
 
-no. I was intend to use fake struct page. but this idea is also good to me.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+V2: Update Koul-Vinod's comments
+---
+ drivers/dma/pch_dma.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-> If so, migrated-from page is already removed from LRU list and
-> migrated-to page isn't LRU as it's page allocated newly so they don't
-> have any LRU information. How can we swap them? We need space keeps
-> LRU information before removing the page from LRU list. :(
-
-pure fake struct page or preallocation migrated-to page?
-
-
-
-> 
-> Could you explain in detail about swapping if I miss something?
-> 
-> About one way pointer, I think it's no problem. Worst case I imagine
-> is to put the page in head of LRU list. It means it's same issue now.
-> So it doesn't make worse than now.
-> 
-> >
-> > ie,
-> > is_fake_page(page)
-> > {
-> >        if (is_stack_addr((void*)page))
-> >                return true;
-> >        return false;
-> > }
-> >
-> > Also, I like to use stack rather than kmalloc in compaction.
-> >
-> 
-> Compaction is a procedure of reclaim. As you know, we had a problem
-> about using of stack during reclaim path.
-> I admit kmalloc-thing isn't good.
-> I will try to solve the issue as TODO.
-
-It depend on stack consumption size. because we don't call pageout()
-from compaction path. It's big different from regular reclaim path.
-
-> 
-> Thanks for the review, KOSAKI.
-
-Yeah, thank you for making very good patch!
-
-
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 8d8fef1..c84b18d 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -478,7 +478,6 @@ static int pd_alloc_chan_resources(struct dma_chan *chan)
+ 	spin_unlock_bh(&pd_chan->lock);
+ 
+ 	pdc_enable_irq(chan, 1);
+-	pdc_set_dir(chan);
+ 
+ 	return pd_chan->descs_allocated;
+ }
+@@ -561,6 +560,9 @@ static struct dma_async_tx_descriptor *pd_prep_slave_sg(struct dma_chan *chan,
+ 	else
+ 		return NULL;
+ 
++	pd_chan->dir = direction;
++	pdc_set_dir(chan);
++
+ 	for_each_sg(sgl, sg, sg_len, i) {
+ 		desc = pdc_desc_get(pd_chan);
+ 
+@@ -850,8 +852,6 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
+ 
+ 		pd_chan->membase = &regs->desc[i];
+ 
+-		pd_chan->dir = (i % 2) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+-
+ 		spin_lock_init(&pd_chan->lock);
+ 
+ 		INIT_LIST_HEAD(&pd_chan->active_list);
+-- 
+1.7.4
 
