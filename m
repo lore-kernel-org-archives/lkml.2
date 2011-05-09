@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab1EIFx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 01:53:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:39355 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab1EIFxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 01:53:54 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 09/18] virtio: use avail_event index
-In-Reply-To: <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com> <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
-User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Mon, 09 May 2011 14:03:26 +0930
-Message-ID: <874o54h4rt.fsf@rustcorp.com.au>
+	id S1751250Ab1EIEjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 00:39:43 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:36923 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab1EIEjk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 00:39:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=O7e0Nd3fB+DZcdq48XsG7BQupCF14WZW79/3350UvmnJ77mX75uQgg0QcTUJqLwPYA
+         IxwFZZWsUWJoU9TvT2/XKhkp977U780sftOGDF8pyimrTLjW6BIZEHtIVJPPT7CdzjYA
+         4qmjgpMao1XJ/xCSmDfusJRyMd/GJveuyuqOc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
+References: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
+Date: Mon, 9 May 2011 12:39:39 +0800
+Message-ID: <BANLkTimjkK-q63x5DrEj+9=pF8zbW7mJ2g@mail.gmail.com>
+Subject: Re: [PATCH] sched: shorten setting the allowed cpu mask of task
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011 23:51:47 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> Use the new avail_event feature to reduce the number
-> of exits from the guest.
+On Fri, May 6, 2011 at 8:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> When setting the allowed cpu mask for a given task, if the task is
+> already bound to certain cpu, after checking the validity of the new
 
-Figures here would be nice :)
+Maybe we don't need to restrict it only on task bound to certain cpu.
 
-> @@ -228,6 +237,12 @@ add_head:
->  	 * new available array entries. */
->  	virtio_wmb();
->  	vq->vring.avail->idx++;
-> +	/* If the driver never bothers to kick in a very long while,
-> +	 * avail index might wrap around. If that happens, invalidate
-> +	 * kicked_avail index we stored. TODO: make sure all drivers
-> +	 * kick at least once in 2^16 and remove this. */
-> +	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
-> +		vq->kicked_avail_valid = true;
+> mask of allowed cpus, job is done, and no further efforts needed for
+> the valid case as well.
+>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+>
+> --- a/kernel/sched.c    2011-04-27 11:48:50.000000000 +0800
+> +++ b/kernel/sched.c    2011-05-06 20:39:58.000000000 +0800
+> @@ -5899,9 +5899,9 @@ again:
+>                goto out;
+>        }
+>
+> -       if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
+> -                    !cpumask_equal(&p->cpus_allowed, new_mask))) {
+> -               ret = -EINVAL;
+> +       if ((p->flags & PF_THREAD_BOUND) && p != current) {
+> +               if (!cpumask_equal(&p->cpus_allowed, new_mask))
 
-If they don't, they're already buggy.  Simply do:
-        WARN_ON(vq->vring.avail->idx == vq->kicked_avail);
-
-> +static bool vring_notify(struct vring_virtqueue *vq)
-> +{
-> +	u16 old, new;
-> +	bool v;
-> +	if (!vq->event)
-> +		return !(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY);
-> +
-> +	v = vq->kicked_avail_valid;
-> +	old = vq->kicked_avail;
-> +	new = vq->kicked_avail = vq->vring.avail->idx;
-> +	vq->kicked_avail_valid = true;
-> +	if (unlikely(!v))
-> +		return true;
-
-This is the only place you actually used kicked_avail_valid.  Is it
-possible to initialize it in such a way that you can remove this?
-
-> @@ -482,6 +517,8 @@ void vring_transport_features(struct virtio_device *vdev)
->  			break;
->  		case VIRTIO_RING_F_USED_EVENT_IDX:
->  			break;
-> +		case VIRTIO_RING_F_AVAIL_EVENT_IDX:
-> +			break;
->  		default:
->  			/* We don't understand this bit. */
->  			clear_bit(i, vdev->features);
-
-Does this belong in a prior patch?
+IOW, we could make '!cpumask_equal(&p->cpus_allowed, new_mask)'
+be a separated condition. And I don't see any potential problem with it.
 
 Thanks,
-Rusty.
+Yong
+
+
+> +                       ret = -EINVAL;
+>                goto out;
+>        }
+>
+
+
+
+-- 
+Only stand for myself
