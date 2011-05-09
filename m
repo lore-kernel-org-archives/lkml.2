@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab1EIDkx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 23:40:53 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5624 "EHLO
+	id S1756011Ab1EIDk3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 23:40:29 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5630 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755647Ab1EIDk1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754842Ab1EIDk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 May 2011 23:40:27 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
@@ -13,56 +13,55 @@ To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
         Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH V2 1/5] pch_dma: fix dma direction issue for ML7213 IOH video-in
-Date: Mon,  9 May 2011 12:40:02 +0900
-Message-Id: <1304912406-6531-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH V2 2/5] pch_dma: modify for checkpatch
+Date: Mon,  9 May 2011 12:40:03 +0900
+Message-Id: <1304912406-6531-2-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1304912406-6531-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1304912406-6531-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, even-channel number is set as tx direction and odd is set as rx.
-However, though video-in uses ch6, the direction is not tx but rx.
-This patch sets video-in's DMA direction correctly.
+Fix checkpatch warnings.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
-V2: Update Koul-Vinod's comments
----
- drivers/dma/pch_dma.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/dma/pch_dma.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 8d8fef1..c84b18d 100644
+index c84b18d..f73686e 100644
 --- a/drivers/dma/pch_dma.c
 +++ b/drivers/dma/pch_dma.c
-@@ -478,7 +478,6 @@ static int pd_alloc_chan_resources(struct dma_chan *chan)
- 	spin_unlock_bh(&pd_chan->lock);
+@@ -138,7 +138,8 @@ struct pch_dma {
+ #define dma_writel(pd, name, val) \
+ 	writel((val), (pd)->membase + PCH_DMA_##name)
  
- 	pdc_enable_irq(chan, 1);
--	pdc_set_dir(chan);
- 
- 	return pd_chan->descs_allocated;
+-static inline struct pch_dma_desc *to_pd_desc(struct dma_async_tx_descriptor *txd)
++static inline struct pch_dma_desc *to_pd_desc(
++					struct dma_async_tx_descriptor *txd)
+ {
+ 	return container_of(txd, struct pch_dma_desc, txd);
  }
-@@ -561,6 +560,9 @@ static struct dma_async_tx_descriptor *pd_prep_slave_sg(struct dma_chan *chan,
- 	else
- 		return NULL;
+@@ -163,13 +164,15 @@ static inline struct device *chan2parent(struct dma_chan *chan)
+ 	return chan->dev->device.parent;
+ }
  
-+	pd_chan->dir = direction;
-+	pdc_set_dir(chan);
-+
- 	for_each_sg(sgl, sg, sg_len, i) {
- 		desc = pdc_desc_get(pd_chan);
+-static inline struct pch_dma_desc *pdc_first_active(struct pch_dma_chan *pd_chan)
++static inline struct pch_dma_desc *pdc_first_active(
++						struct pch_dma_chan *pd_chan)
+ {
+ 	return list_first_entry(&pd_chan->active_list,
+ 				struct pch_dma_desc, desc_node);
+ }
  
-@@ -850,8 +852,6 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
- 
- 		pd_chan->membase = &regs->desc[i];
- 
--		pd_chan->dir = (i % 2) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
--
- 		spin_lock_init(&pd_chan->lock);
- 
- 		INIT_LIST_HEAD(&pd_chan->active_list);
+-static inline struct pch_dma_desc *pdc_first_queued(struct pch_dma_chan *pd_chan)
++static inline struct pch_dma_desc *pdc_first_queued(
++						struct pch_dma_chan *pd_chan)
+ {
+ 	return list_first_entry(&pd_chan->queue,
+ 				struct pch_dma_desc, desc_node);
 -- 
 1.7.4
 
