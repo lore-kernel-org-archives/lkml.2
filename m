@@ -1,110 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172Ab1EIJ0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 05:26:07 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:37972 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750707Ab1EIJ0F (ORCPT
+	id S1751313Ab1EIJew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 05:34:52 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49823 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab1EIJev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 05:26:05 -0400
-Date: Mon, 9 May 2011 12:25:58 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        balbi@ti.com, ablay@codeaurora.org, Maya Erez <merez@codeaurora.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 5/7] usb: Add streams support to the gadget framework
-Message-ID: <20110509092555.GF1254@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1304853414-10234-1-git-send-email-tlinder@codeaurora.org>
- <1304853414-10234-6-git-send-email-tlinder@codeaurora.org>
+	Mon, 9 May 2011 05:34:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=bybIaq+oDZF/FGKGDeIMWvCRqKwysiz7yrBr0VynGRqRXCMyZCwmPCSl73VSlNCux2
+         7/jkxBYKxesRALm4zfsl+4n8kbtx4xUIYRAwVqAvlhegSntnMlk1/ibDqKms5eVDZSw4
+         XOOTqnBbfL/k5SZo+OPsz2AhIxcaPMWFzDk5w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304853414-10234-6-git-send-email-tlinder@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110509145854.9e6d8806.sfr@canb.auug.org.au>
+References: <20110509145854.9e6d8806.sfr@canb.auug.org.au>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Mon, 9 May 2011 11:34:35 +0200
+Message-ID: <BANLkTinzFs0cfGdmkdOE8cgKSHK=5NEjmg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (driver-core tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Anton Guda <atu@dmeti.dp.ua>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 9, 2011 at 06:58, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> After merging the final tree, today's linux-next build (powerpc allnoconfig)
+> failed like this:
+>
+> kernel/sys.c: In function 'kernel_restart_prepare':
+> kernel/sys.c:317: error: implicit declaration of function 'usermodehelper_disable'
 
-On Sun, May 08, 2011 at 02:16:46PM +0300, Tatyana Brokhman wrote:
-> This patch defines necessary fields to support streaming for USB3.0.
-> It implements a new function (usb_ep_autoconfig_ss) to be used instead of
-> the existing usb_ep_autoconfig when working in SS mode and there is a
-> need to search for an endpoint according to the number of required
-> streams.
-> 
-> Signed-off-by: Maya Erez <merez@codeaurora.org>
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> 
-> ---
->  drivers/usb/gadget/epautoconf.c |  125 +++++++++++++++++++++++++++++++--------
->  include/linux/usb/gadget.h      |   10 +++
->  2 files changed, 110 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
-> index e7e373a..920d1fa 100644
-> --- a/drivers/usb/gadget/epautoconf.c
-> +++ b/drivers/usb/gadget/epautoconf.c
-> @@ -63,13 +63,16 @@ static int
->  ep_matches (
->  	struct usb_gadget		*gadget,
->  	struct usb_ep			*ep,
-> -	struct usb_endpoint_descriptor	*desc
-> +	struct usb_endpoint_descriptor	*desc,
-> +	struct usb_ss_ep_comp_descriptor *ep_comp
->  )
->  {
->  	u8		type;
->  	const char	*tmp;
->  	u16		max;
->  
-> +	int		num_req_streams = 0;
-> +
->  	/* endpoint already claimed? */
->  	if (NULL != ep->driver_data)
->  		return 0;
-> @@ -129,6 +132,22 @@ ep_matches (
->  	}
->  
->  	/*
-> +	 * Get the number of required streams from the EP companion
-> +	 * descriptor and see if the EP matches it
-> +	 */
-> +	if (usb_endpoint_xfer_bulk(desc)) {
-> +		if (ep_comp) {
-> +			num_req_streams = ep_comp->bmAttributes & 0x1f;
-> +			if (num_req_streams > ep->max_streams)
-> +				return 0;
+Rafael, seems usermodehelper_disable() depends on CONFIG_PM_SLEEP.
 
-We would like the gadget drivers to all with all controllers, this would
-likely be better to ask from controller driver for N streams but work if
-we get less ? Something like:
+Any reason for that conditional? Remove it now?
 
-struct usb_gadget_ops {
-	...
-	request_stream(struct usb_gadget *g, int max_streams);
-};
-
-if (usb_endpoint_xfer_bulk(desc)) {
-	if (ep_comp) {
-		num_req_streams = usb_gadget_request_streams(gadget,
-			ep_comp->bmAttributes & 0x1f);
-
-		/* now patch ep_comp descriptor */
-		ep_comp->bmAttributes = num_req_streams;
-	}
-}
-
-this way, different function drivers can request for a different number
-of streams and controller driver is required to keep track of total
-number of streams, and number of "busy" streams.
-
-Another approach would be to require function drivers to request the
-streams during bind by themselves and only give this layer correct
-descriptors, which allow you to make those arguments const.
-
--- 
-balbi
+Thanks,
+Kay
