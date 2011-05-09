@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1EINDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:03:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752856Ab1EINDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:03:44 -0400
-Date: Mon, 9 May 2011 09:03:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: shaohua.li@intel.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, jaxboe@fusionio.com, hch@infradead.org,
-        jgarzik@pobox.com, djwong@us.ibm.com, sshtylyov@mvista.com,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org, ricwheeler@gmail.com
-Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
- non-queueable flush drive
-Message-ID: <20110509130316.GB5975@redhat.com>
-References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
- <20110505020417.817084678@sli10-conroe.sh.intel.com>
- <20110505083853.GC30950@htj.dyndns.org>
+	id S1753124Ab1EINHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:07:17 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:44142 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752800Ab1EINHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:07:15 -0400
+Date: Mon, 9 May 2011 16:07:07 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Felipe Balbi <balbi@ti.com>, Liam Girdwood <lrg@kernel.org>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 4/4] USB: TWL6025 allow different regulator name
+Message-ID: <20110509130703.GM1254@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
+ <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
+ <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
+ <1304867317.3246.10.camel@odin>
+ <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
+ <1304941430.3192.4.camel@odin>
+ <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
+ <20110509122941.GA3225@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110505083853.GC30950@htj.dyndns.org>
+In-Reply-To: <20110509122941.GA3225@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 10:38:53AM +0200, Tejun Heo wrote:
+Hi,
 
-[..]
-> Similarly, I'd like to suggest something like the following.
+On Mon, May 09, 2011 at 02:29:41PM +0200, Mark Brown wrote:
+> On Mon, May 09, 2011 at 03:16:03PM +0300, Felipe Balbi wrote:
+> > On Mon, May 09, 2011 at 12:43:49PM +0100, Liam Girdwood wrote:
 > 
-> 		/*
-> 		 * Hold dispatching of regular requests if non-queueable
-> 		 * flush is in progress; otherwise, the low level driver
-> 		 * would keep dispatching IO requests just to requeue them
-> 		 * until the flush finishes, which not only adds
-> 		 * dispatching / requeueing overhead but may also
-> 		 * significantly affect throughput when multiple flushes
-> 		 * are issued back-to-back.  Please consider the following
-> 		 * scenario.
-> 		 *
-> 		 * - flush1 is dispatched with write1 in the elevator.
-> 		 *
-> 		 * - Driver dispatches write1 and requeues it.
-> 		 *
-> 		 * - flush2 is issued and appended to dispatch queue after
-> 		 *   the requeued write1.  As write1 has been requeued
-> 		 *   flush2 can't be put in front of it.
-> 		 *
-> 		 * - When flush1 finishes, the driver has to process write1
-> 		 *   before flush2 even though there's no fundamental
-> 		 *   reason flush2 can't be processed first and, when two
-> 		 *   flushes are issued back-to-back without intervening
-> 		 *   writes, the second one essentially becomes noop.
-> 		 *
-> 		 * This phenomena becomes quite visible under heavy
-> 		 * concurrent fsync workload and holding the queue while
-> 		 * flush is in progress leads to significant throughput
-> 		 * gain.
-> 		 */
+> > > I think it's the lesser evil though, especially for device integrators.
+> > > They will just match the regulator name from the schematics together
+> > > with the TRM name when creating their regulator constraints and having
+> > > different names here will definitely cause confusion.
+> 
+> > Any chance Device Tree could be used to pass that data to kernel
+> > instead, together with regulator names and all needed data for each one
+> > of them ?
+> 
+> I'm pretty sure that as soon as we have viable device tree support for
+> relevant platforms in mainline we'll have regulator support, though I'm
+> not sure that this will help too much with the naming as you'll still
+> have to figure out what the consumer requests.  We shouldn't be passing
+> in the consumer supply names from device tree (at least not a board
+> specific one) as this breaks the model that the supply names correspond
+> to the chip pins.
 
-Tejun,
+The thing is. We already had problems in the past with the Clock FW
+because drivers were passing clock names on platform_data and I really
+want to avoid the same on regulators. We need something clever.
 
-I am assuming that these back-to-back flushes are independent of each
-other otherwise write request will anyway get between two flushes.
+We pass in the data of how regulators are wired at the board level and
+drivers would regulator_get(my_dev->dev, "whatever fancy name I want as
+it doesn't matter at all");
 
-If that's the case, then should we solve the problem by improving flush
-merge logic a bit better. (Say idle a bit before issuing a flush only
-if request queue is not empty).
+If a driver has >1 regulator, you can distinguish them by which
+functionality they provide, no matter the name, they will be connected
+to a particular ball on the IC package which has a certain definition
+on the TRM. In other words, we should match on the functionality they
+provide, not on the name.
 
-That way multiple back to back flushes can be merged without taking a hit on
-throughput and we can avoid this special casing whether driver can queue the
-flush or not.
+Let's try to thing some 5 - 6 years ahead. With the current trend, we
+will be working on support for the PMIC on OMAP10, imagine if each one
+of those revisions decide to change the name of the regulator, because
+this new HW engineer working on the PMIC design doesn't like the old
+name. We will have X regulator pointers and X regulator name pointers in
+our platform_data. It will be really cumbersome and prone to errors if
+people continue on copy&pasting old code to "generate" a new driver.
 
-Thanks
-Vivek
+What I was expecting to see, was a mechanism where we define how those
+things are wired (it doesn't matter if the data uses DeviceTree or what)
+at the HW level and we ask the framework to give us the regulator
+connected to device X which provides a certain functionality. Just like
+clkdev has managed to get close to. Currently drivers will:
+
+clk_get(dev, "ick");
+clk_get(dev, "fck");
+
+etc...
+
+and the name really doesn't matter. Clkdev still isn't perfect as it
+uses device names, then when we want/need to change the device/driver
+name (due to some re-factoring for example) we end up breaking things.
+IMHO, struct device should point to its dependencies, be it a clock, be
+it a regulator.
+
+-- 
+balbi
