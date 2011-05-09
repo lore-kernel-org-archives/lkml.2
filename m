@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab1EIDLK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 23:11:10 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34109 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab1EIDLH (ORCPT
+	id S1755843Ab1EIDNY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 23:13:24 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:51574 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab1EIDNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 23:11:07 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>
-Subject: Re: [v2 000/115] faster tree-based sysctl implementation
-References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
-Date: Sun, 08 May 2011 20:11:00 -0700
-In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
-	(Lucian Adrian Grijincu's message of "Mon, 9 May 2011 00:38:12 +0200")
-Message-ID: <m1ei48zhyz.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Sun, 8 May 2011 23:13:22 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: unable to handle kernel paging request when inserting FAT32 formatted flash media
+References: <20110502064945.GA12197@mac.home>
+	<20110502065529.GA12397@mac.home> <87y62pf9xg.fsf@devron.myhome.or.jp>
+	<87r58hf866.fsf@devron.myhome.or.jp>
+	<20110502170122.GA14096@eazy.amigager.de>
+	<87k4e9ey9k.fsf@devron.myhome.or.jp> <20110502203327.GA19507@mac.home>
+	<87bozkg3ng.fsf@devron.myhome.or.jp>
+	<8762psfwew.fsf@devron.myhome.or.jp>
+	<87vcxsegbo.fsf@devron.myhome.or.jp>
+	<87r58geejh.fsf@devron.myhome.or.jp>
+	<87k4e8ecm4.fsf@devron.myhome.or.jp> <874o54ip8m.fsf@rustcorp.com.au>
+Date: Mon, 09 May 2011 12:13:18 +0900
+In-Reply-To: <874o54ip8m.fsf@rustcorp.com.au> (Rusty Russell's message of
+	"Mon, 09 May 2011 11:56:01 +0930")
+Message-ID: <8762pk36sx.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/ki7WCFI3l/xnKFsasPOeTToKz1g2E5Hk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
+Rusty Russell <rusty@rustcorp.com.au> writes:
 
-> Eric also asked for:
-> - replacing the per-header list of subdirs with a rbtree.
->   -- Again, lack of time, and this can always be added at a later time
->      to optimize lookup and duplicate checks. At the moment this patch
->      series does not add a complexity regression over the previous
->      implementation, au contraire.
+> On Tue, 03 May 2011 11:34:11 +0900, OGAWA Hirofumi
+> <hirofumi@mail.parknet.co.jp> wrote:
+>> > Hm. It seems to be 0x80 was gone somehow. If I added 0x80 at 0x8661, it
+>> > seems to be sane code.
+>> >
+>> >   20:	74 51                	je     73 <a+0x73>
+>> >   22:	49 c7 c6 d8 91 13 a0 	mov    $0xffffffffa01391d8,%r14
+>> >   29:	b2 b6                	mov    $0xb6,%dl
+>> >   2b: 80 3d fc 9b 00 00 00 cmpb $0x0,0x9bfc(%rip) <- here is
+>> > 0x8661
+>> >   32:	74 3f                	je     73 <a+0x73>
+>> >   34:	49 8d 44 24 08       	lea    0x8(%r12),%rax
+>> 
+>> Code: fd ff ff 0f 1f 80 00 00 00 00 83 ca 01 89 93 10 02 00 00 ba ff
+>> 01 00 00 41 f6 85 96 00 00 00 02 74 51 49 c7 c6 d8 91 13 a0 b2 b6 3d
+>> fc 9b 00 00 00 74 3f 49 8d 44 24 08 48 89 44 24 08 eb 18 
+>
+> How strange, but if this can't be reproduced with a rebuilt kernel I'm
+> tempted to put it down to corruption in the module somehow...
 
-Instead you add a dubious mechanisms, to avoid duplicates checks
-because the duplicate checks takes time.
+I just bridged the bug report, so not pretty sure though. It sounds like
+to be fixed by rebuilding kernel.
 
-A good internal data structure should have logN duplicate checks
-and that should not be cost prohibitive. For maintainability of
-the users a good internal data structure removes the need for
-special cases, and it actually makes use the sysctl fast.
-Your implementation continues to have a O(N^2) cost to use the
-sysctl files.
-
-Getting a good internal data structure is the most important part
-of a making sysctls fast, and keeping them fast.  Your patchset
-fails in that.
-
-So at that level, a great big NAK on the patchset as it currently
-exists.
-
-
-You have made a key observation that we only need better data
-structures for the directories and can leave off that work
-for the callers.
-
-Thank you for that.
-
-Additionally thank you for splitting up your changes to the
-core of sysctl so there is a chance of reviewing those.
-
-With respect to review and merging.  The priorities should be:
-1) Figure out what the users really need to do, before we change
-   everything so we only need one sweeping pass through the users
-   that hopefully simplifies them.
-
-2) Ensure you have a version of the new interfaces ready at the
-   start of the patchset, so the sweeping changes can be made
-   incrementally.
-
-3) Clean up the users.
-
-4) Make simplifications because you don't have any old users left.
-
-I very much agree that the data structures that sysctl uses today
-are far from ideal, and that we can make a lot of headway.
-
-That said I think there is some good work in your patchset and I may
-try and cherry pick out the good bits that we can merge now.
-
-Eric
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
