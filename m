@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1EIRSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 13:18:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105Ab1EIRSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 13:18:47 -0400
-Subject: Re: KVM Steal Time Set
-From: Glauber Costa <glommer@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110509171228.GB2378@mgebm.net>
-References: <20110509163343.GA2378@mgebm.net>
-	 <1304959439.361.11.camel@mothafucka.localdomain>
-	 <20110509171228.GB2378@mgebm.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Mon, 09 May 2011 14:18:43 -0300
-Message-ID: <1304961523.361.12.camel@mothafucka.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753757Ab1EIR3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 13:29:49 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46321 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab1EIR3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 13:29:47 -0400
+Date: Mon, 9 May 2011 22:59:35 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        kexec@lists.infradead.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [RFC] Kdump and memory error handling
+Message-ID: <20110509172935.GD1963@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110504193509.GA5342@in.ibm.com>
+ <20110504203914.GC1737@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110504203914.GC1737@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-09 at 13:12 -0400, Eric B Munson wrote:
-> On Mon, 09 May 2011, Glauber Costa wrote:
+On Wed, May 04, 2011 at 10:39:14PM +0200, Andi Kleen wrote:
+> > Any thoughts/suggestions?
 > 
-> > On Mon, 2011-05-09 at 12:33 -0400, Eric B Munson wrote:
-> > > Glauber,
-> > > 
-> > > I am interested in your work on KVM steal time, but I haven't seen anything new
-> > > since the end of January.  Are you still working on these?
-> > > 
-> > > Thanks,
-> > > Eric
-> > > 
-> > Hi Eric,
-> > 
-> > Yes, although I am having some though times, and am not being able to go
-> > back to it as often as I'd like. Would you be interested in getting an
-> > early version of the patches I get here, for testing ?
-> > 
+> My old attempts to solve this are
 > 
-> Hi Glauber,
+> Don't dump on MCE:
 > 
-> Yes I would, please send me any set you feel is ready for testing and I will
-> let you know how it turns out for me.
+> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/xpanic
 > 
-> Thanks,
-> Eric
-I think I can have something ready for testing state by tomorrow
 
+The problem we seen in avoiding a panic->crash_kexec->[coredump capture] is
+that the user may not have a means to know the reason for crash, unless
+the serial console is connected to capture and store the panic string.
+
+Alternatively a 'slim' kdump (as described here:
+https://lkml.org/lkml/2011/5/4/396) would not contain meaningless data from
+the old memory, but inform the user about the cause of the crash. I'm
+intending to post some patches with a quick implementation of it soon.
+
+> Handle dumps of corrupted memory regresions:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=shortlog;h=refs/heads/mce/crashdump
+> 
+
+> IMHO these patches are still the right solutions for this.
+> 
+
+Like Vatsa had raised, the processor's behaviour upon reading (or any I/O
+operation) the faulty memory location isn't clearly defined (to the
+extent I read through System Programming Guide Part 1, Volume 3A,
+Chapter 15). In such a scenario, disabling MCE for the kdump kernel (which can
+potentially read the faulty memory) is making things hazy.
+
+Thanks,
+K.Prasad
 
