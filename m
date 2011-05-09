@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab1EJJ4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:56:22 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:41709
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S932432Ab1EIWNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:13:17 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47307
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754310Ab1EJJyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:54:08 -0400
+	id S1751545Ab1EIVon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 17:44:43 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 012/206] Staging: hv: Rename the function stor_vsc_on_device_remove
-Date: Mon,  9 May 2011 14:54:54 -0700
-Message-Id: <1304978288-22999-12-git-send-email-kys@microsoft.com>
+Subject: [PATCH 013/206] Staging: hv: Get rid of the indirection for removing stor device
+Date: Mon,  9 May 2011 14:54:55 -0700
+Message-Id: <1304978288-22999-13-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,64 +32,58 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c  |    2 +-
- drivers/staging/hv/storvsc.c     |    2 +-
- drivers/staging/hv/storvsc_api.h |    2 +-
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 908c169..830f257 100644
+index 830f257..8b8d960 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -197,7 +197,7 @@ static int blk_vsc_initialize(struct hv_driver *driver)
+@@ -197,7 +197,6 @@ static int blk_vsc_initialize(struct hv_driver *driver)
  		    stor_driver->max_outstanding_req_per_channel);
  
  	/* Setup the dispatch table */
--	stor_driver->base.dev_rm = stor_vsc_on_device_remove;
-+	stor_driver->base.dev_rm = storvsc_dev_remove;
+-	stor_driver->base.dev_rm = storvsc_dev_remove;
  	stor_driver->base.cleanup = stor_vsc_on_cleanup;
  	stor_driver->on_io_request = stor_vsc_on_io_request;
  
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 503c6bf..976f382 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -483,7 +483,7 @@ cleanup:
- /*
-  * stor_vsc_on_device_remove - Callback when the our device is being removed
+@@ -543,8 +542,6 @@ out:
   */
--int stor_vsc_on_device_remove(struct hv_device *device)
-+int storvsc_dev_remove(struct hv_device *device)
+ static int blkvsc_remove(struct hv_device *dev)
  {
- 	struct storvsc_device *stor_device;
+-	struct storvsc_driver *storvsc_drv =
+-				drv_to_stordrv(dev->device.driver);
+ 	struct block_device_context *blkdev = dev_get_drvdata(&dev->device);
+ 	unsigned long flags;
  
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index 0200154..b3207a0 100644
---- a/drivers/staging/hv/storvsc_api.h
-+++ b/drivers/staging/hv/storvsc_api.h
-@@ -165,7 +165,7 @@ struct storvsc_driver *drv_to_stordrv(struct device_driver *d)
+@@ -552,7 +549,7 @@ static int blkvsc_remove(struct hv_device *dev)
+ 	 * Call to the vsc driver to let it know that the device is being
+ 	 * removed
+ 	 */
+-	storvsc_drv->base.dev_rm(dev);
++	storvsc_dev_remove(dev);
  
- int storvsc_dev_add(struct hv_device *device,
- 				void *additional_info);
--int stor_vsc_on_device_remove(struct hv_device *device);
-+int storvsc_dev_remove(struct hv_device *device);
+ 	/* Get to a known state */
+ 	spin_lock_irqsave(&blkdev->lock, flags);
+@@ -934,9 +931,6 @@ static void blkvsc_drv_exit(void)
+  */
+ static int blkvsc_probe(struct hv_device *dev)
+ {
+-	struct storvsc_driver *storvsc_drv =
+-			drv_to_stordrv(dev->device.driver);
+-
+ 	struct block_device_context *blkdev = NULL;
+ 	struct storvsc_device_info device_info;
+ 	struct storvsc_major_info major_info;
+@@ -1033,7 +1027,7 @@ static int blkvsc_probe(struct hv_device *dev)
+ 	return ret;
  
- int stor_vsc_on_io_request(struct hv_device *device,
- 				struct hv_storvsc_request *request);
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 5168eb7..903ecbe 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -114,7 +114,7 @@ static int stor_vsc_initialize(struct hv_driver *driver)
+ remove:
+-	storvsc_drv->base.dev_rm(dev);
++	storvsc_dev_remove(dev);
  
- 	/* Setup the dispatch table */
- 	stor_driver->base.dev_add	= storvsc_dev_add;
--	stor_driver->base.dev_rm	= stor_vsc_on_device_remove;
-+	stor_driver->base.dev_rm	= storvsc_dev_remove;
- 	stor_driver->base.cleanup	= stor_vsc_on_cleanup;
- 
- 	stor_driver->on_io_request	= stor_vsc_on_io_request;
+ cleanup:
+ 	if (blkdev) {
 -- 
 1.7.4.1
 
