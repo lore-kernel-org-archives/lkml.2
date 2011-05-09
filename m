@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab1EICPl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 22:15:41 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45904 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932321Ab1EICPk convert rfc822-to-8bit (ORCPT
+	id S932471Ab1EICUf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 22:20:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52062 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406Ab1EICUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 22:15:40 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=rf8tG+Tx3XyWjcmxG/cneT8ulnQVRPrN/Juwf6rDhUNZsWV9e+9ebZInwxCNJZ5Dm9ViLMXQSEFYyj/2O9CsdCQwPpj+snhpDdXrxtDARsSlMD6JFEvtCzaOgElmhyjK;
-Date: Sun, 8 May 2011 19:15:36 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Connor H <cmdkhh@gmail.com>
-Cc: gene heskett <gheskett@wdtv.com>, linux-kernel@vger.kernel.org
-Subject: Re: trying to build 2.6.38.5?
-Message-Id: <20110508191536.ba3173d2.rdunlap@xenotime.net>
-In-Reply-To: <BANLkTik5uTMRpg5mj2MtnW+MZDgWwOgyUQ@mail.gmail.com>
-References: <201105082023.09878.gene.heskett@gmail.com>
-	<20110508174528.24b0f0c2.rdunlap@xenotime.net>
-	<201105082112.14959.gheskett@wdtv.com>
-	<BANLkTik5uTMRpg5mj2MtnW+MZDgWwOgyUQ@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sun, 8 May 2011 22:20:34 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCHv2] memcg: reclaim memory from node in round-robin
+Cc: kosaki.motohiro@jp.fujitsu.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Ying Han <yinghan@google.com>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20110509112215.3ACD.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon,  9 May 2011 11:20:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011 19:00:54 -0700 Connor H wrote:
-
-> unable to reproduce using the included config file,
+> I changed the logic a little and add a filter for skipping nodes.
+> With large NUMA, tasks may under cpuset or mempolicy and the usage of memory
+> can be unbalanced. So, I think a filter is required.
 > 
-> Connor
+> ==
+> Now, memory cgroup's direct reclaim frees memory from the current node.
+> But this has some troubles. In usual, when a set of threads works in
+> cooperative way, they are tend to on the same node. So, if they hit
+> limits under memcg, it will reclaim memory from themselves, it may be
+> active working set.
+> 
+> For example, assume 2 node system which has Node 0 and Node 1
+> and a memcg which has 1G limit. After some work, file cacne remains and
+> and usages are
+>    Node 0:  1M
+>    Node 1:  998M.
+> 
+> and run an application on Node 0, it will eats its foot before freeing
+> unnecessary file caches.
+> 
+> This patch adds round-robin for NUMA and adds equal pressure to each
+> node. When using cpuset's spread memory feature, this will work very well.
 
-Nor can I.
-
-
-> On Sun, May 8, 2011 at 6:12 PM, gene heskett <gheskett@wdtv.com> wrote:
-> > On Sunday, May 08, 2011, Randy Dunlap wrote:
-> >>On Sun, 8 May 2011 20:23:09 -0400 Gene Heskett wrote:
-> >>> At the end of a make -j2 all:
-> >>>
-> >>> /home/gene/src/linux-2.6.38.5-gene/include/linux/Kbuild:25: ***
-> >>> commands commence before first target.  Stop.
-> >>> make[2]: *** [linux] Error 2
-> >>> make[2]: *** Waiting for unfinished jobs....
-> >>> make[1]: *** [headers_install] Error 2
-> >>> make: *** [vmlinux] Error 2
-> >>>
-> >>> What am I missing?
-> >>
-> >>I can't reproduce this problem.  Please post your kernel .config file.
-> >>
-> >
-> > Attached, thanks Randy.
+Looks nice. And it would be more nice if global reclaim has the same feature.
+Do you have a plan to do it?
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
