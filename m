@@ -1,160 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1EIHCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 03:02:47 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52071 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab1EIHCp (ORCPT
+	id S1752884Ab1EIHFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 03:05:21 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48442 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab1EIHFT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 03:02:45 -0400
-Date: Mon, 9 May 2011 09:02:30 +0200
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Nick Kossifidis <mickflemm@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ath5k regression associating with APs in 2.6.38
-Message-ID: <20110509070230.GA20458@thinkpad-t410>
-Mail-Followup-To: Nick Kossifidis <mickflemm@gmail.com>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Jiri Slaby <jirislaby@gmail.com>,
-	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
-	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110504153819.GA4551@thinkpad-t410>
- <20110504172716.GC18541@tuxdriver.com>
- <20110504192639.GB4551@thinkpad-t410>
- <BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
- <20110505135207.GA13727@thinkpad-t410>
- <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
+	Mon, 9 May 2011 03:05:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=nrRcJP33rN4vqmKBGBE/8xkDlf5oB4vOZ08Sw7leLgUEFhxusBvmQ96XOqJF5M8yZx
+         3zk0cOePg0dXo771zy74qQlfWVW/4XNte+xWSdIPr/2DLciaowubzAas6FbAXrJNKhd7
+         sWMllm7k1LaLUdvrA6PE9sv1r702VHjlTnSd4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1304901131-7104-17-git-send-email-sameo@linux.intel.com>
+References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+	<1304901131-7104-17-git-send-email-sameo@linux.intel.com>
+Date: Mon, 9 May 2011 09:05:19 +0200
+X-Google-Sender-Auth: OW5R-dKDa_9LT6AnZCPA6kU3CSQ
+Message-ID: <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
+Subject: Re: [PATCH 16/19] mfd: Use mfd cell platform_data for tps6105x cells
+ platform bits
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
-> Hmm I don't see any errors from reset/phy code, can you disable
-> Network Manager/wpa-supplicant and test connection on an open network
-> using iw ? It 'll give us a better picture...
-> 
-> If iw doesn't return any scan results we are probably hitting a PHY/RF
-> error specific to your device (not all vendors follow the reference
-> design). Maybe we should follow a blacklist/whitelist approach for
-> this feature.
+2011/5/9 Samuel Ortiz <sameo@linux.intel.com>:
 
-I got the results back from my tester. He was able to get scan results,
-but it took multiple tries and the direct probe failures appear in the
-log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
-need that and I'll request he retest with the extra debug logs enabled.
+> With the addition of a platform device mfd_cell pointer, MFD drivers
+> can go back to passing platform data back to their sub drivers.
+> This allows for an mfd_cell->mfd_data removal and thus keep the
+> sub drivers MFD agnostic. This is mostly needed for non MFD aware
+> sub drivers.
+>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 
+I have some question marks on this one...
 
-[   25.070218] ath5k 0000:06:02.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-[   25.070290] ath5k 0000:06:02.0: registered as 'phy0'
-[   25.830368] ath: EEPROM regdomain: 0x63
-[   25.830372] ath: EEPROM indicates we should expect a direct regpair map
-[   25.830376] ath: Country alpha2 being used: 00
-[   25.830378] ath: Regpair used: 0x63
-[   25.830382] cfg80211: Updating information on frequency 2412 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830386] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830388] cfg80211: Updating information on frequency 2417 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830392] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830394] cfg80211: Updating information on frequency 2422 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830397] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830400] cfg80211: Updating information on frequency 2427 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830403] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830405] cfg80211: Updating information on frequency 2432 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830409] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830411] cfg80211: Updating information on frequency 2437 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830414] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830417] cfg80211: Updating information on frequency 2442 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830420] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830423] cfg80211: Updating information on frequency 2447 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830426] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830428] cfg80211: Updating information on frequency 2452 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830431] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830434] cfg80211: Updating information on frequency 2457 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830437] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830440] cfg80211: Updating information on frequency 2462 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830443] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830445] cfg80211: Updating information on frequency 2467 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830449] cfg80211: 2457000 KHz - 2482000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830451] cfg80211: Updating information on frequency 2472 MHz for a 20 MHz width channel with regulatory rule:
-[   25.830454] cfg80211: 2457000 KHz - 2482000 KHz @  KHz), (N/A mBi, 2000 mBm)
-[   25.830457] cfg80211: Disabling freq 2484 MHz as custom regd has no rule that fits a 20 MHz wide channel
-[   25.842012] cfg80211: Ignoring regulatory request Set by core since the driver uses its own custom regulatory domain 
-[   26.048048] ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
-[   26.051154] ath5k phy0: Atheros AR2413 chip found (MAC: 0x78, PHY: 0x45)
-[  133.492866] ADDRCONF(NETDEV_UP): wlan0: link is not ready
-[  278.050097] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
-[  278.248082] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
-[  278.448111] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
-[  278.648084] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
-[  283.920272] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  284.120232] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  284.320074] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  284.520081] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  295.029501] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  295.228085] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  295.428086] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  295.628099] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  306.137353] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  306.336092] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  306.536097] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  306.736099] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  317.245279] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  317.444097] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  317.644111] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  317.844091] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  328.348112] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  328.548171] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  328.748109] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  328.948095] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  339.453369] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  339.652085] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  339.852082] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  340.052092] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  344.316878] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
-[  344.516064] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
-[  344.716125] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
-[  344.916101] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
-[  355.421554] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
-[  355.620092] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
-[  355.820642] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
-[  356.020054] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
-[  366.521629] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 1/3)
-[  366.720085] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 2/3)
-[  366.920080] wlan0: direct probe to c0:3f:0e:b9:f3:b2 (try 3/3)
-[  367.120367] wlan0: direct probe to c0:3f:0e:b9:f3:b2 timed out
-[  433.347401] ADDRCONF(NETDEV_UP): wlan0: link is not ready
-[  468.143619] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 1/3)
-[  468.340073] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 2/3)
-[  468.540069] wlan0: direct probe to c2:3f:0e:b9:f3:b3 (try 3/3)
-[  468.740069] wlan0: direct probe to c2:3f:0e:b9:f3:b3 timed out
-[  482.093842] wlan0: authenticate with c2:3f:0e:b9:f3:b3 (try 1)
-[  482.095325] wlan0: authenticated
-[  482.095384] wlan0: associate with c2:3f:0e:b9:f3:b3 (try 1)
-[  482.097657] wlan0: RX AssocResp from c2:3f:0e:b9:f3:b3 (capab=0x401 status=0 aid=1)
-[  482.097666] wlan0: associated
-[  482.099748] ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
-[  492.416050] wlan0: no IPv6 routers present
-[  547.281613] wlan0: deauthenticating from c2:3f:0e:b9:f3:b3 by local choice (reason=3)
-[  547.281973] cfg80211: All devices are disconnected, going to restore regulatory settings
-[  547.281984] cfg80211: Restoring regulatory settings
-[  547.283060] cfg80211: Calling CRDA to update world regulatory domain
-[  547.311427] cfg80211: Ignoring regulatory request Set by core since the driver uses its own custom regulatory domain 
-[  547.311446] cfg80211: World regulatory domain updated:
-[  547.311451] cfg80211:     (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
-[  547.311461] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
-[  547.311469] cfg80211:     (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
-[  547.311477] cfg80211:     (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
-[  547.311484] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
-[  547.311492] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+> --- a/drivers/mfd/tps6105x.c
+> +++ b/drivers/mfd/tps6105x.c
+> @@ -183,7 +183,8 @@ static int __devinit tps6105x_probe(struct i2c_client *client,
+>        /* Set up and register the platform devices. */
+>        for (i = 0; i < ARRAY_SIZE(tps6105x_cells); i++) {
+>                /* One state holder for all drivers, this is simple */
+> -               tps6105x_cells[i].mfd_data = tps6105x;
+> +               tps6105x_cells[i].platform_data = tps6105x;
+> +               tps6105x_cells[i].pdata_size = sizeof(*tps6105x);
 
+ACK
+
+> --- a/drivers/regulator/tps6105x-regulator.c
+> +++ b/drivers/regulator/tps6105x-regulator.c
+> @@ -137,7 +137,7 @@ static struct regulator_desc tps6105x_regulator_desc = {
+>  */
+>  static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
+>  {
+> -       struct tps6105x *tps6105x = mfd_get_data(pdev);
+> +       struct tps6105x *tps6105x = pdev->dev.platform_data;
+
+Can you use platform_get_drvdata(pdev); instead?
+
+>        struct tps6105x_platform_data *pdata = tps6105x->pdata;
+>        int ret;
+>
+> @@ -164,7 +164,7 @@ static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
+>
+>  static int __devexit tps6105x_regulator_remove(struct platform_device *pdev)
+>  {
+> -       struct tps6105x *tps6105x = platform_get_drvdata(pdev);
+> +       struct tps6105x *tps6105x = pdev->dev.platform_data;
+
+And this is a NO-OP, actually a bug in the present code, just leave it
+as it is and the other changes removing the mfd->mfd_data fixes the bug...
+
+Yours,
+Linus Walleij
