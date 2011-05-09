@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab1EIIWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:22:10 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:38203 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753379Ab1EIIWF (ORCPT
+	id S1753558Ab1EIIZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:25:23 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:58416 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753404Ab1EIIZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:22:05 -0400
+	Mon, 9 May 2011 04:25:20 -0400
 From: Haojian Zhuang <hzhuang1@marvell.com>
 To: Samuel Ortiz <sameo@linux.intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+CC: Andres Salomon <dilinger@queued.net>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Dmitry Baryshkov <dbaryshkov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Florian Fainelli <florian@openwrt.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ian Molton <spyro@f2s.com>, "Ira W. Snyder" <iws@ovro.caltech.edu>,
         Liam Girdwood <lrg@slimlogic.co.uk>,
-        Richard Purdie <rpurdie@rpsys.net>
-Date: Mon, 9 May 2011 01:21:30 -0700
-Subject: RE: [PATCH 17/19] mfd: Use mfd cell platform_data for 88pm860x
- cells platform bits
-Thread-Topic: [PATCH 17/19] mfd: Use mfd cell platform_data for 88pm860x
- cells platform bits
-Thread-Index: AcwN4MZ062aeKcRISPqK9BNWcTGnGwAQTtLA
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05D178BDD2@SC-VEXCH1.marvell.com>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Matti Aaltonen <matti.j.aaltonen@nokia.com>,
+        Matt Reimer <mreimer@vpop.net>,
+        Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        =?utf-8?B?UmljaGFyZCBSw7ZqZm9ycw==?= 
+	<richard.rojfors@pelagicore.com>,
+        =?utf-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Date: Mon, 9 May 2011 01:22:00 -0700
+Subject: RE: [PATCH 01/19] mfd: Add platform data pointer back
+Thread-Topic: [PATCH 01/19] mfd: Add platform data pointer back
+Thread-Index: AcwN4KoVX86Cn5+8Qyy9wmHNHStqLAAQXU6Q
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05D178BDD3@SC-VEXCH1.marvell.com>
 References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
- <1304901131-7104-18-git-send-email-sameo@linux.intel.com>
-In-Reply-To: <1304901131-7104-18-git-send-email-sameo@linux.intel.com>
+ <1304901131-7104-2-git-send-email-sameo@linux.intel.com>
+In-Reply-To: <1304901131-7104-2-git-send-email-sameo@linux.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498MLsk023735
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498PU4C023755
 
 
 
 >-----Original Message-----
 >From: Samuel Ortiz [mailto:sameo@linux.intel.com]
->Sent: 2011Äê5ÔÂ9ÈÕ 8:32 AM
+>Sent: 2011å¹´5æœˆ9æ—¥ 8:32 AM
 >To: linux-kernel
->Cc: Samuel Ortiz; Haojian Zhuang; Mark Brown; Liam Girdwood; Richard
->Purdie
->Subject: [PATCH 17/19] mfd: Use mfd cell platform_data for 88pm860x
->cells platform bits
+>Cc: Samuel Ortiz; Andres Salomon; Artem Bityutskiy; Dmitry Baryshkov;
+>Dmitry Torokhov; Florian Fainelli; Grant Likely; Guennadi Liakhovetski;
+>Haojian Zhuang; Ian Molton; Ira W. Snyder; Liam Girdwood; Linus Walleij;
+>Mark Brown; Matti Aaltonen; Matt Reimer; Miguel Aguilar; Paul Mundt;
+>Peter Ujfalusi; Philipp Zabel; Richard Purdie; Richard RÃ¶jfors; Uwe
+>Kleine-KÃ¶nig; Wim Van Sebroeck; Wolfgang Grandegger
+>Subject: [PATCH 01/19] mfd: Add platform data pointer back
 >
->With the addition of a platform device mfd_cell pointer, MFD drivers
->can go back to passing platform back to their sub drivers.
->This allows for an mfd_cell->mfd_data removal and thus keep the
->sub drivers MFD agnostic. This is mostly needed for non MFD aware
->sub drivers.
+>Now that we have a way to pass MFD cells down to the sub drivers,
+>we can gradually get rid of mfd_data by putting the platform pointer
+>back in place.
 >
+>Cc: Andres Salomon <dilinger@queued.net>
+>Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+>Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+>Cc: Dmitry Torokhov <dtor@mail.ru>
+>Cc: Florian Fainelli <florian@openwrt.org>
+>Cc: Grant Likely <grant.likely@secretlab.ca>
+>Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 >Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
->Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>Cc: Ian Molton <spyro@f2s.com>
+>Cc: Ira W. Snyder <iws@ovro.caltech.edu>
 >Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+>Cc: Linus Walleij <linus.walleij@linaro.org>
+>Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>Cc: Matti Aaltonen <matti.j.aaltonen@nokia.com>
+>Cc: Matt Reimer <mreimer@vpop.net>
+>Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>
+>Cc: Paul Mundt <lethal@linux-sh.org>
+>Cc: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+>Cc: Philipp Zabel <philipp.zabel@gmail.com>
 >Cc: Richard Purdie <rpurdie@rpsys.net>
+>Cc: Richard RÃ¶jfors <richard.rojfors@pelagicore.com>
+>Cc: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
+>Cc: Wim Van Sebroeck <wim@iguana.be>
+>Cc: Wolfgang Grandegger <wg@grandegger.com>
 >Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 >---
-> drivers/leds/leds-88pm860x.c          |    7 +------
-> drivers/mfd/88pm860x-core.c           |   18 ++++++++++++------
-> drivers/regulator/88pm8607.c          |    7 +------
-> drivers/video/backlight/88pm860x_bl.c |    7 +------
-> 4 files changed, 15 insertions(+), 24 deletions(-)
+> drivers/mfd/mfd-core.c   |    7 +++++++
+> include/linux/mfd/core.h |    4 ++++
+> 2 files changed, 11 insertions(+), 0 deletions(-)
 >
 Tested. It's OK.
 ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
