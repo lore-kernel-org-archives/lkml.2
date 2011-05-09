@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab1EJJy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:54:56 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42644
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S932588Ab1EJIie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:38:34 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42671
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752777Ab1EJJyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:54:10 -0400
+	id S1756082Ab1EJIaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 04:30:52 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 192/206] Staging: hv: Get rid of netvsc_api.h
-Date: Mon,  9 May 2011 14:57:54 -0700
-Message-Id: <1304978288-22999-192-git-send-email-kys@microsoft.com>
+Subject: [PATCH 193/206] Staging: hv: Get rid of netvsc.h
+Date: Mon,  9 May 2011 14:57:55 -0700
+Message-Id: <1304978288-22999-193-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -25,23 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of netvsc_api.h
+Now get rid of netvsc.h
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/netvsc_api.h |  130 ---------------------------------------
- 1 files changed, 0 insertions(+), 130 deletions(-)
- delete mode 100644 drivers/staging/hv/netvsc_api.h
+ drivers/staging/hv/netvsc.h |  331 -------------------------------------------
+ 1 files changed, 0 insertions(+), 331 deletions(-)
+ delete mode 100644 drivers/staging/hv/netvsc.h
 
-diff --git a/drivers/staging/hv/netvsc_api.h b/drivers/staging/hv/netvsc_api.h
+diff --git a/drivers/staging/hv/netvsc.h b/drivers/staging/hv/netvsc.h
 deleted file mode 100644
-index b385c9d..0000000
---- a/drivers/staging/hv/netvsc_api.h
+index 9ebea3b..0000000
+--- a/drivers/staging/hv/netvsc.h
 +++ /dev/null
-@@ -1,130 +0,0 @@
+@@ -1,331 +0,0 @@
 -/*
 - *
 - * Copyright (c) 2009, Microsoft Corporation.
@@ -66,112 +66,313 @@ index b385c9d..0000000
 - */
 -
 -
--#ifndef _NETVSC_API_H_
--#define _NETVSC_API_H_
+-#ifndef _NETVSC_H_
+-#define _NETVSC_H_
 -
--#include "vmbus_api.h"
--#include "vmbus.h"
+-#include <linux/list.h>
+-#include "vmbus_packet_format.h"
+-#include "vmbus_channel_interface.h"
+-#include "netvsc_api.h"
 -
--/* Fwd declaration */
--struct hv_netvsc_packet;
 -
--/* Represent the xfer page packet which contains 1 or more netvsc packet */
--struct xferpage_packet {
--	struct list_head list_ent;
+-#define NVSP_INVALID_PROTOCOL_VERSION	((u32)0xFFFFFFFF)
 -
--	/* # of netvsc packets this xfer packet contains */
--	u32 count;
+-#define NVSP_PROTOCOL_VERSION_1		2
+-#define NVSP_MIN_PROTOCOL_VERSION	NVSP_PROTOCOL_VERSION_1
+-#define NVSP_MAX_PROTOCOL_VERSION	NVSP_PROTOCOL_VERSION_1
+-
+-enum {
+-	NVSP_MSG_TYPE_NONE = 0,
+-
+-	/* Init Messages */
+-	NVSP_MSG_TYPE_INIT			= 1,
+-	NVSP_MSG_TYPE_INIT_COMPLETE		= 2,
+-
+-	NVSP_VERSION_MSG_START			= 100,
+-
+-	/* Version 1 Messages */
+-	NVSP_MSG1_TYPE_SEND_NDIS_VER		= NVSP_VERSION_MSG_START,
+-
+-	NVSP_MSG1_TYPE_SEND_RECV_BUF,
+-	NVSP_MSG1_TYPE_SEND_RECV_BUF_COMPLETE,
+-	NVSP_MSG1_TYPE_REVOKE_RECV_BUF,
+-
+-	NVSP_MSG1_TYPE_SEND_SEND_BUF,
+-	NVSP_MSG1_TYPE_SEND_SEND_BUF_COMPLETE,
+-	NVSP_MSG1_TYPE_REVOKE_SEND_BUF,
+-
+-	NVSP_MSG1_TYPE_SEND_RNDIS_PKT,
+-	NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE,
+-
+-	/*
+-	 * This should be set to the number of messages for the version with
+-	 * the maximum number of messages.
+-	 */
+-	NVSP_NUM_MSG_PER_VERSION		= 9,
 -};
 -
--/* The number of pages which are enough to cover jumbo frame buffer. */
--#define NETVSC_PACKET_MAXPAGE		4
+-enum {
+-	NVSP_STAT_NONE = 0,
+-	NVSP_STAT_SUCCESS,
+-	NVSP_STAT_FAIL,
+-	NVSP_STAT_PROTOCOL_TOO_NEW,
+-	NVSP_STAT_PROTOCOL_TOO_OLD,
+-	NVSP_STAT_INVALID_RNDIS_PKT,
+-	NVSP_STAT_BUSY,
+-	NVSP_STAT_MAX,
+-};
+-
+-struct nvsp_message_header {
+-	u32 msg_type;
+-};
+-
+-/* Init Messages */
 -
 -/*
-- * Represent netvsc packet which contains 1 RNDIS and 1 ethernet frame
-- * within the RNDIS
+- * This message is used by the VSC to initialize the channel after the channels
+- * has been opened. This message should never include anything other then
+- * versioning (i.e. this message will be the same for ever).
 - */
--struct hv_netvsc_packet {
--	/* Bookkeeping stuff */
--	struct list_head list_ent;
+-struct nvsp_message_init {
+-	u32 min_protocol_ver;
+-	u32 max_protocol_ver;
+-} __packed;
 -
--	struct hv_device *device;
--	bool is_data_pkt;
+-/*
+- * This message is used by the VSP to complete the initialization of the
+- * channel. This message should never include anything other then versioning
+- * (i.e. this message will be the same for ever).
+- */
+-struct nvsp_message_init_complete {
+-	u32 negotiated_protocol_ver;
+-	u32 max_mdl_chain_len;
+-	u32 status;
+-} __packed;
+-
+-union nvsp_message_init_uber {
+-	struct nvsp_message_init init;
+-	struct nvsp_message_init_complete init_complete;
+-} __packed;
+-
+-/* Version 1 Messages */
+-
+-/*
+- * This message is used by the VSC to send the NDIS version to the VSP. The VSP
+- * can use this information when handling OIDs sent by the VSC.
+- */
+-struct nvsp_1_message_send_ndis_version {
+-	u32 ndis_major_ver;
+-	u32 ndis_minor_ver;
+-} __packed;
+-
+-/*
+- * This message is used by the VSC to send a receive buffer to the VSP. The VSP
+- * can then use the receive buffer to send data to the VSC.
+- */
+-struct nvsp_1_message_send_receive_buffer {
+-	u32 gpadl_handle;
+-	u16 id;
+-} __packed;
+-
+-struct nvsp_1_receive_buffer_section {
+-	u32 offset;
+-	u32 sub_alloc_size;
+-	u32 num_sub_allocs;
+-	u32 end_offset;
+-} __packed;
+-
+-/*
+- * This message is used by the VSP to acknowledge a receive buffer send by the
+- * VSC. This message must be sent by the VSP before the VSP uses the receive
+- * buffer.
+- */
+-struct nvsp_1_message_send_receive_buffer_complete {
+-	u32 status;
+-	u32 num_sections;
 -
 -	/*
--	 * Valid only for receives when we break a xfer page packet
--	 * into multiple netvsc packets
+-	 * The receive buffer is split into two parts, a large suballocation
+-	 * section and a small suballocation section. These sections are then
+-	 * suballocated by a certain size.
 -	 */
--	struct xferpage_packet *xfer_page_pkt;
 -
--	union {
--		struct{
--			u64 recv_completion_tid;
--			void *recv_completion_ctx;
--			void (*recv_completion)(void *context);
--		} recv;
--		struct{
--			u64 send_completion_tid;
--			void *send_completion_ctx;
--			void (*send_completion)(void *context);
--		} send;
--	} completion;
+-	/*
+-	 * For example, the following break up of the receive buffer has 6
+-	 * large suballocations and 10 small suballocations.
+-	 */
 -
--	/* This points to the memory after page_buf */
+-	/*
+-	 * |            Large Section          |  |   Small Section   |
+-	 * ------------------------------------------------------------
+-	 * |     |     |     |     |     |     |  | | | | | | | | | | |
+-	 * |                                      |
+-	 *  LargeOffset                            SmallOffset
+-	 */
+-
+-	struct nvsp_1_receive_buffer_section sections[1];
+-} __packed;
+-
+-/*
+- * This message is sent by the VSC to revoke the receive buffer.  After the VSP
+- * completes this transaction, the vsp should never use the receive buffer
+- * again.
+- */
+-struct nvsp_1_message_revoke_receive_buffer {
+-	u16 id;
+-};
+-
+-/*
+- * This message is used by the VSC to send a send buffer to the VSP. The VSC
+- * can then use the send buffer to send data to the VSP.
+- */
+-struct nvsp_1_message_send_send_buffer {
+-	u32 gpadl_handle;
+-	u16 id;
+-} __packed;
+-
+-/*
+- * This message is used by the VSP to acknowledge a send buffer sent by the
+- * VSC. This message must be sent by the VSP before the VSP uses the sent
+- * buffer.
+- */
+-struct nvsp_1_message_send_send_buffer_complete {
+-	u32 status;
+-
+-	/*
+-	 * The VSC gets to choose the size of the send buffer and the VSP gets
+-	 * to choose the sections size of the buffer.  This was done to enable
+-	 * dynamic reconfigurations when the cost of GPA-direct buffers
+-	 * decreases.
+-	 */
+-	u32 section_size;
+-} __packed;
+-
+-/*
+- * This message is sent by the VSC to revoke the send buffer.  After the VSP
+- * completes this transaction, the vsp should never use the send buffer again.
+- */
+-struct nvsp_1_message_revoke_send_buffer {
+-	u16 id;
+-};
+-
+-/*
+- * This message is used by both the VSP and the VSC to send a RNDIS message to
+- * the opposite channel endpoint.
+- */
+-struct nvsp_1_message_send_rndis_packet {
+-	/*
+-	 * This field is specified by RNIDS. They assume there's two different
+-	 * channels of communication. However, the Network VSP only has one.
+-	 * Therefore, the channel travels with the RNDIS packet.
+-	 */
+-	u32 channel_type;
+-
+-	/*
+-	 * This field is used to send part or all of the data through a send
+-	 * buffer. This values specifies an index into the send buffer. If the
+-	 * index is 0xFFFFFFFF, then the send buffer is not being used and all
+-	 * of the data was sent through other VMBus mechanisms.
+-	 */
+-	u32 send_buf_section_index;
+-	u32 send_buf_section_size;
+-} __packed;
+-
+-/*
+- * This message is used by both the VSP and the VSC to complete a RNDIS message
+- * to the opposite channel endpoint. At this point, the initiator of this
+- * message cannot use any resources associated with the original RNDIS packet.
+- */
+-struct nvsp_1_message_send_rndis_packet_complete {
+-	u32 status;
+-};
+-
+-union nvsp_1_message_uber {
+-	struct nvsp_1_message_send_ndis_version send_ndis_ver;
+-
+-	struct nvsp_1_message_send_receive_buffer send_recv_buf;
+-	struct nvsp_1_message_send_receive_buffer_complete
+-						send_recv_buf_complete;
+-	struct nvsp_1_message_revoke_receive_buffer revoke_recv_buf;
+-
+-	struct nvsp_1_message_send_send_buffer send_send_buf;
+-	struct nvsp_1_message_send_send_buffer_complete send_send_buf_complete;
+-	struct nvsp_1_message_revoke_send_buffer revoke_send_buf;
+-
+-	struct nvsp_1_message_send_rndis_packet send_rndis_pkt;
+-	struct nvsp_1_message_send_rndis_packet_complete
+-						send_rndis_pkt_complete;
+-} __packed;
+-
+-union nvsp_all_messages {
+-	union nvsp_message_init_uber init_msg;
+-	union nvsp_1_message_uber v1_msg;
+-} __packed;
+-
+-/* ALL Messages */
+-struct nvsp_message {
+-	struct nvsp_message_header hdr;
+-	union nvsp_all_messages msg;
+-} __packed;
+-
+-
+-
+-
+-/* #define NVSC_MIN_PROTOCOL_VERSION		1 */
+-/* #define NVSC_MAX_PROTOCOL_VERSION		1 */
+-
+-#define NETVSC_SEND_BUFFER_SIZE			(64*1024)	/* 64K */
+-#define NETVSC_SEND_BUFFER_ID			0xface
+-
+-
+-#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024)	/* 1MB */
+-
+-#define NETVSC_RECEIVE_BUFFER_ID		0xcafe
+-
+-#define NETVSC_RECEIVE_SG_COUNT			1
+-
+-/* Preallocated receive packets */
+-#define NETVSC_RECEIVE_PACKETLIST_COUNT		256
+-
+-#define NETVSC_PACKET_SIZE                      2048
+-
+-/* Per netvsc channel-specific */
+-struct netvsc_device {
+-	struct hv_device *dev;
+-
+-	atomic_t refcnt;
+-	atomic_t num_outstanding_sends;
+-	/*
+-	 * List of free preallocated hv_netvsc_packet to represent receive
+-	 * packet
+-	 */
+-	struct list_head recv_pkt_list;
+-	spinlock_t recv_pkt_list_lock;
+-
+-	/* Send buffer allocated by us but manages by NetVSP */
+-	void *send_buf;
+-	u32 send_buf_size;
+-	u32 send_buf_gpadl_handle;
+-	u32 send_section_size;
+-
+-	/* Receive buffer allocated by us but manages by NetVSP */
+-	void *recv_buf;
+-	u32 recv_buf_size;
+-	u32 recv_buf_gpadl_handle;
+-	u32 recv_section_cnt;
+-	struct nvsp_1_receive_buffer_section *recv_section;
+-
+-	/* Used for NetVSP initialization protocol */
+-	struct completion channel_init_wait;
+-	struct nvsp_message channel_init_pkt;
+-
+-	struct nvsp_message revoke_packet;
+-	/* unsigned char HwMacAddr[HW_MACADDR_LEN]; */
+-
+-	/* Holds rndis device info */
 -	void *extension;
--
--	u32 total_data_buflen;
--	/* Points to the send/receive buffer where the ethernet frame is */
--	u32 page_buf_cnt;
--	struct hv_page_buffer page_buf[NETVSC_PACKET_MAXPAGE];
 -};
 -
--/* Represents the net vsc driver */
--struct netvsc_driver {
--	/* Must be the first field */
--	/* Which is a bug FIXME! */
--	struct hv_driver base;
--
--	u32 ring_buf_size;
--	u32 req_ext_size;
--
--	/*
--	 * This is set by the caller to allow us to callback when we
--	 * receive a packet from the "wire"
--	 */
--	int (*recv_cb)(struct hv_device *dev,
--				 struct hv_netvsc_packet *packet);
--	void (*link_status_change)(struct hv_device *dev, u32 status);
--
--	/* Specific to this driver */
--	int (*send)(struct hv_device *dev, struct hv_netvsc_packet *packet);
--
--	void *ctx;
--};
--
--static inline
--struct netvsc_driver *drv_to_netvscdrv(struct device_driver *d)
--{
--	struct hv_driver *hvdrv = drv_to_hv_drv(d);
--	return container_of(hvdrv, struct netvsc_driver, base);
--}
--
--struct netvsc_device_info {
--	unsigned char mac_adr[6];
--	bool link_state;	/* 0 - link up, 1 - link down */
--};
--
--/* Interface */
--int netvsc_device_add(struct hv_device *device, void *additional_info);
--int netvsc_device_remove(struct hv_device *device);
--int netvsc_initialize(struct hv_driver *drv);
--int rndis_filter_open(struct hv_device *dev);
--int rndis_filter_close(struct hv_device *dev);
--int rndis_filte_device_add(struct hv_device *dev,
--			void *additional_info);
--int rndis_filter_device_remove(struct hv_device *dev);
--
--
--#endif /* _NETVSC_API_H_ */
+-#endif /* _NETVSC_H_ */
 -- 
 1.7.4.1
 
