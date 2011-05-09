@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1EIU51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:57:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53343 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab1EIU5Z (ORCPT
+	id S1754822Ab1EIU6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:58:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46546 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752838Ab1EIU6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:57:25 -0400
-Message-ID: <4DC85519.8020303@kernel.org>
-Date: Mon, 09 May 2011 13:56:57 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Yinghai Lu <yinghai.lu@oracle.com>, Kalle Valo <kvalo@adurom.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pci, dmar: flush IOTLB before exit domain
-References: <4DC34B21.9040203@oracle.com> <1304952530.30435.16.camel@i7.infradead.org>
-In-Reply-To: <1304952530.30435.16.camel@i7.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 May 2011 16:58:07 -0400
+Date: Mon, 9 May 2011 13:57:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@google.com>
+Subject: Re: [PATCH] softlockup: re-increase hung tasks check from 2 minutes
+ to 8 minutes
+Message-Id: <20110509135741.36320e27.akpm@linux-foundation.org>
+In-Reply-To: <4DC4153E.5020304@suse.com>
+References: <4DC4153E.5020304@suse.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4DC85524.0020,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2011 07:48 AM, David Woodhouse wrote:
-> On Thu, 2011-05-05 at 18:13 -0700, Yinghai Lu wrote:
->> @@ -3252,6 +3252,9 @@ static int device_notifier(struct notifi
->>                 return 0;
->>  
->>         if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through) {
->> +               /* before we remove dev with domain, flush IOTLB */
->> +               flush_unmaps();
->> +
->>                 domain_remove_one_dev_info(domain, pdev);
->>  
->>                 if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) && 
-> 
-> That calls flush_unmaps() without the async_umap_flush_lock held,
-> doesn't it? A few days ago I asked someone else to test this candidate
-> patch for a similar issue:
-> 
-> http://david.woodhou.se/flush-unmaps-on-unbind.patch
-> 
+On Fri, 06 May 2011 11:35:26 -0400
+Jeff Mahoney <jeffm@suse.com> wrote:
 
-Your patch works.
+>  Commit e162b39a, which moved the soft lockup code around a bit,
+>  accidentally reverted commit fb822db4, which extended the soft lockup
+>  timeout from 2 minutes to 8 minutes.
+> 
+>  This patch restores it to 8 minutes.
 
-Thanks
+Nit: it's conventional to refer to commits in the following manner:
 
-Yinghai
+e162b39a ("softlockup: decouple hung tasks check from softlockup detection")
+
+because a commit can have a different hash in different trees.
+
+Notnit: "softlockup: decouple hung tasks check from softlockup
+detection" was merged two years ago.  Shouldn't we have a Cc:
+<stable@kernel.org> in this changelog?
+
