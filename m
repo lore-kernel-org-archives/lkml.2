@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab1EIIQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:16:24 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:34107 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753341Ab1EIIQS (ORCPT
+	id S1753641Ab1EIIRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:17:46 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:46974 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753365Ab1EIIQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:16:18 -0400
+	Mon, 9 May 2011 04:16:25 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <linux-arm-kernel@lists.infradead.org>,
         <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V5 2/5] dmaengine/dw_dmac: set residue as total len in dwc_tx_status if status is !DMA_SUCCESS
-Date: Mon, 9 May 2011 13:45:50 +0530
-Message-ID: <3e58409b899e9bfcf4aa56a49876fe7968e1a079.1304928776.git.viresh.kumar@st.com>
+Subject: [PATCH V5 3/5] dmaengine/dw_dmac: Divide one sg to many desc, if sg len is greater than DWC_MAX_COUNT
+Date: Mon, 9 May 2011 13:45:51 +0530
+Message-ID: <ecbdde14487012935c26c31d6d4df45c63297fc7.1304928776.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1304928776.git.viresh.kumar@st.com>
 References: <cover.1304928776.git.viresh.kumar@st.com>
@@ -24,31 +24,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If transfer status is !=DMA_SUCCESS, return total transfer len as residue,
-instead of zero.
+If len passed in sg for slave_sg transfers is greater than DWC_MAX_COUNT, then
+driver programmes controller incorrectly.  This patch adds code to handle this
+situation by allocation more than one desc for same sg.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/dma/dw_dmac.c |   65 +++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 44 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 77fd01c7..2b147cf 100644
+index 2b147cf..a69b08e 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -860,7 +860,11 @@ dwc_tx_status(struct dma_chan *chan,
- 		ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	}
+@@ -693,9 +693,15 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		reg = dws->tx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+-			u32		len;
+-			u32		mem;
++			u32		len, dlen, mem;
  
--	dma_set_tx_state(txstate, last_complete, last_used, 0);
-+	if (ret != DMA_SUCCESS)
-+		dma_set_tx_state(txstate, last_complete, last_used,
-+				dwc_first_active(dwc)->len);
-+	else
-+		dma_set_tx_state(txstate, last_complete, last_used, 0);
++			mem = sg_phys(sg);
++			len = sg_dma_len(sg);
++			mem_width = 2;
++			if (unlikely(mem & 3 || len & 3))
++				mem_width = 0;
++
++slave_sg_todev_fill_desc:
+ 			desc = dwc_desc_get(dwc);
+ 			if (!desc) {
+ 				dev_err(chan2dev(chan),
+@@ -703,16 +709,19 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 				goto err_desc_get;
+ 			}
  
- 	return ret;
- }
+-			mem = sg_phys(sg);
+-			len = sg_dma_len(sg);
+-			mem_width = 2;
+-			if (unlikely(mem & 3 || len & 3))
+-				mem_width = 0;
+-
+ 			desc->lli.sar = mem;
+ 			desc->lli.dar = reg;
+ 			desc->lli.ctllo = ctllo | DWC_CTLL_SRC_WIDTH(mem_width);
+-			desc->lli.ctlhi = len >> mem_width;
++			if ((len >> mem_width) > DWC_MAX_COUNT) {
++				dlen = DWC_MAX_COUNT << mem_width;
++				mem += dlen;
++				len -= dlen;
++			} else {
++				dlen = len;
++				len = 0;
++			}
++
++			desc->lli.ctlhi = dlen >> mem_width;
+ 
+ 			if (!first) {
+ 				first = desc;
+@@ -726,7 +735,10 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 						&first->tx_list);
+ 			}
+ 			prev = desc;
+-			total_len += len;
++			total_len += dlen;
++
++			if (len)
++				goto slave_sg_todev_fill_desc;
+ 		}
+ 		break;
+ 	case DMA_FROM_DEVICE:
+@@ -739,15 +751,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		reg = dws->rx_reg;
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+-			u32		len;
+-			u32		mem;
+-
+-			desc = dwc_desc_get(dwc);
+-			if (!desc) {
+-				dev_err(chan2dev(chan),
+-					"not enough descriptors available\n");
+-				goto err_desc_get;
+-			}
++			u32		len, dlen, mem;
+ 
+ 			mem = sg_phys(sg);
+ 			len = sg_dma_len(sg);
+@@ -755,10 +759,26 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 			if (unlikely(mem & 3 || len & 3))
+ 				mem_width = 0;
+ 
++slave_sg_fromdev_fill_desc:
++			desc = dwc_desc_get(dwc);
++			if (!desc) {
++				dev_err(chan2dev(chan),
++						"not enough descriptors available\n");
++				goto err_desc_get;
++			}
++
+ 			desc->lli.sar = reg;
+ 			desc->lli.dar = mem;
+ 			desc->lli.ctllo = ctllo | DWC_CTLL_DST_WIDTH(mem_width);
+-			desc->lli.ctlhi = len >> reg_width;
++			if ((len >> reg_width) > DWC_MAX_COUNT) {
++				dlen = DWC_MAX_COUNT << reg_width;
++				mem += dlen;
++				len -= dlen;
++			} else {
++				dlen = len;
++				len = 0;
++			}
++			desc->lli.ctlhi = dlen >> reg_width;
+ 
+ 			if (!first) {
+ 				first = desc;
+@@ -772,7 +792,10 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 						&first->tx_list);
+ 			}
+ 			prev = desc;
+-			total_len += len;
++			total_len += dlen;
++
++			if (len)
++				goto slave_sg_fromdev_fill_desc;
+ 		}
+ 		break;
+ 	default:
 -- 
 1.7.2.2
 
