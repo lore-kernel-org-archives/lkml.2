@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab1EIXSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 19:18:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60112 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932436Ab1EIXSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 19:18:11 -0400
-Date: Mon, 9 May 2011 23:18:03 GMT
-From: tip-bot for Matthew Garrett <mjg@redhat.com>
-Message-ID: <tip-935a638241b0658b9749edd060f972575f9d4a78@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1304623186-18261-5-git-send-email-mjg@redhat.com>
-References: <1304623186-18261-5-git-send-email-mjg@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/efi] x86, efi: Ensure that the entirity of a region is mapped
-Git-Commit-ID: 935a638241b0658b9749edd060f972575f9d4a78
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 09 May 2011 23:18:04 +0000 (UTC)
+	id S932512Ab1EIXSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 19:18:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43569 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab1EIXSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 19:18:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=subject:from:to:cc:date:in-reply-to:references:content-type
+         :x-mailer:content-transfer-encoding:message-id:mime-version;
+        b=euWKT0zb1wdbXLF58l+RyCSxc3pg3oh1TwhelYrOcLgt2mWyPa40tId1RAC/9zW6IW
+         hAXIoELpS1gzZs15DXnzkdu81DlAFiaaExVJGIQxGDI8spxNx4inKkbeVlyMq+WLv4UU
+         eFygBcgAoQ46mllCX9M2Ah+W5SssAVLjWQgNU=
+Subject: Re: linux-next: build failure after merge of the final tree
+ (driver-core tree related)
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Guda <atu@dmeti.dp.ua>
+Date: Tue, 10 May 2011 01:18:22 +0200
+In-Reply-To: <201105100019.52936.rjw@sisk.pl>
+References: <20110509145854.9e6d8806.sfr@canb.auug.org.au>
+	 <BANLkTinzFs0cfGdmkdOE8cgKSHK=5NEjmg@mail.gmail.com>
+	 <201105100019.52936.rjw@sisk.pl>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.1 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1304983104.1351.17.camel@zag>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  935a638241b0658b9749edd060f972575f9d4a78
-Gitweb:     http://git.kernel.org/tip/935a638241b0658b9749edd060f972575f9d4a78
-Author:     Matthew Garrett <mjg@redhat.com>
-AuthorDate: Thu, 5 May 2011 15:19:46 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 9 May 2011 12:14:45 -0700
+On Tue, 2011-05-10 at 00:19 +0200, Rafael J. Wysocki wrote:
+> On Monday, May 09, 2011, Kay Sievers wrote:
+> > On Mon, May 9, 2011 at 06:58, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > After merging the final tree, today's linux-next build (powerpc allnoconfig)
+> > > failed like this:
+> > >
+> > > kernel/sys.c: In function 'kernel_restart_prepare':
+> > > kernel/sys.c:317: error: implicit declaration of function 'usermodehelper_disable'
+> > 
+> > Rafael, seems usermodehelper_disable() depends on CONFIG_PM_SLEEP.
+> > 
+> > Any reason for that conditional? Remove it now?
+> 
+> Aw, we have two conflicting changes.  Could you prepare a patch on top of:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-next
+> 
+> removing that #ifdef?  That needs to be done in kmod.h too.
 
-x86, efi: Ensure that the entirity of a region is mapped
+Like this?
 
-It's possible for init_memory_mapping() to fail to map the entire region
-if it crosses a boundary, so ensure that we complete the mapping.
+Thanks,
+Kay
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Link: http://lkml.kernel.org/r/1304623186-18261-5-git-send-email-mjg@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+
+From: Kay Sievers <kay.sievers@vrfy.org>
+Subject: kmod: always provide usermodehelper_disable()
+
+We need to prevent kernel-forked processes during system poweroff.
+Such processes try to access the filesystem whose disks we are
+trying to shutdown at the same time. This causes delays and exceptions
+in the storage drivers.
+
+A follow-up patch will add these calls and need usermodehelper_disable()
+also on systems without suspend support.
+
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
 ---
- arch/x86/platform/efi/efi_64.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 94d6b39..2649426 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -89,8 +89,10 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
- 		return ioremap(phys_addr, size);
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 7f3dbcb..3102318 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -111,12 +111,8 @@ call_usermodehelper(char *path, char **argv, char **envp, enum umh_wait wait)
  
- 	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
--	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size)
--		return NULL;
-+	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
-+		unsigned long top = last_map_pfn << PAGE_SHIFT;
-+		efi_ioremap(top, size - (top - phys_addr), type);
-+	}
+ extern void usermodehelper_init(void);
  
- 	return (void __iomem *)__va(phys_addr);
+-#ifdef CONFIG_PM_SLEEP
+ extern int usermodehelper_disable(void);
+ extern void usermodehelper_enable(void);
+ extern bool usermodehelper_is_disabled(void);
+-#else
+-static inline bool usermodehelper_is_disabled(void) { return false; }
+-#endif
+ 
+ #endif /* __LINUX_KMOD_H__ */
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 9ab513b..5ae0ff3 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -245,7 +245,6 @@ static void __call_usermodehelper(struct work_struct *work)
+ 	}
  }
+ 
+-#ifdef CONFIG_PM_SLEEP
+ /*
+  * If set, call_usermodehelper_exec() will exit immediately returning -EBUSY
+  * (used for preventing user land processes from being created after the user
+@@ -321,12 +320,6 @@ static void helper_unlock(void)
+ 	if (atomic_dec_and_test(&running_helpers))
+ 		wake_up(&running_helpers_waitq);
+ }
+-#else /* CONFIG_PM_SLEEP */
+-#define usermodehelper_disabled	0
+-
+-static inline void helper_lock(void) {}
+-static inline void helper_unlock(void) {}
+-#endif /* CONFIG_PM_SLEEP */
+ 
+ /**
+  * call_usermodehelper_setup - prepare to call a usermode helper
+
+
