@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab1EIUVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:21:33 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60648 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab1EIUVc (ORCPT
+	id S1754651Ab1EIU2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:28:53 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19613 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460Ab1EIU2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:21:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=S523hosHiQkMYO6YEHUSVvbCj9jksXwYe9R+wPjNCrDNTZxtOcnqBSgcFH/665+hrl
-         3jtOeeckj+g/AmoGppjgm8WpLpgYPYlLp1Bndf/iFTCn0NFE9YH5ci68wFy8Wf/++jZ7
-         6Nwy4lvLeQY2b7+ZyK5wd17VuS0plEYAEQ+DU=
+	Mon, 9 May 2011 16:28:51 -0400
+Date: Mon, 9 May 2011 22:21:54 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Please don't hijack patches - even trivial ones (was: Re: [PATCH
+ 13/14] HPFS: Move declaration up, so that there are no out-of-scope
+ pointers=
+In-Reply-To: <alpine.DEB.2.00.1105082031050.7013@artax.karlin.mff.cuni.cz>
+Message-ID: <alpine.LNX.2.00.1105092215450.19722@swampdragon.chaosbits.net>
+References: <alpine.DEB.2.00.1105082031050.7013@artax.karlin.mff.cuni.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201105071815.03318.thomas@fjellstrom.ca>
-References: <201105071815.03318.thomas@fjellstrom.ca>
-Date: Mon, 9 May 2011 16:21:30 -0400
-Message-ID: <BANLkTi=R0ub_zfL4A2k7unGa8X+_EeRCeQ@mail.gmail.com>
-Subject: Re: long delay when using HMDI output on RS780
-From: Alex Deucher <alexdeucher@gmail.com>
-To: thomas@fjellstrom.ca
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 7, 2011 at 8:15 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
-> I just switched to using HDMI with my media center, and its causing a 30+
-> second delay in the screen turning on, as well as a 7 second delay in the X
-> startup when it tries to fetch the EDID information. Basically I don't get any
-> picture at all once KMS initializes until after X has been up a few seconds.
->
-> The odd thing is the monitor seems to think something is going on, since it
-> doesn't go to sleep or display its "No Signal" OSD, but just after X starts
-> up, it pops up the "Input detected/switched" OSD, and the picture appears.
->
-> The bios, grub2 (in both text mode and graphics mode), and the initial linux
-> kernel messages all display fine and immediately. Its only once KMS and
-> radeondrmfb initializes that there's a problem (at least till X starts up).
->
-> I've just built with a vanila 2.6.38.4 kernel from the stable git repo, and
-> have played with some EDID settings, trying to disable edid where I could
-> thinking thats what caused the problem. That doesn't seem to be the case
-> though. I also tried playing with the video= kernel option, trying to force
-> disable VGA-1, and set a static mode for HDMI-A-1, but if I try, it seems to
-> force disable HDMI-A-1 instead of force the mode.
->
-> With a DVI-D cable instead, the problem goes away.
->
-> Attached are the dmesg and xorg.log files for the latest boot with HDMI (no
-> video= parameter, and EDID enabled, most settings at defaults).
->
-> What exactly would cause this, and is there a way I can fix it?
+On Sun, 8 May 2011, Mikulas Patocka wrote:
 
-Most likely, the monitor doesn't like the hdmi packets it's getting
-from the GPU.  If you don't need audio, boot 2.6.38 or newer with
-radeon.audio=0
+> Move declaration up, so that there are no out-of-scope pointers
+> 
+> Reported-by: Jesper Juhl <jj@chaosbits.net>
+> Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+> 
 
-Alex
+Hmm. I'm a little currious how my original Signed-off-by got turned into a 
+Reported-by for this patch?
 
->
+This patch is *exactely* the one I submitted on Dec 24 in a message with 
+Message-ID: <alpine.LNX.2.00.1012242020090.28973@swampdragon.chaosbits.net>
+
+Ok, it's a trivial little thing, but still. When the patch is completely 
+unchanged I think it's a little steep to change the original authors 
+Signed-off-by and essentially claim authorship of the patch for one self.
+
+
+> ---
+>  fs/hpfs/ea.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-2.6.39-rc5-fast/fs/hpfs/ea.c
+> ===================================================================
+> --- linux-2.6.39-rc5-fast.orig/fs/hpfs/ea.c	2011-05-05 01:03:00.000000000 +0200
+> +++ linux-2.6.39-rc5-fast/fs/hpfs/ea.c	2011-05-05 01:03:01.000000000 +0200
+> @@ -76,6 +76,7 @@ int hpfs_read_ea(struct super_block *s, 
+>  	unsigned pos;
+>  	int ano, len;
+>  	secno a;
+> +	char ex[4 + 255 + 1 + 8];
+>  	struct extended_attribute *ea;
+>  	struct extended_attribute *ea_end = fnode_end_ea(fnode);
+>  	for (ea = fnode_ea(fnode); ea < ea_end; ea = next_ea(ea))
+> @@ -93,7 +94,6 @@ int hpfs_read_ea(struct super_block *s, 
+>  	ano = fnode->ea_anode;
+>  	pos = 0;
+>  	while (pos < len) {
+> -		char ex[4 + 255 + 1 + 8];
+>  		ea = (struct extended_attribute *)ex;
+>  		if (pos + 4 > len) {
+>  			hpfs_error(s, "EAs don't end correctly, %s %08x, len %08x",
 > --
-> Thomas Fjellstrom
-> thomas@fjellstrom.ca
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
