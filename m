@@ -1,106 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab1EISgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 14:36:45 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55050 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab1EISgk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 14:36:40 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: EDAC devel <linux-edac@vger.kernel.org>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH -v3 6/6] EDAC, MCE, AMD: Add an injector function
-Date: Mon,  9 May 2011 20:35:55 +0200
-Message-Id: <1304966155-9841-7-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1304966155-9841-1-git-send-email-bp@amd64.org>
-References: <1304966155-9841-1-git-send-email-bp@amd64.org>
+	id S1753569Ab1EISib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 14:38:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20293 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab1EISia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 14:38:30 -0400
+Date: Mon, 9 May 2011 20:38:16 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: jbaron@redhat.com, rostedt@goodmis.org, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] jump_label,x86: make batch update of jump_label entries
+Message-ID: <20110509183816.GF3981@jolsa.brq.redhat.com>
+References: <1304023961-12741-1-git-send-email-jolsa@redhat.com>
+ <1304502103-3228-1-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304502103-3228-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, May 04, 2011 at 11:41:41AM +0200, Jiri Olsa wrote:
+> hi,
+> 
+> I'm changing the jump label update code to use batch processing
+> for x86 architectures. 
+> 
+> Currently each jump label update calls text_poke_smp for each
+> jump label key entry. Thus one key update ends up calling stop
+> machine multiple times.
+> 
+> This patch is using text_poke_smp_batch, which is called for
+> all the key's entries. Thus ensuring the stop machine is called
+> only once per jump_label key.
+> 
+> attached patches:
+> 1/2 - jump_label,x86: use text_poke_smp_batch for entries update
+> 	- added jump_label_update_end function which is paired with
+> 	the key's entries update
+> 	- jump_label_update_end calls arch_jump_label_update_end which
+> 	is overloaded by x86 arch and makes the batch update of all the
+> 	entries queued by arch_jump_label_transform function.
+> 
+> 2/2 - jump_label,x86: using static arrays before dynamic allocation is needed
+> 	- in the first patch, the queue array, which stores jump_label
+> 	entries is allocated/resized dynamically.
+> 	- due to the fact that many jump_label entries have low number
+> 	of callers, it seems appropriate to use static sized array
+> 	when the update starts and if needed (in case of high number
+> 	of jump_label entries) allocate/use the dynamic array
+> 
+> 
+> Patch 2/2 and could be ommited if the benefit/complexity ratio
+> would seem too low.. ;)
+> 
+> I tested this on x86 and s390 archs.
+> 
+> v2 changes:
+>  - queueing all entries for single key and process them
+>    all at one time
+> 
+> wrb,
+> jirka
+> ---
+>  arch/x86/kernel/jump_label.c |  177 +++++++++++++++++++++++++++++++++++++++--
+>  include/linux/jump_label.h   |    1 +
+>  kernel/jump_label.c          |   16 ++++-
+>  3 files changed, 183 insertions(+), 11 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Selectively inject either a real MCE or a sw-only version which
-exercises the decoding code only. The hardware-injected MCE triggers a
-machine check exception (#MC) so that the MCE handler can be bothered to
-do something too.
+hi,
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+I did jump_label entries statistics on allyesconfig kernel
+and got following numbers:
+
+callers - keys
+      1 - 964
+      2 - 28
+      3 - 5
+      4 - 1
+      6 - 1
+     11 - 2
+     12 - 1
+     14 - 2
+     17 - 2
+     21 - 1
+    170 - 1
+
+
+So the maximum is 170 callers and just for one key,
+which is the key used in trace_module_get function.
+
+Jason suggested we might stay with the static way because for most
+of the entries the maximum number of callers is up to 21.
+
+I'm attaching the static version for consideration.
+
+wbr,
+jirka
+
 ---
- drivers/edac/mce_amd_inj.c |   50 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 48 insertions(+), 2 deletions(-)
+Changing the jump label update code to use batch processing
+for x86 architectures.
 
-diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-index 592871f..45e8122 100644
---- a/drivers/edac/mce_amd_inj.c
-+++ b/drivers/edac/mce_amd_inj.c
-@@ -131,6 +131,53 @@ static int inj_extcpu_set(void *data, u64 val)
+Currently each jump label update calls text_poke_smp for each
+jump label key entry. Thus one key update ends up calling stop
+machine multiple times.
+
+This patch is using text_poke_smp_batch, which is called for
+mmultiple entries at a time.
+
+Added jump_label_update_end function which is paired with
+the key's entries update.
+
+The jump_label_update_end calls arch_jump_label_update_end
+(with generic weak definition) which is overloaded by x86
+arch and makes the batch update of all the entries queued
+by arch_jump_label_transform function.
+
+The number of entries that can be updated at a single time
+is set to 30. This number is based on statistics from allyesconfig
+kernel showing most of the keys having upto 30 callers.
+
+callers - keys
+      1 - 964
+      2 - 28
+      3 - 5
+      4 - 1
+      6 - 1
+     11 - 2
+     12 - 1
+     14 - 2
+     17 - 2
+     21 - 1
+    170 - 1
+
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com> 
+---
+ arch/x86/kernel/jump_label.c |   68 ++++++++++++++++++++++++++++++++++++-----
+ include/linux/jump_label.h   |    1 +
+ kernel/jump_label.c          |   16 ++++++++-
+ 3 files changed, 74 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+index 3fee346..bbde5db 100644
+--- a/arch/x86/kernel/jump_label.c
++++ b/arch/x86/kernel/jump_label.c
+@@ -24,24 +24,74 @@ union jump_code_union {
+ 	} __attribute__((packed));
+ };
  
- DEFINE_SIMPLE_ATTRIBUTE(extcpu_fops, inj_extcpu_get, inj_extcpu_set, "%llu\n");
+-void arch_jump_label_transform(struct jump_entry *entry,
+-			       enum jump_label_type type)
++struct text_poke_buffer {
++	u8 code[JUMP_LABEL_NOP_SIZE];
++};
++
++#define POKE_CNT_MAX 30
++
++static struct text_poke_param  poke_pars[POKE_CNT_MAX];
++static struct text_poke_buffer poke_bufs[POKE_CNT_MAX];
++static int poke_cnt;
++
++static void poke_setup(struct text_poke_param *param, u8 *buf,
++		       int enable,
++		       struct jump_entry *entry)
+ {
+-	union jump_code_union code;
++	union jump_code_union *code = (union jump_code_union *) buf;
  
-+static void trigger_mce(void *info)
-+{
-+	asm volatile("int $18");
+-	if (type == JUMP_LABEL_ENABLE) {
+-		code.jump = 0xe9;
+-		code.offset = entry->target -
+-				(entry->code + JUMP_LABEL_NOP_SIZE);
++	if (enable == JUMP_LABEL_ENABLE) {
++		code->jump = 0xe9;
++		code->offset = entry->target -
++			       (entry->code + JUMP_LABEL_NOP_SIZE);
+ 	} else
+-		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
++		memcpy(code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
++
++	param->addr = (void *) entry->code;
++	param->opcode = code;
++	param->len = JUMP_LABEL_NOP_SIZE;
 +}
 +
-+static void do_inject(void)
++static void poke_process(void)
 +{
-+	u64 mcg_status = 0;
-+	unsigned int cpu = i_mce.extcpu;
-+	int this_cpu;
-+	u8 b = i_mce.bank;
+ 	get_online_cpus();
+ 	mutex_lock(&text_mutex);
+-	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
 +
-+	if (!(i_mce.inject_flags & MCJ_HW_INJECT)) {
-+		amd_decode_mce(NULL, 0, &i_mce);
++	text_poke_smp_batch(poke_pars, poke_cnt);
++	poke_cnt = 0;
++
+ 	mutex_unlock(&text_mutex);
+ 	put_online_cpus();
+ }
+ 
++static void poke_end(void)
++{
++	if (!poke_cnt)
 +		return;
-+	}
 +
-+	/* prep MCE global settings for the injection */
-+	mcg_status = MCG_STATUS_MCIP | MCG_STATUS_EIPV;
-+
-+	if (!(i_mce.status & MCI_STATUS_PCC))
-+		mcg_status |= MCG_STATUS_RIPV;
-+
-+	this_cpu = get_cpu();
-+
-+	toggle_hw_mce_inject(cpu, true);
-+
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCG_STATUS,
-+		     (u32)mcg_status, (u32)(mcg_status >> 32));
-+
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCx_STATUS(b),
-+		     (u32)i_mce.status, (u32)(i_mce.status >> 32));
-+
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCx_ADDR(b),
-+		     (u32)i_mce.addr, (u32)(i_mce.addr >> 32));
-+
-+	wrmsr_on_cpu(cpu, MSR_IA32_MCx_MISC(b),
-+		     (u32)i_mce.misc, (u32)(i_mce.misc >> 32));
-+
-+	toggle_hw_mce_inject(cpu, false);
-+
-+	smp_call_function_single(cpu, trigger_mce, NULL, 0);
-+
-+	put_cpu();
-+
++	poke_process();
 +}
 +
- /*
-  * This denotes into which bank we're injecting and triggers
-  * the injection, at the same time.
-@@ -146,8 +193,7 @@ static int inj_bank_set(void *data, u64 val)
- 		}
++void arch_jump_label_transform(struct jump_entry *entry,
++			       enum jump_label_type enable)
++{
++	if (poke_cnt == POKE_CNT_MAX)
++		poke_process();
++
++	poke_setup(&poke_pars[poke_cnt], poke_bufs[poke_cnt].code,
++		   enable, entry);
++	poke_cnt++;
++}
++
++/*
++ * Called after arch_jump_label_transform is called for
++ * all entries of a single key.
++ */
++void arch_jump_label_update_end(void)
++{
++	poke_end();
++}
++
+ void arch_jump_label_text_poke_early(jump_label_t addr)
+ {
+ 	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 83e745f..e7a8fa3 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -46,6 +46,7 @@ extern void jump_label_unlock(void);
+ extern void arch_jump_label_transform(struct jump_entry *entry,
+ 				 enum jump_label_type type);
+ extern void arch_jump_label_text_poke_early(jump_label_t addr);
++extern void arch_jump_label_update_end(void);
+ extern int jump_label_text_reserved(void *start, void *end);
+ extern void jump_label_inc(struct jump_label_key *key);
+ extern void jump_label_dec(struct jump_label_key *key);
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 74d1c09..6657a37 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -125,6 +125,15 @@ void __weak arch_jump_label_text_poke_early(jump_label_t addr)
+ {
+ }
  
- 	m->bank = val;
++void __weak arch_jump_label_update_end(void)
++{
++}
++
++void jump_label_update_end(void)
++{
++	arch_jump_label_update_end();
++}
++
+ static __init int jump_label_init(void)
+ {
+ 	struct jump_entry *iter_start = __start___jump_table;
+@@ -244,10 +253,11 @@ static int jump_label_add_module(struct module *mod)
+ 		jlm->next = key->next;
+ 		key->next = jlm;
+ 
+-		if (jump_label_enabled(key))
++		if (jump_label_enabled(key)) {
+ 			__jump_label_update(key, iter, JUMP_LABEL_ENABLE);
++			jump_label_update_end();
++		}
+ 	}
 -
--	amd_decode_mce(NULL, 0, m);
-+	do_inject();
- 
  	return 0;
  }
+ 
+@@ -376,6 +386,8 @@ static void jump_label_update(struct jump_label_key *key, int enable)
+ #ifdef CONFIG_MODULES
+ 	__jump_label_mod_update(key, enable);
+ #endif
++
++	jump_label_update_end();
+ }
+ 
+ #endif
 -- 
-1.7.4.rc2
+1.7.1
 
