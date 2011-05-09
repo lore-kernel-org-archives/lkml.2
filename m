@@ -1,125 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1EIMfC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 08:35:02 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59386 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab1EIMfA convert rfc822-to-8bit (ORCPT
+	id S1752939Ab1EIMfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 08:35:50 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:27667 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab1EIMfs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 08:35:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <0F831E97-0168-4CD5-985C-4965BFF816A0@marvell.com>
-References: <1304795706-27308-1-git-send-email-per.forlin@linaro.org>
-	<0F831E97-0168-4CD5-985C-4965BFF816A0@marvell.com>
-Date: Mon, 9 May 2011 14:34:58 +0200
-Message-ID: <BANLkTikid1yHh6AdgOeqy7NqS8D=W0SWTw@mail.gmail.com>
-Subject: Re: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize latency
-From: Per Forlin <per.forlin@linaro.org>
-To: Philip Rakity <prakity@marvell.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Mon, 9 May 2011 08:35:48 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: various vmbus review comments
+Thread-Topic: various vmbus review comments
+Thread-Index: AQHMCdM/6BBvI53KVEebJyh4jiWUR5SDpzdAgACmNgCAACkxQA==
+Date: Mon, 9 May 2011 12:35:46 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481E9474@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <20110503204641.GA11132@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481E9404@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20110509030452.GA17182@kroah.com>
+In-Reply-To: <20110509030452.GA17182@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 May 2011 04:05, Philip Rakity <prakity@marvell.com> wrote:
->
-> Hi Per,
->
-> We noticed on some of our systems if we ADMA or SDMA and a bounce buffer it is significantly faster then SDMA.
->
-I have not done work with ADMA or SDMA. Where should I look to read
-more about it?
-Are these the right places. DMA iop-dma.c and imx-sdma.c, MMC: sdhci.c.
 
-> I believe ADMA will do large transfers.  Another data point.
->
-> Philip
-Thanks,
-Per
 
->
-> On May 7, 2011, at 12:14 PM, Per Forlin wrote:
->
->> How significant is the cache maintenance over head?
->> It depends, the eMMC are much faster now
->> compared to a few years ago and cache maintenance cost more due to
->> multiple cache levels and speculative cache pre-fetch. In relation the
->> cost for handling the caches have increased and is now a bottle neck
->> dealing with fast eMMC together with DMA.
->>
->> The intention for introducing none blocking mmc requests is to minimize the
->> time between a mmc request ends and another mmc request starts. In the
->> current implementation the MMC controller is idle when dma_map_sg and
->> dma_unmap_sg is processing. Introducing none blocking mmc request makes it
->> possible to prepare the caches for next job parallel with an active
->> mmc request.
->>
->> This is done by making the issue_rw_rq() none blocking.
->> The increase in throughput is proportional to the time it takes to
->> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
->> a request and how fast the memory is. The faster the MMC/SD is
->> the more significant the prepare request time becomes. Measurements on U5500
->> and Panda on eMMC and SD shows significant performance gain for for large
->> reads when running DMA mode. In the PIO case the performance is unchanged.
->>
->> There are two optional hooks pre_req() and post_req() that the host driver
->> may implement in order to move work to before and after the actual mmc_request
->> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
->> the dma descriptor and post_req runs the dma_unmap_sg.
->>
->> Details on measurements from IOZone and mmc_test:
->> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
->>
->> Under consideration:
->> * Make pre_req and post_req private to core.c.
->> * Generalize implementation and make it available for SDIO.
->>
->> Changes since v2:
->> * Fix compile warnings in core.c and block.c
->> * Simplify max transfer size in mmc_test
->> * set TASK_RUNNING in queue.c before issue_req()
->>
->> Per Forlin (12):
->>  mmc: add none blocking mmc request function
->>  mmc: mmc_test: add debugfs file to list all tests
->>  mmc: mmc_test: add test for none blocking transfers
->>  mmc: add member in mmc queue struct to hold request data
->>  mmc: add a block request prepare function
->>  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
->>  mmc: add a second mmc queue request member
->>  mmc: add handling for two parallel block requests in issue_rw_rq
->>  mmc: test: add random fault injection in core.c
->>  omap_hsmmc: use original sg_len for dma_unmap_sg
->>  omap_hsmmc: add support for pre_req and post_req
->>  mmci: implement pre_req() and post_req()
->>
->> drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
->> drivers/mmc/card/mmc_test.c   |  340 +++++++++++++++++++++++++++-
->> drivers/mmc/card/queue.c      |  180 ++++++++++------
->> drivers/mmc/card/queue.h      |   31 ++-
->> drivers/mmc/core/core.c       |  132 ++++++++++-
->> drivers/mmc/core/debugfs.c    |    5 +
->> drivers/mmc/host/mmci.c       |  146 +++++++++++-
->> drivers/mmc/host/mmci.h       |    8 +
->> drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
->> include/linux/mmc/core.h      |    9 +-
->> include/linux/mmc/host.h      |   13 +-
->> lib/Kconfig.debug             |   11 +
->> 12 files changed, 1174 insertions(+), 284 deletions(-)
->>
->> --
->> 1.7.4.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Sunday, May 08, 2011 11:05 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: various vmbus review comments
+> 
+> On Mon, May 09, 2011 at 01:46:56AM +0000, KY Srinivasan wrote:
+> > > 	- the instances of hv_driver structures need to be static and
+> > > 	  not programatically defined, like all other USB and PCI
+> > > 	  drivers are handled.
+> >
+> > Done. You had expressed some concern that this would expose some issue
+> > with the core vmbus driver (which is what I want to concentrate on this
+> > go around). I have done this for both the block driver and the mouse driver
+> > and I am pretty sure I can do the same with the network driver. I have not
+> > currently done this for the network driver, since the number of patches I have
+> > to submit is already very large.
+> 
+> Ok, but it shouldn't be a major change to the code, right?
+
+Right, it is not. I will submit code for the net driver after I am done with this patch-set.
+
+> 
+> > > 	- module reference counting.  Are you sure you got it all right
+> > > 	  for the individual modules that attach to the bus?  I don't
+> > > 	  see any reference counting happening, is that correct?
+> >
+> > I have already exchanged an email with you on this. To summarize, it
+> > does not look like there is a problem
+> >
+> > > 	- fix the sparse warnings.
+> > Mostly done; most of the errors are in the base kernel coming out of
+> > the macro page_to_pfn()
+> >
+> > > 	- fix the use of volatile in the ring buffer code.  It should
+> > > 	  not be needed and if you are relying on it, then the code is
+> > > 	  wrong.
+> >
+> > You are right; all accesses were already serialized with a spin lock and the
+> > Volatile attribute was unnecessary.
+> >
+> > > 	- fix the namespace on the ringbuffer code to show that it
+> > > 	  really is only for the hyperv bus code internally.
+> >
+> > Done.
+> >
+> > >
+> > > That should be enough for at least one more set of patches for you all
+> > > to work on :)
+> >
+> > Greg,
+> >
+> > I have had so much fun cleaning up these drivers that I lost track of the patch
+> count.
+> > I have addressed all the issues you have raised in addition to some other
+> cleanup
+> > that I was doing since about a week. As I look at the patch-set, I have little over
+> > 200 patches. If it is ok with you, I would like to send them as a single set. Let me
+> know
+> > what you prefer. I need to circulate these patches internally before I can send
+> them out.
+> > I should be able to send these out early next week.
+> 
+> A single set is fine, if that's what you want to do, I can handle that
+> amount as long as they all build all along the way and don't break
+> anything.
+
+Thanks Greg. 
+
+Regards,
+
+K. Y
+
