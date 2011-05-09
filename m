@@ -1,107 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab1EIIsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:48:17 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:40775 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab1EIIsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:48:16 -0400
-Date: Mon, 9 May 2011 04:47:46 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: avagin@gmail.com, Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan.kim@gmail.com>
-Message-ID: <1491537913.283996.1304930866703.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110509155612.1648.A69D9226@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
- all_unreclaimable()
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+	id S1753841Ab1EIIu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:50:57 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:39489 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753735Ab1EIIuz (ORCPT
+	<rfc822;groupwise-jlee@novell.com:6:1>);
+	Mon, 9 May 2011 04:50:55 -0400
+Message-Id: <4DC8378A020000230002C5A8@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Mon, 09 May 2011 02:50:50 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <melchior.franz@gmail.com>
+Cc: <chris@chris-wilson.co.uk>, <dri-devel@lists.freedesktop.org>,
+        "Joey Lee" <JLee@novell.com>, "Michael Chang" <MChang@novell.com>,
+        <tiwai@suse.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: i915/kms/backlight-combo mode problem
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
+ <201105072222.41807@rk-nord.at>
+ <4DC72A34020000230002C541@novprvlin0050.provo.novell.com>
+ <201105081605.46617@rk-nord.at>
+In-Reply-To: <201105081605.46617@rk-nord.at>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add Cc. Michael Chang for he is our i915 expert.
 
+Hi Melchior, 
 
------ Original Message -----
-> >
-> >
-> > ----- Original Message -----
-> > > On 03/05/2011 06:20 PM, Minchan Kim wrote:
-> > > > On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
-> > > >> Check zone->all_unreclaimable in all_unreclaimable(), otherwise
-> > > >> the
-> > > >> kernel may hang up, because shrink_zones() will do nothing, but
-> > > >> all_unreclaimable() will say, that zone has reclaimable pages.
-> > > >>
-> > > >> do_try_to_free_pages()
-> > > >> 	shrink_zones()
-> > > >> 		 for_each_zone
-> > > >> 			if (zone->all_unreclaimable)
-> > > >> 				continue
-> > > >> 	if !all_unreclaimable(zonelist, sc)
-> > > >> 		return 1
-> > > >>
-> > > >> __alloc_pages_slowpath()
-> > > >> retry:
-> > > >> 	did_some_progress = do_try_to_free_pages(page)
-> > > >> 	...
-> > > >> 	if (!page&& did_some_progress)
-> > > >> 		retry;
-> > > >>
-> > > >> Signed-off-by: Andrey Vagin<avagin@openvz.org>
-> > > >> ---
-> > > >>   mm/vmscan.c | 2 ++
-> > > >>   1 files changed, 2 insertions(+), 0 deletions(-)
-> > > >>
-> > > >> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > >> index 6771ea7..1c056f7 100644
-> > > >> --- a/mm/vmscan.c
-> > > >> +++ b/mm/vmscan.c
-> > > >> @@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct
-> > > >> zonelist
-> > > >> *zonelist,
-> > > >>
-> > > >>   	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> > > >>   			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> > > >> + if (zone->all_unreclaimable)
-> > > >> + continue;
-> > > >>   		if (!populated_zone(zone))
-> > > >>   			continue;
-> > > >>   		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> > > >
-> > > > zone_reclaimable checks it. Isn't it enough?
-> > > I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
-> > > This two patches are enough.
-> > > > Does the hang up really happen or see it by code review?
-> > > Yes. You can reproduce it for help the attached python program.
-> > > It's
-> > > not
-> > > very clever:)
-> > > It make the following actions in loop:
-> > > 1. fork
-> > > 2. mmap
-> > > 3. touch memory
-> > > 4. read memory
-> > > 5. munmmap
-> > >
-> > > >> --
-> > > >> 1.7.1
-> > I have tested this for the latest mainline kernel using the
-> > reproducer
-> > attached, the system just hung or deadlock after oom. The whole oom
-> > trace is here.
-> > http://people.redhat.com/qcai/oom.log
-> >
-> > Did I miss anything?
+於 日，2011-05-08 於 16:05 +0200，Melchior FRANZ 提到：
 > 
-> Can you please try commit 929bea7c714220fc76ce3f75bef9056477c28e74?
-As I have mentioned that I have tested the latest mainline which have
-already included that fix. Also, does this problem only for x86? The
-testing was done using x86_64. Not sure if that would be a problem.
+> > Does it work to you direct control brightness by access
+> > by /sys/class/backlight/acer-wmi/brightness ?
+> 
+> No. A number written to this virtual file is accepted and remembered,
+> but it doesn't actually change the brightness. It takes setpci to do
+> that. 
+> 
+
+I thought the video driver still is the KEY component for backlight
+issues, need fix the problem in video driver first.
+
+> 
+>  
+> > As I remember, use setpci to control brightness is not recommended
+> > because BIOS or ACPI will also touch brightness level. That will be
+> > better control brightness by the function that was provided by BIOS. 
+> > e.g. ACPI or WMI interface, or direct control by EC.
+> 
+> Well, sounds plausible. And I wouldn't do it if it weren't the only
+> way at the moment.  :-)
+> 
+> 
+> 
+> > That means that will be better fix your Fn key control brightness like
+> > before, you just need press Fn key to change brightness and don't need
+> > have any workaround.
+> 
+> OK. I have added a lot of debug messages to intel_panel.c yesterday.
+> All it told me was that it seems to work correctly wiht acpi_osi=Linux.
+> Except that it doesn't actually change the brightness. Without acpi_osi
+> the functions aren't called at all and none of my messages showed up.
+> 
+
+I traced _Q event in your DSDT, when acpi_osi=Linux, it run the Intel
+OpRegion logic for change brightness. And, finally, intel_opregion will
+access the function the were provided by intel_panel. So, the problem
+still back to intel_panel.
+
+After discuss with Michael chang, we thought there have problem in your
+brightness level after add combination mode:
+
+vi driver/gpu/drm/i915/intel_panel.c
+
+void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+{
+        struct drm_i915_private *dev_priv = dev->dev_private;
+        u32 tmp;
+
+        DRM_DEBUG_DRIVER("set backlight PWM = %d\n", level);
+
+        if (HAS_PCH_SPLIT(dev))
+                return intel_pch_panel_set_backlight(dev, level);
+
+        if (is_backlight_combination_mode(dev)){
+                u32 max = intel_panel_get_max_backlight(dev);
+                u8 lbpc;
+
+                lbpc = level * 0xfe / max + 1;
+                level /= lbpc;			/* maybe the level changed by lbpc */
+                pci_write_config_byte(dev->pdev, PCI_LBPC, lbpc);
+        }
+
+        tmp = I915_READ(BLC_PWM_CTL);
+        if (IS_PINEVIEW(dev)) {
+                tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
+                level <<= 1;
+        } else
+                tmp &= ~BACKLIGHT_DUTY_CYCLE_MASK;
+        I915_WRITE(BLC_PWM_CTL, tmp | level);
+}
+
+We need to know some run time value when intel_panel_set_backlight call by funciton key.
+Please help to apply the attached debug patch to intel_panel.c then attached dmesg.
+
+> 
+> 
+> > Looks like current status is we try to fix bko#31522 but the patch
+> > causes your brightness no work by press Fn key even with acpi_osi=Linux.
+> > Does it right?
+> 
+> The history is: with acpi_osi=Linux everything worked with 2.6.38-rc8.
+> With 2.6.38 the screen stayed black. The patch that only ignored lbpc=0
+> worked (IIRC) including key adjustment. Later patches broke keys.
+> 
+> 
+> 
+> > 	replace acpi_osi=Linux by acpi_osi="!Windows 2006"
+> > 
+> > Does it also works to you for backlight control?
+> 
+> No, doesn't work.
+> 
+
+We can test the acpi_osi="!Windows 2006" again after we fix the i915's
+problem.
+
+
+Thank's
+Joey Lee
+
+The following is debug patch, and please add kernel parameter
+drm.debug=0x02 :
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index f8f86e5..f62dbd9 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -236,17 +236,22 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+ 		u32 max = intel_panel_get_max_backlight(dev);
+ 		u8 lbpc;
+ 
++		DRM_DEBUG_DRIVER("set backlight max = % 		lbpc = level * 0xfe / max + 1;
++		DRM_DEBUG_DRIVER("set backlight lbpc = %d\n", lbpc);
+ 		level /= lbpc;
+ 		pci_write_config_byte(dev->pdev, PCI_LBPC, lbpc);
+ 	}
+ 
+ 	tmp = I915_READ(BLC_PWM_CTL);
++	DRM_DEBUG_DRIVER("set backlight tmp(1) = %d\n", tmp);
+ 	if (IS_PINEVIEW(dev)) {
+ 		tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
+ 		level <<= 1;
+ 	} else
+ 		tmp &= ~BACKLIGHT_DUTY_CYCLE_MASK;
++	DRM_DEBUG_DRIVER("set backlight tmp(2) = %d\n", tmp);
++	DRM_DEBUG_DRIVER("set backlight level = %d\n", level);
+ 	I915_WRITE(BLC_PWM_CTL, tmp | level);
+ }
+ 
+
+
