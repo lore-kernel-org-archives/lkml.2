@@ -1,38 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab1EILU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 07:20:27 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22804 "EHLO mga11.intel.com"
+	id S1752666Ab1EILVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 07:21:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20799 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab1EILUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 07:20:23 -0400
+	id S1751080Ab1EILVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 07:21:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,340,1301900400"; 
-   d="scan'208";a="919897486"
-Date: Mon, 9 May 2011 13:20:21 +0200
+   d="scan'208";a="690079012"
+Date: Mon, 9 May 2011 13:21:08 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/19] mfd: mfd_data removal
-Message-ID: <20110509112020.GB8071@sortiz-mobl>
+Subject: [PATCH 01/19] mfd: Add platform data pointer back
+Message-ID: <20110509112107.GC8071@sortiz-mobl>
 References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+ <1304901131-7104-2-git-send-email-sameo@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+In-Reply-To: <1304901131-7104-2-git-send-email-sameo@linux.intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patchset is using the newly added platform_device mfd_cell pointer to get
-rid of the mfd_data cell pointer.
-Drivers willing to access their parent MFD cell will do so through the
-mfd_get_cell accessor. Other drivers (and in particular the non MFD ones) will
-get their platform data bits from the cell's platform_data pointer. This
-allows for non MFD sub drivers to not depend on the MFD core APIs if they
-don't need to.
+Now that we have a way to pass MFD cells down to the sub drivers,
+we can gradually get rid of mfd_data by putting the platform pointer
+back in place.
 
 Cc: Andres Salomon <dilinger@queued.net>
 Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
@@ -58,82 +55,45 @@ Cc: Richard Röjfors <richard.rojfors@pelagicore.com>
 Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Cc: Wim Van Sebroeck <wim@iguana.be>
 Cc: Wolfgang Grandegger <wg@grandegger.com>
-
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 ---
-Samuel Ortiz (19):
-  mfd: Add platform data pointer back
-  mfd: Use mfd cell platform_data for ab3550 cells platform bits
-  mfd: Use mfd cell platform_data for ab3100 cells platform bits
-  mmc: Use device platform_data to retrieve tmio_mmc platform bits
-  w1: Use device platform_data to retrieve ds1wm platform bits
-  mfd: Pass htc-pasic3 led platform data through the cell platform_data
-  mfd: Use mfd cell platform_data for wl1273 cells platform bits
-  fb: Use platform_data to retrieve tmiofb platform bits
-  mtd: Use platform_data to retrieve tmio_nand platform bits
-  mfd: Use mfd cell platform_data for timberdale cells platform bits
-  mfd: Use mfd cell platform_data for rdc321x cells platform bits
-  mfd: Use mfd cell platform_data for wm8400 cells platform bits
-  mfd: Use mfd cell platform_data for mc13xxx cells platform bits
-  mfd: Use mfd cell platform_data for janz cells platform bits
-  mfd: Use mfd cell platform_data for twl4030 codec cells platform bits
-  mfd: Use mfd cell platform_data for tps6105x cells platform bits
-  mfd: Use mfd cell platform_data for 88pm860x cells platform bits
-  mfd: Use mfd cell platform_data for davinci cells platform bits
-  mfd: Remove mfd_data
+ drivers/mfd/mfd-core.c   |    7 +++++++
+ include/linux/mfd/core.h |    4 ++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
- drivers/dma/timb_dma.c                 |    3 +-
- drivers/gpio/janz-ttl.c                |    3 +-
- drivers/gpio/rdc321x-gpio.c            |    3 +-
- drivers/gpio/timbgpio.c                |    6 +-
- drivers/i2c/busses/i2c-ocores.c        |    3 +-
- drivers/i2c/busses/i2c-xiic.c          |    3 +-
- drivers/input/misc/twl4030-vibra.c     |    3 +-
- drivers/leds/leds-88pm860x.c           |    7 +--
- drivers/leds/leds-mc13783.c            |    7 +--
- drivers/media/radio/radio-timb.c       |    3 +-
- drivers/media/radio/radio-wl1273.c     |    2 +-
- drivers/media/video/timblogiw.c        |    3 +-
- drivers/mfd/88pm860x-core.c            |   18 +++++--
- drivers/mfd/ab3100-core.c              |    6 ++-
- drivers/mfd/ab3550-core.c              |    6 ++-
- drivers/mfd/asic3.c                    |    6 ++-
- drivers/mfd/davinci_voicecodec.c       |    6 ++-
- drivers/mfd/htc-pasic3.c               |    5 ++-
- drivers/mfd/janz-cmodio.c              |    3 +-
- drivers/mfd/mc13xxx-core.c             |   12 +++--
- drivers/mfd/mfd-core.c                 |    7 +++
- drivers/mfd/rdc321x-southbridge.c      |    6 ++-
- drivers/mfd/t7l66xb.c                  |    6 ++-
- drivers/mfd/tc6387xb.c                 |    3 +-
- drivers/mfd/tc6393xb.c                 |   10 +++-
- drivers/mfd/timberdale.c               |   81 +++++++++++++++++++++-----------
- drivers/mfd/tps6105x.c                 |    3 +-
- drivers/mfd/twl4030-codec.c            |    6 ++-
- drivers/mfd/wl1273-core.c              |    6 ++-
- drivers/mfd/wm8400-core.c              |    3 +-
- drivers/mmc/host/tmio_mmc.c            |    2 +-
- drivers/mtd/nand/tmio_nand.c           |    2 +-
- drivers/net/can/janz-ican3.c           |    3 +-
- drivers/net/ks8842.c                   |    3 +-
- drivers/regulator/88pm8607.c           |    7 +--
- drivers/regulator/ab3100.c             |    3 +-
- drivers/regulator/mc13783-regulator.c  |    7 ++-
- drivers/regulator/mc13892-regulator.c  |    7 ++-
- drivers/regulator/tps6105x-regulator.c |    4 +-
- drivers/spi/xilinx_spi.c               |    3 +-
- drivers/video/backlight/88pm860x_bl.c  |    7 +--
- drivers/video/tmiofb.c                 |   12 ++---
- drivers/w1/masters/ds1wm.c             |   12 ++++-
- drivers/watchdog/rdc321x_wdt.c         |    3 +-
- include/linux/mfd/abx500.h             |    1 +
- include/linux/mfd/core.h               |   23 +--------
- sound/soc/codecs/cq93vc.c              |    3 +-
- sound/soc/codecs/twl4030.c             |    6 +--
- sound/soc/codecs/wl1273.c              |    3 +-
- sound/soc/codecs/wm8400.c              |    2 +-
- sound/soc/davinci/davinci-vcif.c       |    2 +-
- 51 files changed, 191 insertions(+), 163 deletions(-)
-
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index f4c8c84..0902523 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -88,6 +88,13 @@ static int mfd_add_device(struct device *parent, int id,
+ 
+ 	pdev->dev.parent = parent;
+ 
++	if (cell->pdata_size) {
++		ret = platform_device_add_data(pdev,
++					cell->platform_data, cell->pdata_size);
++		if (ret)
++			goto fail_res;
++	}
++
+ 	ret = mfd_platform_add_cell(pdev, cell);
+ 	if (ret)
+ 		goto fail_res;
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index aef23309..68c13e5 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -36,6 +36,10 @@ struct mfd_cell {
+ 	/* mfd_data can be used to pass data to client drivers */
+ 	void			*mfd_data;
+ 
++	/* platform data passed to the sub devices drivers */
++	void			*platform_data;
++	size_t			pdata_size;
++
+ 	/*
+ 	 * These resources can be specified relative to the parent device.
+ 	 * For accessing hardware you should use resources from the platform dev
 -- 
 1.7.2.3
 
