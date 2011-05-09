@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1EISHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 14:07:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7595 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab1EISHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 14:07:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,341,1301900400"; 
-   d="scan'208";a="744595071"
-Date: Mon, 9 May 2011 10:55:32 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCHv3] x86, mrst: share APB timer code with other platforms
-Message-ID: <20110509105532.71b78cc3@putvin>
-In-Reply-To: <20110508171617.GA2943@pulham.picochip.com>
-References: <1302606630-12459-1-git-send-email-jamie@jamieiles.com>
-	<20110508171617.GA2943@pulham.picochip.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752381Ab1EISD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 14:03:59 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:55011 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab1EISD6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 14:03:58 -0400
+Date: Mon, 9 May 2011 14:03:58 -0400 (EDT)
+From: Dave Anderson <anderson@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Josef Bacik <jbacik@redhat.com>
+Message-ID: <1850345881.414857.1304964238493.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH] fs: kill default_llseek
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011 18:16:17 +0100
-Jamie Iles <jamie@jamieiles.com> wrote:
 
-> On Tue, Apr 12, 2011 at 12:10:30PM +0100, Jamie Iles wrote:
-> > The APB timers are an IP block from Synopsys (DesignWare APB timers)
-> > and are also found in other systems including ARM SoC's.  This patch
-> > adds functions for creating clock_event_devices and clocksources
-> > from APB timers but does not do the resource allocation.  This is
-> > handled in a higher layer to allow the timers to be created from
-> > multiple methods such as platform_devices.
-> > 
-> > Changes since v2:
-> > 	- Make eoi() for clock_event_device optional for x86 where
-> > eoi is handled in firmware.
-> > Changes since v1:
-> > 	- Use the correct timer for clocksource on x86
-> > 	- Select the correct timer rating for x86
-> > 	- Restore freerunning timer behaviour for oneshot event
-> > devices
-> > 	- Reenable event irq correctly for hotplug
-> > 
-> > Cc: John Stultz <johnstul@us.ibm.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+On Thursday 05 May 2011 16:27:57 Josef Bacik wrote:
+> Looking at this llseek stuff I noticed that default_llseek is the exact same as
+> generic_file_llseek, so kill default_llseek.  I patched this using spatch with
+> just a simple
 > 
-> Ping?
-Just to confirm on my side of testing, they are good on Moorestown
-platform.
+> @@
+> @@
+> 
+> - default_llseek
+> + generic_file_llseek
+
+...
+
+> diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+> index d245cb2..6f37c39 100644
+> --- a/fs/proc/kcore.c
+> +++ b/fs/proc/kcore.c
+> @@ -558,7 +558,7 @@ static int open_kcore(struct inode *inode, struct file *filp)
+>  static const struct file_operations proc_kcore_operations = {
+>  	.read		= read_kcore,
+>  	.open		= open_kcore,
+> -	.llseek		= default_llseek,
+> +	.llseek		= generic_file_llseek,
+>  };
+ 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 74802bc5..0cafd9e 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -163,7 +163,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>  
+>  static const struct file_operations proc_vmcore_operations = {
+>  	.read		= read_vmcore,
+> -	.llseek		= default_llseek,
+> +	.llseek		= generic_file_llseek,
+>  };
+ 
+Both /proc/kcore and /proc/vmcore currently require default_llseek().  
+They were both changed to use generic_file_llseek(), but then subsequently
+reverted back to default_llseek():
+
+commit c227e69028473c7c7994a9b0a2cc0034f3f7e0fe
+Author: Arnd Bergmann <arnd@arndb.de>
+Date:   Wed Sep 22 13:04:54 2010 -0700
+
+    /proc/vmcore: fix seeking
+    
+    Commit 73296bc611 ("procfs: Use generic_file_llseek in /proc/vmcore")
+    broke seeking on /proc/vmcore.  This changes it back to use default_llseek
+    in order to restore the original behaviour.
+    ...
+
+
+commit ceff1a770933e2ca2bf995b453dade4ec47a9878
+Author: Dave Anderson <anderson@redhat.com>
+Date:   Wed Jan 12 17:00:36 2011 -0800
+
+    /proc/kcore: fix seeking
+    
+    Commit 34aacb2920 ("procfs: Use generic_file_llseek in /proc/kcore") broke
+    seeking on /proc/kcore.  This changes it back to use default_llseek in
+    order to restore the original behavior.
+    ...
+
+Dave Anderson
