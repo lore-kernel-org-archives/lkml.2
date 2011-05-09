@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab1EIWMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:12:47 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:48549
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S932387Ab1EIWMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:12:46 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:48560
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751595Ab1EIVon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751626Ab1EIVon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 May 2011 17:44:43 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 016/206] Staging: hv: Rename the function stor_vsc_on_io_request
-Date: Mon,  9 May 2011 14:54:58 -0700
-Message-Id: <1304978288-22999-16-git-send-email-kys@microsoft.com>
+Subject: [PATCH 017/206] Staging: hv: Get rid of the indirection for invoking io request
+Date: Mon,  9 May 2011 14:54:59 -0700
+Message-Id: <1304978288-22999-17-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,64 +32,41 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c  |    2 +-
- drivers/staging/hv/storvsc.c     |    2 +-
- drivers/staging/hv/storvsc_api.h |    2 +-
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index ec00a16..bfec15c 100644
+index bfec15c..9de7df7a 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -196,7 +196,7 @@ static int blk_vsc_initialize(struct hv_driver *driver)
+@@ -195,8 +195,6 @@ static int blk_vsc_initialize(struct hv_driver *driver)
+ 	DPRINT_INFO(BLKVSC, "max io outstd %u",
  		    stor_driver->max_outstanding_req_per_channel);
  
- 	/* Setup the dispatch table */
--	stor_driver->on_io_request = stor_vsc_on_io_request;
-+	stor_driver->on_io_request = storvsc_do_io;
+-	/* Setup the dispatch table */
+-	stor_driver->on_io_request = storvsc_do_io;
  
  	return ret;
  }
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 2e276b4..867eba1 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -520,7 +520,7 @@ int storvsc_dev_remove(struct hv_device *device)
- /*
-  * stor_vsc_on_io_request - Callback to initiate an I/O request
-  */
--int stor_vsc_on_io_request(struct hv_device *device,
-+int storvsc_do_io(struct hv_device *device,
- 			      struct hv_storvsc_request *request)
+@@ -206,9 +204,6 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
+ 			void (*request_completion)(struct hv_storvsc_request *))
  {
- 	struct storvsc_device *stor_device;
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index 3168161..f8c724b 100644
---- a/drivers/staging/hv/storvsc_api.h
-+++ b/drivers/staging/hv/storvsc_api.h
-@@ -167,7 +167,7 @@ int storvsc_dev_add(struct hv_device *device,
- 				void *additional_info);
- int storvsc_dev_remove(struct hv_device *device);
+ 	struct block_device_context *blkdev = blkvsc_req->dev;
+-	struct hv_device *device_ctx = blkdev->device_ctx;
+-	struct storvsc_driver *storvsc_drv =
+-			drv_to_stordrv(device_ctx->device.driver);
+ 	struct hv_storvsc_request *storvsc_req;
+ 	struct vmscsi_request *vm_srb;
+ 	int ret;
+@@ -233,7 +228,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
  
--int stor_vsc_on_io_request(struct hv_device *device,
-+int storvsc_do_io(struct hv_device *device,
- 				struct hv_storvsc_request *request);
- void storvsc_cleanup(struct hv_driver *driver);
+ 	storvsc_req->sense_buffer = blkvsc_req->sense_buffer;
  
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 86f2bab..799231c 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -117,7 +117,7 @@ static int stor_vsc_initialize(struct hv_driver *driver)
- 	stor_driver->base.dev_rm	= storvsc_dev_remove;
- 	stor_driver->base.cleanup	= storvsc_cleanup;
- 
--	stor_driver->on_io_request	= stor_vsc_on_io_request;
-+	stor_driver->on_io_request	= storvsc_do_io;
- 
- 	return 0;
- }
+-	ret = storvsc_drv->on_io_request(blkdev->device_ctx,
++	ret =  storvsc_do_io(blkdev->device_ctx,
+ 					   &blkvsc_req->request);
+ 	if (ret == 0)
+ 		blkdev->num_outstanding_reqs++;
 -- 
 1.7.4.1
 
