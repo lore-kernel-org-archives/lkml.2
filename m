@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab1EIVuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:50:10 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47680
+	id S932082Ab1EIVuB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:50:01 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47688
 	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755064Ab1EIVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:44:53 -0400
+	id S1755072Ab1EIVoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 17:44:54 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 110/206] Staging: hv: Rename the variable messageHandler
-Date: Mon,  9 May 2011 14:56:32 -0700
-Message-Id: <1304978288-22999-110-git-send-email-kys@microsoft.com>
+Subject: [PATCH 111/206] Staging: hv: Rename the variable messageType
+Date: Mon,  9 May 2011 14:56:33 -0700
+Message-Id: <1304978288-22999-111-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,33 +32,22 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/channel_mgmt.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/hv/channel_mgmt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
-index 71b79c6..bc6e235 100644
+index bc6e235..a8be565 100644
 --- a/drivers/staging/hv/channel_mgmt.c
 +++ b/drivers/staging/hv/channel_mgmt.c
-@@ -35,7 +35,7 @@
+@@ -34,7 +34,7 @@
+ #include "utils.h"
  
  struct vmbus_channel_message_table_entry {
- 	enum vmbus_channel_message_type messageType;
--	void (*messageHandler)(struct vmbus_channel_message_header *msg);
-+	void (*message_handler)(struct vmbus_channel_message_header *msg);
+-	enum vmbus_channel_message_type messageType;
++	enum vmbus_channel_message_type message_type;
+ 	void (*message_handler)(struct vmbus_channel_message_header *msg);
  };
  
- #define MAX_MSG_TYPES                    4
-@@ -740,8 +740,8 @@ void vmbus_onmessage(void *context)
- 		return;
- 	}
- 
--	if (gChannelMessageTable[hdr->msgtype].messageHandler)
--		gChannelMessageTable[hdr->msgtype].messageHandler(hdr);
-+	if (gChannelMessageTable[hdr->msgtype].message_handler)
-+		gChannelMessageTable[hdr->msgtype].message_handler(hdr);
- 	else
- 		pr_err("Unhandled channel message type %d\n", hdr->msgtype);
- }
 -- 
 1.7.4.1
 
