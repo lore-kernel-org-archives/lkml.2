@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab1EIDNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 23:13:24 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:51574 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab1EIDNW (ORCPT
+	id S1755860Ab1EIDVS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 23:21:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39760 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab1EIDVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 23:13:22 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: unable to handle kernel paging request when inserting FAT32 formatted flash media
-References: <20110502064945.GA12197@mac.home>
-	<20110502065529.GA12397@mac.home> <87y62pf9xg.fsf@devron.myhome.or.jp>
-	<87r58hf866.fsf@devron.myhome.or.jp>
-	<20110502170122.GA14096@eazy.amigager.de>
-	<87k4e9ey9k.fsf@devron.myhome.or.jp> <20110502203327.GA19507@mac.home>
-	<87bozkg3ng.fsf@devron.myhome.or.jp>
-	<8762psfwew.fsf@devron.myhome.or.jp>
-	<87vcxsegbo.fsf@devron.myhome.or.jp>
-	<87r58geejh.fsf@devron.myhome.or.jp>
-	<87k4e8ecm4.fsf@devron.myhome.or.jp> <874o54ip8m.fsf@rustcorp.com.au>
-Date: Mon, 09 May 2011 12:13:18 +0900
-In-Reply-To: <874o54ip8m.fsf@rustcorp.com.au> (Rusty Russell's message of
-	"Mon, 09 May 2011 11:56:01 +0930")
-Message-ID: <8762pk36sx.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Sun, 8 May 2011 23:21:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC 6/8] In order putback lru core
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+In-Reply-To: <BANLkTikHf+3vhnXFu3ubWXOXkCkD4j206Q@mail.gmail.com>
+References: <20110501224844.75EC.A69D9226@jp.fujitsu.com> <BANLkTikHf+3vhnXFu3ubWXOXkCkD4j206Q@mail.gmail.com>
+Message-Id: <20110509122255.3AD5.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Mon,  9 May 2011 12:21:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> writes:
+> On Sun, May 1, 2011 at 10:47 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> >> > +/* This structure is used for keeping LRU ordering of isolated page */
+> >> > +struct pages_lru {
+> >> > +        struct page *page;      /* isolated page */
+> >> > +        struct page *prev_page; /* previous page of isolate page as LRU order */
+> >> > +        struct page *next_page; /* next page of isolate page as LRU order */
+> >> > +        struct list_head lru;
+> >> > +};
+> >> >  /*
+> >>
+> >> So this thing has to be allocated from somewhere. We can't put it
+> >> on the stack as we're already in danger there so we must be using
+> >> kmalloc. In the reclaim paths, this should be avoided obviously.
+> >> For compaction, we might hurt the compaction success rates if pages
+> >> are pinned with control structures. It's something to be wary of.
+> >>
+> >> At LSF/MM, I stated a preference for swapping the source and
+> >> destination pages in the LRU. This unfortunately means that the LRU
+> >> now contains a page in the process of being migrated to and the backout
+> >> paths for migration failure become a lot more complex. Reclaim should
+> >> be ok as it'll should fail to lock the page and recycle it in the list.
+> >> This avoids allocations but I freely admit that I'm not in the position
+> >> to implement such a thing right now :(
+> >
+> > I like swaping to fake page. one way pointer might become dangerous. vmscan can
+> > detect fake page and ignore it.
+> 
+> 
+> I guess it means swapping between migrated-from page and migrated-to page.
+> Right? 
 
-> On Tue, 03 May 2011 11:34:11 +0900, OGAWA Hirofumi
-> <hirofumi@mail.parknet.co.jp> wrote:
->> > Hm. It seems to be 0x80 was gone somehow. If I added 0x80 at 0x8661, it
->> > seems to be sane code.
->> >
->> >   20:	74 51                	je     73 <a+0x73>
->> >   22:	49 c7 c6 d8 91 13 a0 	mov    $0xffffffffa01391d8,%r14
->> >   29:	b2 b6                	mov    $0xb6,%dl
->> >   2b: 80 3d fc 9b 00 00 00 cmpb $0x0,0x9bfc(%rip) <- here is
->> > 0x8661
->> >   32:	74 3f                	je     73 <a+0x73>
->> >   34:	49 8d 44 24 08       	lea    0x8(%r12),%rax
->> 
->> Code: fd ff ff 0f 1f 80 00 00 00 00 83 ca 01 89 93 10 02 00 00 ba ff
->> 01 00 00 41 f6 85 96 00 00 00 02 74 51 49 c7 c6 d8 91 13 a0 b2 b6 3d
->> fc 9b 00 00 00 74 3f 49 8d 44 24 08 48 89 44 24 08 eb 18 
->
-> How strange, but if this can't be reproduced with a rebuilt kernel I'm
-> tempted to put it down to corruption in the module somehow...
+no. I was intend to use fake struct page. but this idea is also good to me.
 
-I just bridged the bug report, so not pretty sure though. It sounds like
-to be fixed by rebuilding kernel.
+> If so, migrated-from page is already removed from LRU list and
+> migrated-to page isn't LRU as it's page allocated newly so they don't
+> have any LRU information. How can we swap them? We need space keeps
+> LRU information before removing the page from LRU list. :(
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+pure fake struct page or preallocation migrated-to page?
+
+
+
+> 
+> Could you explain in detail about swapping if I miss something?
+> 
+> About one way pointer, I think it's no problem. Worst case I imagine
+> is to put the page in head of LRU list. It means it's same issue now.
+> So it doesn't make worse than now.
+> 
+> >
+> > ie,
+> > is_fake_page(page)
+> > {
+> >        if (is_stack_addr((void*)page))
+> >                return true;
+> >        return false;
+> > }
+> >
+> > Also, I like to use stack rather than kmalloc in compaction.
+> >
+> 
+> Compaction is a procedure of reclaim. As you know, we had a problem
+> about using of stack during reclaim path.
+> I admit kmalloc-thing isn't good.
+> I will try to solve the issue as TODO.
+
+It depend on stack consumption size. because we don't call pageout()
+from compaction path. It's big different from regular reclaim path.
+
+> 
+> Thanks for the review, KOSAKI.
+
+Yeah, thank you for making very good patch!
+
+
+
