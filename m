@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab1EIMGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 08:06:02 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39465 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1EIMGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 08:06:00 -0400
-Date: Mon, 9 May 2011 13:05:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v5 02/19] ARM: LPAE: add ISBs around MMU enabling code
-Message-ID: <20110509120509.GR27807@n2100.arm.linux.org.uk>
-References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com> <1304859098-10760-3-git-send-email-catalin.marinas@arm.com> <20110508214101.GO27807@n2100.arm.linux.org.uk> <1304936539.7658.31.camel@e102109-lin.cambridge.arm.com> <20110509103242.GQ27807@n2100.arm.linux.org.uk> <1304938794.7658.56.camel@e102109-lin.cambridge.arm.com>
+	id S1752702Ab1EIMIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 08:08:22 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:33796 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750747Ab1EIMIU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 08:08:20 -0400
+From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Lee Jones <lee.jones@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Date: Mon, 9 May 2011 14:07:02 +0200
+Subject: RE: [PATCH v5] staging: Add ST-Ericsson CG2900 driver
+Thread-Topic: [PATCH v5] staging: Add ST-Ericsson CG2900 driver
+Thread-Index: AcwJu6iZijbqdeXCTUOvUpRPhCcpjAEhHp/Q
+Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA33959B23C3@EXDCVYMBSTM005.EQ1STM.local>
+References: <1303818021-24275-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <20110503174937.GA18622@kroah.com>
+In-Reply-To: <20110503174937.GA18622@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1304938794.7658.56.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 11:59:54AM +0100, Catalin Marinas wrote:
-> On Mon, 2011-05-09 at 11:32 +0100, Russell King - ARM Linux wrote:
-> > On Mon, May 09, 2011 at 11:22:19AM +0100, Catalin Marinas wrote:
-> > > Alternatively an exception return would do as well (like movs pc, lr)
-> > > but I think we still add some code for setting up the SPSR.
-> > 
-> > That gives us a way out of both of these without introducing any CPU
-> > specific code.  We can setup the SPSR before this block of code, and
-> > call it with two movs pc, reg instructions which will provide the
-> > necessary synchronization.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: den 3 maj 2011 19:50
 > 
-> We still need an ISB before enabling the MMU to make sure that the TTBR
-> changing is visible. We may run with the MMU enabled (in the identity
-> mapping) before the exception return but with random data in TTBR.
+> What changed in this version?  It still doesn't apply properly to the
+> linux-next tree, which shows me that I don't think anything really
+> changed here.
+> 
 
-  Changes to CP15 registers and the memory order model
-  All changes to CP15 registers that appear in program order after any
-  explicit memory operations are guaranteed not to affect those memory
-  operations.
+What I changed from v4 was in particular to adapt to changes to mfd.
+The mfd device data name had been changed from platform_data (plus length)
+to mfd_data. This was modified cg2900_chip.c and stlc2690.c.
+In connection to this I also modified so we used the function mfd_get_data
+to retrieve the platform data.
+There had also been one parameter removed in the call to tty->ops->tiocmget
+so I had to modify the call in hci_ldisc as well.
 
-  Any change to CP15 registers is guaranteed to be visible to subsequent
-  instructions only after one of:
-  • the execution of an ISB instruction
-  • the taking of an exception
-  • the return from an exception.
+> Can you rediff it so it properly applies (i.e. why are you adding your
+> driver to the middle of drivers/staging/Makefile and not at the end
+> which is where it properly belongs?) and resend it?
 
-  To guarantee the visibility of changes to some CP15 registers, additional
-  operations might be required, on a case by case basis, before the ISB
-  instruction, exception or return from exception. These cases are
-  identified specifically in the definition of the registers.
+I will do another try, but I honestly do not know why it doesn't apply.
+The reason for the placement in the makefile I do not remember at the
+moment, probably just a simple mistake from my part. I agree that I
+should have placed it last in the file.
 
-  However, for CP15 register accesses, all MRC and MCR instructions to
-  the same register using the same register number appear to occur in
-  program order relative to each other without context synchronization.
-
-So, my reading of this suggests that ISB and returning from an exception
-(iow, movs pc, reg) have the same properties.  So:
-
-        mcr     p15, 0, r5, c3, c0, 0           @ load domain access register
-        mcr     p15, 0, r4, c2, c0, 0           @ load page table pointer
--       b       __turn_mmu_on
-+	mrs	r4, cpsr			@ copy cpsr to spsr
-+	msr	spsr, r4
-+	adr	r4, BSYM(__turn_mmu_on)
-+	movs	pc, r4				@ synchronizing
-
-        .align  5
-__turn_mmu_on:
-        mov     r0, r0
-        mcr     p15, 0, r0, c1, c0, 0           @ write control reg
-        mrc     p15, 0, r3, c0, c0, 0           @ read id reg
-        mov     r3, r3
-        mov     r3, r13
--       mov     pc, r3
-+       movs    pc, r3				@ synchronizing
-
-should be sufficient - and has the advantage that it should work on
-existing CPUs.
+Thanks,
+/P-G
