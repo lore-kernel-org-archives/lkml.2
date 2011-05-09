@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab1EIFx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 01:53:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:40426 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab1EIFxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 01:53:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH 06/18] virtio_ring: avail event index interface
-In-Reply-To: <b00ef5d572ec9bc3b884c496025512abc1f14349.1304541919.git.mst@redhat.com>
-References: <cover.1304541918.git.mst@redhat.com> <b00ef5d572ec9bc3b884c496025512abc1f14349.1304541919.git.mst@redhat.com>
-User-Agent: Notmuch/0.3.1 (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Mon, 09 May 2011 13:43:15 +0930
-Message-ID: <87aaewh5pg.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751547Ab1EIEOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 00:14:15 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56362
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750928Ab1EIEOO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 00:14:14 -0400
+Date: Sun, 08 May 2011 21:13:41 -0700 (PDT)
+Message-Id: <20110508.211341.226779345.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110509134613.bcf0b017.sfr@canb.auug.org.au>
+References: <20110509134613.bcf0b017.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011 23:51:19 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> Define a new feature bit for the host to
-> declare that it uses an avail_event index
-> (like Xen) instead of a feature bit
-> to enable/disable interrupts.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 9 May 2011 13:46:13 +1000
+
+> Hi all,
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_ring.h |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
+> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+> produced this warning:
 > 
-> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> index f5c1b75..f791772 100644
-> --- a/include/linux/virtio_ring.h
-> +++ b/include/linux/virtio_ring.h
-> @@ -32,6 +32,9 @@
->  /* The Guest publishes the used index for which it expects an interrupt
->   * at the end of the avail ring. Host should ignore the avail->flags field. */
->  #define VIRTIO_RING_F_USED_EVENT_IDX	29
-> +/* The Host publishes the avail index for which it expects a kick
-> + * at the end of the used ring. Guest should ignore the used->flags field. */
-> +#define VIRTIO_RING_F_AVAIL_EVENT_IDX	32
+> net/sctp/protocol.c: In function 'sctp_v4_xmit':
+> net/sctp/protocol.c:842: warning: format '%p' expects type 'void *', but argument 5 has type '__be32'
+> net/sctp/protocol.c:842: warning: format '%p' expects type 'void *', but argument 6 has type '__be32'
+> 
+> Caused by commit f1c0a276ea17 ("sctp: Don't use rt->rt_{src,dst} in
+> sctp_v4_xmit()").
 
-Are you really sure we want to separate the two?  Seems a little simpler
-to have one bit to mean "we're publishing our threshold".  For someone
-implementing this from scratch, it's a little simpler.
-
-Or are there cases where the old style makes more sense?
-
-Thanks,
-Rusty.
+I'll fix this, thanks for the report Stephen.
