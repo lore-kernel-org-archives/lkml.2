@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1EIN32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:29:28 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39361 "EHLO
+	id S1753413Ab1EIN3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:29:52 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39365 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab1EIN30 (ORCPT
+	with ESMTP id S1753111Ab1EIN3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:29:26 -0400
-Date: Mon, 09 May 2011 14:29:22 +0100
-Message-Id: <E1QJQWY-0000M4-A5@rmk-PC.arm.linux.org.uk>
+	Mon, 9 May 2011 09:29:51 -0400
+Date: Mon, 09 May 2011 14:29:42 +0100
+Message-Id: <E1QJQWs-0000M8-S8@rmk-PC.arm.linux.org.uk>
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <johnstul@us.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 3/4] clocksource: convert x86 to generic i8253 clocksource
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 4/4] clocksource: convert mips to generic i8253 clocksource
 MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="us-ascii"
@@ -21,51 +21,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert x86 i8253 clocksource code to use generic i8253 clocksource.
+Convert MIPS i8253 clocksource code to use generic i8253 clocksource.
 
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/x86/Kconfig             |    1 +
- arch/x86/include/asm/i8253.h |    2 +
- arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
- 3 files changed, 4 insertions(+), 78 deletions(-)
+ arch/mips/Kconfig             |    1 +
+ arch/mips/include/asm/i8253.h |    5 +++
+ arch/mips/kernel/i8253.c      |   78 +----------------------------------------
+ 3 files changed, 7 insertions(+), 77 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cc6c53a..01115d5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -8,6 +8,7 @@ config 64BIT
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 8e256cc..f7f6419 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2339,6 +2339,7 @@ config MMU
  
- config X86_32
- 	def_bool !64BIT
+ config I8253
+ 	bool
 +	select CLKSRC_I8253
+ 	select MIPS_EXTERNAL_TIMER
  
- config X86_64
- 	def_bool 64BIT
-diff --git a/arch/x86/include/asm/i8253.h b/arch/x86/include/asm/i8253.h
-index fc1f579..65aaa91 100644
---- a/arch/x86/include/asm/i8253.h
-+++ b/arch/x86/include/asm/i8253.h
-@@ -6,6 +6,8 @@
+ config ZONE_DMA32
+diff --git a/arch/mips/include/asm/i8253.h b/arch/mips/include/asm/i8253.h
+index 48bb823..9ad0113 100644
+--- a/arch/mips/include/asm/i8253.h
++++ b/arch/mips/include/asm/i8253.h
+@@ -12,8 +12,13 @@
  #define PIT_CH0			0x40
  #define PIT_CH2			0x42
  
-+#define PIT_LATCH	LATCH
++#define PIT_LATCH		LATCH
 +
  extern raw_spinlock_t i8253_lock;
  
- extern struct clock_event_device *global_clock_event;
-diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
-index 2dfd315..a97aefc 100644
---- a/arch/x86/kernel/i8253.c
-+++ b/arch/x86/kernel/i8253.c
-@@ -117,81 +117,6 @@ void __init setup_pit_timer(void)
+ extern void setup_pit_timer(void);
+ 
++#define inb_pit inb_p
++#define outb_pit outb_p
++
+ #endif /* __ASM_I8253_H */
+diff --git a/arch/mips/kernel/i8253.c b/arch/mips/kernel/i8253.c
+index 2392a7a2..e4660ba 100644
+--- a/arch/mips/kernel/i8253.c
++++ b/arch/mips/kernel/i8253.c
+@@ -125,87 +125,11 @@ void __init setup_pit_timer(void)
+ 	setup_irq(0, &irq0);
  }
  
- #ifndef CONFIG_X86_64
 -/*
 - * Since the PIT overflows every tick, its not very useful
 - * to just read by itself. So use jiffies to emulate a free
@@ -73,11 +76,11 @@ index 2dfd315..a97aefc 100644
 - */
 -static cycle_t pit_read(struct clocksource *cs)
 -{
--	static int old_count;
--	static u32 old_jifs;
 -	unsigned long flags;
 -	int count;
 -	u32 jifs;
+-	static int old_count;
+-	static u32 old_jifs;
 -
 -	raw_spin_lock_irqsave(&i8253_lock, flags);
 -	/*
@@ -94,15 +97,15 @@ index 2dfd315..a97aefc 100644
 -	 * count), it cannot be newer.
 -	 */
 -	jifs = jiffies;
--	outb_pit(0x00, PIT_MODE);	/* latch the count ASAP */
--	count = inb_pit(PIT_CH0);	/* read the latched count */
--	count |= inb_pit(PIT_CH0) << 8;
+-	outb_p(0x00, PIT_MODE);	/* latch the count ASAP */
+-	count = inb_p(PIT_CH0);	/* read the latched count */
+-	count |= inb_p(PIT_CH0) << 8;
 -
 -	/* VIA686a test code... reset the latch if count > max + 1 */
 -	if (count > LATCH) {
--		outb_pit(0x34, PIT_MODE);
--		outb_pit(LATCH & 0xff, PIT_CH0);
--		outb_pit(LATCH >> 8, PIT_CH0);
+-		outb_p(0x34, PIT_MODE);
+-		outb_p(LATCH & 0xff, PIT_CH0);
+-		outb(LATCH >> 8, PIT_CH0);
 -		count = LATCH - 1;
 -	}
 -
@@ -119,9 +122,9 @@ index 2dfd315..a97aefc 100644
 -	 * Previous attempts to handle these cases intelligently were
 -	 * buggy, so we just do the simple thing now.
 -	 */
--	if (count > old_count && jifs == old_jifs)
+-	if (count > old_count && jifs == old_jifs) {
 -		count = old_count;
--
+-	}
 -	old_count = count;
 -	old_jifs = jifs;
 -
@@ -132,29 +135,25 @@ index 2dfd315..a97aefc 100644
 -	return (cycle_t)(jifs * LATCH) + count;
 -}
 -
--static struct clocksource pit_cs = {
--	.name		= "pit",
--	.rating		= 110,
--	.read		= pit_read,
--	.mask		= CLOCKSOURCE_MASK(32),
--	.mult		= 0,
--	.shift		= 20,
+-static struct clocksource clocksource_pit = {
+-	.name	= "pit",
+-	.rating = 110,
+-	.read	= pit_read,
+-	.mask	= CLOCKSOURCE_MASK(32),
+-	.mult	= 0,
+-	.shift	= 20,
 -};
 -
  static int __init init_pit_clocksource(void)
  {
- 	 /*
-@@ -205,9 +130,7 @@ static int __init init_pit_clocksource(void)
- 	    pit_ce.mode != CLOCK_EVT_MODE_PERIODIC)
+ 	if (num_possible_cpus() > 1) /* PIT does not scale! */
  		return 0;
  
--	pit_cs.mult = clocksource_hz2mult(CLOCK_TICK_RATE, pit_cs.shift);
--
--	return clocksource_register(&pit_cs);
+-	clocksource_pit.mult = clocksource_hz2mult(CLOCK_TICK_RATE, 20);
+-	return clocksource_register(&clocksource_pit);
 +	return clocksource_pit_init();
  }
  arch_initcall(init_pit_clocksource);
- 
 -- 
 1.7.4.4
 
