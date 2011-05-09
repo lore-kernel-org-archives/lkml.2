@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1EIU2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:28:53 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19613 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754460Ab1EIU2v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:28:51 -0400
-Date: Mon, 9 May 2011 22:21:54 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Please don't hijack patches - even trivial ones (was: Re: [PATCH
- 13/14] HPFS: Move declaration up, so that there are no out-of-scope
- pointers=
-In-Reply-To: <alpine.DEB.2.00.1105082031050.7013@artax.karlin.mff.cuni.cz>
-Message-ID: <alpine.LNX.2.00.1105092215450.19722@swampdragon.chaosbits.net>
-References: <alpine.DEB.2.00.1105082031050.7013@artax.karlin.mff.cuni.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754589Ab1EIUW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:22:28 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:36999 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753539Ab1EIUW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 16:22:27 -0400
+Subject: Re: [PATCHv3] x86, mrst: share APB timer code with other platforms
+From: john stultz <johnstul@us.ibm.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1302606630-12459-1-git-send-email-jamie@jamieiles.com>
+References: <1302606630-12459-1-git-send-email-jamie@jamieiles.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 13:22:22 -0700
+Message-ID: <1304972542.2939.20.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011, Mikulas Patocka wrote:
-
-> Move declaration up, so that there are no out-of-scope pointers
+On Tue, 2011-04-12 at 12:10 +0100, Jamie Iles wrote:
+> The APB timers are an IP block from Synopsys (DesignWare APB timers)
+> and are also found in other systems including ARM SoC's.  This patch
+> adds functions for creating clock_event_devices and clocksources from
+> APB timers but does not do the resource allocation.  This is handled
+> in a higher layer to allow the timers to be created from multiple
+> methods such as platform_devices.
 > 
-> Reported-by: Jesper Juhl <jj@chaosbits.net>
-> Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-> 
+> Changes since v2:
+> 	- Make eoi() for clock_event_device optional for x86 where eoi
+> 	is handled in firmware.
+> Changes since v1:
+> 	- Use the correct timer for clocksource on x86
+> 	- Select the correct timer rating for x86
+> 	- Restore freerunning timer behaviour for oneshot event devices
+> 	- Reenable event irq correctly for hotplug
 
-Hmm. I'm a little currious how my original Signed-off-by got turned into a 
-Reported-by for this patch?
+Sorry for being slow to review this.
 
-This patch is *exactely* the one I submitted on Dec 24 in a message with 
-Message-ID: <alpine.LNX.2.00.1012242020090.28973@swampdragon.chaosbits.net>
+Just a minor nit below.
 
-Ok, it's a trivial little thing, but still. When the patch is completely 
-unchanged I think it's a little steep to change the original authors 
-Signed-off-by and essentially claim authorship of the patch for one self.
+> +struct dw_apb_clocksource *
+> +dw_apb_clocksource_init(unsigned rating, char *name, void __iomem *base,
+> +			unsigned long freq)
+> +{
+> +	struct dw_apb_clocksource *dw_cs = kzalloc(sizeof(*dw_cs), GFP_KERNEL);
+> +
+> +	if (!dw_cs)
+> +		return NULL;
+> +
+> +	dw_cs->timer.base = base;
+> +	dw_cs->timer.freq = freq;
+> +	dw_cs->cs.name = name;
+> +	dw_cs->cs.rating = rating;
+> +	dw_cs->cs.read = __apbt_read_clocksource;
+> +	dw_cs->cs.mask = CLOCKSOURCE_MASK(32);
+> +	dw_cs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
+> +	dw_cs->cs.resume = apbt_restart_clocksource;
+> +
+> +	return dw_cs;
+> +}
 
+So I don't see anything that frees the dw_apb_clocksource structure
+after it has been allocated. Should this instead be allocated by the
+caller and passed in to be initialized here?
 
-> ---
->  fs/hpfs/ea.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6.39-rc5-fast/fs/hpfs/ea.c
-> ===================================================================
-> --- linux-2.6.39-rc5-fast.orig/fs/hpfs/ea.c	2011-05-05 01:03:00.000000000 +0200
-> +++ linux-2.6.39-rc5-fast/fs/hpfs/ea.c	2011-05-05 01:03:01.000000000 +0200
-> @@ -76,6 +76,7 @@ int hpfs_read_ea(struct super_block *s, 
->  	unsigned pos;
->  	int ano, len;
->  	secno a;
-> +	char ex[4 + 255 + 1 + 8];
->  	struct extended_attribute *ea;
->  	struct extended_attribute *ea_end = fnode_end_ea(fnode);
->  	for (ea = fnode_ea(fnode); ea < ea_end; ea = next_ea(ea))
-> @@ -93,7 +94,6 @@ int hpfs_read_ea(struct super_block *s, 
->  	ano = fnode->ea_anode;
->  	pos = 0;
->  	while (pos < len) {
-> -		char ex[4 + 255 + 1 + 8];
->  		ea = (struct extended_attribute *)ex;
->  		if (pos + 4 > len) {
->  			hpfs_error(s, "EAs don't end correctly, %s %08x, len %08x",
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+thanks
+-john
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
