@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab1EIP6U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:58:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40022 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752319Ab1EIP6T (ORCPT
+	id S1753183Ab1EIQBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 12:01:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44312 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab1EIQBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:58:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
- <alpine.LSU.2.00.1105081303540.16151@sister.anvils> <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 May 2011 08:57:56 -0700
-Message-ID: <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com>
-Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
-To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 May 2011 12:01:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=gCORg82RmDNI935sRcQMk8gk+g3kZ653IcixpamwGvjxwEPfOnahXQ3i29xZJLHgtH
+         PbbAez6XFQ7Uwd40Zn8WL2Mzx3aJO1Lf0tz+E1TnvPSj/C1UNZ6mrEjXsc4TqRJpqmS8
+         QQvvsXM8yCk1udzihYOjQNcQQW5Izb+sC1Ga8=
+Subject: Re: [PATCH] regulator: Support voltage offsets to compensate for
+ drops in system
+From: Liam Girdwood <lrg@kernel.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+In-Reply-To: <1304889217-12319-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1304889217-12319-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 17:01:35 +0100
+Message-ID: <1304956895.3192.16.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 4:12 AM, Mikulas Patocka
-<mikulas@artax.karlin.mff.cuni.cz> wrote:
->
-> See ./lib/mm/memlock.c in LVM2. It reads /proc/self/maps, parses the file
-> and locks each map with mlock, except for glibc locale file.
+On Sun, 2011-05-08 at 22:13 +0100, Mark Brown wrote:
+> Some systems, particularly physically large systems used for early
+> prototyping, may experience substantial voltage drops between the regulator
+> and the consumers as a result of long traces in the system. With these
+> systems voltages may need to be set higher than requested in order to
+> ensure reliable system operation.
+> 
+> Allow systems to work around such hardware issues by allowing constraints
+> to supply an offset to be applied to any requested and reported voltages.
+> This is not ideal, especially since the voltage drop may be load dependant,
+> but is sufficient for most affected systems, it is not expected to be used
+> in production hardware. The offset is applied after all constraint
+> processing so constraints should be specified in terms of consumer values
+> not physically configured values.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
 
-Hmm. One thing that strikes me is this problem also implies that the
-/proc/self/maps file is wrong for the GROWSUP case, isn't it?
+Applied.
 
-So I think we should not just apply your lock fix, but then *also*
-apply something like this:
+Thanks
 
-    diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-    index 2e7addfd9803..080980880c7f 100644
-    --- a/fs/proc/task_mmu.c
-    +++ b/fs/proc/task_mmu.c
-    @@ -214,7 +214,7 @@ static void show_map_vma(struct seq_file *m,
-struct vm_area_struct *vma)
-     	int flags = vma->vm_flags;
-     	unsigned long ino = 0;
-     	unsigned long long pgoff = 0;
-    -	unsigned long start;
-    +	unsigned long start, end;
-     	dev_t dev = 0;
-     	int len;
+Liam
 
-    @@ -227,13 +227,16 @@ static void show_map_vma(struct seq_file *m,
-struct vm_area_struct *vma)
-
-     	/* We don't show the stack guard page in /proc/maps */
-     	start = vma->vm_start;
-    -	if (vma->vm_flags & VM_GROWSDOWN)
-    -		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
-    -			start += PAGE_SIZE;
-    +	if (stack_guard_page_growsdown(vma, start))
-    +		start += PAGE_SIZE;
-    +	end = vma->vm_end;
-    +	if (stack_guard_page_growsup(vma, end))
-    +		end -= PAGE_SIZE;
-    +
-
-     	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
-     			start,
-    -			vma->vm_end,
-    +			end,
-     			flags & VM_READ ? 'r' : '-',
-     			flags & VM_WRITE ? 'w' : '-',
-     			flags & VM_EXEC ? 'x' : '-',
-
-NOTE! The above actually assumes that your
-"stack_guard_page_growsup()" has been changed to actually take the
-"next page" value, which I think makes more sense (ie it's the "end of
-stack", the same way "stack_guard_page_growsdown()" address is).
-
-Hmm? I don't have any growsup machine to test with, can you do that?
-
-                        Linus
