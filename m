@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1EJJyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:54:11 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42480
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S932107Ab1EJJzU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 05:55:20 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:41710
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751652Ab1EJJyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:54:07 -0400
+	id S1754353Ab1EJJyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 05:54:09 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 168/206] Staging: hv: Add the ringbuffer interfaces
-Date: Mon,  9 May 2011 14:57:30 -0700
-Message-Id: <1304978288-22999-168-git-send-email-kys@microsoft.com>
+Subject: [PATCH 169/206] Staging: hv: Include the contents of vmbus_private.h
+Date: Mon,  9 May 2011 14:57:31 -0700
+Message-Id: <1304978288-22999-169-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,44 +32,109 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/hyperv_vmbus.h |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
+ drivers/staging/hv/hyperv_vmbus.h |   93 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 93 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/staging/hv/hyperv_vmbus.h b/drivers/staging/hv/hyperv_vmbus.h
-index ea06691..bd943fe 100644
+index bd943fe..8ccae84 100644
 --- a/drivers/staging/hv/hyperv_vmbus.h
 +++ b/drivers/staging/hv/hyperv_vmbus.h
-@@ -505,4 +505,32 @@ extern void hv_synic_init(void *irqarg);
+@@ -533,4 +533,97 @@ void hv_dump_ring_info(struct hv_ring_buffer_info *ring_info, char *prefix);
+ void hv_ringbuffer_get_debuginfo(struct hv_ring_buffer_info *ring_info,
+ 			    struct hv_ring_buffer_debug_info *debug_info);
  
- extern void hv_synic_cleanup(void *arg);
- 
 +
-+/* Interface */
++#include <asm/sync_bitops.h>
 +
 +
-+int hv_ringbuffer_init(struct hv_ring_buffer_info *ring_info, void *buffer,
-+		   u32 buflen);
++/*
++ * Maximum channels is determined by the size of the interrupt page
++ * which is PAGE_SIZE. 1/2 of PAGE_SIZE is for send endpoint interrupt
++ * and the other is receive endpoint interrupt
++ */
++#define MAX_NUM_CHANNELS	((PAGE_SIZE >> 1) << 3)	/* 16348 channels */
 +
-+void hv_ringbuffer_cleanup(struct hv_ring_buffer_info *ring_info);
++/* The value here must be in multiple of 32 */
++/* TODO: Need to make this configurable */
++#define MAX_NUM_CHANNELS_SUPPORTED	256
 +
-+int hv_ringbuffer_write(struct hv_ring_buffer_info *ring_info,
-+		    struct scatterlist *sglist,
-+		    u32 sgcount);
 +
-+int hv_ringbuffer_peek(struct hv_ring_buffer_info *ring_info, void *buffer,
-+		   u32 buflen);
++enum vmbus_connect_state {
++	DISCONNECTED,
++	CONNECTING,
++	CONNECTED,
++	DISCONNECTING
++};
 +
-+int hv_ringbuffer_read(struct hv_ring_buffer_info *ring_info,
-+		   void *buffer,
-+		   u32 buflen,
-+		   u32 offset);
++#define MAX_SIZE_CHANNEL_MESSAGE	HV_MESSAGE_PAYLOAD_BYTE_COUNT
 +
-+u32 hv_get_ringbuffer_interrupt_mask(struct hv_ring_buffer_info *ring_info);
++struct vmbus_connection {
++	enum vmbus_connect_state conn_state;
 +
-+void hv_dump_ring_info(struct hv_ring_buffer_info *ring_info, char *prefix);
++	atomic_t next_gpadl_handle;
 +
-+void hv_ringbuffer_get_debuginfo(struct hv_ring_buffer_info *ring_info,
-+			    struct hv_ring_buffer_debug_info *debug_info);
++	/*
++	 * Represents channel interrupts. Each bit position represents a
++	 * channel.  When a channel sends an interrupt via VMBUS, it finds its
++	 * bit in the sendInterruptPage, set it and calls Hv to generate a port
++	 * event. The other end receives the port event and parse the
++	 * recvInterruptPage to see which bit is set
++	 */
++	void *int_page;
++	void *send_int_page;
++	void *recv_int_page;
++
++	/*
++	 * 2 pages - 1st page for parent->child notification and 2nd
++	 * is child->parent notification
++	 */
++	void *monitor_pages;
++	struct list_head chn_msg_list;
++	spinlock_t channelmsg_lock;
++
++	/* List of channels */
++	struct list_head chn_list;
++	spinlock_t channel_lock;
++
++	struct workqueue_struct *work_queue;
++};
++
++
++struct vmbus_msginfo {
++	/* Bookkeeping stuff */
++	struct list_head msglist_entry;
++
++	/* The message itself */
++	unsigned char msg[0];
++};
++
++
++extern struct vmbus_connection vmbus_connection;
++
++/* General vmbus interface */
++
++struct hv_device *vmbus_child_device_create(struct hv_guid *type,
++					 struct hv_guid *instance,
++					 struct vmbus_channel *channel);
++
++int vmbus_child_device_register(struct hv_device *child_device_obj);
++void vmbus_child_device_unregister(struct hv_device *device_obj);
++
++struct vmbus_channel *relid2channel(u32 relid);
++
++
++/* Connection interface */
++
++int vmbus_connect(void);
++
++int vmbus_disconnect(void);
++
++int vmbus_post_msg(void *buffer, size_t buflen);
++
++int vmbus_set_event(u32 child_relid);
++
++void vmbus_on_event(unsigned long data);
++
 +
  #endif /* _HYPERV_VMBUS_H */
 -- 
