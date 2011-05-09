@@ -1,70 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab1EIOgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:36:09 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:44295 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754460Ab1EIOgH (ORCPT
+	id S1754184Ab1EIOhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:37:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61391 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab1EIOhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:36:07 -0400
-Date: Mon, 9 May 2011 10:36:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        <linux-sh@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [linux-pm] [PATCH 3/5] PM: Support for system-wide power
- transitions in generic power domains
-In-Reply-To: <201105082324.19674.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1105091032190.2002-100000@iolanthe.rowland.org>
+	Mon, 9 May 2011 10:37:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YQjNv8/4yC0okouPe6WwdBAoXNwFW00OFsifnJu3JCm1MKhLkkgAdhaM013Mva0+vo
+         U/kzfUgmH4Oc7OHsRO/PeuozA1o4K9SHHxahtCxMcA5/UqvMAYWKr/JlI8otfEvtqU5a
+         gOBiu9NyCKMwaevrh1SK1GNhQ6b3/kZX5Mbcs=
+Date: Mon, 9 May 2011 16:37:02 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
+ non-queueable flush drive
+Message-ID: <20110509143702.GK1661@htj.dyndns.org>
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
+ <20110505020417.817084678@sli10-conroe.sh.intel.com>
+ <20110505083853.GC30950@htj.dyndns.org>
+ <20110509130316.GB5975@redhat.com>
+ <20110509135046.GB29753@sli10-conroe.sh.intel.com>
+ <20110509135851.GD5975@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110509135851.GD5975@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011, Rafael J. Wysocki wrote:
+Hello, Vivek, Shaohua.
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+On Mon, May 09, 2011 at 09:58:51AM -0400, Vivek Goyal wrote:
+> > > I am assuming that these back-to-back flushes are independent of each
+> > > other otherwise write request will anyway get between two flushes.
+
+Yeap.
+
+> > > If that's the case, then should we solve the problem by improving flush
+> > > merge logic a bit better. (Say idle a bit before issuing a flush only
+> > > if request queue is not empty).
+
+Maybe, I don't know.  Maybe we can implement some sort of adaptive
+delay logic which detects parallel stream of flush requests and try to
+insert artificial delays between flush issues to maximize throughput.
+With such workload, such optimization probably wouldn't hurt latency
+that much either.
+
+However, such heuristics tend to be fairly finicky and result in
+unexpected behavior when workload isn't of the expected pattern and
+that's why I stuck with mostly mechanical mechanism we currently have
+for the initial implementation, but please feel free to play with it.
+It would be awesome if such logic can be implemented with something
+mechanical which doesn't involve a lot of magic tunables, timers and
+pattern detection logics.
+
+> If we try to get rid of WRITE completely between these 10 flushes
+> then we run the risk of starving other READS/WRITES as long as
+> flushes are going on.
+
+Back-to-back flushes are very cheap.  It just costs command
+issue/completion roundtrip latency and if that's a problem we can
+optimize that out too, so I don't think stream of back-to-back empty
+flushes can be a problem.  For flushes with data, nothing prevents
+other IOs from issued while flush writes are being sequenced.  It will
+look like,
+
+ FLUSH -> FLUSH and other data -> FLUSH -> FLUSH -> FLUSH and other data...
+
+Before this patch, it was
+
+ FLUSH -> FLUSH and other data -> FLUSH -> other data -> FLUSH -> FLUSH and other data...
+
+The change isn't gonna cause starvation.
+
+> I did not understand this one. With improved back to back merge logic 
+> we have already optimized the flush case. So for 10 flush and one write
+> we seem to be issuing following (as per your mail).
 > 
-> Make generic power domains support system-wide power transitions
-> (system suspend and hibernation).  Add suspend, resume, freeze and
-> thaw callbacks to be associated with struct generic_power_domain
-> objects and make pm_genpd_init() use them as appropriate.
+> 1 flush (6 flush merged)--> WRITE --> 1flush (4 flush merged).
+> 
+> So where is the opprotinutiy for drive (non flush queuing drive) to optimize
+> flush here?
 
-...
+I suspect the workload doesn't really swamp the device with fsync's
+and there frequently are brief holes without any pending flush.  In
+such cases, flush sequencer will start sequencing immediately and the
+following flushes would lose a chance to be merged and the intervening
+write causes the performance hit.  It would be interesting to
+investigate this deeper tho.
 
-> Index: linux-2.6/drivers/base/power/domain.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/power/domain.c
-> +++ linux-2.6/drivers/base/power/domain.c
-> @@ -273,6 +273,280 @@ static int pm_genpd_runtime_resume(struc
->  
->  #endif /* CONFIG_PM_RUNTIME */
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +
-> +/**
-> + * pm_genpd_powered_down - Check if power has been removed from a power domain.
-> + * @genpd: Power domain to check.
-> + */
-> +static bool pm_genpd_powered_down(struct generic_power_domain *genpd)
-> +{
-> +	bool ret;
-> +
-> +	mutex_lock(&genpd->lock);
-> +	ret = genpd->power_is_off;
-> +	mutex_unlock(&genpd->lock);
-> +
-> +	return ret;
-> +}
+> IOW, if flush merging is already working well, do we really want to move
+> in a direction where we can potentially starve other READ/WRITE happening
+> in an attempt to improve throughput for a sepecific workload.
 
-What is the purpose of the mutex?  On the face of it, there's nothing 
-to prevent another thread from changing the domain's power state in 
-between the mutex_unlock() call and the return statement.
+I don't think it's gonna starve anything and actually like it as it
+effectively implements another side of mechnical merging.  Before the
+patch, it only tried to merge requests which already shared a FLUSH.
+ie. It delayed post-FLUSH until all writes which shared pre-FLUSH
+finished.  This change doesn't introduce any latency on idle queue
+while allowing effective merging of flushes which immediately follows
+the first one, and there's no knobs to adjust - timings are regulated
+by how fast the device can handle flushes and IOs.
 
-Alan Stern
+So, whether we add further merge strategy or not, I think this one can
+serve nicely as one of the base logics and would really like to see
+how it affects higher end devices.
 
+Please note that really highend devices with battery backed buffer
+wouldn't care about all of this anyway.  I think we would mostly be
+looking at SCSI hard drives or cheap arrays where I don't think
+issuing other IOs together with flush would bring a lot of benefits.
+So, I'd like to enable the logic by default unless it actively hurts
+those devices.
+
+Thank you.
+
+-- 
+tejun
