@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab1EIVjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:39:52 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:58805 "EHLO
+	id S1754901Ab1EIVjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:39:51 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:50004 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754665Ab1EIVju (ORCPT
+	with ESMTP id S1752937Ab1EIVju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 May 2011 17:39:50 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: alsa-devel@alsa-project.org
-Subject: [PATCH 1/3] tea575x: unify read/write functions
-Date: Mon, 9 May 2011 23:39:26 +0200
+Subject: [PATCH 2/3] es1968: convert TEA575x support to new interface
+Date: Mon, 9 May 2011 23:39:37 +0200
 User-Agent: KMail/1.9.10
 Cc: linux-media@vger.kernel.org,
         "Kernel development list" <linux-kernel@vger.kernel.org>
@@ -19,220 +19,149 @@ Content-Type: text/plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-Id: <201105092339.29143.linux@rainbow-software.org>
+Message-Id: <201105092339.42319.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement generic read/write functions to access TEA575x tuners. They're now
-implemented 4 times (once in es1968 and 3 times in fm801).
-This also allows mute to work on all cards.
-Also improve tuner detection/initialization.
+Use common functions to access TEA575x tuner - remove original read/write
+functions and provide new pin manipulation functions instead.
+
+Tested with SF64-PCE2 card.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
---- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-04-29 22:48:34.000000000 +0200
-+++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-06 22:20:46.000000000 +0200
-@@ -26,12 +26,17 @@
- #include <media/v4l2-dev.h>
- #include <media/v4l2-ioctl.h>
+--- linux-2.6.39-rc2-/sound/pci/es1968.c	2011-05-06 22:46:24.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/es1968.c	2011-05-09 23:25:06.000000000 +0200
+@@ -2591,96 +2591,48 @@ static int __devinit snd_es1968_input_re
+ #define STR_WREN	0x0100 /* GPIO8 */
+ #define STR_MOST	0x0200 /* GPIO9 */
  
-+#define TEA575X_DATA	(1 << 0)
-+#define TEA575X_CLK	(1 << 1)
-+#define TEA575X_WREN	(1 << 2)
-+#define TEA575X_MOST	(1 << 3)
-+
- struct snd_tea575x;
- 
- struct snd_tea575x_ops {
--	void (*write)(struct snd_tea575x *tea, unsigned int val);
--	unsigned int (*read)(struct snd_tea575x *tea);
--	void (*mute)(struct snd_tea575x *tea, unsigned int mute);
-+	void (*set_pins)(struct snd_tea575x *tea, u8 pins);
-+	u8 (*get_pins)(struct snd_tea575x *tea);
-+	void (*set_direction)(struct snd_tea575x *tea, bool output);
- };
- 
- struct snd_tea575x {
-@@ -49,7 +54,7 @@ struct snd_tea575x {
- 	void *private_data;
- };
- 
--void snd_tea575x_init(struct snd_tea575x *tea);
-+int snd_tea575x_init(struct snd_tea575x *tea);
- void snd_tea575x_exit(struct snd_tea575x *tea);
- 
- #endif /* __SOUND_TEA575X_TUNER_H */
---- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-06 22:44:14.000000000 +0200
-+++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-06 22:21:09.000000000 +0200
-@@ -77,11 +77,65 @@ static struct v4l2_queryctrl radio_qctrl
-  * lowlevel part
-  */
- 
-+static void snd_tea575x_write(struct snd_tea575x *tea, unsigned int val)
-+{
-+	u16 l;
-+	u8 data;
-+
-+	tea->ops->set_direction(tea, 1);
-+	udelay(16);
-+
-+	for (l = 25; l > 0; l--) {
-+		data = (val >> 24) & TEA575X_DATA;
-+		val <<= 1;			/* shift data */
-+		tea->ops->set_pins(tea, data | TEA575X_WREN);
-+		udelay(2);
-+		tea->ops->set_pins(tea, data | TEA575X_WREN | TEA575X_CLK);
-+		udelay(2);
-+		tea->ops->set_pins(tea, data | TEA575X_WREN);
-+		udelay(2);
-+	}
-+
-+	if (!tea->mute)
-+		tea->ops->set_pins(tea, 0);
-+}
-+
-+static unsigned int snd_tea575x_read(struct snd_tea575x *tea)
-+{
-+	u16 l, rdata;
-+	u32 data = 0;
-+
-+	tea->ops->set_direction(tea, 0);
-+	tea->ops->set_pins(tea, 0);
-+	udelay(16);
-+
-+	for (l = 24; l--;) {
-+		tea->ops->set_pins(tea, TEA575X_CLK);
-+		udelay(2);
-+		if (!l)
-+			tea->tuned = tea->ops->get_pins(tea) & TEA575X_MOST ? 0 : 1;
-+		tea->ops->set_pins(tea, 0);
-+		udelay(2);
-+		data <<= 1;			/* shift data */
-+		rdata = tea->ops->get_pins(tea);
-+		if (!l)
-+			tea->stereo = (rdata & TEA575X_MOST) ?  0 : 1;
-+		if (rdata & TEA575X_DATA)
-+			data++;
-+		udelay(2);
-+	}
-+
-+	if (tea->mute)
-+		tea->ops->set_pins(tea, TEA575X_WREN);
-+
-+	return data;
-+}
-+
- static void snd_tea575x_get_freq(struct snd_tea575x *tea)
+-static void snd_es1968_tea575x_write(struct snd_tea575x *tea, unsigned int val)
++static void snd_es1968_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
  {
- 	unsigned long freq;
+ 	struct es1968 *chip = tea->private_data;
+ 	unsigned long io = chip->io_port + GPIO_DATA;
+-	u16 l, bits;
+-	u16 omask, odir;
++	u16 val = 0;
  
--	freq = tea->ops->read(tea) & TEA575X_BIT_FREQ_MASK;
-+	freq = snd_tea575x_read(tea) & TEA575X_BIT_FREQ_MASK;
- 	/* freq *= 12.5 */
- 	freq *= 125;
- 	freq /= 10;
-@@ -111,7 +165,7 @@ static void snd_tea575x_set_freq(struct
- 
- 	tea->val &= ~TEA575X_BIT_FREQ_MASK;
- 	tea->val |= freq & TEA575X_BIT_FREQ_MASK;
--	tea->ops->write(tea, tea->val);
-+	snd_tea575x_write(tea, tea->val);
- }
- 
- /*
-@@ -139,7 +193,7 @@ static int vidioc_g_tuner(struct file *f
- 	if (v->index > 0)
- 		return -EINVAL;
- 
--	tea->ops->read(tea);
-+	snd_tea575x_read(tea);
- 
- 	strcpy(v->name, "FM");
- 	v->type = V4L2_TUNER_RADIO;
-@@ -233,10 +287,8 @@ static int vidioc_g_ctrl(struct file *fi
- 
- 	switch (ctrl->id) {
- 	case V4L2_CID_AUDIO_MUTE:
--		if (tea->ops->mute) {
--			ctrl->value = tea->mute;
--			return 0;
--		}
-+		ctrl->value = tea->mute;
-+		return 0;
- 	}
- 	return -EINVAL;
- }
-@@ -248,11 +300,11 @@ static int vidioc_s_ctrl(struct file *fi
- 
- 	switch (ctrl->id) {
- 	case V4L2_CID_AUDIO_MUTE:
--		if (tea->ops->mute) {
--			tea->ops->mute(tea, ctrl->value);
-+		if (tea->mute != ctrl->value) {
- 			tea->mute = ctrl->value;
--			return 0;
-+			snd_tea575x_set_freq(tea);
- 		}
-+		return 0;
- 	}
- 	return -EINVAL;
- }
-@@ -317,18 +369,16 @@ static struct video_device tea575x_radio
- /*
-  * initialize all the tea575x chips
-  */
--void snd_tea575x_init(struct snd_tea575x *tea)
-+int snd_tea575x_init(struct snd_tea575x *tea)
- {
- 	int retval;
--	unsigned int val;
- 	struct video_device *tea575x_radio_inst;
- 
--	val = tea->ops->read(tea);
--	if (val == 0x1ffffff || val == 0) {
--		snd_printk(KERN_ERR
--			   "tea575x-tuner: Cannot find TEA575x chip\n");
--		return;
--	}
-+	tea->mute = 1;
-+
-+	snd_tea575x_write(tea, 0x55AA);
-+	if (snd_tea575x_read(tea) != 0x55AA)
-+		return -ENODEV;
- 
- 	tea->in_use = 0;
- 	tea->val = TEA575X_BIT_BAND_FM | TEA575X_BIT_SEARCH_10_40;
-@@ -337,7 +387,7 @@ void snd_tea575x_init(struct snd_tea575x
- 	tea575x_radio_inst = video_device_alloc();
- 	if (tea575x_radio_inst == NULL) {
- 		printk(KERN_ERR "tea575x-tuner: not enough memory\n");
--		return;
-+		return -ENOMEM;
- 	}
- 
- 	memcpy(tea575x_radio_inst, &tea575x_radio, sizeof(tea575x_radio));
-@@ -352,17 +402,13 @@ void snd_tea575x_init(struct snd_tea575x
- 	if (retval) {
- 		printk(KERN_ERR "tea575x-tuner: can't register video device!\n");
- 		kfree(tea575x_radio_inst);
--		return;
-+		return retval;
- 	}
- 
- 	snd_tea575x_set_freq(tea);
+-	omask = inw(io + IO_MASK);
+-	odir = (inw(io + IO_DIR) & ~STR_DATA) | (STR_CLK | STR_WREN);
+-	outw(odir | STR_DATA, io + IO_DIR);
+-	outw(~(STR_DATA | STR_CLK | STR_WREN), io + IO_MASK);
+-	udelay(16);
 -
--	/* mute on init */
--	if (tea->ops->mute) {
--		tea->ops->mute(tea, 1);
--		tea->mute = 1;
+-	for (l = 25; l; l--) {
+-		bits = ((val >> 18) & STR_DATA) | STR_WREN;
+-		val <<= 1;			/* shift data */
+-		outw(bits, io);			/* start strobe */
+-		udelay(2);
+-		outw(bits | STR_CLK, io);	/* HI level */
+-		udelay(2);
+-		outw(bits, io);			/* LO level */
+-		udelay(4);
 -	}
- 	tea->vd = tea575x_radio_inst;
-+
-+	return 0;
+-
+-	if (!tea->mute)
+-		outw(0, io);
++	val |= (pins & TEA575X_DATA) ? STR_DATA : 0;
++	val |= (pins & TEA575X_CLK)  ? STR_CLK  : 0;
++	val |= (pins & TEA575X_WREN) ? STR_WREN : 0;
+ 
+-	udelay(4);
+-	outw(omask, io + IO_MASK);
+-	outw(odir, io + IO_DIR);
+-	msleep(125);
++	outw(val, io);
  }
  
- void snd_tea575x_exit(struct snd_tea575x *tea)
+-static unsigned int snd_es1968_tea575x_read(struct snd_tea575x *tea)
++static u8 snd_es1968_tea575x_get_pins(struct snd_tea575x *tea)
+ {
+ 	struct es1968 *chip = tea->private_data;
+ 	unsigned long io = chip->io_port + GPIO_DATA;
+-	u16 l, rdata;
+-	u32 data = 0;
+-	u16 omask;
+-
+-	omask = inw(io + IO_MASK);
+-	outw(~(STR_CLK | STR_WREN), io + IO_MASK);
+-	outw(0, io);
+-	udelay(16);
+-
+-	for (l = 24; l--;) {
+-		outw(STR_CLK, io);		/* HI state */
+-		udelay(2);
+-		if (!l)
+-			tea->tuned = inw(io) & STR_MOST ? 0 : 1;
+-		outw(0, io);			/* LO state */
+-		udelay(2);
+-		data <<= 1;			/* shift data */
+-		rdata = inw(io);
+-		if (!l)
+-			tea->stereo = (rdata & STR_MOST) ?  0 : 1;
+-		else if (l && rdata & STR_DATA)
+-			data++;
+-		udelay(2);
+-	}
++	u16 val = inw(io);
+ 
+-	if (tea->mute)
+-		outw(STR_WREN, io);
+-
+-	udelay(4);
+-	outw(omask, io + IO_MASK);
+-
+-	return data & 0x3ffe;
++	return  (val & STR_DATA) ? TEA575X_DATA : 0 |
++		(val & STR_MOST) ? TEA575X_MOST : 0;
+ }
+ 
+-static void snd_es1968_tea575x_mute(struct snd_tea575x *tea, unsigned int mute)
++static void snd_es1968_tea575x_set_direction(struct snd_tea575x *tea, bool output)
+ {
+ 	struct es1968 *chip = tea->private_data;
+ 	unsigned long io = chip->io_port + GPIO_DATA;
+-	u16 omask;
++	u16 odir = inw(io + IO_DIR);
+ 
+-	omask = inw(io + IO_MASK);
+-	outw(~STR_WREN, io + IO_MASK);
+-	tea->mute = mute;
+-	outw(tea->mute ? STR_WREN : 0, io);
+-	udelay(4);
+-	outw(omask, io + IO_MASK);
+-	msleep(125);
++	if (output) {
++		outw(~(STR_DATA | STR_CLK | STR_WREN), io + IO_MASK);
++		outw(odir | STR_DATA | STR_CLK | STR_WREN, io + IO_DIR);
++	} else {
++		outw(~(STR_CLK | STR_WREN | STR_DATA | STR_MOST), io + IO_MASK);
++		outw((odir & ~(STR_DATA | STR_MOST)) | STR_CLK | STR_WREN, io + IO_DIR);
++	}
+ }
+ 
+ static struct snd_tea575x_ops snd_es1968_tea_ops = {
+-	.write = snd_es1968_tea575x_write,
+-	.read  = snd_es1968_tea575x_read,
+-	.mute  = snd_es1968_tea575x_mute,
++	.set_pins = snd_es1968_tea575x_set_pins,
++	.get_pins = snd_es1968_tea575x_get_pins,
++	.set_direction = snd_es1968_tea575x_set_direction,
+ };
+ #endif
+ 
+@@ -2845,7 +2797,8 @@ static int __devinit snd_es1968_create(s
+ 	chip->tea.freq_fixup = 10700;
+ 	chip->tea.private_data = chip;
+ 	chip->tea.ops = &snd_es1968_tea_ops;
+-	snd_tea575x_init(&chip->tea);
++	if (!snd_tea575x_init(&chip->tea))
++		printk(KERN_INFO "es1968: detected TEA575x radio\n");
+ #endif
+ 
+ 	*chip_ret = chip;
 
 
 -- 
