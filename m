@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab1EJJ4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:56:21 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:41695
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1756169Ab1EJIrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:47:24 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53118
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754298Ab1EJJyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:54:08 -0400
+	id S1756039Ab1EJIau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 04:30:50 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 164/206] Staging: hv: Add the definition hv_guid
-Date: Mon,  9 May 2011 14:57:26 -0700
-Message-Id: <1304978288-22999-164-git-send-email-kys@microsoft.com>
+Subject: [PATCH 165/206] Staging: hv: Add a new header file to include all header files private to vmbus core
+Date: Mon,  9 May 2011 14:57:27 -0700
+Message-Id: <1304978288-22999-165-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,24 +32,39 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- include/linux/hyperv.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/staging/hv/hyperv_vmbus.h |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/hv/hyperv_vmbus.h
 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 92369b9..81f8742 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -34,6 +34,10 @@
- #include <linux/device.h>
- #include <asm/hyperv.h>
- 
-+struct hv_guid {
-+	unsigned char data[16];
-+};
-+
- #define MAX_PAGE_BUFFER_COUNT				16
- #define MAX_MULTIPAGE_BUFFER_COUNT			32 /* 128K */
- 
+diff --git a/drivers/staging/hv/hyperv_vmbus.h b/drivers/staging/hv/hyperv_vmbus.h
+new file mode 100644
+index 0000000..ce27244
+--- /dev/null
++++ b/drivers/staging/hv/hyperv_vmbus.h
+@@ -0,0 +1,23 @@
++/*
++ *
++ * Copyright (c) 2011, Microsoft Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
++ * Place - Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * Authors:
++ *   Haiyang Zhang <haiyangz@microsoft.com>
++ *   Hank Janssen  <hjanssen@microsoft.com>
++ *   K. Y. Srinivasan <kys@microsoft.com>
++ *
++ */
 -- 
 1.7.4.1
 
