@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab1EILM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 07:12:27 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:36237 "EHLO
-	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1EILMZ (ORCPT
+	id S1752320Ab1EILUD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 07:20:03 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11237 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751080Ab1EILUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 07:12:25 -0400
-Date: Mon, 9 May 2011 13:12:24 +0200 (CEST)
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: Hugh Dickins <hughd@google.com>
-cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
-In-Reply-To: <alpine.LSU.2.00.1105081303540.16151@sister.anvils>
-Message-ID: <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz> <alpine.LSU.2.00.1105081303540.16151@sister.anvils>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Personality-Disorder: Schizoid
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 9 May 2011 07:20:01 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Jon Mason <jon.mason@exar.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH] pch_gbe: support ML7223 IOH
+Date: Mon,  9 May 2011 20:19:37 +0900
+Message-Id: <1304939977-11728-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 May 2011, Hugh Dickins wrote:
+Support new device OKI SEMICONDUCTOR ML7223 IOH(Input/Output Hub).
+The ML7223 IOH is for MP(Media Phone) use.
+The ML7223 is companion chip for Intel Atom E6xx series.
+The ML7223 is completely compatible for Intel EG20T PCH.
 
-> On Sun, 8 May 2011, Mikulas Patocka wrote:
-> 
-> > Don't mlock guardpage if the stack is growing up
-> > 
-> > Linux kernel excludes guard page when performing mlock on a VMA with 
-> > down-growing stack. However, some architectures have up-growing stack and 
-> > locking the guard page should be excluded in this case too.
-> > 
-> > This patch fixes lvm2 on PA-RISC (and possibly other architectures with 
-> > up-growing stack). lvm2 calculates the number of used pages when locking 
-> > and when unlocking and reports an internal error if the numbers mismatch. 
-> > On PA-RISC, the kernel would incorrectly attempt to mlock the stack guard 
-> > page, this causes allocation of one more page and internal error in lvm2.
-> > 
-> > Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-> 
-> Interesting, I'd convinced myself that the growsup case was safe,
-> because of how we always approach the vma from its bottom end.
-> 
-> I've added Michel to the Cc, he's the one with the best grasp here.
-> 
-> Could you point us to where lvm2 is making these calculations?
-> I don't understand quite what it's doing.
-> 
-> Thanks,
-> Hugh
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/net/Kconfig                |    8 +++++++-
+ drivers/net/pch_gbe/pch_gbe_main.c |   11 +++++++++++
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-See ./lib/mm/memlock.c in LVM2. It reads /proc/self/maps, parses the file 
-and locks each map with mlock, except for glibc locale file.
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index dc280bc..6c884ef 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -2536,7 +2536,7 @@ config S6GMAC
+ source "drivers/net/stmmac/Kconfig"
+ 
+ config PCH_GBE
+-	tristate "PCH Gigabit Ethernet"
++	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GbE"
+ 	depends on PCI
+ 	select MII
+ 	---help---
+@@ -2548,6 +2548,12 @@ config PCH_GBE
+ 	  to Gigabit Ethernet.
+ 	  This driver enables Gigabit Ethernet function.
+ 
++	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
++	  Output Hub), ML7223.
++	  ML7223 IOH is for MP(Media Phone) use.
++	  ML7223 is companion chip for Intel Atom E6xx series.
++	  ML7223 is completely compatible for Intel EG20T PCH.
++
+ endif # NETDEV_1000
+ 
+ #
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 2ef2f9c..bd27e1d 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -34,6 +34,10 @@ const char pch_driver_version[] = DRV_VERSION;
+ #define PCH_GBE_COPYBREAK_DEFAULT	256
+ #define PCH_GBE_PCI_BAR			1
+ 
++/* Macros for ML7223 */
++#define PCI_VENDOR_ID_ROHM			0x10db
++#define PCI_DEVICE_ID_ROHM_ML7223_GBE		0x8013
++
+ #define PCH_GBE_TX_WEIGHT         64
+ #define PCH_GBE_RX_WEIGHT         64
+ #define PCH_GBE_RX_BUFFER_WRITE   16
+@@ -2420,6 +2424,13 @@ static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
+ 	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
+ 	 .class_mask = (0xFFFF00)
+ 	 },
++	{.vendor = PCI_VENDOR_ID_ROHM,
++	 .device = PCI_DEVICE_ID_ROHM_ML7223_GBE,
++	 .subvendor = PCI_ANY_ID,
++	 .subdevice = PCI_ANY_ID,
++	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
++	 .class_mask = (0xFFFF00)
++	 },
+ 	/* required last entry */
+ 	{0}
+ };
+-- 
+1.7.4
 
-It calculates how much memory it took when locking and unlocking and 
-prints an internal error if the numbers differ. The internal error 
-normally means that there was some memory allocated while it was locked 
-(that is wrong).
-
-However, on up-growing stack, the internal error is always triggered, 
-because mlock() of the stack touches the guard page and allocates one more 
-page.
-
-Mikulas
