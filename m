@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1EIQMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 12:12:13 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38548 "EHLO mgw2.diku.dk"
+	id S1753352Ab1EIQPz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 12:15:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34028 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751837Ab1EIQMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 12:12:12 -0400
-Date: Mon, 9 May 2011 18:12:05 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Vladimir Motyka <vladimir.motyka@gmail.com>
-Cc: cjb@laptop.org, kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/mmc/card/block.c: fix potential null dereference
- 'idata'
-In-Reply-To: <4DC8117C.7060200@gmail.com>
-Message-ID: <Pine.LNX.4.64.1105091811320.15483@pc-004.diku.dk>
-References: <4DC7F4AB.90607@gmail.com> <Pine.LNX.4.64.1105091631400.15483@pc-004.diku.dk>
- <4DC802C0.9040302@gmail.com> <Pine.LNX.4.64.1105091713080.15483@pc-004.diku.dk>
- <4DC8117C.7060200@gmail.com>
+	id S1752277Ab1EIQPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 12:15:54 -0400
+Date: Mon, 9 May 2011 18:15:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 09/17] writeback: elevate queue_io() into wb_writeback()
+Message-ID: <20110509161547.GT4122@quack.suse.cz>
+References: <20110506030821.523093711@intel.com>
+ <20110506031612.914153017@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110506031612.914153017@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess there is also a point at which idata has been successfully 
-allocated but idata->buf has not.
-
-julia
-
-
-On Mon, 9 May 2011, Vladimir Motyka wrote:
-
-> When allocation of idata fails there was a null dereference.
+On Fri 06-05-11 11:08:30, Wu Fengguang wrote:
+> Code refactor for more logical code layout.
+> No behavior change.
 > 
-> Signed-off-by: Vladimir Motyka <vladimir.motyka@gmail.com>
+> - remove the mis-named __writeback_inodes_sb()
+> 
+> - wb_writeback()/writeback_inodes_wb() will decide when to queue_io()
+>   before calling __writeback_inodes_wb()
+> 
+  You can add:
+Acked-by: Jan Kara <jack@suse.cz>
+
+								Honza
+
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 > ---
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 407836d..a03cdc6 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -237,7 +237,7 @@ static struct mmc_blk_ioc_data
-> *mmc_blk_ioctl_copy_from_user(
->  	idata = kzalloc(sizeof(*idata), GFP_KERNEL);
->  	if (!idata) {
->  		err = -ENOMEM;
-> -		goto copy_err;
-> +		goto alloc_err;
->  	}
+>  fs/fs-writeback.c |   27 ++++++++++++---------------
+>  1 file changed, 12 insertions(+), 15 deletions(-)
 > 
->  	if (copy_from_user(&idata->ic, user, sizeof(idata->ic))) {
-> @@ -268,8 +268,8 @@ static struct mmc_blk_ioc_data
-> *mmc_blk_ioctl_copy_from_user(
->  copy_err:
->  	kfree(idata->buf);
->  	kfree(idata);
-> +alloc_err:
->  	return ERR_PTR(err);
-> -
+> --- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:41:36.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2011-05-05 23:51:59.000000000 +0800
+> @@ -580,17 +580,13 @@ static int writeback_sb_inodes(struct su
+>  	return 1;
 >  }
+>  
+> -void writeback_inodes_wb(struct bdi_writeback *wb,
+> -		struct writeback_control *wbc)
+> +static void __writeback_inodes_wb(struct bdi_writeback *wb,
+> +				  struct writeback_control *wbc)
+>  {
+>  	int ret = 0;
+>  
+>  	if (!wbc->wb_start)
+>  		wbc->wb_start = jiffies; /* livelock avoidance */
+> -	spin_lock(&wb->list_lock);
+> -
+> -	if (list_empty(&wb->b_io))
+> -		queue_io(wb, wbc->older_than_this);
+>  
+>  	while (!list_empty(&wb->b_io)) {
+>  		struct inode *inode = wb_inode(wb->b_io.prev);
+> @@ -606,19 +602,16 @@ void writeback_inodes_wb(struct bdi_writ
+>  		if (ret)
+>  			break;
+>  	}
+> -	spin_unlock(&wb->list_lock);
+>  	/* Leave any unwritten inodes on b_io */
+>  }
+>  
+> -static void __writeback_inodes_sb(struct super_block *sb,
+> -		struct bdi_writeback *wb, struct writeback_control *wbc)
+> +void writeback_inodes_wb(struct bdi_writeback *wb,
+> +		struct writeback_control *wbc)
+>  {
+> -	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+> -
+>  	spin_lock(&wb->list_lock);
+>  	if (list_empty(&wb->b_io))
+>  		queue_io(wb, wbc->older_than_this);
+> -	writeback_sb_inodes(sb, wb, wbc, true);
+> +	__writeback_inodes_wb(wb, wbc);
+>  	spin_unlock(&wb->list_lock);
+>  }
+>  
+> @@ -685,7 +678,7 @@ static long wb_writeback(struct bdi_writ
+>  	 * The intended call sequence for WB_SYNC_ALL writeback is:
+>  	 *
+>  	 *      wb_writeback()
+> -	 *          __writeback_inodes_sb()     <== called only once
+> +	 *          writeback_sb_inodes()       <== called only once
+>  	 *              write_cache_pages()     <== called once for each inode
+>  	 *                   (quickly) tag currently dirty pages
+>  	 *                   (maybe slowly) sync all tagged pages
+> @@ -731,10 +724,14 @@ static long wb_writeback(struct bdi_writ
+>  
+>  retry:
+>  		trace_wbc_writeback_start(&wbc, wb->bdi);
+> +		spin_lock(&wb->list_lock);
+> +		if (list_empty(&wb->b_io))
+> +			queue_io(wb, wbc.older_than_this);
+>  		if (work->sb)
+> -			__writeback_inodes_sb(work->sb, wb, &wbc);
+> +			writeback_sb_inodes(work->sb, wb, &wbc, true);
+>  		else
+> -			writeback_inodes_wb(wb, &wbc);
+> +			__writeback_inodes_wb(wb, &wbc);
+> +		spin_unlock(&wb->list_lock);
+>  		trace_wbc_writeback_written(&wbc, wb->bdi);
+>  
+>  		work->nr_pages -= write_chunk - wbc.nr_to_write;
 > 
->  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
