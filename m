@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1EIPZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:25:55 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:28435 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752097Ab1EIPZy (ORCPT
+	id S1752381Ab1EIP3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 11:29:46 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54027 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751272Ab1EIP3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:25:54 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Q6k6P4oWdxMsbVv4vNSc+
-Date: Mon, 9 May 2011 08:25:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Mike Rapoport <mike.rapoport@gmail.com>
-Cc: Colin Cross <ccross@google.com>, Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Erik Gilling <konkers@google.com>
-Subject: Re: [PATCH 1/4] drivers: create a pinmux subsystem
-Message-ID: <20110509152547.GD11410@atomide.com>
-References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
- <74CDBE0F657A3D45AFBB94109FB122FF0497F1B201@HQMAIL01.nvidia.com>
- <BANLkTimKU-=GXzrn8=MQn-GAmKHOvKmuNQ@mail.gmail.com>
- <20110504092219.GW2092@atomide.com>
- <BANLkTin9-aKZjEGdBeZqDwHwADXCYERErg@mail.gmail.com>
+	Mon, 9 May 2011 11:29:45 -0400
+X-Sasl-enc: hVO4Q3Y2ou4PRuqdj6kYDWe/3JdNkdLC7X+JDqF1buUw 1304954983
+Date: Mon, 9 May 2011 12:29:41 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: ibm-acpi-devel@lists.sourceforge.net, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
+Message-ID: <20110509152941.GD13275@khazad-dum.debian.net>
+References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+ <20110509144546.GB13275@khazad-dum.debian.net>
+ <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTin9-aKZjEGdBeZqDwHwADXCYERErg@mail.gmail.com>
+In-Reply-To: <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Rapoport <mike.rapoport@gmail.com> [110507 12:03]:
-> On Wed, May 4, 2011 at 12:22 PM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Colin Cross <ccross@google.com> [110502 14:26]:
-> >> On Mon, May 2, 2011 at 1:52 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> >>
-> >> * Drive strength is also controlled through groups of pins, but
-> >> different groups than pinmux.  Most of the drive strength groups are
-> >> collections of pad mux groups, but there are a few pins that are in
-> >> the same pad mux group but a different drive strength group.
-> >> * Setting a pin as a GPIO overrides its group's mux setting, except
-> >> for the group's tristate.  You must untristate the entire group to use
-> >> a single pin as a GPIO.
-> >> * Each group has a "safe mode", but which mux id to select to enter
-> >> the safe mode is completely random.
-> >
-> > Just posted something in this thread regarding using standard data and
-> > standard read and write functions, then allow setting platform specific
-> > custom flags as needed. Care to see if that works for you too?
+On Mon, 09 May 2011, Andrew Lutomirski wrote:
+> > The SBS interface exposes more data about the battery, including
+> > per-cell-group voltage and pack microcontroller aging counters, alarms, and
+> > the "needs to get through the fuel-gaugue reset procedure" semasphore.
 > 
-> Tegra does not allow pin muxing on the pin by pin basis. And,
-> registers that define mux config differ from those that define flags
-> (pull, driver strength, safe mode etc).
+> If I'm feeling really motivated, I'll look at that.  I'm currently
+> more interested in the charging thresholds, though, which I think is
+> independent of the choice of SBS vs ACPI to access the battery state.
+> (From a quick glance at the SBS spec, you can inhibit charging
+> entirely but you can't ask for thresholds.  I assume that the EC takes
+> care of that.  If I'm wrong, please tell me, but SMAPI seems like a
+> fine way to access the thresholds.)
 
-Hmm well the separate config register could be added easily. But the
-grouping of pins might be tricky then :)
+Yeah, SMAPI is the safest way to deal with all this.  It is an interface
+layer that Lenovo is not fond of breaking (or touches very rarely.  Amounts
+to the same in the end).
 
-Tony
+SBS does not take care of thresholds, indeed.  The EC does (and I know how
+to program the threshold in a few models, if you do want to test it in your
+X220, I can send you the information.  It is safe to test if you use it
+together with SMAPI to cross-check).
+
+The SBS ACPI interface would be useful to provide a single driver that can
+replace the ACPI battery one to deliver full functionality in one place.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
