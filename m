@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab1EIUW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:22:28 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:36999 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab1EIUW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:22:27 -0400
-Subject: Re: [PATCHv3] x86, mrst: share APB timer code with other platforms
-From: john stultz <johnstul@us.ibm.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-In-Reply-To: <1302606630-12459-1-git-send-email-jamie@jamieiles.com>
-References: <1302606630-12459-1-git-send-email-jamie@jamieiles.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 May 2011 13:22:22 -0700
-Message-ID: <1304972542.2939.20.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754697Ab1EIUiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:38:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49108 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab1EIUiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 16:38:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aCdOvm4aAGYD2QgTdWtWxbVuosp3y9TL8RoyZvV+ZnUo5OcrfBFs9Cpi8pERhrHjqJ
+         xzWBPHtiMi7kCKLhArBXI3xz6DK2iPx38+AP5ZONO1A59Q1nGUYQLBTAh6Z+gAXlBq/B
+         uUYeO8viAyPQEzyMLSNN6/wb3+w6mwEyoqY/s=
+Message-ID: <4DC85081.9090105@gmail.com>
+Date: Mon, 09 May 2011 22:37:21 +0200
+From: Vladimir Motyka <vladimir.motyka@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Julia Lawall <julia@diku.dk>
+CC: cjb@laptop.org, kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/mmc/card/block.c: fix potential null dereference
+ 'idata'
+References: <4DC7F4AB.90607@gmail.com> <Pine.LNX.4.64.1105091631400.15483@pc-004.diku.dk> <4DC802C0.9040302@gmail.com> <Pine.LNX.4.64.1105091713080.15483@pc-004.diku.dk> <4DC8117C.7060200@gmail.com> <Pine.LNX.4.64.1105091811320.15483@pc-004.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1105091811320.15483@pc-004.diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-04-12 at 12:10 +0100, Jamie Iles wrote:
-> The APB timers are an IP block from Synopsys (DesignWare APB timers)
-> and are also found in other systems including ARM SoC's.  This patch
-> adds functions for creating clock_event_devices and clocksources from
-> APB timers but does not do the resource allocation.  This is handled
-> in a higher layer to allow the timers to be created from multiple
-> methods such as platform_devices.
+On 05/09/2011 06:12 PM, Julia Lawall wrote:
+> I guess there is also a point at which idata has been successfully 
+> allocated but idata->buf has not.
 > 
-> Changes since v2:
-> 	- Make eoi() for clock_event_device optional for x86 where eoi
-> 	is handled in firmware.
-> Changes since v1:
-> 	- Use the correct timer for clocksource on x86
-> 	- Select the correct timer rating for x86
-> 	- Restore freerunning timer behaviour for oneshot event devices
-> 	- Reenable event irq correctly for hotplug
+> julia
+> 
+Yes there is. Thank You for pointing out.
 
-Sorry for being slow to review this.
+Vladimir Motyka
 
-Just a minor nit below.
-
-> +struct dw_apb_clocksource *
-> +dw_apb_clocksource_init(unsigned rating, char *name, void __iomem *base,
-> +			unsigned long freq)
-> +{
-> +	struct dw_apb_clocksource *dw_cs = kzalloc(sizeof(*dw_cs), GFP_KERNEL);
-> +
-> +	if (!dw_cs)
-> +		return NULL;
-> +
-> +	dw_cs->timer.base = base;
-> +	dw_cs->timer.freq = freq;
-> +	dw_cs->cs.name = name;
-> +	dw_cs->cs.rating = rating;
-> +	dw_cs->cs.read = __apbt_read_clocksource;
-> +	dw_cs->cs.mask = CLOCKSOURCE_MASK(32);
-> +	dw_cs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
-> +	dw_cs->cs.resume = apbt_restart_clocksource;
-> +
-> +	return dw_cs;
-> +}
-
-So I don't see anything that frees the dw_apb_clocksource structure
-after it has been allocated. Should this instead be allocated by the
-caller and passed in to be initialized here?
-
-thanks
--john
-
+> On Mon, 9 May 2011, Vladimir Motyka wrote:
+> 
+>> When allocation of idata fails there was a null dereference.
+>>
+>> Signed-off-by: Vladimir Motyka <vladimir.motyka@gmail.com>
+>> ---
+>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>> index 407836d..a03cdc6 100644
+>> --- a/drivers/mmc/card/block.c
+>> +++ b/drivers/mmc/card/block.c
+>> @@ -237,7 +237,7 @@ static struct mmc_blk_ioc_data
+>> *mmc_blk_ioctl_copy_from_user(
+>>  	idata = kzalloc(sizeof(*idata), GFP_KERNEL);
+>>  	if (!idata) {
+>>  		err = -ENOMEM;
+>> -		goto copy_err;
+>> +		goto alloc_err;
+>>  	}
+>>
+>>  	if (copy_from_user(&idata->ic, user, sizeof(idata->ic))) {
+>> @@ -268,8 +268,8 @@ static struct mmc_blk_ioc_data
+>> *mmc_blk_ioctl_copy_from_user(
+>>  copy_err:
+>>  	kfree(idata->buf);
+>>  	kfree(idata);
+>> +alloc_err:
+>>  	return ERR_PTR(err);
+>> -
+>>  }
+>>
+>>  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
 
