@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab1EIChN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 22:37:13 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35576 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756670Ab1EIChL (ORCPT
+	id S1756760Ab1EICjK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 22:39:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49040 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756670Ab1EICjF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 22:37:11 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 9 May 2011 11:30:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Ying Han <yinghan@google.com>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCHv2] memcg: reclaim memory from node in round-robin
-Message-Id: <20110509113031.fa4263df.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110509112215.3ACD.A69D9226@jp.fujitsu.com>
-References: <20110427165120.a60c6609.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110509112215.3ACD.A69D9226@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 8 May 2011 22:39:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ruui1TAcLSmfUpNcK2vttOebS/h7hGv3zMRS9MIEXZrzNVVZcTODO2AxyYHzhR+kJO
+         UeXqBkPV9xaNvwRLwyiBb+C62TRIjUzdPoZ7F3QStK1XnMCe82hf/lERwZgSKfhQ4lmd
+         U4WEw7BYE9LAu6ThJRyhIsGg0F1e33bXZorBQ=
+MIME-Version: 1.0
+In-Reply-To: <201105081133.50824.sven@narfation.org>
+References: <1304458235-28473-1-git-send-email-sven@narfation.org>
+ <20110508092403.GB27807@n2100.arm.linux.org.uk> <201105081133.50824.sven@narfation.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sun, 8 May 2011 22:38:43 -0400
+Message-ID: <BANLkTim+z0mv7oXZHr0YnoxtfnoDZTEr9Q@mail.gmail.com>
+Subject: Re: [PATCH] atomic: add *_dec_not_zero
+To: Sven Eckelmann <sven@narfation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-m32r@ml.linux-m32r.org,
+        linux-ia64@vger.kernel.org, linux-parisc@vger.kernel.org,
+        linux-cris-kernel@axis.com, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, x86@kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        David Howells <dhowells@redhat.com>, linux-m68k@vger.kernel.org,
+        linux-am33-list@redhat.com, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  9 May 2011 11:20:31 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Sun, May 8, 2011 at 05:33, Sven Eckelmann wrote:
+> Russell King - ARM Linux wrote:
+> [...]
+>> Do we need atomic_dec_not_zero() et.al. in every arch header - is there no
+>> generic header which it could be added to?
+>
+> Mike Frysinger already tried to answer it in
+> <BANLkTimctgbto3dsnJ3d3r7NggS0KF9_Sw@mail.gmail.com>:
+>> that's what asm-generic is for.  if the arch isnt using it, it's
+>> either because the arch needs to convert to it, or they're using SMP
+>> and asm-generic doesnt yet support that for atomic.h.
+>>
+>> for example, the Blackfin port only needed updating for the SMP case.
+>> in the non-SMP case, we're getting the def from asm-generic/atomic.h.
+>
+> Feel free to change that but I just followed the style used by all other
+> macros and will not redesign the complete atomic*.h idea.
 
-> > I changed the logic a little and add a filter for skipping nodes.
-> > With large NUMA, tasks may under cpuset or mempolicy and the usage of memory
-> > can be unbalanced. So, I think a filter is required.
-> > 
-> > ==
-> > Now, memory cgroup's direct reclaim frees memory from the current node.
-> > But this has some troubles. In usual, when a set of threads works in
-> > cooperative way, they are tend to on the same node. So, if they hit
-> > limits under memcg, it will reclaim memory from themselves, it may be
-> > active working set.
-> > 
-> > For example, assume 2 node system which has Node 0 and Node 1
-> > and a memcg which has 1G limit. After some work, file cacne remains and
-> > and usages are
-> >    Node 0:  1M
-> >    Node 1:  998M.
-> > 
-> > and run an application on Node 0, it will eats its foot before freeing
-> > unnecessary file caches.
-> > 
-> > This patch adds round-robin for NUMA and adds equal pressure to each
-> > node. When using cpuset's spread memory feature, this will work very well.
-> 
-> Looks nice. And it would be more nice if global reclaim has the same feature.
-> Do you have a plan to do it?
-> 
-
-Hmm, IIUC, at allocating memory for file-cache, we may be able to avoid starting
-from current node. But, isn't it be a feature of cpuset ? 
-If cpuset.memory_spread_page==1 and a page for file is allocated from a node in
-round-robin, and memory reclaim runs in such manner (using node-only zonelist
-fallabck).
-
-Do you mean the kernel should have a knob for allowing non-local allocation for
-file caches even without cpuset ?
-
-Thanks,
--Kame
-
-
-
+what you're doing is currently correct.  i think merging SMP support
+into asm-generic for atomic* will take a bit of pondering first.
+-mike
