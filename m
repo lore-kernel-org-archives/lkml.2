@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab1EIJf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 05:35:29 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:47279 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750704Ab1EIJf2 (ORCPT
-	<rfc822;groupwise-jlee@novell.com:6:1>);
-	Mon, 9 May 2011 05:35:28 -0400
-Message-Id: <4DC841FD020000230002C5BF@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 09 May 2011 03:35:25 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <chris@chris-wilson.co.uk>, <melchior.franz@gmail.com>,
-        <dri-devel@lists.freedesktop.org>, "Joey Lee" <JLee@novell.com>,
-        "Michael Chang" <MChang@novell.com>, <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: i915/kms/backlight-combo mode problem
-References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
- <201105072222.41807@rk-nord.at>
- <4DC72A34020000230002C541@novprvlin0050.provo.novell.com>
- <201105081605.46617@rk-nord.at>
- <4DC8378A020000230002C5A8@novprvlin0050.provo.novell.com>
- <s5hpqns6yg5.wl%tiwai@suse.de>
-In-Reply-To: <s5hpqns6yg5.wl%tiwai@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1751413Ab1EIJk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 05:40:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42818 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750704Ab1EIJk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 05:40:58 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Factor out references to rdev in regulator_force_disable()
+Date: Mon,  9 May 2011 11:41:02 +0200
+Message-Id: <1304934062-22847-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2011-05-09 於 11:00 +0200，Takashi Iwai 提到：
-> At Mon, 09 May 2011 02:50:50 -0600,
-> Joey Lee wrote:
-> > 
-> > We need to know some run time value when intel_panel_set_backlight call by funciton key.
-> 
-> Yes, that'll help understanding.
-> 
-> > Please help to apply the attached debug patch to intel_panel.c then attached dmesg.
-> 
-> The patch has an obvious typo :)
-> Also, we should track the value in intel_panel_get_backlight(), too.
-> 
-> 
-> Takashi
-> 
+Don't go looking up the rdev pointer every time, just use a local variable
+like everything else.
 
-Thank's for Takashi's review and sorry for my typo. 
-Follow Takashi's suggestion, I added a debug message in get_backlight,
-the following is new debug patch:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index f8f86e5..9695840 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -199,6 +199,7 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
- 		val = I915_READ(BLC_PWM_CPU_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
- 	} else {
- 		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
-+		DRM_DEBUG_DRIVER("get backlight val = %d\n", val);
- 		if (IS_PINEVIEW(dev))
- 			val >>= 1;
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index c5b3c50..58452ac 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1508,13 +1508,14 @@ static int _regulator_force_disable(struct regulator_dev *rdev,
+  */
+ int regulator_force_disable(struct regulator *regulator)
+ {
++	struct regulator_dev *rdev = regulator->rdev;
+ 	struct regulator_dev *supply_rdev = NULL;
+ 	int ret;
  
-@@ -236,17 +237,22 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
- 		u32 max = intel_panel_get_max_backlight(dev);
- 		u8 lbpc;
+-	mutex_lock(&regulator->rdev->mutex);
++	mutex_lock(&rdev->mutex);
+ 	regulator->uA_load = 0;
+-	ret = _regulator_force_disable(regulator->rdev, &supply_rdev);
+-	mutex_unlock(&regulator->rdev->mutex);
++	ret = _regulator_force_disable(rdev, &supply_rdev);
++	mutex_unlock(&rdev->mutex);
  
-+		DRM_DEBUG_DRIVER("set backlight max = %d\n", max);
- 		lbpc = level * 0xfe / max + 1;
-+		DRM_DEBUG_DRIVER("set backlight lbpc = %d\n", lbpc);
- 		level /= lbpc;
- 		pci_write_config_byte(dev->pdev, PCI_LBPC, lbpc);
- 	}
- 
- 	tmp = I915_READ(BLC_PWM_CTL);
-+	DRM_DEBUG_DRIVER("set backlight tmp(1) = %d\n", tmp);
- 	if (IS_PINEVIEW(dev)) {
- 		tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
- 		level <<= 1;
- 	} else
- 		tmp &= ~BACKLIGHT_DUTY_CYCLE_MASK;
-+	DRM_DEBUG_DRIVER("set backlight tmp(2) = %d\n", tmp);
-+	DRM_DEBUG_DRIVER("set backlight level = %d\n", level);
- 	I915_WRITE(BLC_PWM_CTL, tmp | level);
- }
- 
-
+ 	if (supply_rdev)
+ 		regulator_disable(get_device_regulator(rdev_get_dev(supply_rdev)));
+-- 
+1.7.4.1
 
