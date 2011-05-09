@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab1EIOd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:33:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46638 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab1EIOd4 (ORCPT
+	id S1754489Ab1EIOgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:36:09 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:44295 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754460Ab1EIOgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:33:56 -0400
-Date: Mon, 9 May 2011 10:33:52 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: various vmbus review comments
-Message-ID: <20110509143352.GB29635@infradead.org>
-References: <20110503204641.GA11132@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481DFCFA@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110504163228.GA19754@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481E0694@TK5EX14MBXC124.redmond.corp.microsoft.com>
+	Mon, 9 May 2011 10:36:07 -0400
+Date: Mon, 9 May 2011 10:36:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        <linux-sh@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [linux-pm] [PATCH 3/5] PM: Support for system-wide power
+ transitions in generic power domains
+In-Reply-To: <201105082324.19674.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1105091032190.2002-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481E0694@TK5EX14MBXC124.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 01:10:38PM +0000, KY Srinivasan wrote:
-> I audited the block and the net drivers. As part of their exit routine,
-> they invoke vmbus_child_driver_unregister() after properly cleaning
-> up all the devices they are managing. Do you still see an issue with
-> regards to module reference counting.
+On Sun, 8 May 2011, Rafael J. Wysocki wrote:
 
-Which is not the correct thing to do as explained in my last round
-of reviews.  Take a look at the PCI code - the functional driver only
-does a foo_untegister_driver (which maps almost directly to
-driver_unregister), which then causes the device core to unbind the
-devices.  The function driver must never call device_unregister
-directly as the device continues to exist even if no driver is bound to
-it.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Make generic power domains support system-wide power transitions
+> (system suspend and hibernation).  Add suspend, resume, freeze and
+> thaw callbacks to be associated with struct generic_power_domain
+> objects and make pm_genpd_init() use them as appropriate.
+
+...
+
+> Index: linux-2.6/drivers/base/power/domain.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/power/domain.c
+> +++ linux-2.6/drivers/base/power/domain.c
+> @@ -273,6 +273,280 @@ static int pm_genpd_runtime_resume(struc
+>  
+>  #endif /* CONFIG_PM_RUNTIME */
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +
+> +/**
+> + * pm_genpd_powered_down - Check if power has been removed from a power domain.
+> + * @genpd: Power domain to check.
+> + */
+> +static bool pm_genpd_powered_down(struct generic_power_domain *genpd)
+> +{
+> +	bool ret;
+> +
+> +	mutex_lock(&genpd->lock);
+> +	ret = genpd->power_is_off;
+> +	mutex_unlock(&genpd->lock);
+> +
+> +	return ret;
+> +}
+
+What is the purpose of the mutex?  On the face of it, there's nothing 
+to prevent another thread from changing the domain's power state in 
+between the mutex_unlock() call and the return statement.
+
+Alan Stern
 
