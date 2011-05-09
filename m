@@ -1,113 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab1EIVRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:17:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4944 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab1EIVRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:17:04 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Cliff Wickman <cpw@sgi.com>
-Subject: [PATCH] Revert "x86, UV: Make kdump avoid stack dumps"
-Date: Mon,  9 May 2011 17:16:44 -0400
-Message-Id: <1304975804-24443-1-git-send-email-dzickus@redhat.com>
+	id S1754884Ab1EIVU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:20:26 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35725 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754440Ab1EIVUY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 17:20:24 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=rl395ZokoFSecPeuzH1PJEtlseaedG49PVbN/N29GoijeFwFZmZfpEo+4itbJ77ZWrHgrK6Nvjo98R3Jw/dMw4rboN5bIXFM8PntrhzB+nt6SGaqmnqa8FTF1pdoFjwI;
+Date: Mon, 9 May 2011 14:20:14 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH -v2] pci: Check bridge resources after resource
+ allocation.
+Message-ID: <20110509142014.617e3100@jbarnes-desktop>
+In-Reply-To: <4DC64C58.70203@kernel.org>
+References: <4DC250A6.9040802@kernel.org>
+	<20110506081243.GF16782@ram-laptop>
+	<4DC4586C.6020308@kernel.org>
+	<20110507015240.GN16782@ram-laptop>
+	<4DC4B059.3030502@kernel.org>
+	<4DC64C58.70203@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally these changes were added to hack around kdump calling into
-the nmi handlers of the UV system and kdb.
+On Sun, 08 May 2011 00:55:04 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-However the true reason was the priorities were not setup correctly when
-registering the nmi handlers.
+> 
+> During pci remove/rescan testing found:
+> 
+> [  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+> [  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
+> [  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+> [  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+> [  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+> [  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
+> [  541.199202] pci 0000:c0:03.0: enabling bus mastering
+> [  541.199209] pci 0000:c0:03.0: setting latency timer to 64
+> [  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
+> [  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
+> 
+> This bug was uncovered by commit
+> | commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+> | Author: Ram Pai <linuxram@us.ibm.com>
+> | Date:   Mon Feb 14 17:43:20 2011 -0800
+> |
+> |    PCI: pre-allocate additional resources to devices only after successful allocation of essential resources.
+> 
+> After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size.
+> So it will not go through resource_size(res) != 0 path,  and will not be reset there.
+> 
+> The root cause is: pci_bridge_check_ranges will set RESOURCE_IO flag for pci
+> bridge, and later if children do not need IO resource. those bridge
+> resources will not need to be allocated. but flags is still there. that will
+> confuse the the pci_enable_bridges later.
+> 
+> related code:
+> | static void assign_requested_resources_sorted(struct resource_list *head,
+> |                                  struct resource_list_x *fail_head)
+> | {
+> |         struct resource *res;
+> |         struct resource_list *list;
+> |         int idx;
+> |
+> |         for (list = head->next; list; list = list->next) {
+> |                 res = list->res;
+> |                 idx = res - &list->dev->resource[0];
+> |                 if (resource_size(res) && pci_assign_resource(list->dev, idx)) {
+> | ...
+> |                         reset_resource(res);
+> |                 }
+> |         }
+> | }
+> 
+> We can not just reset resource there, because will still need to use flag for addition resource allocation afterwards.
+> 
+> At last, We have to add pci_bridge_check_resources() to close the loop.
+> 
+> after patch, will get right result:
+> [  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
+> [  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
+> [  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
+> [  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
+> [  621.247012] pci 0000:c0:03.0: enabling bus mastering
+> [  621.247275] pci 0000:c0:03.0: setting latency timer to 64
+> [  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
+> [  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
+> [  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
+> [  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
+> [  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
+> [  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
+> [  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
+> 
+> -v2: update description.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-During boot-up the UV system and kdb registered their nmi handlers without
-any priority number assigned to it.  Therefore the die_notifier defaulted
-to priority zero.  Later when kdump wanted to signal an NMI on all cpus to
-shut them down, it had to register an nmi callback.  But it forgot to add
-the priority.  Again the die_notifier used the default of zero.
+Why do I keep getting the feeling that our resource handling code is
+made of duct tape and bailing wire?  The fact that we can't just clear
+the resource and the flag where we discover the allocation failure
+suggests that maybe we should be splitting our bus and device
+allocation code a bit more.
 
-When the die_register inserted kdump's nmi callback onto the die_chain, the
-die_register noticed the other two nmi handlers with a priority zero and placed
-kdump's nmi callback behind them.  So when an NMI came into the system, the
-die_notifier called the UV and kdb handlers first, then kdumps.  This was
-obviously not the intent when the kdump handler was written.
+Clearly we don't want to allocate resources (especially scarce ones
+like I/O space) when we don't actually need them, but I think it's
+going to be tough to handle all supported cases without real resource
+move support in the core and drivers.
 
-The fix is easy, increase the priority of the kdump handler.  This was already
-done with commit 166d751479c6d4e5b17dfc1f204a9c4397c9b3f1.
+That said, if this doesn't break other cases I guess it's a fairly
+minimal fix.
 
-I had George B. from SGI test this on a one-rack UV system with success.
+Linus?  Bjorn?  Ram?
 
-This patch just cleans up the hack.  As long as the kdump NMI handler prioritizes
-itself as the highest, we shouldin't run into the same problem as before.  Also
-because most priorities are above zero, any handler that forgets to set their
-priority winds up on the bottom of the queue instead of the top.
-
-This reverts commit 1d6225e8cc5598f2bc5c992f9c88b1137763e8e1.
-This reverts commit 5edd19af18a36a4e22c570b1b969179e0ca1fe4c.
-
-Cc:  Cliff Wickman <cpw@sgi.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/include/asm/kdebug.h      |    6 ------
- arch/x86/kernel/apic/x2apic_uv_x.c |    4 ----
- arch/x86/kernel/crash.c            |    3 ---
- 3 files changed, 0 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index fe2cc6e..575f85b 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -31,11 +31,5 @@ extern void __show_regs(struct pt_regs *regs, int all);
- extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
- extern void oops_end(unsigned long, struct pt_regs *, int signr);
--#ifdef CONFIG_KEXEC
--extern int in_crash_kexec;
--#else
--/* no crash dump is ever in progress if no crash kernel can be kexec'd */
--#define in_crash_kexec 0
--#endif
- 
- #endif /* _ASM_X86_KDEBUG_H */
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 33b10a0..d026c99 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -644,10 +644,6 @@ int uv_handle_nmi(struct notifier_block *self, unsigned long reason, void *data)
- {
- 	if (reason != DIE_NMIUNKNOWN)
- 		return NOTIFY_OK;
--
--	if (in_crash_kexec)
--		/* do nothing if entering the crash kernel */
--		return NOTIFY_OK;
- 	/*
- 	 * Use a lock so only one cpu prints at a time
- 	 * to prevent intermixed output.
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 764c7c2..ebd4c51 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -28,8 +28,6 @@
- #include <asm/reboot.h>
- #include <asm/virtext.h>
- 
--int in_crash_kexec;
--
- #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
- 
- static void kdump_nmi_callback(int cpu, struct die_args *args)
-@@ -63,7 +61,6 @@ static void kdump_nmi_callback(int cpu, struct die_args *args)
- 
- static void kdump_nmi_shootdown_cpus(void)
- {
--	in_crash_kexec = 1;
- 	nmi_shootdown_cpus(kdump_nmi_callback);
- 
- 	disable_local_APIC();
+Thanks,
 -- 
-1.7.4.4
-
+Jesse Barnes, Intel Open Source Technology Center
