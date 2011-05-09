@@ -1,176 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab1EIUcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:32:54 -0400
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:64366 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751417Ab1EIUcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:32:53 -0400
-X-Greylist: delayed 871 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 May 2011 16:32:53 EDT
-Message-ID: <4DC84C0A.2070503@blueyonder.co.uk>
-Date: Mon, 09 May 2011 21:18:18 +0100
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8 ThunderBrowse/3.3.5
-MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
-References: <4DB17A3B.3060609@blueyonder.co.uk> <20110509183138.GB4964@ericsson.com>
-In-Reply-To: <20110509183138.GB4964@ericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=RQ36K_f0x-kA:10 a=jP4ZM9dVWk4A:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=z323o3TU7AUPA-8HYK4A:9 a=QW5G9V1pVz6IuJCjjeMA:7 a=wPNLvfGTeEIA:10 a=O--OGzHkBvRHjPyo:21 a=9HG78xlikQ0nwlnu:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1754615Ab1EIUSF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:18:05 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:37737 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754372Ab1EIUSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 16:18:04 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: UV BAU fix for non-consecutive nasids
+Cc: mingo@elte.hu
+Message-Id: <E1QJWvo-0006ug-Fd@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Mon, 09 May 2011 15:19:52 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/11 19:31, Guenter Roeck wrote:
-> Hi Sid,
->
-> On Fri, Apr 22, 2011 at 08:53:15AM -0400, Sid Boyce wrote:
->> Guenter Roeck wrote:
->> Depends. In our case, turns out the devices consuming the clock
->> have user mode drivers. Lots of history there, but the chip vendors
->> provide those user mode drivers, and the teams responsible for
->> integrating the drivers decided to not rewrite it to kernel mode drivers.
->> Also, for special purposes such as margining, it is necessary to control
->> the clock from userspace. So, for our use case, I need the user-visible
->> interface. I _don't_ need the kernel interface, at least not right now,
->> which is why I did not add it.
->>
->> Browsing through the web, it seems the chip is somewhat popular with
->> Amateur Radio. No idea if it would ever be controlled for such a purpose
->> from Linux, but if so, it would also require a user configurable frequency.
->>
->> If there is a better place for such a driver than misc, please let me know.
->>
->> Thanks,
->> Guenter
->> =============================================================================
->> Support for these devices included in several Amateur radio programs
->> tend to differ greatly which means reinventing the wheel in most of them.
->> Programs like Linrad, sdr-shell, quisk, lysdr, ghpsdr3, etc.
->> It's a small addition to the kernel that would significantly help in the
->> development of software for the myriad of SDR (Software Defined Radio)
->> designs based on this chip family.
->> I have 5 Amateur Radio transceivers using this chip and 2 more soon to
->> be added.
->> They are all open hardware heavily reliant on Linux.
->> The addition of UAC2 (USB Audio Class 2) kernel support has helped our
->> SDR hardware design efforts significantly.
->> I and the rest of the Linux SDR community would be happy to see it included.
->> Regards
->> Sid.
->
-> Thanks for the feedback. Somehow I missed your reply at the time.
->
-> As you probably have noticed from the discussion, I seems to be unlikely that
-> the driver will be accepted into the kernel, at least not unless there is
-> significant demand for it from others.
->
-> It may help if you can provide a list of requirements from your side (do you need
-> a kernel API ? Do you need an ABI to set the frequency from applications ?).
->
-> I would be happy to provide and maintain the driver as separate patch until it
-> is accepted (if that ever happens), and work with application maintainers to
-> integrate it. Let me know if there is interest, and feel free to forward this
-> e-mail to interested parties.
->
-> Thanks,
-> Guenter
->
 
-Thanks Guenter,
-I discussed the driver with other members of the SDR groups who have 
-also looked at your posting.
 
-One seeing your driver I thought it might offer a way of offloading 
-si570 communication to the driver but there are other functions that are 
-needed by other OS's and they are all part of the outboard 
-microprocessor based firmware.
+From: Cliff Wickman <cpw@sgi.com>
 
-At present there are user programs that are used to control the si570 
-through an attached USB device that is coded with a command set specific 
-to the SDR hardware and not only to the si570.
+This is a fix for the SGI Altix-UV Broadcast Assist Unit code, which is
+used for TLB flushing.
 
-Currently the PC drives a ATTiny85 or ATmega via the USB and it's the 
-microprocessor that is flashed with firmware that controls the si570 
-with i2c commands and the rest of the SDR communication.
-Software program <-->  USB <--> ATmel chip <--> SDR hardware via the i2C 
-bus.
+This patch allows nasids (numa address space id's) to be non-consecutive, as is
+the case when using nasid striding or in some certain hardware configurations.
+It also provides a table in local memory for each cpu to translate target cpu
+number to target pnode and nasid.
 
-It's felt that your driver would be suited to an embedded platform that 
-includes the si570, but not for current PC based hardware.
+Diffed against 2.6.39-rc6
 
-The current linux program used is "usbsoftrock" and the list of commands 
-below shows it's to control other non-si570 functions such as switching 
-Band Pass and Low Pass filters, transmit with a PTT signal, providing CW 
-tones and reading the state of the morse key for transmitting morse 
-code, but as you can see interacting with the si570 is a major part of 
-it's job.
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
+ arch/x86/include/asm/uv/uv_bau.h |   17 +++++--
+ arch/x86/platform/uv/tlb_uv.c    |   93 ++++++++++++++++++++++++++-------------
+ 2 files changed, 77 insertions(+), 33 deletions(-)
 
-Other programs have used the usbsoftrock ideas to communicate with SDR 
-receiver and transceiver hardware, these include hamlib Linrad and 
-sdr-shell being the major ones.
-
-# usbsoftrock
-usbsoftrock 1.0.2
-usage: usbsoftrock [OPTION] COMMAND
-
-OPTION is one or more of
-   -a                             Advanced firmware present
-                                  i.e. let the firmware calculate registers
-   -d                             Enter a mode that listens for commands 
-via UDP.
-   -h                             PTT status by reading hardware port
-                                  Mobo only.
-   -i <address>                   I2C address in DECIMAL (DEFAULT = 85 
-(0x55))
-   -m <multiplier>                Multiplication factor for frequency 
-(DEFAULT = 4)
-   -p <port num>                  Port to listen for UDP datagrams 
-(DEFAULT = 19004)
-   -s <startup frequency MHz>     Factory programmed startup frequency 
-(DEFAULT = 56.32)
-   -u <serial number>             Serial Number of Device
-   -v                             Verbose output (fairly useful)
-   -vv                            Even more verbose output (debugging)
-   -x <calibrated xtall freq MHz> Corrected XTALL frequency of Si570 
-device calculated
-                                  through the use of the calibrate 
-command immediately
-                                  after startup.
-COMMAND is one of
-   calibrate (may require -s option)
-   getfreq
-   getregisters
-   interactive
-   getptt                                 (-h option for Mobo only)
-   getkeys                                (PE0FKO+TF3LJ+Mobo)
-   gettone
-   ptt {on|off}
-   set bpf {on|off}                       (PE0FKO+TF3LJ+Mobo)
-   set bpf_addr <band> <filter>           (PE0FKO >= 15.12+Mobo)
-   set bpf_point <crossover> <f in MHz>   (PE0FKO+TF3LJ+Mobo)
-   set lpf {on|off}                       (TF3LJ+Mobo only)
-   set lpf_addr <band> <filter>                   "
-   set lpf_point <crossover> <f in MHz>           "
-   set freq <frequency in MHz>
-   set si570_addr <i2c address in decimal>
-   set si570_multiplier [band] <decimal factor>  (PE0FKO>=15.12+Mobo)
-   set startup <frequency in MHz>         (PE0FKO+TF3LJ+Mobo)
-   set xtall <frequency in MHz>           (PE0FKO+TF3LJ+Mobo)
-   status
-
-   where TF3LJ = Lofturs AtMega168 derivative
-         Mobo  = Mobo 4.3 Project AT90USB162 Firmware
-Regards
-Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linux/arch/x86/include/asm/uv/uv_bau.h
+@@ -94,6 +94,8 @@
+ /* after this # consecutive successes, bump up the throttle if it was lowered */
+ #define COMPLETE_THRESHOLD 5
+ 
++#define UV_LB_SUBNODEID 0x10
++
+ /*
+  * number of entries in the destination side payload queue
+  */
+@@ -124,7 +126,7 @@
+  * The distribution specification (32 bytes) is interpreted as a 256-bit
+  * distribution vector. Adjacent bits correspond to consecutive even numbered
+  * nodeIDs. The result of adding the index of a given bit to the 15-bit
+- * 'base_dest_nodeid' field of the header corresponds to the
++ * 'base_dest_nasid' field of the header corresponds to the
+  * destination nodeID associated with that specified bit.
+  */
+ struct bau_target_uvhubmask {
+@@ -176,7 +178,7 @@ struct bau_msg_payload {
+ struct bau_msg_header {
+ 	unsigned int dest_subnodeid:6;	/* must be 0x10, for the LB */
+ 	/* bits 5:0 */
+-	unsigned int base_dest_nodeid:15; /* nasid of the */
++	unsigned int base_dest_nasid:15; /* nasid of the */
+ 	/* bits 20:6 */			  /* first bit in uvhub map */
+ 	unsigned int command:8;	/* message type */
+ 	/* bits 28:21 */
+@@ -378,6 +380,10 @@ struct ptc_stats {
+ 	unsigned long d_rcanceled; /* number of messages canceled by resets */
+ };
+ 
++struct hub_and_pnode {
++	short uvhub;
++	short pnode;
++};
+ /*
+  * one per-cpu; to locate the software tables
+  */
+@@ -399,10 +405,12 @@ struct bau_control {
+ 	int baudisabled;
+ 	int set_bau_off;
+ 	short cpu;
++	short osnode;
+ 	short uvhub_cpu;
+ 	short uvhub;
+ 	short cpus_in_socket;
+ 	short cpus_in_uvhub;
++	short partition_base_pnode;
+ 	unsigned short message_number;
+ 	unsigned short uvhub_quiesce;
+ 	short socket_acknowledge_count[DEST_Q_SIZE];
+@@ -422,15 +430,16 @@ struct bau_control {
+ 	int congested_period;
+ 	cycles_t period_time;
+ 	long period_requests;
++	struct hub_and_pnode *target_hub_and_pnode;
+ };
+ 
+ static inline int bau_uvhub_isset(int uvhub, struct bau_target_uvhubmask *dstp)
+ {
+ 	return constant_test_bit(uvhub, &dstp->bits[0]);
+ }
+-static inline void bau_uvhub_set(int uvhub, struct bau_target_uvhubmask *dstp)
++static inline void bau_uvhub_set(int pnode, struct bau_target_uvhubmask *dstp)
+ {
+-	__set_bit(uvhub, &dstp->bits[0]);
++	__set_bit(pnode, &dstp->bits[0]);
+ }
+ static inline void bau_uvhubs_clear(struct bau_target_uvhubmask *dstp,
+ 				    int nbits)
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -699,16 +699,17 @@ const struct cpumask *uv_flush_tlb_other
+ 					  struct mm_struct *mm,
+ 					  unsigned long va, unsigned int cpu)
+ {
+-	int tcpu;
+-	int uvhub;
+ 	int locals = 0;
+ 	int remotes = 0;
+ 	int hubs = 0;
++	int tcpu;
++	int tpnode;
+ 	struct bau_desc *bau_desc;
+ 	struct cpumask *flush_mask;
+ 	struct ptc_stats *stat;
+ 	struct bau_control *bcp;
+ 	struct bau_control *tbcp;
++	struct hub_and_pnode *hpp;
+ 
+ 	/* kernel was booted 'nobau' */
+ 	if (nobau)
+@@ -750,11 +751,18 @@ const struct cpumask *uv_flush_tlb_other
+ 	bau_desc += UV_ITEMS_PER_DESCRIPTOR * bcp->uvhub_cpu;
+ 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
+ 
+-	/* cpu statistics */
+ 	for_each_cpu(tcpu, flush_mask) {
+-		uvhub = uv_cpu_to_blade_id(tcpu);
+-		bau_uvhub_set(uvhub, &bau_desc->distribution);
+-		if (uvhub == bcp->uvhub)
++		/*
++		 * The distribution vector is a bit map of pnodes, relative
++		 * to the partition base pnode (and the partition base nasid
++		 * in the header).
++		 * Translate cpu to pnode and hub using an array stored
++		 * in local memory.
++		 */
++		hpp = &bcp->socket_master->target_hub_and_pnode[tcpu];
++		tpnode = hpp->pnode - bcp->partition_base_pnode;
++		bau_uvhub_set(tpnode, &bau_desc->distribution);
++		if (hpp->uvhub == bcp->uvhub)
+ 			locals++;
+ 		else
+ 			remotes++;
+@@ -855,7 +863,7 @@ void uv_bau_message_interrupt(struct pt_
+  * an interrupt, but causes an error message to be returned to
+  * the sender.
+  */
+-static void uv_enable_timeouts(void)
++static void __init uv_enable_timeouts(void)
+ {
+ 	int uvhub;
+ 	int nuvhubs;
+@@ -1326,10 +1334,10 @@ static int __init uv_ptc_init(void)
+ }
+ 
+ /*
+- * initialize the sending side's sending buffers
++ * Initialize the sending side's sending buffers.
+  */
+ static void
+-uv_activation_descriptor_init(int node, int pnode)
++uv_activation_descriptor_init(int node, int pnode, int part_base_pnode)
+ {
+ 	int i;
+ 	int cpu;
+@@ -1352,11 +1360,11 @@ uv_activation_descriptor_init(int node,
+ 	n = pa >> uv_nshift;
+ 	m = pa & uv_mmask;
+ 
++	/* the 14-bit pnode */
+ 	uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE,
+ 			      (n << UV_DESC_BASE_PNODE_SHIFT | m));
+-
+ 	/*
+-	 * initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
++	 * Initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
+ 	 * cpu even though we only use the first one; one descriptor can
+ 	 * describe a broadcast to 256 uv hubs.
+ 	 */
+@@ -1365,12 +1373,14 @@ uv_activation_descriptor_init(int node,
+ 		memset(bd2, 0, sizeof(struct bau_desc));
+ 		bd2->header.sw_ack_flag = 1;
+ 		/*
+-		 * base_dest_nodeid is the nasid of the first uvhub
+-		 * in the partition. The bit map will indicate uvhub numbers,
+-		 * which are 0-N in a partition. Pnodes are unique system-wide.
++		 * The base_dest_nasid set in the message header is the nasid
++		 * of the first uvhub in the partition. The bit map will
++		 * indicate destination pnode numbers relative to that base.
++		 * They may not be consecutive if nasid striding is being used.
+ 		 */
+-		bd2->header.base_dest_nodeid = UV_PNODE_TO_NASID(uv_partition_base_pnode);
+-		bd2->header.dest_subnodeid = 0x10; /* the LB */
++		bd2->header.base_dest_nasid =
++					UV_PNODE_TO_NASID(part_base_pnode);
++		bd2->header.dest_subnodeid = UV_LB_SUBNODEID;
+ 		bd2->header.command = UV_NET_ENDPOINT_INTD;
+ 		bd2->header.int_both = 1;
+ 		/*
+@@ -1442,7 +1452,7 @@ uv_payload_queue_init(int node, int pnod
+ /*
+  * Initialization of each UV hub's structures
+  */
+-static void __init uv_init_uvhub(int uvhub, int vector)
++static void __init uv_init_uvhub(int uvhub, int vector, int part_base_pnode)
+ {
+ 	int node;
+ 	int pnode;
+@@ -1450,11 +1460,11 @@ static void __init uv_init_uvhub(int uvh
+ 
+ 	node = uvhub_to_first_node(uvhub);
+ 	pnode = uv_blade_to_pnode(uvhub);
+-	uv_activation_descriptor_init(node, pnode);
++	uv_activation_descriptor_init(node, pnode, part_base_pnode);
+ 	uv_payload_queue_init(node, pnode);
+ 	/*
+-	 * the below initialization can't be in firmware because the
+-	 * messaging IRQ will be determined by the OS
++	 * The below initialization can't be in firmware because the
++	 * messaging IRQ will be determined by the OS.
+ 	 */
+ 	apicid = uvhub_to_first_apicid(uvhub) | uv_apicid_hibits;
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG,
+@@ -1491,10 +1501,11 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static int __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs, int base_part_pnode)
+ {
+ 	int i;
+ 	int cpu;
++	int tcpu;
+ 	int pnode;
+ 	int uvhub;
+ 	int have_hmaster;
+@@ -1528,6 +1539,15 @@ static int __init uv_init_per_cpu(int nu
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
+ 		pnode = uv_cpu_hub_info(cpu)->pnode;
++		if ((pnode - base_part_pnode) >= UV_DISTRIBUTION_SIZE) {
++			printk(KERN_EMERG
++				"cpu %d pnode %d-%d beyond %d; BAU disabled\n",
++				cpu, pnode, base_part_pnode,
++				UV_DISTRIBUTION_SIZE);
++			return 1;
++		}
++		bcp->osnode = cpu_to_node(cpu);
++		bcp->partition_base_pnode = uv_partition_base_pnode;
+ 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
+ 		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
+ 		bdp = &uvhub_descs[uvhub];
+@@ -1536,7 +1556,7 @@ static int __init uv_init_per_cpu(int nu
+ 		bdp->pnode = pnode;
+ 		/* kludge: 'assuming' one node per socket, and assuming that
+ 		   disabling a socket just leaves a gap in node numbers */
+-		socket = (cpu_to_node(cpu) & 1);
++		socket = bcp->osnode & 1;
+ 		bdp->socket_mask |= (1 << socket);
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+@@ -1585,6 +1605,20 @@ static int __init uv_init_per_cpu(int nu
+ nextsocket:
+ 			socket++;
+ 			socket_mask = (socket_mask >> 1);
++			/* each socket gets a local array of pnodes/hubs */
++			bcp = smaster;
++			bcp->target_hub_and_pnode = kmalloc_node(
++				sizeof(struct hub_and_pnode) *
++				num_possible_cpus(), GFP_KERNEL, bcp->osnode);
++			memset(bcp->target_hub_and_pnode, 0,
++				sizeof(struct hub_and_pnode) *
++				num_possible_cpus());
++			for_each_present_cpu(tcpu) {
++				bcp->target_hub_and_pnode[tcpu].pnode =
++					uv_cpu_hub_info(tcpu)->pnode;
++				bcp->target_hub_and_pnode[tcpu].uvhub =
++					uv_cpu_hub_info(tcpu)->numa_blade_id;
++			}
+ 		}
+ 	}
+ 	kfree(uvhub_descs);
+@@ -1637,21 +1671,22 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
+ 
+-	if (uv_init_per_cpu(nuvhubs)) {
+-		nobau = 1;
+-		return 0;
+-	}
+-
+ 	uv_partition_base_pnode = 0x7fffffff;
+-	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
++	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (uv_blade_nr_possible_cpus(uvhub) &&
+ 			(uv_blade_to_pnode(uvhub) < uv_partition_base_pnode))
+ 			uv_partition_base_pnode = uv_blade_to_pnode(uvhub);
++	}
++
++	if (uv_init_per_cpu(nuvhubs, uv_partition_base_pnode)) {
++		nobau = 1;
++		return 0;
++	}
+ 
+ 	vector = UV_BAU_MESSAGE;
+ 	for_each_possible_blade(uvhub)
+ 		if (uv_blade_nr_possible_cpus(uvhub))
+-			uv_init_uvhub(uvhub, vector);
++			uv_init_uvhub(uvhub, vector, uv_partition_base_pnode);
+ 
+ 	uv_enable_timeouts();
+ 	alloc_intr_gate(vector, uv_bau_message_intr1);
