@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1EIMwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 08:52:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54403 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1EIMwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 08:52:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=auPReu9sl8cHgmigqeUuXgXnHdYcUbY4RPFJZHf7OexppWT58jor22m2t9Ky/Pkojl
-         /QyHJ+yMFkYkeDwClQu9vIgLCTG51DGbE5LdyZ1valkTGU6Ji0RilxQGAWVkgNZc9N1w
-         RvxddunOG93dNHR1QPCN+77GdXvwXl8vorIC8=
+	id S1753135Ab1EINDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:03:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856Ab1EINDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:03:44 -0400
+Date: Mon, 9 May 2011 09:03:16 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: shaohua.li@intel.com, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, jaxboe@fusionio.com, hch@infradead.org,
+        jgarzik@pobox.com, djwong@us.ibm.com, sshtylyov@mvista.com,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, ricwheeler@gmail.com
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
+ non-queueable flush drive
+Message-ID: <20110509130316.GB5975@redhat.com>
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
+ <20110505020417.817084678@sli10-conroe.sh.intel.com>
+ <20110505083853.GC30950@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimjkK-q63x5DrEj+9=pF8zbW7mJ2g@mail.gmail.com>
-References: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
-	<BANLkTimjkK-q63x5DrEj+9=pF8zbW7mJ2g@mail.gmail.com>
-Date: Mon, 9 May 2011 20:52:53 +0800
-Message-ID: <BANLkTimrHnX5BcK5Q6eJgCAzP+j7azAqow@mail.gmail.com>
-Subject: Re: [PATCH] sched: shorten setting the allowed cpu mask of task
-From: Hillf Danton <dhillf@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110505083853.GC30950@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 12:39 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Fri, May 6, 2011 at 8:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> When setting the allowed cpu mask for a given task, if the task is
->> already bound to certain cpu, after checking the validity of the new
->
-> Maybe we don't need to restrict it only on task bound to certain cpu.
->
-Hi Yong
+On Thu, May 05, 2011 at 10:38:53AM +0200, Tejun Heo wrote:
 
-The original code guards, I guess, casual change in the mask of
-allowed CPUs, if bounded,
-for tasks such as the workers of work queue. So the restriction looks necessary.
+[..]
+> Similarly, I'd like to suggest something like the following.
+> 
+> 		/*
+> 		 * Hold dispatching of regular requests if non-queueable
+> 		 * flush is in progress; otherwise, the low level driver
+> 		 * would keep dispatching IO requests just to requeue them
+> 		 * until the flush finishes, which not only adds
+> 		 * dispatching / requeueing overhead but may also
+> 		 * significantly affect throughput when multiple flushes
+> 		 * are issued back-to-back.  Please consider the following
+> 		 * scenario.
+> 		 *
+> 		 * - flush1 is dispatched with write1 in the elevator.
+> 		 *
+> 		 * - Driver dispatches write1 and requeues it.
+> 		 *
+> 		 * - flush2 is issued and appended to dispatch queue after
+> 		 *   the requeued write1.  As write1 has been requeued
+> 		 *   flush2 can't be put in front of it.
+> 		 *
+> 		 * - When flush1 finishes, the driver has to process write1
+> 		 *   before flush2 even though there's no fundamental
+> 		 *   reason flush2 can't be processed first and, when two
+> 		 *   flushes are issued back-to-back without intervening
+> 		 *   writes, the second one essentially becomes noop.
+> 		 *
+> 		 * This phenomena becomes quite visible under heavy
+> 		 * concurrent fsync workload and holding the queue while
+> 		 * flush is in progress leads to significant throughput
+> 		 * gain.
+> 		 */
 
-thanks
-          Hillf
+Tejun,
+
+I am assuming that these back-to-back flushes are independent of each
+other otherwise write request will anyway get between two flushes.
+
+If that's the case, then should we solve the problem by improving flush
+merge logic a bit better. (Say idle a bit before issuing a flush only
+if request queue is not empty).
+
+That way multiple back to back flushes can be merged without taking a hit on
+throughput and we can avoid this special casing whether driver can queue the
+flush or not.
+
+Thanks
+Vivek
