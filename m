@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab1EIIZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:25:23 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:58416 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753404Ab1EIIZU (ORCPT
+	id S1753602Ab1EIIYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:24:48 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:39845 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752127Ab1EIIYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:25:20 -0400
+	Mon, 9 May 2011 04:24:46 -0400
 From: Haojian Zhuang <hzhuang1@marvell.com>
 To: Samuel Ortiz <sameo@linux.intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>
@@ -33,14 +33,14 @@ CC: Andres Salomon <dilinger@queued.net>,
 	<u.kleine-koenig@pengutronix.de>,
         Wim Van Sebroeck <wim@iguana.be>,
         Wolfgang Grandegger <wg@grandegger.com>
-Date: Mon, 9 May 2011 01:22:00 -0700
-Subject: RE: [PATCH 01/19] mfd: Add platform data pointer back
-Thread-Topic: [PATCH 01/19] mfd: Add platform data pointer back
-Thread-Index: AcwN4KoVX86Cn5+8Qyy9wmHNHStqLAAQXU6Q
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05D178BDD3@SC-VEXCH1.marvell.com>
+Date: Mon, 9 May 2011 01:22:21 -0700
+Subject: RE: [PATCH 19/19] mfd: Remove mfd_data
+Thread-Topic: [PATCH 19/19] mfd: Remove mfd_data
+Thread-Index: AcwN4MxxOiU4f64uSeWCsU/RLYWDNQAQWF9g
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05D178BDD4@SC-VEXCH1.marvell.com>
 References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
- <1304901131-7104-2-git-send-email-sameo@linux.intel.com>
-In-Reply-To: <1304901131-7104-2-git-send-email-sameo@linux.intel.com>
+ <1304901131-7104-20-git-send-email-sameo@linux.intel.com>
+In-Reply-To: <1304901131-7104-20-git-send-email-sameo@linux.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -52,7 +52,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498PU4C023755
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498OxE6023751
 
 
 
@@ -66,11 +66,10 @@ X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498PU4C023755
 >Mark Brown; Matti Aaltonen; Matt Reimer; Miguel Aguilar; Paul Mundt;
 >Peter Ujfalusi; Philipp Zabel; Richard Purdie; Richard RÃ¶jfors; Uwe
 >Kleine-KÃ¶nig; Wim Van Sebroeck; Wolfgang Grandegger
->Subject: [PATCH 01/19] mfd: Add platform data pointer back
+>Subject: [PATCH 19/19] mfd: Remove mfd_data
 >
->Now that we have a way to pass MFD cells down to the sub drivers,
->we can gradually get rid of mfd_data by putting the platform pointer
->back in place.
+>Cell pointers are passed through device->mfd_cell and platform data
+>is passed through the MFD cell platform_data pointer.
 >
 >Cc: Andres Salomon <dilinger@queued.net>
 >Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
@@ -98,9 +97,8 @@ X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p498PU4C023755
 >Cc: Wolfgang Grandegger <wg@grandegger.com>
 >Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 >---
-> drivers/mfd/mfd-core.c   |    7 +++++++
-> include/linux/mfd/core.h |    4 ++++
-> 2 files changed, 11 insertions(+), 0 deletions(-)
+> include/linux/mfd/core.h |   21 ---------------------
+> 1 files changed, 0 insertions(+), 21 deletions(-)
 >
 Tested. It's OK.
 ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
