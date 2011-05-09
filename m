@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250Ab1EIEjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 00:39:43 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36923 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab1EIEjk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 00:39:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=O7e0Nd3fB+DZcdq48XsG7BQupCF14WZW79/3350UvmnJ77mX75uQgg0QcTUJqLwPYA
-         IxwFZZWsUWJoU9TvT2/XKhkp977U780sftOGDF8pyimrTLjW6BIZEHtIVJPPT7CdzjYA
-         4qmjgpMao1XJ/xCSmDfusJRyMd/GJveuyuqOc=
+	id S1751344Ab1EIElS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 00:41:18 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49737 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704Ab1EIElR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 00:41:17 -0400
+Date: Mon, 9 May 2011 05:40:44 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1105090538250.8999@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
-References: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
-Date: Mon, 9 May 2011 12:39:39 +0800
-Message-ID: <BANLkTimjkK-q63x5DrEj+9=pF8zbW7mJ2g@mail.gmail.com>
-Subject: Re: [PATCH] sched: shorten setting the allowed cpu mask of task
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 6, 2011 at 8:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> When setting the allowed cpu mask for a given task, if the task is
-> already bound to certain cpu, after checking the validity of the new
 
-Maybe we don't need to restrict it only on task bound to certain cpu.
+Hi Linus,
 
-> mask of allowed cpus, job is done, and no further efforts needed for
-> the valid case as well.
->
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
->
-> --- a/kernel/sched.c    2011-04-27 11:48:50.000000000 +0800
-> +++ b/kernel/sched.c    2011-05-06 20:39:58.000000000 +0800
-> @@ -5899,9 +5899,9 @@ again:
->                goto out;
->        }
->
-> -       if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
-> -                    !cpumask_equal(&p->cpus_allowed, new_mask))) {
-> -               ret = -EINVAL;
-> +       if ((p->flags & PF_THREAD_BOUND) && p != current) {
-> +               if (!cpumask_equal(&p->cpus_allowed, new_mask))
+One regression fix in the debugfs output, a couple of radeon fixes, and a 
+nouveau unload fix. I've got a dirty fix for the DMA_ERROR_CODE dependency 
+breaking drm on alpha but waiting for a bit more before you get it, its 
+just a workaround until proper fix can happen in 2.6.40 hopefully
 
-IOW, we could make '!cpumask_equal(&p->cpus_allowed, new_mask)'
-be a separated condition. And I don't see any potential problem with it.
+Dave.
 
-Thanks,
-Yong
+The following changes since commit 8aeb96f80232e9a701b5c4715504f4c9173978bd:
 
+  drm/radeon/kms: fix gart setup on fusion parts (v2) (2011-05-04 10:16:40 +1000)
 
-> +                       ret = -EINVAL;
->                goto out;
->        }
->
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
+Alex Deucher (2):
+      drm/radeon/kms: ATPX switcheroo fixes
+      drm/radeon/kms: add pci id to acer travelmate quirk for 5730
 
+Daniel Vetter (1):
+      drm: mm: fix debug output
 
--- 
-Only stand for myself
+Dave Airlie (1):
+      Merge remote branch 'nouveau/drm-nouveau-fixes' of /ssd/git/drm-nouveau-next into drm-fixes
+
+Ilija Hadzic (1):
+      drm/radeon: fix order of doing things in radeon_crtc_cursor_set
+
+Jimmy Rentz (1):
+      drm/nouveau: Fix a crash at card takedown for NV40 and older cards
+
+ drivers/gpu/drm/drm_mm.c                     |    6 ++--
+ drivers/gpu/drm/nouveau/nouveau_mem.c        |    2 -
+ drivers/gpu/drm/nouveau/nouveau_state.c      |    5 ++++
+ drivers/gpu/drm/radeon/radeon_atombios.c     |    4 +-
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |   29 ++++++++++++++++++++++++-
+ drivers/gpu/drm/radeon/radeon_cursor.c       |    6 ++--
+ include/drm/drm_mm.h                         |    2 +-
+ 7 files changed, 41 insertions(+), 13 deletions(-)
