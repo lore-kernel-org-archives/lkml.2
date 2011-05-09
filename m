@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab1EIP3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:29:46 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54027 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751272Ab1EIP3p (ORCPT
+	id S1752560Ab1EIPeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 11:34:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44166 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab1EIPeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:29:45 -0400
-X-Sasl-enc: hVO4Q3Y2ou4PRuqdj6kYDWe/3JdNkdLC7X+JDqF1buUw 1304954983
-Date: Mon, 9 May 2011 12:29:41 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: ibm-acpi-devel@lists.sourceforge.net, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
-Message-ID: <20110509152941.GD13275@khazad-dum.debian.net>
-References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
- <20110509144546.GB13275@khazad-dum.debian.net>
- <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
+	Mon, 9 May 2011 11:34:36 -0400
+Date: Mon, 9 May 2011 16:34:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v5 02/19] ARM: LPAE: add ISBs around MMU enabling code
+Message-ID: <20110509153416.GC16919@n2100.arm.linux.org.uk>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com> <1304859098-10760-3-git-send-email-catalin.marinas@arm.com> <20110508214101.GO27807@n2100.arm.linux.org.uk> <1304936539.7658.31.camel@e102109-lin.cambridge.arm.com> <20110509103242.GQ27807@n2100.arm.linux.org.uk> <1304938794.7658.56.camel@e102109-lin.cambridge.arm.com> <20110509120509.GR27807@n2100.arm.linux.org.uk> <1304953316.7658.71.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1304953316.7658.71.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 May 2011, Andrew Lutomirski wrote:
-> > The SBS interface exposes more data about the battery, including
-> > per-cell-group voltage and pack microcontroller aging counters, alarms, and
-> > the "needs to get through the fuel-gaugue reset procedure" semasphore.
+On Mon, May 09, 2011 at 04:01:56PM +0100, Catalin Marinas wrote:
+> This doesn't work. From the ARM ARM (B1.3.3):
 > 
-> If I'm feeling really motivated, I'll look at that.  I'm currently
-> more interested in the charging thresholds, though, which I think is
-> independent of the choice of SBS vs ACPI to access the battery state.
-> (From a quick glance at the SBS spec, you can inhibit charging
-> entirely but you can't ask for thresholds.  I assume that the EC takes
-> care of that.  If I'm wrong, please tell me, but SMAPI seems like a
-> fine way to access the thresholds.)
+>         The execution state bits are the IT[7:0], J, E, and T bits. In
+>         exception modes you can read or write these bits in the current
+>         SPSR.
+>         In the CPSR, unless the processor is in Debug state:
+>         • The execution state bits, other than the E bit, are RAZ when
+>         read by an MRS instruction.
+> 
+> So reading the CPSR doesn't copy the T and E bits. Of course, we could
+> set them explicitly but I find the ISB much simpler (and in practice we
+> only need it for ARMv7 onwards but adding the ARMv6 in case we have a
+> kernel compiled for both).
 
-Yeah, SMAPI is the safest way to deal with all this.  It is an interface
-layer that Lenovo is not fond of breaking (or touches very rarely.  Amounts
-to the same in the end).
+Err.  If that's correct then the Linux kernel is totally broken, and
+that's an incompatible change to the behaviour of the MRS and MSR
+instructions which has gone unnoticed.
 
-SBS does not take care of thresholds, indeed.  The EC does (and I know how
-to program the threshold in a few models, if you do want to test it in your
-X220, I can send you the information.  It is safe to test if you use it
-together with SMAPI to cross-check).
+We use "MRS reg, cpsr" for saving the IRQ state in SVC mode and
+"MSR cpsr, reg" to restore the interrupt state.  If the T bit gets
+reset by that, then Thumb kernels can never work.
 
-The SBS ACPI interface would be useful to provide a single driver that can
-replace the ACPI battery one to deliver full functionality in one place.
+What you've just said tells me that our implementation of:
+- arch_local_irq_save()
+- arch_local_save_flags()
+- arch_local_irq_restore()
+won't work because we can't read or write the I and F bits using
+MSR/MRS, even in SVC mode.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+What is the replacement method for doing this?
+
+If there isn't a replacement method...
