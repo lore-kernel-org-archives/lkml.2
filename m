@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754Ab1EICtB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 22:49:01 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33521 "EHLO smtps.tip.net.au"
+	id S1755805Ab1EIDEo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 23:04:44 -0400
+Received: from kroah.org ([198.145.64.141]:40061 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab1EICs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 22:48:58 -0400
-Date: Mon, 9 May 2011 12:41:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: linux-next: manual merge of the slab tree with Linus' tree
-Message-Id: <20110509124158.1c099f24.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751565Ab1EIDEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 23:04:36 -0400
+Date: Sun, 8 May 2011 20:04:52 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: various vmbus review comments
+Message-ID: <20110509030452.GA17182@kroah.com>
+References: <20110503204641.GA11132@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481E9404@TK5EX14MBXC128.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481E9404@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, May 09, 2011 at 01:46:56AM +0000, KY Srinivasan wrote:
+> > 	- the instances of hv_driver structures need to be static and
+> > 	  not programatically defined, like all other USB and PCI
+> > 	  drivers are handled.
+> 
+> Done. You had expressed some concern that this would expose some issue
+> with the core vmbus driver (which is what I want to concentrate on this 
+> go around). I have done this for both the block driver and the mouse driver
+> and I am pretty sure I can do the same with the network driver. I have not 
+> currently done this for the network driver, since the number of patches I have 
+> to submit is already very large.
 
-Today's linux-next merge of the slab tree got a conflict in mm/slub.c
-between commit 30106b8ce2cc ("slub: Fix the lockless code on 32-bit
-platforms with no 64-bit cmpxchg") from Linus' tree and commit
-1759415e630e ("slub: Remove CONFIG_CMPXCHG_LOCAL ifdeffery") from the
-slab tree.
+Ok, but it shouldn't be a major change to the code, right?
 
-Just context changes (maybe).  I fixed it up (see below) and can carry
-the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> > 	- module reference counting.  Are you sure you got it all right
+> > 	  for the individual modules that attach to the bus?  I don't
+> > 	  see any reference counting happening, is that correct?
+> 
+> I have already exchanged an email with you on this. To summarize, it
+> does not look like there is a problem
+> 
+> > 	- fix the sparse warnings.
+> Mostly done; most of the errors are in the base kernel coming out of
+> the macro page_to_pfn()
+> 
+> > 	- fix the use of volatile in the ring buffer code.  It should
+> > 	  not be needed and if you are relying on it, then the code is
+> > 	  wrong.
+> 
+> You are right; all accesses were already serialized with a spin lock and the 
+> Volatile attribute was unnecessary.
+> 
+> > 	- fix the namespace on the ringbuffer code to show that it
+> > 	  really is only for the hyperv bus code internally.
+> 
+> Done.
+> 
+> > 
+> > That should be enough for at least one more set of patches for you all
+> > to work on :)
+> 
+> Greg,
+> 
+> I have had so much fun cleaning up these drivers that I lost track of the patch count.
+> I have addressed all the issues you have raised in addition to some other cleanup
+> that I was doing since about a week. As I look at the patch-set, I have little over 
+> 200 patches. If it is ok with you, I would like to send them as a single set. Let me know 
+> what you prefer. I need to circulate these patches internally before I can send them out. 
+> I should be able to send these out early next week.
 
-diff --cc mm/slub.c
-index 9d2e5e4,461199f..0000000
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@@ -1927,9 -1918,8 +1918,8 @@@ redo
-  		object = __slab_alloc(s, gfpflags, node, addr, c);
-  
-  	else {
-- #ifdef CONFIG_CMPXCHG_LOCAL
-  		/*
- -		 * The cmpxchg will only match if there was no additonal
- +		 * The cmpxchg will only match if there was no additional
-  		 * operation and if we are on the right processor.
-  		 *
-  		 * The cmpxchg does the following atomically (without lock semantics!)
-@@@ -2144,8 -2103,7 +2103,7 @@@ redo
-  	if (likely(page == c->page && c->node != NUMA_NO_NODE)) {
-  		set_freepointer(s, object, c->freelist);
-  
-- #ifdef CONFIG_CMPXCHG_LOCAL
- -		if (unlikely(!this_cpu_cmpxchg_double(
- +		if (unlikely(!irqsafe_cpu_cmpxchg_double(
-  				s->cpu_slab->freelist, s->cpu_slab->tid,
-  				c->freelist, tid,
-  				object, next_tid(tid)))) {
+A single set is fine, if that's what you want to do, I can handle that
+amount as long as they all build all along the way and don't break
+anything.
+
+thanks,
+
+greg k-h
