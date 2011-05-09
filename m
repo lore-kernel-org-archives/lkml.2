@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197Ab1EIV7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:59:33 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54222
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S932205Ab1EIV7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:59:34 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47516
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754947Ab1EIVos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754944Ab1EIVos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 May 2011 17:44:48 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 064/206] Staging: hv: Get rid of the indirection in invoking storvsc_do_io()
-Date: Mon,  9 May 2011 14:55:46 -0700
-Message-Id: <1304978288-22999-64-git-send-email-kys@microsoft.com>
+Subject: [PATCH 065/206] Staging: hv: Get rid of the code initializing the dispatch table
+Date: Mon,  9 May 2011 14:55:47 -0700
+Message-Id: <1304978288-22999-65-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -25,40 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The subject line says it all.
+Now that we have eliminated the indirection, we can get rid of 
+the code to initialize the dispatch table.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 599b5d2..6300b79 100644
+index 6300b79..caa1f36 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -596,8 +596,6 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 	struct hv_host_device *host_dev =
- 		(struct hv_host_device *)scmnd->device->host->hostdata;
- 	struct hv_device *dev = host_dev->dev;
--	struct storvsc_driver *storvsc_drv_obj =
--		drv_to_stordrv(dev->device.driver);
- 	struct hv_storvsc_request *request;
- 	struct storvsc_cmd_request *cmd_request;
- 	unsigned int request_size = 0;
-@@ -717,8 +715,8 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+@@ -107,11 +107,6 @@ static int storvsc_initialize(struct hv_driver *driver)
+ 		    stor_driver->max_outstanding_req_per_channel,
+ 		    STORVSC_MAX_IO_REQUESTS);
  
- retry_request:
- 	/* Invokes the vsc to start an IO */
--	ret = storvsc_drv_obj->on_io_request(dev,
--					   &cmd_request->request);
-+	ret = storvsc_do_io(dev, &cmd_request->request);
-+
- 	if (ret == -1) {
- 		/* no more space */
+-	/* Setup the dispatch table */
+-	stor_driver->base.dev_add	= storvsc_dev_add;
+-	stor_driver->base.dev_rm	= storvsc_dev_remove;
+-
+-	stor_driver->on_io_request	= storvsc_do_io;
  
+ 	return 0;
+ }
 -- 
 1.7.4.1
 
