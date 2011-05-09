@@ -1,142 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1EIPTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:19:48 -0400
-Received: from mail.pre-sense.de ([213.238.39.107]:58521 "EHLO
-	mail.pre-sense.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab1EIPTr (ORCPT
+	id S1751881Ab1EIPN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 11:13:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63448 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab1EIPN4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:19:47 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 May 2011 11:19:47 EDT
-Message-ID: <4DC804A0.4090404@pre-sense.de>
-Date: Mon, 09 May 2011 17:13:36 +0200
-From: Timo Warns <warns@pre-sense.de>
-Organization: PRESENSE Technologies GmbH
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Mon, 9 May 2011 11:13:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KoDTg60jow8Ox8NmIhb9ezXZdhgzjftpKIk6Rx2hqfl68LhvDUHj1wHLbtWcyOuAro
+         CONALzGNFMtqe6daGR8O9yDFwxgo15u6EU1NTOJuWi1zEAnPMCwF9E7KLLZ2xxgL0cMQ
+         rKjEt/8qC2Eb0sv8rU8ICH13OCLxer5tIDK2M=
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>, Richard Russon <rich@flatcap.org>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk,
-        Harvey Harrison <harvey.harrison@gmail.com>, Greg KH <gregkh@suse.de>
-Subject: Re: [Stable-review] [patch 35/38] fs/partitions/ldm.c: fix oops caused
- by corrupted partition table
-References: <20110506001210.724927797@clark.kroah.org> <1304735051.3203.87.camel@localhost>
-In-Reply-To: <1304735051.3203.87.camel@localhost>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------060007000202020003050207"
+In-Reply-To: <4DC802C0.9040302@gmail.com>
+References: <4DC7F4AB.90607@gmail.com>
+	<Pine.LNX.4.64.1105091631400.15483@pc-004.diku.dk>
+	<4DC802C0.9040302@gmail.com>
+Date: Mon, 9 May 2011 18:13:55 +0300
+Message-ID: <BANLkTimOfmS=tKMY7Z_vRcCWEO6drgwegQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/mmc/card/block.c: fix potential null dereference 'idata'
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vladimir Motyka <vladimir.motyka@gmail.com>
+Cc: Julia Lawall <julia@diku.dk>, cjb@laptop.org,
+        kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060007000202020003050207
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-Am 07.05.2011 04:24, schrieb Ben Hutchings:
-> On Thu, 2011-05-05 at 17:11 -0700, Greg KH wrote:
->> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
+On Mon, May 9, 2011 at 6:05 PM, Vladimir Motyka
+<vladimir.motyka@gmail.com> wrote:
+> On 05/09/2011 04:32 PM, Julia Lawall wrote:
+>> On Mon, 9 May 2011, Vladimir Motyka wrote:
 >>
->> ------------------
+>>> When allocation of idata fails there was a null dereferece.
 >>
->> From: Timo Warns <Warns@pre-sense.de>
+>> Why not have a different label for the two cases?  That would make the
+>> code easier to statically analyze, and perhaps be more understandable as
+>> well.
 >>
->> commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
->> [...]
-> 
-> I don't think this actually fixes the vulnerability, and I don't think
-> this code works at all.
+>> julia
+>>
+> I think You are right. So it could be better like this?
 >
-> [...]
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 3dec493..a03cdc6 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -237,7 +237,7 @@ static struct mmc_blk_ioc_data
+> *mmc_blk_ioctl_copy_from_user(
+>        idata = kzalloc(sizeof(*idata), GFP_KERNEL);
+>        if (!idata) {
+>                err = -ENOMEM;
+> -               goto copy_err;
+> +               goto alloc_err;
+>        }
 >
->> +	if (rec >= num) {
->> +		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
->> +		return false;
->> +	}
-> 
-> This is fine for the first fragment we find, when we allocate memory
-> based on 'num'.  However, when we add another fragment, we need to
-> compare with f->num.  So there still seems to be the possibility of a
-> buffer overflow.
+>        if (copy_from_user(&idata->ic, user, sizeof(idata->ic))) {
+> @@ -266,9 +266,9 @@ static struct mmc_blk_ioc_data
+> *mmc_blk_ioctl_copy_from_user(
+>        return idata;
+>
+>  copy_err:
+> -       if(idata)
+> -               kfree(idata->buf);
+> +       kfree(idata->buf);
+Make it one patch not series.
 
-Yes, I agree. I have missed this one. Please consider the attached patch.
-
->> [...]
->>  	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
+>        kfree(idata);
+> +alloc_err:
+>        return ERR_PTR(err);
+>  }
+>
+> Or it could return right after allocation fails so there needn't be
+> goto. It is simplier, but maybe worse looking and to read. What is your
+> opinion?
+>
+> Vladimir Motyka
+>
 >>
->>  	return true;
-> 
-> The offset used for the destination means that the first VBLK_SIZE_HEAD
-> bytes of f->data are never initialised!
-> 
-> I suspect (without any knowledge of LDM) that the intent was to use the
-> header from the first fragment and drop it from the subsequent
-> fragments, like this:
-> 
-> 	if (rec == 0)
-> 		memcpy(f->data, data, VBLK_SIZE_HEAD);
-> 	data += VBLK_SIZE_HEAD;
-> 	size -= VBLK_SIZE_HEAD;
-> 	memcpy(f->data + VBLK_SIZE_HEAD + rec * size, data, size);
+>>> Signed-off-by: Vladimir Motyka <vladimir.motyka@gmail.com>
+>>>
+>>> ---
+>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>>> index 407836d..3dec493 100644
+>>> --- a/drivers/mmc/card/block.c
+>>> +++ b/drivers/mmc/card/block.c
+>>> @@ -266,10 +266,10 @@ static struct mmc_blk_ioc_data
+>>> *mmc_blk_ioctl_copy_from_user(
+>>>      return idata;
+>>>
+>>>  copy_err:
+>>> -    kfree(idata->buf);
+>>> +    if(idata)
+>>> +            kfree(idata->buf);
+>>>      kfree(idata);
+>>>      return ERR_PTR(err);
+>>> -
+>>>  }
+>>>
+>>>  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-The patch that I provided preserves the original behaviour. Hence, I
-would like to pass this issue to Richard. Richard, could you comment on
-this?
 
-Cheers, Timo
 
---------------060007000202020003050207
-Content-Type: text/x-patch;
- name="patch.diff"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
- filename="patch.diff"
-
---- linux-2.6.38.5-b/fs/partitions/ldm.c	2011-05-02 18:30:53.000000000 +0=
-200
-+++ linux-2.6.38.5-a/fs/partitions/ldm.c	2011-05-09 17:09:07.000000000 +0=
-200
-@@ -1299,6 +1299,11 @@
-=20
- 	BUG_ON (!data || !frags);
-=20
-+	if (size < 2 * VBLK_SIZE_HEAD) {
-+		ldm_error("Value of size is to small.");
-+		return false;
-+	}
-+=09
- 	group =3D get_unaligned_be32(data + 0x08);
- 	rec   =3D get_unaligned_be16(data + 0x0C);
- 	num   =3D get_unaligned_be16(data + 0x0E);
-@@ -1326,6 +1331,12 @@
-=20
- 	list_add_tail (&f->list, frags);
- found:
-+	if (rec >=3D f->num) {
-+		ldm_error ("REC value (%d) exceeds NUM value (%d)", rec, f->num);
-+		f->map &=3D 0x7F;			/* Mark the group as broken */
-+		return false;
-+	}
-+
- 	if (f->map & (1 << rec)) {
- 		ldm_error ("Duplicate VBLK, part %d.", rec);
- 		f->map &=3D 0x7F;			/* Mark the group as broken */
-@@ -1334,10 +1345,9 @@
-=20
- 	f->map |=3D (1 << rec);
-=20
--	if (num > 0) {
--		data +=3D VBLK_SIZE_HEAD;
--		size -=3D VBLK_SIZE_HEAD;
--	}
-+	data +=3D VBLK_SIZE_HEAD;
-+	size -=3D VBLK_SIZE_HEAD;
-+
- 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
-=20
- 	return true;
-
---------------060007000202020003050207--
+-- 
+With Best Regards,
+Andy Shevchenko
