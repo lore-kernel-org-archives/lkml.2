@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab1EIXAn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 19:00:43 -0400
-Received: from nm20-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.115]:36118
-	"HELO nm20-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755680Ab1EIXAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 19:00:40 -0400
-X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 May 2011 19:00:39 EDT
-X-Yahoo-Newman-Id: 722236.8570.bm@omp1003.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.de;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Date:From:To:Subject:Message-ID:X-Mailer:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=OEr/FjWeASDak5iBmlsKUXgQk4BRfwRdeuZ2fYtY5jvhdjc83AyNocGzwsjZZPLluMz4SuvpEROwCp9nG77yae4sx3VzXAb+oIicfCZECnuoHbiHu2YLLKcmKJlhATu4ROzpsND7CHM5y7OywNDDbynrKOx9EjDGduS5Mlu6DB4=  ;
-X-Yahoo-SMTP: l4eGSwiswBBRzUBXz_sLX8lbHRIEWbo-
-X-YMail-OSG: vAMWxPYVM1mV8RJwrnSIvR8UOM7hLPA..3eJfLdnoR26Tx6
- RZwFkjrU4Eh7bqTD_omyNJDw8uZ5uOpb4MMHX3_fRNk9e9BgMgmoGb8YIADZ
- ReD1p94woFxH_fTUv2_JFoVxvXlOLWEZD0_sX.KCupvOCjSjX597sfofCkBL
- Yh23ClVbBDr3AtJnRZGUldmH5UkA3eAGwdfNfYaTruL4CwBHeSnzCcqAWLuS
- e7LhVpXkE_ozhoCqlPHi7N7uHT86mujuPi9aJ4yEsXr5aya_xzCfzVMBEAVY
- 2ZT34U7CZ51PSN5qOGgaj
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 10 May 2011 06:53:27 +0800
-From: "Ckxo" <schumerhms@yahoo.de>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: G9S
-Message-ID: <201105100653271407192@yahoo.de>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1755810Ab1EIWxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:53:33 -0400
+Received: from kroah.org ([198.145.64.141]:44609 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755767Ab1EIWxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 18:53:32 -0400
+Date: Mon, 9 May 2011 15:53:28 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 077/206] Staging: hv: Get rid of call to cleanup()
+Message-ID: <20110509225328.GA2832@kroah.com>
+References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
+ <1304978288-22999-1-git-send-email-kys@microsoft.com>
+ <1304978288-22999-77-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304978288-22999-77-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p49N0ptg027816
 
-83409180007460581448sohu.com834091800074605814485
-¿Í»§£ºÄúºÃ£ºT
-8±¾¹«Ë¾ÓëºÏ×÷¹«Ë¾Òò½øÏî½Ï¶àµÈÔ­Òò£¬³¤ÆÚÎªÄúÌá¹©£º
-   ´ú-¿ª-Õæ-·¢-Æ± £¨ÒµÎñ£©J
-  °üÀ¨£ºÆÕÍ¨ÔöÖµË°¡¢¹úË°¡¢µØË°·¢/Æ±¡¢¹ã¸æ¡¢×ÉÑ¯¡¢»áÒé¡¢½¨Öş¹¤³Ì¡¢ÉÌÆ·
-ÏúÊÛ¡¢×¡ËŞ¡¢¹úÄÚÔËÊä£¬¹ú¼Ê»õÔË¡¢×âÁŞ¡¢º£¹Ø½É¿îÊéµÈ·¢/Æ±¡£
-    oÒÔÉÏ·¢/Æ±¾ù¿ÉÉÏÍø²éÑ¯»òµ½µ±µØË°¾ÖÑéÖ¤£¬Ë°µã´ÓÓÅ£¬3
-»¶Ó­À´µç×ÉÑ¯¡£´òÈÅÇëÁÂ½â£¡ĞèÒªÇëÁôÓÃ!
-    ÁªÏµÈË£º(139-18631325) ³ÂÏÈÉú  ¿Í·şQQ£º(126-4017-554 ) 
+On Mon, May 09, 2011 at 02:55:59PM -0700, K. Y. Srinivasan wrote:
+> cleanup() is an empty function; get rid of it.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> ---
+>  drivers/staging/hv/netvsc_drv.c |    4 ----
 
-//msa.hinet.net83409180007460581448ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Just picking a random patch out of this series (which, I only received
+the first 132, not all 206).
+
+You need to specify a better changelog entry as you didn't say what code
+you are changing in the Subject:.
+
+How about:
+	Staging: hv: netvsc_drv: Get rid of call to cleanup()
+
+Otherwise I would think (and I did) that you got rid of a global
+function called cleanup() in all of the hv code.
+
+Care to fix the names of your patches?
+
+Note, I wouldn't recommend sending that many patches to lkml, it's not
+needed, just stick to the devel@linuxdriverproject.org list as I really
+doubt anyone else cares about this code at the moment.
+
+thanks,
+
+greg k-h
