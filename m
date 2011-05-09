@@ -1,73 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab1EIO4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:56:55 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:51487 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab1EIO4y convert rfc822-to-8bit (ORCPT
+	id S1751484Ab1EIO5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:57:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44070 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab1EIO5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:56:54 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: various vmbus review comments
-Thread-Topic: various vmbus review comments
-Thread-Index: AQHMCdM/6BBvI53KVEebJyh4jiWUR5R8ywQggACIZQCAAm/aIIAFSqsA//+P6RA=
-Date: Mon, 9 May 2011 14:56:52 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481E95C6@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <20110503204641.GA11132@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481DFCFA@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110504163228.GA19754@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481E0694@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110509143352.GB29635@infradead.org>
-In-Reply-To: <20110509143352.GB29635@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 May 2011 10:57:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VgfjdcjFqv9PpbhlW67LDRDS4hrnQz/PgLFO/vVVaCYbousZbKvnpl9cCsIDOvsivj
+         lxiuLRGxQAPXmsASPTi8QiKm/igOSWHurvzhLna68NwPJb2p1/+bxQz6XokfEErCqT3m
+         24edsCXoXQtmjrv9q4uVHEKxjp2rNoSMOaAQo=
 MIME-Version: 1.0
+In-Reply-To: <1304949119-8250-1-git-send-email-pajot.stephane@gmail.com>
+References: <1304949119-8250-1-git-send-email-pajot.stephane@gmail.com>
+Date: Mon, 9 May 2011 17:57:30 +0300
+Message-ID: <BANLkTik2=pezgunre5QC2HyADbuFP=H1zg@mail.gmail.com>
+Subject: Re: [PATCH] Staging: comedi: fix brace coding style issue in
+ jr3_pci.c This is a patch to the jr3_pci.c file that fixes up a brace warning
+ found by the checkpatch.pl tool Signed-off-by: Stephane Pajot <pajot.stephane@gmail.com>
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Stephane Pajot <pajot.stephane@gmail.com>
+Cc: gregkh@suse.de, arun.thomas@gmail.com, ruben.smits@mech.kuleuven.be,
+        abbotti@mev.co.uk, ext-andriy.shevchenko@nokia.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p49EvfFu025069
+
+On Mon, May 9, 2011 at 4:51 PM, Stephane Pajot <pajot.stephane@gmail.com> wrote:
+
+Please, split the subject and description with Signed-off-by lines.
+
+> ---
+>  drivers/staging/comedi/drivers/jr3_pci.c |   27 +++++++++------------------
+>  1 files changed, 9 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
+> index 5c6c727..d96140c 100644
+> --- a/drivers/staging/comedi/drivers/jr3_pci.c
+> +++ b/drivers/staging/comedi/drivers/jr3_pci.c
+> @@ -193,9 +193,8 @@ static void set_transforms(volatile struct jr3_channel *channel,
+>                set_s16(&channel->transforms[num].link[i].link_amount,
+>                        transf.link[i].link_amount);
+>                udelay(1);
+> -               if (transf.link[i].link_type == end_x_form) {
+> +               if (transf.link[i].link_type == end_x_form)
+>                        break;
+> -               }
+>        }
+>  }
+>
+> @@ -460,9 +459,8 @@ static int jr3_download_firmware(struct comedi_device *dev, const u8 * data,
+>                                unsigned int count, addr;
+>                                more = more
+>                                    && read_idm_word(data, size, &pos, &count);
+> -                               if (more && count == 0xffff) {
+> +                               if (more && count == 0xffff)
+>                                        break;
+> -                               }
+>                                more = more
+>                                    && read_idm_word(data, size, &pos, &addr);
+>                                printk("Loading#%d %4.4x bytes at %4.4x\n", i,
+> @@ -793,9 +791,8 @@ static int jr3_pci_attach(struct comedi_device *dev,
+>        }
+>
+>        result = alloc_private(dev, sizeof(struct jr3_pci_dev_private));
+> -       if (result < 0) {
+> +       if (result < 0)
+>                return -ENOMEM;
+> -       }
+>        card = NULL;
+>        devpriv = dev->private;
+>        init_timer(&devpriv->timer);
+> @@ -851,9 +848,8 @@ static int jr3_pci_attach(struct comedi_device *dev,
+>        }
+>
+>        result = comedi_pci_enable(card, "jr3_pci");
+> -       if (result < 0) {
+> +       if (result < 0)
+>                return -EIO;
+> -       }
+>
+>        devpriv->pci_enabled = 1;
+>        devpriv->iobase = ioremap(pci_resource_start(card, 0),
+> @@ -922,9 +918,8 @@ static int jr3_pci_attach(struct comedi_device *dev,
+>        result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+>        printk("Firmare load %d\n", result);
+>
+> -       if (result < 0) {
+> +       if (result < 0)
+>                goto out;
+> -       }
+I guess it better to leave blank line here.
+
+>  /*
+>  * TODO: use firmware to load preferred offset tables. Suggested
+>  * format:
+> @@ -973,21 +968,17 @@ static int jr3_pci_detach(struct comedi_device *dev)
+>                del_timer_sync(&devpriv->timer);
+>
+>                if (dev->subdevices) {
+> -                       for (i = 0; i < devpriv->n_channels; i++) {
+> +                       for (i = 0; i < devpriv->n_channels; i++)
+>                                kfree(dev->subdevices[i].private);
+> -                       }
+>                }
+>
+> -               if (devpriv->iobase) {
+> +               if (devpriv->iobase)
+>                        iounmap((void *)devpriv->iobase);
+> -               }
+> -               if (devpriv->pci_enabled) {
+> +               if (devpriv->pci_enabled)
+>                        comedi_pci_disable(devpriv->pci_dev);
+> -               }
+>
+> -               if (devpriv->pci_dev) {
+> +               if (devpriv->pci_dev)
+>                        pci_dev_put(devpriv->pci_dev);
+> -               }
+>        }
+>        return 0;
+>  }
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
 
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Monday, May 09, 2011 10:34 AM
-> To: KY Srinivasan
-> Cc: Greg KH; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: various vmbus review comments
-> 
-> On Fri, May 06, 2011 at 01:10:38PM +0000, KY Srinivasan wrote:
-> > I audited the block and the net drivers. As part of their exit routine,
-> > they invoke vmbus_child_driver_unregister() after properly cleaning
-> > up all the devices they are managing. Do you still see an issue with
-> > regards to module reference counting.
-> 
-> Which is not the correct thing to do as explained in my last round
-> of reviews.  Take a look at the PCI code - the functional driver only
-> does a foo_untegister_driver (which maps almost directly to
-> driver_unregister), which then causes the device core to unbind the
-> devices.  The function driver must never call device_unregister
-> directly as the device continues to exist even if no driver is bound to
-> it.
-
-I will address this. Greg had a concern about module reference counting
-and looking at the current code, it did not appear to be an issue. The
-change you are suggesting will not affect the vmbus core which is what I want
-to focus on. I will however, fix this issue in the current round of patches I will
-send out this week.
-
-Regards,
-
-K. Y
-
-
+-- 
+With Best Regards,
+Andy Shevchenko
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
