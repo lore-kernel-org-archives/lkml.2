@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab1EINMG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:12:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47407 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab1EINME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:12:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oQRctujoN+T8aypOQf+XuOnTbSKooMGB1GkhZV2vbxeFx4DM7hD6xPSvUktDHrup18
-         haqKP4XMnwMIeU/10+uMvEifZEGLpSpl0/hG8qkStfVbTc3nYUVAVab9MGtW9RbcqJpx
-         rXxwn7q0bd3L6hV16R5zM9JcYwnUdhLZeLIA8=
-Subject: Re: [PATCH 4/4] USB: TWL6025 allow different regulator name
-From: Liam Girdwood <lrg@kernel.org>
-To: balbi@ti.com
-Cc: Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com
-In-Reply-To: <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
-References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
-	 <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
-	 <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
-	 <1304867317.3246.10.camel@odin>
-	 <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
-	 <1304941430.3192.4.camel@odin>
-	 <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 May 2011 14:11:59 +0100
-Message-ID: <1304946719.3192.10.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2
+	id S1753278Ab1EINXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:23:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924Ab1EINXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:23:47 -0400
+Message-ID: <4DC7EAD7.9070606@redhat.com>
+Date: Mon, 09 May 2011 09:23:35 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org
+Subject: Re: [PATCH] fs: kill default_llseek
+References: <1304605677-1882-1-git-send-email-josef@redhat.com> <201105081623.39876.arnd@arndb.de>
+In-Reply-To: <201105081623.39876.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-09 at 15:16 +0300, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, May 09, 2011 at 12:43:49PM +0100, Liam Girdwood wrote:
-> > On Mon, 2011-05-09 at 12:03 +0300, Felipe Balbi wrote:
-> > > Hi,
-> > > 
-> > > On Sun, May 08, 2011 at 04:08:37PM +0100, Liam Girdwood wrote:
-> > > > On Wed, 2011-04-27 at 13:45 +0300, Felipe Balbi wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > On Wed, Apr 27, 2011 at 10:39:51AM +0100, Graeme Gregory wrote:
-> > > > > > The twl6025 uses a different regulator for USB than the 6030 so select
-> > > > > > the correct regulator name depending on the subclass of device.
-> > > > > > 
-> > > > > > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > > > > 
-> > > > > I don't see the point of this patch. It's just a string. Use the same
-> > > > > name and add a comment saying that on datasheet/TRM/documentation the
-> > > > > name LDO is actually referred to as LDOUSB. It's the same functionality
-> > > > > anyway.
-> > > > > 
-> > > > 
-> > > > I think for the avoidance of any doubt, it's probably best to use the
-> > > > TWL6025 string name here as it will importantly match the TWL6025 TRM
-> > > > and any schematics using the TWL6025. Getting this wrong during TWL6025
-> > > > board integration has the potential for hardware damage.
-> > > 
-> > > I would rather have something that doesn't depend on a correct string
-> > > and matches based on the device pointer instead. I agree that having the
-> > > correct string makes it easier to reference schematics/trm and the like,
-> > > but making the SW depend on the correct spelling of a simple string, is
-> > > too much for me :-(
-> > > 
-> > > Specially when getting it wrong "has the potential for hardware damage"
-> > > :-)
-> > > 
-> > 
-> > I think it's the lesser evil though, especially for device integrators.
-> > They will just match the regulator name from the schematics together
-> > with the TRM name when creating their regulator constraints and having
-> > different names here will definitely cause confusion.
-> 
-> Any chance Device Tree could be used to pass that data to kernel
-> instead, together with regulator names and all needed data for each one
-> of them ?
-> 
+On 05/08/2011 10:23 AM, Arnd Bergmann wrote:
+> On Thursday 05 May 2011 16:27:57 Josef Bacik wrote:
+>> Looking at this llseek stuff I noticed that default_llseek is the exact same as
+>> generic_file_llseek, so kill default_llseek.  I patched this using spatch with
+>> just a simple
+>>
+>> @@
+>> @@
+>>
+>> - default_llseek
+>> + generic_file_llseek
+>>
+>> and then I manually removed the default_llseek definitions.  I've built and
+>> booted this and it works fine.  Thanks,
+>>
+>> Signed-off-by: Josef Bacik<josef@redhat.com>
+>
+> Good idea in principle, but you missed the fact that generic_file_llseek
+> checks (offset>  inode->i_sb->s_maxbytes), which default_llseek
+> does not.
+>
 
-Yes, I think this should be the long term aim, but atm we will have to
-stick with current implementation until regulator has device tree
-support.
+Right, I didn't miss it, I probably should have said this in my commit, 
+but anybody who gets a super gets it from sget, which does alloc_super, 
+which automatically sets s_maxbytes to MAX_NON_LFS, which is ((1UL<<31) 
+- 1), plenty of size.
 
-Liam
+> This makes a huge difference on file systems that do not initialize
+> s_maxbytes, leaving it at zero. In particular, it doesn't work for
+> character devices, IIRC they will use whatever s_maxbytes is set for
+> the file system that stores the dentry and for debugfs and other
+> virtual file systems, it is not set at all.
+>
+> The proper fix should be to make sure all file systems set an appropriate
+> s_maxbytes, and then add a special case for character devices to
+> generic_file_llseek. The main reason I didn't do it last year was to
+> avoid possible regressions when missing some other special cases, but
+> please continue to push this once you are sure to have a correct version
+> of the patch.
+>
 
+So every sb has s_maxbytes set to something, is this not acceptable for 
+character devices?  I guess some can let you seek well past this point 
+so we should just do some if (S_ISCHR()) return or whatever?  Thanks,
+
+Josef
