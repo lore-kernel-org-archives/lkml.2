@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab1EJIie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:38:34 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42671
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S932683Ab1EJIii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:38:38 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35445
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756082Ab1EJIaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756080Ab1EJIaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 May 2011 04:30:52 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 193/206] Staging: hv: Get rid of netvsc.h
-Date: Mon,  9 May 2011 14:57:55 -0700
-Message-Id: <1304978288-22999-193-git-send-email-kys@microsoft.com>
+Subject: [PATCH 194/206] Staging: hv: Get rid of ring_buffer.h
+Date: Mon,  9 May 2011 14:57:56 -0700
+Message-Id: <1304978288-22999-194-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -25,23 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now get rid of netvsc.h
+Now get rid of ring_buffer.h.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/netvsc.h |  331 -------------------------------------------
- 1 files changed, 0 insertions(+), 331 deletions(-)
- delete mode 100644 drivers/staging/hv/netvsc.h
+ drivers/staging/hv/ring_buffer.h |  102 --------------------------------------
+ 1 files changed, 0 insertions(+), 102 deletions(-)
+ delete mode 100644 drivers/staging/hv/ring_buffer.h
 
-diff --git a/drivers/staging/hv/netvsc.h b/drivers/staging/hv/netvsc.h
+diff --git a/drivers/staging/hv/ring_buffer.h b/drivers/staging/hv/ring_buffer.h
 deleted file mode 100644
-index 9ebea3b..0000000
---- a/drivers/staging/hv/netvsc.h
+index 089c536..0000000
+--- a/drivers/staging/hv/ring_buffer.h
 +++ /dev/null
-@@ -1,331 +0,0 @@
+@@ -1,102 +0,0 @@
 -/*
 - *
 - * Copyright (c) 2009, Microsoft Corporation.
@@ -62,317 +62,88 @@ index 9ebea3b..0000000
 - * Authors:
 - *   Haiyang Zhang <haiyangz@microsoft.com>
 - *   Hank Janssen  <hjanssen@microsoft.com>
+- *   K. Y. Srinivasan <kys@microsoft.com>
 - *
 - */
 -
 -
--#ifndef _NETVSC_H_
--#define _NETVSC_H_
+-#ifndef _RING_BUFFER_H_
+-#define _RING_BUFFER_H_
 -
--#include <linux/list.h>
--#include "vmbus_packet_format.h"
--#include "vmbus_channel_interface.h"
--#include "netvsc_api.h"
+-#include <linux/scatterlist.h>
 -
+-struct hv_ring_buffer {
+-	/* Offset in bytes from the start of ring data below */
+-	u32 write_index;
 -
--#define NVSP_INVALID_PROTOCOL_VERSION	((u32)0xFFFFFFFF)
+-	/* Offset in bytes from the start of ring data below */
+-	u32 read_index;
 -
--#define NVSP_PROTOCOL_VERSION_1		2
--#define NVSP_MIN_PROTOCOL_VERSION	NVSP_PROTOCOL_VERSION_1
--#define NVSP_MAX_PROTOCOL_VERSION	NVSP_PROTOCOL_VERSION_1
+-	u32 interrupt_mask;
 -
--enum {
--	NVSP_MSG_TYPE_NONE = 0,
+-	/* Pad it to PAGE_SIZE so that data starts on page boundary */
+-	u8	reserved[4084];
 -
--	/* Init Messages */
--	NVSP_MSG_TYPE_INIT			= 1,
--	NVSP_MSG_TYPE_INIT_COMPLETE		= 2,
--
--	NVSP_VERSION_MSG_START			= 100,
--
--	/* Version 1 Messages */
--	NVSP_MSG1_TYPE_SEND_NDIS_VER		= NVSP_VERSION_MSG_START,
--
--	NVSP_MSG1_TYPE_SEND_RECV_BUF,
--	NVSP_MSG1_TYPE_SEND_RECV_BUF_COMPLETE,
--	NVSP_MSG1_TYPE_REVOKE_RECV_BUF,
--
--	NVSP_MSG1_TYPE_SEND_SEND_BUF,
--	NVSP_MSG1_TYPE_SEND_SEND_BUF_COMPLETE,
--	NVSP_MSG1_TYPE_REVOKE_SEND_BUF,
--
--	NVSP_MSG1_TYPE_SEND_RNDIS_PKT,
--	NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE,
+-	/* NOTE:
+-	 * The interrupt_mask field is used only for channels but since our
+-	 * vmbus connection also uses this data structure and its data starts
+-	 * here, we commented out this field.
+-	 */
 -
 -	/*
--	 * This should be set to the number of messages for the version with
--	 * the maximum number of messages.
+-	 * Ring data starts here + RingDataStartOffset
+-	 * !!! DO NOT place any fields below this !!!
 -	 */
--	NVSP_NUM_MSG_PER_VERSION		= 9,
+-	u8 buffer[0];
+-} __packed;
+-
+-struct hv_ring_buffer_info {
+-	struct hv_ring_buffer *ring_buffer;
+-	u32 ring_size;			/* Include the shared header */
+-	spinlock_t ring_lock;
+-
+-	u32 ring_datasize;		/* < ring_size */
+-	u32 ring_data_startoffset;
 -};
 -
--enum {
--	NVSP_STAT_NONE = 0,
--	NVSP_STAT_SUCCESS,
--	NVSP_STAT_FAIL,
--	NVSP_STAT_PROTOCOL_TOO_NEW,
--	NVSP_STAT_PROTOCOL_TOO_OLD,
--	NVSP_STAT_INVALID_RNDIS_PKT,
--	NVSP_STAT_BUSY,
--	NVSP_STAT_MAX,
+-struct hv_ring_buffer_debug_info {
+-	u32 current_interrupt_mask;
+-	u32 current_read_index;
+-	u32 current_write_index;
+-	u32 bytes_avail_toread;
+-	u32 bytes_avail_towrite;
 -};
 -
--struct nvsp_message_header {
--	u32 msg_type;
--};
--
--/* Init Messages */
--
--/*
-- * This message is used by the VSC to initialize the channel after the channels
-- * has been opened. This message should never include anything other then
-- * versioning (i.e. this message will be the same for ever).
-- */
--struct nvsp_message_init {
--	u32 min_protocol_ver;
--	u32 max_protocol_ver;
--} __packed;
--
--/*
-- * This message is used by the VSP to complete the initialization of the
-- * channel. This message should never include anything other then versioning
-- * (i.e. this message will be the same for ever).
-- */
--struct nvsp_message_init_complete {
--	u32 negotiated_protocol_ver;
--	u32 max_mdl_chain_len;
--	u32 status;
--} __packed;
--
--union nvsp_message_init_uber {
--	struct nvsp_message_init init;
--	struct nvsp_message_init_complete init_complete;
--} __packed;
--
--/* Version 1 Messages */
--
--/*
-- * This message is used by the VSC to send the NDIS version to the VSP. The VSP
-- * can use this information when handling OIDs sent by the VSC.
-- */
--struct nvsp_1_message_send_ndis_version {
--	u32 ndis_major_ver;
--	u32 ndis_minor_ver;
--} __packed;
--
--/*
-- * This message is used by the VSC to send a receive buffer to the VSP. The VSP
-- * can then use the receive buffer to send data to the VSC.
-- */
--struct nvsp_1_message_send_receive_buffer {
--	u32 gpadl_handle;
--	u16 id;
--} __packed;
--
--struct nvsp_1_receive_buffer_section {
--	u32 offset;
--	u32 sub_alloc_size;
--	u32 num_sub_allocs;
--	u32 end_offset;
--} __packed;
--
--/*
-- * This message is used by the VSP to acknowledge a receive buffer send by the
-- * VSC. This message must be sent by the VSP before the VSP uses the receive
-- * buffer.
-- */
--struct nvsp_1_message_send_receive_buffer_complete {
--	u32 status;
--	u32 num_sections;
--
--	/*
--	 * The receive buffer is split into two parts, a large suballocation
--	 * section and a small suballocation section. These sections are then
--	 * suballocated by a certain size.
--	 */
--
--	/*
--	 * For example, the following break up of the receive buffer has 6
--	 * large suballocations and 10 small suballocations.
--	 */
--
--	/*
--	 * |            Large Section          |  |   Small Section   |
--	 * ------------------------------------------------------------
--	 * |     |     |     |     |     |     |  | | | | | | | | | | |
--	 * |                                      |
--	 *  LargeOffset                            SmallOffset
--	 */
--
--	struct nvsp_1_receive_buffer_section sections[1];
--} __packed;
--
--/*
-- * This message is sent by the VSC to revoke the receive buffer.  After the VSP
-- * completes this transaction, the vsp should never use the receive buffer
-- * again.
-- */
--struct nvsp_1_message_revoke_receive_buffer {
--	u16 id;
--};
--
--/*
-- * This message is used by the VSC to send a send buffer to the VSP. The VSC
-- * can then use the send buffer to send data to the VSP.
-- */
--struct nvsp_1_message_send_send_buffer {
--	u32 gpadl_handle;
--	u16 id;
--} __packed;
--
--/*
-- * This message is used by the VSP to acknowledge a send buffer sent by the
-- * VSC. This message must be sent by the VSP before the VSP uses the sent
-- * buffer.
-- */
--struct nvsp_1_message_send_send_buffer_complete {
--	u32 status;
--
--	/*
--	 * The VSC gets to choose the size of the send buffer and the VSP gets
--	 * to choose the sections size of the buffer.  This was done to enable
--	 * dynamic reconfigurations when the cost of GPA-direct buffers
--	 * decreases.
--	 */
--	u32 section_size;
--} __packed;
--
--/*
-- * This message is sent by the VSC to revoke the send buffer.  After the VSP
-- * completes this transaction, the vsp should never use the send buffer again.
-- */
--struct nvsp_1_message_revoke_send_buffer {
--	u16 id;
--};
--
--/*
-- * This message is used by both the VSP and the VSC to send a RNDIS message to
-- * the opposite channel endpoint.
-- */
--struct nvsp_1_message_send_rndis_packet {
--	/*
--	 * This field is specified by RNIDS. They assume there's two different
--	 * channels of communication. However, the Network VSP only has one.
--	 * Therefore, the channel travels with the RNDIS packet.
--	 */
--	u32 channel_type;
--
--	/*
--	 * This field is used to send part or all of the data through a send
--	 * buffer. This values specifies an index into the send buffer. If the
--	 * index is 0xFFFFFFFF, then the send buffer is not being used and all
--	 * of the data was sent through other VMBus mechanisms.
--	 */
--	u32 send_buf_section_index;
--	u32 send_buf_section_size;
--} __packed;
--
--/*
-- * This message is used by both the VSP and the VSC to complete a RNDIS message
-- * to the opposite channel endpoint. At this point, the initiator of this
-- * message cannot use any resources associated with the original RNDIS packet.
-- */
--struct nvsp_1_message_send_rndis_packet_complete {
--	u32 status;
--};
--
--union nvsp_1_message_uber {
--	struct nvsp_1_message_send_ndis_version send_ndis_ver;
--
--	struct nvsp_1_message_send_receive_buffer send_recv_buf;
--	struct nvsp_1_message_send_receive_buffer_complete
--						send_recv_buf_complete;
--	struct nvsp_1_message_revoke_receive_buffer revoke_recv_buf;
--
--	struct nvsp_1_message_send_send_buffer send_send_buf;
--	struct nvsp_1_message_send_send_buffer_complete send_send_buf_complete;
--	struct nvsp_1_message_revoke_send_buffer revoke_send_buf;
--
--	struct nvsp_1_message_send_rndis_packet send_rndis_pkt;
--	struct nvsp_1_message_send_rndis_packet_complete
--						send_rndis_pkt_complete;
--} __packed;
--
--union nvsp_all_messages {
--	union nvsp_message_init_uber init_msg;
--	union nvsp_1_message_uber v1_msg;
--} __packed;
--
--/* ALL Messages */
--struct nvsp_message {
--	struct nvsp_message_header hdr;
--	union nvsp_all_messages msg;
--} __packed;
 -
 -
+-/* Interface */
 -
 -
--/* #define NVSC_MIN_PROTOCOL_VERSION		1 */
--/* #define NVSC_MAX_PROTOCOL_VERSION		1 */
+-int hv_ringbuffer_init(struct hv_ring_buffer_info *ring_info, void *buffer,
+-		   u32 buflen);
 -
--#define NETVSC_SEND_BUFFER_SIZE			(64*1024)	/* 64K */
--#define NETVSC_SEND_BUFFER_ID			0xface
+-void hv_ringbuffer_cleanup(struct hv_ring_buffer_info *ring_info);
 -
+-int hv_ringbuffer_write(struct hv_ring_buffer_info *ring_info,
+-		    struct scatterlist *sglist,
+-		    u32 sgcount);
 -
--#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024)	/* 1MB */
+-int hv_ringbuffer_peek(struct hv_ring_buffer_info *ring_info, void *buffer,
+-		   u32 buflen);
 -
--#define NETVSC_RECEIVE_BUFFER_ID		0xcafe
+-int hv_ringbuffer_read(struct hv_ring_buffer_info *ring_info,
+-		   void *buffer,
+-		   u32 buflen,
+-		   u32 offset);
 -
--#define NETVSC_RECEIVE_SG_COUNT			1
+-u32 hv_get_ringbuffer_interrupt_mask(struct hv_ring_buffer_info *ring_info);
 -
--/* Preallocated receive packets */
--#define NETVSC_RECEIVE_PACKETLIST_COUNT		256
+-void hv_dump_ring_info(struct hv_ring_buffer_info *ring_info, char *prefix);
 -
--#define NETVSC_PACKET_SIZE                      2048
+-void hv_ringbuffer_get_debuginfo(struct hv_ring_buffer_info *ring_info,
+-			    struct hv_ring_buffer_debug_info *debug_info);
 -
--/* Per netvsc channel-specific */
--struct netvsc_device {
--	struct hv_device *dev;
--
--	atomic_t refcnt;
--	atomic_t num_outstanding_sends;
--	/*
--	 * List of free preallocated hv_netvsc_packet to represent receive
--	 * packet
--	 */
--	struct list_head recv_pkt_list;
--	spinlock_t recv_pkt_list_lock;
--
--	/* Send buffer allocated by us but manages by NetVSP */
--	void *send_buf;
--	u32 send_buf_size;
--	u32 send_buf_gpadl_handle;
--	u32 send_section_size;
--
--	/* Receive buffer allocated by us but manages by NetVSP */
--	void *recv_buf;
--	u32 recv_buf_size;
--	u32 recv_buf_gpadl_handle;
--	u32 recv_section_cnt;
--	struct nvsp_1_receive_buffer_section *recv_section;
--
--	/* Used for NetVSP initialization protocol */
--	struct completion channel_init_wait;
--	struct nvsp_message channel_init_pkt;
--
--	struct nvsp_message revoke_packet;
--	/* unsigned char HwMacAddr[HW_MACADDR_LEN]; */
--
--	/* Holds rndis device info */
--	void *extension;
--};
--
--#endif /* _NETVSC_H_ */
+-#endif /* _RING_BUFFER_H_ */
 -- 
 1.7.4.1
 
