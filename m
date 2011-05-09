@@ -1,117 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab1EIQzC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 12:55:02 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54132 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809Ab1EIQzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 12:55:00 -0400
-Date: Mon, 9 May 2011 18:54:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
+	id S1753605Ab1EIQ4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 12:56:44 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:60030 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab1EIQ4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 12:56:43 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Randy Dunlap <randy.dunlap@oracle.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 14/17] writeback: make writeback_control.nr_to_write
- straight
-Message-ID: <20110509165458.GV4122@quack.suse.cz>
-References: <20110506030821.523093711@intel.com>
- <20110506031613.556854231@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506031613.556854231@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.39-rc6-mmotm0506 and -next - __kfree_rcu breaks third-party kernel code
+In-Reply-To: Your message of "Mon, 09 May 2011 09:17:57 PDT."
+             <20110509091757.580f3f6c.randy.dunlap@oracle.com>
+From: Valdis.Kletnieks@vt.edu
+References: <7961.1304953500@localhost>
+            <20110509091757.580f3f6c.randy.dunlap@oracle.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1304960192_2759P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 09 May 2011 12:56:32 -0400
+Message-ID: <14010.1304960192@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4DC81CC1.01DE,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 06-05-11 11:08:35, Wu Fengguang wrote:
-> Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
-> and initialize the struct writeback_control there.
-> 
-> struct writeback_control is basically designed to control writeback of a
-> single file, but we keep abuse it for writing multiple files in
-> writeback_sb_inodes() and its callers.
-> 
-> It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
-> work->nr_pages starts to make sense, and instead of saving and restoring
-> pages_skipped in writeback_sb_inodes it can always start with a clean
-> zero value.
-> 
-> It also makes a neat IO pattern change: large dirty files are now
-> written in the full 4MB writeback chunk size, rather than whatever
-> remained quota in wbc->nr_to_write.
-> 
-> Proposed-by: Christoph Hellwig <hch@infradead.org>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-...
-> @@ -543,34 +588,40 @@ static int writeback_sb_inodes(struct su
->  			requeue_io(inode, wb);
->  			continue;
->  		}
-> -
->  		__iget(inode);
-> +		write_chunk = writeback_chunk_size(work);
-> +		wbc.nr_to_write = write_chunk;
-> +		wbc.pages_skipped = 0;
-> +
-> +		writeback_single_inode(inode, wb, &wbc);
->  
-> -		pages_skipped = wbc->pages_skipped;
-> -		writeback_single_inode(inode, wb, wbc);
-> -		if (wbc->pages_skipped != pages_skipped) {
-> +		work->nr_pages -= write_chunk - wbc.nr_to_write;
-> +		wrote += write_chunk - wbc.nr_to_write;
-> +		if (wbc.pages_skipped) {
->  			/*
->  			 * writeback is not making progress due to locked
->  			 * buffers.  Skip this inode for now.
->  			 */
->  			redirty_tail(inode, wb);
-> -		}
-> +		} else if (!(inode->i_state & I_DIRTY))
-> +			wrote++;
->  		spin_unlock(&inode->i_lock);
->  		spin_unlock(&wb->list_lock);
->  		iput(inode);
->  		cond_resched();
->  		spin_lock(&wb->list_lock);
-> -		if (wbc->nr_to_write <= 0)
-> -			return 1;
-> +		if (wrote >= MAX_WRITEBACK_PAGES)
-> +			break;
-  This definitely deserves a comment (as well as a similar check in
-__writeback_inodes_wb()). I guess you bail out here so that we perform the
-background limit check and livelocking of for_kupdate/for_background check
-often enough. I'm undecided whether it's good to bail out like this. It's
-not necessary in some cases (like WB_SYNC_ALL or for_sync writeback) but
-OTOH moving the necessary checks here does not look ideal either...
+--==_Exmh_1304960192_2759P
+Content-Type: text/plain; charset="us-ascii"
+Content-Id: <14004.1304960192.1@localhost>
 
->  void writeback_inodes_wb(struct bdi_writeback *wb,
-> -		struct writeback_control *wbc)
-> +			 struct writeback_control *wbc)
->  {
-> +	struct wb_writeback_work work = {
-> +		.nr_pages	= wbc->nr_to_write,
-> +		.sync_mode	= wbc->sync_mode,
-> +		.range_cyclic	= wbc->range_cyclic,
-> +	};
-> +
->  	spin_lock(&wb->list_lock);
->  	if (list_empty(&wb->b_io))
-> -		queue_io(wb, wbc->older_than_this);
-> -	__writeback_inodes_wb(wb, wbc);
-> +		queue_io(wb, NULL);
-> +	__writeback_inodes_wb(wb, &work);
->  	spin_unlock(&wb->list_lock);
-> -}
-  Hmm, maybe we should just pass in number of pages (similarly as in
-writeback_inodes_sb_nr())? It would look like a cleaner interface than
-passing whole writeback_control and then ignoring parts of it.
+On Mon, 09 May 2011 09:17:57 PDT, Randy Dunlap said:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> I'd be happy to see a simple fix, but we don't generally support building
+> external modules without using the kernel kbuild infrastructure AFAIK --
+> and when I add a Makefile along with your kernconf.c file, it builds successfully
+> on mmotm-2011-0506-1639.
+
+And in fact the module *does* use the Makefile stuff for the actual build - it
+was just the installer's "am I looking at a sane 2.6 tree" sanity check that
+bombed. So I go looking for what special sauce the Makefile adds to make it
+work, and....
+
+OK, *now* I'm confused.  The magic sauce appears to be "-Os". Adding that makes
+the compile work.  And for no obvious reason - there's something in there that
+causes indigestion, but only if the optimizer isn't invoked.
+
+*WTF*?
+
+ LANG=C ./kern.sh 
+cat > /tmp/kernconf.c <<EOF
+#include <linux/version.h>
+#include <linux/utsname.h>
+EOF
++ cat
+
+kern="/lib/modules/2.6.39-rc6-mmotm0506/"
++ kern=/lib/modules/2.6.39-rc6-mmotm0506/
+cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I${kern}/build/include -I$kern/arch/x86/include/generated -include ${kern}/build/include/generated/autoconf.h -I${kern}/build/arch/x86/include -I${kern}/include/generated -Os -c /tmp/kernconf.c
++ cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I/lib/modules/2.6.39-rc6-mmotm0506//build/include -I/lib/modules/2.6.39-rc6-mmotm0506//arch/x86/include/generated -include /lib/modules/2.6.39-rc6-mmotm0506//build/include/generated/autoconf.h -I/lib/modules/2.6.39-rc6-mmotm0506//build/arch/x86/include -I/lib/modules/2.6.39-rc6-mmotm0506//include/generated -Os -c /tmp/kernconf.c
+cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I${kern}/build/include -I$kern/arch/x86/include/generated -include ${kern}/build/include/generated/autoconf.h -I${kern}/build/arch/x86/include -I${kern}/include/generated -c /tmp/kernconf.c
++ cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I/lib/modules/2.6.39-rc6-mmotm0506//build/include -I/lib/modules/2.6.39-rc6-mmotm0506//arch/x86/include/generated -include /lib/modules/2.6.39-rc6-mmotm0506//build/include/generated/autoconf.h -I/lib/modules/2.6.39-rc6-mmotm0506//build/arch/x86/include -I/lib/modules/2.6.39-rc6-mmotm0506//include/generated -c /tmp/kernconf.c
+In file included from /lib/modules/2.6.39-rc6-mmotm0506//build/include/linux/sem.h:81:0,
+                 from /lib/modules/2.6.39-rc6-mmotm0506//build/include/linux/sched.h:72,
+                 from /lib/modules/2.6.39-rc6-mmotm0506//build/include/linux/utsname.h:35,
+                 from /tmp/kernconf.c:2:
+/lib/modules/2.6.39-rc6-mmotm0506//build/include/linux/rcupdate.h: In function '__kfree_rcu':
+/lib/modules/2.6.39-rc6-mmotm0506//build/include/linux/rcupdate.h:822:2: error: size of unnamed array is negative
+
+rm /tmp/kernconf.c
++ rm /tmp/kernconf.c
+
+
+
+
+
+--==_Exmh_1304960192_2759P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNyBzAcC3lWbTT17ARAtAsAKCBjgt8GlXuQhBrChI8/Al/qGrSbACfRE0V
+4G7tnEZwOWJOKRHGHQWVSEs=
+=PVdx
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1304960192_2759P--
+
