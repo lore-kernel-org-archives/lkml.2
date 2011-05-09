@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab1EIPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:23:57 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37200 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752458Ab1EIPXz (ORCPT
+	id S1751911Ab1EIPFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 11:05:24 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:59595 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab1EIPFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:23:55 -0400
-From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 2/2] gma500: Fix dumb create crash
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Mon, 09 May 2011 16:04:45 +0100
-Message-ID: <20110509150437.28865.72860.stgit@localhost.localdomain>
-In-Reply-To: <20110509150334.28865.25665.stgit@localhost.localdomain>
-References: <20110509150334.28865.25665.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 9 May 2011 11:05:23 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: 2.6.39-rc6-mmotm0506 and -next - __kfree_rcu breaks third-party kernel code
+From: Valdis.Kletnieks@vt.edu
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1304953500_2759P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Mon, 09 May 2011 11:05:00 -0400
+Message-ID: <7961.1304953500@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4DC8029E.002E,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error path from gtt_alloc returns NULL not a ptr error. The underlying
-fail is caused by a bug in the size calculation. With these two fixed it
-passes kmstest, although it's not really doing anything useful yet.
+--==_Exmh_1304953500_2759P
+Content-Type: text/plain; charset="us-ascii"
+Content-Id: <7948.1304953491.1@localhost>
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+So I have a third-party kernel module which wants to check what kernel version
+it's building against, and it fails to build under -rc6-mmotm0506 (it works
+just fine under -rc5-mmotm0429).
 
- drivers/staging/gma500/psb_gem.c |    6 +++---
- drivers/staging/gma500/psb_gtt.c |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+I finally isolated it down to a two-liner section of code, which seems to die
+because somebody didn't include something that rcupdate.h wanted to see:
 
-diff --git a/drivers/staging/gma500/psb_gem.c b/drivers/staging/gma500/psb_gem.c
-index d47c187..518f8c1 100644
---- a/drivers/staging/gma500/psb_gem.c
-+++ b/drivers/staging/gma500/psb_gem.c
-@@ -100,8 +100,8 @@ static int psb_gem_create(struct drm_file *file,
- 	/* Allocate our object - for now a direct gtt range which is not 
- 	   stolen memory backed */
- 	r = psb_gtt_alloc_range(dev, size, "gem", 0);
--	if (IS_ERR(r))
--		return PTR_ERR(r);
-+	if (r == NULL)
-+		return -ENOSPC;
- 	/* Initialize the extra goodies GEM needs to do all the hard work */
- 	if (drm_gem_object_init(dev, &r->gem, size) != 0) {
- 		psb_gtt_free_range(dev, r);
-@@ -135,7 +135,7 @@ static int psb_gem_create(struct drm_file *file,
- int psb_gem_dumb_create(struct drm_file *file, struct drm_device *dev,
- 			struct drm_mode_create_dumb *args)
- {
--	args->pitch = ALIGN(args->width & ((args->bpp + 1) / 8), 64);
-+	args->pitch = ALIGN(args->width * ((args->bpp + 7) / 8), 64);
- 	args->size = args->pitch * args->height;
- 	return psb_gem_create(file, dev, args->size, &args->handle);
- }
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 10d772a..dc0a4b7 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -277,7 +277,7 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
-         } else {
-                 /* The rest we will use for GEM backed objects */
-                 start = r->start + dev_priv->pg->stolen_size;
--                end = -1;
-+                end = r->end;
-         }
- 
- 	gt = kzalloc(sizeof(struct gtt_range), GFP_KERNEL);
+cat > /tmp/kernconf.c <<EOF
+#include <linux/version.h>
+#include <linux/utsname.h>
+EOF
++ cat
+
+# This builds fine
+kern="2.6.39-rc5-mmotm0429"
++ kern=2.6.39-rc5-mmotm0429
+cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I/lib/modules/${kern}/build/include -include /lib/modules/${kern}/build/include/generated/autoconf.h -I/lib/modules/${kern}/build/arch/x86/include -c /tmp/kernconf.c
++ cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I/lib/modules/2.6.39-rc5-mmotm0429/build/include -include /lib/modules/2.6.39-rc5-mmotm0429/build/include/generated/autoconf.h -I/lib/modules/2.6.39-rc5-mmotm0429/build/arch/x86/include -c /tmp/kernconf.c
+
+# this one dies
+kern="2.6.39-rc6-mmotm0506"
++ kern=2.6.39-rc6-mmotm0506
+cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I/lib/modules/${kern}/build/include -include /lib/modules/${kern}/build/include/generated/autoconf.h -I/lib/modules/${kern}/build/arch/x86/include -c /tmp/kernconf.c
++ cc -D__KERNEL__ -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/4.6.0/include -I/lib/modules/2.6.39-rc6-mmotm0506/build/include -include /lib/modules/2.6.39-rc6-mmotm0506/build/include/generated/autoconf.h -I/lib/modules/2.6.39-rc6-mmotm0506/build/arch/x86/include -c /tmp/kernconf.c
+In file included from /lib/modules/2.6.39-rc6-mmotm0506/build/include/linux/sem.h:81:0,
+                 from /lib/modules/2.6.39-rc6-mmotm0506/build/include/linux/sched.h:72,
+                 from /lib/modules/2.6.39-rc6-mmotm0506/build/include/linux/utsname.h:35,
+                 from /tmp/kernconf.c:2:
+/lib/modules/2.6.39-rc6-mmotm0506/build/include/linux/rcupdate.h: In function '__kfree_rcu':
+/lib/modules/2.6.39-rc6-mmotm0506/build/include/linux/rcupdate.h:822:2: error: size of unnamed array is negative
+
+rm /tmp/kernconf.c
++ rm /tmp/kernconf.c
+
+'git blame include/linux/rcudate.h' points at this commit:
+
+commit 896d4eb94e0b7cd896ee92c380fadc1e9d867cfc
+Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date:   Fri Mar 18 11:15:47 2011 +0800
+
+    rcu: introduce kfree_rcu()
+
+
+
+--==_Exmh_1304953500_2759P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNyAKccC3lWbTT17ARAkkTAJ9LBsnOZ4GafOFnL0op2dVDWH4oQQCfT3i0
+/8A9vjYXRFJjLBbY4IEC1S4=
+=0TZ6
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1304953500_2759P--
 
