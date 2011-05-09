@@ -1,155 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab1EINvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:51:37 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:54543 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752802Ab1EINvg (ORCPT
+	id S1753546Ab1EINwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:52:20 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60920 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab1EINwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:51:36 -0400
-Date: Mon, 9 May 2011 16:51:26 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Felipe Balbi <balbi@ti.com>, Liam Girdwood <lrg@kernel.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 4/4] USB: TWL6025 allow different regulator name
-Message-ID: <20110509135122.GQ1254@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
- <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
- <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
- <1304867317.3246.10.camel@odin>
- <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
- <1304941430.3192.4.camel@odin>
- <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
- <20110509122941.GA3225@opensource.wolfsonmicro.com>
- <20110509130703.GM1254@legolas.emea.dhcp.ti.com>
- <20110509133542.GF3225@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509133542.GF3225@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 May 2011 09:52:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=BnaVr68ctExo71JhiCa5EYyvo+dCp4gODcoOX7SFZOfp/e2K3jXcHXJ3O/Xx4SzdRh
+         4G/RJlHJUMRXGN+hbKhlZ4qnW90q3r81t7MDM90yMwQwV55eEeN3BnUlI4oky0o5r4nE
+         BraBDED2goSmeQtXl/fd7a+o6fP31o6Nd07GM=
+From: Stephane Pajot <pajot.stephane@gmail.com>
+To: gregkh@suse.de, arun.thomas@gmail.com, ruben.smits@mech.kuleuven.be,
+        abbotti@mev.co.uk, ext-andriy.shevchenko@nokia.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Stephane Pajot <pajot.stephane@gmail.com>
+Subject: [PATCH] Staging: comedi: fix brace coding style issue in jr3_pci.c This is a patch to the jr3_pci.c file that fixes up a brace warning found by the checkpatch.pl tool Signed-off-by: Stephane Pajot <pajot.stephane@gmail.com>
+Date: Mon,  9 May 2011 15:51:59 +0200
+Message-Id: <1304949119-8250-1-git-send-email-pajot.stephane@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 03:35:43PM +0200, Mark Brown wrote:
-> On Mon, May 09, 2011 at 04:07:07PM +0300, Felipe Balbi wrote:
-> 
-> > The thing is. We already had problems in the past with the Clock FW
-> > because drivers were passing clock names on platform_data and I really
-> > want to avoid the same on regulators. We need something clever.
-> 
-> Right, which is why you should *never* do that.  Any time I see anyone
-> requesting a regulator based on anything other than a fixed string in
-> the driver and the struct device for the consumer I push back very hard,
-> and so should everyone else.
+---
+ drivers/staging/comedi/drivers/jr3_pci.c |   27 +++++++++------------------
+ 1 files changed, 9 insertions(+), 18 deletions(-)
 
-ok, so let's go back to the original patch:
-
-> @@ -190,6 +190,12 @@ static int twl6030_phy_suspend(struct otg_transceiver *x, int suspend)
->  
->  static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
->  {
-> +	char *regulator_name;
-> +
-> +	if (twl_features() & TWL6025_SUBCLASS)
-> +		regulator_name = "ldousb";
-> +	else
-> +		regulator_name = "vusb";
->  
->  	/* Set to OTG_REV 1.3 and turn on the ID_WAKEUP_COMP */
->  	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x1, TWL6030_BACKUP_REG);
-> @@ -200,7 +206,7 @@ static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
->  	/* Program MISC2 register and set bit VUSB_IN_VBAT */
->  	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x10, TWL6030_MISC2);
->  
-> -	twl->usb3v3 = regulator_get(twl->dev, "vusb");
-> +	twl->usb3v3 = regulator_get(twl->dev, regulator_name);
->  	if (IS_ERR(twl->usb3v3))
->  		return -ENODEV;
-
-then, imagine 5 years from now how that branch will look. How long do
-you think it'll take until someone decides to pass that name via
-platform_data to avoid growing that conditional ?
-
-
-> > We pass in the data of how regulators are wired at the board level and
-> > drivers would regulator_get(my_dev->dev, "whatever fancy name I want as
-> > it doesn't matter at all");
-> 
-> No, not at all.  Consumer drivers should be hard coding the strings they
-> request and the strings used should correspond to the pin names used on
-> the device.
-
-but that's the thing. Why do they need to depend on that string ?
-
-> > on the TRM. In other words, we should match on the functionality they
-> > provide, not on the name.
-> 
-> As Liam said this will just make the situation worse.  Users will have
-> to figure out what the names the driver authors assigned to the various
-> device supplies map onto in the physical system via an additional layer
-> of indirection which will at best be written down in comments in the
-> driver.
-
-My point is that the "name" shouldn't matter. Instead of matching a
-"name" match a "reference". Have something earlier in the boot assing
-regulators to devices, or something like that, so that drivers don't
-need to care about "names".
-
-> > Let's try to thing some 5 - 6 years ahead. With the current trend, we
-> > will be working on support for the PMIC on OMAP10, imagine if each one
-> > of those revisions decide to change the name of the regulator, because
-> > this new HW engineer working on the PMIC design doesn't like the old
-> > name. We will have X regulator pointers and X regulator name pointers in
-> > our platform_data. It will be really cumbersome and prone to errors if
-> > people continue on copy&pasting old code to "generate" a new driver.
-> 
-> Here you're apparently talking about something different - you're
-> talking about how we pass in the regulator init data for the regulators
-> supplied by the chip.  The patch being discussed changes the consumer
-> side for USB, not the regulator driver side.  The naming on the driver
-
-see above, how long do you think it'll take for someone to try and pass
-that name via pdata ? On the next name change, this is already likely to
-happen to prevent that conditional from growing.
-
-> side is a particular problem for TWL devices since unlike most PMICs the
-> regulators aren't simply numbered but are instead assigned individual
-> names so you can't just use a big array indexed by number.
-
-why not ? The name shouldn't matter. In anycase, if you look into
-/sys/class/regulator/ all directories are regulator.<index>:
-
-	dev_set_name(&rdev->dev, "regulator.%d",
-		     atomic_inc_return(&regulator_no) - 1);
-
-> > What I was expecting to see, was a mechanism where we define how those
-> > things are wired (it doesn't matter if the data uses DeviceTree or what)
-> > at the HW level and we ask the framework to give us the regulator
-> > connected to device X which provides a certain functionality. Just like
-> > clkdev has managed to get close to. Currently drivers will:
-> 
-> This is preceisely what is happening.  A well written consumer driver
-> asks the regulator core for the regulator supplying a given supply, with
-> the supplies named in the same way as they are named in the datasheet.
-> 
-> You appear to be arging strongly for us to adopt the model which is
-> already in use.
-
-I guess I hasn't been clear enough then, my whole point is that drivers
-shouldn't depend on strings at all in order to fetch the correct
-regulator. How many:
-
-if (xxx_features() & XXX_CLASS_IS_YYYY)
-	regulator_name = "my_first_name";
-else
-	regulator_name = "my_second_name";
-
-will have to pop in drivers until we figure that it won't scale ?
-
+diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
+index 5c6c727..d96140c 100644
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -193,9 +193,8 @@ static void set_transforms(volatile struct jr3_channel *channel,
+ 		set_s16(&channel->transforms[num].link[i].link_amount,
+ 			transf.link[i].link_amount);
+ 		udelay(1);
+-		if (transf.link[i].link_type == end_x_form) {
++		if (transf.link[i].link_type == end_x_form)
+ 			break;
+-		}
+ 	}
+ }
+ 
+@@ -460,9 +459,8 @@ static int jr3_download_firmware(struct comedi_device *dev, const u8 * data,
+ 				unsigned int count, addr;
+ 				more = more
+ 				    && read_idm_word(data, size, &pos, &count);
+-				if (more && count == 0xffff) {
++				if (more && count == 0xffff)
+ 					break;
+-				}
+ 				more = more
+ 				    && read_idm_word(data, size, &pos, &addr);
+ 				printk("Loading#%d %4.4x bytes at %4.4x\n", i,
+@@ -793,9 +791,8 @@ static int jr3_pci_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	result = alloc_private(dev, sizeof(struct jr3_pci_dev_private));
+-	if (result < 0) {
++	if (result < 0)
+ 		return -ENOMEM;
+-	}
+ 	card = NULL;
+ 	devpriv = dev->private;
+ 	init_timer(&devpriv->timer);
+@@ -851,9 +848,8 @@ static int jr3_pci_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	result = comedi_pci_enable(card, "jr3_pci");
+-	if (result < 0) {
++	if (result < 0)
+ 		return -EIO;
+-	}
+ 
+ 	devpriv->pci_enabled = 1;
+ 	devpriv->iobase = ioremap(pci_resource_start(card, 0),
+@@ -922,9 +918,8 @@ static int jr3_pci_attach(struct comedi_device *dev,
+ 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+ 	printk("Firmare load %d\n", result);
+ 
+-	if (result < 0) {
++	if (result < 0)
+ 		goto out;
+-	}
+ /*
+  * TODO: use firmware to load preferred offset tables. Suggested
+  * format:
+@@ -973,21 +968,17 @@ static int jr3_pci_detach(struct comedi_device *dev)
+ 		del_timer_sync(&devpriv->timer);
+ 
+ 		if (dev->subdevices) {
+-			for (i = 0; i < devpriv->n_channels; i++) {
++			for (i = 0; i < devpriv->n_channels; i++)
+ 				kfree(dev->subdevices[i].private);
+-			}
+ 		}
+ 
+-		if (devpriv->iobase) {
++		if (devpriv->iobase)
+ 			iounmap((void *)devpriv->iobase);
+-		}
+-		if (devpriv->pci_enabled) {
++		if (devpriv->pci_enabled)
+ 			comedi_pci_disable(devpriv->pci_dev);
+-		}
+ 
+-		if (devpriv->pci_dev) {
++		if (devpriv->pci_dev)
+ 			pci_dev_put(devpriv->pci_dev);
+-		}
+ 	}
+ 	return 0;
+ }
 -- 
-balbi
+1.7.1
+
