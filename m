@@ -1,76 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab1EIVfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:35:48 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:57803 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754158Ab1EIVfq (ORCPT
+	id S1754939Ab1EIVjw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:39:52 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:58805 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754665Ab1EIVju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:35:46 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=A6aj3yfMAEqpghCeh5pQjYxV59zFPokWkBLwnh0QT9ZNHwEllMkoCdcXRLTnGLadrH9zXB4khjUYgJoRCTlodpfvE8OkUj+hbPOYPc3IhqXOfH2mzdP12BbwZlL/wFJS;
-Date: Mon, 9 May 2011 14:35:36 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] pci, e1000e: Add and use __pci_disable_link_state
-Message-ID: <20110509143536.08bd0297@jbarnes-desktop>
-In-Reply-To: <4DC6E6E8.9040306@kernel.org>
-References: <4DC6E6E8.9040306@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 9 May 2011 17:39:50 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: alsa-devel@alsa-project.org
+Subject: [PATCH 1/3] tea575x: unify read/write functions
+Date: Mon, 9 May 2011 23:39:26 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-media@vger.kernel.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Content-Disposition: inline
+Message-Id: <201105092339.29143.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 08 May 2011 11:54:32 -0700
-Yinghai Lu <yinghai@kernel.org> wrote:
+Implement generic read/write functions to access TEA575x tuners. They're now
+implemented 4 times (once in es1968 and 3 times in fm801).
+This also allows mute to work on all cards.
+Also improve tuner detection/initialization.
 
-> 
-> Need to use it in _e1000e_disable_aspm.
-> when aer happens,
-> pci_walk_bus already have down_read(&pci_bus_sem)...
-> then report_slot_reset
->         ==> e1000_io_slot_reset
->                 ==> e1000e_disable_aspm
->                         ==> pci_disable_link_state...
-> 
-> We can not use pci_disable_link_state, and it will try to hold pci_bus_sem again.
-> 
-> Try to have __pci_disable_link_state that will not need to hold pci_bus_sem.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-What about the other callers of e1000e_disable_aspm?  Do they already
-have the lock held or is it just reset that needs the already locked
-version?
+--- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-04-29 22:48:34.000000000 +0200
++++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-06 22:20:46.000000000 +0200
+@@ -26,12 +26,17 @@
+ #include <media/v4l2-dev.h>
+ #include <media/v4l2-ioctl.h>
+ 
++#define TEA575X_DATA	(1 << 0)
++#define TEA575X_CLK	(1 << 1)
++#define TEA575X_WREN	(1 << 2)
++#define TEA575X_MOST	(1 << 3)
++
+ struct snd_tea575x;
+ 
+ struct snd_tea575x_ops {
+-	void (*write)(struct snd_tea575x *tea, unsigned int val);
+-	unsigned int (*read)(struct snd_tea575x *tea);
+-	void (*mute)(struct snd_tea575x *tea, unsigned int mute);
++	void (*set_pins)(struct snd_tea575x *tea, u8 pins);
++	u8 (*get_pins)(struct snd_tea575x *tea);
++	void (*set_direction)(struct snd_tea575x *tea, bool output);
+ };
+ 
+ struct snd_tea575x {
+@@ -49,7 +54,7 @@ struct snd_tea575x {
+ 	void *private_data;
+ };
+ 
+-void snd_tea575x_init(struct snd_tea575x *tea);
++int snd_tea575x_init(struct snd_tea575x *tea);
+ void snd_tea575x_exit(struct snd_tea575x *tea);
+ 
+ #endif /* __SOUND_TEA575X_TUNER_H */
+--- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-06 22:44:14.000000000 +0200
++++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-06 22:21:09.000000000 +0200
+@@ -77,11 +77,65 @@ static struct v4l2_queryctrl radio_qctrl
+  * lowlevel part
+  */
+ 
++static void snd_tea575x_write(struct snd_tea575x *tea, unsigned int val)
++{
++	u16 l;
++	u8 data;
++
++	tea->ops->set_direction(tea, 1);
++	udelay(16);
++
++	for (l = 25; l > 0; l--) {
++		data = (val >> 24) & TEA575X_DATA;
++		val <<= 1;			/* shift data */
++		tea->ops->set_pins(tea, data | TEA575X_WREN);
++		udelay(2);
++		tea->ops->set_pins(tea, data | TEA575X_WREN | TEA575X_CLK);
++		udelay(2);
++		tea->ops->set_pins(tea, data | TEA575X_WREN);
++		udelay(2);
++	}
++
++	if (!tea->mute)
++		tea->ops->set_pins(tea, 0);
++}
++
++static unsigned int snd_tea575x_read(struct snd_tea575x *tea)
++{
++	u16 l, rdata;
++	u32 data = 0;
++
++	tea->ops->set_direction(tea, 0);
++	tea->ops->set_pins(tea, 0);
++	udelay(16);
++
++	for (l = 24; l--;) {
++		tea->ops->set_pins(tea, TEA575X_CLK);
++		udelay(2);
++		if (!l)
++			tea->tuned = tea->ops->get_pins(tea) & TEA575X_MOST ? 0 : 1;
++		tea->ops->set_pins(tea, 0);
++		udelay(2);
++		data <<= 1;			/* shift data */
++		rdata = tea->ops->get_pins(tea);
++		if (!l)
++			tea->stereo = (rdata & TEA575X_MOST) ?  0 : 1;
++		if (rdata & TEA575X_DATA)
++			data++;
++		udelay(2);
++	}
++
++	if (tea->mute)
++		tea->ops->set_pins(tea, TEA575X_WREN);
++
++	return data;
++}
++
+ static void snd_tea575x_get_freq(struct snd_tea575x *tea)
+ {
+ 	unsigned long freq;
+ 
+-	freq = tea->ops->read(tea) & TEA575X_BIT_FREQ_MASK;
++	freq = snd_tea575x_read(tea) & TEA575X_BIT_FREQ_MASK;
+ 	/* freq *= 12.5 */
+ 	freq *= 125;
+ 	freq /= 10;
+@@ -111,7 +165,7 @@ static void snd_tea575x_set_freq(struct
+ 
+ 	tea->val &= ~TEA575X_BIT_FREQ_MASK;
+ 	tea->val |= freq & TEA575X_BIT_FREQ_MASK;
+-	tea->ops->write(tea, tea->val);
++	snd_tea575x_write(tea, tea->val);
+ }
+ 
+ /*
+@@ -139,7 +193,7 @@ static int vidioc_g_tuner(struct file *f
+ 	if (v->index > 0)
+ 		return -EINVAL;
+ 
+-	tea->ops->read(tea);
++	snd_tea575x_read(tea);
+ 
+ 	strcpy(v->name, "FM");
+ 	v->type = V4L2_TUNER_RADIO;
+@@ -233,10 +287,8 @@ static int vidioc_g_ctrl(struct file *fi
+ 
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_AUDIO_MUTE:
+-		if (tea->ops->mute) {
+-			ctrl->value = tea->mute;
+-			return 0;
+-		}
++		ctrl->value = tea->mute;
++		return 0;
+ 	}
+ 	return -EINVAL;
+ }
+@@ -248,11 +300,11 @@ static int vidioc_s_ctrl(struct file *fi
+ 
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_AUDIO_MUTE:
+-		if (tea->ops->mute) {
+-			tea->ops->mute(tea, ctrl->value);
++		if (tea->mute != ctrl->value) {
+ 			tea->mute = ctrl->value;
+-			return 0;
++			snd_tea575x_set_freq(tea);
+ 		}
++		return 0;
+ 	}
+ 	return -EINVAL;
+ }
+@@ -317,18 +369,16 @@ static struct video_device tea575x_radio
+ /*
+  * initialize all the tea575x chips
+  */
+-void snd_tea575x_init(struct snd_tea575x *tea)
++int snd_tea575x_init(struct snd_tea575x *tea)
+ {
+ 	int retval;
+-	unsigned int val;
+ 	struct video_device *tea575x_radio_inst;
+ 
+-	val = tea->ops->read(tea);
+-	if (val == 0x1ffffff || val == 0) {
+-		snd_printk(KERN_ERR
+-			   "tea575x-tuner: Cannot find TEA575x chip\n");
+-		return;
+-	}
++	tea->mute = 1;
++
++	snd_tea575x_write(tea, 0x55AA);
++	if (snd_tea575x_read(tea) != 0x55AA)
++		return -ENODEV;
+ 
+ 	tea->in_use = 0;
+ 	tea->val = TEA575X_BIT_BAND_FM | TEA575X_BIT_SEARCH_10_40;
+@@ -337,7 +387,7 @@ void snd_tea575x_init(struct snd_tea575x
+ 	tea575x_radio_inst = video_device_alloc();
+ 	if (tea575x_radio_inst == NULL) {
+ 		printk(KERN_ERR "tea575x-tuner: not enough memory\n");
+-		return;
++		return -ENOMEM;
+ 	}
+ 
+ 	memcpy(tea575x_radio_inst, &tea575x_radio, sizeof(tea575x_radio));
+@@ -352,17 +402,13 @@ void snd_tea575x_init(struct snd_tea575x
+ 	if (retval) {
+ 		printk(KERN_ERR "tea575x-tuner: can't register video device!\n");
+ 		kfree(tea575x_radio_inst);
+-		return;
++		return retval;
+ 	}
+ 
+ 	snd_tea575x_set_freq(tea);
+-
+-	/* mute on init */
+-	if (tea->ops->mute) {
+-		tea->ops->mute(tea, 1);
+-		tea->mute = 1;
+-	}
+ 	tea->vd = tea575x_radio_inst;
++
++	return 0;
+ }
+ 
+ void snd_tea575x_exit(struct snd_tea575x *tea)
 
-> +extern void __pci_disable_link_state(struct pci_dev *pdev, int state);
->  extern void pcie_clear_aspm(void);
->  extern void pcie_no_aspm(void);
->  #else
-
-pci_disable_link_state_locked would be more descriptive and would match
-other usage in the kernel.
-
-Thanks,
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Ondrej Zary
