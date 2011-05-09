@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab1EIIZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 04:25:42 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:30648 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753620Ab1EIIZl (ORCPT
+	id S1753527Ab1EIIiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 04:38:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58039 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab1EIIh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 04:25:41 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_uart: Support new device ML7223 IOH
-Date: Mon,  9 May 2011 17:25:20 +0900
-Message-Id: <1304929520-5798-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	Mon, 9 May 2011 04:37:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lK1M8il0jQlwMdMgFZA6WB+/NhWd2f4VZcxLq0GQ3lqcfuePKZisjnIgdbbJTnLukZ
+         mjQ0I84iwX2p/dbZ45CzfN/qXIek2dSRyd3bc2JH+8YNbCsQpBNHAGyUjQgHPNvs4ATA
+         ZwzUUCWToUKlj82HvF6enFiRGQbshQl9xwU4U=
+Date: Mon, 9 May 2011 10:37:54 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH ptrace] ptrace: use GROUP_STOP_TRAPPING for
+ PTRACE_DETACH too
+Message-ID: <20110509083754.GC1661@htj.dyndns.org>
+References: <20110508144424.GB29783@htj.dyndns.org>
+ <20110508160720.GA11705@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110508160720.GA11705@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new device OKI SEMICONDUCTOR ML7223 IOH(Input/Output Hub).
-The ML7223 IOH is for MP(Media Phone) use.
-The ML7223 is companion chip for Intel Atom E6xx series.
-The ML7223 is completely compatible for Intel EG20T PCH.
+Hey, Oleg.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/tty/serial/Kconfig    |   12 +++++++-----
- drivers/tty/serial/pch_uart.c |    8 ++++++++
- 2 files changed, 15 insertions(+), 5 deletions(-)
+On Sun, May 08, 2011 at 06:07:20PM +0200, Oleg Nesterov wrote:
+> > 	  for (i = 0; i < 100000; i++) {
+> > 		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
+> > 		  waitid(P_PID, tracee, &si, WSTOPPED | WNOHANG);
+> > 		  if (!si.si_pid)
+> > 			  nr_wait_fails++;
+> 
+> OK, this is clear, waitid(WSTOPPED | WNOHANG) can fail if it sees the
+> tracee inside the transition.
+> 
+> But,
+> 
+> > 		  if (ptrace(PTRACE_DETACH, tracee, NULL, NULL)) {
+> > 			  nr_ptrace_fails++;
+> 
+> I assume this can only fail for the same reason if waitid() fails?
+> Or there is something else?
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 80484af..2b9f47b 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1577,7 +1577,7 @@ config SERIAL_IFX6X60
- 	  Support for the IFX6x60 modem devices on Intel MID platforms.
- 
- config SERIAL_PCH_UART
--	tristate "Intel EG20T PCH UART/OKI SEMICONDUCTOR ML7213 IOH"
-+	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223) UART"
- 	depends on PCI
- 	select SERIAL_CORE
- 	help
-@@ -1585,10 +1585,12 @@ config SERIAL_PCH_UART
- 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
- 	  Enabling PCH_DMA, this PCH UART works as DMA mode.
- 
--	  This driver also can be used for OKI SEMICONDUCTOR ML7213 IOH(Input/
--	  Output Hub) which is for IVI(In-Vehicle Infotainment) use.
--	  ML7213 is companion chip for Intel Atom E6xx series.
--	  ML7213 is completely compatible for Intel EG20T PCH.
-+	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
-+	  Output Hub), ML7213 and ML7223.
-+	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
-+	  for MP(Media Phone) use.
-+	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
-+	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
- 
- config SERIAL_MSM_SMD
- 	bool "Enable tty device interface for some SMD ports"
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 26403b8..c63d0d1 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -253,6 +253,8 @@ enum pch_uart_num_t {
- 	pch_ml7213_uart0,
- 	pch_ml7213_uart1,
- 	pch_ml7213_uart2,
-+	pch_ml7223_uart0,
-+	pch_ml7223_uart1,
- };
- 
- static struct pch_uart_driver_data drv_dat[] = {
-@@ -263,6 +265,8 @@ static struct pch_uart_driver_data drv_dat[] = {
- 	[pch_ml7213_uart0] = {PCH_UART_8LINE, 0},
- 	[pch_ml7213_uart1] = {PCH_UART_2LINE, 1},
- 	[pch_ml7213_uart2] = {PCH_UART_2LINE, 2},
-+	[pch_ml7223_uart0] = {PCH_UART_8LINE, 0},
-+	[pch_ml7223_uart1] = {PCH_UART_2LINE, 1},
- };
- 
- static unsigned int default_baud = 9600;
-@@ -1534,6 +1538,10 @@ static DEFINE_PCI_DEVICE_TABLE(pch_uart_pci_id) = {
- 	 .driver_data = pch_ml7213_uart1},
- 	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8029),
- 	 .driver_data = pch_ml7213_uart2},
-+	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x800C),
-+	 .driver_data = pch_ml7223_uart0},
-+	{PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x800D),
-+	 .driver_data = pch_ml7223_uart1},
- 	{0,},
- };
- 
+Oh yeah, I was just curious about the timing and see how many fail
+waitid() but succeed ptrace().
+
+> >  	/*
+> >  	 * Reinstate GROUP_STOP_PENDING if group stop is in effect and
+> > -	 * @child isn't dead.
+> > +	 * @child isn't dead.  This will trigger TRACED -> RUNNING ->
+> > +	 * STOPPED transition.  As this transition can affect the next
+> > +	 * ptracer if it attaches before the transition completes, set
+> > +	 * TRAPPING too.  Read comment in ptrace_attach() for more details.
+> >  	 */
+> >  	if (!(child->flags & PF_EXITING) &&
+> >  	    (child->signal->flags & SIGNAL_STOP_STOPPED ||
+> >  	     child->signal->group_stop_count))
+> > -		child->group_stop |= GROUP_STOP_PENDING;
+> > +		child->group_stop |= GROUP_STOP_PENDING | GROUP_STOP_TRAPPING;
+> 
+> This doesn't look safe, see below. We do not know what the tracee does,
+> it can be even running.
+
+Ah, right.  Setting TRAPPING should probably depend on JOBCTL_TRAPPED
+flag which is added later.
+
+> >  static int ptrace_attach(struct task_struct *task)
+> >  {
+> > -	bool wait_trap = false;
+> >  	int retval;
+> >
+> >  	audit_ptrace(task);
+> > @@ -245,7 +247,6 @@ static int ptrace_attach(struct task_str
+> >  	if (task_is_stopped(task)) {
+> >  		task->group_stop |= GROUP_STOP_PENDING | GROUP_STOP_TRAPPING;
+> >  		signal_wake_up(task, 1);
+> > -		wait_trap = true;
+> >  	}
+> >
+> >  	spin_unlock(&task->sighand->siglock);
+> > @@ -256,9 +257,8 @@ unlock_tasklist:
+> >  unlock_creds:
+> >  	mutex_unlock(&task->signal->cred_guard_mutex);
+> >  out:
+> > -	if (wait_trap)
+> > -		wait_event(current->signal->wait_chldexit,
+> > -			   !(task->group_stop & GROUP_STOP_TRAPPING));
+> > +	wait_event(current->signal->wait_chldexit,
+> > +		   !(task->group_stop & GROUP_STOP_TRAPPING));
+> 
+> Suppose that SIGCONT or, worse, SIGKILL comes in between.
+
+Please ignore this one for now.  I'll re-do it after the SEIZE series.
+
+Thanks.
+
 -- 
-1.7.4
-
+tejun
