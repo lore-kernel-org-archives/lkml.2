@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1EINuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:50:11 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:62586 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab1EINuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:50:09 -0400
-Message-ID: <3A9C5CD56396439DBF825BB4E5779DB9@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
-        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
-        "Andrew Morton \(commit_signer:1/4=25%\)" <akpm@linux-foundation.org>,
-        "Randy Dunlap \(commit_signer:1/4=25%\)" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com><1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com><034A6447E0D54737B5CEE009A4D20B37@subhasishg> <20110509144610.6b4f7090@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110509144610.6b4f7090@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-Date: Mon, 9 May 2011 19:20:17 +0530
-Organization: Mistral Solutions
+	id S1753530Ab1EINuw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:50:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60948 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802Ab1EINut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:50:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,340,1301900400"; 
+   d="scan'208";a="744454247"
+Date: Mon, 9 May 2011 21:50:46 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
+ non-queueable flush drive
+Message-ID: <20110509135046.GB29753@sli10-conroe.sh.intel.com>
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
+ <20110505020417.817084678@sli10-conroe.sh.intel.com>
+ <20110505083853.GC30950@htj.dyndns.org>
+ <20110509130316.GB5975@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110509130316.GB5975@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I then modified this function to as follows and the error is not observed
->> anymore.
->
-> That looks like you are somehow calling uart_carrier_raised somewhere
-> with interrupts disabled ?
->
-I am not calling this function in my driver atall, this is getting called by 
-tty_port.c
-
-int tty_port_block_til_ready(struct tty_port *port,
-                                struct tty_struct *tty, struct file *filp)
-{
- /* Probe the carrier. For devices with no carrier detect this
-                   will always return true */
-                cd = tty_port_carrier_raised(port);
-                if (!(port->flags & ASYNC_CLOSING) &&
-                                (do_clocal || cd))
-                        break;
-                if (signal_pending(current)) {
-                        retval = -ERESTARTSYS;
-                        break;
-                }
-
+On Mon, May 09, 2011 at 09:03:16PM +0800, Vivek Goyal wrote:
+> On Thu, May 05, 2011 at 10:38:53AM +0200, Tejun Heo wrote:
+> 
+> [..]
+> > Similarly, I'd like to suggest something like the following.
+> > 
+> > 		/*
+> > 		 * Hold dispatching of regular requests if non-queueable
+> > 		 * flush is in progress; otherwise, the low level driver
+> > 		 * would keep dispatching IO requests just to requeue them
+> > 		 * until the flush finishes, which not only adds
+> > 		 * dispatching / requeueing overhead but may also
+> > 		 * significantly affect throughput when multiple flushes
+> > 		 * are issued back-to-back.  Please consider the following
+> > 		 * scenario.
+> > 		 *
+> > 		 * - flush1 is dispatched with write1 in the elevator.
+> > 		 *
+> > 		 * - Driver dispatches write1 and requeues it.
+> > 		 *
+> > 		 * - flush2 is issued and appended to dispatch queue after
+> > 		 *   the requeued write1.  As write1 has been requeued
+> > 		 *   flush2 can't be put in front of it.
+> > 		 *
+> > 		 * - When flush1 finishes, the driver has to process write1
+> > 		 *   before flush2 even though there's no fundamental
+> > 		 *   reason flush2 can't be processed first and, when two
+> > 		 *   flushes are issued back-to-back without intervening
+> > 		 *   writes, the second one essentially becomes noop.
+> > 		 *
+> > 		 * This phenomena becomes quite visible under heavy
+> > 		 * concurrent fsync workload and holding the queue while
+> > 		 * flush is in progress leads to significant throughput
+> > 		 * gain.
+> > 		 */
+> 
+> Tejun,
+> 
+> I am assuming that these back-to-back flushes are independent of each
+> other otherwise write request will anyway get between two flushes.
+Hi,
+yes, the flushes are independent.
  
+> If that's the case, then should we solve the problem by improving flush
+> merge logic a bit better. (Say idle a bit before issuing a flush only
+> if request queue is not empty).
+I tried some ways to improve flush merge logic. The problem I observed is something like:
+say we have 10 flushes, originally we dispatch 4 flush, write, 6 flush. doing more merge
+we have 6 flush, write, 4 flush. the flush request number sent to drive isn't reduced.
+Another reason I didn't see improvement with better back-to-back merge might be drive
+already optimizes two adjacent flushes case well.
 
+Thanks,
+Shaohua
