@@ -1,46 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab1EIN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:56:24 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53075 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab1EIN4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:56:23 -0400
-Date: Mon, 9 May 2011 14:56:12 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC] Controlling the ThinkPad battery charger
-Message-ID: <20110509135612.GA1873@srcf.ucam.org>
-References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+	id S1753788Ab1EIN72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:59:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39146 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753617Ab1EIN70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 09:59:26 -0400
+Date: Mon, 9 May 2011 09:58:51 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
+Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
+ non-queueable flush drive
+Message-ID: <20110509135851.GD5975@redhat.com>
+References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
+ <20110505020417.817084678@sli10-conroe.sh.intel.com>
+ <20110505083853.GC30950@htj.dyndns.org>
+ <20110509130316.GB5975@redhat.com>
+ <20110509135046.GB29753@sli10-conroe.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110509135046.GB29753@sli10-conroe.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 08, 2011 at 08:35:32AM -0400, Andrew Lutomirski wrote:
+On Mon, May 09, 2011 at 09:50:46PM +0800, Shaohua Li wrote:
+> On Mon, May 09, 2011 at 09:03:16PM +0800, Vivek Goyal wrote:
+> > On Thu, May 05, 2011 at 10:38:53AM +0200, Tejun Heo wrote:
+> > 
+> > [..]
+> > > Similarly, I'd like to suggest something like the following.
+> > > 
+> > > 		/*
+> > > 		 * Hold dispatching of regular requests if non-queueable
+> > > 		 * flush is in progress; otherwise, the low level driver
+> > > 		 * would keep dispatching IO requests just to requeue them
+> > > 		 * until the flush finishes, which not only adds
+> > > 		 * dispatching / requeueing overhead but may also
+> > > 		 * significantly affect throughput when multiple flushes
+> > > 		 * are issued back-to-back.  Please consider the following
+> > > 		 * scenario.
+> > > 		 *
+> > > 		 * - flush1 is dispatched with write1 in the elevator.
+> > > 		 *
+> > > 		 * - Driver dispatches write1 and requeues it.
+> > > 		 *
+> > > 		 * - flush2 is issued and appended to dispatch queue after
+> > > 		 *   the requeued write1.  As write1 has been requeued
+> > > 		 *   flush2 can't be put in front of it.
+> > > 		 *
+> > > 		 * - When flush1 finishes, the driver has to process write1
+> > > 		 *   before flush2 even though there's no fundamental
+> > > 		 *   reason flush2 can't be processed first and, when two
+> > > 		 *   flushes are issued back-to-back without intervening
+> > > 		 *   writes, the second one essentially becomes noop.
+> > > 		 *
+> > > 		 * This phenomena becomes quite visible under heavy
+> > > 		 * concurrent fsync workload and holding the queue while
+> > > 		 * flush is in progress leads to significant throughput
+> > > 		 * gain.
+> > > 		 */
+> > 
+> > Tejun,
+> > 
+> > I am assuming that these back-to-back flushes are independent of each
+> > other otherwise write request will anyway get between two flushes.
+> Hi,
+> yes, the flushes are independent.
+>  
+> > If that's the case, then should we solve the problem by improving flush
+> > merge logic a bit better. (Say idle a bit before issuing a flush only
+> > if request queue is not empty).
+> I tried some ways to improve flush merge logic. The problem I observed is something like:
+> say we have 10 flushes, originally we dispatch 4 flush, write, 6 flush. doing more merge
+> we have 6 flush, write, 4 flush. the flush request number sent to drive isn't reduced.
 
-> I like option 2 better, since it means that a userspace tool (like
-> GNOME) could learn how to operate a battery charge controller once and
-> then other laptops and devices could reuse the same interface.  The
-> problem is that the ACPI battery driver can't see the charge control.
-> So either it would need a hook to allow per-vendor control like this
-> or the power_supply class would need to recognize separate charge
-> controllers.
+If we try to get rid of WRITE completely between these 10 flushes then we
+run the risk of starving other READS/WRITES as long as flushes are going on.
 
-I agree that this is preferable. One option would be to just use smapi 
-and provide a hook to detach the ACPI driver, but that would potentially 
-mean a certain amount of code duplication.
+> Another reason I didn't see improvement with better back-to-back merge might be drive
+> already optimizes two adjacent flushes case well.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I did not understand this one. With improved back to back merge logic 
+we have already optimized the flush case. So for 10 flush and one write
+we seem to be issuing following (as per your mail).
+
+1 flush (6 flush merged)--> WRITE --> 1flush (4 flush merged).
+
+So where is the opprotinutiy for drive (non flush queuing drive) to optimize
+flush here?
+
+IOW, if flush merging is already working well, do we really want to move
+in a direction where we can potentially starve other READ/WRITE happening
+in an attempt to improve throughput for a sepecific workload.
+
+Thanks
+Vivek
