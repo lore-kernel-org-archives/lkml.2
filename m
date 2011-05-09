@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab1EIWZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:25:08 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:46487 "EHLO
+	id S1755772Ab1EIW0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:26:42 -0400
+Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:44060 "EHLO
 	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab1EIWZG (ORCPT
+	with ESMTP id S1755231Ab1EIW0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 18:25:06 -0400
-Date: Tue, 10 May 2011 00:25:04 +0200 (CEST)
+	Mon, 9 May 2011 18:26:40 -0400
+Date: Tue, 10 May 2011 00:26:39 +0200 (CEST)
 From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Please don't hijack patches - even trivial ones (was: Re: [PATCH
- 13/14] HPFS: Move declaration up, so that there are no out-of-scope
- pointers=
-In-Reply-To: <alpine.LNX.2.00.1105092215450.19722@swampdragon.chaosbits.net>
-Message-ID: <alpine.DEB.2.00.1105100023220.13325@artax.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1105082031050.7013@artax.karlin.mff.cuni.cz> <alpine.LNX.2.00.1105092215450.19722@swampdragon.chaosbits.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        linux-ia64@vger.kernel.org
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+In-Reply-To: <BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1105100025300.13325@artax.karlin.mff.cuni.cz>
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz> <alpine.LSU.2.00.1105081303540.16151@sister.anvils> <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz> <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com>
+ <BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 X-Personality-Disorder: Schizoid
 MIME-Version: 1.0
@@ -28,69 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Mon, 9 May 2011, Jesper Juhl wrote:
+On Mon, 9 May 2011, Linus Torvalds wrote:
 
-> On Sun, 8 May 2011, Mikulas Patocka wrote:
+> On Mon, May 9, 2011 at 8:57 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Hmm. One thing that strikes me is this problem also implies that the
+> > /proc/self/maps file is wrong for the GROWSUP case, isn't it?
+> >
+> > So I think we should not just apply your lock fix, but then *also*
+> > apply something like this:
 > 
-> > Move declaration up, so that there are no out-of-scope pointers
-> > 
-> > Reported-by: Jesper Juhl <jj@chaosbits.net>
-> > Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-> > 
+> Actually, I think we might be better off with something like this.
+> 
+> It makes a few more changes:
+> 
+>  - move the stack guard page checking in __get_user_pages() into the
+> rare case (ie we didn't find a page), since that's the only case we
+> care about (the thing about the guard page is that don't want to call
+> "handle_mm_fault()"). As a result, it's off any path where we can
+> possibly care about performance, so we might as well have a nice
+> helper function for both the grow-up and grow-down cases, instead of
+> trying to be clever and only look at the grow-down case for the first
+> page in the vma like you did in your patch.
+> 
+>    End result: simpler, more straightforward code.
+> 
+>  - Move the growsup/down helper functions to <linux/mm.h>, since the
+> /proc code really wants to use them too. That means that the
+> "vma_stack_continue()" function (which now got split up into two
+> cases, for the up/down cases) is now entirely just an internal helper
+> function - nobody else uses it, and the real interface are the
+> "stack_guard_page_xyz()"  functions. Renamed to be simpler.
+> 
+>  - changed that naming of those stack_guard_page functions to use
+> _start and _end instead of growsup/growsdown, since it actually takes
+> the start or the end of the page as the argument (to match the
+> semantics of the afore-mentioned helpers)
+> 
+>  - and finally, make /proc/<pid>/maps use these helpers for both the
+> up/down case, so now /proc/self/maps should work well for the growsup
+> case too.
+> 
+> Hmm?
+> 
+> The only oddish case is IA64 that actually has a stack that grows
+> *both* up and down. That means that I could make up a stack mapping
+> that has a single virtual page in it, that is both the start *and* the
+> end page. Now /proc/self/maps would actually show such a mapping with
+> "negative" size. That's interesting.
+> 
+> It would be easy enough to have a "if (end < start) end = start" there
+> for that case, but maybe it's actually interesting information.
+> 
+> Regardless, I'd like to hear whether this patch really does work on
+> PA-RISC and especially IA64. I think those are the only cases that
+> have a GROWSUP stack. And the IA64 case that supports both is the most
+> interesting, everybody else does just one or the other.
+> 
+>                     Linus
 
-So change it to:
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-
-> Hmm. I'm a little currious how my original Signed-off-by got turned into a 
-> Reported-by for this patch?
-
-I don't know. I probably checked the code independently after your report 
-and ended up fixing exactly the same thing that you fixed.
+I will test it after a week, now I'm traveling away.
 
 Mikulas
-
-> This patch is *exactely* the one I submitted on Dec 24 in a message with 
-> Message-ID: <alpine.LNX.2.00.1012242020090.28973@swampdragon.chaosbits.net>
-> 
-> Ok, it's a trivial little thing, but still. When the patch is completely 
-> unchanged I think it's a little steep to change the original authors 
-> Signed-off-by and essentially claim authorship of the patch for one self.
-> 
-> 
-> > ---
-> >  fs/hpfs/ea.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > Index: linux-2.6.39-rc5-fast/fs/hpfs/ea.c
-> > ===================================================================
-> > --- linux-2.6.39-rc5-fast.orig/fs/hpfs/ea.c	2011-05-05 01:03:00.000000000 +0200
-> > +++ linux-2.6.39-rc5-fast/fs/hpfs/ea.c	2011-05-05 01:03:01.000000000 +0200
-> > @@ -76,6 +76,7 @@ int hpfs_read_ea(struct super_block *s, 
-> >  	unsigned pos;
-> >  	int ano, len;
-> >  	secno a;
-> > +	char ex[4 + 255 + 1 + 8];
-> >  	struct extended_attribute *ea;
-> >  	struct extended_attribute *ea_end = fnode_end_ea(fnode);
-> >  	for (ea = fnode_ea(fnode); ea < ea_end; ea = next_ea(ea))
-> > @@ -93,7 +94,6 @@ int hpfs_read_ea(struct super_block *s, 
-> >  	ano = fnode->ea_anode;
-> >  	pos = 0;
-> >  	while (pos < len) {
-> > -		char ex[4 + 255 + 1 + 8];
-> >  		ea = (struct extended_attribute *)ex;
-> >  		if (pos + 4 > len) {
-> >  			hpfs_error(s, "EAs don't end correctly, %s %08x, len %08x",
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
