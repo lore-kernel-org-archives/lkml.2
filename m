@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344Ab1EIElS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 00:41:18 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49737 "EHLO gir.skynet.ie"
+	id S1751489Ab1EIFYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 01:24:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55853 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab1EIElR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 00:41:17 -0400
-Date: Mon, 9 May 2011 05:40:44 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1105090538250.8999@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751350Ab1EIFYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 01:24:00 -0400
+Date: Mon, 9 May 2011 14:58:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, Anton Guda <atu@dmeti.dp.ua>
+Subject: linux-next: build failure after merge of the final tree
+ (driver-core tree related)
+Message-Id: <20110509145854.9e6d8806.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+Hi all,
 
-One regression fix in the debugfs output, a couple of radeon fixes, and a 
-nouveau unload fix. I've got a dirty fix for the DMA_ERROR_CODE dependency 
-breaking drm on alpha but waiting for a bit more before you get it, its 
-just a workaround until proper fix can happen in 2.6.40 hopefully
+After merging the final tree, today's linux-next build (powerpc allnoconfig)
+failed like this:
 
-Dave.
+kernel/sys.c: In function 'kernel_restart_prepare':
+kernel/sys.c:317: error: implicit declaration of function 'usermodehelper_d=
+isable'
 
-The following changes since commit 8aeb96f80232e9a701b5c4715504f4c9173978bd:
+Caused by commit b50fa7c8077c ("reboot: disable usermodehelper to prevent
+fs access").  See Rule 1 in Documentation/SubmitChecklist.
 
-  drm/radeon/kms: fix gart setup on fusion parts (v2) (2011-05-04 10:16:40 +1000)
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+--Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW
+Content-Type: application/pgp-signature
 
-Alex Deucher (2):
-      drm/radeon/kms: ATPX switcheroo fixes
-      drm/radeon/kms: add pci id to acer travelmate quirk for 5730
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Daniel Vetter (1):
-      drm: mm: fix debug output
+iQEcBAEBAgAGBQJNx3SOAAoJEDMEi1NhKgbsb08H+wa+zoNsiEu54T5XV4fkOaP3
+yTZpLc7V1ufJHUNp3FclU4nOeOSJ2q6uaGM7Ih6/LbEmasPon9YQULY5ZG7ZdPmx
+4EEkeu8Bj9eA7Q7KK6fwUf2/afPi0X1khWHZbpPCpd8ridExluERcWAo6AwpJVTA
+VJCqN1WNi8Agf67ncYx4gIp1NGFrrNUN94lfdz8b9ABiPM+YDZZJ9bblrYsrKYyV
+6DUwPISWrZlMsI4mV1u7TWgDyh8G2gzxoZILQoX/dd9RRpgGQTsNghh9q1pWK1Ql
+qSqinZMx1PcRpo7j5l0BO82xlsELLUZd/MKEPRPXOcxTBiiQjyQhj6DfLD7OZVY=
+=DN31
+-----END PGP SIGNATURE-----
 
-Dave Airlie (1):
-      Merge remote branch 'nouveau/drm-nouveau-fixes' of /ssd/git/drm-nouveau-next into drm-fixes
-
-Ilija Hadzic (1):
-      drm/radeon: fix order of doing things in radeon_crtc_cursor_set
-
-Jimmy Rentz (1):
-      drm/nouveau: Fix a crash at card takedown for NV40 and older cards
-
- drivers/gpu/drm/drm_mm.c                     |    6 ++--
- drivers/gpu/drm/nouveau/nouveau_mem.c        |    2 -
- drivers/gpu/drm/nouveau/nouveau_state.c      |    5 ++++
- drivers/gpu/drm/radeon/radeon_atombios.c     |    4 +-
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   29 ++++++++++++++++++++++++-
- drivers/gpu/drm/radeon/radeon_cursor.c       |    6 ++--
- include/drm/drm_mm.h                         |    2 +-
- 7 files changed, 41 insertions(+), 13 deletions(-)
+--Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW--
