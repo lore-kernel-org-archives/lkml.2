@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab1EIMjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 08:39:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753048Ab1EIMjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 08:39:20 -0400
-Date: Mon, 9 May 2011 08:39:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        kexec@lists.infradead.org
-Subject: Re: [Bug] Kdump does not work when panic triggered due to MCE
-Message-ID: <20110509123902.GA5975@redhat.com>
-References: <20110506165412.GB2719@in.ibm.com>
+	id S1752968Ab1EIMjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 08:39:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46942 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab1EIMjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 08:39:09 -0400
+Date: Mon, 9 May 2011 14:39:04 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: "Tian, Kevin" <kevin.tian@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v2 1/2] x86: skip migrating IRQF_PER_CPU irq in
+ fixup_irqs
+In-Reply-To: <20110506135828.GC5500@dumpdata.com>
+Message-ID: <alpine.LFD.2.02.1105091437500.2843@ionos>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E2@shsmsx502.ccr.corp.intel.com> <20110506135828.GC5500@dumpdata.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506165412.GB2719@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 10:24:12PM +0530, K.Prasad wrote:
-> Hi All,
-> 	I wanted to test the behaviour of kdump when panic is triggered
-> due to MCE on x86 and found that kdump is not captured.
+On Fri, 6 May 2011, Konrad Rzeszutek Wilk wrote:
+> On Fri, May 06, 2011 at 02:43:36PM +0800, Tian, Kevin wrote:
+> > because Xen event chip silently fails the set_affinity ops, and
+> > logically IRQF_PER_CPU should be recognized here.
 > 
-> While the kdump service is configured and running and non-MCE panics
-> (such as those triggered through to /proc/sysrq-trigger) successfully
-> capture a kdump, any fatal MCE error injected through the mce-inject
-> tool causes a reboot of the machine.
-> 
-> The code has been traced (using early_serial_putc()) to enter the kexec
-> path i.e. panic()->crash_kexec()->machine_kexec()->relocate_kernel()
-> but is untraceable further.
-> 
-> Kdump works fine when the same the similar test is carried out inside a
-> KVM guest.
-> 
-> Has anybody tested this before? Or have found kdump working when fatal
-> MCEs have actually occurred?
+> OK, so what if the set_affinity ops was implemented?
 
-Prasad,
+An interrupt chip which has a set_affinity op should not mark
+something per cpu, which implies that the irq CANNOT be moved.
 
-I have never tried taking dump in MCE situation. Does kdump work on this
-machine with normal panic()?
+Thanks,
 
-Use --debug and --serial option in kexec-tools to print some debug message
-and look for "I am in purgatory". This will tell you whether you hanged
-in first kernel or second kernel.
-
-Then put "outb()" messages in the kernel to trace what happened. 
-
-Thanks
-Vivek
+	tglx
