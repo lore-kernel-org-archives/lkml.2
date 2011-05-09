@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab1EIO2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:28:43 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:34496 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1EIO2m convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:7:1>);
-	Mon, 9 May 2011 10:28:42 -0400
-Message-Id: <4DC81635020000780004072A@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 09 May 2011 15:28:37 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Ian Campbell" <Ian.Campbell@eu.citrix.com>,
-        "Kevin Tian" <kevin.tian@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
+	id S1753859Ab1EIOab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:30:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46614 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab1EIOaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 10:30:30 -0400
+Date: Mon, 9 May 2011 10:30:27 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH v2 1/2] x86: skip migrating IRQF_PER_CPU irq in
-	 fixup_irqs
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E2@shsmsx502.ccr.corp.intel.com>
- <20110506135828.GC5500@dumpdata.com>
- <alpine.LFD.2.02.1105091437500.2843@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105091437500.2843@ionos>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+        Dmitry Monakhov <dmonakhov@openvz.org>, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 1/3] blkdev: Submit discard bio in batches in
+ blkdev_issue_discard()
+Message-ID: <20110509143027.GA29635@infradead.org>
+References: <1304345841-20063-1-git-send-email-lczerner@redhat.com>
+ <4DBEDA78.7020502@fusionio.com>
+ <alpine.LFD.2.00.1105051717050.3760@dhcp-27-109.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1105051717050.3760@dhcp-27-109.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 09.05.11 at 14:39, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 6 May 2011, Konrad Rzeszutek Wilk wrote:
->> On Fri, May 06, 2011 at 02:43:36PM +0800, Tian, Kevin wrote:
->> > because Xen event chip silently fails the set_affinity ops, and
->> > logically IRQF_PER_CPU should be recognized here.
->> 
->> OK, so what if the set_affinity ops was implemented?
+On Thu, May 05, 2011 at 05:20:40PM +0200, Lukas Czerner wrote:
+> > Good results. It'd be more efficient to add the vectored discard support
+> > and use it for this too though, and it would get rid of the need to wait
+> > on the batches since there'd be just one discard bio for the ranges.
+> > 
 > 
-> An interrupt chip which has a set_affinity op should not mark
-> something per cpu, which implies that the irq CANNOT be moved.
+> Since we do not have vectored discard yet, can this change go in as it
+> is ? Also, Christoph thinks that it would not help anyway since the we do
+> batch the discard requests only when it exceeds the max range.
 
-Why shouldn't it be possible o use the same "chip" for both per-CPU
-and "normal" IRQs?
-
-Jan
+I think this patch is orthogonal to vectored discard.  The batching
+is important for large ranges which generally come from BLKDISCARD or
+FITRIM, while vectored discard is mostly interesting for lots of small
+discards at transaction commit time. 
 
