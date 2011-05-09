@@ -1,162 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab1EIVdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:33:20 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:42436 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753404Ab1EIVdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:33:19 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: long delay when using HMDI output on RS780
-Date: Mon, 9 May 2011 15:32:48 -0600
-User-Agent: KMail/1.13.7 (Linux/2.6.38-2-amd64; KDE/4.6.2; x86_64; ; )
-Cc: Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-References: <201105071815.03318.thomas@fjellstrom.ca> <201105091504.54868.thomas@fjellstrom.ca> <BANLkTi=iV7Mg_4Lx_+Z6c7C2qzMxsf0Aew@mail.gmail.com>
-In-Reply-To: <BANLkTi=iV7Mg_4Lx_+Z6c7C2qzMxsf0Aew@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754844Ab1EIVfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:35:48 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:57803 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754158Ab1EIVfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 17:35:46 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=A6aj3yfMAEqpghCeh5pQjYxV59zFPokWkBLwnh0QT9ZNHwEllMkoCdcXRLTnGLadrH9zXB4khjUYgJoRCTlodpfvE8OkUj+hbPOYPc3IhqXOfH2mzdP12BbwZlL/wFJS;
+Date: Mon, 9 May 2011 14:35:36 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] pci, e1000e: Add and use __pci_disable_link_state
+Message-ID: <20110509143536.08bd0297@jbarnes-desktop>
+In-Reply-To: <4DC6E6E8.9040306@kernel.org>
+References: <4DC6E6E8.9040306@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105091532.48331.thomas@fjellstrom.ca>
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 9, 2011, Alex Deucher wrote:
-> On Mon, May 9, 2011 at 5:04 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> 
-wrote:
-> > On May 9, 2011, Thomas Fjellstrom wrote:
-> >> On May 9, 2011, Jerome Glisse wrote:
-> >> > On Mon, May 9, 2011 at 3:50 PM, Thomas Fjellstrom
-> >> > <thomas@fjellstrom.ca>
-> >> 
-> >> wrote:
-> >> > > On May 7, 2011, Thomas Fjellstrom wrote:
-> >> > >> I just switched to using HDMI with my media center, and its causing
-> >> > >> a 30+ second delay in the screen turning on, as well as a 7 second
-> >> > >> delay in the X startup when it tries to fetch the EDID
-> >> > >> information. Basically I don't get any picture at all once KMS
-> >> > >> initializes until after X has been up a few seconds.
-> >> > >> 
-> >> > >> The odd thing is the monitor seems to think something is going on,
-> >> > >> since it doesn't go to sleep or display its "No Signal" OSD, but
-> >> > >> just after X starts up, it pops up the "Input detected/switched"
-> >> > >> OSD, and the picture appears.
-> >> > >> 
-> >> > >> The bios, grub2 (in both text mode and graphics mode), and the
-> >> > >> initial linux kernel messages all display fine and immediately.
-> >> > >> Its only once KMS and radeondrmfb initializes that there's a
-> >> > >> problem (at least till X starts up).
-> >> > >> 
-> >> > >> I've just built with a vanila 2.6.38.4 kernel from the stable git
-> >> > >> repo, and have played with some EDID settings, trying to disable
-> >> > >> edid where I could thinking thats what caused the problem. That
-> >> > >> doesn't seem to be the case though. I also tried playing with the
-> >> > >> video= kernel option, trying to force disable VGA-1, and set a
-> >> > >> static mode for HDMI-A-1, but if I try, it seems to force disable
-> >> > >> HDMI-A-1 instead of force the mode.
-> >> > >> 
-> >> > >> With a DVI-D cable instead, the problem goes away.
-> >> > >> 
-> >> > >> Attached are the dmesg and xorg.log files for the latest boot with
-> >> > >> HDMI (no video= parameter, and EDID enabled, most settings at
-> >> > >> defaults).
-> >> > >> 
-> >> > >> What exactly would cause this, and is there a way I can fix it?
-> >> > > 
-> >> > > I've been playing around with it more, and got it to not blank the
-> >> > > screen after KMS init, /once/. So far no luck repeating that
-> >> > > success.
-> >> > > 
-> >> > > I've tried late, and early kms init, and currently have the radeon
-> >> > > module and firmware compiled into the kernel. Boot times at least
-> >> > > are fairly decent, about 8-10s till X starts, but about 25-35s till
-> >> > > anything shows up.
-> >> > > 
-> >> > > Some strangeness, I have the kernel set to force the hdmi output to
-> >> > > on, with a very specific mode, that X tends to like, the vga port
-> >> > > is forced disabled. X is set to ignore EDID, and also set to that
-> >> > > specific mode that it tends to auto set itself. Regardless X still
-> >> > > wants to pause for 7s 2-3 times while processing EDID info.
-> >> > > 
-> >> > > I've attached the new dmesg and xorg logs from the latest attempts.
-> >> > > 
-> >> > > Note, this only happens with KMS, with HDMI. disabling KMS, or using
-> >> > > DVI makes the problem go away. Even grub's own graphical mode works
-> >> > > fine, its only once KMS inits that things go bad, and its not till
-> >> > > after X is up for a few seconds that something displays on my
-> >> > > screen.
-> >> > > 
-> >> > > --
-> >> > > Thomas Fjellstrom
-> >> > > thomas@fjellstrom.ca
-> >> > 
-> >> > Please boot with drm.debug=4 and attach dmesg it should be more
-> >> > verbose. You might also want to try booting with radeon.audio=0
-> >> 
-> >> Hi, attached both one with just drm.debug=4, and one with that and
-> >> radeon.audio=0.
-> >> 
-> >> Now, I'm guessing its a bug in my monitor claiming it can do HDMI audio?
-> >> As setting radeon.audio=0 seems to have fixed the blanking problem. And
-> >> the dmesg logs seem to claim that radeon thinks it can do HDMI audio.
+On Sun, 08 May 2011 11:54:32 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
+
 > 
-> Most likely the driver is sending the wrong packets for hdmi audio.
-> Until that gets fixed up, it's probably best to disable hdmi audio if
-> it's not working for you.
-
-Ok. I'll do that for now, since I have no need for HDMI audio atm. My receiver 
-is only capable of Dolby Pro Logic input, so eh.
-
-Would be nice to fix the xorg pauses. And whatever is causing the massive 
-amounts of drm log spam (yes, I could disable drm.debug, but that would just 
-hide the issue, as whatever it is, will keep doing whatever it is doing 
-regardless).
-
-> Alex
+> Need to use it in _e1000e_disable_aspm.
+> when aer happens,
+> pci_walk_bus already have down_read(&pci_bus_sem)...
+> then report_slot_reset
+>         ==> e1000_io_slot_reset
+>                 ==> e1000e_disable_aspm
+>                         ==> pci_disable_link_state...
 > 
-> >> It also seems to be ignoring the mode I've requested via the video=
-> >> param. It at least sees that I want it forced enabled, but claims its
-> >> 0x0? Or at least it seems its picking the preferred mode.
-> >> 
-> >> Still have X blocking for up to 14s though.
-> >> 
-> >> Theres also a bunch of repeated log messages from drm now, every second
-> >> about it seems to spam the following lines: (the last one is repeated a
-> >> bunch of times, with FB:44 or FB:42)
-> >> 
-> >> [   31.330033] [drm:output_poll_execute], [CONNECTOR:13:VGA-1] status
-> >> updated from 2 to 2
-> >> [   31.435455] [drm:radeon_atombios_connected_scratch_regs], DFP1
-> >> connected [   31.435463] [drm:output_poll_execute],
-> >> [CONNECTOR:15:HDMI-A-1] status updated from 1 to 1
-> >> [   31.437391] [drm:drm_mode_addfb], [FB:42]
-> >> 
-> >> > Cheers,
-> >> > Jerome
-> > 
-> > Ok, a bit more news. My monitor does indeed support audio, at least it
-> > has volume buttons, so I assume it has speakers, and should support HDMI
-> > audio (I have never used it though).
-> > 
-> > --
-> > Thomas Fjellstrom
-> > thomas@fjellstrom.ca
-> > _______________________________________________
-> > dri-devel mailing list
-> > dri-devel@lists.freedesktop.org
-> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> We can not use pci_disable_link_state, and it will try to hold pci_bus_sem again.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Try to have __pci_disable_link_state that will not need to hold pci_bus_sem.
 
+What about the other callers of e1000e_disable_aspm?  Do they already
+have the lock held or is it just reset that needs the already locked
+version?
+
+> +extern void __pci_disable_link_state(struct pci_dev *pdev, int state);
+>  extern void pcie_clear_aspm(void);
+>  extern void pcie_no_aspm(void);
+>  #else
+
+pci_disable_link_state_locked would be more descriptive and would match
+other usage in the kernel.
+
+Thanks,
 
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Jesse Barnes, Intel Open Source Technology Center
