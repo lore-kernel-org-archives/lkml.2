@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab1EIGD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 02:03:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56914 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab1EIGD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 02:03:57 -0400
-Date: Mon, 9 May 2011 15:54:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 5
-Message-Id: <20110509155452.e67bfd6e.sfr@canb.auug.org.au>
-In-Reply-To: <20110507032442.GB21017@game.jcrosoft.org>
-References: <20110505134959.b3761297.sfr@canb.auug.org.au>
-	<20110507032442.GB21017@game.jcrosoft.org>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__9_May_2011_15_54_52_+1000_iyZyc76E=AUrbPPm"
+	id S1752189Ab1EIF4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 01:56:43 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:39864 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751537Ab1EIF4m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 01:56:42 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:X-Identified-User;
+	b=rzvBfgxObN37SoE/LksYokmVRILDJI/xXXZSn1BA0JAsCau+QDNjnLr2VImid1Uld8Uo4fqlW/ZiP2DZz0L8nQT4nB99iXQbE5plL/qt6NlF2R8z/h1Q+HGT4hfhF8OE;
+From: Tao Ma <tm@tao.ma>
+To: axboe@kernel.dk
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the block tree
+Date: Mon,  9 May 2011 13:55:37 +0800
+Message-Id: <1304920537-3975-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20110509134931.6d822e05.sfr@canb.auug.org.au>
+References: <20110509134931.6d822e05.sfr@canb.auug.org.au>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_May_2011_15_54_52_+1000_iyZyc76E=AUrbPPm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Jens,
 
-Hi,
+Sorry for the trouble. Here is the fix.
 
-On Sat, 7 May 2011 05:24:42 +0200 Jean-Christophe PLAGNIOL-VILLARD <plagnio=
-j@jcrosoft.com> wrote:
->
-> 	on at91 at91sam9261ek_defconfig and at91sam9263ek_defconfig
->=20
-> 	will not exist next merge window
->=20
-> 	as we merge all 9263 and 9261 in
-> 	at91sam9263_defconfig and at91sam9261_defconfig
-> 	respectively
->=20
-> 	for at91rm9200 there are all merged in at91rm9200_defconfig
-> 	in previous release
->=20
-> 	so ecbat91_defconfig does not exist anymore
+>From 60bf0c0972c0d0d237e30e1f1c79356f4aefa138 Mon Sep 17 00:00:00 2001
+From: Tao Ma <boyu.mt@taobao.com>
+Date: Mon, 9 May 2011 13:39:49 +0800
+Subject: [PATCH] block: Change wrong type cast in part_discard_alignment_show.
 
-Thanks for letting me know. I have updated our build system.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Use 'unsigned int' instead of 'unsigned long long' introduced by commit
+"block: Remove extra discard_alignment from hd_struct".
 
---Signature=_Mon__9_May_2011_15_54_52_+1000_iyZyc76E=AUrbPPm
-Content-Type: application/pgp-signature
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/partitions/check.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index b7e16bc..b2bae85 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -258,7 +258,7 @@ ssize_t part_discard_alignment_show(struct device *dev,
+ 	struct gendisk *disk = dev_to_disk(dev);
+ 
+ 	return sprintf(buf, "%u\n",
+-		       (unsigned long long)queue_limit_discard_alignment(
++		       (unsigned int)queue_limit_discard_alignment(
+ 							&disk->queue->limits,
+ 							p->start_sect));
+ }
+-- 
+1.7.4
 
-iQEcBAEBAgAGBQJNx4GsAAoJEDMEi1NhKgbswAsH/0zb/X1oEYkmtFLk/oEpqu5t
-aIqbbxN8YXmsWTtPW1fFPGhoj9psjHVBoY0dmzCt9ImkpRRB05kKOSakzA7NzxS6
-RbuOhJDAA19/KxsinzQH0PXiGze5/gT9Pzjz/h5RFEfOiWhuT3vRmCbK8povEs3I
-EhrXF0Moz3EtBODOqlL96wSkhLJe2ZGJ06UrzuUIKDu3/xuNjKGGIwHCoyVL3+3v
-b6WNO7enGWOjfYph5JrWvdB8NHmqcS3Fxt5h4zsHV+6cOwcyS6HZ2SqVxtUahokT
-70uvpPDTZI3y3TIt8yc4JMiUOBmLgjDojP5qpA58FpFfohSuDUtibHrOzXnM4yg=
-=4Jet
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_May_2011_15_54_52_+1000_iyZyc76E=AUrbPPm--
