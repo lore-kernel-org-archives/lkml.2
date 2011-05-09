@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab1EIJsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 05:48:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33417 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab1EIJsp (ORCPT
+	id S1751465Ab1EIJtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 05:49:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55776 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab1EIJts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 05:48:45 -0400
+	Mon, 9 May 2011 05:49:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AQanbOl3MFG+JzjRb8bhIA5ZqSqH7V+fW1uV+gzbliyMMQ36BFwCsGQG8fPEow97bv
-         Bv/Vl99m5bsTF6Hxvbq8WCu+1VbrpxxNoGbrWI2dKzlBozFY3QG7ViXMs+XKaqfkJQfR
-         i8Lxo0p804nywoY0n9MYG9OXdVvfiAxhDXa5A=
-Date: Mon, 9 May 2011 11:48:39 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
- group stop notification
-Message-ID: <20110509094839.GG1661@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <201105090027.41534.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105090027.41534.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=MQUKEnUnezzgKYPRM78AF4Zj8LiH9IFZb/AbcdHGRjdsHo2anqXG3XBTSJMgoGfZHQ
+         Lw2ZB795ronasawQ9bfwyecokpKa/JNOMLv0+Wt1LYp3xS9fhPGsiV80f4n6czQm+raw
+         dxlA0tuWMsSLLWVahq+Wp1vh5Rsw4HwDZFti4=
+Subject: [PATCH] regulator: Use mc13xxx_reg_write instead of
+ mc13xxx_reg_rmw in mc13892_sw_regulator_set_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yong Shen <yong.shen@linaro.org>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 17:49:40 +0800
+Message-ID: <1304934580.9600.7.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently, we call mc13xxx_reg_read and mc13xxx_reg_rmw for the same register.
+This can be converted to simply a mc13xxx_reg_read and a mc13xxx_reg_write,
+thus save a redundant register read.
 
-On Mon, May 09, 2011 at 12:27:41AM +0200, Denys Vlasenko wrote:
-> > After PTRACE_SEIZE, tracee will trap.
-> 
-> So which is it? Does PTRACE_SEIZE trap or not?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+hi Uwe, Yong,
+I don't have this hardware handy,
+I appreciate if you can help to test this patch if you think this patch is ok.
 
-PTRACE_SEIZE attaches to a new tracee and traps it.  INTERRUPT traps
-already attached tracee.
+Regards,
+Axel
 
-> > * Group stop notification is implemented as sticky INTERRUPT trap
-> >   which gets cleared on PTRACE_GETSIGINFO and notifies both start and
-> >   end of group stops.
-> > ...
-> > * The trap condition is sticky until GETSIGINFO.  This is necessary
-> >   because generation of the event may race with CONT and ptracer may
-> >   miss the trap.
-> 
-> As a userspace guy, I find this explanation unclear.
-> 
-> What is "sticky" exactly? siginfo.si_pt_flags contents?
-> 
-> What exactly "sticky" means? If PTRACE_GETSIGINFO is not queried
-> by userspace after it observed ptrace stop, what will happen?
+ drivers/regulator/mc13892-regulator.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
 
-It means that INTERRUPT trap will happen repeatedly until the
-condition is cleared by PTRACE_GETSIGINFO.
-
-> Real world users of ptrace, such as strace, will likely avoid
-> PTRACE_GETSIGINFO'ing on every stop - they will examine wait status,
-> and query PTRACE_GETSIGINFO only if they know they have to -
-> such as when they see a job stop signal (SIGSTOP/SIGTSTP/etc),
-> not SIGTRAP.
->
-> Is it still possible, or PTRACE_GETSIGINFO will be a mandatory call
-> after each ptrace stop for any userspace usage which wants to track
-> job stop status of the tracee?
-
-You can tell INTERRUPT trap from the exit_code stored in si_status
-(si_code CLD_TRAPPED and si_status SIGTRAP | (PTRACE_EVENT_INTERRUPT
-<< 8)), so you can call GETSIGINFO only after INTERRUPT traps, which
-should be enough for job control notifications, but you would also
-have to do GETSIGINFO to discern signal delivery and actual group stop
-traps (si_code zero and si_status is the signo for both).
-
-> I don't know the status of ptrace test suite after I stopped working
-> on strace (did the suite bit rot, or is it maintained and still
-> relevant?). If it is still in use, I can adapt these tests and add
-> them to it.
-
-I have no idea but am planning write more complete example program.
-The ones included in the commit messages are mostly just to show that
-the basic functionality implemented by the commit works, so they
-aren't necessarily good examples.
-
-Thank you.
-
+diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
+index 1b8f739..33d43b2 100644
+--- a/drivers/regulator/mc13892-regulator.c
++++ b/drivers/regulator/mc13892-regulator.c
+@@ -431,7 +431,8 @@ static int mc13892_sw_regulator_set_voltage(struct regulator_dev *rdev,
+ 		int min_uV, int max_uV, unsigned *selector)
+ {
+ 	struct mc13xxx_regulator_priv *priv = rdev_get_drvdata(rdev);
+-	int hi, value, val, mask, id = rdev_get_id(rdev);
++	int hi, value, mask, id = rdev_get_id(rdev);
++	u32 valread;
+ 	int ret;
+ 
+ 	dev_dbg(rdev_get_dev(rdev), "%s id: %d min_uV: %d max_uV: %d\n",
+@@ -447,15 +448,16 @@ static int mc13892_sw_regulator_set_voltage(struct regulator_dev *rdev,
+ 
+ 	mc13xxx_lock(priv->mc13xxx);
+ 	ret = mc13xxx_reg_read(priv->mc13xxx,
+-		mc13892_regulators[id].vsel_reg, &val);
++		mc13892_regulators[id].vsel_reg, &valread);
+ 	if (ret)
+ 		goto err;
+ 
+-	hi  = val & MC13892_SWITCHERS0_SWxHI;
+ 	if (value > 1375)
+ 		hi = 1;
+-	if (value < 1100)
++	else if (value < 1100)
+ 		hi = 0;
++	else
++		hi = valread & MC13892_SWITCHERS0_SWxHI;
+ 
+ 	if (hi) {
+ 		value = (value - 1100000) / 25000;
+@@ -464,8 +466,10 @@ static int mc13892_sw_regulator_set_voltage(struct regulator_dev *rdev,
+ 		value = (value - 600000) / 25000;
+ 
+ 	mask = mc13892_regulators[id].vsel_mask | MC13892_SWITCHERS0_SWxHI;
+-	ret = mc13xxx_reg_rmw(priv->mc13xxx, mc13892_regulators[id].vsel_reg,
+-			mask, value << mc13892_regulators[id].vsel_shift);
++	valread = (valread & ~mask) |
++			(value << mc13892_regulators[id].vsel_shift);
++	ret = mc13xxx_reg_write(priv->mc13xxx, mc13892_regulators[id].vsel_reg,
++			valread);
+ err:
+ 	mc13xxx_unlock(priv->mc13xxx);
+ 
 -- 
-tejun
+1.7.1
+
+
+
