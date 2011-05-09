@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab1EIWch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:32:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60802 "EHLO
+	id S932281Ab1EIWhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:37:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33034 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753532Ab1EIWcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 18:32:35 -0400
+	by vger.kernel.org with ESMTP id S1755640Ab1EIWhC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 18:37:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1304979549.4865.56.camel@mulgrave.site>
-References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
- <alpine.LSU.2.00.1105081303540.16151@sister.anvils> <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
- <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com> <BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
- <1304979549.4865.56.camel@mulgrave.site>
+In-Reply-To: <20110509142014.617e3100@jbarnes-desktop>
+References: <4DC250A6.9040802@kernel.org> <20110506081243.GF16782@ram-laptop>
+ <4DC4586C.6020308@kernel.org> <20110507015240.GN16782@ram-laptop>
+ <4DC4B059.3030502@kernel.org> <4DC64C58.70203@kernel.org> <20110509142014.617e3100@jbarnes-desktop>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 May 2011 15:31:42 -0700
-Message-ID: <BANLkTim7ATRyJ2NvoCj4Sv=7CLizKMd_WA@mail.gmail.com>
-Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-ia64@vger.kernel.org
-Content-Type: multipart/mixed; boundary=002354477dba8c26c904a2df68c4
+Date: Mon, 9 May 2011 15:36:10 -0700
+Message-ID: <BANLkTi=U0LSj45y+5+n+7R=Cj4uRqk-LQw@mail.gmail.com>
+Subject: Re: [PATCH -v2] pci: Check bridge resources after resource allocation.
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ram Pai <linuxram@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---002354477dba8c26c904a2df68c4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, May 9, 2011 at 3:19 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
+On Mon, May 9, 2011 at 2:20 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 >
-> So I can test the patch, if you tell me how. =A0I don't use lvm2, so it
-> would have to be a simple test case.
+> Linus?  Bjorn?  Ram?
 
-Something like the attached. Run it as root (it needs root just for
-the mlockall), and see whether the stack it shows changes.
+I dunno. The patch really makes me go "that looks *broken*". I really
+dislike it. But maybe the crappiness of the patch comes from the
+horror that is the current code.
 
-With current kernels, I think the stack expands by one page during the
-mlockall (for STACK_GROWSUP), with the patch it shouldn't.
-
-                   Linus
-
---002354477dba8c26c904a2df68c4
-Content-Type: text/x-csrc; charset=US-ASCII; name="t.c"
-Content-Disposition: attachment; filename="t.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gnhzk71z0
-
-I2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzdHJpbmcuaD4KI2luY2x1ZGUgPHN5cy9tbWFu
-Lmg+CgpzdGF0aWMgdm9pZCBzaG93X3N0YWNrKHZvaWQpCnsKCUZJTEUgKm1hcDsKCWNoYXIgYnVm
-WzEwMDBdOwoKCW1hcCA9IGZvcGVuKCIvcHJvYy9zZWxmL21hcHMiLCAiciIpOwoJaWYgKCFtYXAp
-CgkJcmV0dXJuOwoKCXdoaWxlIChmZ2V0cyhidWYsIDEwMDAsIG1hcCkpIHsKCQlpZiAoIXN0cnN0
-cihidWYsICJbc3RhY2tdIikpCgkJCWNvbnRpbnVlOwoJCWZwdXRzKGJ1Ziwgc3Rkb3V0KTsKCX0K
-CglmY2xvc2UobWFwKTsKfQoKaW50IG1haW4odm9pZCkKewoJc2hvd19zdGFjaygpOwoJbWxvY2th
-bGwoTUNMX0NVUlJFTlQgfCBNQ0xfRlVUVVJFKTsKCXNob3dfc3RhY2soKTsKCXJldHVybiAwOwp9
-Cg==
---002354477dba8c26c904a2df68c4--
+               Linus
