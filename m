@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab1EIQyK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 12:54:10 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53482 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1EIQyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 12:54:08 -0400
-Date: Mon, 9 May 2011 22:23:57 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        kexec@lists.infradead.org
-Subject: Re: [Bug] Kdump does not work when panic triggered due to MCE
-Message-ID: <20110509165357.GB1963@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20110506165412.GB2719@in.ibm.com>
- <20110509123902.GA5975@redhat.com>
+	id S1753564Ab1EIQzC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 12:55:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54132 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752809Ab1EIQzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 12:55:00 -0400
+Date: Mon, 9 May 2011 18:54:58 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/17] writeback: make writeback_control.nr_to_write
+ straight
+Message-ID: <20110509165458.GV4122@quack.suse.cz>
+References: <20110506030821.523093711@intel.com>
+ <20110506031613.556854231@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509123902.GA5975@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110506031613.556854231@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 08:39:02AM -0400, Vivek Goyal wrote:
-> On Fri, May 06, 2011 at 10:24:12PM +0530, K.Prasad wrote:
-> > Hi All,
-> > 	I wanted to test the behaviour of kdump when panic is triggered
-> > due to MCE on x86 and found that kdump is not captured.
-> > 
-> > While the kdump service is configured and running and non-MCE panics
-> > (such as those triggered through to /proc/sysrq-trigger) successfully
-> > capture a kdump, any fatal MCE error injected through the mce-inject
-> > tool causes a reboot of the machine.
-> > 
-> > The code has been traced (using early_serial_putc()) to enter the kexec
-> > path i.e. panic()->crash_kexec()->machine_kexec()->relocate_kernel()
-> > but is untraceable further.
-> > 
-> > Kdump works fine when the same the similar test is carried out inside a
-> > KVM guest.
-> > 
-> > Has anybody tested this before? Or have found kdump working when fatal
-> > MCEs have actually occurred?
+On Fri 06-05-11 11:08:35, Wu Fengguang wrote:
+> Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
+> and initialize the struct writeback_control there.
 > 
-> Prasad,
+> struct writeback_control is basically designed to control writeback of a
+> single file, but we keep abuse it for writing multiple files in
+> writeback_sb_inodes() and its callers.
 > 
-> I have never tried taking dump in MCE situation. Does kdump work on this
-> machine with normal panic()?
+> It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
+> work->nr_pages starts to make sense, and instead of saving and restoring
+> pages_skipped in writeback_sb_inodes it can always start with a clean
+> zero value.
 > 
-
-Hi Vivek,
-	kdump worked fine on this machine for non-MCE triggered panic
-calls (the /proc/sysrq-trigger initiated crashes got the kdump fine).
-
-> Use --debug and --serial option in kexec-tools to print some debug message
-> and look for "I am in purgatory". This will tell you whether you hanged
-> in first kernel or second kernel.
+> It also makes a neat IO pattern change: large dirty files are now
+> written in the full 4MB writeback chunk size, rather than whatever
+> remained quota in wbc->nr_to_write.
 > 
+> Proposed-by: Christoph Hellwig <hch@infradead.org>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+...
+> @@ -543,34 +588,40 @@ static int writeback_sb_inodes(struct su
+>  			requeue_io(inode, wb);
+>  			continue;
+>  		}
+> -
+>  		__iget(inode);
+> +		write_chunk = writeback_chunk_size(work);
+> +		wbc.nr_to_write = write_chunk;
+> +		wbc.pages_skipped = 0;
+> +
+> +		writeback_single_inode(inode, wb, &wbc);
+>  
+> -		pages_skipped = wbc->pages_skipped;
+> -		writeback_single_inode(inode, wb, wbc);
+> -		if (wbc->pages_skipped != pages_skipped) {
+> +		work->nr_pages -= write_chunk - wbc.nr_to_write;
+> +		wrote += write_chunk - wbc.nr_to_write;
+> +		if (wbc.pages_skipped) {
+>  			/*
+>  			 * writeback is not making progress due to locked
+>  			 * buffers.  Skip this inode for now.
+>  			 */
+>  			redirty_tail(inode, wb);
+> -		}
+> +		} else if (!(inode->i_state & I_DIRTY))
+> +			wrote++;
+>  		spin_unlock(&inode->i_lock);
+>  		spin_unlock(&wb->list_lock);
+>  		iput(inode);
+>  		cond_resched();
+>  		spin_lock(&wb->list_lock);
+> -		if (wbc->nr_to_write <= 0)
+> -			return 1;
+> +		if (wrote >= MAX_WRITEBACK_PAGES)
+> +			break;
+  This definitely deserves a comment (as well as a similar check in
+__writeback_inodes_wb()). I guess you bail out here so that we perform the
+background limit check and livelocking of for_kupdate/for_background check
+often enough. I'm undecided whether it's good to bail out like this. It's
+not necessary in some cases (like WB_SYNC_ALL or for_sync writeback) but
+OTOH moving the necessary checks here does not look ideal either...
 
-There were no boot logs from the second kernel while the "Rebooting in X
-seconds..." message had appeared before the system rebooted, suggesting
-that the second kernel did not boot at all.
+>  void writeback_inodes_wb(struct bdi_writeback *wb,
+> -		struct writeback_control *wbc)
+> +			 struct writeback_control *wbc)
+>  {
+> +	struct wb_writeback_work work = {
+> +		.nr_pages	= wbc->nr_to_write,
+> +		.sync_mode	= wbc->sync_mode,
+> +		.range_cyclic	= wbc->range_cyclic,
+> +	};
+> +
+>  	spin_lock(&wb->list_lock);
+>  	if (list_empty(&wb->b_io))
+> -		queue_io(wb, wbc->older_than_this);
+> -	__writeback_inodes_wb(wb, wbc);
+> +		queue_io(wb, NULL);
+> +	__writeback_inodes_wb(wb, &work);
+>  	spin_unlock(&wb->list_lock);
+> -}
+  Hmm, maybe we should just pass in number of pages (similarly as in
+writeback_inodes_sb_nr())? It would look like a cleaner interface than
+passing whole writeback_control and then ignoring parts of it.
 
-> Then put "outb()" messages in the kernel to trace what happened. 
-> 
-
-The outb logs showed that the system entered machine_kexec function (traceable
-upto relocate_kernel) but then rebooted from inside the panic() function.
-
-Thanks,
-K.Prasad
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
