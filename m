@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab1EINHR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:07:17 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:44142 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752800Ab1EINHP (ORCPT
+	id S1753264Ab1EINMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:12:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47407 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab1EINME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:07:15 -0400
-Date: Mon, 9 May 2011 16:07:07 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Felipe Balbi <balbi@ti.com>, Liam Girdwood <lrg@kernel.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
+	Mon, 9 May 2011 09:12:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=oQRctujoN+T8aypOQf+XuOnTbSKooMGB1GkhZV2vbxeFx4DM7hD6xPSvUktDHrup18
+         haqKP4XMnwMIeU/10+uMvEifZEGLpSpl0/hG8qkStfVbTc3nYUVAVab9MGtW9RbcqJpx
+         rXxwn7q0bd3L6hV16R5zM9JcYwnUdhLZeLIA8=
 Subject: Re: [PATCH 4/4] USB: TWL6025 allow different regulator name
-Message-ID: <20110509130703.GM1254@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
+From: Liam Girdwood <lrg@kernel.org>
+To: balbi@ti.com
+Cc: Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com
+In-Reply-To: <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
 References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
- <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
- <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
- <1304867317.3246.10.camel@odin>
- <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
- <1304941430.3192.4.camel@odin>
- <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
- <20110509122941.GA3225@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509122941.GA3225@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
+	 <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
+	 <1304867317.3246.10.camel@odin>
+	 <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
+	 <1304941430.3192.4.camel@odin>
+	 <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 14:11:59 +0100
+Message-ID: <1304946719.3192.10.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, May 09, 2011 at 02:29:41PM +0200, Mark Brown wrote:
-> On Mon, May 09, 2011 at 03:16:03PM +0300, Felipe Balbi wrote:
-> > On Mon, May 09, 2011 at 12:43:49PM +0100, Liam Girdwood wrote:
+On Mon, 2011-05-09 at 15:16 +0300, Felipe Balbi wrote:
+> Hi,
 > 
-> > > I think it's the lesser evil though, especially for device integrators.
-> > > They will just match the regulator name from the schematics together
-> > > with the TRM name when creating their regulator constraints and having
-> > > different names here will definitely cause confusion.
+> On Mon, May 09, 2011 at 12:43:49PM +0100, Liam Girdwood wrote:
+> > On Mon, 2011-05-09 at 12:03 +0300, Felipe Balbi wrote:
+> > > Hi,
+> > > 
+> > > On Sun, May 08, 2011 at 04:08:37PM +0100, Liam Girdwood wrote:
+> > > > On Wed, 2011-04-27 at 13:45 +0300, Felipe Balbi wrote:
+> > > > > Hi,
+> > > > > 
+> > > > > On Wed, Apr 27, 2011 at 10:39:51AM +0100, Graeme Gregory wrote:
+> > > > > > The twl6025 uses a different regulator for USB than the 6030 so select
+> > > > > > the correct regulator name depending on the subclass of device.
+> > > > > > 
+> > > > > > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > > > > 
+> > > > > I don't see the point of this patch. It's just a string. Use the same
+> > > > > name and add a comment saying that on datasheet/TRM/documentation the
+> > > > > name LDO is actually referred to as LDOUSB. It's the same functionality
+> > > > > anyway.
+> > > > > 
+> > > > 
+> > > > I think for the avoidance of any doubt, it's probably best to use the
+> > > > TWL6025 string name here as it will importantly match the TWL6025 TRM
+> > > > and any schematics using the TWL6025. Getting this wrong during TWL6025
+> > > > board integration has the potential for hardware damage.
+> > > 
+> > > I would rather have something that doesn't depend on a correct string
+> > > and matches based on the device pointer instead. I agree that having the
+> > > correct string makes it easier to reference schematics/trm and the like,
+> > > but making the SW depend on the correct spelling of a simple string, is
+> > > too much for me :-(
+> > > 
+> > > Specially when getting it wrong "has the potential for hardware damage"
+> > > :-)
+> > > 
+> > 
+> > I think it's the lesser evil though, especially for device integrators.
+> > They will just match the regulator name from the schematics together
+> > with the TRM name when creating their regulator constraints and having
+> > different names here will definitely cause confusion.
 > 
-> > Any chance Device Tree could be used to pass that data to kernel
-> > instead, together with regulator names and all needed data for each one
-> > of them ?
+> Any chance Device Tree could be used to pass that data to kernel
+> instead, together with regulator names and all needed data for each one
+> of them ?
 > 
-> I'm pretty sure that as soon as we have viable device tree support for
-> relevant platforms in mainline we'll have regulator support, though I'm
-> not sure that this will help too much with the naming as you'll still
-> have to figure out what the consumer requests.  We shouldn't be passing
-> in the consumer supply names from device tree (at least not a board
-> specific one) as this breaks the model that the supply names correspond
-> to the chip pins.
 
-The thing is. We already had problems in the past with the Clock FW
-because drivers were passing clock names on platform_data and I really
-want to avoid the same on regulators. We need something clever.
+Yes, I think this should be the long term aim, but atm we will have to
+stick with current implementation until regulator has device tree
+support.
 
-We pass in the data of how regulators are wired at the board level and
-drivers would regulator_get(my_dev->dev, "whatever fancy name I want as
-it doesn't matter at all");
+Liam
 
-If a driver has >1 regulator, you can distinguish them by which
-functionality they provide, no matter the name, they will be connected
-to a particular ball on the IC package which has a certain definition
-on the TRM. In other words, we should match on the functionality they
-provide, not on the name.
-
-Let's try to thing some 5 - 6 years ahead. With the current trend, we
-will be working on support for the PMIC on OMAP10, imagine if each one
-of those revisions decide to change the name of the regulator, because
-this new HW engineer working on the PMIC design doesn't like the old
-name. We will have X regulator pointers and X regulator name pointers in
-our platform_data. It will be really cumbersome and prone to errors if
-people continue on copy&pasting old code to "generate" a new driver.
-
-What I was expecting to see, was a mechanism where we define how those
-things are wired (it doesn't matter if the data uses DeviceTree or what)
-at the HW level and we ask the framework to give us the regulator
-connected to device X which provides a certain functionality. Just like
-clkdev has managed to get close to. Currently drivers will:
-
-clk_get(dev, "ick");
-clk_get(dev, "fck");
-
-etc...
-
-and the name really doesn't matter. Clkdev still isn't perfect as it
-uses device names, then when we want/need to change the device/driver
-name (due to some re-factoring for example) we end up breaking things.
-IMHO, struct device should point to its dependencies, be it a clock, be
-it a regulator.
-
--- 
-balbi
