@@ -1,77 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1EISbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 14:31:51 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:54550 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab1EISbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 14:31:50 -0400
-Date: Mon, 9 May 2011 11:31:38 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Sid Boyce <sboyce@blueyonder.co.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] misc: Driver for Silicon Labs Si570 and compatibles
-Message-ID: <20110509183138.GB4964@ericsson.com>
-References: <4DB17A3B.3060609@blueyonder.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4DB17A3B.3060609@blueyonder.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753534Ab1EISga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 14:36:30 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55025 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab1EISg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 14:36:28 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: EDAC devel <linux-edac@vger.kernel.org>
+Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH -v3 0/6] x86, MCE, AMD: Hardware MCE injection
+Date: Mon,  9 May 2011 20:35:49 +0200
+Message-Id: <1304966155-9841-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sid,
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-On Fri, Apr 22, 2011 at 08:53:15AM -0400, Sid Boyce wrote:
-> Guenter Roeck wrote:
-> Depends. In our case, turns out the devices consuming the clock
-> have user mode drivers. Lots of history there, but the chip vendors
-> provide those user mode drivers, and the teams responsible for
-> integrating the drivers decided to not rewrite it to kernel mode drivers.
-> Also, for special purposes such as margining, it is necessary to control
-> the clock from userspace. So, for our use case, I need the user-visible
-> interface. I _don't_ need the kernel interface, at least not right now,
-> which is why I did not add it.
-> 
-> Browsing through the web, it seems the chip is somewhat popular with
-> Amateur Radio. No idea if it would ever be controlled for such a purpose
-> from Linux, but if so, it would also require a user configurable frequency.
-> 
-> If there is a better place for such a driver than misc, please let me know.
-> 
-> Thanks,
-> Guenter
-> =============================================================================
-> Support for these devices included in several Amateur radio programs 
-> tend to differ greatly which means reinventing the wheel in most of them.
-> Programs like Linrad, sdr-shell, quisk, lysdr, ghpsdr3, etc.
-> It's a small addition to the kernel that would significantly help in the 
-> development of software for the myriad of SDR (Software Defined Radio) 
-> designs based on this chip family.
-> I have 5 Amateur Radio transceivers using this chip and 2 more soon to 
-> be added.
-> They are all open hardware heavily reliant on Linux.
-> The addition of UAC2 (USB Audio Class 2) kernel support has helped our 
-> SDR hardware design efforts significantly.
-> I and the rest of the Linux SDR community would be happy to see it included.
-> Regards
-> Sid.
+Hi,
 
-Thanks for the feedback. Somehow I missed your reply at the time.
+this new set version moves the whole interface to debugfs since it
+belongs there in the first place. Remaining functionality unchanged.
 
-As you probably have noticed from the discussion, I seems to be unlikely that
-the driver will be accepted into the kernel, at least not unless there is
-significant demand for it from others.
+Changelog:
 
-It may help if you can provide a list of requirements from your side (do you need 
-a kernel API ? Do you need an ABI to set the frequency from applications ?).
+v2: only small changes from the last submission
+(http://lkml.org/lkml/2011/4/15/171) so that we can have valid
+MCG_STATUS values and don't choke on severity sanity checking.
 
-I would be happy to provide and maintain the driver as separate patch until it 
-is accepted (if that ever happens), and work with application maintainers to 
-integrate it. Let me know if there is interest, and feel free to forward this
-e-mail to interested parties.
+v1: Initial submission.
 
-Thanks,
-Guenter
+
+Thanks.
