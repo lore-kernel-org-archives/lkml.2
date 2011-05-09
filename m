@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab1EINzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:55:03 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60748 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753327Ab1EINzC (ORCPT
+	id S1753594Ab1EIN4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:56:24 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53075 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab1EIN4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:55:02 -0400
-Date: Mon, 9 May 2011 14:55:34 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
-        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
-        "Andrew Morton \(commit_signer:1/4=25%\)" <akpm@linux-foundation.org>,
-        "Randy Dunlap \(commit_signer:1/4=25%\)" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-Message-ID: <20110509145534.2677dfa1@lxorguk.ukuu.org.uk>
-In-Reply-To: <3A9C5CD56396439DBF825BB4E5779DB9@subhasishg>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
-	<1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
-	<034A6447E0D54737B5CEE009A4D20B37@subhasishg>
-	<20110509144610.6b4f7090@lxorguk.ukuu.org.uk>
-	<3A9C5CD56396439DBF825BB4E5779DB9@subhasishg>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 May 2011 09:56:23 -0400
+Date: Mon, 9 May 2011 14:56:12 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC] Controlling the ThinkPad battery charger
+Message-ID: <20110509135612.GA1873@srcf.ucam.org>
+References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 May 2011 19:20:17 +0530
-"Subhasish Ghosh" <subhasish@mistralsolutions.com> wrote:
+On Sun, May 08, 2011 at 08:35:32AM -0400, Andrew Lutomirski wrote:
 
-> >> I then modified this function to as follows and the error is not observed
-> >> anymore.
-> >
-> > That looks like you are somehow calling uart_carrier_raised somewhere
-> > with interrupts disabled ?
-> >
-> I am not calling this function in my driver atall, this is getting called by 
-> tty_port.c
+> I like option 2 better, since it means that a userspace tool (like
+> GNOME) could learn how to operate a battery charge controller once and
+> then other laptops and devices could reuse the same interface.  The
+> problem is that the ACPI battery driver can't see the charge control.
+> So either it would need a hook to allow per-vendor control like this
+> or the power_supply class would need to recognize separate charge
+> controllers.
 
-Can you verify the status of the interrupt flags at the point that
-routine is called in your code and get a backtrace of the path. It
-should never be gettng called with interrupts off, and if it is we need
-to know what the path is. Otherwise that code change would imply a bug
-in the core code for the platform which seems less likely.
- 
+I agree that this is preferable. One option would be to just use smapi 
+and provide a hook to detach the ACPI driver, but that would potentially 
+mean a certain amount of code duplication.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
