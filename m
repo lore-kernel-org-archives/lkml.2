@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab1EIWxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:53:33 -0400
-Received: from kroah.org ([198.145.64.141]:44609 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755767Ab1EIWxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 18:53:32 -0400
-Date: Mon, 9 May 2011 15:53:28 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 077/206] Staging: hv: Get rid of call to cleanup()
-Message-ID: <20110509225328.GA2832@kroah.com>
-References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
- <1304978288-22999-1-git-send-email-kys@microsoft.com>
- <1304978288-22999-77-git-send-email-kys@microsoft.com>
+	id S932419Ab1EIWxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:53:38 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:45021 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab1EIWxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 18:53:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=cTGJc7BifhKVDtGIup+rK9AWaJjQWYKzuXVmNn7D4Voy2uYdxiwaNQXlQ/bOpy0cjG
+         42OlqocHpTM9UCyuIVnCcM+iQFupYkqm1uoBhVJI867Wktod1a/i7M/W8xpFouVcxIdu
+         McX1za6juWQRecCoaDVq2GuWT2Zg8kC/OyKR0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304978288-22999-77-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTim7ATRyJ2NvoCj4Sv=7CLizKMd_WA@mail.gmail.com>
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
+	<alpine.LSU.2.00.1105081303540.16151@sister.anvils>
+	<alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
+	<BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com>
+	<BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
+	<1304979549.4865.56.camel@mulgrave.site>
+	<BANLkTim7ATRyJ2NvoCj4Sv=7CLizKMd_WA@mail.gmail.com>
+Date: Mon, 9 May 2011 15:53:33 -0700
+Message-ID: <BANLkTi=DCKmN_BafFckKHOMfjWpVLQPDFA@mail.gmail.com>
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+From: Tony Luck <tony.luck@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Fenghua Yu <fenghua.yu@intel.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-ia64@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 02:55:59PM -0700, K. Y. Srinivasan wrote:
-> cleanup() is an empty function; get rid of it.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> ---
->  drivers/staging/hv/netvsc_drv.c |    4 ----
+On Mon, May 9, 2011 at 3:31 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> With current kernels, I think the stack expands by one page during the
+> mlockall (for STACK_GROWSUP), with the patch it shouldn't.
 
-Just picking a random patch out of this series (which, I only received
-the first 132, not all 206).
+Tried this on ia64 (with a mod because the upward growing stack isn't
+blessed with
+the [stack] annotation, only the downward growing stack gets that honour).
 
-You need to specify a better changelog entry as you didn't say what code
-you are changing in the Subject:.
+ia64 builds, boots, and processes can still grow stacks (both of them).  The
+patched kernel doesn't change the size of the upwardly growing stack across
+the mlockall().
 
-How about:
-	Staging: hv: netvsc_drv: Get rid of call to cleanup()
+-Tony
 
-Otherwise I would think (and I did) that you got rid of a global
-function called cleanup() in all of the hv code.
-
-Care to fix the names of your patches?
-
-Note, I wouldn't recommend sending that many patches to lkml, it's not
-needed, just stick to the devel@linuxdriverproject.org list as I really
-doubt anyone else cares about this code at the moment.
-
-thanks,
-
-greg k-h
+P.S. while we could start both stacks on the same page and have the grow
+away from the start point, ia64 actually starts them out a fair distance apart
+and lets them run into each other (if you have enough memory to let them
+grow that far, and if ulimit -s doesn't stop them earlier)
