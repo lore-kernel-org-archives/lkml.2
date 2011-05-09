@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab1EIFYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 01:24:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55853 "EHLO smtps.tip.net.au"
+	id S1751604Ab1EIFfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 01:35:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4745 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab1EIFYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 01:24:00 -0400
-Date: Mon, 9 May 2011 14:58:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, Anton Guda <atu@dmeti.dp.ua>
-Subject: linux-next: build failure after merge of the final tree
- (driver-core tree related)
-Message-Id: <20110509145854.9e6d8806.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1750808Ab1EIFfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 01:35:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,338,1301900400"; 
+   d="scan'208";a="744280583"
+Subject: Re: [PATCH V4 1/5] dmaengine/dw_dmac: don't call callback routine
+ in case dmaengine_terminate_all() is called
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        armando.visconti@st.com, shiraz.hashim@st.com,
+        linux-arm-kernel@lists.infradead.org, viresh.linux@gmail.com,
+        linux@arm.linux.org.uk
+In-Reply-To: <8d1b15be425a70cdbd30725b88bd303cc74e706d.1304596524.git.viresh.kumar@st.com>
+References: <cover.1304596524.git.viresh.kumar@st.com>
+	 <8d1b15be425a70cdbd30725b88bd303cc74e706d.1304596524.git.viresh.kumar@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 10:32:51 +0530
+Message-ID: <1304917371.32447.10.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-05-05 at 17:30 +0530, Viresh Kumar wrote:
+> If dmaengine_terminate_all() is called for dma channel, then it doesn't make
+> much sense to call registered callback routine. While in case of success or
+> failure it must be called.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  drivers/dma/dw_dmac.c |   31 ++++++++++++++++---------------
+>  1 files changed, 16 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index 1bd4803..d28cd84 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -195,18 +195,21 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
+>  /*----------------------------------------------------------------------*/
+>  
 
-Hi all,
+> -	/*
+> -	 * The API requires that no submissions are done from a
+> -	 * callback, so we don't need to drop the lock here
+> -	 */
+> -	if (callback)
+> -		callback(param);
+> +	if (callback_required) {
+> +		if (callback)
+> +			callback(param);
+> +	}
+How about changing this to:
+	if (callback_required && callback)
+		callback(param)
+This will make it look cleaner ...
 
-After merging the final tree, today's linux-next build (powerpc allnoconfig)
-failed like this:
 
-kernel/sys.c: In function 'kernel_restart_prepare':
-kernel/sys.c:317: error: implicit declaration of function 'usermodehelper_d=
-isable'
+-- 
+~Vinod
 
-Caused by commit b50fa7c8077c ("reboot: disable usermodehelper to prevent
-fs access").  See Rule 1 in Documentation/SubmitChecklist.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNx3SOAAoJEDMEi1NhKgbsb08H+wa+zoNsiEu54T5XV4fkOaP3
-yTZpLc7V1ufJHUNp3FclU4nOeOSJ2q6uaGM7Ih6/LbEmasPon9YQULY5ZG7ZdPmx
-4EEkeu8Bj9eA7Q7KK6fwUf2/afPi0X1khWHZbpPCpd8ridExluERcWAo6AwpJVTA
-VJCqN1WNi8Agf67ncYx4gIp1NGFrrNUN94lfdz8b9ABiPM+YDZZJ9bblrYsrKYyV
-6DUwPISWrZlMsI4mV1u7TWgDyh8G2gzxoZILQoX/dd9RRpgGQTsNghh9q1pWK1Ql
-qSqinZMx1PcRpo7j5l0BO82xlsELLUZd/MKEPRPXOcxTBiiQjyQhj6DfLD7OZVY=
-=DN31
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_May_2011_14_58_54_+1000_Y8qoS8lreJdC9EHW--
