@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab1EIX0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 19:26:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40732 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755129Ab1EIX0P (ORCPT
+	id S1755880Ab1EIX3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 19:29:38 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56663 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755129Ab1EIX3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 19:26:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTiksgtgviJGmq925OtLNU4QynVLVtg@mail.gmail.com>
-References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
- <alpine.LSU.2.00.1105081303540.16151@sister.anvils> <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
- <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com> <BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
- <1304979549.4865.56.camel@mulgrave.site> <BANLkTim7ATRyJ2NvoCj4Sv=7CLizKMd_WA@mail.gmail.com>
- <BANLkTi=DCKmN_BafFckKHOMfjWpVLQPDFA@mail.gmail.com> <BANLkTikkA5H2D23u23FV0cTcL2bAT8BKWQ@mail.gmail.com>
- <BANLkTikLJPCc5ffobAb5uhdryRqjGhpVAQ@mail.gmail.com> <BANLkTiksgtgviJGmq925OtLNU4QynVLVtg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 May 2011 16:25:23 -0700
-Message-ID: <BANLkTikUyUpa9-ZZBquHW4xSCEj8W8TgnA@mail.gmail.com>
-Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
-To: Tony Luck <tony.luck@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Fenghua Yu <fenghua.yu@intel.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-ia64@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 May 2011 19:29:37 -0400
+Subject: Re: [PATCH 0/4] Consolidate i8253 clocksource
+From: John Stultz <john.stultz@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+In-Reply-To: <20110509132738.GB16919@n2100.arm.linux.org.uk>
+References: <20110509132738.GB16919@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 16:29:22 -0700
+Message-ID: <1304983762.2939.39.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 4:17 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Ok, I'll consider it tested. I'll commit it with Mikulas as author,
-> but note that I edited it so he won't get the blame if there's some
-> problem.
+On Mon, 2011-05-09 at 14:27 +0100, Russell King - ARM Linux wrote:
+> Three architectures have an i8253 PIT clocksource, and each duplicates
+> the code for this.  The initial patch extracts a common implementation
+> to drivers/clocksource, and subsequent patches convert each architecture
+> to use this copy.
 
-Oh, and I marked it for stable too, although I don't know if any
-distribution really cares about parisc or ia64. And I'm not sure that
-ia64 even saw the lvm2 failure case - I'd have expected to hear about
-it if it actually happens there.
+Very cool! The series looks good to me. 
 
-                       Linus
+Although maybe should we get rid of the inb_p redefinitions in a later
+cleanup? 
+
+Acked-by: John Stultz <john.stultz@linaro.org>
+
+thanks
+-john
+
+
