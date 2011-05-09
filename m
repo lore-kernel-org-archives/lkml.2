@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab1EJIhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:37:07 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53163
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1756172Ab1EJIib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:38:31 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35435
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756097Ab1EJIaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756091Ab1EJIaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 May 2011 04:30:52 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 204/206] Staging: hv: Get rid of vmbus_private.h
-Date: Mon,  9 May 2011 14:58:06 -0700
-Message-Id: <1304978288-22999-204-git-send-email-kys@microsoft.com>
+Subject: [PATCH 205/206] Staging: hv: Get rid of vstorage.h
+Date: Mon,  9 May 2011 14:58:07 -0700
+Message-Id: <1304978288-22999-205-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -25,23 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of vmbus_private.h.
+Now, get rid of vstorage.h.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/vmbus_private.h |  130 ------------------------------------
- 1 files changed, 0 insertions(+), 130 deletions(-)
- delete mode 100644 drivers/staging/hv/vmbus_private.h
+ drivers/staging/hv/vstorage.h |  197 -----------------------------------------
+ 1 files changed, 0 insertions(+), 197 deletions(-)
+ delete mode 100644 drivers/staging/hv/vstorage.h
 
-diff --git a/drivers/staging/hv/vmbus_private.h b/drivers/staging/hv/vmbus_private.h
+diff --git a/drivers/staging/hv/vstorage.h b/drivers/staging/hv/vstorage.h
 deleted file mode 100644
-index bea331e..0000000
---- a/drivers/staging/hv/vmbus_private.h
+index 83060cd..0000000
+--- a/drivers/staging/hv/vstorage.h
 +++ /dev/null
-@@ -1,130 +0,0 @@
+@@ -1,197 +0,0 @@
 -/*
 - *
 - * Copyright (c) 2009, Microsoft Corporation.
@@ -65,113 +65,180 @@ index bea331e..0000000
 - *
 - */
 -
+-/* vstorage.w revision number.  This is used in the case of a version match, */
+-/* to alert the user that structure sizes may be mismatched even though the */
+-/* protocol versions match. */
 -
--#ifndef _VMBUS_PRIVATE_H_
--#define _VMBUS_PRIVATE_H_
+-#ifndef _VSTORAGE_H_
+-#define _VSTORAGE_H_
 -
--#include "hv.h"
--#include "vmbus_api.h"
--#include "channel.h"
--#include "channel_mgmt.h"
--#include "ring_buffer.h"
--#include <linux/list.h>
--#include <asm/sync_bitops.h>
+-#define REVISION_STRING(REVISION_) #REVISION_
+-#define FILL_VMSTOR_REVISION(RESULT_LVALUE_)				\
+-	do {								\
+-		char *revision_string					\
+-			= REVISION_STRING($Rev : 6 $) + 6;		\
+-		RESULT_LVALUE_ = 0;					\
+-		while (*revision_string >= '0'				\
+-			&& *revision_string <= '9') {			\
+-			RESULT_LVALUE_ *= 10;				\
+-			RESULT_LVALUE_ += *revision_string - '0';	\
+-			revision_string++;				\
+-		}							\
+-	} while (0)
+-
+-/* Major/minor macros.  Minor version is in LSB, meaning that earlier flat */
+-/* version numbers will be interpreted as "0.x" (i.e., 1 becomes 0.1). */
+-#define VMSTOR_PROTOCOL_MAJOR(VERSION_)		(((VERSION_) >> 8) & 0xff)
+-#define VMSTOR_PROTOCOL_MINOR(VERSION_)		(((VERSION_))      & 0xff)
+-#define VMSTOR_PROTOCOL_VERSION(MAJOR_, MINOR_)	((((MAJOR_) & 0xff) << 8) | \
+-						 (((MINOR_) & 0xff)))
+-#define VMSTOR_INVALID_PROTOCOL_VERSION		(-1)
+-
+-/* Version history: */
+-/* V1 Beta                    0.1 */
+-/* V1 RC < 2008/1/31          1.0 */
+-/* V1 RC > 2008/1/31          2.0 */
+-#define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(2, 0)
+-
+-
+-
+-
+-/*  This will get replaced with the max transfer length that is possible on */
+-/*  the host adapter. */
+-/*  The max transfer length will be published when we offer a vmbus channel. */
+-#define MAX_TRANSFER_LENGTH	0x40000
+-#define DEFAULT_PACKET_SIZE (sizeof(struct vmdata_gpa_direct) +	\
+-			sizeof(struct vstor_packet) +		\
+-			sizesizeof(u64) * (MAX_TRANSFER_LENGTH / PAGE_SIZE)))
+-
+-
+-/*  Packet structure describing virtual storage requests. */
+-enum vstor_packet_operation {
+-	VSTOR_OPERATION_COMPLETE_IO		= 1,
+-	VSTOR_OPERATION_REMOVE_DEVICE		= 2,
+-	VSTOR_OPERATION_EXECUTE_SRB		= 3,
+-	VSTOR_OPERATION_RESET_LUN		= 4,
+-	VSTOR_OPERATION_RESET_ADAPTER		= 5,
+-	VSTOR_OPERATION_RESET_BUS		= 6,
+-	VSTOR_OPERATION_BEGIN_INITIALIZATION	= 7,
+-	VSTOR_OPERATION_END_INITIALIZATION	= 8,
+-	VSTOR_OPERATION_QUERY_PROTOCOL_VERSION	= 9,
+-	VSTOR_OPERATION_QUERY_PROPERTIES	= 10,
+-	VSTOR_OPERATION_MAXIMUM			= 10
+-};
+-
+-/*
+- * Platform neutral description of a scsi request -
+- * this remains the same across the write regardless of 32/64 bit
+- * note: it's patterned off the SCSI_PASS_THROUGH structure
+- */
+-#define CDB16GENERIC_LENGTH			0x10
+-
+-#ifndef SENSE_BUFFER_SIZE
+-#define SENSE_BUFFER_SIZE			0x12
+-#endif
+-
+-#define MAX_DATA_BUF_LEN_WITH_PADDING		0x14
+-
+-struct vmscsi_request {
+-	unsigned short length;
+-	unsigned char srb_status;
+-	unsigned char scsi_status;
+-
+-	unsigned char port_number;
+-	unsigned char path_id;
+-	unsigned char target_id;
+-	unsigned char lun;
+-
+-	unsigned char cdb_length;
+-	unsigned char sense_info_length;
+-	unsigned char data_in;
+-	unsigned char reserved;
+-
+-	unsigned int data_transfer_length;
+-
+-	union {
+-		unsigned char cdb[CDB16GENERIC_LENGTH];
+-		unsigned char sense_data[SENSE_BUFFER_SIZE];
+-		unsigned char reserved_array[MAX_DATA_BUF_LEN_WITH_PADDING];
+-	};
+-} __attribute((packed));
 -
 -
 -/*
-- * Maximum channels is determined by the size of the interrupt page
-- * which is PAGE_SIZE. 1/2 of PAGE_SIZE is for send endpoint interrupt
-- * and the other is receive endpoint interrupt
+- * This structure is sent during the intialization phase to get the different
+- * properties of the channel.
 - */
--#define MAX_NUM_CHANNELS	((PAGE_SIZE >> 1) << 3)	/* 16348 channels */
+-struct vmstorage_channel_properties {
+-	unsigned short protocol_version;
+-	unsigned char path_id;
+-	unsigned char target_id;
 -
--/* The value here must be in multiple of 32 */
--/* TODO: Need to make this configurable */
--#define MAX_NUM_CHANNELS_SUPPORTED	256
+-	/* Note: port number is only really known on the client side */
+-	unsigned int port_number;
+-	unsigned int flags;
+-	unsigned int max_transfer_bytes;
 -
+-	/*  This id is unique for each channel and will correspond with */
+-	/*  vendor specific data in the inquirydata */
+-	unsigned long long unique_id;
+-} __packed;
 -
--enum vmbus_connect_state {
--	DISCONNECTED,
--	CONNECTING,
--	CONNECTED,
--	DISCONNECTING
--};
--
--#define MAX_SIZE_CHANNEL_MESSAGE	HV_MESSAGE_PAYLOAD_BYTE_COUNT
--
--struct vmbus_connection {
--	enum vmbus_connect_state conn_state;
--
--	atomic_t next_gpadl_handle;
--
--	/*
--	 * Represents channel interrupts. Each bit position represents a
--	 * channel.  When a channel sends an interrupt via VMBUS, it finds its
--	 * bit in the sendInterruptPage, set it and calls Hv to generate a port
--	 * event. The other end receives the port event and parse the
--	 * recvInterruptPage to see which bit is set
--	 */
--	void *int_page;
--	void *send_int_page;
--	void *recv_int_page;
+-/*  This structure is sent during the storage protocol negotiations. */
+-struct vmstorage_protocol_version {
+-	/* Major (MSW) and minor (LSW) version numbers. */
+-	unsigned short major_minor;
 -
 -	/*
--	 * 2 pages - 1st page for parent->child notification and 2nd
--	 * is child->parent notification
+-	 * Revision number is auto-incremented whenever this file is changed
+-	 * (See FILL_VMSTOR_REVISION macro above).  Mismatch does not
+-	 * definitely indicate incompatibility--but it does indicate mismatched
+-	 * builds.
 -	 */
--	void *monitor_pages;
--	struct list_head chn_msg_list;
--	spinlock_t channelmsg_lock;
+-	unsigned short revision;
+-} __packed;
 -
--	/* List of channels */
--	struct list_head chn_list;
--	spinlock_t channel_lock;
+-/* Channel Property Flags */
+-#define STORAGE_CHANNEL_REMOVABLE_FLAG		0x1
+-#define STORAGE_CHANNEL_EMULATED_IDE_FLAG	0x2
 -
--	struct workqueue_struct *work_queue;
--};
+-struct vstor_packet {
+-	/* Requested operation type */
+-	enum vstor_packet_operation operation;
 -
+-	/*  Flags - see below for values */
+-	unsigned int flags;
 -
--struct vmbus_msginfo {
--	/* Bookkeeping stuff */
--	struct list_head msglist_entry;
+-	/* Status of the request returned from the server side. */
+-	unsigned int status;
 -
--	/* The message itself */
--	unsigned char msg[0];
--};
+-	/* Data payload area */
+-	union {
+-		/*
+-		 * Structure used to forward SCSI commands from the
+-		 * client to the server.
+-		 */
+-		struct vmscsi_request vm_srb;
 -
+-		/* Structure used to query channel properties. */
+-		struct vmstorage_channel_properties storage_channel_properties;
 -
--extern struct vmbus_connection vmbus_connection;
+-		/* Used during version negotiations. */
+-		struct vmstorage_protocol_version version;
+-	};
+-} __packed;
 -
--/* General vmbus interface */
+-/* Packet flags */
+-/*
+- * This flag indicates that the server should send back a completion for this
+- * packet.
+- */
+-#define REQUEST_COMPLETION_FLAG	0x1
 -
--struct hv_device *vmbus_child_device_create(struct hv_guid *type,
--					 struct hv_guid *instance,
--					 struct vmbus_channel *channel);
+-/*  This is the set of flags that the vsc can set in any packets it sends */
+-#define VSC_LEGAL_FLAGS		(REQUEST_COMPLETION_FLAG)
 -
--int vmbus_child_device_register(struct hv_device *child_device_obj);
--void vmbus_child_device_unregister(struct hv_device *device_obj);
--
--/* static void */
--/* VmbusChildDeviceDestroy( */
--/* struct hv_device *); */
--
--struct vmbus_channel *relid2channel(u32 relid);
--
--
--/* Connection interface */
--
--int vmbus_connect(void);
--
--int vmbus_disconnect(void);
--
--int vmbus_post_msg(void *buffer, size_t buflen);
--
--int vmbus_set_event(u32 child_relid);
--
--void vmbus_on_event(unsigned long data);
--
--
--#endif /* _VMBUS_PRIVATE_H_ */
+-#endif /* _VSTORAGE_H_ */
 -- 
 1.7.4.1
 
