@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1EIQJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 12:09:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36362 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab1EIQJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753305Ab1EIQJQ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 May 2011 12:09:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=KPFUpL7Y4QRSYRnMUFxCZzfwbsqrZDbnVPLvgnctr7Snc78pv+Q8BOBol80ekUkzk5
-         6kiNCkP8aGT3pD8SuKN1eN0QDD26+bIbbmGoJ4SkgQSP4KfHQx9HME05m7MNdlGJfil2
-         wWvFpxkV//7Hgc7VsdD2ThN7I2s++FoxJfjSI=
-Message-ID: <4DC8117C.7060200@gmail.com>
-Date: Mon, 09 May 2011 18:08:28 +0200
-From: Vladimir Motyka <vladimir.motyka@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:37650
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752659Ab1EIQJP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 12:09:15 -0400
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371O1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powerpc/mpc8610_hpcd: Do not use "/" in interrupt names
+Thread-Topic: [PATCH] powerpc/mpc8610_hpcd: Do not use "/" in interrupt names
+Thread-Index: AQHMDmNuKpMWZdItIEWhmorYcx2eig==
+Date: Mon, 9 May 2011 16:09:10 +0000
+Message-ID: <BANLkTi=ytcPhpYp=Mqk7fYYAv+5eqbkNww@mail.gmail.com>
+References: <alpine.DEB.2.00.1105041627560.2601@ayla.of.borg>
+In-Reply-To: <alpine.DEB.2.00.1105041627560.2601@ayla.of.borg>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.56.112.32]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <55E5303434DEDE44999A9E3AC5E41CC9@freescale.net>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: cjb@laptop.org
-CC: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/mmc/card/block.c: fix potential null dereference
- 'idata'
-References: <4DC7F4AB.90607@gmail.com> <Pine.LNX.4.64.1105091631400.15483@pc-004.diku.dk> <4DC802C0.9040302@gmail.com> <Pine.LNX.4.64.1105091713080.15483@pc-004.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1105091713080.15483@pc-004.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When allocation of idata fails there was a null dereference.
+On Wed, May 4, 2011 at 9:29 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> It may trigger a warning in fs/proc/generic.c:__xlate_proc_name() when
+> trying to add an entry for the interrupt handler to sysfs.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Signed-off-by: Vladimir Motyka <vladimir.motyka@gmail.com>
----
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 407836d..a03cdc6 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -237,7 +237,7 @@ static struct mmc_blk_ioc_data
-*mmc_blk_ioctl_copy_from_user(
- 	idata = kzalloc(sizeof(*idata), GFP_KERNEL);
- 	if (!idata) {
- 		err = -ENOMEM;
--		goto copy_err;
-+		goto alloc_err;
- 	}
+Acked-by: Timur Tabi <timur@freescale.com>
 
- 	if (copy_from_user(&idata->ic, user, sizeof(idata->ic))) {
-@@ -268,8 +268,8 @@ static struct mmc_blk_ioc_data
-*mmc_blk_ioctl_copy_from_user(
- copy_err:
- 	kfree(idata->buf);
- 	kfree(idata);
-+alloc_err:
- 	return ERR_PTR(err);
--
- }
+This fixes a real bug in the kernel.
 
- static int mmc_blk_ioctl_cmd(struct block_device *bdev,
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
