@@ -1,212 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab1EIW7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:59:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34969 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755680Ab1EIW6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 18:58:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [RFC][PATCH] PM / Hibernate: Add sysfs knob to control size of memory for drivers
-Date: Tue, 10 May 2011 00:59:25 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>
+	id S932470Ab1EIXDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 19:03:51 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:38676 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab1EIXDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 19:03:46 -0400
+Subject: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback
+	for various fses
+To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Date: Mon, 09 May 2011 16:03:18 -0700
+Message-ID: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105100059.25372.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Hi all,
 
-Martin reports that on his system hibernation occasionally fails due
-to the lack of memory, because the radeon driver apparently allocates
-too much of it during the device freeze stage.  It turns out that the
-amount of memory allocated by radeon during hibernation (and
-presumably during system suspend too) depends on the utilization of
-the GPU (e.g. hibernating while there are two KDE 4 sessions with
-compositing enabled causes radeon to allocate more memory than for
-one KDE 4 session).
+This is v3.1 of the stable-page-writes patchset for ext4/3/2, xfs, and fat.
+The purpose of this patchset is to prohibit processes from writing on memory
+pages that are currently being written to disk because certain storage setups
+(e.g. SCSI disks with DIF integrity checksums) will fail a write if the page
+contents don't match the checksum.  btrfs already guarantees page stability, so
+it does not use these changes.
 
-In principle it should be possible to use image_size to make the
-memory preallocation mechanism free enough memory for the radeon
-driver, but in practice it is not easy to guess the right value
-because of the way the preallocation code uses image_size.  For this
-reason, it seems reasonable to allow users to control the amount of
-memory reserved for driver allocations made after the preallocation,
-which currently is constant and amounts to 1 MB.
+The technique used is fairly simple -- whenever a page is about to become
+writable (either because of a write fault to a mapped page, or a buffered write
+is in progress), wait for the page writeback flag to be clear, indicating that
+the page is not being written to disk.  This means that it is necessary (1) to
+add wait for writeback code to grab_cache_page_write_begin to take care of
+buffered writes, and (2) all filesystems must have a page_mkwrite that locks a
+page, waits for writeback, and returns the locked page.  For filesystems that
+piggyback on the generic block_page_mkwrite, the patchset adds the writeback
+wait to that function; for filesystems that do not use the page_mkwrite hook at
+all, the patchset provides a stub page_mkwrite.
 
-Introduce a new sysfs file, /sys/power/reserved_size, whose value
-will be used as the amount of memory to reserve for the
-post-preallocation reservations made by device drivers, in bytes.
-For backwards compatibility, set its default (and initial) value to
-the currently used number (1 MB).
+I ran my write-after-checksum ("wac") reproducer program to try to create the
+DIF checksum errors by madly rewriting the same memory pages.  In fact, I tried
+the following combinations against ext2/3/4, xfs, btrfs, and vfat:
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=34102
-Reported-by: Martin Steigerwald <Martin@Lichtvoll.de>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/ABI/testing/sysfs-power |   14 ++++++++++++++
- kernel/power/hibernate.c              |   23 +++++++++++++++++++++++
- kernel/power/main.c                   |    1 +
- kernel/power/power.h                  |    4 ++++
- kernel/power/snapshot.c               |   25 ++++++++++++++++++++-----
- 5 files changed, 62 insertions(+), 5 deletions(-)
+a. 64 write() threads + sync_file_range
+b. 64 mmap write threads + msync
+c. 32 write() threads + sync_file_range + 32 mmap write threads + msync
+d. Same as C, but with all threads in directio mode
+e. Same as A, but with all threads in directio mode
+f. Same as B, but with all threads in directio mode
 
-Index: linux-2.6/kernel/power/hibernate.c
-===================================================================
---- linux-2.6.orig/kernel/power/hibernate.c
-+++ linux-2.6/kernel/power/hibernate.c
-@@ -968,10 +968,33 @@ static ssize_t image_size_store(struct k
- 
- power_attr(image_size);
- 
-+static ssize_t reserved_size_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%lu\n", reserved_size);
-+}
-+
-+static ssize_t reserved_size_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t n)
-+{
-+	unsigned long size;
-+
-+	if (sscanf(buf, "%lu", &size) == 1) {
-+		reserved_size = size;
-+		return n;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+power_attr(reserved_size);
-+
- static struct attribute * g[] = {
- 	&disk_attr.attr,
- 	&resume_attr.attr,
- 	&image_size_attr.attr,
-+	&reserved_size_attr.attr,
- 	NULL,
- };
- 
-Index: linux-2.6/kernel/power/power.h
-===================================================================
---- linux-2.6.orig/kernel/power/power.h
-+++ linux-2.6/kernel/power/power.h
-@@ -15,6 +15,7 @@ struct swsusp_info {
- 
- #ifdef CONFIG_HIBERNATION
- /* kernel/power/snapshot.c */
-+extern void __init hibernate_reserved_size_init(void);
- extern void __init hibernate_image_size_init(void);
- 
- #ifdef CONFIG_ARCH_HIBERNATION_HEADER
-@@ -55,6 +56,7 @@ extern int hibernation_platform_enter(vo
- 
- #else /* !CONFIG_HIBERNATION */
- 
-+static inline void hibernate_reserved_size_init(void) {}
- static inline void hibernate_image_size_init(void) {}
- #endif /* !CONFIG_HIBERNATION */
- 
-@@ -72,6 +74,8 @@ static struct kobj_attribute _name##_att
- 
- /* Preferred image size in bytes (default 500 MB) */
- extern unsigned long image_size;
-+/* Size of memory reserved for drivers (default SPARE_PAGES x PAGE_SIZE) */
-+extern unsigned long reserved_size;
- extern int in_suspend;
- extern dev_t swsusp_resume_device;
- extern sector_t swsusp_resume_block;
-Index: linux-2.6/kernel/power/snapshot.c
-===================================================================
---- linux-2.6.orig/kernel/power/snapshot.c
-+++ linux-2.6/kernel/power/snapshot.c
-@@ -41,6 +41,18 @@ static void swsusp_set_page_forbidden(st
- static void swsusp_unset_page_forbidden(struct page *);
- 
- /*
-+ * Number of bytes to reserve for memory allocations made by device drivers
-+ * from their ->freeze() and ->freeze_noirq() callbacks so that they don't
-+ * cause image creation to fail (tunable via /sys/power/reserved_size).
-+ */
-+unsigned long reserved_size;
-+
-+void __init hibernate_reserved_size_init(void)
-+{
-+	reserved_size = SPARE_PAGES * PAGE_SIZE;
-+}
-+
-+/*
-  * Preferred image size in bytes (tunable via /sys/power/image_size).
-  * When it is set to N, the image creating code will do its best to
-  * ensure the image size will not exceed N bytes, but if that is
-@@ -1263,11 +1275,13 @@ static unsigned long minimum_image_size(
-  * frame in use.  We also need a number of page frames to be free during
-  * hibernation for allocations made while saving the image and for device
-  * drivers, in case they need to allocate memory from their hibernation
-- * callbacks (these two numbers are given by PAGES_FOR_IO and SPARE_PAGES,
-- * respectively, both of which are rough estimates).  To make this happen, we
-- * compute the total number of available page frames and allocate at least
-+ * callbacks (these two numbers are given by PAGES_FOR_IO (which is a rough
-+ * estimate) and reserverd_size divided by PAGE_SIZE (which is tunable through
-+ * /sys/power/reserved_size, respectively).  To make this happen, we compute the
-+ * total number of available page frames and allocate at least
-  *
-- * ([page frames total] + PAGES_FOR_IO + [metadata pages]) / 2 + 2 * SPARE_PAGES
-+ * ([page frames total] + PAGES_FOR_IO + [metadata pages]) / 2
-+ *  + 2 * DIV_ROUND_UP(reserved_size, PAGE_SIZE)
-  *
-  * of them, which corresponds to the maximum size of a hibernation image.
-  *
-@@ -1322,7 +1336,8 @@ int hibernate_preallocate_memory(void)
- 	count -= totalreserve_pages;
- 
- 	/* Compute the maximum number of saveable pages to leave in memory. */
--	max_size = (count - (size + PAGES_FOR_IO)) / 2 - 2 * SPARE_PAGES;
-+	max_size = (count - (size + PAGES_FOR_IO)) / 2
-+			- 2 * DIV_ROUND_UP(reserved_size, PAGE_SIZE);
- 	/* Compute the desired number of image pages specified by image_size. */
- 	size = DIV_ROUND_UP(image_size, PAGE_SIZE);
- 	if (size > max_size)
-Index: linux-2.6/kernel/power/main.c
-===================================================================
---- linux-2.6.orig/kernel/power/main.c
-+++ linux-2.6/kernel/power/main.c
-@@ -337,6 +337,7 @@ static int __init pm_init(void)
- 	if (error)
- 		return error;
- 	hibernate_image_size_init();
-+	hibernate_reserved_size_init();
- 	power_kobj = kobject_create_and_add("power", NULL);
- 	if (!power_kobj)
- 		return -ENOMEM;
-Index: linux-2.6/Documentation/ABI/testing/sysfs-power
-===================================================================
---- linux-2.6.orig/Documentation/ABI/testing/sysfs-power
-+++ linux-2.6/Documentation/ABI/testing/sysfs-power
-@@ -158,3 +158,17 @@ Description:
- 		successful, will make the kernel abort a subsequent transition
- 		to a sleep state if any wakeup events are reported after the
- 		write has returned.
-+
-+What:		/sys/power/reserved_size
-+Date:		May 2011
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/power/reserved_size file allows user space to control
-+		the amount of memory reserved for allocations made by device
-+		drivers during the "device freeze" stage of hibernation.  It can
-+		be written a string representing a non-negative integer that
-+		will be used as the amount of memory to reserve for allocations
-+		made by device drivers' "freeze" callbacks, in bytes.
-+
-+		Reading from this file will display the current value, which is
-+		set to 1 MB by default.
+After running profiles A-F for 30 minutes each on 6 different machines, ext2,
+ext4, xfs, and vfat reported no errors.  ext3 still has a lingering failure
+case (which I will touch on briefly later) and btrfs eventually reports -ENOSPC
+and fails the test, though it does that even without any of the patches applied.
+
+To assess the performance impact of stable page writes, I moved to a disk that
+doesn't have DIF support so that I could measure just the impact of waiting for
+writeback.  I first ran wac with 64 threads madly scribbling on a 64k file and
+saw about a 12 percent performance decrease.  I then reran the wac program with
+64 threads and a 64MB file and saw about the same performance numbers.  As I
+suspected, the patchset only seems to impact workloads that rewrite the same
+memory page frequently.
+
+I am still chasing down what exactly is broken in ext3.  data=writeback mode
+passes with no failures.  data=ordered, however, does not pass; my current
+suspicion is that jbd is calling submit_bh on data buffers but doesn't call
+page_mkclean to kick the userspace programs off the page before writing it.
+
+Per various comments regarding v3 of this patchset, I've integrated his
+suggestions, reworked the patch descriptions to make it clearer which ones
+touch all the filesystems and which ones are to fix remaining holes in specific
+filesystems, and expanded the scope of filesystems that got fixed.
+
+As always, questions and comments are welcome; and thank you to all the
+previous reviewers of this patchset.  I am also soliciting people's opinions on
+whether or not these patches could go upstream for .40.
+
+--D
