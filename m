@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab1EILL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 07:11:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab1EILL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 07:11:56 -0400
-Date: Mon, 9 May 2011 13:11:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: mingo@elte.hu
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH] kprobes,x86: disable irq durinr optimized callback
-Message-ID: <20110509111149.GB3981@jolsa.brq.redhat.com>
-References: <1303822891-8450-1-git-send-email-jolsa@redhat.com>
- <20110426134625.GA21840@home.goodmis.org>
- <20110426141903.GC1896@jolsa.brq.redhat.com>
- <4DB7688B.7010503@hitachi.com>
+	id S1752570Ab1EILM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 07:12:27 -0400
+Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:36237 "EHLO
+	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab1EILMZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 07:12:25 -0400
+Date: Mon, 9 May 2011 13:12:24 +0200 (CEST)
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+To: Hugh Dickins <hughd@google.com>
+cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+In-Reply-To: <alpine.LSU.2.00.1105081303540.16151@sister.anvils>
+Message-ID: <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz> <alpine.LSU.2.00.1105081303540.16151@sister.anvils>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-Personality-Disorder: Schizoid
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DB7688B.7010503@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 27, 2011 at 09:51:23AM +0900, Masami Hiramatsu wrote:
-> (2011/04/26 23:19), Jiri Olsa wrote:
-> > On Tue, Apr 26, 2011 at 09:46:25AM -0400, Steven Rostedt wrote:
-> >> On Tue, Apr 26, 2011 at 03:01:31PM +0200, Jiri Olsa wrote:
+On Sun, 8 May 2011, Hugh Dickins wrote:
 
-SNIP
-
-> >>> hi,
+> On Sun, 8 May 2011, Mikulas Patocka wrote:
+> 
+> > Don't mlock guardpage if the stack is growing up
 > > 
-> > makes the optimized kprobes to be missed. None is missed
-> > if the kprobe optimatization is disabled.
+> > Linux kernel excludes guard page when performing mlock on a VMA with 
+> > down-growing stack. However, some architectures have up-growing stack and 
+> > locking the guard page should be excluded in this case too.
 > > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> 
-> Ingo, could you pull this as a bugfix?
-
-hi,
-could this be pulled in?
-
-thanks,
-jirka
-
-> 
-> Thank you!
-> 
-> 
-> > ---
-> >  arch/x86/kernel/kprobes.c |    5 +++--
-> >  1 files changed, 3 insertions(+), 2 deletions(-)
+> > This patch fixes lvm2 on PA-RISC (and possibly other architectures with 
+> > up-growing stack). lvm2 calculates the number of used pages when locking 
+> > and when unlocking and reports an internal error if the numbers mismatch. 
+> > On PA-RISC, the kernel would incorrectly attempt to mlock the stack guard 
+> > page, this causes allocation of one more page and internal error in lvm2.
 > > 
-> > diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-> > index c969fd9..f1a6244 100644
-> > --- a/arch/x86/kernel/kprobes.c
-> > +++ b/arch/x86/kernel/kprobes.c
-> > @@ -1183,12 +1183,13 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
-> >  					 struct pt_regs *regs)
-> >  {
-> >  	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-> > +	unsigned long flags;
-> >  
-> >  	/* This is possible if op is under delayed unoptimizing */
-> >  	if (kprobe_disabled(&op->kp))
-> >  		return;
-> >  
-> > -	preempt_disable();
-> > +	local_irq_save(flags);
-> >  	if (kprobe_running()) {
-> >  		kprobes_inc_nmissed_count(&op->kp);
-> >  	} else {
-> > @@ -1207,7 +1208,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
-> >  		opt_pre_handler(&op->kp, regs);
-> >  		__this_cpu_write(current_kprobe, NULL);
-> >  	}
-> > -	preempt_enable_no_resched();
-> > +	local_irq_restore(flags);
-> >  }
-> >  
-> >  static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
+> > Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 > 
+> Interesting, I'd convinced myself that the growsup case was safe,
+> because of how we always approach the vma from its bottom end.
 > 
-> -- 
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
+> I've added Michel to the Cc, he's the one with the best grasp here.
+> 
+> Could you point us to where lvm2 is making these calculations?
+> I don't understand quite what it's doing.
+> 
+> Thanks,
+> Hugh
+
+See ./lib/mm/memlock.c in LVM2. It reads /proc/self/maps, parses the file 
+and locks each map with mlock, except for glibc locale file.
+
+It calculates how much memory it took when locking and unlocking and 
+prints an internal error if the numbers differ. The internal error 
+normally means that there was some memory allocated while it was locked 
+(that is wrong).
+
+However, on up-growing stack, the internal error is always triggered, 
+because mlock() of the stack touches the guard page and allocates one more 
+page.
+
+Mikulas
