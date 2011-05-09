@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1EIXv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 19:51:28 -0400
-Received: from home.keithp.com ([63.227.221.253]:36831 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab1EIXv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 19:51:27 -0400
-From: "Keith Packard" <keithp@keithp.com>
-To: "Torvalds\, Linus" <torvalds@linux-foundation.org>
-Subject: [PULL] drm intel fixes
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Airlie\, Dave" <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Date: Mon, 09 May 2011 16:51:22 -0700
-Message-ID: <yun1v07whz9.fsf@aiko.keithp.com>
+	id S1755909Ab1EIXxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 19:53:37 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:18459 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755765Ab1EIXxg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 19:53:36 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 077/206] Staging: hv: Get rid of call to cleanup()
+Thread-Topic: [PATCH 077/206] Staging: hv: Get rid of call to cleanup()
+Thread-Index: AQHMDpJjVBoLN8VyEUWib/ixs1RrB5SFkAYA//+aVzA=
+Date: Mon, 9 May 2011 23:53:35 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481EEBA7@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
+ <1304978288-22999-1-git-send-email-kys@microsoft.com>
+ <1304978288-22999-77-git-send-email-kys@microsoft.com>
+ <20110509225328.GA2832@kroah.com>
+In-Reply-To: <20110509225328.GA2832@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
 
 
-Here are a few very small changes for Intel mode setting.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, May 09, 2011 6:53 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
+> Subject: Re: [PATCH 077/206] Staging: hv: Get rid of call to cleanup()
+> 
+> On Mon, May 09, 2011 at 02:55:59PM -0700, K. Y. Srinivasan wrote:
+> > cleanup() is an empty function; get rid of it.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > ---
+> >  drivers/staging/hv/netvsc_drv.c |    4 ----
+> 
+> Just picking a random patch out of this series (which, I only received
+> the first 132, not all 206).
+> 
+> You need to specify a better changelog entry as you didn't say what code
+> you are changing in the Subject:.
+> 
+> How about:
+> 	Staging: hv: netvsc_drv: Get rid of call to cleanup()
+> 
+> Otherwise I would think (and I did) that you got rid of a global
+> function called cleanup() in all of the hv code.
+> 
+> Care to fix the names of your patches?
 
-They should fix the following bugs:
+Good point; I will fix up the names.
+> 
+> Note, I wouldn't recommend sending that many patches to lkml, it's not
+> needed, just stick to the devel@linuxdriverproject.org list as I really
+> doubt anyone else cares about this code at the moment.
 
-    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=3D36314
-    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=3D36456
-    References: https://bugs.freedesktop.org/show_bug.cgi?id=3D36246
+Agreed; I will do that. Shall I go ahead and fix the names and send the patches 
+just to you or do you want me to send them to the devel list as well.
 
-The following changes since commit 0ee5623f9a6e52df90a78bd21179f8ab370e102e:
+Regards,
 
-  Linux 2.6.39-rc6 (2011-05-03 19:59:13 -0700)
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm-in=
-tel-fixes
-
-Alex Williamson (1):
-      drm/i915/lvds: Only act on lid notify when the device is on
-
-Chris Wilson (4):
-      drm/i915: Release object along create user fb error path
-      drm/i915/dp: Be paranoid in case we disable a DP before it is attached
-      drm/i915: Only enable the plane after setting the fb base (pre-ILK)
-      drm/i915: fix intel_crtc_clock_get pipe reads after "cleanup cleanup"
-
- drivers/gpu/drm/i915/intel_display.c |   10 +++++-----
- drivers/gpu/drm/i915/intel_dp.c      |   17 +++++++++++++++--
- drivers/gpu/drm/i915/intel_lvds.c    |    3 +++
- 3 files changed, 23 insertions(+), 7 deletions(-)
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFNyH36Qp8BWwlsTdMRAhiRAJsEh+Gzky0MrhkkiPyoPzrY+z8XVACfYfJZ
-tFjw7iW6HfsN9ldneCrcmPA=
-=qarT
------END PGP SIGNATURE-----
---=-=-=--
