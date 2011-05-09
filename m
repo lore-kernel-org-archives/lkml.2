@@ -1,87 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1EIPLR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 11:11:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47008 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab1EIPLP convert rfc822-to-8bit (ORCPT
+	id S1752201Ab1EIPTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 11:19:48 -0400
+Received: from mail.pre-sense.de ([213.238.39.107]:58521 "EHLO
+	mail.pre-sense.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab1EIPTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 11:11:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=m0CKH3sV/HhIwrhyTN8wqxpBs21F7YG7RUvty8YQ9gHZdMadvoB2Oa5ZgW7vVdM+hr
-         /Fb6XTk6B6qBpmEEG0bqaOXvrTky+ikvb7/bOv7smmaWlvDev+edI3ADicNESb6XfHCC
-         k5E1uGT08JqciY70D/b5X9etxYZ2ZbMiu3M0k=
+	Mon, 9 May 2011 11:19:47 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 May 2011 11:19:47 EDT
+Message-ID: <4DC804A0.4090404@pre-sense.de>
+Date: Mon, 09 May 2011 17:13:36 +0200
+From: Timo Warns <warns@pre-sense.de>
+Organization: PRESENSE Technologies GmbH
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20110509144546.GB13275@khazad-dum.debian.net>
-References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com> <20110509144546.GB13275@khazad-dum.debian.net>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 9 May 2011 11:10:55 -0400
-X-Google-Sender-Auth: OY5YFCZCRyTA7UOD86-nAYrO8_Y
-Message-ID: <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
-Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Eugene Teo <eugeneteo@kernel.sg>, Richard Russon <rich@flatcap.org>,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk,
+        Harvey Harrison <harvey.harrison@gmail.com>, Greg KH <gregkh@suse.de>
+Subject: Re: [Stable-review] [patch 35/38] fs/partitions/ldm.c: fix oops caused
+ by corrupted partition table
+References: <20110506001210.724927797@clark.kroah.org> <1304735051.3203.87.camel@localhost>
+In-Reply-To: <1304735051.3203.87.camel@localhost>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/mixed;
+ boundary="------------060007000202020003050207"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 10:45 AM, Henrique de Moraes Holschuh
-<hmh@hmh.eng.br> wrote:
-> On Sun, 08 May 2011, Andrew Lutomirski wrote:
->> I've figured out how the ThinkPad SMAPI charge control works (at least
->> well enough to program thresholds on some models), and I'd like to get
->
-> Yeah, there's a little protocol to talk to the EC, otherwise it simply
-> ignores writes to the battery threshold registers.  I think you had to set
-> bit 7 before you write the threshold to the relevant EC register, or
-> something.  Found it by trial-and-error a long time ago, I documented it
-> somewhere but never took it forward.  I never bothered to hunt down the
-> force-drain/battery-select commands, though.
->
-> Anyway, since SMAPI works, and is *stable* (the fact that it works from the
-> A21 to the latest Lenovos tells you just how stable), which is a lot more
-> than what I can say about the ACPI stuff, I didn't see any reason to mess
-> with this.
+This is a multi-part message in MIME format.
+--------------060007000202020003050207
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-I must have been unclear.  I'm using SMAPI -- I've reverse-engineered
-it from a combination of tp_smapi, the mwave driver, the ancient PDF
-on Lenovo's site, and trial-and-error on my X220.  (The X220 fails
-requests for the start threshold that work on on the X200s.)
+Am 07.05.2011 04:24, schrieb Ben Hutchings:
+> On Thu, 2011-05-05 at 17:11 -0700, Greg KH wrote:
+>> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
+>>
+>> ------------------
+>>
+>> From: Timo Warns <Warns@pre-sense.de>
+>>
+>> commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
+>> [...]
+> 
+> I don't think this actually fixes the vulnerability, and I don't think
+> this code works at all.
+>
+> [...]
+>
+>> +	if (rec >= num) {
+>> +		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
+>> +		return false;
+>> +	}
+> 
+> This is fine for the first fragment we find, when we allocate memory
+> based on 'num'.  However, when we add another fragment, we need to
+> compare with f->num.  So there still seems to be the possibility of a
+> buffer overflow.
 
->> 2. Integrate it with power_supply.
->
-> Only if we can make it generic enough, but yes, THIS is the better way.
->
-> However, I'd prefer if you went all the way and actually hooked to the SBS
-> subsystem and exposed all the battery information.  There is a way to do
-> that through the ACPI DSDT (but you will have to do the rev. engineering
-> yourself, as I said, smapi works just fine across so many models, that I
-> never bothered with it -- it is far better supported than ACPI).
->
-> It is not even difficult, just look at the methods used to expose the
-> standard ACPI battery interface, then read the Smart Battery System (SBS)
-> standard, and you will find out by fast trial-and-error how to map one to
-> the other.  Or you can look at tp_smapi to speed things up (only, tp_smapi
-> talks directly to the EC instead of doing it over ACPI).
->
-> The SBS interface exposes more data about the battery, including
-> per-cell-group voltage and pack microcontroller aging counters, alarms, and
-> the "needs to get through the fuel-gaugue reset procedure" semasphore.
+Yes, I agree. I have missed this one. Please consider the attached patch.
 
-If I'm feeling really motivated, I'll look at that.  I'm currently
-more interested in the charging thresholds, though, which I think is
-independent of the choice of SBS vs ACPI to access the battery state.
-(From a quick glance at the SBS spec, you can inhibit charging
-entirely but you can't ask for thresholds.  I assume that the EC takes
-care of that.  If I'm wrong, please tell me, but SMAPI seems like a
-fine way to access the thresholds.)
+>> [...]
+>>  	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
+>>
+>>  	return true;
+> 
+> The offset used for the destination means that the first VBLK_SIZE_HEAD
+> bytes of f->data are never initialised!
+> 
+> I suspect (without any knowledge of LDM) that the intent was to use the
+> header from the first fragment and drop it from the subsequent
+> fragments, like this:
+> 
+> 	if (rec == 0)
+> 		memcpy(f->data, data, VBLK_SIZE_HEAD);
+> 	data += VBLK_SIZE_HEAD;
+> 	size -= VBLK_SIZE_HEAD;
+> 	memcpy(f->data + VBLK_SIZE_HEAD + rec * size, data, size);
 
---Andy
+The patch that I provided preserves the original behaviour. Hence, I
+would like to pass this issue to Richard. Richard, could you comment on
+this?
+
+Cheers, Timo
+
+--------------060007000202020003050207
+Content-Type: text/x-patch;
+ name="patch.diff"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+ filename="patch.diff"
+
+--- linux-2.6.38.5-b/fs/partitions/ldm.c	2011-05-02 18:30:53.000000000 +0=
+200
++++ linux-2.6.38.5-a/fs/partitions/ldm.c	2011-05-09 17:09:07.000000000 +0=
+200
+@@ -1299,6 +1299,11 @@
+=20
+ 	BUG_ON (!data || !frags);
+=20
++	if (size < 2 * VBLK_SIZE_HEAD) {
++		ldm_error("Value of size is to small.");
++		return false;
++	}
++=09
+ 	group =3D get_unaligned_be32(data + 0x08);
+ 	rec   =3D get_unaligned_be16(data + 0x0C);
+ 	num   =3D get_unaligned_be16(data + 0x0E);
+@@ -1326,6 +1331,12 @@
+=20
+ 	list_add_tail (&f->list, frags);
+ found:
++	if (rec >=3D f->num) {
++		ldm_error ("REC value (%d) exceeds NUM value (%d)", rec, f->num);
++		f->map &=3D 0x7F;			/* Mark the group as broken */
++		return false;
++	}
++
+ 	if (f->map & (1 << rec)) {
+ 		ldm_error ("Duplicate VBLK, part %d.", rec);
+ 		f->map &=3D 0x7F;			/* Mark the group as broken */
+@@ -1334,10 +1345,9 @@
+=20
+ 	f->map |=3D (1 << rec);
+=20
+-	if (num > 0) {
+-		data +=3D VBLK_SIZE_HEAD;
+-		size -=3D VBLK_SIZE_HEAD;
+-	}
++	data +=3D VBLK_SIZE_HEAD;
++	size -=3D VBLK_SIZE_HEAD;
++
+ 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
+=20
+ 	return true;
+
+--------------060007000202020003050207--
