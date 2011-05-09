@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab1EJIli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:41:38 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35478
+	id S932584Ab1EJIbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:31:14 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35470
 	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756079Ab1EJIaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 04:30:52 -0400
+	id S1756067Ab1EJIav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 04:30:51 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 197/206] Staging: hv: Get rid of storvsc_api.h
-Date: Mon,  9 May 2011 14:57:59 -0700
-Message-Id: <1304978288-22999-197-git-send-email-kys@microsoft.com>
+Subject: [PATCH 198/206] Staging: hv: Get rid of utils.h
+Date: Mon,  9 May 2011 14:58:00 -0700
+Message-Id: <1304978288-22999-198-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -25,25 +25,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of storvsc_api.h.
+Now, get rid of utils.h.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_api.h |  162 --------------------------------------
- 1 files changed, 0 insertions(+), 162 deletions(-)
- delete mode 100644 drivers/staging/hv/storvsc_api.h
+ drivers/staging/hv/utils.h |  120 --------------------------------------------
+ 1 files changed, 0 insertions(+), 120 deletions(-)
+ delete mode 100644 drivers/staging/hv/utils.h
 
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
+diff --git a/drivers/staging/hv/utils.h b/drivers/staging/hv/utils.h
 deleted file mode 100644
-index b163515..0000000
---- a/drivers/staging/hv/storvsc_api.h
+index acebbbf..0000000
+--- a/drivers/staging/hv/utils.h
 +++ /dev/null
-@@ -1,162 +0,0 @@
+@@ -1,120 +0,0 @@
 -/*
-- *
 - * Copyright (c) 2009, Microsoft Corporation.
 - *
 - * This program is free software; you can redistribute it and/or modify it
@@ -62,148 +61,107 @@ index b163515..0000000
 - * Authors:
 - *   Haiyang Zhang <haiyangz@microsoft.com>
 - *   Hank Janssen  <hjanssen@microsoft.com>
-- *
 - */
--
--
--#ifndef _STORVSC_API_H_
--#define _STORVSC_API_H_
--
--#include <linux/kernel.h>
--#include <linux/wait.h>
--#include "vstorage.h"
--#include "vmbus_api.h"
--#include "vmbus.h"
--
--/* Defines */
--#define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
--#define BLKVSC_RING_BUFFER_SIZE				(20*PAGE_SIZE)
--
--#define STORVSC_MAX_IO_REQUESTS				128
+-#ifndef __HV_UTILS_H_
+-#define __HV_UTILS_H_
 -
 -/*
-- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
-- * reality, the path/target is not used (ie always set to 0) so our
-- * scsi host adapter essentially has 1 bus with 1 target that contains
-- * up to 256 luns.
+- * Common header for Hyper-V ICs
 - */
--#define STORVSC_MAX_LUNS_PER_TARGET			64
--#define STORVSC_MAX_TARGETS				1
--#define STORVSC_MAX_CHANNELS				1
+-#define ICMSGTYPE_NEGOTIATE		0
+-#define ICMSGTYPE_HEARTBEAT		1
+-#define ICMSGTYPE_KVPEXCHANGE		2
+-#define ICMSGTYPE_SHUTDOWN		3
+-#define ICMSGTYPE_TIMESYNC		4
+-#define ICMSGTYPE_VSS			5
 -
--struct hv_storvsc_request;
+-#define ICMSGHDRFLAG_TRANSACTION	1
+-#define ICMSGHDRFLAG_REQUEST		2
+-#define ICMSGHDRFLAG_RESPONSE		4
 -
--/* Matches Windows-end */
--enum storvsc_request_type{
--	WRITE_TYPE,
--	READ_TYPE,
--	UNKNOWN_TYPE,
+-#define HV_S_OK				0x00000000
+-#define HV_E_FAIL			0x80004005
+-#define HV_ERROR_NOT_SUPPORTED		0x80070032
+-#define HV_ERROR_MACHINE_LOCKED		0x800704F7
+-
+-struct vmbuspipe_hdr {
+-	u32 flags;
+-	u32 msgsize;
+-} __packed;
+-
+-struct ic_version {
+-	u16 major;
+-	u16 minor;
+-} __packed;
+-
+-struct icmsg_hdr {
+-	struct ic_version icverframe;
+-	u16 icmsgtype;
+-	struct ic_version icvermsg;
+-	u16 icmsgsize;
+-	u32 status;
+-	u8 ictransaction_id;
+-	u8 icflags;
+-	u8 reserved[2];
+-} __packed;
+-
+-struct icmsg_negotiate {
+-	u16 icframe_vercnt;
+-	u16 icmsg_vercnt;
+-	u32 reserved;
+-	struct ic_version icversion_data[1]; /* any size array */
+-} __packed;
+-
+-struct shutdown_msg_data {
+-	u32 reason_code;
+-	u32 timeout_seconds;
+-	u32 flags;
+-	u8  display_message[2048];
+-} __packed;
+-
+-struct heartbeat_msg_data {
+-	u64 seq_num;
+-	u32 reserved[8];
+-} __packed;
+-
+-/* Time Sync IC defs */
+-#define ICTIMESYNCFLAG_PROBE	0
+-#define ICTIMESYNCFLAG_SYNC	1
+-#define ICTIMESYNCFLAG_SAMPLE	2
+-
+-#ifdef __x86_64__
+-#define WLTIMEDELTA	116444736000000000L	/* in 100ns unit */
+-#else
+-#define WLTIMEDELTA	116444736000000000LL
+-#endif
+-
+-struct ictimesync_data{
+-	u64 parenttime;
+-	u64 childtime;
+-	u64 roundtriptime;
+-	u8 flags;
+-} __packed;
+-
+-/* Index for each IC struct in array hv_cb_utils[] */
+-#define HV_SHUTDOWN_MSG		0
+-#define HV_TIMESYNC_MSG		1
+-#define HV_HEARTBEAT_MSG	2
+-#define HV_KVP_MSG		3
+-
+-struct hyperv_service_callback {
+-	u8 msg_type;
+-	char *log_msg;
+-	unsigned char data[16];
+-	struct vmbus_channel *channel;
+-	void (*callback) (void *context);
 -};
 -
+-extern void prep_negotiate_resp(struct icmsg_hdr *,
+-				struct icmsg_negotiate *, u8 *);
+-extern void chn_cb_negotiate(void *);
+-extern struct hyperv_service_callback hv_cb_utils[];
 -
--struct hv_storvsc_request {
--	struct hv_storvsc_request *request;
--	struct hv_device *device;
--
--	/* Synchronize the request/response if needed */
--	struct completion wait_event;
--
--	unsigned char *sense_buffer;
--	void *context;
--	void (*on_io_completion)(struct hv_storvsc_request *request);
--	struct hv_multipage_buffer data_buffer;
--
--	struct vstor_packet vstor_packet;
--};
--
--
--struct storvsc_device_info {
--	u32 ring_buffer_size;
--	unsigned int port_number;
--	unsigned char path_id;
--	unsigned char target_id;
--};
--
--struct storvsc_major_info {
--	int major;
--	int index;
--	bool do_register;
--	char *devname;
--	char *diskname;
--};
--
--/* A storvsc device is a device object that contains a vmbus channel */
--struct storvsc_device {
--	struct hv_device *device;
--
--	/* 0 indicates the device is being destroyed */
--	atomic_t ref_count;
--
--	bool	 drain_notify;
--	atomic_t num_outstanding_req;
--
--	wait_queue_head_t waiting_to_drain;
--
--	/*
--	 * Each unique Port/Path/Target represents 1 channel ie scsi
--	 * controller. In reality, the pathid, targetid is always 0
--	 * and the port is set by us
--	 */
--	unsigned int port_number;
--	unsigned char path_id;
--	unsigned char target_id;
--
--	/* Used for vsc/vsp channel reset process */
--	struct hv_storvsc_request init_request;
--	struct hv_storvsc_request reset_request;
--};
--
--
--/* Get the stordevice object iff exists and its refcount > 1 */
--static inline struct storvsc_device *get_stor_device(struct hv_device *device)
--{
--	struct storvsc_device *stor_device;
--
--	stor_device = (struct storvsc_device *)device->ext;
--	if (stor_device && atomic_read(&stor_device->ref_count) > 1)
--		atomic_inc(&stor_device->ref_count);
--	else
--		stor_device = NULL;
--
--	return stor_device;
--}
--
--
--static inline void put_stor_device(struct hv_device *device)
--{
--	struct storvsc_device *stor_device;
--
--	stor_device = (struct storvsc_device *)device->ext;
--
--	atomic_dec(&stor_device->ref_count);
--}
--
--static inline void storvsc_wait_to_drain(struct storvsc_device *dev)
--{
--	dev->drain_notify = true;
--	wait_event(dev->waiting_to_drain,
--		   atomic_read(&dev->num_outstanding_req) == 0);
--	dev->drain_notify = false;
--}
--
--/* Interface */
--
--int storvsc_dev_add(struct hv_device *device,
--				void *additional_info);
--int storvsc_dev_remove(struct hv_device *device);
--
--int storvsc_do_io(struct hv_device *device,
--				struct hv_storvsc_request *request);
--
--int storvsc_get_major_info(struct storvsc_device_info *device_info,
--				struct storvsc_major_info *major_info);
--
--#endif /* _STORVSC_API_H_ */
+-#endif /* __HV_UTILS_H_ */
 -- 
 1.7.4.1
 
