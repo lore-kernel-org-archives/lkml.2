@@ -1,132 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab1EIVU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 17:20:26 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35725 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754440Ab1EIVUY (ORCPT
+	id S1754908Ab1EIVUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 17:20:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58647 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab1EIVUr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 17:20:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=rl395ZokoFSecPeuzH1PJEtlseaedG49PVbN/N29GoijeFwFZmZfpEo+4itbJ77ZWrHgrK6Nvjo98R3Jw/dMw4rboN5bIXFM8PntrhzB+nt6SGaqmnqa8FTF1pdoFjwI;
-Date: Mon, 9 May 2011 14:20:14 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH -v2] pci: Check bridge resources after resource
- allocation.
-Message-ID: <20110509142014.617e3100@jbarnes-desktop>
-In-Reply-To: <4DC64C58.70203@kernel.org>
-References: <4DC250A6.9040802@kernel.org>
-	<20110506081243.GF16782@ram-laptop>
-	<4DC4586C.6020308@kernel.org>
-	<20110507015240.GN16782@ram-laptop>
-	<4DC4B059.3030502@kernel.org>
-	<4DC64C58.70203@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Mon, 9 May 2011 17:20:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=l5KrNkcC3TLPAJX96GLwSQ8gmhL07kFGe12QeAQqXf3ASD4Dpc62AH9F8+ef5LiqmX
+         fOs4k1SdrZLMASYJePuB1ryah552m0hDvOqtS8ClAxmKNifNOjFDt1vBGRDogWTQJL47
+         7J3m4MsZ0bZFhK2ybEbcUmn3j4Iafr3GfEDak=
+MIME-Version: 1.0
+In-Reply-To: <201105091504.54868.thomas@fjellstrom.ca>
+References: <201105071815.03318.thomas@fjellstrom.ca>
+	<BANLkTik1NUc8Jaa4i_awNSbBHaMhW9FgqA@mail.gmail.com>
+	<201105091446.22781.thomas@fjellstrom.ca>
+	<201105091504.54868.thomas@fjellstrom.ca>
+Date: Mon, 9 May 2011 17:20:47 -0400
+Message-ID: <BANLkTi=iV7Mg_4Lx_+Z6c7C2qzMxsf0Aew@mail.gmail.com>
+Subject: Re: long delay when using HMDI output on RS780
+From: Alex Deucher <alexdeucher@gmail.com>
+To: thomas@fjellstrom.ca
+Cc: Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 08 May 2011 00:55:04 -0700
-Yinghai Lu <yinghai@kernel.org> wrote:
+On Mon, May 9, 2011 at 5:04 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
+> On May 9, 2011, Thomas Fjellstrom wrote:
+>> On May 9, 2011, Jerome Glisse wrote:
+>> > On Mon, May 9, 2011 at 3:50 PM, Thomas Fjellstrom <thomas@fjellstrom.ca>
+>>
+>> wrote:
+>> > > On May 7, 2011, Thomas Fjellstrom wrote:
+>> > >> I just switched to using HDMI with my media center, and its causing a
+>> > >> 30+ second delay in the screen turning on, as well as a 7 second delay
+>> > >> in the X startup when it tries to fetch the EDID information.
+>> > >> Basically I don't get any picture at all once KMS initializes until
+>> > >> after X has been up a few seconds.
+>> > >>
+>> > >> The odd thing is the monitor seems to think something is going on,
+>> > >> since it doesn't go to sleep or display its "No Signal" OSD, but just
+>> > >> after X starts up, it pops up the "Input detected/switched" OSD, and
+>> > >> the picture appears.
+>> > >>
+>> > >> The bios, grub2 (in both text mode and graphics mode), and the initial
+>> > >> linux kernel messages all display fine and immediately. Its only once
+>> > >> KMS and radeondrmfb initializes that there's a problem (at least till
+>> > >> X starts up).
+>> > >>
+>> > >> I've just built with a vanila 2.6.38.4 kernel from the stable git
+>> > >> repo, and have played with some EDID settings, trying to disable edid
+>> > >> where I could thinking thats what caused the problem. That doesn't
+>> > >> seem to be the case though. I also tried playing with the video=
+>> > >> kernel option, trying to force disable VGA-1, and set a static mode
+>> > >> for HDMI-A-1, but if I try, it seems to force disable HDMI-A-1
+>> > >> instead of force the mode.
+>> > >>
+>> > >> With a DVI-D cable instead, the problem goes away.
+>> > >>
+>> > >> Attached are the dmesg and xorg.log files for the latest boot with
+>> > >> HDMI (no video= parameter, and EDID enabled, most settings at
+>> > >> defaults).
+>> > >>
+>> > >> What exactly would cause this, and is there a way I can fix it?
+>> > >
+>> > > I've been playing around with it more, and got it to not blank the
+>> > > screen after KMS init, /once/. So far no luck repeating that success.
+>> > >
+>> > > I've tried late, and early kms init, and currently have the radeon
+>> > > module and firmware compiled into the kernel. Boot times at least are
+>> > > fairly decent, about 8-10s till X starts, but about 25-35s till
+>> > > anything shows up.
+>> > >
+>> > > Some strangeness, I have the kernel set to force the hdmi output to on,
+>> > > with a very specific mode, that X tends to like, the vga port is forced
+>> > > disabled. X is set to ignore EDID, and also set to that specific mode
+>> > > that it tends to auto set itself. Regardless X still wants to pause for
+>> > > 7s 2-3 times while processing EDID info.
+>> > >
+>> > > I've attached the new dmesg and xorg logs from the latest attempts.
+>> > >
+>> > > Note, this only happens with KMS, with HDMI. disabling KMS, or using
+>> > > DVI makes the problem go away. Even grub's own graphical mode works
+>> > > fine, its only once KMS inits that things go bad, and its not till
+>> > > after X is up for a few seconds that something displays on my screen.
+>> > >
+>> > > --
+>> > > Thomas Fjellstrom
+>> > > thomas@fjellstrom.ca
+>> >
+>> > Please boot with drm.debug=4 and attach dmesg it should be more
+>> > verbose. You might also want to try booting with radeon.audio=0
+>>
+>> Hi, attached both one with just drm.debug=4, and one with that and
+>> radeon.audio=0.
+>>
+>> Now, I'm guessing its a bug in my monitor claiming it can do HDMI audio? As
+>> setting radeon.audio=0 seems to have fixed the blanking problem. And the
+>> dmesg logs seem to claim that radeon thinks it can do HDMI audio.
 
-> 
-> During pci remove/rescan testing found:
-> 
-> [  541.141614] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-> [  541.141965] pci 0000:c0:03.0:   bridge window [io  0x1000-0x0fff]
-> [  541.159181] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-> [  541.159540] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-> [  541.179374] pci 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-> [  541.199198] pci 0000:c0:03.0: Error enabling bridge (-22), continuing
-> [  541.199202] pci 0000:c0:03.0: enabling bus mastering
-> [  541.199209] pci 0000:c0:03.0: setting latency timer to 64
-> [  541.199917] pcieport 0000:c0:03.0: device not available (can't reserve [io  0x1000-0x0fff])
-> [  541.199963] pcieport: probe of 0000:c0:03.0 failed with error -22
-> 
-> This bug was uncovered by commit
-> | commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
-> | Author: Ram Pai <linuxram@us.ibm.com>
-> | Date:   Mon Feb 14 17:43:20 2011 -0800
-> |
-> |    PCI: pre-allocate additional resources to devices only after successful allocation of essential resources.
-> 
-> After that commit, pci_hotplug_io_size is changed to additional_io_size from minium size.
-> So it will not go through resource_size(res) != 0 path,  and will not be reset there.
-> 
-> The root cause is: pci_bridge_check_ranges will set RESOURCE_IO flag for pci
-> bridge, and later if children do not need IO resource. those bridge
-> resources will not need to be allocated. but flags is still there. that will
-> confuse the the pci_enable_bridges later.
-> 
-> related code:
-> | static void assign_requested_resources_sorted(struct resource_list *head,
-> |                                  struct resource_list_x *fail_head)
-> | {
-> |         struct resource *res;
-> |         struct resource_list *list;
-> |         int idx;
-> |
-> |         for (list = head->next; list; list = list->next) {
-> |                 res = list->res;
-> |                 idx = res - &list->dev->resource[0];
-> |                 if (resource_size(res) && pci_assign_resource(list->dev, idx)) {
-> | ...
-> |                         reset_resource(res);
-> |                 }
-> |         }
-> | }
-> 
-> We can not just reset resource there, because will still need to use flag for addition resource allocation afterwards.
-> 
-> At last, We have to add pci_bridge_check_resources() to close the loop.
-> 
-> after patch, will get right result:
-> [  621.206655] pci 0000:c0:03.0: PCI bridge to [bus c4-c9]
-> [  621.206912] pci 0000:c0:03.0:   bridge window [io  disabled]
-> [  621.226594] pci 0000:c0:03.0:   bridge window [mem 0xf0000000-0xf00fffff]
-> [  621.226904] pci 0000:c0:03.0:   bridge window [mem 0xfc180000000-0xfc197ffffff 64bit pref]
-> [  621.247012] pci 0000:c0:03.0: enabling bus mastering
-> [  621.247275] pci 0000:c0:03.0: setting latency timer to 64
-> [  621.267656] pcieport 0000:c0:03.0: setting latency timer to 64
-> [  621.268134] pcieport 0000:c0:03.0: irq 160 for MSI/MSI-X
-> [  621.286832] pcieport 0000:c0:03.0: Signaling PME through PCIe PME interrupt
-> [  621.306360] pci 0000:c4:00.0: Signaling PME through PCIe PME interrupt
-> [  621.306684] pcie_pme 0000:c0:03.0:pcie01: service driver pcie_pme loaded
-> [  621.326512] aer 0000:c0:03.0:pcie02: service driver aer loaded
-> [  621.326911] pciehp 0000:c0:03.0:pcie04: Hotplug Controller:
-> 
-> -v2: update description.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Most likely the driver is sending the wrong packets for hdmi audio.
+Until that gets fixed up, it's probably best to disable hdmi audio if
+it's not working for you.
 
-Why do I keep getting the feeling that our resource handling code is
-made of duct tape and bailing wire?  The fact that we can't just clear
-the resource and the flag where we discover the allocation failure
-suggests that maybe we should be splitting our bus and device
-allocation code a bit more.
+Alex
 
-Clearly we don't want to allocate resources (especially scarce ones
-like I/O space) when we don't actually need them, but I think it's
-going to be tough to handle all supported cases without real resource
-move support in the core and drivers.
 
-That said, if this doesn't break other cases I guess it's a fairly
-minimal fix.
-
-Linus?  Bjorn?  Ram?
-
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+>>
+>> It also seems to be ignoring the mode I've requested via the video= param.
+>> It at least sees that I want it forced enabled, but claims its 0x0? Or at
+>> least it seems its picking the preferred mode.
+>>
+>> Still have X blocking for up to 14s though.
+>>
+>> Theres also a bunch of repeated log messages from drm now, every second
+>> about it seems to spam the following lines: (the last one is repeated a
+>> bunch of times, with FB:44 or FB:42)
+>>
+>> [   31.330033] [drm:output_poll_execute], [CONNECTOR:13:VGA-1] status
+>> updated from 2 to 2
+>> [   31.435455] [drm:radeon_atombios_connected_scratch_regs], DFP1 connected
+>> [   31.435463] [drm:output_poll_execute], [CONNECTOR:15:HDMI-A-1] status
+>> updated from 1 to 1
+>> [   31.437391] [drm:drm_mode_addfb], [FB:42]
+>>
+>> > Cheers,
+>> > Jerome
+>
+> Ok, a bit more news. My monitor does indeed support audio, at least it has
+> volume buttons, so I assume it has speakers, and should support HDMI audio (I
+> have never used it though).
+>
+> --
+> Thomas Fjellstrom
+> thomas@fjellstrom.ca
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
