@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab1EIWDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 18:03:16 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47441
+	id S932240Ab1EIWDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 18:03:14 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47449
 	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754788Ab1EIVoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754844Ab1EIVoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 May 2011 17:44:46 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 046/206] Staging: hv: Get rid of the forward declaration for copy_to_bounce_buffer()
-Date: Mon,  9 May 2011 14:55:28 -0700
-Message-Id: <1304978288-22999-46-git-send-email-kys@microsoft.com>
+Subject: [PATCH 047/206] Staging: hv: Get rid of the forward declaration of storvsc_remove()
+Date: Mon,  9 May 2011 14:55:29 -0700
+Message-Id: <1304978288-22999-47-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1304978288-22999-1-git-send-email-kys@microsoft.com>
 References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
@@ -32,165 +32,93 @@ Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |  132 +++++++++++++++++++-------------------
- 1 files changed, 66 insertions(+), 66 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   62 +++++++++++++++++++-------------------
+ 1 files changed, 31 insertions(+), 31 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 4e3e9ca..807ba89 100644
+index 807ba89..6f23f52 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -284,16 +284,78 @@ static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
+@@ -350,11 +350,41 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
  	return total_copied;
  }
  
 +
-+/* Assume the bounce_sgl has enough room ie using the create_bounce_buffer() */
-+static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
-+					  struct scatterlist *bounce_sgl,
-+					  unsigned int orig_sgl_count)
++/*
++ * storvsc_remove - Callback when our device is removed
++ */
++static int storvsc_remove(struct hv_device *dev)
 +{
-+	int i;
-+	int j = 0;
-+	unsigned long src, dest;
-+	unsigned int srclen, destlen, copylen;
-+	unsigned int total_copied = 0;
-+	unsigned long bounce_addr = 0;
-+	unsigned long src_addr = 0;
-+	unsigned long flags;
++	struct storvsc_driver *storvsc_drv_obj =
++			 drv_to_stordrv(dev->device.driver);
++	struct Scsi_Host *host = dev_get_drvdata(&dev->device);
++	struct hv_host_device *host_dev =
++			(struct hv_host_device *)host->hostdata;
 +
-+	local_irq_save(flags);
++	/*
++	 * Call to the vsc driver to let it know that the device is being
++	 * removed
++	 */
++	storvsc_drv_obj->base.dev_rm(dev);
 +
-+	for (i = 0; i < orig_sgl_count; i++) {
-+		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
-+				KM_IRQ0) + orig_sgl[i].offset;
-+		src = src_addr;
-+		srclen = orig_sgl[i].length;
-+
-+		if (bounce_addr == 0)
-+			bounce_addr =
-+			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
-+						KM_IRQ0);
-+
-+		while (srclen) {
-+			/* assume bounce offset always == 0 */
-+			dest = bounce_addr + bounce_sgl[j].length;
-+			destlen = PAGE_SIZE - bounce_sgl[j].length;
-+
-+			copylen = min(srclen, destlen);
-+			memcpy((void *)dest, (void *)src, copylen);
-+
-+			total_copied += copylen;
-+			bounce_sgl[j].length += copylen;
-+			srclen -= copylen;
-+			src += copylen;
-+
-+			if (bounce_sgl[j].length == PAGE_SIZE) {
-+				/* full..move to next entry */
-+				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
-+				j++;
-+
-+				/* if we need to use another bounce buffer */
-+				if (srclen || i != orig_sgl_count - 1)
-+					bounce_addr =
-+					(unsigned long)kmap_atomic(
-+					sg_page((&bounce_sgl[j])), KM_IRQ0);
-+
-+			} else if (srclen == 0 && i == orig_sgl_count - 1) {
-+				/* unmap the last bounce that is < PAGE_SIZE */
-+				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
-+			}
-+		}
-+
-+		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
++	if (host_dev->request_pool) {
++		kmem_cache_destroy(host_dev->request_pool);
++		host_dev->request_pool = NULL;
 +	}
 +
-+	local_irq_restore(flags);
++	DPRINT_INFO(STORVSC, "removing host adapter (%p)...", host);
++	scsi_remove_host(host);
 +
-+	return total_copied;
++	DPRINT_INFO(STORVSC, "releasing host adapter (%p)...", host);
++	scsi_host_put(host);
++	return 0;
 +}
 +
  /* Static decl */
  static int storvsc_probe(struct hv_device *dev);
  static int storvsc_queuecommand(struct Scsi_Host *shost, struct scsi_cmnd *scmnd);
  static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd);
- static int storvsc_remove(struct hv_device *dev);
+-static int storvsc_remove(struct hv_device *dev);
  
--static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
--					  struct scatterlist *bounce_sgl,
--					  unsigned int orig_sgl_count);
--
  static int storvsc_get_chs(struct scsi_device *sdev, struct block_device *bdev,
  			   sector_t capacity, int *info);
- 
-@@ -613,68 +675,6 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
- 	kmem_cache_free(host_dev->request_pool, cmd_request);
+@@ -589,36 +619,6 @@ static int storvsc_probe(struct hv_device *device)
  }
  
--/* Assume the bounce_sgl has enough room ie using the create_bounce_buffer() */
--static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
--					  struct scatterlist *bounce_sgl,
--					  unsigned int orig_sgl_count)
+ /*
+- * storvsc_remove - Callback when our device is removed
+- */
+-static int storvsc_remove(struct hv_device *dev)
 -{
--	int i;
--	int j = 0;
--	unsigned long src, dest;
--	unsigned int srclen, destlen, copylen;
--	unsigned int total_copied = 0;
--	unsigned long bounce_addr = 0;
--	unsigned long src_addr = 0;
--	unsigned long flags;
+-	struct storvsc_driver *storvsc_drv_obj =
+-			 drv_to_stordrv(dev->device.driver);
+-	struct Scsi_Host *host = dev_get_drvdata(&dev->device);
+-	struct hv_host_device *host_dev =
+-			(struct hv_host_device *)host->hostdata;
 -
--	local_irq_save(flags);
+-	/*
+-	 * Call to the vsc driver to let it know that the device is being
+-	 * removed
+-	 */
+-	storvsc_drv_obj->base.dev_rm(dev);
 -
--	for (i = 0; i < orig_sgl_count; i++) {
--		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
--				KM_IRQ0) + orig_sgl[i].offset;
--		src = src_addr;
--		srclen = orig_sgl[i].length;
--
--		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
--
--		if (bounce_addr == 0)
--			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
--
--		while (srclen) {
--			/* assume bounce offset always == 0 */
--			dest = bounce_addr + bounce_sgl[j].length;
--			destlen = PAGE_SIZE - bounce_sgl[j].length;
--
--			copylen = min(srclen, destlen);
--			memcpy((void *)dest, (void *)src, copylen);
--
--			total_copied += copylen;
--			bounce_sgl[j].length += copylen;
--			srclen -= copylen;
--			src += copylen;
--
--			if (bounce_sgl[j].length == PAGE_SIZE) {
--				/* full..move to next entry */
--				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
--				j++;
--
--				/* if we need to use another bounce buffer */
--				if (srclen || i != orig_sgl_count - 1)
--					bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
--			} else if (srclen == 0 && i == orig_sgl_count - 1) {
--				/* unmap the last bounce that is < PAGE_SIZE */
--				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
--			}
--		}
--
--		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
+-	if (host_dev->request_pool) {
+-		kmem_cache_destroy(host_dev->request_pool);
+-		host_dev->request_pool = NULL;
 -	}
 -
--	local_irq_restore(flags);
+-	DPRINT_INFO(STORVSC, "removing host adapter (%p)...", host);
+-	scsi_remove_host(host);
 -
--	return total_copied;
+-	DPRINT_INFO(STORVSC, "releasing host adapter (%p)...", host);
+-	scsi_host_put(host);
+-	return 0;
 -}
 -
- /*
-  * storvsc_queuecommand - Initiate command processing
+-/*
+  * storvsc_commmand_completion - Command completion processing
   */
+ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
 -- 
 1.7.4.1
 
