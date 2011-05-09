@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1EIDEo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 23:04:44 -0400
-Received: from kroah.org ([198.145.64.141]:40061 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab1EIDEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 23:04:36 -0400
-Date: Sun, 8 May 2011 20:04:52 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: various vmbus review comments
-Message-ID: <20110509030452.GA17182@kroah.com>
-References: <20110503204641.GA11132@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481E9404@TK5EX14MBXC128.redmond.corp.microsoft.com>
+	id S1755793Ab1EIDLK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 23:11:10 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34109 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab1EIDLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 May 2011 23:11:07 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>
+Subject: Re: [v2 000/115] faster tree-based sysctl implementation
+References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
+Date: Sun, 08 May 2011 20:11:00 -0700
+In-Reply-To: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com>
+	(Lucian Adrian Grijincu's message of "Mon, 9 May 2011 00:38:12 +0200")
+Message-ID: <m1ei48zhyz.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481E9404@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/ki7WCFI3l/xnKFsasPOeTToKz1g2E5Hk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 01:46:56AM +0000, KY Srinivasan wrote:
-> > 	- the instances of hv_driver structures need to be static and
-> > 	  not programatically defined, like all other USB and PCI
-> > 	  drivers are handled.
-> 
-> Done. You had expressed some concern that this would expose some issue
-> with the core vmbus driver (which is what I want to concentrate on this 
-> go around). I have done this for both the block driver and the mouse driver
-> and I am pretty sure I can do the same with the network driver. I have not 
-> currently done this for the network driver, since the number of patches I have 
-> to submit is already very large.
+Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
 
-Ok, but it shouldn't be a major change to the code, right?
+> Eric also asked for:
+> - replacing the per-header list of subdirs with a rbtree.
+>   -- Again, lack of time, and this can always be added at a later time
+>      to optimize lookup and duplicate checks. At the moment this patch
+>      series does not add a complexity regression over the previous
+>      implementation, au contraire.
 
-> > 	- module reference counting.  Are you sure you got it all right
-> > 	  for the individual modules that attach to the bus?  I don't
-> > 	  see any reference counting happening, is that correct?
-> 
-> I have already exchanged an email with you on this. To summarize, it
-> does not look like there is a problem
-> 
-> > 	- fix the sparse warnings.
-> Mostly done; most of the errors are in the base kernel coming out of
-> the macro page_to_pfn()
-> 
-> > 	- fix the use of volatile in the ring buffer code.  It should
-> > 	  not be needed and if you are relying on it, then the code is
-> > 	  wrong.
-> 
-> You are right; all accesses were already serialized with a spin lock and the 
-> Volatile attribute was unnecessary.
-> 
-> > 	- fix the namespace on the ringbuffer code to show that it
-> > 	  really is only for the hyperv bus code internally.
-> 
-> Done.
-> 
-> > 
-> > That should be enough for at least one more set of patches for you all
-> > to work on :)
-> 
-> Greg,
-> 
-> I have had so much fun cleaning up these drivers that I lost track of the patch count.
-> I have addressed all the issues you have raised in addition to some other cleanup
-> that I was doing since about a week. As I look at the patch-set, I have little over 
-> 200 patches. If it is ok with you, I would like to send them as a single set. Let me know 
-> what you prefer. I need to circulate these patches internally before I can send them out. 
-> I should be able to send these out early next week.
+Instead you add a dubious mechanisms, to avoid duplicates checks
+because the duplicate checks takes time.
 
-A single set is fine, if that's what you want to do, I can handle that
-amount as long as they all build all along the way and don't break
-anything.
+A good internal data structure should have logN duplicate checks
+and that should not be cost prohibitive. For maintainability of
+the users a good internal data structure removes the need for
+special cases, and it actually makes use the sysctl fast.
+Your implementation continues to have a O(N^2) cost to use the
+sysctl files.
 
-thanks,
+Getting a good internal data structure is the most important part
+of a making sysctls fast, and keeping them fast.  Your patchset
+fails in that.
 
-greg k-h
+So at that level, a great big NAK on the patchset as it currently
+exists.
+
+
+You have made a key observation that we only need better data
+structures for the directories and can leave off that work
+for the callers.
+
+Thank you for that.
+
+Additionally thank you for splitting up your changes to the
+core of sysctl so there is a chance of reviewing those.
+
+With respect to review and merging.  The priorities should be:
+1) Figure out what the users really need to do, before we change
+   everything so we only need one sweeping pass through the users
+   that hopefully simplifies them.
+
+2) Ensure you have a version of the new interfaces ready at the
+   start of the patchset, so the sweeping changes can be made
+   incrementally.
+
+3) Clean up the users.
+
+4) Make simplifications because you don't have any old users left.
+
+I very much agree that the data structures that sysctl uses today
+are far from ideal, and that we can make a lot of headway.
+
+That said I think there is some good work in your patchset and I may
+try and cherry pick out the good bits that we can merge now.
+
+Eric
