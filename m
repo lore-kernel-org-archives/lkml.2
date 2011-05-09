@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab1EICLc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 May 2011 22:11:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12602 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932321Ab1EICLb convert rfc822-to-8bit (ORCPT
+	id S932424Ab1EICPl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 May 2011 22:15:41 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45904 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932321Ab1EICPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 May 2011 22:11:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,338,1301900400"; 
-   d="scan'208";a="432696897"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Mon, 9 May 2011 10:11:13 +0800
-Subject: RE: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Topic: [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating
- them
-Thread-Index: AcwL+bTQLIdKuFPJQSKYXmpwNiVr0QB8sQcw
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1505C8ED7FB9F@shsmsx502.ccr.corp.intel.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <alpine.LFD.2.02.1105061149330.3005@ionos>
- <625BA99ED14B2D499DC4E29D8138F1505C8ED7F962@shsmsx502.ccr.corp.intel.com>
- <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1105061526120.10886@kaball-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Sun, 8 May 2011 22:15:40 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=rf8tG+Tx3XyWjcmxG/cneT8ulnQVRPrN/Juwf6rDhUNZsWV9e+9ebZInwxCNJZ5Dm9ViLMXQSEFYyj/2O9CsdCQwPpj+snhpDdXrxtDARsSlMD6JFEvtCzaOgElmhyjK;
+Date: Sun, 8 May 2011 19:15:36 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Connor H <cmdkhh@gmail.com>
+Cc: gene heskett <gheskett@wdtv.com>, linux-kernel@vger.kernel.org
+Subject: Re: trying to build 2.6.38.5?
+Message-Id: <20110508191536.ba3173d2.rdunlap@xenotime.net>
+In-Reply-To: <BANLkTik5uTMRpg5mj2MtnW+MZDgWwOgyUQ@mail.gmail.com>
+References: <201105082023.09878.gene.heskett@gmail.com>
+	<20110508174528.24b0f0c2.rdunlap@xenotime.net>
+	<201105082112.14959.gheskett@wdtv.com>
+	<BANLkTik5uTMRpg5mj2MtnW+MZDgWwOgyUQ@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Stefano Stabellini [mailto:stefano.stabellini@eu.citrix.com]
-> Sent: Friday, May 06, 2011 10:29 PM
+On Sun, 8 May 2011 19:00:54 -0700 Connor H wrote:
+
+> unable to reproduce using the included config file,
 > 
-> On Fri, 6 May 2011, Tian, Kevin wrote:
-> > > From: Thomas Gleixner
-> > > Sent: Friday, May 06, 2011 6:00 PM
-> > >
-> > > On Fri, 6 May 2011, Tian, Kevin wrote:
-> > > > x86: don't unmask disabled irqs when migrating them
-> > > >
-> > > > it doesn't make sense to mask/unmask a disabled irq when migrating
-> > > > it from offlined cpu to another, because it's not expected to
-> > > > handle any instance of it. Current mask/set_affinity/unmask steps
-> > > > may trigger unexpected instance on disabled irq which then simply
-> > > > bug on when there is no handler for it. One failing example is observed in
-> Xen.
-> > > > Xen pvops
-> > >
-> > > So there is no handler, why the heck is there an irq action?
-> > >
-> > > 	  if (!irq_has_action(irq) ....
-> > > 	     	continue;
-> > >
-> > > Should have caught an uninitialized interrupt. If Xen abuses
-> > > interrupts that way, then it rightfully explodes. And we do not fix it by magic
-> somewhere else.
+> Connor
+
+Nor can I.
+
+
+> On Sun, May 8, 2011 at 6:12 PM, gene heskett <gheskett@wdtv.com> wrote:
+> > On Sunday, May 08, 2011, Randy Dunlap wrote:
+> >>On Sun, 8 May 2011 20:23:09 -0400 Gene Heskett wrote:
+> >>> At the end of a make -j2 all:
+> >>>
+> >>> /home/gene/src/linux-2.6.38.5-gene/include/linux/Kbuild:25: ***
+> >>> commands commence before first target.  Stop.
+> >>> make[2]: *** [linux] Error 2
+> >>> make[2]: *** Waiting for unfinished jobs....
+> >>> make[1]: *** [headers_install] Error 2
+> >>> make: *** [vmlinux] Error 2
+> >>>
+> >>> What am I missing?
+> >>
+> >>I can't reproduce this problem.  Please post your kernel .config file.
+> >>
 > >
-> > sorry that my bad description here. there does be a dummy handler
-> > registered on such irqs which simply throws out a BUG_ON when hit. I
-> > should just say such injection is not expected instead of no handler.
-> > :-)
-> 
-> I don't think this patch is necessary anymore after the event channel handling
-> cleanup patches I have just sent to the list.
-> Could you please try the following two patches:
-> 
-> http://marc.info/?l=linux-kernel&m=130468120032172&w=2
-> http://marc.info/?l=linux-kernel&m=130468178200468&w=2
-> 
-> and let me know if you still need this patch?
+> > Attached, thanks Randy.
 
-yes, with your patch this issue disappears, since you explicitly make mask/unmask as
-a nop for xen_percpu_chip, which effectively avoids them from undesired unmask
-when doing the migration. Though it works, it's not intuitive as to me it's an
-workaround to make Xen chip implementation adapting to specific fixup_irqs logic.
-If the logic within fixup_irqs is changed in the future, it's still possible to expose this
-issue again. If we explicitly avoid the percpu irqs in the 1st place in fixup_irqs like
-what my 1st patch does, it'd be clearer.
 
-But based on your referred patchesand Jeremy's info about possible unbinding xenn 
-event from irq namespace, my patches are not that necessary now as before. So I'll leave 
-to Thomas to decide whether he wants to take my 1st patch. the 2nd one talked in this
-thread could be dropped. 
-
-Thanks
-Kevin
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
