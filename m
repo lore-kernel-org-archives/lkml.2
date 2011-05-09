@@ -1,44 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab1EITV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 15:21:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34343 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab1EITV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 15:21:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Todd Poynor <toddpoynor@google.com>
-Subject: Re: [linux-pm] [PATCH 1/5] PM / Runtime: Support for generic I/O power domains (v3)
-Date: Mon, 9 May 2011 21:22:09 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-sh@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-References: <201104290154.12966.rjw@sisk.pl> <201105082322.44268.rjw@sisk.pl> <BANLkTinPGQNUrFnyFVazqA72iyMbB-K_OA@mail.gmail.com>
-In-Reply-To: <BANLkTinPGQNUrFnyFVazqA72iyMbB-K_OA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105092122.09690.rjw@sisk.pl>
+	id S1754125Ab1EITWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 15:22:22 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2319 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab1EITWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 15:22:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 09 May 2011 12:22:19 -0700
+From: riyer@nvidia.com
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: amartin@nvidia.com, olof@lixom.net, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Rakesh Iyer <riyer@nvidia.com>
+Subject: [v2] Input: tegra-kbc - modify keypress wakeup logic.
+Date: Mon,  9 May 2011 12:22:37 -0700
+Message-Id: <1304968957-10288-1-git-send-email-riyer@nvidia.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 09, 2011, Todd Poynor wrote:
-> On Sun, May 8, 2011 at 2:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> ...
-> 
-> > power management (i.e. ->stop_device() may disable a device's
-> > clocks, while ->start_device() may enable them, ->power_on() is
-> > supposed to remove power from the entire power domain
-> > and ->power_off() is supposed to restore it).
-> >
-> 
-> power_off removes power, power_on restores?
+From: Rakesh Iyer <riyer@nvidia.com>
 
-Yes, that's the intention.  Thanks for spotting that!
+Modify wakeup logic so either all keypresses wake the system or none do.
 
-Rafael
+Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
+---
+v2: Use platform data member 'wakeup' to indicate keyboard wakeup capability.
+v1: Modify wakeup logic so either all keypresses wake the system or none do.
+
+ arch/arm/mach-tegra/include/mach/kbc.h |    3 ---
+ drivers/input/keyboard/tegra-kbc.c     |   28 ++++------------------------
+ 2 files changed, 4 insertions(+), 27 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
+index bd99744..4f3572a 100644
+--- a/arch/arm/mach-tegra/include/mach/kbc.h
++++ b/arch/arm/mach-tegra/include/mach/kbc.h
+@@ -50,9 +50,6 @@ struct tegra_kbc_platform_data {
+ 	unsigned int debounce_cnt;
+ 	unsigned int repeat_cnt;
+ 
+-	unsigned int wake_cnt; /* 0:wake on any key >1:wake on wake_cfg */
+-	const struct tegra_kbc_wake_key *wake_cfg;
+-
+ 	struct tegra_kbc_pin_cfg pin_cfg[KBC_MAX_GPIO];
+ 	const struct matrix_keymap_data *keymap_data;
+ 
+diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+index 5fb4b97..c851fe6 100644
+--- a/drivers/input/keyboard/tegra-kbc.c
++++ b/drivers/input/keyboard/tegra-kbc.c
+@@ -66,8 +66,6 @@ struct tegra_kbc {
+ 	void __iomem *mmio;
+ 	struct input_dev *idev;
+ 	unsigned int irq;
+-	unsigned int wake_enable_rows;
+-	unsigned int wake_enable_cols;
+ 	spinlock_t lock;
+ 	unsigned int repoll_dly;
+ 	unsigned long cp_dly_jiffies;
+@@ -291,7 +289,7 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
+ 	 * Matrix keyboard designs are prone to keyboard ghosting.
+ 	 * Ghosting occurs if there are 3 keys such that -
+ 	 * any 2 of the 3 keys share a row, and any 2 of them share a column.
+-	 * If so ignore the key presses for this iteration.
++	 * If so ignore the keypresses for this iteration.
+ 	 */
+ 	if ((kbc->use_ghost_filter) && (num_down >= 3)) {
+ 		for (i = 0; i < num_down; i++) {
+@@ -328,7 +326,7 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
+ 
+ 	spin_unlock_irqrestore(&kbc->lock, flags);
+ 
+-	/* Ignore the key presses for this iteration? */
++	/* Ignore the keypresses for this iteration? */
+ 	if (key_in_same_col && key_in_same_row)
+ 		return;
+ 
+@@ -418,21 +416,11 @@ static void tegra_kbc_setup_wakekeys(struct tegra_kbc *kbc, bool filter)
+ 	int i;
+ 	unsigned int rst_val;
+ 
+-	BUG_ON(pdata->wake_cnt > KBC_MAX_KEY);
+-	rst_val = (filter && pdata->wake_cnt) ? ~0 : 0;
++	/* Either mask all keys or none. */
++	rst_val = (filter && !pdata->wakeup) ? ~0 : 0;
+ 
+ 	for (i = 0; i < KBC_MAX_ROW; i++)
+ 		writel(rst_val, kbc->mmio + KBC_ROW0_MASK_0 + i * 4);
+-
+-	if (filter) {
+-		for (i = 0; i < pdata->wake_cnt; i++) {
+-			u32 val, addr;
+-			addr = pdata->wake_cfg[i].row * 4 + KBC_ROW0_MASK_0;
+-			val = readl(kbc->mmio + addr);
+-			val &= ~(1 << pdata->wake_cfg[i].col);
+-			writel(val, kbc->mmio + addr);
+-		}
+-	}
+ }
+ 
+ static void tegra_kbc_config_pins(struct tegra_kbc *kbc)
+@@ -594,7 +582,6 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int irq;
+ 	int err;
+-	int i;
+ 	int num_rows = 0;
+ 	unsigned int debounce_cnt;
+ 	unsigned int scan_time_rows;
+@@ -651,13 +638,6 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
+ 		goto err_iounmap;
+ 	}
+ 
+-	kbc->wake_enable_rows = 0;
+-	kbc->wake_enable_cols = 0;
+-	for (i = 0; i < pdata->wake_cnt; i++) {
+-		kbc->wake_enable_rows |= (1 << pdata->wake_cfg[i].row);
+-		kbc->wake_enable_cols |= (1 << pdata->wake_cfg[i].col);
+-	}
+-
+ 	/*
+ 	 * The time delay between two consecutive reads of the FIFO is
+ 	 * the sum of the repeat time and the time taken for scanning
+-- 
+1.7.2.3
+
