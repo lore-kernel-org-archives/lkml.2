@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1EIM3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 08:29:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37699 "EHLO
+	id S1752855Ab1EIMcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 08:32:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42951 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752352Ab1EIM3j (ORCPT
+	by vger.kernel.org with ESMTP id S1752352Ab1EIMcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 08:29:39 -0400
-Date: Mon, 9 May 2011 14:29:41 +0200
+	Mon, 9 May 2011 08:32:12 -0400
+Date: Mon, 9 May 2011 14:32:18 +0200
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Liam Girdwood <lrg@kernel.org>, Graeme Gregory <gg@slimlogic.co.uk>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Subject: Re: [PATCH 4/4] USB: TWL6025 allow different regulator name
-Message-ID: <20110509122941.GA3225@opensource.wolfsonmicro.com>
-References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
- <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
- <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
- <1304867317.3246.10.camel@odin>
- <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
- <1304941430.3192.4.camel@odin>
- <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+Subject: Re: [PATCHv1 -next] LEDS: LED module of DA9052 PMIC driver
+Message-ID: <20110509123218.GC3225@opensource.wolfsonmicro.com>
+References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5B8D9@KCINPUNHJCMS01.kpit.com>
+ <20110504135833.c44c372d.akpm@linux-foundation.org>
+ <20110505140238.GB26651@sirena.org.uk>
+ <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BB713D4@KCINPUNHJCMS01.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
+In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BB713D4@KCINPUNHJCMS01.kpit.com>
 X-Cookie: You will never know hunger.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 03:16:03PM +0300, Felipe Balbi wrote:
-> On Mon, May 09, 2011 at 12:43:49PM +0100, Liam Girdwood wrote:
+On Mon, May 09, 2011 at 04:02:18PM +0530, Ashish Jangam wrote:
 
-> > I think it's the lesser evil though, especially for device integrators.
-> > They will just match the regulator name from the schematics together
-> > with the TRM name when creating their regulator constraints and having
-> > different names here will definitely cause confusion.
+> > Ideally you should do this by submitting all your patches in a single
+> > patch series.
 
-> Any chance Device Tree could be used to pass that data to kernel
-> instead, together with regulator names and all needed data for each one
-> of them ?
+> LED module is dependent upon MFD module so does this mean that along
+> with the LED patch we also need to give MFD patch as reference or just
+> list down the dependent module in the LED patch. 
 
-I'm pretty sure that as soon as we have viable device tree support for
-relevant platforms in mainline we'll have regulator support, though I'm
-not sure that this will help too much with the naming as you'll still
-have to figure out what the consumer requests.  We shouldn't be passing
-in the consumer supply names from device tree (at least not a board
-specific one) as this breaks the model that the supply names correspond
-to the chip pins.
+Look at how other people submit similar drivers: submit a single patch
+series with everything in it and CC the relevant people on the relevant
+bits.
