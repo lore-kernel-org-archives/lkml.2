@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1EITwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 15:52:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60573
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754326Ab1EITwj (ORCPT
+	id S1754693Ab1EIUAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:00:05 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:43453 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab1EIUAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 15:52:39 -0400
-Date: Mon, 09 May 2011 12:52:07 -0700 (PDT)
-Message-Id: <20110509.125207.242129102.davem@davemloft.net>
-To: joe@perches.com
-Cc: grundler@parisc-linux.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 4/4] tulip: Use pr_<level> where appropriate
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <76d02bec193a5a7558aa7d6e97282ae2bec67f0b.1304970062.git.joe@perches.com>
-References: <cover.1304970062.git.joe@perches.com>
-	<76d02bec193a5a7558aa7d6e97282ae2bec67f0b.1304970062.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 9 May 2011 16:00:02 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Miller <davem@davemloft.net>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org, hadi@cyberus.ca,
+        daniel.lezcano@free.fr, containers@lists.osdl.org,
+        renatowestphal@gmail.com
+Subject: Re: [PATCH 0/7] Network namespace manipulation with file descriptors
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<20110509.120408.48494155.davem@davemloft.net>
+Date: Mon, 09 May 2011 12:59:55 -0700
+In-Reply-To: <20110509.120408.48494155.davem@davemloft.net> (David Miller's
+	message of "Mon, 09 May 2011 12:04:08 -0700 (PDT)")
+Message-ID: <m1oc3btzk4.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19k8oirLk2L/A8pNDNcVCySgLMYjRF76Gk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon,  9 May 2011 12:45:23 -0700
+David Miller <davem@davemloft.net> writes:
 
-> Use the current logging styles.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> The networking bits look OK to me:
+>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Applied.
+Are you merging sendmmsg through the netdev tree?
+
+The conflicts on syscall syscall numbers are an unfortunate pain.
+
+Eric
+
