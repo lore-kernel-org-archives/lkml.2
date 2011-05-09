@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1EIU4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 16:56:07 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44983
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752505Ab1EIU4F (ORCPT
+	id S1754820Ab1EIU51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 16:57:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53343 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab1EIU5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 16:56:05 -0400
-Date: Mon, 09 May 2011 13:55:32 -0700 (PDT)
-Message-Id: <20110509.135532.200362374.davem@davemloft.net>
-To: ebiederm@xmission.com
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org, hadi@cyberus.ca,
-        daniel.lezcano@free.fr, containers@lists.osdl.org,
-        renatowestphal@gmail.com
-Subject: Re: [PATCH 0/7] Network namespace manipulation with file
- descriptors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <m1bozbtx0y.fsf@fess.ebiederm.org>
-References: <m1oc3btzk4.fsf@fess.ebiederm.org>
-	<20110509.134007.116389415.davem@davemloft.net>
-	<m1bozbtx0y.fsf@fess.ebiederm.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 9 May 2011 16:57:25 -0400
+Message-ID: <4DC85519.8020303@kernel.org>
+Date: Mon, 09 May 2011 13:56:57 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Yinghai Lu <yinghai.lu@oracle.com>, Kalle Valo <kvalo@adurom.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pci, dmar: flush IOTLB before exit domain
+References: <4DC34B21.9040203@oracle.com> <1304952530.30435.16.camel@i7.infradead.org>
+In-Reply-To: <1304952530.30435.16.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090208.4DC85524.0020,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 09 May 2011 13:54:37 -0700
+On 05/09/2011 07:48 AM, David Woodhouse wrote:
+> On Thu, 2011-05-05 at 18:13 -0700, Yinghai Lu wrote:
+>> @@ -3252,6 +3252,9 @@ static int device_notifier(struct notifi
+>>                 return 0;
+>>  
+>>         if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through) {
+>> +               /* before we remove dev with domain, flush IOTLB */
+>> +               flush_unmaps();
+>> +
+>>                 domain_remove_one_dev_info(domain, pdev);
+>>  
+>>                 if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) && 
+> 
+> That calls flush_unmaps() without the async_umap_flush_lock held,
+> doesn't it? A few days ago I asked someone else to test this candidate
+> patch for a similar issue:
+> 
+> http://david.woodhou.se/flush-unmaps-on-unbind.patch
+> 
 
-> Do you know if there are any plans to support sendmmsg on parisc for
-> 2.6.40?  That could get sticky as the parisc tree has a bunch of syscall
-> catchup support they are doing now.
+Your patch works.
 
-If you would like, you could send me a patch for net-next-2.6 that adds
-the sendmmsg syscall entries and hooks for all the platforms not taken
-care of right now.
+Thanks
+
+Yinghai
