@@ -1,137 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1EIOhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 10:37:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61391 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab1EIOhI (ORCPT
+	id S1753827Ab1EIOp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 10:45:57 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54323 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751881Ab1EIOpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 10:37:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YQjNv8/4yC0okouPe6WwdBAoXNwFW00OFsifnJu3JCm1MKhLkkgAdhaM013Mva0+vo
-         U/kzfUgmH4Oc7OHsRO/PeuozA1o4K9SHHxahtCxMcA5/UqvMAYWKr/JlI8otfEvtqU5a
-         gOBiu9NyCKMwaevrh1SK1GNhQ6b3/kZX5Mbcs=
-Date: Mon, 9 May 2011 16:37:02 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Shaohua Li <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "djwong@us.ibm.com" <djwong@us.ibm.com>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ricwheeler@gmail.com" <ricwheeler@gmail.com>
-Subject: Re: [patch v3 2/3] block: hold queue if flush is running for
- non-queueable flush drive
-Message-ID: <20110509143702.GK1661@htj.dyndns.org>
-References: <20110505015932.306763905@sli10-conroe.sh.intel.com>
- <20110505020417.817084678@sli10-conroe.sh.intel.com>
- <20110505083853.GC30950@htj.dyndns.org>
- <20110509130316.GB5975@redhat.com>
- <20110509135046.GB29753@sli10-conroe.sh.intel.com>
- <20110509135851.GD5975@redhat.com>
+	Mon, 9 May 2011 10:45:55 -0400
+X-Sasl-enc: BoM9Km+sgWI/ODEe22qUnw6uHb+6pHC7nVFV6X+hiy8e 1304952354
+Date: Mon, 9 May 2011 11:45:46 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
+Message-ID: <20110509144546.GB13275@khazad-dum.debian.net>
+References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509135851.GD5975@redhat.com>
+In-Reply-To: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek, Shaohua.
+On Sun, 08 May 2011, Andrew Lutomirski wrote:
+> I've figured out how the ThinkPad SMAPI charge control works (at least
+> well enough to program thresholds on some models), and I'd like to get
 
-On Mon, May 09, 2011 at 09:58:51AM -0400, Vivek Goyal wrote:
-> > > I am assuming that these back-to-back flushes are independent of each
-> > > other otherwise write request will anyway get between two flushes.
+Yeah, there's a little protocol to talk to the EC, otherwise it simply
+ignores writes to the battery threshold registers.  I think you had to set
+bit 7 before you write the threshold to the relevant EC register, or
+something.  Found it by trial-and-error a long time ago, I documented it
+somewhere but never took it forward.  I never bothered to hunt down the
+force-drain/battery-select commands, though.
 
-Yeap.
+Anyway, since SMAPI works, and is *stable* (the fact that it works from the
+A21 to the latest Lenovos tells you just how stable), which is a lot more
+than what I can say about the ACPI stuff, I didn't see any reason to mess
+with this.
 
-> > > If that's the case, then should we solve the problem by improving flush
-> > > merge logic a bit better. (Say idle a bit before issuing a flush only
-> > > if request queue is not empty).
-
-Maybe, I don't know.  Maybe we can implement some sort of adaptive
-delay logic which detects parallel stream of flush requests and try to
-insert artificial delays between flush issues to maximize throughput.
-With such workload, such optimization probably wouldn't hurt latency
-that much either.
-
-However, such heuristics tend to be fairly finicky and result in
-unexpected behavior when workload isn't of the expected pattern and
-that's why I stuck with mostly mechanical mechanism we currently have
-for the initial implementation, but please feel free to play with it.
-It would be awesome if such logic can be implemented with something
-mechanical which doesn't involve a lot of magic tunables, timers and
-pattern detection logics.
-
-> If we try to get rid of WRITE completely between these 10 flushes
-> then we run the risk of starving other READS/WRITES as long as
-> flushes are going on.
-
-Back-to-back flushes are very cheap.  It just costs command
-issue/completion roundtrip latency and if that's a problem we can
-optimize that out too, so I don't think stream of back-to-back empty
-flushes can be a problem.  For flushes with data, nothing prevents
-other IOs from issued while flush writes are being sequenced.  It will
-look like,
-
- FLUSH -> FLUSH and other data -> FLUSH -> FLUSH -> FLUSH and other data...
-
-Before this patch, it was
-
- FLUSH -> FLUSH and other data -> FLUSH -> other data -> FLUSH -> FLUSH and other data...
-
-The change isn't gonna cause starvation.
-
-> I did not understand this one. With improved back to back merge logic 
-> we have already optimized the flush case. So for 10 flush and one write
-> we seem to be issuing following (as per your mail).
+> Currently, I have a little driver (not yet in mergeable shape) that
+> creates a platform device and sticks some sysfs attributes in it
+> depending on which thresholds it can figure out how to program.  It's
+> here:
 > 
-> 1 flush (6 flush merged)--> WRITE --> 1flush (4 flush merged).
+> https://gitorious.org/linux-test-utils/tp_charge/blobs/master/kmod/tp_charge.c
+
+I apologise, but I will not read that code until it is clear I need not be
+available for any possible clean-room attempts.
+
+> 2. Integrate it with power_supply.
+
+Only if we can make it generic enough, but yes, THIS is the better way.
+
+However, I'd prefer if you went all the way and actually hooked to the SBS
+subsystem and exposed all the battery information.  There is a way to do
+that through the ACPI DSDT (but you will have to do the rev. engineering
+yourself, as I said, smapi works just fine across so many models, that I
+never bothered with it -- it is far better supported than ACPI).
+
+It is not even difficult, just look at the methods used to expose the
+standard ACPI battery interface, then read the Smart Battery System (SBS)
+standard, and you will find out by fast trial-and-error how to map one to
+the other.  Or you can look at tp_smapi to speed things up (only, tp_smapi
+talks directly to the EC instead of doing it over ACPI).
+
+The SBS interface exposes more data about the battery, including
+per-cell-group voltage and pack microcontroller aging counters, alarms, and
+the "needs to get through the fuel-gaugue reset procedure" semasphore.
+
+> then other laptops and devices could reuse the same interface.  The
+> problem is that the ACPI battery driver can't see the charge control.
+> So either it would need a hook to allow per-vendor control like this
+> or the power_supply class would need to recognize separate charge
+> controllers.
 > 
-> So where is the opprotinutiy for drive (non flush queuing drive) to optimize
-> flush here?
+> I have no intention of creating a kitchen sink like tp_smapi.  But I
+> might want to add things like forced discharge or outright disabling
+> of charging.  On possible added complication: on ThinkPads, the charge
+> thresholds stay in effect until reprogrammed or until the battery is
+> removed, even if the computer is off.
 
-I suspect the workload doesn't really swamp the device with fsync's
-and there frequently are brief holes without any pending flush.  In
-such cases, flush sequencer will start sequencing immediately and the
-following flushes would lose a chance to be merged and the intervening
-write causes the performance hit.  It would be interesting to
-investigate this deeper tho.
+This is not a complication.  You must never assume you are the one in charge
+of the ThinkPad firmware (you're not, it does its own thing).  You can
+respectfully ask it to do something else, but you have to keep an eye on it,
+because it might change its mind as soon as an external event is detected.
 
-> IOW, if flush merging is already working well, do we really want to move
-> in a direction where we can potentially starve other READ/WRITE happening
-> in an attempt to improve throughput for a sepecific workload.
+If the kernel power_supply subsystem cannot work that way, you will have to
+fix that limitation first.  You need to read the thresholds when you need
+that information, etc.
 
-I don't think it's gonna starve anything and actually like it as it
-effectively implements another side of mechnical merging.  Before the
-patch, it only tried to merge requests which already shared a FLUSH.
-ie. It delayed post-FLUSH until all writes which shared pre-FLUSH
-finished.  This change doesn't introduce any latency on idle queue
-while allowing effective merging of flushes which immediately follows
-the first one, and there's no knobs to adjust - timings are regulated
-by how fast the device can handle flushes and IOs.
-
-So, whether we add further merge strategy or not, I think this one can
-serve nicely as one of the base logics and would really like to see
-how it affects higher end devices.
-
-Please note that really highend devices with battery backed buffer
-wouldn't care about all of this anyway.  I think we would mostly be
-looking at SCSI hard drives or cheap arrays where I don't think
-issuing other IOs together with flush would bring a lot of benefits.
-So, I'd like to enable the logic by default unless it actively hurts
-those devices.
-
-Thank you.
+The SBS parameters stay in effect until the EC is power-cycled.  IBMs will
+shut it down when turned off if the AC feed is removed.  Lenovos will only
+shut it down when there is no power at all (i.e. no AC feed, and no SBS
+batteries connected to the box).
 
 -- 
-tejun
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
