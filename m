@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1EISgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 14:36:39 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55046 "EHLO
+	id S1753939Ab1EISgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 14:36:45 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55050 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab1EISgh (ORCPT
+	with ESMTP id S1753883Ab1EISgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 14:36:37 -0400
+	Mon, 9 May 2011 14:36:40 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: EDAC devel <linux-edac@vger.kernel.org>
 Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH -v3 5/6] EDAC, MCE, AMD: Add attributes needed for HW injection
-Date: Mon,  9 May 2011 20:35:54 +0200
-Message-Id: <1304966155-9841-6-git-send-email-bp@amd64.org>
+Subject: [PATCH -v3 6/6] EDAC, MCE, AMD: Add an injector function
+Date: Mon,  9 May 2011 20:35:55 +0200
+Message-Id: <1304966155-9841-7-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1304966155-9841-1-git-send-email-bp@amd64.org>
 References: <1304966155-9841-1-git-send-email-bp@amd64.org>
@@ -23,90 +23,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-hw_inject denotes whether we want to do a hardware or a software
-injection and, in the case of hardware injection, we want to do that on
-a particular cpu, thus the second 'cpu' attribute.
+Selectively inject either a real MCE or a sw-only version which
+exercises the decoding code only. The hardware-injected MCE triggers a
+machine check exception (#MC) so that the MCE handler can be bothered to
+do something too.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/mce_amd_inj.c |   57 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 57 insertions(+), 0 deletions(-)
+ drivers/edac/mce_amd_inj.c |   50 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 48 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-index 421c3b5..592871f 100644
+index 592871f..45e8122 100644
 --- a/drivers/edac/mce_amd_inj.c
 +++ b/drivers/edac/mce_amd_inj.c
-@@ -77,6 +77,61 @@ static int toggle_hw_mce_inject(unsigned int cpu, bool enable)
- }
+@@ -131,6 +131,53 @@ static int inj_extcpu_set(void *data, u64 val)
  
+ DEFINE_SIMPLE_ATTRIBUTE(extcpu_fops, inj_extcpu_get, inj_extcpu_set, "%llu\n");
+ 
++static void trigger_mce(void *info)
++{
++	asm volatile("int $18");
++}
++
++static void do_inject(void)
++{
++	u64 mcg_status = 0;
++	unsigned int cpu = i_mce.extcpu;
++	int this_cpu;
++	u8 b = i_mce.bank;
++
++	if (!(i_mce.inject_flags & MCJ_HW_INJECT)) {
++		amd_decode_mce(NULL, 0, &i_mce);
++		return;
++	}
++
++	/* prep MCE global settings for the injection */
++	mcg_status = MCG_STATUS_MCIP | MCG_STATUS_EIPV;
++
++	if (!(i_mce.status & MCI_STATUS_PCC))
++		mcg_status |= MCG_STATUS_RIPV;
++
++	this_cpu = get_cpu();
++
++	toggle_hw_mce_inject(cpu, true);
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCG_STATUS,
++		     (u32)mcg_status, (u32)(mcg_status >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_STATUS(b),
++		     (u32)i_mce.status, (u32)(i_mce.status >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_ADDR(b),
++		     (u32)i_mce.addr, (u32)(i_mce.addr >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_MISC(b),
++		     (u32)i_mce.misc, (u32)(i_mce.misc >> 32));
++
++	toggle_hw_mce_inject(cpu, false);
++
++	smp_call_function_single(cpu, trigger_mce, NULL, 0);
++
++	put_cpu();
++
++}
++
  /*
-+ * HW or SW injection
-+ */
-+static int hw_inj_get(void *data, u64 *val)
-+{
-+	struct mce *m = (struct mce *)data;
-+
-+	*val = !!(m->inject_flags & MCJ_HW_INJECT);
-+
-+	return 0;
-+}
-+
-+static int hw_inj_set(void *data, u64 val)
-+{
-+	struct mce *m = (struct mce *)data;
-+
-+	switch (val) {
-+	case 0:
-+		m->inject_flags &= (u8)~MCJ_HW_INJECT;
-+		break;
-+
-+	case 1:
-+		m->inject_flags |= MCJ_HW_INJECT;
-+		break;
-+
-+	default:
-+		printk(KERN_ERR "%s: Only 0 or 1 allowed!\n", __func__);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+DEFINE_SIMPLE_ATTRIBUTE(hw_inj_fops, hw_inj_get, hw_inj_set, "%llu\n");
-+
-+/*
-+ * On which CPU to inject?
-+ */
-+
-+MCE_INJECT_GET(extcpu);
-+
-+
-+static int inj_extcpu_set(void *data, u64 val)
-+{
-+	struct mce *m = (struct mce *)data;
-+
-+	if (val >= num_online_cpus()) {
-+		printk(KERN_ERR "%s: Non-existent CPU: %llu\n", __func__, val);
-+		return -EINVAL;
-+	}
-+	m->extcpu = val;
-+	return 0;
-+}
-+
-+DEFINE_SIMPLE_ATTRIBUTE(extcpu_fops, inj_extcpu_get, inj_extcpu_set, "%llu\n");
-+
-+/*
   * This denotes into which bank we're injecting and triggers
   * the injection, at the same time.
-  */
-@@ -116,6 +171,8 @@ struct dfs_node {
- 	{ .name = "misc",	.fops = &misc_fops },
- 	{ .name = "addr",	.fops = &addr_fops },
- 	{ .name = "bank",	.fops = &bank_fops },
-+	{ .name = "hw_inject",	.fops = &hw_inj_fops },
-+	{ .name = "cpu",	.fops = &extcpu_fops },
- };
+@@ -146,8 +193,7 @@ static int inj_bank_set(void *data, u64 val)
+ 		}
  
- static int __init edac_init_mce_inject(void)
+ 	m->bank = val;
+-
+-	amd_decode_mce(NULL, 0, m);
++	do_inject();
+ 
+ 	return 0;
+ }
 -- 
 1.7.4.rc2
 
