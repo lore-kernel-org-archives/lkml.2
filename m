@@ -1,159 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1EIN3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 09:29:52 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39365 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab1EIN3v (ORCPT
+	id S1753341Ab1EINfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 09:35:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34306 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752680Ab1EINfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 09:29:51 -0400
-Date: Mon, 09 May 2011 14:29:42 +0100
-Message-Id: <E1QJQWs-0000M8-S8@rmk-PC.arm.linux.org.uk>
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 4/4] clocksource: convert mips to generic i8253 clocksource
+	Mon, 9 May 2011 09:35:37 -0400
+Date: Mon, 9 May 2011 15:35:43 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Liam Girdwood <lrg@kernel.org>, Graeme Gregory <gg@slimlogic.co.uk>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 4/4] USB: TWL6025 allow different regulator name
+Message-ID: <20110509133542.GF3225@opensource.wolfsonmicro.com>
+References: <1303897191-14792-1-git-send-email-gg@slimlogic.co.uk>
+ <1303897191-14792-5-git-send-email-gg@slimlogic.co.uk>
+ <20110427104542.GZ13227@legolas.emea.dhcp.ti.com>
+ <1304867317.3246.10.camel@odin>
+ <20110509090335.GC1254@legolas.emea.dhcp.ti.com>
+ <1304941430.3192.4.camel@odin>
+ <20110509121600.GK1254@legolas.emea.dhcp.ti.com>
+ <20110509122941.GA3225@opensource.wolfsonmicro.com>
+ <20110509130703.GM1254@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20110509130703.GM1254@legolas.emea.dhcp.ti.com>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert MIPS i8253 clocksource code to use generic i8253 clocksource.
+On Mon, May 09, 2011 at 04:07:07PM +0300, Felipe Balbi wrote:
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- arch/mips/Kconfig             |    1 +
- arch/mips/include/asm/i8253.h |    5 +++
- arch/mips/kernel/i8253.c      |   78 +----------------------------------------
- 3 files changed, 7 insertions(+), 77 deletions(-)
+> The thing is. We already had problems in the past with the Clock FW
+> because drivers were passing clock names on platform_data and I really
+> want to avoid the same on regulators. We need something clever.
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 8e256cc..f7f6419 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2339,6 +2339,7 @@ config MMU
- 
- config I8253
- 	bool
-+	select CLKSRC_I8253
- 	select MIPS_EXTERNAL_TIMER
- 
- config ZONE_DMA32
-diff --git a/arch/mips/include/asm/i8253.h b/arch/mips/include/asm/i8253.h
-index 48bb823..9ad0113 100644
---- a/arch/mips/include/asm/i8253.h
-+++ b/arch/mips/include/asm/i8253.h
-@@ -12,8 +12,13 @@
- #define PIT_CH0			0x40
- #define PIT_CH2			0x42
- 
-+#define PIT_LATCH		LATCH
-+
- extern raw_spinlock_t i8253_lock;
- 
- extern void setup_pit_timer(void);
- 
-+#define inb_pit inb_p
-+#define outb_pit outb_p
-+
- #endif /* __ASM_I8253_H */
-diff --git a/arch/mips/kernel/i8253.c b/arch/mips/kernel/i8253.c
-index 2392a7a2..e4660ba 100644
---- a/arch/mips/kernel/i8253.c
-+++ b/arch/mips/kernel/i8253.c
-@@ -125,87 +125,11 @@ void __init setup_pit_timer(void)
- 	setup_irq(0, &irq0);
- }
- 
--/*
-- * Since the PIT overflows every tick, its not very useful
-- * to just read by itself. So use jiffies to emulate a free
-- * running counter:
-- */
--static cycle_t pit_read(struct clocksource *cs)
--{
--	unsigned long flags;
--	int count;
--	u32 jifs;
--	static int old_count;
--	static u32 old_jifs;
--
--	raw_spin_lock_irqsave(&i8253_lock, flags);
--	/*
--	 * Although our caller may have the read side of xtime_lock,
--	 * this is now a seqlock, and we are cheating in this routine
--	 * by having side effects on state that we cannot undo if
--	 * there is a collision on the seqlock and our caller has to
--	 * retry.  (Namely, old_jifs and old_count.)  So we must treat
--	 * jiffies as volatile despite the lock.  We read jiffies
--	 * before latching the timer count to guarantee that although
--	 * the jiffies value might be older than the count (that is,
--	 * the counter may underflow between the last point where
--	 * jiffies was incremented and the point where we latch the
--	 * count), it cannot be newer.
--	 */
--	jifs = jiffies;
--	outb_p(0x00, PIT_MODE);	/* latch the count ASAP */
--	count = inb_p(PIT_CH0);	/* read the latched count */
--	count |= inb_p(PIT_CH0) << 8;
--
--	/* VIA686a test code... reset the latch if count > max + 1 */
--	if (count > LATCH) {
--		outb_p(0x34, PIT_MODE);
--		outb_p(LATCH & 0xff, PIT_CH0);
--		outb(LATCH >> 8, PIT_CH0);
--		count = LATCH - 1;
--	}
--
--	/*
--	 * It's possible for count to appear to go the wrong way for a
--	 * couple of reasons:
--	 *
--	 *  1. The timer counter underflows, but we haven't handled the
--	 *     resulting interrupt and incremented jiffies yet.
--	 *  2. Hardware problem with the timer, not giving us continuous time,
--	 *     the counter does small "jumps" upwards on some Pentium systems,
--	 *     (see c't 95/10 page 335 for Neptun bug.)
--	 *
--	 * Previous attempts to handle these cases intelligently were
--	 * buggy, so we just do the simple thing now.
--	 */
--	if (count > old_count && jifs == old_jifs) {
--		count = old_count;
--	}
--	old_count = count;
--	old_jifs = jifs;
--
--	raw_spin_unlock_irqrestore(&i8253_lock, flags);
--
--	count = (LATCH - 1) - count;
--
--	return (cycle_t)(jifs * LATCH) + count;
--}
--
--static struct clocksource clocksource_pit = {
--	.name	= "pit",
--	.rating = 110,
--	.read	= pit_read,
--	.mask	= CLOCKSOURCE_MASK(32),
--	.mult	= 0,
--	.shift	= 20,
--};
--
- static int __init init_pit_clocksource(void)
- {
- 	if (num_possible_cpus() > 1) /* PIT does not scale! */
- 		return 0;
- 
--	clocksource_pit.mult = clocksource_hz2mult(CLOCK_TICK_RATE, 20);
--	return clocksource_register(&clocksource_pit);
-+	return clocksource_pit_init();
- }
- arch_initcall(init_pit_clocksource);
--- 
-1.7.4.4
+Right, which is why you should *never* do that.  Any time I see anyone
+requesting a regulator based on anything other than a fixed string in
+the driver and the struct device for the consumer I push back very hard,
+and so should everyone else.
 
+> We pass in the data of how regulators are wired at the board level and
+> drivers would regulator_get(my_dev->dev, "whatever fancy name I want as
+> it doesn't matter at all");
+
+No, not at all.  Consumer drivers should be hard coding the strings they
+request and the strings used should correspond to the pin names used on
+the device.
+
+> If a driver has >1 regulator, you can distinguish them by which
+> functionality they provide, no matter the name, they will be connected
+> to a particular ball on the IC package which has a certain definition
+
+Having more than one supply is the common case for devices; relatively
+few devices have a single supply.
+
+> on the TRM. In other words, we should match on the functionality they
+> provide, not on the name.
+
+As Liam said this will just make the situation worse.  Users will have
+to figure out what the names the driver authors assigned to the various
+device supplies map onto in the physical system via an additional layer
+of indirection which will at best be written down in comments in the
+driver.
+
+> Let's try to thing some 5 - 6 years ahead. With the current trend, we
+> will be working on support for the PMIC on OMAP10, imagine if each one
+> of those revisions decide to change the name of the regulator, because
+> this new HW engineer working on the PMIC design doesn't like the old
+> name. We will have X regulator pointers and X regulator name pointers in
+> our platform_data. It will be really cumbersome and prone to errors if
+> people continue on copy&pasting old code to "generate" a new driver.
+
+Here you're apparently talking about something different - you're
+talking about how we pass in the regulator init data for the regulators
+supplied by the chip.  The patch being discussed changes the consumer
+side for USB, not the regulator driver side.  The naming on the driver
+side is a particular problem for TWL devices since unlike most PMICs the
+regulators aren't simply numbered but are instead assigned individual
+names so you can't just use a big array indexed by number.
+
+> What I was expecting to see, was a mechanism where we define how those
+> things are wired (it doesn't matter if the data uses DeviceTree or what)
+> at the HW level and we ask the framework to give us the regulator
+> connected to device X which provides a certain functionality. Just like
+> clkdev has managed to get close to. Currently drivers will:
+
+This is preceisely what is happening.  A well written consumer driver
+asks the regulator core for the regulator supplying a given supply, with
+the supplies named in the same way as they are named in the datasheet.
+
+You appear to be arging strongly for us to adopt the model which is
+already in use.
