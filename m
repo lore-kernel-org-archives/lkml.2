@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab1EJPIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:08:21 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:50919 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab1EJPIT (ORCPT
+	id S1756567Ab1EJPLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:11:43 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:42925 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752749Ab1EJPLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:08:19 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LKZJDO-01-7IK-02
-X-M-MSG: 
-Date: Tue, 10 May 2011 17:08:21 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] perf, tools: Add support for guest/host-only
- profiling
-Message-ID: <20110510150821.GC30996@amd.com>
-References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
- <1305038132-5080-4-git-send-email-joerg.roedel@amd.com>
- <1305039008.2914.98.camel@laptop>
+	Tue, 10 May 2011 11:11:42 -0400
+From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH v6] Add ST-Ericsson CG2900 driver
+Date: Tue, 10 May 2011 17:10:15 +0200
+Message-ID: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1305039008.2914.98.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 10:50:08AM -0400, Peter Zijlstra wrote:
-> On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
-> > @@ -740,6 +740,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
-> >                         if (!exclude)
-> >                                 exclude = eu = ek = eh = 1;
-> >                         eh = 0;
-> > +               } else if (*str == 'G') {
-> > +                       eg   = 0;
-> > +                       ehst = 1;
-> > +               } else if (*str == 'H') {
-> > +                       eg   = 1;
-> > +                       ehst = 0; 
-> 
-> This doesn't match the existing exclude logic, also eH and eG come to
-> mind.
+This patch adds a driver for the ST-Ericsson CG2900 connectivity controller.
+It has earlier been tried to add this driver to the mfd and bluetooth areas,
+but due to continued discussions the driver is placed into staging for the moment.
 
-OK, eH and eG seems like a better choice. Regarding the logic I
-explictly decided to do it this way. The reason is that guest/host
-counting is orthogonal to user/kernel/hv counting. You can decide to
-only count guest-kernel for example. And if a user just specifies
--e cycles:G this would automatically exlucde user and kernel counting.
-This didn't make sense to me so I decided to keep the logic seperate for
-guest/host exclusions.
+Patch created on next-20110510.
 
-	Joerg
+Compared to v5 this patch has the following update:
+ - Updated driver after changes to MFD interfaces in linux-next (from mfd_data
+   to platform_data).
+ - Changed platform specific file dependencies (included correct nomadik file).
 
+Par-Gunnar Hjalmdahl (1):
+  staging: Add ST-Ericsson CG2900 driver
+
+ drivers/staging/Kconfig                          |    2 +
+ drivers/staging/Makefile                         |    1 +
+ drivers/staging/cg2900/Kconfig                   |   70 +
+ drivers/staging/cg2900/Makefile                  |   12 +
+ drivers/staging/cg2900/TODO                      |   23 +
+ drivers/staging/cg2900/bluetooth/Makefile        |    9 +
+ drivers/staging/cg2900/bluetooth/btcg2900.c      | 1209 ++++++++
+ drivers/staging/cg2900/bluetooth/cg2900_uart.c   | 2074 +++++++++++++
+ drivers/staging/cg2900/bluetooth/hci_ldisc.c     |  657 ++++
+ drivers/staging/cg2900/bluetooth/hci_uart.h      |  105 +
+ drivers/staging/cg2900/board-mop500-cg2900.c     |  202 ++
+ drivers/staging/cg2900/devices-cg2900.c          |  342 +++
+ drivers/staging/cg2900/devices-cg2900.h          |   31 +
+ drivers/staging/cg2900/include/cg2900.h          |  278 ++
+ drivers/staging/cg2900/include/cg2900_audio.h    |  473 +++
+ drivers/staging/cg2900/include/cg2900_hci.h      |   19 +
+ drivers/staging/cg2900/mfd/Makefile              |   18 +
+ drivers/staging/cg2900/mfd/cg2900_audio.c        | 3462 ++++++++++++++++++++++
+ drivers/staging/cg2900/mfd/cg2900_char_devices.c |  707 +++++
+ drivers/staging/cg2900/mfd/cg2900_chip.c         | 3415 +++++++++++++++++++++
+ drivers/staging/cg2900/mfd/cg2900_chip.h         |  613 ++++
+ drivers/staging/cg2900/mfd/cg2900_core.c         |  713 +++++
+ drivers/staging/cg2900/mfd/cg2900_core.h         |   51 +
+ drivers/staging/cg2900/mfd/cg2900_lib.c          |  281 ++
+ drivers/staging/cg2900/mfd/cg2900_lib.h          |   61 +
+ drivers/staging/cg2900/mfd/cg2900_test.c         |  402 +++
+ drivers/staging/cg2900/mfd/stlc2690_chip.c       | 1653 +++++++++++
+ drivers/staging/cg2900/mfd/stlc2690_chip.h       |   47 +
+ 28 files changed, 16930 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/cg2900/Kconfig
+ create mode 100644 drivers/staging/cg2900/Makefile
+ create mode 100644 drivers/staging/cg2900/TODO
+ create mode 100644 drivers/staging/cg2900/bluetooth/Makefile
+ create mode 100644 drivers/staging/cg2900/bluetooth/btcg2900.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/cg2900_uart.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/hci_ldisc.c
+ create mode 100644 drivers/staging/cg2900/bluetooth/hci_uart.h
+ create mode 100644 drivers/staging/cg2900/board-mop500-cg2900.c
+ create mode 100644 drivers/staging/cg2900/devices-cg2900.c
+ create mode 100644 drivers/staging/cg2900/devices-cg2900.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900_audio.h
+ create mode 100644 drivers/staging/cg2900/include/cg2900_hci.h
+ create mode 100644 drivers/staging/cg2900/mfd/Makefile
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_audio.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_char_devices.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_chip.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_chip.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_core.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_core.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_lib.c
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_lib.h
+ create mode 100644 drivers/staging/cg2900/mfd/cg2900_test.c
+ create mode 100644 drivers/staging/cg2900/mfd/stlc2690_chip.c
+ create mode 100644 drivers/staging/cg2900/mfd/stlc2690_chip.h
+
+-- 
+1.7.4.3
 
