@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab1EJVYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:24:30 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51963 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752630Ab1EJVY2 (ORCPT
+	id S1752850Ab1EJVZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:25:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60580 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab1EJVZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:24:28 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Subject: fm801: implement TEA575x tuner autodetection
-Date: Tue, 10 May 2011 23:24:15 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-media@vger.kernel.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
+	Tue, 10 May 2011 17:25:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=gjqaVOstx+BknE7UQKvmtxKteyWkNk/a/VE2hLAa071IVoW6rc6sFBLkFsDbSjlCdI
+         3WSFWsH1E9G5d3BVecj3NS3omrQ6Omw6x1JwOuAWW2f/4bp8xZn4RuRk7GRCyhy/elNw
+         WaqNlyW0CJu9iD4OhyRwTWLqkJ+tJXlbN3wp8=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105102324.18562.linux@rainbow-software.org>
+In-Reply-To: <20110502225708.GD28001@n2100.arm.linux.org.uk>
+References: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
+	<20110502225708.GD28001@n2100.arm.linux.org.uk>
+Date: Tue, 10 May 2011 23:25:44 +0200
+X-Google-Sender-Auth: dcHyAq1uKoPyx-OvLiW-7yUlhao
+Message-ID: <BANLkTikSwkYEvbQ8XVrB3LUetVqBBUjT2g@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Pinmux subsystem
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Autodetect TEA575x tuner connection type during init. This allows tuner to
-work out-of-the box.
+Finally I'm back at the pinmux patch set trying to answer all questions
+accumulated:
 
-tea575x_tuner module parameter remains functional to force tuner type.
+2011/5/3 Russell King - ARM Linux <linux@arm.linux.org.uk>:
 
-Tested with SF256-PCP and SF64-PCR.
+> While I like the idea of consolidating the pinmuxing stuff, I'm not sure
+> about having a struct pin_mux pointer in each bus types device structure.
+> It'd mean this would have to be added to platform devices as well...
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Yeah I'm not sure about the patch to the AMBA/PrimeCell bus really,
+an alternative is for all drivers to request their mux individually. But in
+the AMBA bus we already request the silicon block clock and the
+silicon power switch so it seemed natural to also request a mux setting,
+if there is one.
 
---- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-10 22:31:45.000000000 +0200
-+++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-10 23:21:42.000000000 +0200
-@@ -53,7 +53,7 @@ static int enable[SNDRV_CARDS] = SNDRV_D
- /*
-  *  Enable TEA575x tuner
-  *    1 = MediaForte 256-PCS
-- *    2 = MediaForte 256-PCPR
-+ *    2 = MediaForte 256-PCP
-  *    3 = MediaForte 64-PCR
-  *   16 = setup tuner only (this is additional bit), i.e. SF64-PCR FM card
-  *  High 16-bits are video (radio) device number + 1
-@@ -67,7 +67,7 @@ MODULE_PARM_DESC(id, "ID string for the
- module_param_array(enable, bool, NULL, 0444);
- MODULE_PARM_DESC(enable, "Enable FM801 soundcard.");
- module_param_array(tea575x_tuner, int, NULL, 0444);
--MODULE_PARM_DESC(tea575x_tuner, "TEA575x tuner access method (1 = SF256-PCS, 2=SF256-PCPR, 3=SF64-PCR, +16=tuner-only).");
-+MODULE_PARM_DESC(tea575x_tuner, "TEA575x tuner access method (0 = auto, 1 = SF256-PCS, 2=SF256-PCP, 3=SF64-PCR, 8=disable, +16=tuner-only).");
- 
- #define TUNER_ONLY		(1<<4)
- #define TUNER_TYPE_MASK		(~TUNER_ONLY & 0xFFFF)
-@@ -720,12 +720,13 @@ static int __devinit snd_fm801_pcm(struc
- /* GPIO to TEA575x maps */
- struct snd_fm801_tea575x_gpio {
- 	u8 data, clk, wren, most;
-+	char *name;
- };
- 
- static struct snd_fm801_tea575x_gpio snd_fm801_tea575x_gpios[] = {
--	{ .data = 1, .clk = 3, .wren = 2, .most = 0 },	/* SF256-PCS */
--	{ .data = 1, .clk = 0, .wren = 2, .most = 3 },	/* SF256-PCP */
--	{ .data = 2, .clk = 0, .wren = 1, .most = 3 },	/* SF64-PCR */
-+	{ .data = 1, .clk = 3, .wren = 2, .most = 0, .name = "SF256-PCS" },
-+	{ .data = 1, .clk = 0, .wren = 2, .most = 3, .name = "SF256-PCP" },
-+	{ .data = 2, .clk = 0, .wren = 1, .most = 3, .name = "SF64-PCR" },
- };
- 
- static void snd_fm801_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
-@@ -1229,14 +1230,24 @@ static int __devinit snd_fm801_create(st
- 	snd_card_set_dev(card, &pci->dev);
- 
- #ifdef TEA575X_RADIO
-+	chip->tea.card = card;
-+	chip->tea.freq_fixup = 10700;
-+	chip->tea.private_data = chip;
-+	chip->tea.ops = &snd_fm801_tea_ops;
- 	if ((tea575x_tuner & TUNER_TYPE_MASK) > 0 &&
- 	    (tea575x_tuner & TUNER_TYPE_MASK) < 4) {
--		chip->tea.card = card;
--		chip->tea.freq_fixup = 10700;
--		chip->tea.private_data = chip;
--		chip->tea.ops = &snd_fm801_tea_ops;
--		snd_tea575x_init(&chip->tea);
--	}
-+		if (snd_tea575x_init(&chip->tea))
-+			snd_printk(KERN_ERR "TEA575x radio not found\n");
-+	} else if ((tea575x_tuner & TUNER_TYPE_MASK) == 0)
-+		/* autodetect tuner connection */
-+		for (tea575x_tuner = 1; tea575x_tuner <= 3; tea575x_tuner++) {
-+			chip->tea575x_tuner = tea575x_tuner;
-+			if (!snd_tea575x_init(&chip->tea)) {
-+				snd_printk(KERN_INFO "detected TEA575x radio type %s\n",
-+					snd_fm801_tea575x_gpios[tea575x_tuner - 1].name);
-+				break;
-+			}
-+		}
- #endif
- 
- 	*rchip = chip;
+> Then there's SA1100 (and PXA?) to consider with its IrDA setup, where its
+> necessary to switch the pin muxing during driver operation, when switching
+> between SIR and FIR modes (SIR uses the UART, FIR uses a separate hardware
+> block.)
+>
+> So any per-device pinmuxing subsystem also needs a way that a driver can
+> change the pinmuxing of its associated pins on the fly too.
 
+It can, basically:
 
--- 
-Ondrej Zary
+struct pinmux *pmx;
+
+pmx = pinmux_get(dev, "irda-uart");
+pinmux_enable(pmx);
+(... SIR UART operations ...)
+pinmux_disable(pmx);
+pinmux_put(pmx);
+(... stuff to init FIR silicon ...)
+pmx = pinmux_get(dev, "irda-fir");
+pinmux_enable(pmx);
+(... etc ...)
+
+Just like you would take an alternative clock or regulator in case using i would
+exclude the use of another clock/regulator.
+
+Thanks,
+Linus Walleij
