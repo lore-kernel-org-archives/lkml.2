@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1EJUpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:45:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38119 "EHLO mail.zytor.com"
+	id S1752830Ab1EJUq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:46:26 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38504 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1EJUpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:45:09 -0400
-Message-ID: <4DC9A3A2.20000@zytor.com>
-Date: Tue, 10 May 2011 13:44:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1752316Ab1EJUpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 16:45:00 -0400
+Date: Tue, 10 May 2011 22:44:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
+Message-ID: <20110510204443.GF21903@elte.hu>
+References: <6921.1304989476@localhost>
+ <20110510082029.GF2258@linux.vnet.ibm.com>
+ <20110510085746.GG27426@elte.hu>
+ <20110510162158.GK2258@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: Borislav Petkov <bp@amd64.org>, Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "mikew@google.com" <mikew@google.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH] pstore: EFI Support
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com> <20110510161137.GA14522@kroah.com> <20110510165728.GC3347@gere.osrc.amd.com> <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4815@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4815@USINDEVS01.corp.hds.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510162158.GK2258@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2011 12:18 PM, Seiji Aguchi wrote:
-> Hi,
->
-> Thank you for your comments.
->
->> Btw, is this case of the possibility for APEI of corrupting NVRAM
->> storage something you actually experienced on a real machine or simply a
->> conclusion from looking at APEI code doing ioremap()?
->
-> I simply concluded from looking at ioremap() of APEI code.
->
 
-The thing is that you're effectively betting that the EFI method will be 
-less broken than our kernels.  That is not at all given...
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-	-hpa
+> On Tue, May 10, 2011 at 10:57:46AM +0200, Ingo Molnar wrote:
+> > 
+> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > -	raw_spin_lock_irqsave(&rnp->lock, flags);
+> > > -	rnp->wakemask |= rdp->grpmask;
+> > > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > > +	do {
+> > > +		old = rnp->wakemask;
+> > > +		new = old | rdp->grpmask;
+> > > +	} while (cmpxchg(&rnp->wakemask, old, new) != old);
+> > 
+> > Hm, isnt this an inferior version of atomic_or_long() in essence?
+> > 
+> > Note that atomic_or_long() is x86 only, so a generic one would have to be 
+> > offered too i suspect, atomic_cmpxchg() driven or so - which would look like 
+> > the above loop.
+> > 
+> > Most architectures could offer atomic_or_long() i suspect.
+> 
+> Is the following what you had in mind?  This (untested) patch provides only 
+> the generic function: if this is what you had in mind, I can put together 
+> optimized versions for a couple of the architectures.
+
+Yeah, something like this, except:
+
+> +#ifndef CONFIG_ARCH_HAS_ATOMIC_OR_LONG
+> +static inline void atomic_or_long(unsigned long *v1, unsigned long v2)
+> +{
+> +	unsigned long old;
+> +	unsigned long new;
+> +
+> +	do {
+> +		old = ACCESS_ONCE(*v1);
+> +		new = old | v2;
+> +	} while (cmpxchg(v1, old, new) != old);
+> +}
+> +#endif /* #ifndef CONFIG_ARCH_HAS_ATOMIC_OR_LONG */
+
+Shouldnt that method work on atomic_t (or atomic64_t)?
+
+Thanks,
+
+	Ingo
