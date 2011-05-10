@@ -1,103 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab1EJTcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 15:32:23 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48407 "EHLO e2.ny.us.ibm.com"
+	id S1751993Ab1EJTi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 15:38:26 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39718 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab1EJTcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 15:32:22 -0400
-Date: Tue, 10 May 2011 12:32:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110510193216.GN2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110508151848.GA21906@linux.vnet.ibm.com>
- <20110509073636.GA18247@elte.hu>
- <BANLkTin82W0yZ5Nvv3Dp62X1eou_GxZ6EA@mail.gmail.com>
- <20110510085623.GG2258@linux.vnet.ibm.com>
- <4DC97E49.7040401@kernel.org>
+	id S1750882Ab1EJTiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 15:38:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: linux-next: build failure after merge of the final tree (driver-core tree related)
+Date: Tue, 10 May 2011 21:38:45 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Guda <atu@dmeti.dp.ua>
+References: <20110509145854.9e6d8806.sfr@canb.auug.org.au> <201105100019.52936.rjw@sisk.pl> <1304983104.1351.17.camel@zag>
+In-Reply-To: <1304983104.1351.17.camel@zag>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC97E49.7040401@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105102138.45867.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 11:04:57AM -0700, Yinghai Lu wrote:
-> On 05/10/2011 01:56 AM, Paul E. McKenney wrote:
-> > On Mon, May 09, 2011 at 02:09:21PM -0700, Yinghai Lu wrote:
-> >> On Mon, May 9, 2011 at 12:36 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >>>
-> >>> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> >>>
-> >>>> Hello, Ingo,
-> >>>>
-> >>>> This pull request covers RCU chnages for 2.6.40.  The major new features
-> >>>> are RCU priority boosting and the addition of kfree_rcu(), the latter
-> >>>> courtesy of Lai Jiangshan.  These two features cover well over half
-> >>>> of the commits.  There are a number of smaller features and bug fixes.
-> >>>> All have been sent to LKML in the following batches:
-> >>>>
-> >>>> 0.    https://lkml.org/lkml/2011/2/22/660: RCU priority boosting preview
-> >>>> 1.    https://lkml.org/lkml/2011/5/1/19: RCU priority boosting, kfree_rcu()
-> >>>> 2.    https://lkml.org/lkml/2011/5/2/40: More uses of kfree_rcu()
-> >>>> 3.    https://lkml.org/lkml/2011/5/8/60: miscellaneous
-> >>>>
-> >>>> The kfree_rcu() uses in the pull request have Acked-by:s from the
-> >>>> maintainers.  I have some additional kfree_rcu() requests that lack
-> >>>> Acked-by:s, and I will deal with these later.
-> >>>>
-> >>>> These channges are available in the -rcu git repository at:
-> >>>>
-> >>>>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-> >>>
-> >>> Pulled, thanks a lot Paul!
-> >>>
-> >>
-> >> it seems with this one in tip, my 8 sockets test setup will report cpu stall.
-> >>
-> >> after hard code to enable rcu_cpu_stall_suppress
-> >>
-> >> Index: linux-2.6/kernel/rcutree.c
-> >> ===================================================================
-> >> --- linux-2.6.orig/kernel/rcutree.c
-> >> +++ linux-2.6/kernel/rcutree.c
-> >> @@ -174,7 +174,7 @@ module_param(blimit, int, 0);
-> >>  module_param(qhimark, int, 0);
-> >>  module_param(qlowmark, int, 0);
-> >>
-> >> -int rcu_cpu_stall_suppress __read_mostly;
-> >> +int rcu_cpu_stall_suppress __read_mostly = 1;
-> >>  module_param(rcu_cpu_stall_suppress, int, 0644);
-> >>
-> >>  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
-> >>
-> >> will get system hang after pnp ACPI init.
+On Tuesday, May 10, 2011, Kay Sievers wrote:
+> On Tue, 2011-05-10 at 00:19 +0200, Rafael J. Wysocki wrote:
+> > On Monday, May 09, 2011, Kay Sievers wrote:
+> > > On Mon, May 9, 2011 at 06:58, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > > After merging the final tree, today's linux-next build (powerpc allnoconfig)
+> > > > failed like this:
+> > > >
+> > > > kernel/sys.c: In function 'kernel_restart_prepare':
+> > > > kernel/sys.c:317: error: implicit declaration of function 'usermodehelper_disable'
+> > > 
+> > > Rafael, seems usermodehelper_disable() depends on CONFIG_PM_SLEEP.
+> > > 
+> > > Any reason for that conditional? Remove it now?
 > > 
-> > Could you please send the stack traces from the RCU CPU stall?  Also,
-> > you do have ce31332d3c77532d6ea97ddcb475a2b02dd358b4 applied, correct?
+> > Aw, we have two conflicting changes.  Could you prepare a patch on top of:
 > > 
-> > 							Thanx, Paul
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-next
+> > 
+> > removing that #ifdef?  That needs to be done in kmod.h too.
 > 
-> Do not have time to bisect it at this point.
+> Like this?
 
-Could you please send the stack traces from the RCU CPU stall?
+Yes, thanks.
 
-							Thanx, Paul
+I applied it to suspend-2.6/linux-next.
 
-> can you prepare clean revert patch for following commit to test?
+Rafael
+
+ 
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> Subject: kmod: always provide usermodehelper_disable()
 > 
-> commit a00e0d714fbded07a7a2254391ce9ed5a5cb9d82
-> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Date:   Tue Feb 8 17:14:39 2011 -0800
+> We need to prevent kernel-forked processes during system poweroff.
+> Such processes try to access the filesystem whose disks we are
+> trying to shutdown at the same time. This causes delays and exceptions
+> in the storage drivers.
 > 
->     rcu: Remove conditional compilation for RCU CPU stall warnings
+> A follow-up patch will add these calls and need usermodehelper_disable()
+> also on systems without suspend support.
+> 
+> Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+> ---
+> 
+> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+> index 7f3dbcb..3102318 100644
+> --- a/include/linux/kmod.h
+> +++ b/include/linux/kmod.h
+> @@ -111,12 +111,8 @@ call_usermodehelper(char *path, char **argv, char **envp, enum umh_wait wait)
+>  
+>  extern void usermodehelper_init(void);
+>  
+> -#ifdef CONFIG_PM_SLEEP
+>  extern int usermodehelper_disable(void);
+>  extern void usermodehelper_enable(void);
+>  extern bool usermodehelper_is_disabled(void);
+> -#else
+> -static inline bool usermodehelper_is_disabled(void) { return false; }
+> -#endif
+>  
+>  #endif /* __LINUX_KMOD_H__ */
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index 9ab513b..5ae0ff3 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -245,7 +245,6 @@ static void __call_usermodehelper(struct work_struct *work)
+>  	}
+>  }
+>  
+> -#ifdef CONFIG_PM_SLEEP
+>  /*
+>   * If set, call_usermodehelper_exec() will exit immediately returning -EBUSY
+>   * (used for preventing user land processes from being created after the user
+> @@ -321,12 +320,6 @@ static void helper_unlock(void)
+>  	if (atomic_dec_and_test(&running_helpers))
+>  		wake_up(&running_helpers_waitq);
+>  }
+> -#else /* CONFIG_PM_SLEEP */
+> -#define usermodehelper_disabled	0
+> -
+> -static inline void helper_lock(void) {}
+> -static inline void helper_unlock(void) {}
+> -#endif /* CONFIG_PM_SLEEP */
+>  
+>  /**
+>   * call_usermodehelper_setup - prepare to call a usermode helper
 > 
 > 
-> Thanks
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> Yinghai Lu
+> 
+
