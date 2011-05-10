@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1EJVUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:20:44 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48044 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab1EJVUn (ORCPT
+	id S1752835Ab1EJVYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:24:30 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51963 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752630Ab1EJVY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:20:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=qxpHiR2q7nQOYmw1/KUppu36NBSphfjpIkpyzAeGJRUAvg28Gc8UrKJS/kYJuN2Ywy
-         huE/O5RBUS+tZql0Jd0C08m5RY3ugVz9u01aYz9cVtWng4v7MyzpDQtZ4Zn4LfxNBc0+
-         DylaHs8bBPTQM6/Iy63GlgguOhWs3Tq2TBliE=
-Date: Tue, 10 May 2011 23:20:38 +0200
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: alan@linux.intel.com, greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] gma500: Add option to disable LVDS
-Message-ID: <20110510212038.GA3279@patrik-macbook>
+	Tue, 10 May 2011 17:24:28 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: alsa-devel@alsa-project.org
+Subject: fm801: implement TEA575x tuner autodetection
+Date: Tue, 10 May 2011 23:24:15 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-media@vger.kernel.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201105102324.18562.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the option to load the driver without LVDS support. Some platforms with the gma500 have nothing hooked up to LVDS but only uses SDVO. LVDS is still detected and added as an encoder which causes SDVO mode-setting to fail.
+Autodetect TEA575x tuner connection type during init. This allows tuner to
+work out-of-the box.
 
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
----
+tea575x_tuner module parameter remains functional to force tuner type.
 
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index 46ab028..f1c9f07 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -39,15 +39,18 @@ int drm_psb_debug;
- static int drm_psb_trap_pagefaults;
+Tested with SF256-PCP and SF64-PCR.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+--- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-10 22:31:45.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-10 23:21:42.000000000 +0200
+@@ -53,7 +53,7 @@ static int enable[SNDRV_CARDS] = SNDRV_D
+ /*
+  *  Enable TEA575x tuner
+  *    1 = MediaForte 256-PCS
+- *    2 = MediaForte 256-PCPR
++ *    2 = MediaForte 256-PCP
+  *    3 = MediaForte 64-PCR
+  *   16 = setup tuner only (this is additional bit), i.e. SF64-PCR FM card
+  *  High 16-bits are video (radio) device number + 1
+@@ -67,7 +67,7 @@ MODULE_PARM_DESC(id, "ID string for the
+ module_param_array(enable, bool, NULL, 0444);
+ MODULE_PARM_DESC(enable, "Enable FM801 soundcard.");
+ module_param_array(tea575x_tuner, int, NULL, 0444);
+-MODULE_PARM_DESC(tea575x_tuner, "TEA575x tuner access method (1 = SF256-PCS, 2=SF256-PCPR, 3=SF64-PCR, +16=tuner-only).");
++MODULE_PARM_DESC(tea575x_tuner, "TEA575x tuner access method (0 = auto, 1 = SF256-PCS, 2=SF256-PCP, 3=SF64-PCR, 8=disable, +16=tuner-only).");
  
- int drm_psb_no_fb;
-+int drm_psb_no_lvds;
+ #define TUNER_ONLY		(1<<4)
+ #define TUNER_TYPE_MASK		(~TUNER_ONLY & 0xFFFF)
+@@ -720,12 +720,13 @@ static int __devinit snd_fm801_pcm(struc
+ /* GPIO to TEA575x maps */
+ struct snd_fm801_tea575x_gpio {
+ 	u8 data, clk, wren, most;
++	char *name;
+ };
  
- static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
+ static struct snd_fm801_tea575x_gpio snd_fm801_tea575x_gpios[] = {
+-	{ .data = 1, .clk = 3, .wren = 2, .most = 0 },	/* SF256-PCS */
+-	{ .data = 1, .clk = 0, .wren = 2, .most = 3 },	/* SF256-PCP */
+-	{ .data = 2, .clk = 0, .wren = 1, .most = 3 },	/* SF64-PCR */
++	{ .data = 1, .clk = 3, .wren = 2, .most = 0, .name = "SF256-PCS" },
++	{ .data = 1, .clk = 0, .wren = 2, .most = 3, .name = "SF256-PCP" },
++	{ .data = 2, .clk = 0, .wren = 1, .most = 3, .name = "SF64-PCR" },
+ };
  
- MODULE_PARM_DESC(debug, "Enable debug output");
- MODULE_PARM_DESC(no_fb, "Disable FBdev");
- MODULE_PARM_DESC(trap_pagefaults, "Error and reset on MMU pagefaults");
-+MODULE_PARM_DESC(no_lvds, "Disable LVDS");
- module_param_named(debug, drm_psb_debug, int, 0600);
- module_param_named(no_fb, drm_psb_no_fb, int, 0600);
- module_param_named(trap_pagefaults, drm_psb_trap_pagefaults, int, 0600);
-+module_param_named(no_lvds, drm_psb_no_lvds, int, 0600);
+ static void snd_fm801_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
+@@ -1229,14 +1230,24 @@ static int __devinit snd_fm801_create(st
+ 	snd_card_set_dev(card, &pci->dev);
  
+ #ifdef TEA575X_RADIO
++	chip->tea.card = card;
++	chip->tea.freq_fixup = 10700;
++	chip->tea.private_data = chip;
++	chip->tea.ops = &snd_fm801_tea_ops;
+ 	if ((tea575x_tuner & TUNER_TYPE_MASK) > 0 &&
+ 	    (tea575x_tuner & TUNER_TYPE_MASK) < 4) {
+-		chip->tea.card = card;
+-		chip->tea.freq_fixup = 10700;
+-		chip->tea.private_data = chip;
+-		chip->tea.ops = &snd_fm801_tea_ops;
+-		snd_tea575x_init(&chip->tea);
+-	}
++		if (snd_tea575x_init(&chip->tea))
++			snd_printk(KERN_ERR "TEA575x radio not found\n");
++	} else if ((tea575x_tuner & TUNER_TYPE_MASK) == 0)
++		/* autodetect tuner connection */
++		for (tea575x_tuner = 1; tea575x_tuner <= 3; tea575x_tuner++) {
++			chip->tea575x_tuner = tea575x_tuner;
++			if (!snd_tea575x_init(&chip->tea)) {
++				snd_printk(KERN_INFO "detected TEA575x radio type %s\n",
++					snd_fm801_tea575x_gpios[tea575x_tuner - 1].name);
++				break;
++			}
++		}
+ #endif
  
- static struct pci_device_id pciidlist[] = {
-@@ -663,7 +666,9 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- 		drm_kms_helper_poll_init(dev);
- 	}
- 
--	ret = psb_backlight_init(dev);
-+	if (!drm_psb_no_lvds)
-+		ret = psb_backlight_init(dev);
-+
- 	if (ret)
- 		return ret;
- #if 0
-diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index e19a454..4593c80 100644
---- a/drivers/staging/gma500/psb_drv.h
-+++ b/drivers/staging/gma500/psb_drv.h
-@@ -671,6 +671,7 @@ extern int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
- extern int drm_psb_debug;
- extern int drm_psb_no_fb;
- extern int drm_idle_check_interval;
-+extern int drm_psb_no_lvds;
- 
- #define PSB_DEBUG_GENERAL(_fmt, _arg...) \
- 	PSB_DEBUG(PSB_D_GENERAL, _fmt, ##_arg)
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index ae097cd..7c00952 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -719,7 +719,8 @@ static void psb_setup_outputs(struct drm_device *dev)
- 		else
- 			DRM_ERROR("DSI is not supported\n");
- 	} else {
--		psb_intel_lvds_init(dev, &dev_priv->mode_dev);
-+		if (!drm_psb_no_lvds)
-+			psb_intel_lvds_init(dev, &dev_priv->mode_dev);
- 		psb_intel_sdvo_init(dev, SDVOB);
- 	}
- 
+ 	*rchip = chip;
+
+
+-- 
+Ondrej Zary
