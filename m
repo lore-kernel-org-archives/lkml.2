@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab1EJK1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 06:27:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37601 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751445Ab1EJK1G (ORCPT
+	id S932327Ab1EJMbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:31:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38134 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932085Ab1EJMbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 06:27:06 -0400
-Date: Tue, 10 May 2011 11:27:34 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>, "Arnd Bergmann" <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Marc Kleine-Budde" <mkl@pengutronix.de>, <sachi@mistralsolutions.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <Netdev@vger.kernel.org>, <nsekhar@ti.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
-        <m-watkins@ti.com>
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-Message-ID: <20110510112734.54160824@lxorguk.ukuu.org.uk>
-In-Reply-To: <F1859F4DD03040248B42AC947304D39B@subhasishg>
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>
-	<201105041511.54095.arnd@arndb.de>
-	<4DC163D7.9010309@grandegger.com>
-	<201105041648.37199.arnd@arndb.de>
-	<4DC17831.3070801@grandegger.com>
-	<F1859F4DD03040248B42AC947304D39B@subhasishg>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 10 May 2011 08:31:36 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=Y0O1ELPRERvcVXXL-7QA:9 a=_xSfFlj33uFFPgYJBK4A:7 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Michael Rubin <mrubin@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20110510084732.GE27426@elte.hu>
+References: <4DC45537.6070609@linux.intel.com>
+	 <1304713252.25414.2532.camel@gandalf.stny.rr.com>
+	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+	 <20110507065803.GA23414@elte.hu>
+	 <1304765110.25414.2564.camel@gandalf.stny.rr.com>
+	 <20110507144402.GC2859@elte.hu> <1304788829.11129.57.camel@frodo>
+	 <20110507190033.GA11465@elte.hu> <1304996847.2969.151.camel@frodo>
+	 <20110510084732.GE27426@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 06:33:08 -0400
+Message-ID: <1305023588.2971.6.camel@frodo>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 May 2011 15:41:49 +0530
-"Subhasish Ghosh" <subhasish@mistralsolutions.com> wrote:
-
-> >> 
-> >> It sounds to me like the best solution would be change the firmware
-> >> to lift that restriction and simply allow all IDs, in case it's not
-> >> actually a hardware limitation (which sounds unlikely).
-> > 
-> > Yes, that would be best but they told us, that it's not possible with
-> > the available hardware resources. Subhasish?
+On Tue, 2011-05-10 at 10:47 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Yes, In case if we allow the ALL implementation, it hogs the CPU.
-> In that case we do not need the PRU. The whole purpose of the PRU
-> is to offload the processor for any such implementations. 
+> > [...] Thus a library is a perfect solution. [...]
+> 
+> Btw., just to make things clear, if we indeed have a library to parse things 
+> and if all apps use that then the ABI moves to another (library) level.
+> 
+> The requirement from my maintenance POV is very, very simple: apps should not 
+> break on new kernels. If this is achieved by making apps smarter then that's a 
+> valid solution.
+> 
 
-So the kernel presumably needs to switch between using the PRU and native
-according to the number of ids being requested at the time ?
+Great! Because this is what I want. I would also want a way to designate
+events as stable. I'll add a TRACE_EVENT_STABLE() that can only have the
+events that maintainers agree to maintain. And give the apps an ability
+to only see these. Have the other events need either a separate library,
+or perhaps just separate calls from within the same library, so the XFS
+developers can feel safe that their tracepoints will not be depended on.
+And perhaps have two tracepoints for sched_switch such that Peter
+Zijlsta is happy that he's not bound by an tracepoint that keeps him
+from getting rid of FIFO ;)
 
-That would be roughly what we do with other things (eg IP multicast) so
-that apps don't need to know all the innards
+I'm happy to write a libperf.so and I can discuss with Arnaldo, Arjan
+and yourself what is the best way of doing this.
+
+Thanks,
+
+-- Steve
+
+
