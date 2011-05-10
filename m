@@ -1,174 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab1EJUIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:08:54 -0400
-Received: from kroah.org ([198.145.64.141]:48858 "EHLO coco.kroah.org"
+	id S1752644Ab1EJUNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:13:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50678 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab1EJUIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:08:53 -0400
-Date: Tue, 10 May 2011 13:08:01 -0700
-From: Greg KH <greg@kroah.com>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
-        Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
-Message-ID: <20110510200801.GA8125@kroah.com>
-References: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	id S1752451Ab1EJUNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 16:13:43 -0400
+Date: Tue, 10 May 2011 20:13:31 GMT
+From: tip-bot for Lin Ming <ming.m.lin@intel.com>
+Message-ID: <tip-2b348a77981227c6b64fb9cf19f7c711a6806bc9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        acme@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
+References: <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf probe: Fix the missed parameter initialization
+Git-Commit-ID: 2b348a77981227c6b64fb9cf19f7c711a6806bc9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 10 May 2011 20:13:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 05:10:32PM +0200, Par-Gunnar Hjalmdahl wrote:
-> This patch adds support for the ST-Ericsson CG2900
-> Connectivity Combo controller (Bluetooth, FM, GPS).
-> 
-> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Commit-ID:  2b348a77981227c6b64fb9cf19f7c711a6806bc9
+Gitweb:     http://git.kernel.org/tip/2b348a77981227c6b64fb9cf19f7c711a6806bc9
+Author:     Lin Ming <ming.m.lin@intel.com>
+AuthorDate: Fri, 29 Apr 2011 08:41:57 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 10 May 2011 17:06:23 +0200
 
-{sigh}
+perf probe: Fix the missed parameter initialization
 
-This breaks the build again, the error messages are below :(
+pubname_callback_param::found should be initialized to 0 in
+fastpath lookup, the structure is on the stack and
+uninitialized otherwise.
 
-I'm about to give up here, so the next time you send this patch in, I
-want some kind of proof that the code will at least build properly.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Link: http://lkml.kernel.org/r/1304066518-30420-2-git-send-email-ming.m.lin@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/util/probe-finder.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-How you provide this is up to you.
-
-Oh, and if the next one breaks stuff again, you will owe me a lot of
-beer, although I think you owe me already...
-
-thanks,
-
-greg k-h
-
-  CC [M]  drivers/staging/cg2900/mfd/cg2900_chip.o
-drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: (near initialization for ‘cg2900_devs[0].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2941:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2941:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2945:3: error: (near initialization for ‘cg2900_devs[1].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2946:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2946:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2950:3: error: (near initialization for ‘cg2900_devs[2].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2951:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2951:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2955:3: error: (near initialization for ‘cg2900_devs[3].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2956:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2956:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2960:3: error: (near initialization for ‘cg2900_devs[4].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2961:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2961:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2965:3: error: (near initialization for ‘cg2900_devs[5].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2966:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2966:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2970:3: error: (near initialization for ‘cg2900_devs[6].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2971:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2971:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2975:3: error: (near initialization for ‘cg2900_devs[7].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2976:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2976:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2980:3: error: (near initialization for ‘cg2900_devs[8].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2981:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2981:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2985:3: error: (near initialization for ‘cg2900_devs[9].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2986:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2986:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: warning: initialization makes integer from pointer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: error: initializer element is not computable at load time
-drivers/staging/cg2900/mfd/cg2900_chip.c:2990:3: error: (near initialization for ‘cg2900_devs[10].id’)
-drivers/staging/cg2900/mfd/cg2900_chip.c:2991:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:2991:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3073:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3073:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3074:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3074:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3079:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3079:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3080:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3080:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3085:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3085:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3086:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3086:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3091:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3091:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3092:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3092:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3097:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3097:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3098:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3098:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3103:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3103:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3104:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3104:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3109:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3109:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3110:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3110:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3115:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3115:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3116:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3116:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3121:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3121:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3122:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3122:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3127:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3127:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3128:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3128:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c:3133:3: error: unknown field ‘platform_data’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3133:3: warning: initialization from incompatible pointer type
-drivers/staging/cg2900/mfd/cg2900_chip.c:3134:3: error: unknown field ‘pdata_size’ specified in initializer
-drivers/staging/cg2900/mfd/cg2900_chip.c:3134:3: warning: initialization makes pointer from integer without a cast
-drivers/staging/cg2900/mfd/cg2900_chip.c: In function ‘set_plat_data’:
-drivers/staging/cg2900/mfd/cg2900_chip.c:3147:41: error: ‘struct mfd_cell’ has no member named ‘platform_data’
-drivers/staging/cg2900/mfd/cg2900_chip.c:3147:37: warning: initialization from incompatible pointer type
-make[4]: *** [drivers/staging/cg2900/mfd/cg2900_chip.o] Error 1
-
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index a7c7145..3b9d0b8 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1538,6 +1538,7 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 			.file	  = pp->file,
+ 			.cu_die	  = &pf->cu_die,
+ 			.sp_die	  = &pf->sp_die,
++			.found	  = 0,
+ 		};
+ 		struct dwarf_callback_param probe_param = {
+ 			.data = pf,
