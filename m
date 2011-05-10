@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab1EJIOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:14:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab1EJIOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 04:14:07 -0400
-Date: Tue, 10 May 2011 13:43:53 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cdrom: always check_disk_change() on open
-Message-ID: <20110510081353.GB22655@amit-x200.redhat.com>
-References: <20110406121920.GC4142@mtj.dyndns.org>
- <20110429060200.GA5107@amit-x200.redhat.com>
- <4DBA73B6.6040603@kernel.dk>
- <20110510064247.GA16436@amit-x200.redhat.com>
- <4DC8ECDC.5080106@kernel.dk>
+	id S932508Ab1EJIO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:14:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33865 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932463Ab1EJIOY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 04:14:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 1/4] oom: improve dump_tasks() show items
+Cc: kosaki.motohiro@jp.fujitsu.com, CAI Qian <caiqian@redhat.com>,
+        avagin@gmail.com, Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <20110510171335.16A7.A69D9226@jp.fujitsu.com>
+References: <20110509182110.167F.A69D9226@jp.fujitsu.com> <20110510171335.16A7.A69D9226@jp.fujitsu.com>
+Message-Id: <20110510171600.16AB.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC8ECDC.5080106@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 10 May 2011 17:14:21 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 10 May 2011 [09:44:28], Jens Axboe wrote:
-> On 2011-05-10 08:42, Amit Shah wrote:
-> > On (Fri) 29 Apr 2011 [10:15:50], Jens Axboe wrote:
-> >> On 2011-04-29 08:57, Amit Shah wrote:
-> >>> On (Wed) 06 Apr 2011 [05:20:09], Tejun Heo wrote:
-> >>>> cdrom_open() called check_disk_change() after the rest of open path
-> >>>> succeeded which leads to the following bizarre behavior.
-> >>>>
-> >>>> * After media change, if the device opened without O_NONBLOCK,
-> >>>>   open_for_data() naturally fails with -ENOMEDIA and
-> >>>>   check_disk_change() is never called.  The media is known to be gone
-> >>>>   and the open failure makes it obvious to the userland but device
-> >>>>   invalidation never happens.
-> >>>>
-> >>>> * But if the device is opened with O_NONBLOCK, all the checks are
-> >>>>   bypassed and cdrom_open() doesn't notice that the media is not there
-> >>>>   and check_disk_change() is called and invalidation happens.
-> >>>>
-> >>>> There's nothing to be gained by avoiding calling check_disk_change()
-> >>>> on open failure.  Common cases end up calling check_disk_change()
-> >>>> anyway.  All we get is inconsistent behavior.
-> >>>>
-> >>>> Fix it by moving check_disk_change() invocation to the top of
-> >>>> cdrom_open() so that it always gets called regardless of how the rest
-> >>>> of open proceeds.
-> >>>>
-> >>>> Signed-off-by: Tejun Heo <tj@kernel.org>
-> >>>> Reported-by: Amit Shah <amit.shah@redhat.com>
-> >>>> Tested-by: Amit Shah <amit.shah@redhat.com>
-> >>>
-> >>> Ping?
-> >>>
-> >>> Also, please mark this for stable-2.6.38.
-> >>
-> >> Done, added for 2.6.39 and marked stable for 2.6.38.
-> > 
-> > Ping again.  Don't see this yet in Linus's git tree.
-> 
-> It was added for 2.6.40 and marked for stable.
+Recently, oom internal logic was dramatically changed. Thus
+dump_tasks() is no longer useful. it has some meaningless
+items and don't have some oom socre related items.
 
-OK, Thanks.
+This patch adapt displaying fields to new oom logic.
 
-		Amit
+details
+==========
+removed: pid (we always kill process. don't need thread id),
+         mm->total_vm (we no longer uses virtual memory size)
+         signal->oom_adj (we no longer uses it internally)
+added: ppid (we often kill sacrifice child process)
+modify: RSS (account mm->nr_ptes too)
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+
+Strictly speaking. this is NOT a part of oom fixing patches. but it's
+necessary when I parse QAI's test result.
+
+
+ mm/oom_kill.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index f52e85c..118d958 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -355,7 +355,7 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
+ 	struct task_struct *p;
+ 	struct task_struct *task;
+ 
+-	pr_info("[ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name\n");
++	pr_info("[   pid]   ppid   uid      rss  cpu score_adj name\n");
+ 	for_each_process(p) {
+ 		if (oom_unkillable_task(p, mem, nodemask))
+ 			continue;
+@@ -370,11 +370,13 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
+ 			continue;
+ 		}
+ 
+-		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
+-			task->pid, task_uid(task), task->tgid,
+-			task->mm->total_vm, get_mm_rss(task->mm),
+-			task_cpu(task), task->signal->oom_adj,
+-			task->signal->oom_score_adj, task->comm);
++		pr_info("[%6d] %6d %5d %8lu %4u %9d %s\n",
++			task_tgid_nr(task), task_tgid_nr(task->real_parent),
++			task_uid(task),
++			get_mm_rss(task->mm) + p->mm->nr_ptes,
++			task_cpu(task),
++			task->signal->oom_score_adj,
++			task->comm);
+ 		task_unlock(task);
+ 	}
+ }
+-- 
+1.7.3.1
+
+
+
