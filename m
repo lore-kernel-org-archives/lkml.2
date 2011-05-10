@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab1EJSnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 14:43:12 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60318 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750860Ab1EJSnK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 14:43:10 -0400
-Date: Tue, 10 May 2011 18:43:02 +0000
-From: Pavel Machek <pavel@ucw.cz>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Andrew Lutomirski <luto@mit.edu>, ibm-acpi-devel@lists.sourceforge.net,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
-Message-ID: <20110510184302.GA15631@localhost.ucw.cz>
-References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com> <20110509144546.GB13275@khazad-dum.debian.net> <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com> <20110509152941.GD13275@khazad-dum.debian.net>
+	id S1751806Ab1EJSst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:48:49 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:50169 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750865Ab1EJSss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 14:48:48 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201105101848.p4AImgJF021856@stout.americas.sgi.com>
+Date: Tue, 10 May 2011 13:48:41 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.39
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509152941.GD13275@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2011-05-09 12:29:41, Henrique de Moraes Holschuh wrote:
-> On Mon, 09 May 2011, Andrew Lutomirski wrote:
-> > > The SBS interface exposes more data about the battery, including
-> > > per-cell-group voltage and pack microcontroller aging counters, alarms, and
-> > > the "needs to get through the fuel-gaugue reset procedure" semasphore.
-> > 
-> > If I'm feeling really motivated, I'll look at that.  I'm currently
-> > more interested in the charging thresholds, though, which I think is
-> > independent of the choice of SBS vs ACPI to access the battery state.
-> > (From a quick glance at the SBS spec, you can inhibit charging
-> > entirely but you can't ask for thresholds.  I assume that the EC takes
-> > care of that.  If I'm wrong, please tell me, but SMAPI seems like a
-> > fine way to access the thresholds.)
-> 
-> Yeah, SMAPI is the safest way to deal with all this.  It is an interface
-> layer that Lenovo is not fond of breaking (or touches very rarely.  Amounts
-> to the same in the end).
-> 
-> SBS does not take care of thresholds, indeed.  The EC does (and I know how
-> to program the threshold in a few models, if you do want to test it in your
-> X220, I can send you the information.  It is safe to test if you use it
-> together with SMAPI to cross-check).
+Linus,
 
-Hmm, I jave a battery pack with reasonably good cells, but firmware killed it. IOW available for testing.
+I'm very sorry I couldn't provide you these regression fixes before
+yesterday.  They do address regressions that are pretty important
+so I hope you'll consider pulling them for inclusion in 2.6.39.
 
-(And who know, perhaps recalibrate command would bring it back to life?)
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+The first one fixes a problem that can cause reclaim to stall on an
+XFS allocation group, which prevents inode cache shrinking from
+making progress and ultimately can cause the OOM killer to kick in.
+
+The other four address small but distinct problems that can lead to
+filesystem hangs when attempting to grant log space:
+- The only real change in the first of these is the "goto out_done"
+  that causes a block of common code to be used for a case that was
+  not clearing a flag as it should.
+- The second of these fixes an off-by-one condition check problem.
+- The third addresses a few problems that can arise due to unsafe
+  assignment of 64-bit values on 32-bit architectures.
+- The last one is the most subtle.  Previously a flag bit was
+  getting cleared conditionally but not atomically.  A second
+  location used test_and_set_bit() to conditionally set the flag.
+  The flag could get cleared in the one spot just after a successful
+  test and set in another; the net result basically hung the
+  affected filesystem.  The fix modifies the non-atomic spot to
+  clear the flag unconditionally, then re-set it using atomic
+  test-and-set it if appropriate.
+
+Dave Chinner deserves a lot of credit for sorting through
+these--especially the intersecting causes of the common "filesystem
+hang" symptom that the last four address.
+
+Thanks a lot.
+
+					-Alex
+
+The following changes since commit 693d92a1bbc9e42681c42ed190bd42b636ca876f:
+
+  Linux 2.6.39-rc7 (2011-05-09 19:33:54 -0700)
+
+are available in the git repository at:
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Dave Chinner (5):
+      xfs: ensure reclaim cursor is reset correctly at end of AG
+      xfs: exit AIL push work correctly when AIL is empty
+      xfs: always push the AIL to the target
+      xfs: make AIL target updates and compares 32bit safe.
+      xfs: fix race condition in AIL push trigger
+
+ fs/xfs/linux-2.6/xfs_sync.c |    1 +
+ fs/xfs/xfs_trans_ail.c      |   47 +++++++++++++++++++++++-------------------
+ 2 files changed, 27 insertions(+), 21 deletions(-)
