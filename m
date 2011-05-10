@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab1EJDqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 23:46:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57470 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab1EJDqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 23:46:13 -0400
-Message-ID: <4DC8B5DE.1090103@cn.fujitsu.com>
-Date: Tue, 10 May 2011 11:49:50 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S932209Ab1EJDyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 23:54:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50495 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab1EJDyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 23:54:08 -0400
+Date: Mon, 9 May 2011 23:53:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.39-rc7
+Message-ID: <20110510035356.GA6954@dumpdata.com>
+References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] blk-throttle: Use task_subsys_state() to determine a
- task's blkio_cgroup
-References: <20110509134915.GC5975@redhat.com>
-In-Reply-To: <20110509134915.GC5975@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-10 11:46:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-10 11:46:28,
-	Serialize complete at 2011-05-10 11:46:28
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DC8B6DB.0160:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> Currentlly we first map the task to cgroup and then cgroup to
-> blkio_cgroup. There is a more direct way to get to blkio_cgroup
-> from task using task_subsys_state(). Use that.
-> 
-> The real reason for the fix is that it also avoids a race in generic
-> cgroup code. During remount/umount rebind_subsystems() is called and
-> it can do following with and rcu protection.
-> 
-> cgrp->subsys[i] = NULL;
-> 
-> That means if somebody got hold of cgroup under rcu and then it tried
-> to do cgroup->subsys[] to get to blkio_cgroup, it would get NULL which
-> is wrong. I was running into this race condition with ltp running on a
-> upstream derived kernel and that lead to crash.
-> 
-> So ideally we should also fix cgroup generic code to wait for rcu
-> grace period before setting pointer to NULL. Li Zefan is not very keen
-> on introducing synchronize_wait() as he thinks it will slow
-> down moun/remount/umount operations.
-> 
-> So for the time being atleast fix the kernel crash by taking a more
-> direct route to blkio_cgroup.
-> 
-> One tester had reported a crash while running LTP on a derived kernel
-> and with this fix crash is no more seen while the test has been
-> running for over 6 days.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+On Mon, May 09, 2011 at 07:49:48PM -0700, Linus Torvalds wrote:
+> So things have been pretty quiet, and unless something major comes up
+> I believe that this will be the last -rc.
 
-Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+Oh no! I was hoping for an extra week!
+
+The patch that I asked to be pulled: (a38647837a411f7df79623128421eef2118b5884)
+"xen/mmu: Add workaround "x86-64, mm: Put early page table high"
+
+does not compleltly workaround the regression that the patch from Yinghai titled 
+'x86-64, mm: Put early page table high" introduced wherein Linux can't boot under Xen.
+
+The failure still encountered: https://lkml.org/lkml/2011/5/5/180, the
+previous git pull request with an outline of the problem https://lkml.org/lkml/2011/5/3/99
+and huge amount of details in http://marc.info/?i=1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com
+
+I was hoping that the rc6 could stretch out so that by the time hpa came back from
+his travels he would have had a chance to look at: https://lkml.org/lkml/2011/5/5/226
+(or git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-for-rc6)
+which has a more precise patch and fixes the regression.
+
+Linus, what is the right way to go about this?
