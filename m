@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1EJPSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:18:07 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34436 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464Ab1EJPSG (ORCPT
+	id S1756580Ab1EJPP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:15:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49008 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756495Ab1EJPP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:18:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Jdy1pss/7XU4AyTEFMONHupvUzDLMy5zMJRDLua6SZ7g4pvGbceHQ/AVW5Yb+W50QJ
-         9xVvG9PDXFcNbSAxxMiPQAO5hU+Y+oyX+N+R+/OMTjQ/L/C/eazvIWIdLXqTPECa1AE0
-         9hbJcRCiOZU1TikY3LfqeNOXJ1F30p2kjWVio=
-MIME-Version: 1.0
-Date: Tue, 10 May 2011 11:18:05 -0400
-Message-ID: <BANLkTik8DBNKrFE_hZi5FtxUY7Hw_BBR2Q@mail.gmail.com>
-Subject: selinux troubleshooting
-From: Mark Leeds <markleeds2@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 May 2011 11:15:28 -0400
+Subject: Re: [PATCH 1/3] perf, core: Introduce attrs to count in either
+ host or guest mode
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+In-Reply-To: <20110510145902.GA30996@amd.com>
+References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
+	 <1305038132-5080-2-git-send-email-joerg.roedel@amd.com>
+	 <1305038746.2914.94.camel@laptop>  <20110510145902.GA30996@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 17:18:29 +0200
+Message-ID: <1305040709.2914.99.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all: I'm a total newbie with the kernel and I've never used this
-list before so excuse me if this is not the correct place to ask this
-question. or if I don't follow the positing directions correctly.
+On Tue, 2011-05-10 at 16:59 +0200, Roedel, Joerg wrote:
+> On Tue, May 10, 2011 at 10:45:46AM -0400, Peter Zijlstra wrote:
+> > On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
+> > > +       /* Can't exclude counting in guest and in host mode */
+> > > +       if (attr.exclude_host && attr.exclude_guest)
+> > > +               return -EINVAL;
+> > 
+> > Why not?
+> 
+> By definition the counter won't count at all. The hardware just ignores
+> the bits if they are both set. My rationale here was that it does not
+> makes sense to setup a counter and exclude guest and host mode.
 
-I am running fedora 14.0 and when I do uname - a, I get
+I would expect it to 'work' but simply return 0. If that isn't what the
+AMD hardware does you need to fix that in the AMD driver.
 
-Linux localhost.local 2.6.35.10-74.fc14.i686 #1 SMP Thu Dec 23
-16:17:40 UTC 2010 i686 i686 i386 GNU/Linux
-:/home/markleeds/rpmbuild#
-
-But today I've been trying to run an R  job ( see www.r-project.org
-for details about R )  in the background and
-it just dies without any error messages. well, it does in the sense
-that the operating system hangs and I need to
-shut down the computer by pulling the plug out and putting it back in.
-There's no other way as far as
-I can tell because the computer just freezes essentially.
-
-Then I was poking around to see if I could find any info I went into
-the selinux troubleshooter.
-
-there is a red dot and two yellow dots below it. each says something.
-
-next to the red dot:  "if you do not think /usr/lib/R/bin/exec/R
-should need to map low
-memory in the kernel"
-
-next to the yellow dot:  "if you want to control the ability to mmap a
-low area of teh address space, as confugured by
-/proc/sys/kernel/mmap_min_addr".
-
-next to the second yellow dot: "if you believe that R should be
-allowed mmap_zero access on the
-unknown mprotext by default".
-
-
-In each case, if I click one of the dots, it gives a suggestion on
-what to do  on the right.
-
-
-#==============================================================================
-
-red dot suggestion: "you may be under attack by a hacker, this is a very
-dangerous access. Contact your security administrator and report this issue"
-
-
-first yellow dot suggestion: You must tell SELinux about this by
-enabling the 'mmap_low_allowed' boolean. setsebool -P mmap_low_allowed
-1
-
-
-second yellow dot suggestion.
-
-You should report this as a bug. You can generate a local policy
-module to allow this access.
-Allow this access for now by executing: # grep R /var/log/audit/a
-udit.log | audit2allow -M mypol
-
-# semodule -i mypol.pp
-
-#==============================================================================
-
-
-thank you for any suggestions on what the best thing to do is
-and I'm sorry if this is not the correct mailing list.
-
-
-                                                        mark
