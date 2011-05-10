@@ -1,641 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab1EJDTp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 23:19:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26310 "EHLO mga02.intel.com"
+	id S1754025Ab1EJDW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 23:22:59 -0400
+Received: from mail.tomasu.net ([64.85.170.232]:51728 "EHLO mail.tomasu.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753440Ab1EJDTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 23:19:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,344,1301900400"; 
-   d="scan'208";a="640447337"
-Date: Tue, 10 May 2011 11:19:39 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 14/17] writeback: make writeback_control.nr_to_write
- straight
-Message-ID: <20110510031939.GE6758@localhost>
-References: <20110506030821.523093711@intel.com>
- <20110506031613.556854231@intel.com>
- <20110509165458.GV4122@quack.suse.cz>
+	id S1752779Ab1EJDW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 23:22:58 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: long delay when using HMDI output on RS780
+Date: Mon, 9 May 2011 21:22:32 -0600
+User-Agent: KMail/1.13.7 (Linux/2.6.38-2-amd64; KDE/4.6.2; x86_64; ; )
+Cc: Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+References: <201105071815.03318.thomas@fjellstrom.ca> <BANLkTi=iV7Mg_4Lx_+Z6c7C2qzMxsf0Aew@mail.gmail.com> <201105091532.48331.thomas@fjellstrom.ca>
+In-Reply-To: <201105091532.48331.thomas@fjellstrom.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509165458.GV4122@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105092122.32284.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 12:54:58AM +0800, Jan Kara wrote:
-> On Fri 06-05-11 11:08:35, Wu Fengguang wrote:
-> > Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
-> > and initialize the struct writeback_control there.
+On May 9, 2011, Thomas Fjellstrom wrote:
+> On May 9, 2011, Alex Deucher wrote:
+> > On Mon, May 9, 2011 at 5:04 PM, Thomas Fjellstrom <thomas@fjellstrom.ca>
+> 
+> wrote:
+> > > On May 9, 2011, Thomas Fjellstrom wrote:
+> > >> On May 9, 2011, Jerome Glisse wrote:
+> > >> > On Mon, May 9, 2011 at 3:50 PM, Thomas Fjellstrom
+> > >> > <thomas@fjellstrom.ca>
+> > >> 
+> > >> wrote:
+> > >> > > On May 7, 2011, Thomas Fjellstrom wrote:
+> > >> > >> I just switched to using HDMI with my media center, and its
+> > >> > >> causing a 30+ second delay in the screen turning on, as well as
+> > >> > >> a 7 second delay in the X startup when it tries to fetch the
+> > >> > >> EDID
+> > >> > >> information. Basically I don't get any picture at all once KMS
+> > >> > >> initializes until after X has been up a few seconds.
+> > >> > >> 
+> > >> > >> The odd thing is the monitor seems to think something is going
+> > >> > >> on, since it doesn't go to sleep or display its "No Signal" OSD,
+> > >> > >> but just after X starts up, it pops up the "Input
+> > >> > >> detected/switched" OSD, and the picture appears.
+> > >> > >> 
+> > >> > >> The bios, grub2 (in both text mode and graphics mode), and the
+> > >> > >> initial linux kernel messages all display fine and immediately.
+> > >> > >> Its only once KMS and radeondrmfb initializes that there's a
+> > >> > >> problem (at least till X starts up).
+> > >> > >> 
+> > >> > >> I've just built with a vanila 2.6.38.4 kernel from the stable git
+> > >> > >> repo, and have played with some EDID settings, trying to disable
+> > >> > >> edid where I could thinking thats what caused the problem. That
+> > >> > >> doesn't seem to be the case though. I also tried playing with the
+> > >> > >> video= kernel option, trying to force disable VGA-1, and set a
+> > >> > >> static mode for HDMI-A-1, but if I try, it seems to force disable
+> > >> > >> HDMI-A-1 instead of force the mode.
+> > >> > >> 
+> > >> > >> With a DVI-D cable instead, the problem goes away.
+> > >> > >> 
+> > >> > >> Attached are the dmesg and xorg.log files for the latest boot
+> > >> > >> with HDMI (no video= parameter, and EDID enabled, most settings
+> > >> > >> at defaults).
+> > >> > >> 
+> > >> > >> What exactly would cause this, and is there a way I can fix it?
+> > >> > > 
+> > >> > > I've been playing around with it more, and got it to not blank the
+> > >> > > screen after KMS init, /once/. So far no luck repeating that
+> > >> > > success.
+> > >> > > 
+> > >> > > I've tried late, and early kms init, and currently have the radeon
+> > >> > > module and firmware compiled into the kernel. Boot times at least
+> > >> > > are fairly decent, about 8-10s till X starts, but about 25-35s
+> > >> > > till anything shows up.
+> > >> > > 
+> > >> > > Some strangeness, I have the kernel set to force the hdmi output
+> > >> > > to on, with a very specific mode, that X tends to like, the vga
+> > >> > > port is forced disabled. X is set to ignore EDID, and also set to
+> > >> > > that specific mode that it tends to auto set itself. Regardless X
+> > >> > > still wants to pause for 7s 2-3 times while processing EDID info.
+> > >> > > 
+> > >> > > I've attached the new dmesg and xorg logs from the latest
+> > >> > > attempts.
+> > >> > > 
+> > >> > > Note, this only happens with KMS, with HDMI. disabling KMS, or
+> > >> > > using DVI makes the problem go away. Even grub's own graphical
+> > >> > > mode works fine, its only once KMS inits that things go bad, and
+> > >> > > its not till after X is up for a few seconds that something
+> > >> > > displays on my screen.
+> > >> > > 
+> > >> > > --
+> > >> > > Thomas Fjellstrom
+> > >> > > thomas@fjellstrom.ca
+> > >> > 
+> > >> > Please boot with drm.debug=4 and attach dmesg it should be more
+> > >> > verbose. You might also want to try booting with radeon.audio=0
+> > >> 
+> > >> Hi, attached both one with just drm.debug=4, and one with that and
+> > >> radeon.audio=0.
+> > >> 
+> > >> Now, I'm guessing its a bug in my monitor claiming it can do HDMI
+> > >> audio? As setting radeon.audio=0 seems to have fixed the blanking
+> > >> problem. And the dmesg logs seem to claim that radeon thinks it can
+> > >> do HDMI audio.
 > > 
-> > struct writeback_control is basically designed to control writeback of a
-> > single file, but we keep abuse it for writing multiple files in
-> > writeback_sb_inodes() and its callers.
+> > Most likely the driver is sending the wrong packets for hdmi audio.
+> > Until that gets fixed up, it's probably best to disable hdmi audio if
+> > it's not working for you.
+> 
+> Ok. I'll do that for now, since I have no need for HDMI audio atm. My
+> receiver is only capable of Dolby Pro Logic input, so eh.
+> 
+> Would be nice to fix the xorg pauses. And whatever is causing the massive
+> amounts of drm log spam (yes, I could disable drm.debug, but that would
+> just hide the issue, as whatever it is, will keep doing whatever it is
+> doing regardless).
+
+Any hints on where to look to fix the stalls when the xorg radeon driver starts 
+up?
+
+> > Alex
 > > 
-> > It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
-> > work->nr_pages starts to make sense, and instead of saving and restoring
-> > pages_skipped in writeback_sb_inodes it can always start with a clean
-> > zero value.
+> > >> It also seems to be ignoring the mode I've requested via the video=
+> > >> param. It at least sees that I want it forced enabled, but claims its
+> > >> 0x0? Or at least it seems its picking the preferred mode.
+> > >> 
+> > >> Still have X blocking for up to 14s though.
+> > >> 
+> > >> Theres also a bunch of repeated log messages from drm now, every
+> > >> second about it seems to spam the following lines: (the last one is
+> > >> repeated a bunch of times, with FB:44 or FB:42)
+> > >> 
+> > >> [   31.330033] [drm:output_poll_execute], [CONNECTOR:13:VGA-1] status
+> > >> updated from 2 to 2
+> > >> [   31.435455] [drm:radeon_atombios_connected_scratch_regs], DFP1
+> > >> connected [   31.435463] [drm:output_poll_execute],
+> > >> [CONNECTOR:15:HDMI-A-1] status updated from 1 to 1
+> > >> [   31.437391] [drm:drm_mode_addfb], [FB:42]
+> > >> 
+> > >> > Cheers,
+> > >> > Jerome
+> > > 
+> > > Ok, a bit more news. My monitor does indeed support audio, at least it
+> > > has volume buttons, so I assume it has speakers, and should support
+> > > HDMI audio (I have never used it though).
+> > > 
+> > > --
+> > > Thomas Fjellstrom
+> > > thomas@fjellstrom.ca
+> > > _______________________________________________
+> > > dri-devel mailing list
+> > > dri-devel@lists.freedesktop.org
+> > > http://lists.freedesktop.org/mailman/listinfo/dri-devel
 > > 
-> > It also makes a neat IO pattern change: large dirty files are now
-> > written in the full 4MB writeback chunk size, rather than whatever
-> > remained quota in wbc->nr_to_write.
-> > 
-> > Proposed-by: Christoph Hellwig <hch@infradead.org>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ...
-> > @@ -543,34 +588,40 @@ static int writeback_sb_inodes(struct su
-> >  			requeue_io(inode, wb);
-> >  			continue;
-> >  		}
-> > -
-> >  		__iget(inode);
-> > +		write_chunk = writeback_chunk_size(work);
-> > +		wbc.nr_to_write = write_chunk;
-> > +		wbc.pages_skipped = 0;
-> > +
-> > +		writeback_single_inode(inode, wb, &wbc);
-> >  
-> > -		pages_skipped = wbc->pages_skipped;
-> > -		writeback_single_inode(inode, wb, wbc);
-> > -		if (wbc->pages_skipped != pages_skipped) {
-> > +		work->nr_pages -= write_chunk - wbc.nr_to_write;
-> > +		wrote += write_chunk - wbc.nr_to_write;
-> > +		if (wbc.pages_skipped) {
-> >  			/*
-> >  			 * writeback is not making progress due to locked
-> >  			 * buffers.  Skip this inode for now.
-> >  			 */
-> >  			redirty_tail(inode, wb);
-> > -		}
-> > +		} else if (!(inode->i_state & I_DIRTY))
-> > +			wrote++;
-> >  		spin_unlock(&inode->i_lock);
-> >  		spin_unlock(&wb->list_lock);
-> >  		iput(inode);
-> >  		cond_resched();
-> >  		spin_lock(&wb->list_lock);
-> > -		if (wbc->nr_to_write <= 0)
-> > -			return 1;
-> > +		if (wrote >= MAX_WRITEBACK_PAGES)
-> > +			break;
->   This definitely deserves a comment (as well as a similar check in
-> __writeback_inodes_wb()). I guess you bail out here so that we perform the
-> background limit check and livelocking of for_kupdate/for_background check
-> often enough.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
-OK, do you like this one?
 
-                /*
-                 * bail out to wb_writeback() often enough to check
-                 * background threshold and other termination conditions.
-                 */
-
-> I'm undecided whether it's good to bail out like this. It's
-> not necessary in some cases (like WB_SYNC_ALL or for_sync writeback) but
-> OTOH moving the necessary checks here does not look ideal either...
-
-Yeah, it's OK either way and it's good to have less overheads in
-normal non-sync operations.
-
-When syncing large files, "wrote" will actually be much larger than
-"MAX_WRITEBACK_PAGES". So it's not big overheads for sync.
- 
-> >  void writeback_inodes_wb(struct bdi_writeback *wb,
-> > -		struct writeback_control *wbc)
-> > +			 struct writeback_control *wbc)
-> >  {
-> > +	struct wb_writeback_work work = {
-> > +		.nr_pages	= wbc->nr_to_write,
-> > +		.sync_mode	= wbc->sync_mode,
-> > +		.range_cyclic	= wbc->range_cyclic,
-> > +	};
-> > +
-> >  	spin_lock(&wb->list_lock);
-> >  	if (list_empty(&wb->b_io))
-> > -		queue_io(wb, wbc->older_than_this);
-> > -	__writeback_inodes_wb(wb, wbc);
-> > +		queue_io(wb, NULL);
-> > +	__writeback_inodes_wb(wb, &work);
-> >  	spin_unlock(&wb->list_lock);
-> > -}
->   Hmm, maybe we should just pass in number of pages (similarly as in
-> writeback_inodes_sb_nr())? It would look like a cleaner interface than
-> passing whole writeback_control and then ignoring parts of it.
-
-Good point!
-
-Thanks,
-Fengguang
----
-Subject: writeback: make writeback_control.nr_to_write straight 
-Date: Wed May 04 19:54:37 CST 2011
-
-Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
-and initialize the struct writeback_control there.
-
-struct writeback_control is basically designed to control writeback of a
-single file, but we keep abuse it for writing multiple files in
-writeback_sb_inodes() and its callers.
-
-It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
-work->nr_pages starts to make sense, and instead of saving and restoring
-pages_skipped in writeback_sb_inodes it can always start with a clean
-zero value.
-
-It also makes a neat IO pattern change: large dirty files are now
-written in the full 4MB writeback chunk size, rather than whatever
-remained quota in wbc->nr_to_write.
-
-Proposed-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/btrfs/extent_io.c             |    2 
- fs/fs-writeback.c                |  189 +++++++++++++++--------------
- include/linux/writeback.h        |    6 
- include/trace/events/writeback.h |    6 
- mm/backing-dev.c                 |    9 -
- mm/page-writeback.c              |   14 --
- 6 files changed, 107 insertions(+), 119 deletions(-)
-
-change set:
-- move writeback_control from wb_writeback() down to writeback_sb_inodes()
-- change return value of writeback_sb_inodes()/__writeback_inodes_wb()
-  to the number of pages and/or inodes written
-- move writeback_control.older_than_this to struct wb_writeback_work
-- remove writeback_control.inodes_cleaned
-- remove wbc_writeback_* trace events for now
-
---- linux-next.orig/fs/fs-writeback.c	2011-05-10 10:50:13.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-10 11:09:38.000000000 +0800
-@@ -30,11 +30,21 @@
- #include "internal.h"
- 
- /*
-+ * The maximum number of pages to writeout in a single bdi flush/kupdate
-+ * operation.  We do this so we don't hold I_SYNC against an inode for
-+ * enormous amounts of time, which would block a userspace task which has
-+ * been forced to throttle against that inode.  Also, the code reevaluates
-+ * the dirty each time it has written this many pages.
-+ */
-+#define MAX_WRITEBACK_PAGES     1024L
-+
-+/*
-  * Passed into wb_writeback(), essentially a subset of writeback_control
-  */
- struct wb_writeback_work {
- 	long nr_pages;
- 	struct super_block *sb;
-+	unsigned long *older_than_this;
- 	enum writeback_sync_modes sync_mode;
- 	unsigned int tagged_sync:1;
- 	unsigned int for_kupdate:1;
-@@ -463,7 +473,6 @@ writeback_single_inode(struct inode *ino
- 			 * No need to add it back to the LRU.
- 			 */
- 			list_del_init(&inode->i_wb_list);
--			wbc->inodes_cleaned++;
- 		}
- 	}
- 	inode_sync_complete(inode);
-@@ -496,6 +505,31 @@ static bool pin_sb_for_writeback(struct 
- 	return false;
- }
- 
-+static long writeback_chunk_size(struct wb_writeback_work *work)
-+{
-+	long pages;
-+
-+	/*
-+	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
-+	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
-+	 * here avoids calling into writeback_inodes_wb() more than once.
-+	 *
-+	 * The intended call sequence for WB_SYNC_ALL writeback is:
-+	 *
-+	 *      wb_writeback()
-+	 *          writeback_sb_inodes()       <== called only once
-+	 *              write_cache_pages()     <== called once for each inode
-+	 *                   (quickly) tag currently dirty pages
-+	 *                   (maybe slowly) sync all tagged pages
-+	 */
-+	if (work->sync_mode == WB_SYNC_ALL || work->tagged_sync)
-+		pages = LONG_MAX;
-+	else
-+		pages = min(MAX_WRITEBACK_PAGES, work->nr_pages);
-+
-+	return pages;
-+}
-+
- /*
-  * Write a portion of b_io inodes which belong to @sb.
-  *
-@@ -503,18 +537,29 @@ static bool pin_sb_for_writeback(struct 
-  * inodes. Otherwise write only ones which go sequentially
-  * in reverse order.
-  *
-- * Return 1, if the caller writeback routine should be
-- * interrupted. Otherwise return 0.
-+ * Return the number of pages and/or inodes cleaned.
-  */
--static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
--		struct writeback_control *wbc, bool only_this_sb)
-+static long writeback_sb_inodes(struct super_block *sb,
-+				struct bdi_writeback *wb,
-+				struct wb_writeback_work *work)
- {
-+	struct writeback_control wbc = {
-+		.sync_mode		= work->sync_mode,
-+		.tagged_sync		= work->tagged_sync,
-+		.for_kupdate		= work->for_kupdate,
-+		.for_background		= work->for_background,
-+		.range_cyclic		= work->range_cyclic,
-+		.range_start		= 0,
-+		.range_end		= LLONG_MAX,
-+	};
-+	long write_chunk;
-+	long wrote = 0;  /* count both pages and inodes */
-+
- 	while (!list_empty(&wb->b_io)) {
--		long pages_skipped;
- 		struct inode *inode = wb_inode(wb->b_io.prev);
- 
- 		if (inode->i_sb != sb) {
--			if (only_this_sb) {
-+			if (work->sb) {
- 				/*
- 				 * We only want to write back data for this
- 				 * superblock, move all inodes not belonging
-@@ -529,7 +574,7 @@ static int writeback_sb_inodes(struct su
- 			 * Bounce back to the caller to unpin this and
- 			 * pin the next superblock.
- 			 */
--			return 0;
-+			break;
- 		}
- 
- 		/*
-@@ -543,34 +588,44 @@ static int writeback_sb_inodes(struct su
- 			requeue_io(inode, wb);
- 			continue;
- 		}
--
- 		__iget(inode);
-+		write_chunk = writeback_chunk_size(work);
-+		wbc.nr_to_write = write_chunk;
-+		wbc.pages_skipped = 0;
-+
-+		writeback_single_inode(inode, wb, &wbc);
- 
--		pages_skipped = wbc->pages_skipped;
--		writeback_single_inode(inode, wb, wbc);
--		if (wbc->pages_skipped != pages_skipped) {
-+		work->nr_pages -= write_chunk - wbc.nr_to_write;
-+		wrote += write_chunk - wbc.nr_to_write;
-+		if (wbc.pages_skipped) {
- 			/*
- 			 * writeback is not making progress due to locked
- 			 * buffers.  Skip this inode for now.
- 			 */
- 			redirty_tail(inode, wb);
--		}
-+		} else if (!(inode->i_state & I_DIRTY))
-+			wrote++;
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(&wb->list_lock);
- 		iput(inode);
- 		cond_resched();
- 		spin_lock(&wb->list_lock);
--		if (wbc->nr_to_write <= 0)
--			return 1;
-+		/*
-+		 * bail out to wb_writeback() often enough to check
-+		 * background threshold and other termination conditions.
-+		 */
-+		if (wrote >= MAX_WRITEBACK_PAGES)
-+			break;
-+		if (work->nr_pages <= 0)
-+			break;
- 	}
--	/* b_io is empty */
--	return 1;
-+	return wrote;
- }
- 
--static void __writeback_inodes_wb(struct bdi_writeback *wb,
--				  struct writeback_control *wbc)
-+static long __writeback_inodes_wb(struct bdi_writeback *wb,
-+				  struct wb_writeback_work *work)
- {
--	int ret = 0;
-+	long wrote = 0;
- 
- 	while (!list_empty(&wb->b_io)) {
- 		struct inode *inode = wb_inode(wb->b_io.prev);
-@@ -580,33 +635,34 @@ static void __writeback_inodes_wb(struct
- 			requeue_io(inode, wb);
- 			continue;
- 		}
--		ret = writeback_sb_inodes(sb, wb, wbc, false);
-+		wrote += writeback_sb_inodes(sb, wb, work);
- 		drop_super(sb);
- 
--		if (ret)
-+		if (wrote >= MAX_WRITEBACK_PAGES)
-+			break;
-+		if (work->nr_pages <= 0)
- 			break;
- 	}
- 	/* Leave any unwritten inodes on b_io */
-+	return wrote;
- }
- 
--void writeback_inodes_wb(struct bdi_writeback *wb,
--		struct writeback_control *wbc)
-+long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages)
- {
-+	struct wb_writeback_work work = {
-+		.nr_pages	= nr_pages,
-+		.sync_mode	= WB_SYNC_NONE,
-+		.range_cyclic	= 1,
-+	};
-+
- 	spin_lock(&wb->list_lock);
- 	if (list_empty(&wb->b_io))
--		queue_io(wb, wbc->older_than_this);
--	__writeback_inodes_wb(wb, wbc);
-+		queue_io(wb, NULL);
-+	__writeback_inodes_wb(wb, &work);
- 	spin_unlock(&wb->list_lock);
--}
- 
--/*
-- * The maximum number of pages to writeout in a single bdi flush/kupdate
-- * operation.  We do this so we don't hold I_SYNC against an inode for
-- * enormous amounts of time, which would block a userspace task which has
-- * been forced to throttle against that inode.  Also, the code reevaluates
-- * the dirty each time it has written this many pages.
-- */
--#define MAX_WRITEBACK_PAGES     1024
-+	return nr_pages - work.nr_pages;
-+}
- 
- static inline bool over_bground_thresh(void)
- {
-@@ -636,42 +692,13 @@ static inline bool over_bground_thresh(v
- static long wb_writeback(struct bdi_writeback *wb,
- 			 struct wb_writeback_work *work)
- {
--	struct writeback_control wbc = {
--		.sync_mode		= work->sync_mode,
--		.tagged_sync		= work->tagged_sync,
--		.older_than_this	= NULL,
--		.for_kupdate		= work->for_kupdate,
--		.for_background		= work->for_background,
--		.range_cyclic		= work->range_cyclic,
--	};
-+	long nr_pages = work->nr_pages;
- 	unsigned long oldest_jif;
--	long wrote = 0;
--	long write_chunk = MAX_WRITEBACK_PAGES;
- 	struct inode *inode;
--
--	if (!wbc.range_cyclic) {
--		wbc.range_start = 0;
--		wbc.range_end = LLONG_MAX;
--	}
--
--	/*
--	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
--	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
--	 * here avoids calling into writeback_inodes_wb() more than once.
--	 *
--	 * The intended call sequence for WB_SYNC_ALL writeback is:
--	 *
--	 *      wb_writeback()
--	 *          writeback_sb_inodes()       <== called only once
--	 *              write_cache_pages()     <== called once for each inode
--	 *                   (quickly) tag currently dirty pages
--	 *                   (maybe slowly) sync all tagged pages
--	 */
--	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_sync)
--		write_chunk = LONG_MAX;
-+	long progress;
- 
- 	oldest_jif = jiffies;
--	wbc.older_than_this = &oldest_jif;
-+	work->older_than_this = &oldest_jif;
- 
- 	for (;;) {
- 		/*
-@@ -700,27 +727,18 @@ static long wb_writeback(struct bdi_writ
- 		if (work->for_kupdate || work->for_background) {
- 			oldest_jif = jiffies -
- 				msecs_to_jiffies(dirty_expire_interval * 10);
--			wbc.older_than_this = &oldest_jif;
-+			work->older_than_this = &oldest_jif;
- 		}
- 
--		wbc.nr_to_write = write_chunk;
--		wbc.pages_skipped = 0;
--		wbc.inodes_cleaned = 0;
--
- retry:
--		trace_wbc_writeback_start(&wbc, wb->bdi);
- 		spin_lock(&wb->list_lock);
- 		if (list_empty(&wb->b_io))
--			queue_io(wb, wbc.older_than_this);
-+			queue_io(wb, work->older_than_this);
- 		if (work->sb)
--			writeback_sb_inodes(work->sb, wb, &wbc, true);
-+			progress = writeback_sb_inodes(work->sb, wb, work);
- 		else
--			__writeback_inodes_wb(wb, &wbc);
-+			progress = __writeback_inodes_wb(wb, work);
- 		spin_unlock(&wb->list_lock);
--		trace_wbc_writeback_written(&wbc, wb->bdi);
--
--		work->nr_pages -= write_chunk - wbc.nr_to_write;
--		wrote += write_chunk - wbc.nr_to_write;
- 
- 		/*
- 		 * Did we write something? Try for more
-@@ -730,9 +748,7 @@ retry:
- 		 * mean the overall work is done. So we keep looping as long
- 		 * as made some progress on cleaning pages or inodes.
- 		 */
--		if (wbc.nr_to_write < write_chunk)
--			continue;
--		if (wbc.inodes_cleaned)
-+		if (progress)
- 			continue;
- 		/*
- 		 * background writeback will start with expired inodes, and
-@@ -741,10 +757,10 @@ retry:
- 		 * lists and cause trouble to the page reclaim.
- 		 */
- 		if (work->for_background &&
--		    wbc.older_than_this &&
-+		    work->older_than_this &&
- 		    list_empty(&wb->b_io) &&
- 		    list_empty(&wb->b_more_io)) {
--			wbc.older_than_this = NULL;
-+			work->older_than_this = NULL;
- 			goto retry;
- 		}
- 		/*
-@@ -760,7 +776,6 @@ retry:
- 		spin_lock(&wb->list_lock);
- 		if (!list_empty(&wb->b_more_io))  {
- 			inode = wb_inode(wb->b_more_io.prev);
--			trace_wbc_writeback_wait(&wbc, wb->bdi);
- 			spin_lock(&inode->i_lock);
- 			inode_wait_for_writeback(inode, wb);
- 			spin_unlock(&inode->i_lock);
-@@ -768,7 +783,7 @@ retry:
- 		spin_unlock(&wb->list_lock);
- 	}
- 
--	return wrote;
-+	return nr_pages - work->nr_pages;
- }
- 
- /*
---- linux-next.orig/include/linux/writeback.h	2011-05-10 10:50:13.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-05-10 11:13:48.000000000 +0800
-@@ -24,12 +24,9 @@ enum writeback_sync_modes {
-  */
- struct writeback_control {
- 	enum writeback_sync_modes sync_mode;
--	unsigned long *older_than_this;	/* If !NULL, only write back inodes
--					   older than this */
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
--	long inodes_cleaned;		/* # of inodes cleaned */
- 
- 	/*
- 	 * For a_ops->writepages(): is start or end are non-zero then this is
-@@ -58,8 +55,7 @@ void writeback_inodes_sb_nr(struct super
- int writeback_inodes_sb_if_idle(struct super_block *);
- int writeback_inodes_sb_nr_if_idle(struct super_block *, unsigned long nr);
- void sync_inodes_sb(struct super_block *);
--void writeback_inodes_wb(struct bdi_writeback *wb,
--		struct writeback_control *wbc);
-+long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages);
- long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
- void wakeup_flusher_threads(long nr_pages);
- 
---- linux-next.orig/mm/backing-dev.c	2011-05-10 10:50:13.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2011-05-10 11:13:25.000000000 +0800
-@@ -262,14 +262,7 @@ int bdi_has_dirty_io(struct backing_dev_
- 
- static void bdi_flush_io(struct backing_dev_info *bdi)
- {
--	struct writeback_control wbc = {
--		.sync_mode		= WB_SYNC_NONE,
--		.older_than_this	= NULL,
--		.range_cyclic		= 1,
--		.nr_to_write		= 1024,
--	};
--
--	writeback_inodes_wb(&bdi->wb, &wbc);
-+	writeback_inodes_wb(&bdi->wb, 1024);
- }
- 
- /*
---- linux-next.orig/mm/page-writeback.c	2011-05-10 10:50:13.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-05-10 11:11:32.000000000 +0800
-@@ -494,13 +494,6 @@ static void balance_dirty_pages(struct a
- 		return;
- 
- 	for (;;) {
--		struct writeback_control wbc = {
--			.sync_mode	= WB_SYNC_NONE,
--			.older_than_this = NULL,
--			.nr_to_write	= write_chunk,
--			.range_cyclic	= 1,
--		};
--
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
- 		nr_writeback = global_page_state(NR_WRITEBACK);
-@@ -562,15 +555,12 @@ static void balance_dirty_pages(struct a
- 		 * threshold otherwise wait until the disk writes catch
- 		 * up.
- 		 */
--		trace_wbc_balance_dirty_start(&wbc, bdi);
- 		if (bdi_nr_reclaimable > bdi_thresh) {
--			writeback_inodes_wb(&bdi->wb, &wbc);
--			pages_written += write_chunk - wbc.nr_to_write;
--			trace_wbc_balance_dirty_written(&wbc, bdi);
-+			pages_written += writeback_inodes_wb(&bdi->wb,
-+							     write_chunk);
- 			if (pages_written >= write_chunk)
- 				break;		/* We've done our duty */
- 		}
--		trace_wbc_balance_dirty_wait(&wbc, bdi);
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		io_schedule_timeout(pause);
- 
---- linux-next.orig/include/trace/events/writeback.h	2011-05-10 10:50:13.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-05-10 10:50:13.000000000 +0800
-@@ -101,7 +101,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__field(int, for_background)
- 		__field(int, for_reclaim)
- 		__field(int, range_cyclic)
--		__field(unsigned long, older_than_this)
- 		__field(long, range_start)
- 		__field(long, range_end)
- 	),
-@@ -115,14 +114,12 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_background	= wbc->for_background;
- 		__entry->for_reclaim	= wbc->for_reclaim;
- 		__entry->range_cyclic	= wbc->range_cyclic;
--		__entry->older_than_this = wbc->older_than_this ?
--						*wbc->older_than_this : 0;
- 		__entry->range_start	= (long)wbc->range_start;
- 		__entry->range_end	= (long)wbc->range_end;
- 	),
- 
- 	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
--		"bgrd=%d reclm=%d cyclic=%d older=0x%lx "
-+		"bgrd=%d reclm=%d cyclic=%d "
- 		"start=0x%lx end=0x%lx",
- 		__entry->name,
- 		__entry->nr_to_write,
-@@ -132,7 +129,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_background,
- 		__entry->for_reclaim,
- 		__entry->range_cyclic,
--		__entry->older_than_this,
- 		__entry->range_start,
- 		__entry->range_end)
- )
---- linux-next.orig/fs/btrfs/extent_io.c	2011-05-10 09:50:03.000000000 +0800
-+++ linux-next/fs/btrfs/extent_io.c	2011-05-10 10:50:13.000000000 +0800
-@@ -2596,7 +2596,6 @@ int extent_write_full_page(struct extent
- 	};
- 	struct writeback_control wbc_writepages = {
- 		.sync_mode	= wbc->sync_mode,
--		.older_than_this = NULL,
- 		.nr_to_write	= 64,
- 		.range_start	= page_offset(page) + PAGE_CACHE_SIZE,
- 		.range_end	= (loff_t)-1,
-@@ -2629,7 +2628,6 @@ int extent_write_locked_range(struct ext
- 	};
- 	struct writeback_control wbc_writepages = {
- 		.sync_mode	= mode,
--		.older_than_this = NULL,
- 		.nr_to_write	= nr_pages * 2,
- 		.range_start	= start,
- 		.range_end	= end + 1,
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
