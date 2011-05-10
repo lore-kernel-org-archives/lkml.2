@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1EJKyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 06:54:25 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38139 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1EJKyY (ORCPT
+	id S1754026Ab1EJK5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 06:57:23 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41213 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab1EJK5V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 06:54:24 -0400
-Message-ID: <0B813DC0439B438BBB2B66A88B1A5F7F@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>, "Greg KH" <gregkh@suse.de>
-Cc: "Greg KH" <greg@kroah.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com> <20110425212056.GA29313@kroah.com> <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com> <20110426124519.GC5977@suse.de> <35F38DB5B5C4408EA80AF0DB8A6FA178@subhasishg> <B85A65D85D7EB246BE421B3FB0FBB593024CBA9959@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024CBA9959@dbde02.ent.ti.com>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-Date: Tue, 10 May 2011 16:24:35 +0530
-Organization: Mistral Solutions
+	Tue, 10 May 2011 06:57:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Reply-To: devos@fedoraproject.org
+In-Reply-To: <BANLkTinEJZ=fvJmWRkQ7kKyxbFRaJnum7g@mail.gmail.com>
+References: <1305019249-9898-1-git-send-email-ndevos@redhat.com>
+	<BANLkTinEJZ=fvJmWRkQ7kKyxbFRaJnum7g@mail.gmail.com>
+Date: Tue, 10 May 2011 11:57:18 +0100
+X-Google-Sender-Auth: w26OzdzgfAgchy0QVpibZT4J8IA
+Message-ID: <BANLkTim0Wao+dX-+GpKxdsHtg96DF1bHyw@mail.gmail.com>
+Subject: Re: [PATCH] omap2/omapfb: make DBG() more resistant in if-else constructions
+From: Niels de Vos <ndevos@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Premi, Sanjeev" <premi@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> 
->> >>The driver should probably just get sram
->> >> space through platform data so that it doesn't depend on the
->> >> platform specific sram allocation function.
->> 
->> Are you suggesting that I go back to that implementation.
-> 
-> No, the platform code should use the SRAM allocator and
-> pass on the allocated memory to the driver.
-> 
+On Tue, May 10, 2011 at 10:42 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, May 10, 2011 at 11:20, Niels de Vos <ndevos@redhat.com> wrote:
+>> When DBG() is used in a simple if-else, the resulting code path
+>> currently depends on the definition of DBG(). Inserting the statement in
+>> a "do { ... } while (0)" prevents this possible misuse.
+>>
+>> Signed-off-by: Niels de Vos <ndevos@redhat.com>
+>
+>> --- a/drivers/video/omap2/omapfb/omapfb.h
+>> +++ b/drivers/video/omap2/omapfb/omapfb.h
+>> @@ -34,8 +34,10 @@
+>>  #ifdef DEBUG
+>>  extern unsigned int omapfb_debug;
+>>  #define DBG(format, ...) \
+>> -       if (omapfb_debug) \
+>> -               printk(KERN_DEBUG "OMAPFB: " format, ## __VA_ARGS__)
+>> +       do { \
+>> +               if (omapfb_debug) \
+>> +                       printk(KERN_DEBUG "OMAPFB: " format, ## __VA_ARGS__); \
+>> +       while (0)
+>
+> Where's the closing '}'?
 
-Say, if the driver is loaded as a module.
-If I allocate the sram in the platform code, how to I
-free it when the driver is unloaded. 
+Good catch! That's in a "fixup!" that I forgot to squash :-/
+I'll post an update version in a bit.
+
+
+>>  #else
+>>  #define DBG(format, ...)
+>
+> BTW, no printf()-style format checking here.
+>
+>>  #endif
+>
+> What about using the standard pr_debug()/dev_dbg() instead?
+> With dynamic debug, it can be enabled at run time.
+> As a bonus, you get printf()-style format checking if debugging is disabled.
+
+I think removing DBG() and the omapfb_debug module-parameter is surely
+a good thing. Unfortunately DBG() is used quite a bit in the code and
+replacing them 'll take some more time. I don't know yet when I find
+some time to do and test that.
+
+Thanks for the pointers,
+Niels
+
+
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
