@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab1EJMZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 08:25:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18281 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755980Ab1EJMZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 08:25:42 -0400
-Date: Tue, 10 May 2011 14:24:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-Subject: Re: ptrace pull request for linux-next
-Message-ID: <20110510122431.GA12461@redhat.com>
-References: <20110329090248.GJ6736@htj.dyndns.org> <20110330101204.7a5459c3.sfr@canb.auug.org.au>
+	id S1756369Ab1EJM3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:29:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62976 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756199Ab1EJM3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 08:29:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=m/98ZiTRYo783qp0I1vI7m+gQGqRuDW+KMTIW6oCwx58mXkyxqJAfXhY20HdkYhj1m
+         Fy+WddLiYKwIztb5MN78croTH20LkOnmp7qrOHr/BbeRRB2hbv6NLpnOwaTOi/CCoU1S
+         FyE+Y8yidQi+DUpl1kK0B8NLvH7VYIT99xC1I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110330101204.7a5459c3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1305016329.2914.22.camel@laptop>
+References: <BANLkTi=qPWxRAa6+dT3ohEP6Z=0v+e4EXA@mail.gmail.com>
+	<1305016329.2914.22.camel@laptop>
+Date: Tue, 10 May 2011 20:29:35 +0800
+Message-ID: <BANLkTik0NBxzQY2Jsx1M4pDUGLQJ0a2AuA@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix constructing the span cpu mask of sched domain
+From: Hillf Danton <dhillf@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On 03/30, Stephen Rothwell wrote:
+On Tue, May 10, 2011 at 4:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
 >
-> Hi Tejun,
+> If you're interested in this area of the scheduler, you might want to
+> have a poke at:
 >
-> On Tue, 29 Mar 2011 11:02:48 +0200 Tejun Heo <tj@kernel.org> wrote:
-> >
-> > Can you please pull from the following tree into linux-next?
-> >
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git ptrace
-> >
-> > The tree hosts ongoing ptrace/group stop improvements.  Oleg is in the
-> > process of getting a korg account and setting up a dedicated tree and
-> > it has been agreed that I maintain a temporary tree to be tested in
-> > linux-next until things are properly setup.  The branch is stable and
-> > will be pulled verbatim into Oleg's tree once it's up and running.
+> http://marc.info/?l=linux-kernel&m=130218515520540
 >
-> This will be added from today (I was waiting for -rc1).  I have put you
-> and Oleg as contacts for this tree.
+> That tries to rewrite the CONFIG_NUMA support for the sched_domain stuff
+> to create domains based on the node_distance() to better reflect the
+> actual machine topology.
+>
+Hi Peter
 
-Could you please switch from Tejun's tree to
+Thank you very much for sharing the info.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
-
-?
-
-Thanks,
-
-Oleg.
-
+Hillf
