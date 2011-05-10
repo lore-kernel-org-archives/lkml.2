@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab1EJRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 13:03:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43305 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab1EJRDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 13:03:14 -0400
-Date: Tue, 10 May 2011 19:03:07 +0200
-From: Jan Kara <jack@suse.cz>
+	id S1752927Ab1EJRDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 13:03:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40446 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab1EJRDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 13:03:49 -0400
+Date: Tue, 10 May 2011 13:03:39 -0400
+From: Christoph Hellwig <hch@infradead.org>
 To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
         "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
@@ -22,44 +23,32 @@ Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
         linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
 Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
  writeback for various fses
-Message-ID: <20110510170307.GO4402@quack.suse.cz>
+Message-ID: <20110510170339.GA27538@infradead.org>
 References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
  <87tyd31fkc.fsf@devron.myhome.or.jp>
  <20110510133603.GA5823@infradead.org>
  <874o524q9h.fsf@devron.myhome.or.jp>
  <20110510144939.GI4402@quack.suse.cz>
  <87aaeur31x.fsf@devron.myhome.or.jp>
- <20110510161836.GL4402@quack.suse.cz>
- <87r586plhz.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87r586plhz.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87aaeur31x.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-05-11 01:29:28, OGAWA Hirofumi wrote:
-> Jan Kara <jack@suse.cz> writes:
+On Wed, May 11, 2011 at 12:24:58AM +0900, OGAWA Hirofumi wrote:
+> > under writeback and when it's freed no writeback is started.
 > 
-> > On Wed 11-05-11 00:24:58, OGAWA Hirofumi wrote:
-> >> Jan Kara <jack@suse.cz> writes:
-> >> 
-> >> >> Isn't it reallocated blocks too, and metadata too?
-> >> >   Reallocated blocks - not really. For a block to be freed it cannot be
-> >> > under writeback and when it's freed no writeback is started.
-> >> 
-> >> Sure for data -> data reallocated case. metadata -> data/metadata is
-> >> still there.
-> >   Unless you properly use bforget() (which you should I think). But I have
-> > not really checked this in detail for a while.
-> 
-> bforget() doesn't wait IO, right?
-  Right, my fault. Sorry. So you were right, reallocated blocks will be hit
-as well.
+> Sure for data -> data reallocated case. metadata -> data/metadata is
+> still there.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+That's usually handled differently.  For XFS take a look at the
+xfs_alloc_busy_* function.  For 2.6.40 they've been mostly rewritten
+to rarely wait for the reuse but instead avoid busy blocks.  But that's
+a real data integrity issue even without stable pages for I/O.
+
