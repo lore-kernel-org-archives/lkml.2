@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab1EJEo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 00:44:59 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45616 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750870Ab1EJEo6 (ORCPT
+	id S1751982Ab1EJEvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 00:51:16 -0400
+Received: from nm5.bullet.mail.ne1.yahoo.com ([98.138.90.68]:39333 "HELO
+	nm5.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750851Ab1EJEvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 00:44:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AosEAG3CyE15LBzagWdsb2JhbACmAhUBARYmJcVODoYABJ5d
-Date: Tue, 10 May 2011 14:44:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Michael Rubin <mrubin@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: Fix powerTOP regression with 2.6.39-rc5
-Message-ID: <20110510044438.GB19446@dastard>
-References: <4DC45537.6070609@linux.intel.com>
- <1304713252.25414.2532.camel@gandalf.stny.rr.com>
- <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
- <20110507065803.GA23414@elte.hu>
- <1304765110.25414.2564.camel@gandalf.stny.rr.com>
- <20110507144402.GC2859@elte.hu>
- <1304788829.11129.57.camel@frodo>
- <20110507190033.GA11465@elte.hu>
- <1304996847.2969.151.camel@frodo>
+	Tue, 10 May 2011 00:51:15 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 222055.67297.bm@omp1059.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=olan6yz5WNPpagSvj/LrMSTagbnw5OqgSXrfwB8CLfyDvV6tcN+oxXvekOjWZT0tOKqy0pXSsNwYl+sw1TaVRUvIE44ziBLiTcVp6pQufzbGdaiGU2UDq+K5ID6epUNKXgfPAyifnCUamxZYQlragjx4iQ5rxRpe9UgBGgl1JAo=;
+Message-ID: <29398.62714.qm@web121509.mail.ne1.yahoo.com>
+X-YMail-OSG: NqSIUSEVM1kMjjKuvSaDK79DRuqfLGLKSXSlSiIkF.1Brnw
+ 1o13jXF5WmRjbXM00sPZDYxRHtCxagceCJe74CUzlq1YdBkn5NIpn8AvuIsA
+ tWYuTzjjmBzfCS92X1E4T0mrrbjsloMRLfpeWCxGjCLbh.dmf92W3uAoshna
+ wjxzhbUfri6GciY3Ew0PlF1lTjOupjgmdzYqv7VqruV_Ol8_63rJx3Gd3gTF
+ G1fCNQFqYEsjCzwZU1Ow4oAE7ov01_EtnQtmsuO.j4cP4OgZKX2hSSRqQ0wt
+ uQxkWH13WE9rb4J0VjVTBofnc0QeEMNlQkNWxLdiT5LH36e6.qCjntcu9lCh
+ oL265s49GCKJqRssv9TVYbpxycKdSeCAO5sg63kY4LF02Yi_WEXk5jAE-
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.110.299900
+Date: Mon, 9 May 2011 21:51:13 -0700 (PDT)
+From: Serge Myronyuk <sermyro@yahoo.com>
+Subject: r8712u driver
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304996847.2969.151.camel@frodo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 11:07:27PM -0400, Steven Rostedt wrote:
-> >  Nor do you really seem to see the problem that changing tracepoints 
-> > brings with itself.
-> 
-> I am not for changing tracepoints on a whim. But I would like
-> tracepoints to change as the kernel design changes. The reason
-> tracepoints have currently been stable is that kernel design changes do
-> not happen often. But they do happen, and I foresee that in the future,
-> the kernel will have a large number of "legacy tracepoints", and we will
-> be stuck maintaining them forever.
-> 
-> What happens if someone designs a tool that analyzes the XFS
-> filesystem's 200+ tracepoints? Will all those tracepoints now become
-> ABI?
+Dear sirs,
 
-That's crazy talk.
+I upgraded my ubuntu from 10.10 into 11.04 version.
+And after that I have issue with wireless connection:
+10 minutes network connection is working and 10 minutes
+network connection is down. And again 10 min - up, 10 min down.
 
-XFS tracepoints are _not ever_ guaranteed to be consistent from one
-kernel to another - they are highly dependent on the implementation
-of the code, and as such will change *without warning*. This has
-been the case for the XFS event subsystem since back in the days of
-Irix (yes, that's where most of the events were originally
-implemented). The fact that they are now exported via TRACE_EVENT()
-(so no kernel debugger is needed) does not change the fact the
-information is really for developer use only and as such are
-volatile....
+I am using r8712u driver.
 
-So, if someone wants to write an application that parses the XFS
-tracepoints directly, then they have to live with the fact that
-tracepoints will come and go and change size and shape all the
-time.
+Could you, please, help me and/or recommend good working driver?
 
-Cheers,
+Thank you very much!
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Best regards,
+Serge Myronyuk
