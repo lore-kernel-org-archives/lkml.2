@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab1EJL0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 07:26:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35012 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480Ab1EJL0m (ORCPT
+	id S1755073Ab1EJL1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 07:27:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39893 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752764Ab1EJL1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 07:26:42 -0400
-Message-ID: <4DC92089.40305@ru.mvista.com>
-Date: Tue, 10 May 2011 15:24:57 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 10 May 2011 07:27:30 -0400
+Date: Tue, 10 May 2011 13:27:35 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Yong Shen <yong.shen@linaro.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH] Revert "regulator: Move VCOINCELL to be the last element
+ of mc13892_regulators array"
+Message-ID: <20110510112734.GA7587@opensource.wolfsonmicro.com>
+References: <1305025836.2569.2.camel@phoenix>
 MIME-Version: 1.0
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 7/7] usb: Adding SuperSpeed support to dummy_hcd
-References: <1304853414-10234-1-git-send-email-tlinder@codeaurora.org> <1304853414-10234-8-git-send-email-tlinder@codeaurora.org> <20110509174910.GA7025@linutronix.de>
-In-Reply-To: <20110509174910.GA7025@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305025836.2569.2.camel@phoenix>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, May 10, 2011 at 07:10:36PM +0800, Axel Lin wrote:
+> I check this patch again and found this actually is not a bug
+> because MC13xxx_DEFINE explictly defines the order of each entry in the array.
+> 
+> Thus revert the patch.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-On 09-05-2011 21:49, Sebastian Andrzej Siewior wrote:
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
->> +
->> +	retval = usb_add_hcd(hs_hcd, 0, IRQF_DISABLED | IRQF_SHARED);
-
-> Why IRQF_DISABLED | IRQF_SHARED? you don't interrupts at all.
-
-    Moreover, IRQF_DISABLED is a nop now, see <linux/interrupt.h>.
-
-WBR, Sergei
+but this seems like something error prone that we probably want to
+consider fixing anyway?
