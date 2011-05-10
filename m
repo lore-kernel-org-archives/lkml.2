@@ -1,337 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab1EJEmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 00:42:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59746 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab1EJEmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 00:42:49 -0400
-Date: Tue, 10 May 2011 14:42:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for May 10
-Message-Id: <20110510144242.17d27921.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__10_May_2011_14_42_42_+1000_C=WBqLlSmjpRt.Jo"
+	id S1751867Ab1EJEo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 00:44:59 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45616 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870Ab1EJEo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 00:44:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AosEAG3CyE15LBzagWdsb2JhbACmAhUBARYmJcVODoYABJ5d
+Date: Tue, 10 May 2011 14:44:38 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Michael Rubin <mrubin@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+Message-ID: <20110510044438.GB19446@dastard>
+References: <4DC45537.6070609@linux.intel.com>
+ <1304713252.25414.2532.camel@gandalf.stny.rr.com>
+ <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+ <20110507065803.GA23414@elte.hu>
+ <1304765110.25414.2564.camel@gandalf.stny.rr.com>
+ <20110507144402.GC2859@elte.hu>
+ <1304788829.11129.57.camel@frodo>
+ <20110507190033.GA11465@elte.hu>
+ <1304996847.2969.151.camel@frodo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304996847.2969.151.camel@frodo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_May_2011_14_42_42_+1000_C=WBqLlSmjpRt.Jo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 09, 2011 at 11:07:27PM -0400, Steven Rostedt wrote:
+> >  Nor do you really seem to see the problem that changing tracepoints 
+> > brings with itself.
+> 
+> I am not for changing tracepoints on a whim. But I would like
+> tracepoints to change as the kernel design changes. The reason
+> tracepoints have currently been stable is that kernel design changes do
+> not happen often. But they do happen, and I foresee that in the future,
+> the kernel will have a large number of "legacy tracepoints", and we will
+> be stuck maintaining them forever.
+> 
+> What happens if someone designs a tool that analyzes the XFS
+> filesystem's 200+ tracepoints? Will all those tracepoints now become
+> ABI?
 
-Hi all,
+That's crazy talk.
 
-Changes since 20110509:
+XFS tracepoints are _not ever_ guaranteed to be consistent from one
+kernel to another - they are highly dependent on the implementation
+of the code, and as such will change *without warning*. This has
+been the case for the XFS event subsystem since back in the days of
+Irix (yes, that's where most of the events were originally
+implemented). The fact that they are now exported via TRACE_EVENT()
+(so no kernel debugger is needed) does not change the fact the
+information is really for developer use only and as such are
+volatile....
 
-Dropped tree: xen
+So, if someone wants to write an application that parses the XFS
+tracepoints directly, then they have to live with the fact that
+tracepoints will come and go and change size and shape all the
+time.
 
-The net tree gained a conflict against the net-current tree.
-
-The voltage tree gained a build failure so I used the version from
-next-20110509.
-
-The driver-core tree still has its build failure for which I reverted a
-commit.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 188 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-CONFLICT (content): Merge conflict in include/linux/pci_ids.h
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/tosa.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-designware-cor=
-e.c
-CONFLICT (delete/modify): drivers/i2c/busses/i2c-intel-mid.c deleted in bjd=
-ooks-i2c/next-i2c and modified in HEAD. Version HEAD of drivers/i2c/busses/=
-i2c-intel-mid.c left in tree.
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-pxa.c
-$ git rm -f drivers/i2c/busses/i2c-intel-mid.c
-Applying: i2c-designware: mdelay use needs linux/delay.h inclusion
-Applying: i2c: designware-pcidrv depends on PCI
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/benet/be_main.c
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging cpufreq-move/move-drivers
-CONFLICT (content): Merge conflict in drivers/cpufreq/cpufreq_stats.c
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-CONFLICT (content): Merge conflict in mm/slub.c
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.c
-CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.h
-Merging voltage/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/Kconfig
-CONFLICT (content): Merge conflict in drivers/mfd/Makefile
-$ git reset --hard HEAD^
-Merging refs/next/20110509/voltage
-Merging security-testing/next
-Merging selinux/master
-CONFLICT (content): Merge conflict in lib/flex_array.c
-CONFLICT (content): Merge conflict in security/selinux/avc.c
-CONFLICT (content): Merge conflict in security/selinux/hooks.c
-CONFLICT (content): Merge conflict in security/smack/smack_lsm.c
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-CONFLICT (content): Merge conflict in arch/x86/Kconfig
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/percpu.h
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-CONFLICT (content): Merge conflict in drivers/platform/x86/Kconfig
-CONFLICT (content): Merge conflict in drivers/platform/x86/Makefile
-CONFLICT (content): Merge conflict in drivers/platform/x86/eeepc-laptop.c
-CONFLICT (content): Merge conflict in drivers/platform/x86/sony-laptop.c
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-[master 2ceb9a5] Revert "reboot: disable usermodehelper to prevent fs acces=
-s"
-Merging tty/tty-next
-CONFLICT (content): Merge conflict in drivers/bluetooth/hci_ldisc.c
-CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
-CONFLICT (content): Merge conflict in drivers/usb/host/isp1760-hcd.c
-Merging staging/staging-next
-CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_pci.c dele=
-ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
-taging/rt2860/common/cmm_data_pci.c left in tree.
-CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_usb.c dele=
-ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
-taging/rt2860/common/cmm_data_usb.c left in tree.
-$ git rm -f drivers/staging/rt2860/common/cmm_data_pci.c drivers/staging/rt=
-2860/common/cmm_data_usb.c
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Tue__10_May_2011_14_42_42_+1000_C=WBqLlSmjpRt.Jo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNyMJCAAoJEDMEi1NhKgbsMy0H/3B7WwgMq5U1SbYyn13kUOIC
-Ne0R7UgPNCqggp6iMvutjaq/8ehkJEsGg91T7ftt6nRbSUvn89vyLLXa4xcod24X
-YmJb45Kll6eWWQEZCXdKlFPjREMHGxO6ZU6hAcQ1CI7JyU9WTEXojEai+ST8cZy0
-YEPwVRnohb6qXr5thSGTEAaQrr3vSwkMAa379a8jI6dLPKLC9UIu0hJcM+iq1GWs
-qIzTJwEAcWC+Yoht+vO2t52M2Qop51KJs4uYoVRfvhPyV1w4X3uy8Hzc4JWSuPm4
-xy0ni8CwSvvWiLo2ESj28NWQnmxinbKPo7Ytm2JEZ8WGVrGDNI/dUTkBk48mDQU=
-=M1J+
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_May_2011_14_42_42_+1000_C=WBqLlSmjpRt.Jo--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
