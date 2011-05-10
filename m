@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab1EJQES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 12:04:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40198 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860Ab1EJQEQ (ORCPT
+	id S932942Ab1EJQGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 12:06:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46812 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932457Ab1EJQGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 12:04:16 -0400
-Subject: Re: [PATCH 1/3] perf, core: Introduce attrs to count in either
- host or guest mode
+	Tue, 10 May 2011 12:06:47 -0400
+Subject: Re: [PATCH 3/3] perf, tools: Add support for guest/host-only
+ profiling
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
 Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-In-Reply-To: <20110510153855.GE30996@amd.com>
+In-Reply-To: <20110510154652.GF30996@amd.com>
 References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
-	 <1305038132-5080-2-git-send-email-joerg.roedel@amd.com>
-	 <1305038746.2914.94.camel@laptop> <20110510145902.GA30996@amd.com>
-	 <1305040709.2914.99.camel@laptop>  <20110510153855.GE30996@amd.com>
+	 <1305038132-5080-4-git-send-email-joerg.roedel@amd.com>
+	 <1305039008.2914.98.camel@laptop> <20110510150821.GC30996@amd.com>
+	 <1305041114.2914.105.camel@laptop>  <20110510154652.GF30996@amd.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 18:07:18 +0200
-Message-ID: <1305043638.2914.113.camel@laptop>
+Date: Tue, 10 May 2011 18:09:46 +0200
+Message-ID: <1305043786.2914.115.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -30,37 +30,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-10 at 17:38 +0200, Roedel, Joerg wrote:
-> On Tue, May 10, 2011 at 11:18:29AM -0400, Peter Zijlstra wrote:
-> > On Tue, 2011-05-10 at 16:59 +0200, Roedel, Joerg wrote:
-> > > On Tue, May 10, 2011 at 10:45:46AM -0400, Peter Zijlstra wrote:
-> > > > On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
-> > > > > +       /* Can't exclude counting in guest and in host mode */
-> > > > > +       if (attr.exclude_host && attr.exclude_guest)
-> > > > > +               return -EINVAL;
-> > > > 
-> > > > Why not?
-> > > 
-> > > By definition the counter won't count at all. The hardware just ignores
-> > > the bits if they are both set. My rationale here was that it does not
-> > > makes sense to setup a counter and exclude guest and host mode.
-> > 
-> > I would expect it to 'work' but simply return 0. If that isn't what the
-> > AMD hardware does you need to fix that in the AMD driver.
+On Tue, 2011-05-10 at 17:46 +0200, Roedel, Joerg wrote:
 > 
-> By 'work' you mean that userspace can set it up but it doesn't count at
-> all in this situation? 
+> I intended to re-use the exlude_hv bit originally, but then I looked
+> into how this bit is used. On PPC it looks like this bit is set when
+> Linux itself runs as a guest to exclude the hypervisor code being
+> profiled. The meaning here is different (beacause Linux itself is the
+> hypervisor) and I wanted to avoid different semantics for this bit
+> across architectures. So I introduces seperate bits.
+> The exclude_hv bit can be used when we have some kind of perf-ctr
+> support for KVM guests. 
 
-Right.
+Ah, I didn't mean it like that, yes HV is strictly something different
+(and you understood its purpose well, its when the 'host' is a guest
+itself). What I was wondering about is if we want HV to be included in
+the Guest/Host exclusion mask or not.
 
-> This would certainly be consistent behavior but I
-> can't imagine any use-case for it so that this code assumes that such a
-> situation is most likely a bug.
-> I can certainly change that if wanted, but I think its better to inform
-> userspace if we get weird values?
-
-The eternal how much rope to give and what knots to teach argument I
-guess. As it is, I think we allow people to exclude both user- and
-kernel-space, giving a similar situation, so allowing to exclude both
-host and guest is consistent.
+Then again, I guess that'll change behaviour in non-obvious ways, so
+better not do that.
 
