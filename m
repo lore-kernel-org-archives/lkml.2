@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab1EJBFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 21:05:32 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55229 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab1EJBFa (ORCPT
+	id S1756006Ab1EJBHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 21:07:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37378 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab1EJBHJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 21:05:30 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this time)
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304989523_5294P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 09 May 2011 21:05:23 -0400
-Message-ID: <6954.1304989523@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.4DC88F56.001C,ss=1,fgs=0,
-	ip=71.62.120.129,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 9 May 2011 21:07:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=dB6OMbpDwy1uDpKA9EA5nXaRw0REqUUksqrE7iedmGIiWDELOiP/6R7y2Msp1Jc8x6
+         LlNlC3rlDyH1uQFKjlxH1v2WNpiUs+UHQ0eIqzF6Z0J+MWJMk+ohLCuv3nBS0GFsOthq
+         HQam7bQDDvIcBwSX71DDGuzJoQhIct8cqIuzM=
+MIME-Version: 1.0
+In-Reply-To: <m1ei48zhyz.fsf@fess.ebiederm.org>
+References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com> <m1ei48zhyz.fsf@fess.ebiederm.org>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Tue, 10 May 2011 03:06:15 +0200
+Message-ID: <BANLkTik2Y+Yy4kaa2cNUEvTMygXH6btWUg@mail.gmail.com>
+Subject: Re: [v2 000/115] faster tree-based sysctl implementation
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304989523_5294P
-Content-Type: text/plain; charset=us-ascii
+On Mon, May 9, 2011 at 5:11 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> With respect to review and merging.  The priorities should be:
+> 1) Figure out what the users really need to do, before we change
+>   everything so we only need one sweeping pass through the users
+>   that hopefully simplifies them.
 
-Seen during boot this afternoon:
 
-[   43.309549] 
-[   43.309550] ===================================================
-[   43.309553] [ INFO: suspicious rcu_dereference_check() usage. ]
-[   43.309555] ---------------------------------------------------
-[   43.309558] include/linux/inetdevice.h:226 invoked rcu_dereference_check() without protection!
-[   43.309560] 
-[   43.309561] other info that might help us debug this:
-[   43.309561] 
-[   43.309563] 
-[   43.309564] rcu_scheduler_active = 1, debug_locks = 1
-[   43.309567] 2 locks held by ip/1193:
-[   43.309568]  #0:  (nlk->cb_mutex){+.+...}, at: [<ffffffff81426c1d>] netlink_dump+0x45/0x1d0
-[   43.309579]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8141b9b9>] rtnl_dump_ifinfo+0x0/0x156
-[   43.309587] 
-[   43.309587] stack backtrace:
-[   43.309590] Pid: 1193, comm: ip Not tainted 2.6.39-rc6-mmotm0506 #1
-[   43.309592] Call Trace:
-[   43.309599]  [<ffffffff81066b6e>] lockdep_rcu_dereference+0x9a/0xa2
-[   43.309604]  [<ffffffff81468d41>] __in_dev_get_rtnl+0x3c/0x47
-[   43.309607]  [<ffffffff81468ef0>] inet_fill_link_af+0x12/0x5b
-[   43.309611]  [<ffffffff8141b8fc>] rtnl_fill_ifinfo+0x665/0x710
-[   43.309616]  [<ffffffff8141ba76>] rtnl_dump_ifinfo+0xbd/0x156
-[   43.309620]  [<ffffffff81426c37>] netlink_dump+0x5f/0x1d0
-[   43.309624]  [<ffffffff81404e3e>] ? consume_skb+0x8a/0x8f
-[   43.309628]  [<ffffffff81426fc8>] netlink_recvmsg+0x1dd/0x31d
-[   43.309632]  [<ffffffff813ff21f>] ? rcu_read_unlock+0x21/0x23
-[   43.309636]  [<ffffffff813fab57>] sock_recvmsg+0xed/0x112
-[   43.309641]  [<ffffffff810d1ebf>] ? might_fault+0x4e/0x9e
-[   43.309645]  [<ffffffff81068816>] ? __lock_release+0x93/0x9c
-[   43.309649]  [<ffffffff810d1ebf>] ? might_fault+0x4e/0x9e
-[   43.309652]  [<ffffffff810d1f08>] ? might_fault+0x97/0x9e
-[   43.309656]  [<ffffffff814065f8>] ? copy_from_user+0x3c/0x44
-[   43.309660]  [<ffffffff813fc047>] __sys_recvmsg+0x16c/0x224
-[   43.309665]  [<ffffffff81059240>] ? up_read+0x23/0x27
-[   43.309669]  [<ffffffff81065165>] ? arch_local_irq_save+0x9/0xc
-[   43.309673]  [<ffffffff810f736b>] ? fcheck_files+0xb4/0xeb
-[   43.309676]  [<ffffffff810f79f3>] ? fget_light+0x35/0x96
-[   43.309680]  [<ffffffff813fdded>] sys_recvmsg+0x3d/0x5b
-[   43.309686]  [<ffffffff815705bb>] system_call_fastpath+0x16/0x1b
-[   44.437679] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[   44.488363] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[   44.494680] ADDRCONF(NETDEV_UP): eth0: link is not ready
+The users of the API should not rely on the .child field of 'struct
+ctl_table' because we don't use that to encode the tree structure any
+more.
+That's absolutely the only thing that's changed in the API.
+
+Most of the sysctl users in the tree don't need any change and will
+work with the new sysctl just fine.
+
+For the few that do, the first path of the series (the patches with
+"no-child" in the name) get's rid of the .child field by:
+a) replacing register_sysctl_table with register_sysctl_paths (very
+straight forward change and the new code is cleaner)
+b) registering files in multiple directories separately
 
 
 
---==_Exmh_1304989523_5294P
-Content-Type: application/pgp-signature
+That part of the patch series does not disturb the current
+functionality and does not depend of the later patches; it uses the
+current sysctl API to achieve the same goal.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFNyI9TcC3lWbTT17ARAiazAKCwBtiY3kI8n2VHTBfIyq8yMujczwCgqaXO
-qIO0BoK0g8BXHzKM0Kk6cxg=
-=IWq5
------END PGP SIGNATURE-----
 
---==_Exmh_1304989523_5294P--
+> 2) Ensure you have a version of the new interfaces ready at the
+>   start of the patchset, so the sweeping changes can be made
+>   incrementally.
+>
+> 3) Clean up the users.
+>
+> 4) Make simplifications because you don't have any old users left.
 
+
+Hmm. I'm not sure if I understand you correctly.
+
+You want this so that the cleanup patches get in through the affected
+subsystems, and not in a big series that would possibly create merge
+problems with those trees?
+
+This wouldn't be too hard to do and wouldn't uglify the new interface
+too much, but I have limited time available to do this in the near
+future (exams and school projects). I'll see how I can squeeze this
+in.
+
+-- 
+ .
+..: Lucian
