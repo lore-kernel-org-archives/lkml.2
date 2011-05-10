@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab1EJT5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 15:57:43 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39783 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab1EJT5l (ORCPT
+	id S1752505Ab1EJT56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 15:57:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36965 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751450Ab1EJT54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 15:57:41 -0400
-Subject: Re: linux-next: build failure after merge of the voltage tree
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <6B0D58A8-B278-49D6-835F-C38E7517FCD5@slimlogic.co.uk>
-References: <20110510124434.b30a7631.sfr@canb.auug.org.au>
-	 <1305016712.3206.2.camel@odin>
-	 <6B0D58A8-B278-49D6-835F-C38E7517FCD5@slimlogic.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 20:57:37 +0100
-Message-ID: <1305057457.3206.45.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 May 2011 15:57:56 -0400
+X-Sasl-enc: 7t3mlemxFzmYlepylWDqCoN8bEz7luhiABrzeYES5gSY 1305057475
+Date: Tue, 10 May 2011 16:57:53 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Andrew Lutomirski <luto@mit.edu>, Anton Vorontsov <cbou@mail.ru>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
+Message-ID: <20110510195753.GA5850@khazad-dum.debian.net>
+References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+ <20110509144546.GB13275@khazad-dum.debian.net>
+ <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
+ <20110509152941.GD13275@khazad-dum.debian.net>
+ <20110510184302.GA15631@localhost.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510184302.GA15631@localhost.ucw.cz>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-10 at 12:30 -0500, Jorge Eduardo Candelaria wrote:
-> On May 10, 2011, at 3:38 AM, Liam Girdwood wrote:
-> 
-> > On Tue, 2011-05-10 at 12:44 +1000, Stephen Rothwell wrote:
-> >> Hi Liam,
-> >> 
-> >> After merging the voltage tree, today's linux-next build (x86_64
-> >> allmodconfig) failed like this:
-> >> 
-> >> ERROR: "tps65910_gpio_init" [drivers/mfd/tps65910.ko] undefined!
-> >> ERROR: "tps65910_irq_init" [drivers/mfd/tps65910.ko] undefined!
-> >> ERROR: "irq_modify_status" [drivers/mfd/tps65910-irq.ko] undefined!
-> >> ERROR: "irq_set_chip_and_handler_name" [drivers/mfd/tps65910-irq.ko] undefined!
-> >> ERROR: "handle_edge_irq" [drivers/mfd/tps65910-irq.ko] undefined!
-> >> 
-> >> I have used the voltage tree from next-20110509 for today.
-> > 
-> > Jorge, could you send a fix for this today.
-> > 
-> > Thanks
-> > 
-> > Liam
-> > 
-> 
-> The following patch should solve this:
-> 
-> From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-> MFD: Fix TPS65910 build
-> 
-> Support for tps65910 as a module is not available. The driver can
-> only be compiled as built-in. OTOH, the regulator driver can still
-> be built as module without breaking the compilation.
-> 
-> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-> ---
->  drivers/mfd/Kconfig |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 65930a7..c78865e 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -672,8 +672,8 @@ config MFD_OMAP_USB_HOST
->  	  OMAP USB Host drivers.
->  
->  config MFD_TPS65910
-> -	tristate "TPS65910 Power Management chip"
-> -	depends on I2C &&  GPIOLIB
-> +	bool "TPS65910 Power Management chip"
-> +	depends on I2C && GPIOLIB
->  	select MFD_CORE
->  	help
->  	  if you say yes here you get support for the TPS65910 series of
+On Tue, 10 May 2011, Pavel Machek wrote:
+> Hmm, I jave a battery pack with reasonably good cells, but firmware killed
+> it. IOW available for testing.
 
+That is likely a problem with the battery pack uC, we cannot override that
+using any know firmware path in the ThinkPad.
 
-Applied.
+Does the thinkpad recognizes the presence of the battery pack?  If it
+doesn't, the pack uC is probably dead or in safe mode, and you'd need to
+hardware-hack it.
 
-Thanks
+> (And who know, perhaps recalibrate command would bring it back to life?)
 
-Liam
+AFAIK, the recalibrate command really just does this:
 
+1. sets 'force discharge' flag on EC so that it starts discharging the
+   battery pack.  Discharging stops when cell voltage drops close to the
+   minimum safety level.
+
+2. sets stop threshold to 0 (100%) for that battery pack.
+
+That way, the box will fully-drain the pack, and then charge it to full. At
+that point, the recalibration is complete (the battery pack uC will
+auto-calibrate itself when it notices it has hit the fully-drained and
+fully-charged points).
+
+You can monitor per-cell-group voltages through tp_smapi on a original IBM
+battery pack, that functionality should still be around on the Lenovos.
+Since this is not standard SBS functionality, it might not work on
+non-original battery packs.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
