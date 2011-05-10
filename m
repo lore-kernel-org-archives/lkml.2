@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab1EJSma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 14:42:30 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:58707 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab1EJSm3 (ORCPT
+	id S1751701Ab1EJSnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:43:12 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:60318 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750860Ab1EJSnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 14:42:29 -0400
-Subject: [PATCH] dma-debug: print some unfreed allocations
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 20:42:24 +0200
-Message-ID: <1305052944.3544.8.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 May 2011 14:43:10 -0400
+Date: Tue, 10 May 2011 18:43:02 +0000
+From: Pavel Machek <pavel@ucw.cz>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Andrew Lutomirski <luto@mit.edu>, ibm-acpi-devel@lists.sourceforge.net,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
+Message-ID: <20110510184302.GA15631@localhost.ucw.cz>
+References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com> <20110509144546.GB13275@khazad-dum.debian.net> <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com> <20110509152941.GD13275@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110509152941.GD13275@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+On Mon 2011-05-09 12:29:41, Henrique de Moraes Holschuh wrote:
+> On Mon, 09 May 2011, Andrew Lutomirski wrote:
+> > > The SBS interface exposes more data about the battery, including
+> > > per-cell-group voltage and pack microcontroller aging counters, alarms, and
+> > > the "needs to get through the fuel-gaugue reset procedure" semasphore.
+> > 
+> > If I'm feeling really motivated, I'll look at that.  I'm currently
+> > more interested in the charging thresholds, though, which I think is
+> > independent of the choice of SBS vs ACPI to access the battery state.
+> > (From a quick glance at the SBS spec, you can inhibit charging
+> > entirely but you can't ask for thresholds.  I assume that the EC takes
+> > care of that.  If I'm wrong, please tell me, but SMAPI seems like a
+> > fine way to access the thresholds.)
+> 
+> Yeah, SMAPI is the safest way to deal with all this.  It is an interface
+> layer that Lenovo is not fond of breaking (or touches very rarely.  Amounts
+> to the same in the end).
+> 
+> SBS does not take care of thresholds, indeed.  The EC does (and I know how
+> to program the threshold in a few models, if you do want to test it in your
+> X220, I can send you the information.  It is safe to test if you use it
+> together with SMAPI to cross-check).
 
-When a driver unbinds and still has allocations,
-we print them out but there's no indication where
-they came from. If stacktrace support is built
-into the kernel, we can print out their traces.
+Hmm, I jave a battery pack with reasonably good cells, but firmware killed it. IOW available for testing.
 
-Unfortunately, if you're unloading the module the
-traces will be useless, but once you find such an
-error you can manually unbind the device instead
-to see where the allocations came from.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
- lib/dma-debug.c |   47 +++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 37 insertions(+), 10 deletions(-)
-
---- a/lib/dma-debug.c	2011-05-10 20:25:11.000000000 +0200
-+++ b/lib/dma-debug.c	2011-05-10 20:36:55.000000000 +0200
-@@ -649,7 +649,9 @@ out_err:
- 	return -ENOMEM;
- }
- 
--static int device_dma_allocations(struct device *dev)
-+#define DMA_DEBUG_NUM_PRINT_UNFREED		10
-+
-+static void check_device_dma_allocations(struct device *dev)
- {
- 	struct dma_debug_entry *entry;
- 	unsigned long flags;
-@@ -666,27 +668,52 @@ static int device_dma_allocations(struct
- 		spin_unlock(&dma_entry_hash[i].lock);
- 	}
- 
--	local_irq_restore(flags);
-+	if (count > 1) {
-+		err_printk(dev, NULL, "DMA-API: device driver has pending "
-+			   "DMA allocations while released from device "
-+			   "[count=%d]\n", count);
-+#ifdef CONFIG_STACKTRACE
-+		count = 0;
-+		/*
-+		 * If we have, print out some stack traces for the allocations.
-+		 * In case of module unload, the stack traces will be useless,
-+		 * but instead of unloading the module you can manually unbind
-+		 * the driver instead and get useful traces.
-+		 */
-+		printk(KERN_WARNING "Showing traces for %d allocations:\n",
-+		       DMA_DEBUG_NUM_PRINT_UNFREED);
-+
-+		for (i = 0; i < HASH_SIZE; ++i) {
-+			spin_lock(&dma_entry_hash[i].lock);
-+			list_for_each_entry(entry, &dma_entry_hash[i].list,
-+					    list) {
-+				if (entry->dev == dev)
-+					count += 1;
-+				if (count > DMA_DEBUG_NUM_PRINT_UNFREED)
-+					break;
-+				dump_entry_trace(entry);
-+			}
-+			spin_unlock(&dma_entry_hash[i].lock);
-+
-+			if (count > DMA_DEBUG_NUM_PRINT_UNFREED)
-+				break;
-+		}
-+#endif
-+	}
- 
--	return count;
-+	local_irq_restore(flags);
- }
- 
- static int dma_debug_device_change(struct notifier_block *nb, unsigned long action, void *data)
- {
- 	struct device *dev = data;
--	int count;
- 
- 	if (global_disable)
- 		return 0;
- 
- 	switch (action) {
- 	case BUS_NOTIFY_UNBOUND_DRIVER:
--		count = device_dma_allocations(dev);
--		if (count == 0)
--			break;
--		err_printk(dev, NULL, "DMA-API: device driver has pending "
--				"DMA allocations while released from device "
--				"[count=%d]\n", count);
-+		check_device_dma_allocations(dev);
- 		break;
- 	default:
- 		break;
-
-
+(And who know, perhaps recalibrate command would bring it back to life?)
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
