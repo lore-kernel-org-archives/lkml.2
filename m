@@ -1,93 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab1EJKEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 06:04:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61848 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab1EJKEC convert rfc822-to-8bit (ORCPT
+	id S1756225Ab1EJKLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 06:11:17 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47832 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755941Ab1EJKLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 06:04:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AMU1Bi5ERW3tGU2+A0+zKPphg6bcQ0+d7bsfoQ6qfpYb+ezupqbJlQkhhYmqob+94e
-         tDlx8lvz/Ke1yBa9579wyVDVPAt6psLBe+DfWujthrrMgYfig+ciS/bANaqILlHWfqE5
-         LajwKDZixBCVfvVqw1puNNM4rhESpKmkyMWvk=
-MIME-Version: 1.0
-In-Reply-To: <4DC53134.8070706@gmail.com>
-References: <4DC53134.8070706@gmail.com>
-Date: Tue, 10 May 2011 11:04:00 +0100
-Message-ID: <BANLkTi=DV4nrX2TBaXGCDHB5z2Z4=Q+pqQ@mail.gmail.com>
-Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
-From: Maxim Osipov <maxim.osipov@gmail.com>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Maxim Osipov <maxim.osipov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 May 2011 06:11:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 10 May 2011 19:04:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: [RFC][PATCH 1/7] memcg: check margin to limit  for async reclaim
+Message-Id: <20110510190433.74dba748.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Now, the kernel supports transparent hugepage and it's used at each page fault
+if configured. Then, if the THP allocation hits limit of memcg, it needs to
+reclaim memory of HPAGE_SIZE. This tends to require much larger scan than
+SWAP_CLUSTER_MAX and increases latency. In other allocations, page scanning
+at hitting limit causes latency to some extent.
 
-On Sat, May 7, 2011 at 12:47 PM, Maxim Osipov <maxim.osipov@gmail.com> wrote:
->
-> This patch enables external RTC support on AT91 Flexibity board.
->
-> Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
-> ---
->  arch/arm/mach-at91/board-flexibity.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
-> index c8a62dc..4fdc96c 100644
-> --- a/arch/arm/mach-at91/board-flexibity.c
-> +++ b/arch/arm/mach-at91/board-flexibity.c
-> @@ -1,7 +1,7 @@
->  /*
->  * linux/arch/arm/mach-at91/board-flexibity.c
->  *
-> - *  Copyright (C) 2010 Flexibity
-> + *  Copyright (C) 2010-2011 Flexibity
->  *  Copyright (C) 2005 SAN People
->  *  Copyright (C) 2006 Atmel
->  *
-> @@ -65,6 +65,13 @@ static struct at91_udc_data __initdata flexibity_udc_data = {
->        .pullup_pin     = 0,            /* pull-up driven by UDC */
->  };
->
-> +/* I2C devices */
-> +static struct i2c_board_info __initdata flexibity_i2c_devices[] = {
-> +       {
-> +               I2C_BOARD_INFO("ds1307", 0x68),
-> +       },
-> +};
-> +
->  /* SPI devices */
->  static struct spi_board_info flexibity_spi_devices[] = {
->        {       /* DataFlash chip */
-> @@ -143,6 +150,9 @@ static void __init flexibity_board_init(void)
->        at91_add_device_usbh(&flexibity_usbh_data);
->        /* USB Device */
->        at91_add_device_udc(&flexibity_udc_data);
-> +       /* I2C */
-> +       at91_add_device_i2c(flexibity_i2c_devices,
-> +               ARRAY_SIZE(flexibity_i2c_devices));
->        /* SPI */
->        at91_add_device_spi(flexibity_spi_devices,
->                ARRAY_SIZE(flexibity_spi_devices));
-> --
-> 1.7.4.1
->
->
+This patch adds a logic to keep usage margin to the limit in asynchronous way.
+When the usage over some threshould (determined automatically), asynchronous
+memory reclaim runs and shrink memory to limit - MEMCG_ASYNC_STOP_MARGIN.
 
-If no comments on the patch - could someone commit it please? Or
-should I submit it to the Russell's patch tracking system?
+By this, there will be no difference in total amount of usage of cpu to
+scan the LRU but we'll have a chance to make use of wait time of applications
+for freeing memory. For example, when an application read a file or socket,
+to fill the newly alloated memory, it needs wait. Async reclaim can make use
+of that time and give a chance to reduce latency by background works.
 
-Kind regards,
-Maxim
+This patch only includes required hooks to trigger async reclaim. Core logics
+will be in the following patches.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+
+Index: mmotm-May6/mm/memcontrol.c
+===================================================================
+--- mmotm-May6.orig/mm/memcontrol.c
++++ mmotm-May6/mm/memcontrol.c
+@@ -115,10 +115,12 @@ enum mem_cgroup_events_index {
+ enum mem_cgroup_events_target {
+ 	MEM_CGROUP_TARGET_THRESH,
+ 	MEM_CGROUP_TARGET_SOFTLIMIT,
++	MEM_CGROUP_TARGET_ASYNC,
+ 	MEM_CGROUP_NTARGETS,
+ };
+ #define THRESHOLDS_EVENTS_TARGET (128)
+ #define SOFTLIMIT_EVENTS_TARGET (1024)
++#define ASYNC_EVENTS_TARGET	(512)	/* assume x86-64's hpagesize */
+ 
+ struct mem_cgroup_stat_cpu {
+ 	long count[MEM_CGROUP_STAT_NSTATS];
+@@ -211,6 +213,31 @@ static void mem_cgroup_threshold(struct 
+ static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+ 
+ /*
++ * For example, with transparent hugepages, memory reclaim scan at hitting
++ * limit can very long as to reclaim HPAGE_SIZE of memory. This increases
++ * latency of page fault and may cause fallback. At usual page allocation,
++ * we'll see some (shorter) latency, too. To reduce latency, it's appreciated
++ * to free memory in background to make margin to the limit. This consumes
++ * cpu but we'll have a chance to make use of wait time of applications
++ * (read disk etc..) by asynchronous reclaim.
++ *
++ * This async reclaim tries to reclaim HPAGE_SIZE * 2 of pages when margin
++ * to the limit is smaller than HPAGE_SIZE * 2. This will be enabled
++ * automatically when the limit is set and it's greater than the threshold.
++ */
++#if HPAGE_SIZE != PAGE_SIZE
++#define MEMCG_ASYNC_LIMIT_THRESH      (HPAGE_SIZE * 64)
++#define MEMCG_ASYNC_START_MARGIN      (HPAGE_SIZE * 2)
++#define MEMCG_ASYNC_STOP_MARGIN	      (HPAGE_SIZE * 4)
++#else /* make the margin as 4M bytes */
++#define MEMCG_ASYNC_LIMIT_THRESH      (128 * 1024 * 1024)
++#define MEMCG_ASYNC_START_MARGIN      (4 * 1024 * 1024)
++#define MEMCG_ASYNC_STOP_MARGIN       (8 * 1024 * 1024)
++#endif
++
++static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem);
++
++/*
+  * The memory controller data structure. The memory controller controls both
+  * page cache and RSS per cgroup. We would eventually like to provide
+  * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+@@ -259,6 +286,7 @@ struct mem_cgroup {
+ 
+ 	/* set when res.limit == memsw.limit */
+ 	bool		memsw_is_minimum;
++	bool		need_async_reclaim;
+ 
+ 	/* protect arrays of thresholds */
+ 	struct mutex thresholds_lock;
+@@ -722,6 +750,9 @@ static void __mem_cgroup_target_update(s
+ 	case MEM_CGROUP_TARGET_SOFTLIMIT:
+ 		next = val + SOFTLIMIT_EVENTS_TARGET;
+ 		break;
++	case MEM_CGROUP_TARGET_ASYNC:
++		next = val + ASYNC_EVENTS_TARGET;
++		break;
+ 	default:
+ 		return;
+ 	}
+@@ -745,6 +776,11 @@ static void memcg_check_events(struct me
+ 			__mem_cgroup_target_update(mem,
+ 				MEM_CGROUP_TARGET_SOFTLIMIT);
+ 		}
++		if (__memcg_event_check(mem, MEM_CGROUP_TARGET_ASYNC)) {
++			mem_cgroup_may_async_reclaim(mem);
++			__mem_cgroup_target_update(mem,
++				MEM_CGROUP_TARGET_ASYNC);
++		}
+ 	}
+ }
+ 
+@@ -3376,6 +3412,11 @@ static int mem_cgroup_resize_limit(struc
+ 				memcg->memsw_is_minimum = true;
+ 			else
+ 				memcg->memsw_is_minimum = false;
++
++			if (val >= MEMCG_ASYNC_LIMIT_THRESH)
++				memcg->need_async_reclaim = true;
++			else
++				memcg->need_async_reclaim = false;
+ 		}
+ 		mutex_unlock(&set_limit_mutex);
+ 
+@@ -3553,6 +3594,15 @@ unsigned long mem_cgroup_soft_limit_recl
+ 	return nr_reclaimed;
+ }
+ 
++static void mem_cgroup_may_async_reclaim(struct mem_cgroup *mem)
++{
++	if (!mem->need_async_reclaim)
++		return;
++	if (res_counter_margin(&mem->res) <= MEMCG_ASYNC_START_MARGIN) {
++		/* Fill here */
++	}
++}
++
+ /*
+  * This routine traverse page_cgroup in given list and drop them all.
+  * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
+
