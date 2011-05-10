@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1EJB72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 21:59:28 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:38884 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab1EJB70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 21:59:26 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
-Date: Tue, 10 May 2011 10:59:15 +0900
-In-Reply-To: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
-	(Darrick J. Wong's message of "Mon, 09 May 2011 16:03:18 -0700")
-Message-ID: <87tyd31fkc.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1752654Ab1EJCO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 22:14:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15441 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751701Ab1EJCOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 22:14:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,343,1301900400"; 
+   d="scan'208";a="690454648"
+Date: Tue, 10 May 2011 10:14:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 02/17] writeback: update dirtied_when for synced inode
+ to prevent livelock
+Message-ID: <20110510021421.GA6758@localhost>
+References: <20110506030821.523093711@intel.com>
+ <20110506031612.043390260@intel.com>
+ <20110506163312.GH18982@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110506163312.GH18982@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Darrick J. Wong" <djwong@us.ibm.com> writes:
+On Sat, May 07, 2011 at 12:33:12AM +0800, Jan Kara wrote:
+> On Fri 06-05-11 11:08:23, Wu Fengguang wrote:
+> > With the more aggressive "keep writeback as long as we wrote something"
+> > logic in wb_writeback(), the "use LONG_MAX .nr_to_write" trick in commit
+> > b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") is
+> > no longer enough to stop sync livelock.
+> > 
+> > The fix is to explicitly update .dirtied_when on synced inodes, so that
+> > they are no longer considered for writeback in the next round.
+>   The changelog doesn't make sense now when the patch is in the second
+> place in the series... Also as we discussed in the previous iteration of
+> the patches, I thought you'll move the condition before mapping_tagged()
+> test. I.e. the code would be (comment updated):
+> 	if (!(inode->i_state & I_FREEING)) {
+> 		/*
+> 		 * Sync livelock prevention: Each inode is tagged and
+> 		 * synced in one shot. So we can unconditionally update its
+> 		 * dirty time to prevent syncing it again. Note that time
+> 		 * ordering of b_dirty list will be kept because the
+> 		 * following code either removes the inode from b_dirty
+> 		 * or calls redirty_tail().
+> 		 */
+> 		if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_sync)
+> 			inode->dirtied_when = jiffies;
+> 		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
 
-> To assess the performance impact of stable page writes, I moved to a disk that
-> doesn't have DIF support so that I could measure just the impact of waiting for
-> writeback.  I first ran wac with 64 threads madly scribbling on a 64k file and
-> saw about a 12 percent performance decrease.  I then reran the wac program with
-> 64 threads and a 64MB file and saw about the same performance numbers.  As I
-> suspected, the patchset only seems to impact workloads that rewrite the same
-> memory page frequently.
->
-> I am still chasing down what exactly is broken in ext3.  data=writeback mode
-> passes with no failures.  data=ordered, however, does not pass; my current
-> suspicion is that jbd is calling submit_bh on data buffers but doesn't call
-> page_mkclean to kick the userspace programs off the page before writing it.
->
-> Per various comments regarding v3 of this patchset, I've integrated his
-> suggestions, reworked the patch descriptions to make it clearer which ones
-> touch all the filesystems and which ones are to fix remaining holes in specific
-> filesystems, and expanded the scope of filesystems that got fixed.
->
-> As always, questions and comments are welcome; and thank you to all the
-> previous reviewers of this patchset.  I am also soliciting people's opinions on
-> whether or not these patches could go upstream for .40.
+It looks good, thanks!  Here is the updated patch with your
+reviewed-by. Note that I retains a modified paragraph in the changelog
+to clarify its relationship to the other two patches.
 
-I'd like to know those patches are on what state. Waiting in writeback
-page makes slower, like you mentioned it (I guess it would more
-noticeable if device was slower that like FAT uses). And I think
-currently it doesn't help anything others for blk-integrity stuff
-(without other technic, it doesn't help FS consistency)?
+Thanks,
+Fengguang
+---
+Subject: writeback: update dirtied_when for synced inode to prevent livelock
+Date: Wed Apr 27 19:05:21 CST 2011
 
-So, why is this locking stuff enabled always? I think it would be better
-to enable only if blk-integrity stuff was enabled.
+Explicitly update .dirtied_when on synced inodes, so that they are no
+longer considered for writeback in the next round.
 
-If it was more sophisticate but more complex stuff (e.g. use
-copy-on-write technic for it), I would agree always enable though.
+We'll do more aggressive "keep writeback as long as we wrote something"
+logic in wb_writeback(). Then the "use LONG_MAX .nr_to_write" trick in
+commit b9543dac5b ("writeback: avoid livelocking WB_SYNC_ALL writeback")
+will no longer be enough to stop sync livelock.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- linux-next.orig/fs/fs-writeback.c	2011-05-10 09:50:07.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-10 10:03:00.000000000 +0800
+@@ -419,6 +419,15 @@ writeback_single_inode(struct inode *ino
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_state &= ~I_SYNC;
+ 	if (!(inode->i_state & I_FREEING)) {
++		/*
++		 * Sync livelock prevention. Each inode is tagged and synced in
++		 * one shot, so we can unconditionally update its dirty time to
++		 * prevent syncing it again. Note that time ordering of b_dirty
++		 * list will be kept because the following code either removes
++		 * the inode from b_dirty or calls redirty_tail().
++		 */
++		if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_sync)
++			inode->dirtied_when = jiffies;
+ 		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+ 			/*
+ 			 * We didn't write back all the pages.  nfs_writepages()
