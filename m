@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab1EJQ0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 12:26:34 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:46501 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932727Ab1EJQ0c (ORCPT
+	id S933019Ab1EJQ2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 12:28:42 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:38395 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932727Ab1EJQ2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 12:26:32 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LKZMYX-02-4CC-02
-X-M-MSG: 
-Date: Tue, 10 May 2011 18:25:58 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] perf, core: Introduce attrs to count in either host
- or guest mode
-Message-ID: <20110510162558.GH30996@amd.com>
-References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
- <1305038132-5080-2-git-send-email-joerg.roedel@amd.com>
- <1305038746.2914.94.camel@laptop>
- <20110510145902.GA30996@amd.com>
- <1305040709.2914.99.camel@laptop>
- <20110510153855.GE30996@amd.com>
- <1305043638.2914.113.camel@laptop>
+	Tue, 10 May 2011 12:28:40 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Jan Kara <jack@suse.cz>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+	<87tyd31fkc.fsf@devron.myhome.or.jp>
+	<20110510123819.GB4402@quack.suse.cz>
+	<87hb924s2x.fsf@devron.myhome.or.jp>
+	<20110510132953.GE4402@quack.suse.cz>
+	<878vue4qjb.fsf@devron.myhome.or.jp>
+	<87zkmu3b2i.fsf@devron.myhome.or.jp>
+	<20110510145421.GJ4402@quack.suse.cz>
+	<87zkmupmaq.fsf@devron.myhome.or.jp>
+	<20110510162237.GM4402@quack.suse.cz>
+Date: Wed, 11 May 2011 01:28:32 +0900
+In-Reply-To: <20110510162237.GM4402@quack.suse.cz> (Jan Kara's message of
+	"Tue, 10 May 2011 18:22:37 +0200")
+Message-ID: <87vcxipljj.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1305043638.2914.113.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 12:07:18PM -0400, Peter Zijlstra wrote:
-> On Tue, 2011-05-10 at 17:38 +0200, Roedel, Joerg wrote:
-> > On Tue, May 10, 2011 at 11:18:29AM -0400, Peter Zijlstra wrote:
-> > > On Tue, 2011-05-10 at 16:59 +0200, Roedel, Joerg wrote:
-> > > > On Tue, May 10, 2011 at 10:45:46AM -0400, Peter Zijlstra wrote:
-> > > > > On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
-> > > > > > +       /* Can't exclude counting in guest and in host mode */
-> > > > > > +       if (attr.exclude_host && attr.exclude_guest)
-> > > > > > +               return -EINVAL;
-> > > > > 
-> > > > > Why not?
-> > > > 
-> > > > By definition the counter won't count at all. The hardware just ignores
-> > > > the bits if they are both set. My rationale here was that it does not
-> > > > makes sense to setup a counter and exclude guest and host mode.
-> > > 
-> > > I would expect it to 'work' but simply return 0. If that isn't what the
-> > > AMD hardware does you need to fix that in the AMD driver.
-> > 
-> > By 'work' you mean that userspace can set it up but it doesn't count at
-> > all in this situation? 
-> 
-> Right.
-> 
-> > This would certainly be consistent behavior but I
-> > can't imagine any use-case for it so that this code assumes that such a
-> > situation is most likely a bug.
-> > I can certainly change that if wanted, but I think its better to inform
-> > userspace if we get weird values?
-> 
-> The eternal how much rope to give and what knots to teach argument I
-> guess. As it is, I think we allow people to exclude both user- and
-> kernel-space, giving a similar situation, so allowing to exclude both
-> host and guest is consistent.
+Jan Kara <jack@suse.cz> writes:
 
-Okay, fine. So I change that.
+>> Maybe possible, but you really think on usual case just blocking is
+>> better?
+>   Define usual case... As Christoph noted, we don't currently have a real
+> practical case where blocking would matter (since frequent rewrites are
+> rather rare). So defining what is usual when we don't have a single real
+> case is kind of tough ;)
 
-	Joerg
-
-
+OK. E.g. usual workload on desktop, but FS like ext2/fat.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
