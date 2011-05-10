@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab1EJJTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:19:49 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:42748 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab1EJJTs (ORCPT
+	id S1753311Ab1EJJVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 05:21:20 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46632 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab1EJJVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:19:48 -0400
-Date: Tue, 10 May 2011 11:19:26 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Nicolas Kaiser <nikai@nikai.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend] s390: oprofile: fix error checks in
- oprofile_hwsampler_init()
-Message-ID: <20110510111926.788d7336@mschwide>
-In-Reply-To: <20110510090054.GS31407@erda.amd.com>
-References: <20110502154805.71664123@absol.kitzblitz>
-	<20110503085540.GX31407@erda.amd.com>
-	<20110510105510.455bbf5d@mschwide>
-	<20110510090054.GS31407@erda.amd.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 May 2011 05:21:17 -0400
+From: Niels de Vos <ndevos@redhat.com>
+To: linux-omap@vger.kernel.org
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Niels de Vos <ndevos@redhat.com>
+Subject: [PATCH] omap2/omapfb: make DBG() more resistant in if-else constructions
+Date: Tue, 10 May 2011 10:20:49 +0100
+Message-Id: <1305019249-9898-1-git-send-email-ndevos@redhat.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 May 2011 11:00:54 +0200
-Robert Richter <robert.richter@amd.com> wrote:
+When DBG() is used in a simple if-else, the resulting code path
+currently depends on the definition of DBG(). Inserting the statement in
+a "do { ... } while (0)" prevents this possible misuse.
 
-> > Ok, the improved patch now looks like this:
-> > --
-> > Subject: [PATCH] s390: oprofile: fix min/max interval query checks
-> > 
-> > From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> > 
-> > oprofile_min_interval and oprofile_max_interval are unsigned, checking
-> > for negative values doesn't work. Change hwsampler_query_min_interval
-> > and hwsampler_query_max_interval to return an unsigned long and
-> > check for a zero value instead.
-> > 
-> > Reported-by: Nicolas Kaiser <nikai@nikai.net>
-> > Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> 
-> Looks good.
-> 
-> Acked-by: Robert Richter <robert.richter@amd.com>
-> 
-> Martin, can you queue this up?
+Signed-off-by: Niels de Vos <ndevos@redhat.com>
 
-Yes, I will do that.
+---
+Note, I have not found any offenders, but a mistake can easily be made.
+The following example shows what can go wrong if little intention is
+paid to the definition of the DBG() macro.
 
+Example:
+	if something_went_wrong()
+		DBG("oh no, something went wrong!\n");
+	else
+		printk("all went fine\n");
+
+Old result where the else is placed inside the first if-statment:
+	if something_went_wrong() {
+		if (omapfb_debug) {
+			printk(KERN_DEBUG "oh no, something went wrong!\n");
+		} else {
+			printk("all went fine\n");
+		}
+	}
+
+New result where the else is an alternative to the first if-statement:
+	if something_went_wrong() {
+		do {
+			if (omapfb_debug)
+				printk(KERN_DEBUG "oh no, something went wrong!\n");
+		} while (0);
+	} else {
+		printk("all went fine\n");
+	}
+---
+ drivers/video/omap2/omapfb/omapfb.h |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb/omapfb.h b/drivers/video/omap2/omapfb/omapfb.h
+index 1305fc9..a01b0bb 100644
+--- a/drivers/video/omap2/omapfb/omapfb.h
++++ b/drivers/video/omap2/omapfb/omapfb.h
+@@ -34,8 +34,10 @@
+ #ifdef DEBUG
+ extern unsigned int omapfb_debug;
+ #define DBG(format, ...) \
+-	if (omapfb_debug) \
+-		printk(KERN_DEBUG "OMAPFB: " format, ## __VA_ARGS__)
++	do { \
++		if (omapfb_debug) \
++			printk(KERN_DEBUG "OMAPFB: " format, ## __VA_ARGS__); \
++	while (0)
+ #else
+ #define DBG(format, ...)
+ #endif
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+1.7.4.4
 
