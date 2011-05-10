@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab1EJPrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:47:04 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54059
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756602Ab1EJPrC (ORCPT
+	id S1756659Ab1EJPui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:50:38 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:37747
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754320Ab1EJPug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:47:02 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz936eK179dN154dM1432N98dKzz1202hzzz32i668h839h61h)
+	Tue, 10 May 2011 11:50:36 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LKZL65-01-0DJ-02
+X-WSS-ID: 0LKZLC3-01-0O9-02
 X-M-MSG: 
-Date: Tue, 10 May 2011 17:46:52 +0200
+Date: Tue, 10 May 2011 17:50:24 +0200
 From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+To: Ingo Molnar <mingo@elte.hu>
+CC: "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] perf, tools: Add support for guest/host-only
- profiling
-Message-ID: <20110510154652.GF30996@amd.com>
+Subject: Re: [RFC][PATCH 0/3] perf support for amd guest/host-only bits
+Message-ID: <20110510155024.GG30996@amd.com>
 References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
- <1305038132-5080-4-git-send-email-joerg.roedel@amd.com>
- <1305039008.2914.98.camel@laptop>
- <20110510150821.GC30996@amd.com>
- <1305041114.2914.105.camel@laptop>
+ <20110510152132.GA25705@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1305041114.2914.105.camel@laptop>
+In-Reply-To: <20110510152132.GA25705@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 11:25:14AM -0400, Peter Zijlstra wrote:
-> On Tue, 2011-05-10 at 17:08 +0200, Roedel, Joerg wrote:
-> > On Tue, May 10, 2011 at 10:50:08AM -0400, Peter Zijlstra wrote:
-> > > On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
-> > > > @@ -740,6 +740,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
-> > > >                         if (!exclude)
-> > > >                                 exclude = eu = ek = eh = 1;
-> > > >                         eh = 0;
-> > > > +               } else if (*str == 'G') {
-> > > > +                       eg   = 0;
-> > > > +                       ehst = 1;
-> > > > +               } else if (*str == 'H') {
-> > > > +                       eg   = 1;
-> > > > +                       ehst = 0; 
-> > > 
-> > > This doesn't match the existing exclude logic, also eH and eG come to
-> > > mind.
+On Tue, May 10, 2011 at 11:21:32AM -0400, Ingo Molnar wrote:
+> 
+> * Joerg Roedel <joerg.roedel@amd.com> wrote:
+> 
+> > So any feedback is greatly appreciated :-)
+> 
+> it's nice to see this hw feature utilized :)
+
+Yeah, I planned to do this for some time now and finally found the time
+to do it :)
+
+> 
+> > Diffstat:
 > > 
-> > OK, eH and eG seems like a better choice. Regarding the logic I
-> > explictly decided to do it this way. The reason is that guest/host
-> > counting is orthogonal to user/kernel/hv counting. You can decide to
-> > only count guest-kernel for example. And if a user just specifies
-> > -e cycles:G this would automatically exlucde user and kernel counting.
-> > This didn't make sense to me so I decided to keep the logic seperate for
-> > guest/host exclusions.
+> >  arch/x86/include/asm/perf_event.h    |    3 +++
+> >  arch/x86/kernel/cpu/perf_event_amd.c |    6 ++++++
+> >  include/linux/perf_event.h           |    5 ++++-
+> >  kernel/perf_event.c                  |    4 ++++
+> >  tools/perf/util/parse-events.c       |   10 +++++++++-
+> >  5 files changed, 26 insertions(+), 2 deletions(-)
 > 
-> OK, so the changelog lacked that bit of information ;-)
+> I see you have not touched tools/perf/builtin-kvm.c - how does this feature 
+> integrate with the features of 'perf kvm'? (are you using perf kvm by any 
+> chance?)
 
-Okay, so I add this information to the changelog.
-
-> How about you do something like:
-> 
-> 
-> 
-> +               } else if (*str == 'G') {
-> +			if (!excl_GH)
-> +				excl_GH = eH = eG = 1;
-> +                       eG   = 0;
-> +               } else if (*str == 'H') {
-> +			if (!excl_GH)
-> +				excl_GH = eH = eG = 1;
-> +                       eH   = 0;
-> 
-> Which mirrors the existing logic but keeps it orthogonal?
-
-Right, it would better fit to the u/k/hv logic. It is not strictly
-needed because there are only two excludes here but it makes the code
-look more consistent. I'll change it.
-
-> Hmm,. does this nicely integrate with exclude_hv? that seems to want to
-> be grouped with G/H.
-
-I intended to re-use the exlude_hv bit originally, but then I looked
-into how this bit is used. On PPC it looks like this bit is set when
-Linux itself runs as a guest to exclude the hypervisor code being
-profiled. The meaning here is different (beacause Linux itself is the
-hypervisor) and I wanted to avoid different semantics for this bit
-across architectures. So I introduces seperate bits.
-The exclude_hv bit can be used when we have some kind of perf-ctr
-support for KVM guests.
+builtin-kvm looks like a wrapper for other perf-cmds which just sets up
+some additional state to tell the sub-cmds that guest-symbols need to be
+resolved and so on.
+Implementing this into the place where the other exclude-bits get set
+(which is in generic code) seemed like a good idea to me. Touching
+builtin-kvm was unnecessary for this.
 
 Regards,
 
