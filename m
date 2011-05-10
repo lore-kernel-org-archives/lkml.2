@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1EJUxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:53:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51935 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751450Ab1EJUxQ (ORCPT
+	id S1751225Ab1EJU6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:58:38 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:40864 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750750Ab1EJU6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:53:16 -0400
-Date: Tue, 10 May 2011 22:53:21 +0200
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Margarita Olaya <magi@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 4/4] tps65912: add regulator driver
-Message-ID: <20110510205320.GE8726@opensource.wolfsonmicro.com>
-References: <BANLkTimXbG5TkzV-MthUtkQ8k26AOPsqHw@mail.gmail.com>
+	Tue, 10 May 2011 16:58:36 -0400
+Date: Tue, 10 May 2011 22:58:32 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Andrew Lutomirski <luto@mit.edu>, Anton Vorontsov <cbou@mail.ru>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
+Message-ID: <20110510205832.GC7485@elf.ucw.cz>
+References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
+ <20110509144546.GB13275@khazad-dum.debian.net>
+ <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
+ <20110509152941.GD13275@khazad-dum.debian.net>
+ <20110510184302.GA15631@localhost.ucw.cz>
+ <20110510195753.GA5850@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTimXbG5TkzV-MthUtkQ8k26AOPsqHw@mail.gmail.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110510195753.GA5850@khazad-dum.debian.net>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 03:25:59PM -0500, Margarita Olaya wrote:
+Hi!
 
-A lot of this driver looks awfully similar to a bunch of the other TI
-PMIC drivers posted recently - is it possible to reuse some of driver
-code here?
+> > Hmm, I jave a battery pack with reasonably good cells, but firmware killed
+> > it. IOW available for testing.
+> 
+> That is likely a problem with the battery pack uC, we cannot override that
+> using any know firmware path in the ThinkPad.
+> 
+> Does the thinkpad recognizes the presence of the battery pack?  If it
+> doesn't, the pack uC is probably dead or in safe mode, and you'd need to
+> hardware-hack it.
 
-> +/* Supported voltage values for regulators */
-> +static const u16 VDCDCx_VSEL0_table[] = {
-> +	5000, 5125, 5250, 5375, 5500,
-> +	5625, 5750, 5875, 6000, 6125,
+Yes, it does, and it reports everything ok... (Battery 100% full
+IIRC). Its just that machine dies immediately when AC is removed.
 
-All these tables look like they're nice regular voltage steps and could
-be replaced with simple calculations in the code.  That's better as it
-means we don't have to iterate through the table every time we want to
-do anything.
+> > (And who know, perhaps recalibrate command would bring it back to life?)
+> 
+> AFAIK, the recalibrate command really just does this:
+> 
+> 1. sets 'force discharge' flag on EC so that it starts discharging the
+>    battery pack.  Discharging stops when cell voltage drops close to the
+>    minimum safety level.
+> 
+> 2. sets stop threshold to 0 (100%) for that battery pack.
+> 
+> That way, the box will fully-drain the pack, and then charge it to full. At
+> that point, the recalibration is complete (the battery pack uC will
+> auto-calibrate itself when it notices it has hit the fully-drained and
+> fully-charged points).
+> 
+> You can monitor per-cell-group voltages through tp_smapi on a original IBM
+> battery pack, that functionality should still be around on the Lenovos.
+> Since this is not standard SBS functionality, it might not work on
+> non-original battery packs.
 
-> +static inline int tps65912_read(struct tps65912_reg *pmic, u8 reg)
-> +{
-> +	u8 val;
-> +	int err;
-> +
-> +	err = pmic->mfd->read(pmic->mfd, reg, 1, &val);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	return val;
-> +}
-
-Shouldn't the MFD driver just export this function?  Both the IRQ and
-GPIO drivers also need it.  Similarly for write() and the reg_ versions
-of them.
-
-> +		reg1_val |= DCDCCTRL_DCDC_MODE_MASK;
-> +		tps65912_reg_write(pmic, reg1, reg1_val);
-> +		reg2_val &= ~DCDC_AVS_ECO_MASK;
-> +		tps65912_reg_write(pmic, reg2, reg2_val);
-
-There's set_bits() and clear_bits() ops in the core...
-
-> +	switch (range) {
-> +	case 0:
-> +		/* 0.5 - 1.2875V in 12.5mV steps */
-> +		voltage = tps65912_vsel_to_uv_range0(vsel);
-> +		break;
-
-Just implement get_voltage_sel() and let the core do the lookup.
-
-> +static int tps65912_set_voltage_dcdc(struct regulator_dev *dev,
-> +						unsigned selector)
-> +{
-> +	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
-> +	int id = rdev_get_id(dev);
-> +	int value;
-> +	const u16 *table;
-> +	u8 table_len, reg;
-> +
-> +	table = pmic->info[id]->table;
-> +	table_len = pmic->info[id]->table_len;
-> +
-> +	reg = tps65912_get_dcdc_sel_register(pmic, id);
-> +	value = tps65912_reg_read(pmic, reg);
-> +	value &= 0xC0;
-> +	return tps65912_reg_write(pmic, reg, selector | value);
-
-You're not actually doing anything with table here...
-
-> +static int tps65912_get_voltage_ldo(struct regulator_dev *dev)
-> +{
-> +	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
-> +	int id = rdev_get_id(dev), voltage = 0;
-> +	int vsel = 0;
-> +	u8 reg;
-> +
-> +	reg = tps65912_get_ldo_sel_register(pmic, id);
-> +	vsel = tps65912_reg_read(pmic, reg);
-> +	vsel &= 0x3F;
-> +
-> +	/* 0.5 - 1.2875V in 12.5mV steps */
-> +	voltage = LDO_VSEL_table[vsel];
-> +
-> +	return voltage * 100;
-
-Just make this into a get_voltage_sel().
-
-> +static int tps65912_list_voltage_dcdc(struct regulator_dev *dev,
-> +					unsigned selector)
-> +{
-> +	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
-> +	int id = rdev_get_id(dev);
-> +	const u16 *table;
-> +	u8 table_len;
-> +
-> +	table = pmic->info[id]->table;
-> +	table_len = pmic->info[id]->table_len;
-> +	if (selector >= table_len)
-> +		return -EINVAL;
-> +	else
-> +		return table[selector] * 100;
-> +}
-
-There were a bunch of vsel_to_uV functions further up the driver which
-do the same thing - one of the two implementations should go.
+IIRC I tried playing with tp_smapi and did not get anything
+useful. The pack should be original, and I guess I should try again.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
