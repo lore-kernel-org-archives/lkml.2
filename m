@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab1EJNgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 09:36:22 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56152 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707Ab1EJNgU (ORCPT
+	id S932131Ab1EJNmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 09:42:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41683 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752930Ab1EJNmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 09:36:20 -0400
-Date: Tue, 10 May 2011 09:36:03 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
- writeback for various fses
-Message-ID: <20110510133603.GA5823@infradead.org>
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
- <87tyd31fkc.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87tyd31fkc.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 10 May 2011 09:42:07 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kukjin Kim <kgene.kim@samsung.com>, Dave Jones <davej@redhat.com>,
+        Ben Dooks <ben-linux@fluff.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] CPUFREQ/S3C64xx: Move S3C64xx CPUfreq driver into drivers/cpufreq
+Date: Tue, 10 May 2011 15:42:08 +0200
+Message-Id: <1305034928-25835-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 10:59:15AM +0900, OGAWA Hirofumi wrote:
-> I'd like to know those patches are on what state. Waiting in writeback
-> page makes slower, like you mentioned it (I guess it would more
-> noticeable if device was slower that like FAT uses). And I think
-> currently it doesn't help anything others for blk-integrity stuff
-> (without other technic, it doesn't help FS consistency)?
+This is a straight code motion patch, there are no changes to the driver
+itself. The Kconfig is left untouched as the ARM CPUfreq Kconfig is all
+in one big block in arm/Kconfig and should be moved en masse rather than
+being done piecemeal.
 
-It only makes things slower if we rewrite a region in a file that
-is currently undergoing writeback.  I'd be interested to know about
-real life applications doing that, and if they really are badly affect
-we should help them to work around that in userspace, e.g. by adding
-a fadvice will rewrite call that might be used to never write back
-that regions without an explicit fsync call.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ arch/arm/mach-s3c64xx/Makefile                     |    4 ----
+ drivers/cpufreq/Makefile                           |    2 ++
+ .../cpufreq.c => drivers/cpufreq/s3c64xx.c         |    3 +--
+ 3 files changed, 3 insertions(+), 6 deletions(-)
+ rename arch/arm/mach-s3c64xx/cpufreq.c => drivers/cpufreq/s3c64xx.c (99%)
+
+diff --git a/arch/arm/mach-s3c64xx/Makefile b/arch/arm/mach-s3c64xx/Makefile
+index 88d7fd2..61b4034 100644
+--- a/arch/arm/mach-s3c64xx/Makefile
++++ b/arch/arm/mach-s3c64xx/Makefile
+@@ -23,10 +23,6 @@ obj-$(CONFIG_CPU_S3C6410)	+= s3c6410.o
+ obj-y				+= irq.o
+ obj-y				+= irq-eint.o
+ 
+-# CPU frequency scaling
+-
+-obj-$(CONFIG_CPU_FREQ_S3C64XX)  += cpufreq.o
+-
+ # DMA support
+ 
+ obj-$(CONFIG_S3C64XX_DMA)	+= dma.o
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index e3fc242..2edd08f 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -39,3 +39,5 @@ obj-$(CONFIG_X86_CPUFREQ_NFORCE2)	+= cpufreq-nforce2.o
+ 
+ ##################################################################################d
+ 
++# ARM CPUfreq drivers
++obj-$(CONFIG_CPU_FREQ_S3C64XX)  += s3c64xx.o
+diff --git a/arch/arm/mach-s3c64xx/cpufreq.c b/drivers/cpufreq/s3c64xx.c
+similarity index 99%
+rename from arch/arm/mach-s3c64xx/cpufreq.c
+rename to drivers/cpufreq/s3c64xx.c
+index 1e7df30..c370935 100644
+--- a/arch/arm/mach-s3c64xx/cpufreq.c
++++ b/drivers/cpufreq/s3c64xx.c
+@@ -1,5 +1,4 @@
+-/* linux/arch/arm/plat-s3c64xx/cpufreq.c
+- *
++/*
+  * Copyright 2009 Wolfson Microelectronics plc
+  *
+  * S3C64xx CPUfreq Support
+-- 
+1.7.4.1
 
