@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab1EJPVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:21:48 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43411 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab1EJPVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:21:47 -0400
-Date: Tue, 10 May 2011 17:21:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Joerg Roedel <joerg.roedel@amd.com>, yanmin_zhang@linux.intel.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/3] perf support for amd guest/host-only bits
-Message-ID: <20110510152132.GA25705@elte.hu>
-References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
+	id S932814Ab1EJPZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:25:09 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:59586 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab1EJPZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 11:25:06 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+	<87tyd31fkc.fsf@devron.myhome.or.jp>
+	<20110510133603.GA5823@infradead.org>
+	<874o524q9h.fsf@devron.myhome.or.jp>
+	<20110510144939.GI4402@quack.suse.cz>
+Date: Wed, 11 May 2011 00:24:58 +0900
+In-Reply-To: <20110510144939.GI4402@quack.suse.cz> (Jan Kara's message of
+	"Tue, 10 May 2011 16:49:39 +0200")
+Message-ID: <87aaeur31x.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jan Kara <jack@suse.cz> writes:
 
-* Joerg Roedel <joerg.roedel@amd.com> wrote:
+>> Isn't it reallocated blocks too, and metadata too?
+>   Reallocated blocks - not really. For a block to be freed it cannot be
+> under writeback and when it's freed no writeback is started.
 
-> So any feedback is greatly appreciated :-)
+Sure for data -> data reallocated case. metadata -> data/metadata is
+still there.
 
-it's nice to see this hw feature utilized :)
+> For metadata - yes. But ext3, ext4, xfs, btrfs have to avoid modifying
+> metadata under writeback anyway (because of journalling / COW
+> constraints) and thus they don't care.
 
-> Diffstat:
-> 
->  arch/x86/include/asm/perf_event.h    |    3 +++
->  arch/x86/kernel/cpu/perf_event_amd.c |    6 ++++++
->  include/linux/perf_event.h           |    5 ++++-
->  kernel/perf_event.c                  |    4 ++++
->  tools/perf/util/parse-events.c       |   10 +++++++++-
->  5 files changed, 26 insertions(+), 2 deletions(-)
+Yes. Those would use better way than just blocking.
 
-I see you have not touched tools/perf/builtin-kvm.c - how does this feature 
-integrate with the features of 'perf kvm'? (are you using perf kvm by any 
-chance?)
+> For ext2 or vfat it's a different story. But as I wrote to Darrick,
+> I'm not sure about vfat but for ext2 and similar legacy filesystems,
+> I'd rather let them live with their unstable pages under IO ;) because
+> I see a limited use for that.
 
-Thanks,
+If this patches was not going to tackle it, I have no argument here ;)
+It would be simply FS specific approach/fixes anymore like journal.
 
-	Ingo
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
