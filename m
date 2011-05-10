@@ -1,195 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1EJWq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 18:46:29 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46310 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab1EJWq1 convert rfc822-to-8bit (ORCPT
+	id S1753103Ab1EJWrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 18:47:06 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58163
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751398Ab1EJWrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 18:46:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=H1hfTFIf+AezTo0GoauKd73FCPnJgd2RAofaCTGcfgnjtzNHPlFWua8+qEXN0ECxIN
-         p/tkdphSt3/byWBR/Dn07ZpeTuBr+f6GMXhcHkCn73GMhuomowKqT27xxPkUZQrailUE
-         eIMRPpds232+0Oq8tn3FjCsWVjJuKoTUgTb18=
-MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF0497F1B201@HQMAIL01.nvidia.com>
-References: <1304363786-30376-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF0497F1B201@HQMAIL01.nvidia.com>
-Date: Wed, 11 May 2011 00:46:26 +0200
-X-Google-Sender-Auth: nXmOH_yxojRHAayh8SQmloOZrus
-Message-ID: <BANLkTinZh4f2o9qjTPppO5x6YfH3rhU3jg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] drivers: create a pinmux subsystem
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>,
-        Martin Persson <martin.persson@stericsson.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 May 2011 18:47:04 -0400
+Date: Tue, 10 May 2011 15:46:32 -0700 (PDT)
+Message-Id: <20110510.154632.104076893.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/2 Stephen Warren <swarren@nvidia.com>:
-> Linus Walleij wrote at Monday, May 02, 2011 1:16 PM:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This creates a subsystem for handling of pinmux devices. These are
->> devices that enable and disable groups of pins on primarily PGA and
->> BGA type of chip packages and common in embedded systems.
->
-> I would avoid any references to particular package types; I've seen
-> pinmuxing applied to PLCC and DIP/DIL too, and in general, it's possible
-> irrespective of package type.
 
-Sure dropping parts of that. I'll try to reify the package concept a bit.
-However since I have this nice chessboard example I have to say
-what I'm talking about, the topology of this 2D PGA field is pretty fun.
+There's several OOPS'ers and reverts in here.
 
->> +The mux settings are:
->> +
->> +- Oriented around enumerated physical pins or pads denoted by unsigned
->> +  integers in the range 0..MAX_INT. Every pin on your system (or atleast
->> +  every pin that can be muxed) should have a unique number. The numberspace
->
-> Does this imply a model where each pin's "special function" can be
-> controlled independently?
+I think we now have all of the worst ones fixed from the regression
+list, and I would recommend doing just one more -rc to get this all
+sorted out and tested properly.  But of course that is completely up
+to you.
 
-No not at all. This is defining the terms.
+1) ipheth regressed because it had a hard dependency upon NET_IP_ALIGN
+   being defined always as 2, get rid of that assumption.  From Ben
+   Hutchings.
 
-> In particular, NVIDIA Tegra has a setup where:
->
-> * Pinmux configuration for "special functions" is at a "pad-group"
->  level, where there may be 1..N pins in a pad-group, and there is a
->  single register field that defines the current special function routed
->  to/from all pins in that pad-group at once.
+2) IPV6 REJECT module puts random values in TOS field, fix from
+   Fernando Luis Vazquez Cao.
 
-Perfect fit with this pinmux API.
+3) When an ipv4 fragmentation entry expires via a timer, we have to
+   revalidate the route otherwise we can crash.  Fix from Eric
+   Dumazet.
 
-> * Each pad group can be assigned 1 of N special functions (none might be
->  an option in some/all cases too)
+4) In usbnet, usbnet_bh can be scheduled too early during resume
+   resulting in flood of RX frames but no reclaim, and this leads to
+   running out of atomic memory.  Don't allow usbnet_bh to schedule
+   until the device is brought completely up.  Fix from Ming Lei.
 
-Perfect fit with this pinmux API.
+5) TCP cubic can divide by zero in some extreme cases, fix from
+   Stephen Hemminger.
 
-> * Some special functions may be assignable to multiple pad groups,
->  although obviously only 1 pad group per function at a time.
+6) SLIP and SLCAN devices return incorrect values from their ldisc
+   open method, from Matvejchikov Ilya and Oliver Hartkopp.
 
-Perfect fit with this pinmux API.
+7) VLAN GVRP state is undone at the wrong moment, causing crashes during
+   batched device delete.  From Eric Dumazet.
 
-> * GPIO selection is at per-pin granularity; individual pins may be used
->  as a GPIO irrespective of what SFR is selected for the pad group
->  containing the pin.
+8) dev_close() mistakenly had it's IFF_UP check removed, this has to be
+   put back otherwise we can crash during batched device teardown, in
+   particular with bonding.  Fix from Eric DUmazet.
 
-Perfect fit with this pinmux API. The Nomadik pinmux is basically the
-same.
+9) PCH_GBE "checksum correct" logic on RX is reversed (hardware sets
+   the status bit on checksum failure, clears it on success), from
+   Toshiharu Okada.
 
-Note that the pinmux API makes sure you haven't used a single pin for
-GPIO at the same time as you're using a group containing the same pin.
+10) vmxnet3 does not take ->cmd_lock consistently with interrupts disabled,
+    as is warned by lockdep.  Fix from Roland Dreier.
 
-> * There are also other configurations associated with pinmuxing, such
->  as drive strength, pull up/down enables, etc.
+11) DCCP feature options length needs to be validated properly,
+    otherwise we can end up working with negative lengths, fix from
+    Dan Rosenberg.
 
-I am currently contemplating whether to include a control function for
-this stuff in the pinmux API. I probably will, and then make sure the
-enumerators match those I have just defined for GPIO (since there may
-be systems with such settings for just GPIO pins (which cannot be
-muxed) and vice versa for muxable pins that cannot be used for GPIO
-but still driven low if unused for example.
+13) Fix regressions in ebtables compat support, from Eric Dumazet and
+    Florian Westphal.
 
-> Also, some of our drivers use "dynamic pinmuxing". For example, our
-> downstream I2C driver exposes N I2C busses and reprograms the pinmux
-> at runtime to attach the actual I2C controller to different sets of
-> pins, essentially multi-plexing the control across N physical busses.
+14) IPVS namespace support can leave objects referenced indefinitely until
+    reboot.  Fixes from Hans Schillstrom.
 
-Just pinmux_get()/pinmux_put()/pinmux_get()/pinmux_put() to switch
-these functions in/out at runtime. (Described in reply to Russell
-in patch 0.)
+15) DSCP netfilter code forgets to invert mask, from Fernando Luis
+    Vazquez Cao.
 
->> +/**
->> + * struct pinmux_map - boards/machines shall provide this map for devices
->> + * @node: list node - only for internal use
->
-> Node isn't in the structure.
+16) Revert a buggy xt_conntrack change that broke handling of locally
+    generated packets.  From Florian Westphal and Jan Engelhardt.
 
-Thanks, leftover, removed it.
+17) Inter-family packet output was busted in IPSEC, we need to split
+    the operation into two parts, ->output() and ->output_finish(), to
+    make sure we work in the context of the correct protocol (ipv4 vs
+    ipv6) at each step.  Fix from Steffen Klassert.
 
->> +/*
->> + * The pin number is a global pin number space, nominally the arch shall define
->> + * the number of pins in *total* across all chips in the arch/system.
->> + *
->> + * Example: if your arch has two chips with 64 pins each, you have
->> + * 8*3 = 24 MACH_NR_PINS.
->
-> 2*64 = 128 MACH_NR_PINS ?
+18) We cannot allow ESN handling when anti-reply detection is disabled,
+    also from Steffen Klassert.
 
-Yeah :-P thanks.
+Please pull, thanks a lot!
 
->> +struct pinmux_ops {
->> +     int (*request) (struct pinmux_dev *pmxdev, unsigned offset);
->
-> s/offset/pin/? I assume that's what it means. Same for gpio_request_enable
-> below too.
+The following changes since commit 54b333529df25b21da462c7dcc16c7dc779d9f26:
 
-No not at all. Like in the case with the gpiolib, we may have several muxes
-on the system (e.g. in the U8500 we have alternate functions not only
-on the SoC package but also on the AB8500 mixsig circuit). The offset
-refers to the pin inside the pin range handled by that specific driver.
+  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/upstream-linus (2011-05-10 12:00:53 -0700)
 
-If you have only *one* pinmux driver on your system it will be the same
-thing, but not in the general case.
+are available in the git repository at:
 
->> +/**
->> + * struct pinmux_desc - pinmux descriptor, register this to pinmux subsystem
->> + * @name: name for the pinmux
->> + * @ops: pinmux operation table
->> + * @owner: module providing the pinmux, used for refcounting
->> + * @base: the number of the first pin handled by this pinmux, in the global
->> + *   pin space, subtracted from a given pin to get the offset into the range
->> + *   of a certain pinmux
->> + * @no_pin_settings: the number of pins handled by this pinmux - note that
->
-> That's npins below.
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
 
-Good catch, thanks!
+Ben Hutchings (1):
+      ipheth: Properly distinguish length and alignment in URBs and skbs
 
->> +/* External interface to pinmux */
->> +extern int pinmux_request_gpio(int pin, unsigned gpio);
->> +extern void pinmux_free_gpio(int pin);
->
-> Is there (or should there be) any automatic interaction with gpiolib?
+Dan Rosenberg (1):
+      dccp: handle invalid feature options length
 
-My idea is that if a certain gpiolib driver may need to request a pin that
-is muxed, it will translate the GPIO pin number into a pinmux pin and
-call pinmux_request_gpio() on that pin. So in my head only gpiolib driver
-under drivers/gpio() would nominally be calling this to reserve pins.
+Dan Williams (1):
+      net/usb: mark LG VL600 LTE modem ethernet interface as WWAN
 
-Since not all GPIOs are muxable, it'll need to be on a per-driver basis.
+David S. Miller (1):
+      Merge branch 'pablo/nf-2.6-updates' of git://1984.lsi.us.es/net-2.6
 
->> +extern int pinmux_register_mappings(struct pinmux_map const *map,
->> +                                 unsigned num_maps);
->> +extern struct pinmux *pinmux_get(struct device *dev, const char *func);
->
-> I feel slightly uneasy tying the pinmux API to devices rather than
-> Letting it be more free-form. I've seen this pattern for clocks too,
-> but IIRC there is an override there allowing specification of a NULL
-> device in order to look up a clock by raw clock name instead of
-> device + sub-clock-name right?
+Eric Dumazet (4):
+      net: ip_expire() must revalidate route
+      netfilter: fix ebtables compat support
+      vlan: fix GVRP at dismantle time
+      net: dev_close() should check IFF_UP
 
-Yes and that is possible with pinmux_get() too, you can specify
-a function not tied to a particular device.
+Fernando Luis Vazquez Cao (2):
+      netfilter: IPv6: initialize TOS field in REJECT target module
+      netfilter: IPv6: fix DSCP mangle code
 
-> Still, I'm a relative neophyte regarding internal Linux kernel APIs,
-> so my opinion here may not be particularly relevant.
+Florian Westphal (1):
+      netfilter: ebtables: only call xt_compat_add_offset once per rule
 
-It's relevant.
+Hans Schillstrom (2):
+      IPVS: Change of socket usage to enable name space exit.
+      IPVS: init and cleanup restructuring
 
-Thanks a lot Stephen! Once/if you like the API, please ACK it.
-Linus Walleij
+Kleber Sacilotto de Souza (1):
+      ehea: fix wrongly reported speed and port
+
+Kurt Van Dijck (1):
+      can: fix SJA1000 dlc for RTR packets
+
+Matvejchikov Ilya (1):
+      NET: slip, fix ldisc->open retval
+
+Ming Lei (1):
+      usbnet: runtime pm: fix out of memory
+
+Oliver Hartkopp (1):
+      slcan: fix ldisc->open retval
+
+Pablo Neira Ayuso (2):
+      netfilter: ctnetlink: fix timestamp support for new conntracks
+      netfilter: revert a2361c8735e07322023aedc36e4938b35af31eb0
+
+Roland Dreier (1):
+      vmxnet3: Consistently disable irqs when taking adapter->cmd_lock
+
+Somnath Kotur (1):
+      be2net: Fixed bugs related to PVID.
+
+Steffen Klassert (2):
+      xfrm: Assign the inner mode output function to the dst entry
+      xfrm: Don't allow esn with disabled anti replay detection
+
+Tomoya (1):
+      pch_gbe: support ML7223 IOH
+
+Toshiharu Okada (2):
+      PCH_GbE : Fixed the issue of collision detection
+      PCH_GbE : Fixed the issue of checksum judgment
+
+stephen hemminger (1):
+      tcp_cubic: limit delayed_ack ratio to prevent divide error
+
+ drivers/net/Kconfig                  |    8 ++-
+ drivers/net/benet/be.h               |    2 +-
+ drivers/net/benet/be_cmds.c          |    2 +-
+ drivers/net/benet/be_main.c          |   18 ++++--
+ drivers/net/can/sja1000/sja1000.c    |    2 +-
+ drivers/net/can/slcan.c              |    4 +-
+ drivers/net/ehea/ehea_ethtool.c      |   21 ++++--
+ drivers/net/pch_gbe/pch_gbe_main.c   |   23 +++++--
+ drivers/net/slip.c                   |    4 +-
+ drivers/net/usb/cdc_ether.c          |    2 +-
+ drivers/net/usb/ipheth.c             |   14 +++--
+ drivers/net/usb/usbnet.c             |   10 ++-
+ drivers/net/vmxnet3/vmxnet3_drv.c    |   10 ++-
+ include/net/ip_vs.h                  |   17 +++++
+ include/net/xfrm.h                   |    3 +
+ net/8021q/vlan.c                     |    3 +
+ net/8021q/vlan_dev.c                 |    3 -
+ net/bridge/netfilter/ebtables.c      |   64 +++---------------
+ net/core/dev.c                       |   10 ++-
+ net/dccp/options.c                   |    2 +
+ net/ipv4/ip_fragment.c               |   33 +++++-----
+ net/ipv4/tcp_cubic.c                 |    9 ++-
+ net/ipv4/xfrm4_output.c              |    8 ++-
+ net/ipv4/xfrm4_state.c               |    1 +
+ net/ipv6/netfilter/ip6t_REJECT.c     |    4 +-
+ net/ipv6/xfrm6_output.c              |    6 +-
+ net/ipv6/xfrm6_state.c               |    1 +
+ net/netfilter/ipvs/ip_vs_app.c       |   15 +----
+ net/netfilter/ipvs/ip_vs_conn.c      |   12 +---
+ net/netfilter/ipvs/ip_vs_core.c      |  103 ++++++++++++++++++++++++++---
+ net/netfilter/ipvs/ip_vs_ctl.c       |  120 ++++++++++++++++++++++++++++-----
+ net/netfilter/ipvs/ip_vs_est.c       |   14 +---
+ net/netfilter/ipvs/ip_vs_proto.c     |   11 +---
+ net/netfilter/ipvs/ip_vs_sync.c      |   65 ++++++++++--------
+ net/netfilter/nf_conntrack_netlink.c |    4 +
+ net/netfilter/x_tables.c             |    4 +-
+ net/netfilter/xt_DSCP.c              |    2 +-
+ net/netfilter/xt_conntrack.c         |    5 --
+ net/xfrm/xfrm_policy.c               |   14 ++++-
+ net/xfrm/xfrm_replay.c               |    3 +
+ 40 files changed, 423 insertions(+), 233 deletions(-)
