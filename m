@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1EJVDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:03:24 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60777 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab1EJVDX (ORCPT
+	id S1752289Ab1EJVGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:06:16 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49041 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750784Ab1EJVGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:03:23 -0400
-Date: Tue, 10 May 2011 22:03:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Taylor Hutt <thutt@chromium.org>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CHROMIUM: ASoC: Remove 'const' modifiers which cause
-	warnings during compilation.
-Message-ID: <20110510210319.GA17589@sirena.org.uk>
-References: <1305054860-16054-1-git-send-email-thutt@chromium.org>
+	Tue, 10 May 2011 17:06:14 -0400
+X-Sasl-enc: FMqyallK9rEPGdczMsD38MXLgvaWocneKI8XlIxp0/D3 1305061573
+Message-ID: <4DC9A8C0.9070502@fastmail.fm>
+Date: Tue, 10 May 2011 22:06:08 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305054860-16054-1-git-send-email-thutt@chromium.org>
-X-Cookie: Interchangeable parts won't.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Tim Gardner <tim.gardner@canonical.com>
+CC: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>
+Subject: Re: [PATCH V2] fbcon -- fix race between open and removal of framebuffers
+References: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com> <1304617307-7389-2-git-send-email-tim.gardner@canonical.com> <4DC30FFA.9030708@fastmail.fm> <4DC933EE.70409@canonical.com>
+In-Reply-To: <4DC933EE.70409@canonical.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 12:14:20PM -0700, Taylor Hutt wrote:
-> This change removes a warning produced when 'const * const' values
-> are assigned to a 'const **'.
->
-> These code being modified originally came from these two commits:
-> 
->     http://git.kernel.org/?p=linux/kernel/git/broonie/sound-2.6.git;a=commit;h=82a5a936f6dea13849d93a2899a9b7294a8db336
->     http://git.kernel.org/?p=linux/kernel/git/broonie/sound-2.6.git;a=commit;h=dad31ec133adb20c8fd10bfd9379da3f08b8721e
-> 
-> Change-Id: I964ff6d24aafe78c2db7002abfd03b9069db9687
-> Signed-off-by: Taylor Hutt <thutt@chromium.org>
+Hi Tim,
 
-This is already fixed in -next.
+One more quick question:
 
-Please follow the patch submission procedure in SubmittingPatches, in
-particular:
+On 10/05/2011 13:47, Tim Gardner wrote:
++static struct fb_info *get_framebuffer_info(int idx)
++__acquires(&registered_lock)
++__releases(&registered_lock)
++{
++	struct fb_info *fb_info;
++
++	spin_lock(&registered_lock);
++	fb_info = registered_fb[idx];
++	fb_info->ref_count++;
++	spin_unlock(&registered_lock);
++
++	return fb_info;
++}
 
-- Send patches to the relevant maintainers and mailing lists.
-- Don't include "CHROMIUM" or other local things like gerritt artifacts
-  in your changelog.
+[snip]
 
-If you don't send patches to the maintainers there's a reasonable chance
-they'll never see them, and the changelog stuff is just irrelevant and
-makes it harder to apply the patch as the maintainer has to manually
-remove them.
+ static int
+ fb_open(struct inode *inode, struct file *file)
+ __acquires(&info->lock)
+@@ -1363,13 +1421,18 @@ __releases(&info->lock)
+
+ 	if (fbidx >= FB_MAX)
+ 		return -ENODEV;
+-	info = registered_fb[fbidx];
+-	if (!info)
++	info = get_framebuffer_info(fbidx);
++	if (!info) {
+ 		request_module("fb%d", fbidx);
+-	info = registered_fb[fbidx];
++		info = get_framebuffer_info(fbidx);
++	}
+ 	if (!info)
+ 		return -ENODEV;
+
+This section of code implies that get_framebuffer_info can return NULL
+but in that case wouldn't the fb_info->ref_count++ have oopsed?
+
+You could add the simple case of
+
+if(fb_info)
+	fb_info->ref_count++
+
+to get_framebuffer_info. That should cover it.
+
+Thanks,
+
+Jack
