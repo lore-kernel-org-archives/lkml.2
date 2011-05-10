@@ -1,122 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348Ab1EJR3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 13:29:21 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41695 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750704Ab1EJR3U (ORCPT
+	id S1751399Ab1EJRan (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 13:30:43 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:54326 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959Ab1EJRal convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 13:29:20 -0400
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
- related.
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
-        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <20110510171726.GE4146@suse.de>
-References: <1304432553.2576.10.camel@mulgrave.site>
-	 <20110506074224.GB6591@suse.de> <20110506080728.GC6591@suse.de>
-	 <1304964980.4865.53.camel@mulgrave.site> <20110510102141.GA4149@novell.com>
-	 <1305036064.6737.8.camel@mulgrave.site> <20110510143509.GD4146@suse.de>
-	 <1305041397.6737.12.camel@mulgrave.site>
-	 <1305043052.6737.17.camel@mulgrave.site>
-	 <1305047154.6737.22.camel@mulgrave.site>  <20110510171726.GE4146@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 12:29:13 -0500
-Message-ID: <1305048553.6737.28.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 May 2011 13:30:41 -0400
+Subject: Re: linux-next: build failure after merge of the voltage tree
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+In-Reply-To: <1305016712.3206.2.camel@odin>
+Date: Tue, 10 May 2011 12:30:36 -0500
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6B0D58A8-B278-49D6-835F-C38E7517FCD5@slimlogic.co.uk>
+References: <20110510124434.b30a7631.sfr@canb.auug.org.au> <1305016712.3206.2.camel@odin>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-10 at 18:17 +0100, Mel Gorman wrote:
-> On Tue, May 10, 2011 at 12:05:54PM -0500, James Bottomley wrote:
-> > On Tue, 2011-05-10 at 15:57 +0000, James Bottomley wrote:
-> > > On Tue, 2011-05-10 at 10:29 -0500, James Bottomley wrote:
-> > > > On Tue, 2011-05-10 at 15:35 +0100, Mel Gorman wrote:
-> > > > > On Tue, May 10, 2011 at 09:01:04AM -0500, James Bottomley wrote:
-> > > > > > On Tue, 2011-05-10 at 11:21 +0100, Mel Gorman wrote:
-> > > > > > > I really would like to hear if the fix makes a big difference or
-> > > > > > > if we need to consider forcing SLUB high-order allocations bailing
-> > > > > > > at the first sign of trouble (e.g. by masking out __GFP_WAIT in
-> > > > > > > allocate_slab). Even with the fix applied, kswapd might be waking up
-> > > > > > > less but processes will still be getting stalled in direct compaction
-> > > > > > > and direct reclaim so it would still be jittery.
-> > > > > > 
-> > > > > > "the fix" being this
-> > > > > > 
-> > > > > > https://lkml.org/lkml/2011/3/5/121
-> > > > > > 
-> > > > > 
-> > > > > Drop this for the moment. It was a long shot at best and there is little
-> > > > > evidence the problem is in this area.
-> > > > > 
-> > > > > I'm attaching two patches. The first is the NO_KSWAPD one to stop
-> > > > > kswapd being woken up by SLUB using speculative high-orders. The second
-> > > > > one is more drastic and prevents slub entering direct reclaim or
-> > > > > compaction. It applies on top of patch 1. These are both untested and
-> > > > > afraid are a bit rushed as well :(
-> > > > 
-> > > > Preliminary results with both patches applied still show kswapd
-> > > > periodically going up to 99% but it doesn't stay there, it comes back
-> > > > down again (and, obviously, the system doesn't hang).
-> > > 
-> > > This is a second run with the watch highorders.
-> > > 
-> > > At the end of the run, the system hung temporarily and now comes back
-> > > with CPU3 spinning in all system time at kswapd shrink_slab
-> > 
-> > Here's a trace in the same situation with the ftrace stack entries
-> > bumped to 16 as requested on IRC.  There was no hang for this one.
-> > 
-> 
-> Ok, so the bulk of the high-order allocs are coming from
-> 
-> > 140162 instances order=1 normal gfp_flags=GFP_NOWARN|GFP_NORETRY|GFP_COMP|GFP_NOMEMALLOC|
-> >  => __alloc_pages_nodemask+0x754/0x792 <ffffffff810dc0de>
-> >  => alloc_pages_current+0xbe/0xd8 <ffffffff81105459>
-> >  => alloc_slab_page+0x1c/0x4d <ffffffff8110c5fe>
-> >  => new_slab+0x50/0x199 <ffffffff8110dc48>
-> >  => __slab_alloc+0x24a/0x328 <ffffffff8146ab86>
-> >  => kmem_cache_alloc+0x77/0x105 <ffffffff8110e450>
-> >  => mempool_alloc_slab+0x15/0x17 <ffffffff810d6e85>
-> >  => mempool_alloc+0x68/0x116 <ffffffff810d70fa>
-> >  => bio_alloc_bioset+0x35/0xc3 <ffffffff81144dd8>
-> >  => bio_alloc+0x15/0x24 <ffffffff81144ef5>
-> >  => submit_bh+0x6d/0x105 <ffffffff811409f6>
-> >  => __block_write_full_page+0x1e7/0x2d7 <ffffffff81141fac>
-> >  => block_write_full_page_endio+0x8a/0x97 <ffffffff81143671>
-> >  => block_write_full_page+0x15/0x17 <ffffffff81143693>
-> >  => mpage_da_submit_io+0x31a/0x395 <ffffffff811935d8>
-> >  => mpage_da_map_and_submit+0x2ca/0x2e0 <ffffffff81196e88>
-> > 
-> 
-> That at least is in line with the large untar and absolves i915
-> from being the main cause of trouble. The lack of the hang implies
-> that SLUB doing high order allocations is stressing the system too
-> much and needs to be more willing to fall back to order-0 although
-> it does not adequately explain why it hung as opposed to just being
-> incredible slow.
-> 
-> I'm also still concerned with the reports of getting stuck in a heavy
-> loop on the i915 shrinker so will try again reproducing this locally
-> with a greater focus on something X related happening at the same time.
-> 
-> One thing at a time though, SLUB needs to be less aggressive so I'll
-> prepare a series in the morning, have another go at generating data
-> and see what shakes out.
 
-As a final data point, I tried slub_max_order=0.  kswapd is much more
-quiescent (it calms down to nothing).  It shows spikes of up to 70% and
-once up to 99% though, but it doesn't go up to 99% and stay there like
-it did previously.  This is just with top, so it's a bit inaccurate.
+On May 10, 2011, at 3:38 AM, Liam Girdwood wrote:
 
-James
+> On Tue, 2011-05-10 at 12:44 +1000, Stephen Rothwell wrote:
+>> Hi Liam,
+>> 
+>> After merging the voltage tree, today's linux-next build (x86_64
+>> allmodconfig) failed like this:
+>> 
+>> ERROR: "tps65910_gpio_init" [drivers/mfd/tps65910.ko] undefined!
+>> ERROR: "tps65910_irq_init" [drivers/mfd/tps65910.ko] undefined!
+>> ERROR: "irq_modify_status" [drivers/mfd/tps65910-irq.ko] undefined!
+>> ERROR: "irq_set_chip_and_handler_name" [drivers/mfd/tps65910-irq.ko] undefined!
+>> ERROR: "handle_edge_irq" [drivers/mfd/tps65910-irq.ko] undefined!
+>> 
+>> I have used the voltage tree from next-20110509 for today.
+> 
+> Jorge, could you send a fix for this today.
+> 
+> Thanks
+> 
+> Liam
+> 
 
+The following patch should solve this:
 
+From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+MFD: Fix TPS65910 build
+
+Support for tps65910 as a module is not available. The driver can
+only be compiled as built-in. OTOH, the regulator driver can still
+be built as module without breaking the compilation.
+
+Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+---
+ drivers/mfd/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 65930a7..c78865e 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -672,8 +672,8 @@ config MFD_OMAP_USB_HOST
+ 	  OMAP USB Host drivers.
+ 
+ config MFD_TPS65910
+-	tristate "TPS65910 Power Management chip"
+-	depends on I2C &&  GPIOLIB
++	bool "TPS65910 Power Management chip"
++	depends on I2C && GPIOLIB
+ 	select MFD_CORE
+ 	help
+ 	  if you say yes here you get support for the TPS65910 series of
+-- 
+1.7.1
