@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab1EJHGu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 03:06:50 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58731 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab1EJHGt (ORCPT
+	id S1754318Ab1EJHOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 03:14:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56854 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab1EJHOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 03:06:49 -0400
-Date: Tue, 10 May 2011 03:06:46 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 115/206] Staging: hv: Use completion abstraction in
- struct netvsc_device
-Message-ID: <20110510070646.GB13847@infradead.org>
-References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
- <1304978288-22999-1-git-send-email-kys@microsoft.com>
- <1304978288-22999-115-git-send-email-kys@microsoft.com>
+	Tue, 10 May 2011 03:14:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DC8E5C2.9090701@jp.fujitsu.com>
+Date: Tue, 10 May 2011 16:14:10 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304978288-22999-115-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Paul Turner <pjt@google.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [patch 01/15] sched: (fixlet) dont update shares twice on on_rq
+ parent
+References: <20110503092846.022272244@google.com> <20110503092904.541414484@google.com>
+In-Reply-To: <20110503092904.541414484@google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -	net_device->wait_condition = 0;
->  	ret = vmbus_sendpacket(device->channel, init_packet,
->  			       sizeof(struct nvsp_message),
->  			       (unsigned long)init_packet,
-> @@ -272,10 +272,8 @@ static int netvsc_init_recv_buf(struct hv_device *device)
->  		goto cleanup;
+(2011/05/03 18:28), Paul Turner wrote:
+> In dequeue_task_fair() we bail on dequeue when we encounter a parenting entity
+> with additional weight.  However, we perform a double shares update on this
+> entity since we continue the shares update traversal from that point, despite
+> dequeue_entity() having already updated its queuing cfs_rq.
+> 
+> Avoid this by starting from the parent when we resume.
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> ---
+>  kernel/sched_fair.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> Index: tip/kernel/sched_fair.c
+> ===================================================================
+> --- tip.orig/kernel/sched_fair.c
+> +++ tip/kernel/sched_fair.c
+> @@ -1355,8 +1355,10 @@ static void dequeue_task_fair(struct rq 
+>  		dequeue_entity(cfs_rq, se, flags);
+>  
+>  		/* Don't dequeue parent if it has other entities besides us */
+> -		if (cfs_rq->load.weight)
+> +		if (cfs_rq->load.weight) {
+> +			se = parent_entity(se);
+>  			break;
+> +		}
+>  		flags |= DEQUEUE_SLEEP;
 >  	}
 >  
-> -	wait_event_timeout(net_device->channel_init_wait,
-> -			net_device->wait_condition,
-> -			msecs_to_jiffies(1000));
-> -	BUG_ON(net_device->wait_condition == 0);
-> +	t = wait_for_completion_timeout(&net_device->channel_init_wait, HZ);
-> +	BUG_ON(t == 0);
 
-I don't think you want a BUG_ON here, but rather fail the
-initialization.
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-Also I think you really should add synchronous versions of
-vmbus_sendpacket*, to the vmbus core so that all the synchronous waiting
-can be consolidated into a few helpers instead of needing to opencode
-it everywhere.
+This small fixlet can stand alone.
+Peter, how about getting this into git tree first?
+
+
+Thanks,
+H.Seto
 
