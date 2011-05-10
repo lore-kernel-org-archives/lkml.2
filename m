@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1EJXCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 19:02:25 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:42601 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab1EJXCX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 19:02:23 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-131.messagelabs.com!1305068542!24186206!1
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: =?utf-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Fabio Estevam <fabio.estevam@freescale.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 10 May 2011 18:02:20 -0500
-Subject: RE: [PATCH] [wip] ARM: imx: register "leds-gpio" device using new
- helper function
-Thread-Topic: [PATCH] [wip] ARM: imx: register "leds-gpio" device using new
- helper function
-Thread-Index: AcwO75FmTnyaR4cJROObV4/Z/rEgNQAdoB/Q
-Message-ID: <0D753D10438DA54287A00B027084269764D2C3CD1E@AUSP01VMBX24.collaborationhost.net>
-References: <20110510073152.GF29089@pengutronix.de>
- <1305017456-10910-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <1305017456-10910-2-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1305017456-10910-2-git-send-email-u.kleine-koenig@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753512Ab1EJXc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 19:32:56 -0400
+Received: from cpc7-stkp7-2-0-cust918.10-2.cable.virginmedia.com ([86.22.251.151]:51750
+	"EHLO freya" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753464Ab1EJXcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 19:32:55 -0400
+X-Greylist: delayed 1438 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 19:32:55 EDT
+Date: Wed, 11 May 2011 00:08:32 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Ben Dooks <ben-i2c@fluff.org>, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
+        ben-linux@fluff.org, eric.y.miao@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] i2c: append hardware lock with bus lock
+Message-ID: <20110510230832.GE634@freya.fluff.org>
+References: <1304003746-12127-1-git-send-email-haojian.zhuang@gmail.com>
+ <20110502092734.GV15795@trinity.fluff.org>
+ <20110502114616.7813da79@endymion.delvare>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110502114616.7813da79@endymion.delvare>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4AN2WJm000943
 
-On Tuesday, May 10, 2011 1:51 AM, Uwe Kleine-KÃ¶nig wrote:
->
-> This converts eukrea_mbimx27-baseboard to the new helper function.
->
-> bloat-o-meter reports for this change:
->
->	add/remove: 1/1 grow/shrink: 0/1 up/down: 128/-220 (-92)
->	function                                     old     new   delta
->	gpio_led_register_device                       -     128    +128
->	platform_devices                              28      24      -4
->	leds_gpio                                    216       -    -216
->
-> Additionally gpio_led_info (12 bytes) and gpio_leds (32 Bytes) are
-> initdata now as is gpio_led_register_device.
+On Mon, May 02, 2011 at 11:46:16AM +0200, Jean Delvare wrote:
+> On Mon, 2 May 2011 10:27:34 +0100, Ben Dooks wrote:
+> > On Thu, Apr 28, 2011 at 11:15:44PM +0800, Haojian Zhuang wrote:
+> > > Both AP and CP are contained in Marvell PXA910 silicon. These two ARM
+> > > cores are sharing one pair of I2C pins.
+> > > 
+> > > In order to keep I2C transaction operated with atomic, hardware lock
+> > > (RIPC) is required. Because of this, bus lock in AP side can't afford
+> > > this requirement. Now hardware lock is appended.
+> > > 
+> > > Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+> > > Cc: Ben Dooks <ben-linux@fluff.org>
+> > > Cc: Jean Delvare <khali@linux-fr.org>
+> > 
+> > Right, this looks like a reasonable explanation of what is going on here
+> > and if Jean is happy with the core changes I'll look at where the driver
+> > change can go.
+> 
+> Yes I am!
+> 
+> Let me know if you want me to take the core change in my tree or if you
+> prefer to have it in yours to avoid a dependency.
 
-FWIW, similar results with ep93xx:
-
-add/remove: 1/1 grow/shrink: 2/0 up/down: 137/-240 (-103)
-function                                     old     new   delta
-gpio_led_register_device                       -     128    +128
-kernel_config_data                         10474   10479      +5
-ep93xx_init_devices                          116     120      +4
-ep93xx_leds                                  240       -    -240
-
-Regards,
-Hartleyÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+if it'll go in my tree ok, then yes.
+Will publish a new tree soon.
