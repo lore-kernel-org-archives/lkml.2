@@ -1,64 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1EJCou (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 22:44:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54894 "EHLO smtps.tip.net.au"
+	id S1752910Ab1EJCpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 22:45:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38354 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752707Ab1EJCot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 22:44:49 -0400
-Date: Tue, 10 May 2011 12:44:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: linux-next: build failure after merge of the voltage tree
-Message-Id: <20110510124434.b30a7631.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__10_May_2011_12_44_34_+1000_ovD4ArwMd5mT.Xxi"
+	id S1752417Ab1EJCpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 22:45:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,344,1301900400"; 
+   d="scan'208";a="744819000"
+Date: Tue, 10 May 2011 10:45:28 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 06/17] writeback: sync expired inodes first in
+ background writeback
+Message-ID: <20110510024528.GD6758@localhost>
+References: <20110506030821.523093711@intel.com>
+ <20110506031612.539339712@intel.com>
+ <20110509160827.GS4122@quack.suse.cz>
+ <4DC813CB.2040103@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DC813CB.2040103@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_May_2011_12_44_34_+1000_ovD4ArwMd5mT.Xxi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 10, 2011 at 12:18:19AM +0800, Rik van Riel wrote:
+> On 05/09/2011 12:08 PM, Jan Kara wrote:
+> 
+> >    The age of pages in LRU is not necessarily related with the
+> > i_dirtied_when time stamp so I'm not sure how much this will help after all
+> 
+> Not necessarily, but given that the inactive file list is a
+> FIFO list, I expect there will be decent correlation.
+> 
+> > but it makes some sense from the data integrity point of view at least. You
+> > can add:
+> > Acked-by: Jan Kara<jack@suse.cz>
+> 
+> Good point on the data integrity.
 
-Hi Liam,
+Yeah, I added this good point to the changelog :)
 
-After merging the voltage tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thanks,
+Fengguang
+---
+Subject: writeback: sync expired inodes first in background writeback
+Date: Wed Jul 21 20:11:53 CST 2010
 
-ERROR: "tps65910_gpio_init" [drivers/mfd/tps65910.ko] undefined!
-ERROR: "tps65910_irq_init" [drivers/mfd/tps65910.ko] undefined!
-ERROR: "irq_modify_status" [drivers/mfd/tps65910-irq.ko] undefined!
-ERROR: "irq_set_chip_and_handler_name" [drivers/mfd/tps65910-irq.ko] undefi=
-ned!
-ERROR: "handle_edge_irq" [drivers/mfd/tps65910-irq.ko] undefined!
+A background flush work may run for ever. So it's reasonable for it to
+mimic the kupdate behavior of syncing old/expired inodes first.
 
-I have used the voltage tree from next-20110509 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+At each queue_io() time, first try enqueuing only newly expired inodes.
+If there are zero expired inodes to work with, then relax the rule and
+enqueue all dirty inodes.
 
---Signature=_Tue__10_May_2011_12_44_34_+1000_ovD4ArwMd5mT.Xxi
-Content-Type: application/pgp-signature
+It at least makes sense from the data integrity point of view.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This may also reduce the number of dirty pages encountered by page
+reclaim, eg. the pageout() calls. Normally older inodes contain older
+dirty pages, which are more close to the end of the LRU lists. So
+syncing older inodes first helps reducing the dirty pages reached by the
+page reclaim code.
 
-iQEcBAEBAgAGBQJNyKaSAAoJEDMEi1NhKgbsG2cH/1yJL5gYXwC7sULLMfSobAuZ
-cZ9mpyKDUKOxrHMtDuaS7aT2ejB1xHWFsL37tBbsmT70iZ3PktmDgtLvtnIprGEX
-b4bpEKMBnoe7nJ5MArkQEDZf/z63Get61EkZsC7ldq+oKYi2X1sBWBcen7lhFVWa
-YYYVuZQeW7cs07B8qkQ3jdYMznc7PSgNh6tjKdCnVOS3Utv05+WzTasS0Ju/TFsY
-zvya24jM8a9YpYc1N3vQvgy8ZV6qphd/w5mOJTb5nqWt8CCkSr9iVo9H9kKc/OF/
-WuNrbRpMlJx/RGZBbIGSzRL3G9Om47hfuwEV1cwXv5+2pI8xlNInaeDZ2zx6Ve4=
-=NLaJ
------END PGP SIGNATURE-----
+More background: as Mel put it, "it makes sense to write old pages first
+to reduce the chances page reclaim is initiating IO."
 
---Signature=_Tue__10_May_2011_12_44_34_+1000_ovD4ArwMd5mT.Xxi--
+Rik also presented the situation with a graph:
+
+LRU head                                 [*] dirty page
+[                          *              *      * *  *  * * * * * *]
+
+Ideally, most dirty pages should lie close to the LRU tail instead of
+LRU head. That requires the flusher thread to sync old/expired inodes
+first (as there are obvious correlations between inode age and page
+age), and to give fair opportunities to newly expired inodes rather
+than sticking with some large eldest inodes (as larger inodes have
+weaker correlations in the inode<=>page ages).
+
+This patch helps the flusher to meet both the above requirements.
+
+Side effects: it might reduce the batch size and hence reduce
+inode_wb_list_lock hold time, but in turn make the cluster-by-partition
+logic in the same function less effective on reducing disk seeks.
+
+v2: keep policy changes inside wb_writeback() and keep the
+wbc.older_than_this visibility as suggested by Dave.
+
+CC: Dave Chinner <david@fromorbit.com>
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Rik van Riel<riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:30:25.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-05 23:30:26.000000000 +0800
+@@ -718,7 +718,7 @@ static long wb_writeback(struct bdi_writ
+ 		if (work->for_background && !over_bground_thresh())
+ 			break;
+ 
+-		if (work->for_kupdate) {
++		if (work->for_kupdate || work->for_background) {
+ 			oldest_jif = jiffies -
+ 				msecs_to_jiffies(dirty_expire_interval * 10);
+ 			wbc.older_than_this = &oldest_jif;
+@@ -729,6 +729,7 @@ static long wb_writeback(struct bdi_writ
+ 		wbc.pages_skipped = 0;
+ 		wbc.inodes_cleaned = 0;
+ 
++retry:
+ 		trace_wbc_writeback_start(&wbc, wb->bdi);
+ 		if (work->sb)
+ 			__writeback_inodes_sb(work->sb, wb, &wbc);
+@@ -752,6 +753,19 @@ static long wb_writeback(struct bdi_writ
+ 		if (wbc.inodes_cleaned)
+ 			continue;
+ 		/*
++		 * background writeback will start with expired inodes, and
++		 * if none is found, fallback to all inodes. This order helps
++		 * reduce the number of dirty pages reaching the end of LRU
++		 * lists and cause trouble to the page reclaim.
++		 */
++		if (work->for_background &&
++		    wbc.older_than_this &&
++		    list_empty(&wb->b_io) &&
++		    list_empty(&wb->b_more_io)) {
++			wbc.older_than_this = NULL;
++			goto retry;
++		}
++		/*
+ 		 * No more inodes for IO, bail
+ 		 */
+ 		if (!wbc.more_io)
