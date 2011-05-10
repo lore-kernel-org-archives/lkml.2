@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab1EJVsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:48:42 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53453 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1EJVsl (ORCPT
+	id S1752928Ab1EJVs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:48:56 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36679 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab1EJVsy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:48:41 -0400
+	Tue, 10 May 2011 17:48:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EyDQqRdfPgy3sB6dYwYr291EYBgTz9gH8tZujY3i4WIbqKJW0fnSxrhn4Ty6bMFJ8E
-         rcD6JJqefapdWz/4yiD7chsPoI9q0S8hUjCnCzMJUyWfijOlSg9P2KYznOUcrEOClx+R
-         o31/tpuyQWK0EGx1mxAXSN+oH+OogayZfxJx8=
-Subject: Re: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this
- time)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20110509.205851.189693332.davem@davemloft.net>
-References: <6954.1304989523@localhost>
-	 <1304994188.3050.17.camel@edumazet-laptop>
-	 <1304999271.3050.41.camel@edumazet-laptop>
-	 <20110509.205851.189693332.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 23:48:36 +0200
-Message-ID: <1305064116.2437.34.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DfFsWOO0FXJc7eNym5TlRQXc8myYuqwvCBMNyfCX86kJnV1+w1hxHBumf/sK+ed8cF
+         sQd5fOVjVFWNvqRxxUgz2mhNrbhhtqhGSCmqf1FusWCyo++0aQ/h1QBHNRti0GUlWw4z
+         n1/vS6IxLMrm2CjoHsuvvYUe+qzlEiBL8UaiM=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinnVwQbz+K32pyzLVCdz-fXUVUQ3g@mail.gmail.com>
+References: <BANLkTin=cU_kCSFfznna69pkgTsSNVjJgw@mail.gmail.com>
+	<BANLkTi=Lo4jRWbHhMLkJmOfg09s+ebDjcw@mail.gmail.com>
+	<1305054401.2939.52.camel@work-vm>
+	<BANLkTinnVwQbz+K32pyzLVCdz-fXUVUQ3g@mail.gmail.com>
+Date: Tue, 10 May 2011 23:48:53 +0200
+Message-ID: <BANLkTinjcVjb-1wZahonmP5tjxOzQfMeFw@mail.gmail.com>
+Subject: Re: [hrtimers] Re: Regression affecting b43 LP-PHY card
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: b43-dev <b43-dev@lists.infradead.org>, linux-wireless@vger.kernel.org,
+        Juan Carlos Romero <juancarlos.romero@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Ben Greear <greearb@candelatech.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 09 mai 2011 à 20:58 -0700, David Miller a écrit :
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Tue, 10 May 2011 05:47:51 +0200
-> 
-> > [PATCH net-next-2.6] net: fix two lockdep splats
-> > 
-> > Commit e67f88dd12f6 (net: dont hold rtnl mutex during netlink dump
-> > callbacks) switched rtnl protection to RCU, but we forgot to adjust two
-> > rcu_dereference() lockdep annotations :
-> > 
-> > inet_get_link_af_size() or inet_fill_link_af() might be called with
-> > rcu_read_lock or rtnl held, so use rcu_dereference_rtnl()
-> > instead of rtnl_dereference()
-> > 
-> > Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> 
-> Applied, thanks everyone.
+2011/5/10 Rafał Miłecki <zajec5@gmail.com>:
+> 2011/5/10 John Stultz <john.stultz@linaro.org>:
+>> On Tue, 2011-05-10 at 20:57 +0200, Rafał Miłecki wrote:
+>>> W dniu 10 maja 2011 00:52 użytkownik Rafał Miłecki <zajec5@gmail.com> napisał:
+>>> > In this situation we decided to bisect. I was a little afraid of last
+>>> > merges so we took older 2.6.38 as GOOD (we tested this twice) and
+>>> > wireless-testing commit before my ssb changes as BAD. Today Juan
+>>> > finished bisecting kernel:
+>>> > http://pastebin.com/HSKbRzpB
+>>> >
+>>> > According to his bisection the first bad commit is
+>>> > e06383db9ec591696a06654257474b85bac1f8cb [0]:
+>>> > hrtimers: extend hrtimer base code to handle more then 2 clockids
+>>> >
+>>> > Does it make any sense to you? Could this be some timing issue?
+>>> >
+>>> > It was too late to test this today, we (Juan) will work on this
+>>> > tomorrow. It's impossible to revert this commit from HEAD of
+>>> > wireless-testing, so my idea is to checkout commit, test, revert,
+>>> > test.
+>>> >
+>>> > Did anyone else experience any similar problems with latest wireless-testing?
+>>> >
+>>> >
+>>> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=e06383db9ec591696a06654257474b85bac1f8cb
+>>>
+>>> Today Juan checkouted commit e06383db9ec591696a06654257474b85bac1f8cb
+>>> and tested it. He was disconnected really soon.
+>>>
+>>> Then he reverted e06383db9ec591696a06654257474b85bac1f8cb and tested
+>>> again. Connection was stable, he downloaded 2GB file over network.
+>>>
+>>>
+>>> John S.: your commit does not touch Broadcom card directly, but it
+>>> seems it somehow affects it. I suspect there can be some timing issue.
+>>> Do you have any idea what could it be, how can we debug this?
+>>
+>> Sorry for the trouble!
+>>
+>> My commit exposed a few spots where hrtimers were being initialized
+>> before hrtimer_init is called, which caused problems. Thomas provided a
+>> solution that makes such behavior still function ok:
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=ce31332d3c77532d6ea97ddcb475a2b02dd358b4
+>>
+>> Let me know if the issue is still reproducible with Linus' latest git
+>> tree.
+>
+> We were using wireless-testing git tree, commit:
+> 1e664a777e5eb4b23e65e76fbeadd2376fe8d8d8
+>
+> I can not see ce31332d3c77532d6ea97ddcb475a2b02dd358b4 it git log.
+> I'll apply and test, thanks!
 
-David, I found you applied this patch for net-2.6, but it was
-net-next-2.6 material only ...
+I can confirm updated wireless-testing resolves this issue!
 
+Too bad Juan spent 2-3 days on bisecting on his Atom... but at least
+we came and met ready fix. It could be pain to find a solution with
+out feedback only. I'm aware it was not very detailed.
 
+Thanks for your help :)
 
+-- 
+Rafał
