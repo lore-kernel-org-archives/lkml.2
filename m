@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab1EJFO5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 01:14:57 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43988 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1EJFO4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 01:14:56 -0400
-Date: Tue, 10 May 2011 07:14:22 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Borislav Petkov <bp@amd64.org>, EDAC devel <linux-edac@vger.kernel.org>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 1/6] x86, MCE: Add a HW injection flag
-Message-ID: <20110510051422.GA14195@aftab>
-References: <1304966155-9841-1-git-send-email-bp@amd64.org>
- <1304966155-9841-2-git-send-email-bp@amd64.org>
- <4DC8B117.9030302@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC8B117.9030302@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753638Ab1EJFPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 01:15:53 -0400
+Received: from mail.perches.com ([173.55.12.10]:1441 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751654Ab1EJFPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 01:15:52 -0400
+Subject: Re: [PATCH]Add Maintainer for MAINTAINERS file for us
+From: Joe Perches <joe@perches.com>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+        akpm@linux-foundation.org, greg@kroah.com, linux-doc@vger.kernel.org
+In-Reply-To: <20110510045142.GA2888@gmail.com>
+References: <20110510025024.GA2575@gmail.com>
+	 <1304997087.19586.102.camel@Joe-Laptop>  <20110510045142.GA2888@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 22:15:50 -0700
+Message-ID: <1305004550.19586.114.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 11:29:27PM -0400, Hidetoshi Seto wrote:
-> (2011/05/10 3:35), Borislav Petkov wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > Add an mce->inject_flag to denote that we're doing HW injection.
-> > 
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > Acked-by: Ingo Molnar <mingo@elte.hu>
-> > ---
-> >  arch/x86/include/asm/mce.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> > index eb16e94..a2e3dcf 100644
-> > --- a/arch/x86/include/asm/mce.h
-> > +++ b/arch/x86/include/asm/mce.h
-> > @@ -49,6 +49,7 @@
-> >  #define MCJ_CTX_IRQ		2    /* inject context: IRQ */
-> >  #define MCJ_NMI_BROADCAST	4    /* do NMI broadcasting */
-> >  #define MCJ_EXCEPTION		8    /* raise as exception */
-> > +#define MCJ_HW_INJECT		16   /* do a HW MCE inject, i.e. INT18 */
-> >  
-> >  /* Fields are zero when not available */
-> >  struct mce {
-> 
-> IMHO, we should have better name for this feature; using wrmsr + int$18 is not
-> the only way to inject mce event to HW. I'd like to suggest MCJ_AMD_HW_INJECT,
-> MCJ_USE_WRMSR or so instead. Then we can have MCJ_USE_APEI_EINJ and so on, for
-> various way of MCE injection.
+On Tue, 2011-05-10 at 12:51 +0800, Harry Wei wrote:
+> On Mon, May 09, 2011 at 08:11:27PM -0700, Joe Perches wrote:
+> > On Tue, 2011-05-10 at 10:50 +0800, Harry Wei wrote:
+> > > I'd like to maintain this file for us. The patch is below.
+> > Knock yourself out, but I think this won't
+> > be too valuable.
+> The patch has been updatated below.
+[]
+> This may a little complex. Keeping just MAINTAINERS file
+> with alphabetical order is well for us.
+> I will also write a shell script for MAINTAINERS, which
+> can not only check whether it is in alphabetical order
+> but may also take orders for us.
+> The script is been programing by me and my friend.
+> When it is okay, i will patch for kernel.
 
-Fair enough, the name might be too generic. Maybe I should change it to
-MCJ_HW_MSR_INJECT to denote injecting of hw errors through the MCA MSRs.
+I believe that's been done before.
 
--- 
-Regards/Gruss,
-Boris.
+http://lkml.org/lkml/2011/2/11/330
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> +MAINTAINERS-FILE
+> +M:	Harry Wei <harryxiyou@gmail.com>
+> +L:	linux-doc@vger.kernel.org
+> +S:	Maintained
+> +F:	MAINTAINERS
+
+I think using the linux-doc mailing list for
+MAINTAINERS isn't good.
+
