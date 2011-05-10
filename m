@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1EJGnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 02:43:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab1EJGm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 02:42:59 -0400
-Date: Tue, 10 May 2011 12:12:47 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cdrom: always check_disk_change() on open
-Message-ID: <20110510064247.GA16436@amit-x200.redhat.com>
-References: <20110406121920.GC4142@mtj.dyndns.org>
- <20110429060200.GA5107@amit-x200.redhat.com>
- <4DBA73B6.6040603@kernel.dk>
+	id S1753980Ab1EJGpX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 02:45:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43189 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab1EJGpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 02:45:22 -0400
+Date: Tue, 10 May 2011 08:45:04 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] leds: provide helper to register "leds-gpio" devices
+Message-ID: <20110510064504.GC29089@pengutronix.de>
+References: <1302097097.22904.41.camel@rex>
+ <1302554157-24145-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20110509150254.e7da059f.akpm@linux-foundation.org>
+ <20110509221719.GE16919@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4DBA73B6.6040603@kernel.dk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110509221719.GE16919@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 29 Apr 2011 [10:15:50], Jens Axboe wrote:
-> On 2011-04-29 08:57, Amit Shah wrote:
-> > On (Wed) 06 Apr 2011 [05:20:09], Tejun Heo wrote:
-> >> cdrom_open() called check_disk_change() after the rest of open path
-> >> succeeded which leads to the following bizarre behavior.
-> >>
-> >> * After media change, if the device opened without O_NONBLOCK,
-> >>   open_for_data() naturally fails with -ENOMEDIA and
-> >>   check_disk_change() is never called.  The media is known to be gone
-> >>   and the open failure makes it obvious to the userland but device
-> >>   invalidation never happens.
-> >>
-> >> * But if the device is opened with O_NONBLOCK, all the checks are
-> >>   bypassed and cdrom_open() doesn't notice that the media is not there
-> >>   and check_disk_change() is called and invalidation happens.
-> >>
-> >> There's nothing to be gained by avoiding calling check_disk_change()
-> >> on open failure.  Common cases end up calling check_disk_change()
-> >> anyway.  All we get is inconsistent behavior.
-> >>
-> >> Fix it by moving check_disk_change() invocation to the top of
-> >> cdrom_open() so that it always gets called regardless of how the rest
-> >> of open proceeds.
-> >>
-> >> Signed-off-by: Tejun Heo <tj@kernel.org>
-> >> Reported-by: Amit Shah <amit.shah@redhat.com>
-> >> Tested-by: Amit Shah <amit.shah@redhat.com>
-> > 
-> > Ping?
-> > 
-> > Also, please mark this for stable-2.6.38.
+On Mon, May 09, 2011 at 11:17:19PM +0100, Russell King - ARM Linux wrote:
+> On Mon, May 09, 2011 at 03:02:54PM -0700, Andrew Morton wrote:
+> > On Mon, 11 Apr 2011 22:35:57 +0200
+> > Uwe Kleine-K__nig  <u.kleine-koenig@pengutronix.de> wrote:
+> > > +#if defined(CONFIG_LED_REGISTER_GPIO)
+> > > +struct platform_device *__init gpio_led_register_device(
+> > > +		int id, const struct gpio_led_platform_data *pdata)
+> > > +{
+> > > +	struct platform_device *ret;
+> > > +	struct gpio_led_platform_data _pdata = *pdata;
+> > > +
+> > > +	_pdata.leds = kmemdup(pdata->leds,
+> > > +			pdata->num_leds * sizeof(*pdata->leds), GFP_KERNEL);
+> > > +	if (!_pdata.leds)
+> > > +		return ERR_PTR(-ENOMEM);
+> > > +
+> > > +	ret = platform_device_register_resndata(NULL, "leds-gpio", id,
+> > > +			NULL, 0, &_pdata, sizeof(_pdata));
+> > > +	if (IS_ERR(ret))
+> > > +		kfree(_pdata.leds);
+> > > +
+> > > +	return ret;
+> > > +}
+> > > +#endif
+> ...
+> > The comment doesn't document return values.
 > 
-> Done, added for 2.6.39 and marked stable for 2.6.38.
+> Two further comments.
+> 
+> 1. Why is this .c file always built, but _all_ the containing code is
+> wrapped up in an ifdef?  It seems a waste of resources to compile a .c
+> file with all code #ifdef'd out.
+This was done because I thought that the .c file could contain other
+registration routines later. Richard requested to use
 
-Ping again.  Don't see this yet in Linus's git tree.
+	obj-$(CONFIG_LED_REGISTER_GPIO) += ...
 
-		Amit
+then the #ifdef can go away, too. (@Andrew: Richard's ack was only for a
+patch that used that. You took the patch anyhow and added his ack.)
+
+> 2. What is the point of returning the platform device structure?  You've
+> already registered it, so you must _not_ modify any data in that structure
+> which may be used by the driver.  The only thing which you can safely do
+> with it is unregister it.
+pdev->device can be used as parent for another device. (OK, probably not
+an led device. The origin of this function is the imx device
+registration stuff, and all these functions return a platform device).
+The other case where I needed to have the device created was to fill a
+struct regulator_consumer_supply, but nowadays this is done using just
+the name.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
