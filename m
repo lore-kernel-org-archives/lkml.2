@@ -1,191 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751187Ab1EJSic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 14:38:32 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:40529 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab1EJSib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 14:38:31 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Jerome Glisse <j.glisse@gmail.com>
-Subject: Re: long delay when using HMDI output on RS780
-Date: Tue, 10 May 2011 12:37:49 -0600
-User-Agent: KMail/1.13.7 (Linux/2.6.38-2-amd64; KDE/4.6.2; x86_64; ; )
-Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-References: <201105071815.03318.thomas@fjellstrom.ca> <201105092122.32284.thomas@fjellstrom.ca> <BANLkTindMJ9vYarD+cRoaHaFB60SrvX6hQ@mail.gmail.com>
-In-Reply-To: <BANLkTindMJ9vYarD+cRoaHaFB60SrvX6hQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751659Ab1EJSma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:42:30 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:58707 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab1EJSm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 14:42:29 -0400
+Subject: [PATCH] dma-debug: print some unfreed allocations
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 20:42:24 +0200
+Message-ID: <1305052944.3544.8.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105101237.49686.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 10, 2011, you wrote:
-> On Mon, May 9, 2011 at 11:22 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> 
-wrote:
-> > On May 9, 2011, Thomas Fjellstrom wrote:
-> >> On May 9, 2011, Alex Deucher wrote:
-> >> > On Mon, May 9, 2011 at 5:04 PM, Thomas Fjellstrom
-> >> > <thomas@fjellstrom.ca>
-> >> 
-> >> wrote:
-> >> > > On May 9, 2011, Thomas Fjellstrom wrote:
-> >> > >> On May 9, 2011, Jerome Glisse wrote:
-> >> > >> > On Mon, May 9, 2011 at 3:50 PM, Thomas Fjellstrom
-> >> > >> > <thomas@fjellstrom.ca>
-> >> > >> 
-> >> > >> wrote:
-> >> > >> > > On May 7, 2011, Thomas Fjellstrom wrote:
-> >> > >> > >> I just switched to using HDMI with my media center, and its
-> >> > >> > >> causing a 30+ second delay in the screen turning on, as well
-> >> > >> > >> as a 7 second delay in the X startup when it tries to fetch
-> >> > >> > >> the EDID
-> >> > >> > >> information. Basically I don't get any picture at all once KMS
-> >> > >> > >> initializes until after X has been up a few seconds.
-> >> > >> > >> 
-> >> > >> > >> The odd thing is the monitor seems to think something is going
-> >> > >> > >> on, since it doesn't go to sleep or display its "No Signal"
-> >> > >> > >> OSD, but just after X starts up, it pops up the "Input
-> >> > >> > >> detected/switched" OSD, and the picture appears.
-> >> > >> > >> 
-> >> > >> > >> The bios, grub2 (in both text mode and graphics mode), and the
-> >> > >> > >> initial linux kernel messages all display fine and
-> >> > >> > >> immediately. Its only once KMS and radeondrmfb initializes
-> >> > >> > >> that there's a problem (at least till X starts up).
-> >> > >> > >> 
-> >> > >> > >> I've just built with a vanila 2.6.38.4 kernel from the stable
-> >> > >> > >> git repo, and have played with some EDID settings, trying to
-> >> > >> > >> disable edid where I could thinking thats what caused the
-> >> > >> > >> problem. That doesn't seem to be the case though. I also
-> >> > >> > >> tried playing with the video= kernel option, trying to force
-> >> > >> > >> disable VGA-1, and set a static mode for HDMI-A-1, but if I
-> >> > >> > >> try, it seems to force disable HDMI-A-1 instead of force the
-> >> > >> > >> mode.
-> >> > >> > >> 
-> >> > >> > >> With a DVI-D cable instead, the problem goes away.
-> >> > >> > >> 
-> >> > >> > >> Attached are the dmesg and xorg.log files for the latest boot
-> >> > >> > >> with HDMI (no video= parameter, and EDID enabled, most
-> >> > >> > >> settings at defaults).
-> >> > >> > >> 
-> >> > >> > >> What exactly would cause this, and is there a way I can fix
-> >> > >> > >> it?
-> >> > >> > > 
-> >> > >> > > I've been playing around with it more, and got it to not blank
-> >> > >> > > the screen after KMS init, /once/. So far no luck repeating
-> >> > >> > > that success.
-> >> > >> > > 
-> >> > >> > > I've tried late, and early kms init, and currently have the
-> >> > >> > > radeon module and firmware compiled into the kernel. Boot
-> >> > >> > > times at least are fairly decent, about 8-10s till X starts,
-> >> > >> > > but about 25-35s till anything shows up.
-> >> > >> > > 
-> >> > >> > > Some strangeness, I have the kernel set to force the hdmi
-> >> > >> > > output to on, with a very specific mode, that X tends to like,
-> >> > >> > > the vga port is forced disabled. X is set to ignore EDID, and
-> >> > >> > > also set to that specific mode that it tends to auto set
-> >> > >> > > itself. Regardless X still wants to pause for 7s 2-3 times
-> >> > >> > > while processing EDID info.
-> >> > >> > > 
-> >> > >> > > I've attached the new dmesg and xorg logs from the latest
-> >> > >> > > attempts.
-> >> > >> > > 
-> >> > >> > > Note, this only happens with KMS, with HDMI. disabling KMS, or
-> >> > >> > > using DVI makes the problem go away. Even grub's own graphical
-> >> > >> > > mode works fine, its only once KMS inits that things go bad,
-> >> > >> > > and its not till after X is up for a few seconds that
-> >> > >> > > something displays on my screen.
-> >> > >> > > 
-> >> > >> > > --
-> >> > >> > > Thomas Fjellstrom
-> >> > >> > > thomas@fjellstrom.ca
-> >> > >> > 
-> >> > >> > Please boot with drm.debug=4 and attach dmesg it should be more
-> >> > >> > verbose. You might also want to try booting with radeon.audio=0
-> >> > >> 
-> >> > >> Hi, attached both one with just drm.debug=4, and one with that and
-> >> > >> radeon.audio=0.
-> >> > >> 
-> >> > >> Now, I'm guessing its a bug in my monitor claiming it can do HDMI
-> >> > >> audio? As setting radeon.audio=0 seems to have fixed the blanking
-> >> > >> problem. And the dmesg logs seem to claim that radeon thinks it can
-> >> > >> do HDMI audio.
-> >> > 
-> >> > Most likely the driver is sending the wrong packets for hdmi audio.
-> >> > Until that gets fixed up, it's probably best to disable hdmi audio if
-> >> > it's not working for you.
-> >> 
-> >> Ok. I'll do that for now, since I have no need for HDMI audio atm. My
-> >> receiver is only capable of Dolby Pro Logic input, so eh.
-> >> 
-> >> Would be nice to fix the xorg pauses. And whatever is causing the
-> >> massive amounts of drm log spam (yes, I could disable drm.debug, but
-> >> that would just hide the issue, as whatever it is, will keep doing
-> >> whatever it is doing regardless).
-> > 
-> > Any hints on where to look to fix the stalls when the xorg radeon driver
-> > starts up?
-> 
-> Is the Xserver block or is it just that there is no picture ? ie when
-> you see somethings on the screen is it directly the gnome login screen
-> or what ever should come first ? or do you then see gnome loading ?
-> 
-> If it's just black and then you directly got gnome-shell it's likely
-> that your tv doesn't live hdmi mode change and take time before
-> showing the picture.
+From: Johannes Berg <johannes.berg@intel.com>
 
-I can see X start up, the cursor shows up, but it just pauses for a few 
-seconds, then once the wm is up, it pauses for a bit again.
+When a driver unbinds and still has allocations,
+we print them out but there's no indication where
+they came from. If stacktrace support is built
+into the kernel, we can print out their traces.
 
-Here's some log info from Xorg that I think might be relevant:
+Unfortunately, if you're unloading the module the
+traces will be useless, but once you find such an
+error you can manually unbind the device instead
+to see where the allocations came from.
 
-7 second wait:
-[    16.161] (II) No input driver/identifier specified (ignoring)
-[    23.725] (II) RADEON(0): EDID vendor "BNQ", prod id 30990
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+ lib/dma-debug.c |   47 +++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 37 insertions(+), 10 deletions(-)
 
-1 second:
-[    23.726] (II) RADEON(0): Modeline "1920x1080"x0.0   74.25  1920 2558 2602 
-2750  1080 1084 1089 1125 +hsync +vsync (27.0 kHz)
-[    24.620] (II) RADEON(0): EDID vendor "BNQ", prod id 30990
-
-6 seconds:
-[    24.631] (II) RADEON(0): Modeline "1920x1080"x0.0   74.25  1920 2558 2602 
-2750  1080 1084 1089 1125 +hsync +vsync (27.0 kHz)
-[    30.206] (II) RADEON(0): EDID vendor "BNQ", prod id 30990
+--- a/lib/dma-debug.c	2011-05-10 20:25:11.000000000 +0200
++++ b/lib/dma-debug.c	2011-05-10 20:36:55.000000000 +0200
+@@ -649,7 +649,9 @@ out_err:
+ 	return -ENOMEM;
+ }
+ 
+-static int device_dma_allocations(struct device *dev)
++#define DMA_DEBUG_NUM_PRINT_UNFREED		10
++
++static void check_device_dma_allocations(struct device *dev)
+ {
+ 	struct dma_debug_entry *entry;
+ 	unsigned long flags;
+@@ -666,27 +668,52 @@ static int device_dma_allocations(struct
+ 		spin_unlock(&dma_entry_hash[i].lock);
+ 	}
+ 
+-	local_irq_restore(flags);
++	if (count > 1) {
++		err_printk(dev, NULL, "DMA-API: device driver has pending "
++			   "DMA allocations while released from device "
++			   "[count=%d]\n", count);
++#ifdef CONFIG_STACKTRACE
++		count = 0;
++		/*
++		 * If we have, print out some stack traces for the allocations.
++		 * In case of module unload, the stack traces will be useless,
++		 * but instead of unloading the module you can manually unbind
++		 * the driver instead and get useful traces.
++		 */
++		printk(KERN_WARNING "Showing traces for %d allocations:\n",
++		       DMA_DEBUG_NUM_PRINT_UNFREED);
++
++		for (i = 0; i < HASH_SIZE; ++i) {
++			spin_lock(&dma_entry_hash[i].lock);
++			list_for_each_entry(entry, &dma_entry_hash[i].list,
++					    list) {
++				if (entry->dev == dev)
++					count += 1;
++				if (count > DMA_DEBUG_NUM_PRINT_UNFREED)
++					break;
++				dump_entry_trace(entry);
++			}
++			spin_unlock(&dma_entry_hash[i].lock);
++
++			if (count > DMA_DEBUG_NUM_PRINT_UNFREED)
++				break;
++		}
++#endif
++	}
+ 
+-	return count;
++	local_irq_restore(flags);
+ }
+ 
+ static int dma_debug_device_change(struct notifier_block *nb, unsigned long action, void *data)
+ {
+ 	struct device *dev = data;
+-	int count;
+ 
+ 	if (global_disable)
+ 		return 0;
+ 
+ 	switch (action) {
+ 	case BUS_NOTIFY_UNBOUND_DRIVER:
+-		count = device_dma_allocations(dev);
+-		if (count == 0)
+-			break;
+-		err_printk(dev, NULL, "DMA-API: device driver has pending "
+-				"DMA allocations while released from device "
+-				"[count=%d]\n", count);
++		check_device_dma_allocations(dev);
+ 		break;
+ 	default:
+ 		break;
 
 
-It actually prints out the EDID information 5 times. Once at the beginning, 
-and theres no discernible pause, then later on at the end, it prints out the 
-EDID/DDC information 4 more times, with 3 pauses, once before the second print 
-out, once between the second and third, and once between the fourth and the 
-fifth.
-
-[    15.849] (II) RADEON(0): EDID for output HDMI-0
-[    15.849] (II) RADEON(0): Manufacturer: BNQ  Model: 790e  Serial#: 21573
-[    15.849] (II) RADEON(0): Year: 2009  Week: 6
-[    15.849] (II) RADEON(0): EDID Version: 1.3
-
-This is what led me to believe it might be related to EDID. Thought maybe 
-there was some glitch causing kms+xorg to not like my monitor's EDID info, but 
-it seems it likes it just fine, so much it asks for it 4+ times (kms looks, 
-then x prints it out 5 times, possibly actually fetching it 3+ times).
-
-Also, I have it setup to auto boot into KDE without compositing enabled, using 
-startx in an init script. I'm thinking of switching to icewm or something 
-equally light weight, to see if maybe its KDE causing one of the pauses (it 
-didn't used to pause like this, before I updated to 2.6.38).
-
-Last bit of info, my "TV" is actually a 24" 1080p LCD monitor.
-
-> Cheers,
-> Jerome
-
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
