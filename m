@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab1EJHob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 03:44:31 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34348 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab1EJHoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 03:44:30 -0400
-Message-ID: <4DC8ECDC.5080106@kernel.dk>
-Date: Tue, 10 May 2011 09:44:28 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1755630Ab1EJHry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 03:47:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49833 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab1EJHrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 03:47:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=OuzXwL8zS3NdmIyH90waxubtIo7YP4HebCxE9asgN49XGnzX8p2na9NPh2hiH1jly4
+         t6YbgCJMx/onQ6AaHJ6gjDq0BIp5b6883pLT7tKcoHAzC4aUer+gt+rQSgO0aeJ3RvqY
+         r+AgpS09IkjpkrbgktS2QE+wbNN7Z0ByEnbFg=
 MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cdrom: always check_disk_change() on open
-References: <20110406121920.GC4142@mtj.dyndns.org> <20110429060200.GA5107@amit-x200.redhat.com> <4DBA73B6.6040603@kernel.dk> <20110510064247.GA16436@amit-x200.redhat.com>
-In-Reply-To: <20110510064247.GA16436@amit-x200.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <Pine.LNX.4.64.1105091811320.15483@pc-004.diku.dk>
+References: <4DC7F4AB.90607@gmail.com>
+	<Pine.LNX.4.64.1105091631400.15483@pc-004.diku.dk>
+	<4DC802C0.9040302@gmail.com>
+	<Pine.LNX.4.64.1105091713080.15483@pc-004.diku.dk>
+	<4DC8117C.7060200@gmail.com>
+	<Pine.LNX.4.64.1105091811320.15483@pc-004.diku.dk>
+Date: Tue, 10 May 2011 10:47:52 +0300
+Message-ID: <BANLkTinhy7QwE0a40efJhHazmGSgitKVdw@mail.gmail.com>
+Subject: Re: [PATCH] drivers/mmc/card/block.c: fix potential null dereference 'idata'
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Vladimir Motyka <vladimir.motyka@gmail.com>, cjb@laptop.org,
+        kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-10 08:42, Amit Shah wrote:
-> On (Fri) 29 Apr 2011 [10:15:50], Jens Axboe wrote:
->> On 2011-04-29 08:57, Amit Shah wrote:
->>> On (Wed) 06 Apr 2011 [05:20:09], Tejun Heo wrote:
->>>> cdrom_open() called check_disk_change() after the rest of open path
->>>> succeeded which leads to the following bizarre behavior.
->>>>
->>>> * After media change, if the device opened without O_NONBLOCK,
->>>>   open_for_data() naturally fails with -ENOMEDIA and
->>>>   check_disk_change() is never called.  The media is known to be gone
->>>>   and the open failure makes it obvious to the userland but device
->>>>   invalidation never happens.
->>>>
->>>> * But if the device is opened with O_NONBLOCK, all the checks are
->>>>   bypassed and cdrom_open() doesn't notice that the media is not there
->>>>   and check_disk_change() is called and invalidation happens.
->>>>
->>>> There's nothing to be gained by avoiding calling check_disk_change()
->>>> on open failure.  Common cases end up calling check_disk_change()
->>>> anyway.  All we get is inconsistent behavior.
->>>>
->>>> Fix it by moving check_disk_change() invocation to the top of
->>>> cdrom_open() so that it always gets called regardless of how the rest
->>>> of open proceeds.
->>>>
->>>> Signed-off-by: Tejun Heo <tj@kernel.org>
->>>> Reported-by: Amit Shah <amit.shah@redhat.com>
->>>> Tested-by: Amit Shah <amit.shah@redhat.com>
->>>
->>> Ping?
->>>
->>> Also, please mark this for stable-2.6.38.
->>
->> Done, added for 2.6.39 and marked stable for 2.6.38.
-> 
-> Ping again.  Don't see this yet in Linus's git tree.
-
-It was added for 2.6.40 and marked for stable.
+On Mon, May 9, 2011 at 7:12 PM, Julia Lawall <julia@diku.dk> wrote:
+> I guess there is also a point at which idata has been successfully
+> allocated but idata->buf has not.
+And? kfree() simple ignores NULL pointers.
+I would prefer to see previous version of patch, but let maintainer to choose.
 
 -- 
-Jens Axboe
-
+With Best Regards,
+Andy Shevchenko
