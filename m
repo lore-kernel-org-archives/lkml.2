@@ -1,65 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab1EJKdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 06:33:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48272 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab1EJKdN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 06:33:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=XT7mUq+03KaYxgWnQGtA67p53rEaqaEEirKbPEdtbjcOLVpYgn92bXVZPVkl1ru2ie
-         8yjg0X4DrGrgDzsFIw1TDEWqdnkpJmQhDdcvwfxaEE6T4Nb9L3b9dCOnIRZk7eIaIe1S
-         S79EdcLLKYTdUJL0CPsCBgIUqDlVrBVQudMeo=
+	id S1756352Ab1EJKgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 06:36:44 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34801 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752218Ab1EJKgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 06:36:42 -0400
+Date: Tue, 10 May 2011 12:36:28 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Kaywinnit L. Frye" <kaywinnit.lee.frye.2497@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+Subject: Re: [PATCH] wait: include linux/sched.h
+Message-ID: <20110510103628.GE2400@elte.hu>
+References: <1304372042-12098-1-git-send-email-kaywinnit.lee.frye.2497@gmail.com>
+ <20110506075408.GI23166@elte.hu>
+ <1305015103.2914.17.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20110510102141.GA4149@novell.com>
-References: <20110428192104.GA4658@suse.de>
-	<1304020767.2598.21.camel@mulgrave.site>
-	<1304025145.2598.24.camel@mulgrave.site>
-	<1304030629.2598.42.camel@mulgrave.site>
-	<20110503091320.GA4542@novell.com>
-	<1304431982.2576.5.camel@mulgrave.site>
-	<1304432553.2576.10.camel@mulgrave.site>
-	<20110506074224.GB6591@suse.de>
-	<20110506080728.GC6591@suse.de>
-	<1304964980.4865.53.camel@mulgrave.site>
-	<20110510102141.GA4149@novell.com>
-Date: Tue, 10 May 2011 13:33:11 +0300
-X-Google-Sender-Auth: w493vTRDEN4tR6sZxtnkZNgt5Rs
-Message-ID: <BANLkTi=JwoHtTky=mF5fkhS23mm_dJu4og@mail.gmail.com>
-Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
-From: Pekka Enberg <penberg@kernel.org>
-To: Mel Gorman <mgorman@novell.com>
-Cc: James Bottomley <James.Bottomley@suse.de>, Mel Gorman <mgorman@suse.de>,
-        Jan Kara <jack@suse.cz>, colin.king@canonical.com,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305015103.2914.17.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 1:21 PM, Mel Gorman <mgorman@novell.com> wrote:
-> It goes on. A number of filesystem and network paths are being hit
-> with high-order allocs. i915 was a red herring, it's present but not
-> in massive numbers. The filesystem, network and mempool allocations
-> are likely to be kicking kswapd awake frequently and hurting overall
-> system performance as a result.
->
-> I really would like to hear if the fix makes a big difference or
-> if we need to consider forcing SLUB high-order allocations bailing
-> at the first sign of trouble (e.g. by masking out __GFP_WAIT in
-> allocate_slab). Even with the fix applied, kswapd might be waking up
-> less but processes will still be getting stalled in direct compaction
-> and direct reclaim so it would still be jittery.
 
-Yes, sounds reasonable to me.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-                         Pekka
+> On Fri, 2011-05-06 at 09:54 +0200, Ingo Molnar wrote:
+> 
+> > > diff --git a/include/linux/wait.h b/include/linux/wait.h
+> > > index 3efc9f3..667a3d7 100644
+> > > --- a/include/linux/wait.h
+> > > +++ b/include/linux/wait.h
+> > > @@ -22,6 +22,7 @@
+> > >  #include <linux/list.h>
+> > >  #include <linux/stddef.h>
+> > >  #include <linux/spinlock.h>
+> > > +#include <linux/sched.h>
+> > >  #include <asm/system.h>
+> > >  #include <asm/current.h>
+> > 
+> > I'm quite sure this will break the build all around the place, because sched.h 
+> > itself uses wait.h primitives.
+> 
+> I'm very sure it will, people keep proposing this.
+> 
+> > To fix these super-headers like sched.h and to make wait.h self-sufficient the 
+> > right and cleanest approach would be to split data types and primitive accessor 
+> > functions from higher level helper methods (which inevitably mix different 
+> > domains) and put them into two separate files.
+> > 
+> > We have a few such split files in the kernel tree, spinlock_types.h and 
+> > spinlock_api.h, and this concept works reasonably well.
+> > 
+> > So here we'd need wait_types.h and wait_api.h and of course sched_types.h and 
+> > sched_api.h.
+> > 
+> > For simplicity of migration wait_api.h could be wait.h itself and sched_api.h 
+> > could be sched.h itself.
+> 
+> Argh, please don't. I've been arguing against that for a while now.
+
+Yours is not a very well argued argument i have to say ;-)
+
+> The right thing to do is to clean up sched.h and remove a lot of the 
+> non-scheduler bits in there, like all the process and signal bits.
+
+That, in fact, is the first half of what i suggested - obviously type splitting 
+means first moving unrelated bits out of it.
+
+Lets call it 'purifying' the header.
+
+But, and i talk from first-hand experience here, even if we do that the core 
+problem creating header spaghetti still remains, even if a header file is 
+'pure': helper/utility inline functions using 'other' types which requires the 
+inclusion of those other types - this quickly explodes.
+
+Lets see an example, say we have two types and two headers:
+
+header-A.h:
+
+ type A
+ method::A1
+ method::A2
+
+header-B.h:
+
+ type B
+ method::B1
+ method::B2
+
+And header-B also includes helper functions, which often have the form of:
+
+ helper-method::B1()
+ {
+	type A = method::A1();
+	type B;
+
+	if (B.field)
+		return A;
+
+	return NULL;
+ }
+
+Then this 'imports' type A into type B's header file - although type B does not 
+really relate to type A, only the helper method B1 has some (often superficial) 
+connection to it.
+
+And if we have a similar helper method in header-A, making use of header-B, we 
+have inclusion circular dependency. These are typically worked around via ugly
+#define()s. So we have tons of ugly defines and messy dependencyes.
+
+So if we separate "types + type-specific methods" from "helper functions" 
+(after all the cleanup you suggested as well, i.e. moving unrelated 
+functionality out), we have improved the situation materially: both header-A.h 
+and header-B.h become 'pure' and there's also header-B-helpers.h that can 
+freely mix type-A and type-B methods.
+
+Once that split is done other types can also thus include header-B.h without 
+implicitly including header-A and all of its dependencies.
+
+The end result is that we get a clean hiearchy of types.
+
+Obviously sched.h would include a lot of basic types to begin with, because it 
+is a fundamental 'container' type (struct task_struct) sitting at a top, 
+highlevel node of the type hierarchy - so the initial step you suggest would 
+indeed get us most of the benefits.
+
+Thanks,
+
+	Ingo
