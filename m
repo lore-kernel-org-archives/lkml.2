@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab1EJSxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 14:53:17 -0400
-Received: from outmail021.snc4.facebook.com ([66.220.144.153]:60544 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750863Ab1EJSxP (ORCPT
+	id S1751931Ab1EJSzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:55:13 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:30394 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab1EJSzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 14:53:15 -0400
-From: Arun Sharma <asharma@fb.com>
-To: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        acme@ghostprotocols.net
-Cc: Arun Sharma <asharma@fb.com>
-Subject: [PATCH] Add dso->deleted bit
-Date: Tue, 10 May 2011 11:51:47 -0700
-Message-Id: <1305053507-28729-1-git-send-email-asharma@fb.com>
-X-Mailer: git-send-email 1.7.4
+	Tue, 10 May 2011 14:55:11 -0400
+Subject: Re: [PATCH 2/2] net/dl2k: Don't reconfigure link @100Mbps when
+ disabling autoneg @1Gbps
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Decotigny <decot@google.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1304986748-15809-3-git-send-email-decot@google.com>
+References: <1304986748-15809-1-git-send-email-decot@google.com>
+	 <1304986748-15809-3-git-send-email-decot@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Tue, 10 May 2011 19:55:07 +0100
+Message-ID: <1305053707.2859.57.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 May 2011 18:55:11.0151 (UTC) FILETIME=[C9E75BF0:01CC0F43]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18126.005
+X-TM-AS-Result: No--21.450000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This keeps the knowledge about deleted filenames in one place.
+On Mon, 2011-05-09 at 17:19 -0700, David Decotigny wrote:
+> The initial version of the driver used to force the link to 100Mbps
+> when auto-negociation was disabled on a 1Gbps link, ignoring the
+> requested link speed. Instead, this change refuses to change anything
+> when it is asked to configure the link speed at 1Gbps without
+> auto-negociation, but acts as requested in all the other cases.
+> 
+> IMPORTANT: Previously, the return value from mii_set_media() was
+>            ignored. This patch uses it for its own return value.
+> 
+> Tested: module compiling, NOT tested on real hardware.
+> Signed-off-by: David Decotigny <decot@google.com>
+[...]
 
-Signed-off-by: Arun Sharma <asharma@fb.com>
----
- tools/perf/util/map.c    |    1 +
- tools/perf/util/symbol.c |    2 +-
- tools/perf/util/symbol.h |    1 +
- 3 files changed, 3 insertions(+), 1 deletions(-)
+The changes to validation look fine.  However, I noticed that there's a
+call to netif_carrier_off() at the top of this function.  This means
+that in the error and shortcut cases, the interface will be left
+disabled!  It's an existing bug but might be made slightly worse by this
+change.
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index a16ecab..042ba9f 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -135,6 +135,7 @@ int map__load(struct map *self, symbol_filter_t filter)
- 				   "a debug package?\n", name);
- 		}
- 
-+		self->dso->deleted = 1;
- 		return -1;
- 	}
- 	/*
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 17df793..dbd1944 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1575,7 +1575,7 @@ restart:
- 	}
- 
- 	free(name);
--	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
-+	if (ret < 0 && self->deleted)
- 		return 0;
- 	return ret;
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 713b0b4..943a054 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -142,6 +142,7 @@ struct dso {
- 	u8		 annotate_warned:1;
- 	u8		 sname_alloc:1;
- 	u8		 lname_alloc:1;
-+	u8		 deleted:1;
- 	unsigned char	 symtab_type;
- 	u8		 sorted_by_name;
- 	u8		 loaded;
+Please also move the call to netif_carrier_off() down to the end, just
+before the call to mii_set_media() which actually alters the link.
+
+Ben.
+
 -- 
-1.7.4
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
