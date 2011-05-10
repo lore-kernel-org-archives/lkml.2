@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab1EJWJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 18:09:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35882 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751030Ab1EJWJ2 (ORCPT
+	id S1753126Ab1EJWPl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 18:15:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14013 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1EJWPj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 18:09:28 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] spi: Use void pointers for data in simple SPI I/O operations
-Date: Wed, 11 May 2011 00:09:30 +0200
-Message-Id: <1305065370-28616-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.1
+	Tue, 10 May 2011 18:15:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=GRjz/m2CeZewnL3JC0wU7ThKENhcEedrs2HSlRYBozXdPXqngrIp/K7+LHDeBGsz5L
+         KT/6nCqaTiupAEQz2n1Q==
+MIME-Version: 1.0
+In-Reply-To: <1305053707.2859.57.camel@bwh-desktop>
+References: <1304986748-15809-1-git-send-email-decot@google.com>
+ <1304986748-15809-3-git-send-email-decot@google.com> <1305053707.2859.57.camel@bwh-desktop>
+From: David Decotigny <decot@google.com>
+Date: Tue, 10 May 2011 15:14:59 -0700
+Message-ID: <BANLkTik5Uc8yRRHoNMENkQNeAnovLYcZjQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net/dl2k: Don't reconfigure link @100Mbps when
+ disabling autoneg @1Gbps
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the simple SPI I/O operations all take pointers to u8 * buffers
-to operate on. This creates needless type compatibility issues and the
-underlying spi_transfer structure uses void pointers anyway so convert the
-API over to take void pointers too.
+Hi all,
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/spi/spi.c       |    4 ++--
- include/linux/spi/spi.h |    8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+Yes, right, I will send the updated patch together with the stmmac
+update (if any).
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 82b9a42..2e13a14 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1047,8 +1047,8 @@ static u8	*buf;
-  * spi_{async,sync}() calls with dma-safe buffers.
-  */
- int spi_write_then_read(struct spi_device *spi,
--		const u8 *txbuf, unsigned n_tx,
--		u8 *rxbuf, unsigned n_rx)
-+		const void *txbuf, unsigned n_tx,
-+		void *rxbuf, unsigned n_rx)
- {
- 	static DEFINE_MUTEX(lock);
- 
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index b4d7710..bb4f5fb 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -581,7 +581,7 @@ extern int spi_bus_unlock(struct spi_master *master);
-  * Callable only from contexts that can sleep.
-  */
- static inline int
--spi_write(struct spi_device *spi, const u8 *buf, size_t len)
-+spi_write(struct spi_device *spi, const void *buf, size_t len)
- {
- 	struct spi_transfer	t = {
- 			.tx_buf		= buf,
-@@ -605,7 +605,7 @@ spi_write(struct spi_device *spi, const u8 *buf, size_t len)
-  * Callable only from contexts that can sleep.
-  */
- static inline int
--spi_read(struct spi_device *spi, u8 *buf, size_t len)
-+spi_read(struct spi_device *spi, void *buf, size_t len)
- {
- 	struct spi_transfer	t = {
- 			.rx_buf		= buf,
-@@ -620,8 +620,8 @@ spi_read(struct spi_device *spi, u8 *buf, size_t len)
- 
- /* this copies txbuf and rxbuf data; for small transfers only! */
- extern int spi_write_then_read(struct spi_device *spi,
--		const u8 *txbuf, unsigned n_tx,
--		u8 *rxbuf, unsigned n_rx);
-+		const void *txbuf, unsigned n_tx,
-+		void *rxbuf, unsigned n_rx);
- 
- /**
-  * spi_w8r8 - SPI synchronous 8 bit write followed by 8 bit read
--- 
-1.7.5.1
+I just hope that changing the netdev_private fields without committing
+to hardware and before calling netif_carrier_off() will not create too
+much confusion. I don't think so, but I still wish I could test.
 
+Regards,
+
+--
+David Decotigny
+
+
+
+On Tue, May 10, 2011 at 11:55 AM, Ben Hutchings
+<bhutchings@solarflare.com> wrote:
+> On Mon, 2011-05-09 at 17:19 -0700, David Decotigny wrote:
+>> The initial version of the driver used to force the link to 100Mbps
+>> when auto-negociation was disabled on a 1Gbps link, ignoring the
+>> requested link speed. Instead, this change refuses to change anything
+>> when it is asked to configure the link speed at 1Gbps without
+>> auto-negociation, but acts as requested in all the other cases.
+>>
+>> IMPORTANT: Previously, the return value from mii_set_media() was
+>>            ignored. This patch uses it for its own return value.
+>>
+>> Tested: module compiling, NOT tested on real hardware.
+>> Signed-off-by: David Decotigny <decot@google.com>
+> [...]
+>
+> The changes to validation look fine.  However, I noticed that there's a
+> call to netif_carrier_off() at the top of this function.  This means
+> that in the error and shortcut cases, the interface will be left
+> disabled!  It's an existing bug but might be made slightly worse by this
+> change.
+>
+> Please also move the call to netif_carrier_off() down to the end, just
+> before the call to mii_set_media() which actually alters the link.
+>
+> Ben.
+>
+> --
+> Ben Hutchings, Senior Software Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+>
+>
