@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab1EJTCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 15:02:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39664 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab1EJTCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 15:02:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <minggr@gmail.com>
-Subject: Re: [PATCH 1/5] PM / Runtime: Support for generic I/O power domains (v3)
-Date: Tue, 10 May 2011 21:03:02 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-References: <201104290154.12966.rjw@sisk.pl> <201105082322.44268.rjw@sisk.pl> <BANLkTin49iSYn=r8G=L0S2vnZhtZw6RFpw@mail.gmail.com>
-In-Reply-To: <BANLkTin49iSYn=r8G=L0S2vnZhtZw6RFpw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105102103.02697.rjw@sisk.pl>
+	id S1751660Ab1EJTHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 15:07:13 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41640 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab1EJTHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 15:07:11 -0400
+Subject: Re: [hrtimers] Re: Regression affecting b43 LP-PHY card
+From: John Stultz <john.stultz@linaro.org>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: b43-dev <b43-dev@lists.infradead.org>, linux-wireless@vger.kernel.org,
+        Juan Carlos Romero <juancarlos.romero@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Ben Greear <greearb@candelatech.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTi=Lo4jRWbHhMLkJmOfg09s+ebDjcw@mail.gmail.com>
+References: <BANLkTin=cU_kCSFfznna69pkgTsSNVjJgw@mail.gmail.com>
+	 <BANLkTi=Lo4jRWbHhMLkJmOfg09s+ebDjcw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 12:06:41 -0700
+Message-ID: <1305054401.2939.52.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 10, 2011, Lin Ming wrote:
-> On Mon, May 9, 2011 at 5:22 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
+On Tue, 2011-05-10 at 20:57 +0200, Rafał Miłecki wrote:
+> W dniu 10 maja 2011 00:52 użytkownik Rafał Miłecki <zajec5@gmail.com> napisał:
+> > In this situation we decided to bisect. I was a little afraid of last
+> > merges so we took older 2.6.38 as GOOD (we tested this twice) and
+> > wireless-testing commit before my ssb changes as BAD. Today Juan
+> > finished bisecting kernel:
+> > http://pastebin.com/HSKbRzpB
+> >
+> > According to his bisection the first bad commit is
+> > e06383db9ec591696a06654257474b85bac1f8cb [0]:
+> > hrtimers: extend hrtimer base code to handle more then 2 clockids
+> >
+> > Does it make any sense to you? Could this be some timing issue?
+> >
+> > It was too late to test this today, we (Juan) will work on this
+> > tomorrow. It's impossible to revert this commit from HEAD of
+> > wireless-testing, so my idea is to checkout commit, test, revert,
+> > test.
+> >
+> > Did anyone else experience any similar problems with latest wireless-testing?
+> >
+> >
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=e06383db9ec591696a06654257474b85bac1f8cb
 > 
-> > +
-> > +/**
-> > + * __pm_genpd_restore_device - Restore a pre-suspend state of a device.
-> > + * @dev: Device to restore the state of.
-> > + * @genpd: Power domain the device belongs to.
-> > + */
-> > +static void __pm_genpd_restore_device(struct device *dev,
-> > +                                     struct generic_power_domain *genpd)
-> > +{
-> > +       struct device_driver *drv = dev->driver;
-> > +
-> > +       if (genpd->start_device)
-> > +               genpd->start_device(dev);
-> > +
-> > +       if (drv && drv->pm && drv->pm->runtime_resume)
-> > +               drv->pm->runtime_resume(dev);
-> > +
-> > +       if (genpd->stop_device)
-> > +               genpd->stop_device(dev);
-> > +}
+> Today Juan checkouted commit e06383db9ec591696a06654257474b85bac1f8cb
+> and tested it. He was disconnected really soon.
 > 
-> Why call ->stop_device in restore function?
+> Then he reverted e06383db9ec591696a06654257474b85bac1f8cb and tested
+> again. Connection was stable, he downloaded 2GB file over network.
+> 
+> 
+> John S.: your commit does not touch Broadcom card directly, but it
+> seems it somehow affects it. I suspect there can be some timing issue.
+> Do you have any idea what could it be, how can we debug this?
 
-Because the device is still suspended at this point, most likely.
-Presumably drv->pm->runtime_resume(dev) has restored it's registers, but
-the device's runtime PM status hasn't changed (yet).
+Sorry for the trouble!
 
-> BTW,
-> you implemented power domains for ARM / shmobile,
-> What can we do for other arches?
-> I wonder how to implement this "power domain" on x86.
+My commit exposed a few spots where hrtimers were being initialized
+before hrtimer_init is called, which caused problems. Thomas provided a
+solution that makes such behavior still function ok:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=ce31332d3c77532d6ea97ddcb475a2b02dd358b4
 
-It depends on what kind of x86 you mean.  On PCs we can't control power
-domains directly and it is done through ACPI power resources, which works.
-I don't think there's a need to rework this.
+Let me know if the issue is still reproducible with Linus' latest git
+tree.
 
-On Moorestown and similar, I can't say, since I don't know how the hardware
-is designed.
+thanks
+-john
 
-Thanks,
-Rafael
+
+
