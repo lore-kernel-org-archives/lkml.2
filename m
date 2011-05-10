@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225Ab1EJU6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:58:38 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:40864 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750750Ab1EJU6g (ORCPT
+	id S1751702Ab1EJVDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:03:24 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60777 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab1EJVDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:58:36 -0400
-Date: Tue, 10 May 2011 22:58:32 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Andrew Lutomirski <luto@mit.edu>, Anton Vorontsov <cbou@mail.ru>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [ibm-acpi-devel] [RFC] Controlling the ThinkPad battery charger
-Message-ID: <20110510205832.GC7485@elf.ucw.cz>
-References: <BANLkTinWna2sDDjbNC5xyGX3ELROs=Wd0w@mail.gmail.com>
- <20110509144546.GB13275@khazad-dum.debian.net>
- <BANLkTikB2TFF12vdwLqV9NRw4meEyDjvdA@mail.gmail.com>
- <20110509152941.GD13275@khazad-dum.debian.net>
- <20110510184302.GA15631@localhost.ucw.cz>
- <20110510195753.GA5850@khazad-dum.debian.net>
+	Tue, 10 May 2011 17:03:23 -0400
+Date: Tue, 10 May 2011 22:03:20 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Taylor Hutt <thutt@chromium.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CHROMIUM: ASoC: Remove 'const' modifiers which cause
+	warnings during compilation.
+Message-ID: <20110510210319.GA17589@sirena.org.uk>
+References: <1305054860-16054-1-git-send-email-thutt@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110510195753.GA5850@khazad-dum.debian.net>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305054860-16054-1-git-send-email-thutt@chromium.org>
+X-Cookie: Interchangeable parts won't.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, May 10, 2011 at 12:14:20PM -0700, Taylor Hutt wrote:
+> This change removes a warning produced when 'const * const' values
+> are assigned to a 'const **'.
+>
+> These code being modified originally came from these two commits:
+> 
+>     http://git.kernel.org/?p=linux/kernel/git/broonie/sound-2.6.git;a=commit;h=82a5a936f6dea13849d93a2899a9b7294a8db336
+>     http://git.kernel.org/?p=linux/kernel/git/broonie/sound-2.6.git;a=commit;h=dad31ec133adb20c8fd10bfd9379da3f08b8721e
+> 
+> Change-Id: I964ff6d24aafe78c2db7002abfd03b9069db9687
+> Signed-off-by: Taylor Hutt <thutt@chromium.org>
 
-> > Hmm, I jave a battery pack with reasonably good cells, but firmware killed
-> > it. IOW available for testing.
-> 
-> That is likely a problem with the battery pack uC, we cannot override that
-> using any know firmware path in the ThinkPad.
-> 
-> Does the thinkpad recognizes the presence of the battery pack?  If it
-> doesn't, the pack uC is probably dead or in safe mode, and you'd need to
-> hardware-hack it.
+This is already fixed in -next.
 
-Yes, it does, and it reports everything ok... (Battery 100% full
-IIRC). Its just that machine dies immediately when AC is removed.
+Please follow the patch submission procedure in SubmittingPatches, in
+particular:
 
-> > (And who know, perhaps recalibrate command would bring it back to life?)
-> 
-> AFAIK, the recalibrate command really just does this:
-> 
-> 1. sets 'force discharge' flag on EC so that it starts discharging the
->    battery pack.  Discharging stops when cell voltage drops close to the
->    minimum safety level.
-> 
-> 2. sets stop threshold to 0 (100%) for that battery pack.
-> 
-> That way, the box will fully-drain the pack, and then charge it to full. At
-> that point, the recalibration is complete (the battery pack uC will
-> auto-calibrate itself when it notices it has hit the fully-drained and
-> fully-charged points).
-> 
-> You can monitor per-cell-group voltages through tp_smapi on a original IBM
-> battery pack, that functionality should still be around on the Lenovos.
-> Since this is not standard SBS functionality, it might not work on
-> non-original battery packs.
+- Send patches to the relevant maintainers and mailing lists.
+- Don't include "CHROMIUM" or other local things like gerritt artifacts
+  in your changelog.
 
-IIRC I tried playing with tp_smapi and did not get anything
-useful. The pack should be original, and I guess I should try again.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+If you don't send patches to the maintainers there's a reasonable chance
+they'll never see them, and the changelog stuff is just irrelevant and
+makes it harder to apply the patch as the maintainer has to manually
+remove them.
