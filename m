@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab1EJPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:25:09 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:59586 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab1EJPZG (ORCPT
+	id S932831Ab1EJPWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:22:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40524 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1EJPWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:25:06 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
-	<87tyd31fkc.fsf@devron.myhome.or.jp>
-	<20110510133603.GA5823@infradead.org>
-	<874o524q9h.fsf@devron.myhome.or.jp>
-	<20110510144939.GI4402@quack.suse.cz>
-Date: Wed, 11 May 2011 00:24:58 +0900
-In-Reply-To: <20110510144939.GI4402@quack.suse.cz> (Jan Kara's message of
-	"Tue, 10 May 2011 16:49:39 +0200")
-Message-ID: <87aaeur31x.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 10 May 2011 11:22:13 -0400
+Subject: Re: [PATCH 3/3] perf, tools: Add support for guest/host-only
+ profiling
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+In-Reply-To: <20110510150821.GC30996@amd.com>
+References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
+	 <1305038132-5080-4-git-send-email-joerg.roedel@amd.com>
+	 <1305039008.2914.98.camel@laptop>  <20110510150821.GC30996@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 17:25:14 +0200
+Message-ID: <1305041114.2914.105.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+On Tue, 2011-05-10 at 17:08 +0200, Roedel, Joerg wrote:
+> On Tue, May 10, 2011 at 10:50:08AM -0400, Peter Zijlstra wrote:
+> > On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
+> > > @@ -740,6 +740,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+> > >                         if (!exclude)
+> > >                                 exclude = eu = ek = eh = 1;
+> > >                         eh = 0;
+> > > +               } else if (*str == 'G') {
+> > > +                       eg   = 0;
+> > > +                       ehst = 1;
+> > > +               } else if (*str == 'H') {
+> > > +                       eg   = 1;
+> > > +                       ehst = 0; 
+> > 
+> > This doesn't match the existing exclude logic, also eH and eG come to
+> > mind.
+> 
+> OK, eH and eG seems like a better choice. Regarding the logic I
+> explictly decided to do it this way. The reason is that guest/host
+> counting is orthogonal to user/kernel/hv counting. You can decide to
+> only count guest-kernel for example. And if a user just specifies
+> -e cycles:G this would automatically exlucde user and kernel counting.
+> This didn't make sense to me so I decided to keep the logic seperate for
+> guest/host exclusions.
 
->> Isn't it reallocated blocks too, and metadata too?
->   Reallocated blocks - not really. For a block to be freed it cannot be
-> under writeback and when it's freed no writeback is started.
+OK, so the changelog lacked that bit of information ;-)
 
-Sure for data -> data reallocated case. metadata -> data/metadata is
-still there.
+How about you do something like:
 
-> For metadata - yes. But ext3, ext4, xfs, btrfs have to avoid modifying
-> metadata under writeback anyway (because of journalling / COW
-> constraints) and thus they don't care.
 
-Yes. Those would use better way than just blocking.
 
-> For ext2 or vfat it's a different story. But as I wrote to Darrick,
-> I'm not sure about vfat but for ext2 and similar legacy filesystems,
-> I'd rather let them live with their unstable pages under IO ;) because
-> I see a limited use for that.
++               } else if (*str == 'G') {
++			if (!excl_GH)
++				excl_GH = eH = eG = 1;
++                       eG   = 0;
++               } else if (*str == 'H') {
++			if (!excl_GH)
++				excl_GH = eH = eG = 1;
++                       eH   = 0;
 
-If this patches was not going to tackle it, I have no argument here ;)
-It would be simply FS specific approach/fixes anymore like journal.
+Which mirrors the existing logic but keeps it orthogonal?
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
+Hmm,. does this nicely integrate with exclude_hv? that seems to want to
+be grouped with G/H.
+
