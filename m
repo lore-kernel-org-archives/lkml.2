@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab1EJOQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 10:16:36 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:51844 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932557Ab1EJOQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 10:16:33 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-54-4dc9488a6a17
-From: Andy Lutomirski <luto@MIT.EDU>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v3 6/6] x86-64: Turn off -pg and turn on -foptimize-sibling-calls for vDSO
-Date: Tue, 10 May 2011 10:15:08 -0400
-Message-Id: <180ff42f281f136937840149d8c43384f00b69bd.1305035945.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <cover.1305035945.git.luto@mit.edu>
-References: <cover.1305035945.git.luto@mit.edu>
-In-Reply-To: <cover.1305035945.git.luto@mit.edu>
-References: <cover.1305035945.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsUixG6nrtvlcdLX4PlHKYuLbRfZLPquHGW3
-	OHLtO7vFnPMtLBb73p9ls7i8aw6bxZZLzawWa6e+YbHYvGkqs8WjvrfsFj82PGZ14Pa48pTD
-	Y8vKm0wet9r+MHvM3/mR0WPnrLvsHptWdbJ5vDt3jt3jxIzfLB6bT1d7fN4kF8AVxWWTkpqT
-	WZZapG+XwJWxvH8Hc0EDV8XMNSfYGhgXcXQxcnJICJhIrPu5jw3CFpO4cG89kM3FISSwj1Hi
-	/c8GZghnA6PE2onLmUCqhASeMUlc/BAAYrMJqEh0LH0AFOfgEBEQklh6tw4kzCywmFni630n
-	EFtYIEpiUdt/RhCbRUBVYuO6jawg5bwCQRKfNxZA7FWQuHJlHguIzSlgIPH28D82iE36EouW
-	HsMpPoFRYAEjwypG2ZTcKt3cxMyc4tRk3eLkxLy81CJdI73czBK91JTSTYygCOCU5N3B+O6g
-	0iFGAQ5GJR5eif/HfYVYE8uKK3MPMUpyMCmJ8l52OekrxJeUn1KZkVicEV9UmpNafIhRgoNZ
-	SYR33s8TvkK8KYmVValF+TApaQ4WJXHemZLqvkIC6YklqdmpqQWpRTBZGQ4OJQleeWCkCwkW
-	paanVqRl5pQgpJk4OEGG8wANtwWp4S0uSMwtzkyHyJ9i1OWY3tZ8gFGIJS8/L1VKnFcbpEgA
-	pCijNA9uDixxvWIUB3pLmNcVpIoHmPTgJr0CWsIEtMR8A8gHxSWJCCmpBsb6myr3L3hYb43i
-	7AuVitby0v13pvTmJ93IN9dU8gQZrv868GT6r29BK3IrfvQfcvmt6z1pPtPJzQ8eyM93ut2j
-	kz8vx3f3z0zf3bP9tdtXvnhy4O3s5nLWL45eG+wWHtsuab/Trdnx5NH6dsctimt2Tn/uKejl
-	wipqv/m/5R3n3nb5MJ3w6++VWIozEg21mIuKEwHgtynvNwMAAA==
+	id S1756459Ab1EJOR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 10:17:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55705 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755629Ab1EJOR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 10:17:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,346,1301900400"; 
+   d="scan'208";a="433616713"
+Subject: Re: [PATCH] perf events, x86: Implement Sandybridge last-level
+ cache events
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1305022112.2914.40.camel@laptop>
+References: <1304930382.3924.303.camel@minggr.sh.intel.com>
+	 <1305022112.2914.40.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 22:17:58 +0800
+Message-Id: <1305037078.2226.18.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vDSO isn't part of the kernel, so profiling and kernel
-backtraces don't really matter.
+On Tue, 2011-05-10 at 18:08 +0800, Peter Zijlstra wrote:
+> On Mon, 2011-05-09 at 16:39 +0800, Lin Ming wrote:
+> 
+> >  
+> > +/*
+> > + * Sandy Bridge MSR_OFFCORE_RESPONSE bits;
+> > + * See IA32 SDM Vol 3B 30.8.5
+> > + */
+> > +
+> > +#define SNB_DMND_DATA_RD	(1ULL << 0)
+> > +#define SNB_DMND_RFO		(1ULL << 1)
+> > +#define SNB_DMND_IFETCH		(1ULL << 2)
+> > +#define SNB_DMND_WB		(1ULL << 3)
+> > +#define SNB_PF_DATA_RD		(1ULL << 4)
+> > +#define SNB_PF_DATA_RFO		(1ULL << 5)
+> > +#define SNB_PF_IFETCH		(1ULL << 6)
+> > +#define SNB_PF_LLC_DATA_RD	(1ULL << 7)
+> > +#define SNB_PF_LLC_RFO		(1ULL << 8)
+> > +#define SNB_PF_LLC_IFETCH	(1ULL << 9)
+> > +#define SNB_BUS_LOCKS		(1ULL << 10)
+> > +#define SNB_STRM_ST		(1ULL << 11)
+> > +				/* hole */
+> > +#define SNB_OFFCORE_OTHER	(1ULL << 15)
+> > +#define SNB_COMMON		(1ULL << 16)
+> > +#define SNB_NO_SUPP		(1ULL << 17)
+> > +#define SNB_LLC_HITM		(1ULL << 18)
+> > +#define SNB_LLC_HITE		(1ULL << 19)
+> > +#define SNB_LLC_HITS		(1ULL << 20)
+> > +#define SNB_LLC_HITF		(1ULL << 21)
+> > +				/* hole */
+> > +#define SNB_SNP_NONE		(1ULL << 31)
+> > +#define SNB_SNP_NOT_NEEDED	(1ULL << 32)
+> > +#define SNB_SNP_MISS		(1ULL << 33)
+> > +#define SNB_SNP_NO_FWD		(1ULL << 34)
+> > +#define SNB_SNP_FWD		(1ULL << 35)
+> > +#define SNB_HITM		(1ULL << 36)
+> > +#define SNB_NON_DRAM		(1ULL << 37)
+> > +
+> > +#define SNB_DMND_READ		(SNB_DMND_DATA_RD)
+> > +#define SNB_DMND_WRITE		(SNB_DMND_RFO | SNB_DMND_WB|SNB_STRM_ST)
+> > +#define SNB_DMND_PREFETCH	(SNB_PF_DATA_RD | SNB_PF_DATA_RFO)
+> > +
+> > +#define SNB_SUPPLIER_INFO	(SNB_NO_SUPP | SNB_LLC_HITM | SNB_LLC_HITE | \
+> > +				 SNB_LLC_HITS | SNB_LLC_HITF)
+> > +
+> > +#define SNB_L3_HIT		(SNB_SUPPLIER_INFO | SNB_SNP_NOT_NEEDED | SNB_SNP_NO_FWD | SNB_HITM)
+> > +#define SNB_L3_MISS		(SNB_SUPPLIER_INFO | SNB_SNP_MISS | SNB_SNP_FWD | SNB_NON_DRAM)
+> > +#define SNB_L3_ACCESS		(SNB_L3_HIT | SNB_L3_MISS)
+> 
+> I would very much like to know how these bits work.. Since the SDM
+> doesn't explain anything could you please add a big comment explaining
+> things?
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
----
- arch/x86/vdso/Makefile |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+I'm also not sure if the bits combination do count exactly L3_HIT/_MISS.
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index a651861..bef0bc9 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -37,11 +37,24 @@ $(obj)/%.so: OBJCOPYFLAGS := -S
- $(obj)/%.so: $(obj)/%.so.dbg FORCE
- 	$(call if_changed,objcopy)
- 
-+#
-+# Don't omit frame pointers for ease of userspace debugging, but do
-+# optimize sibling calls.
-+#
- CFL := $(PROFILING) -mcmodel=small -fPIC -O2 -fasynchronous-unwind-tables -m64 \
--       $(filter -g%,$(KBUILD_CFLAGS)) $(call cc-option, -fno-stack-protector)
-+       $(filter -g%,$(KBUILD_CFLAGS)) $(call cc-option, -fno-stack-protector) \
-+       -fno-omit-frame-pointer -foptimize-sibling-calls
- 
- $(vobjs): KBUILD_CFLAGS += $(CFL)
- 
-+#
-+# vDSO code runs in userspace and -pg doesn't help with profiling anyway.
-+#
-+CFLAGS_REMOVE_vdso-note.o = -pg
-+CFLAGS_REMOVE_vclock_gettime.o = -pg
-+CFLAGS_REMOVE_vgetcpu.o = -pg
-+CFLAGS_REMOVE_vvar.o = -pg
-+
- targets += vdso-syms.lds
- obj-$(VDSO64-y)			+= vdso-syms.lds
- 
--- 
-1.7.5.1
+The manual has below statements,
+
+"To specify a complete offcore response filter, software must properly
+program bits in the request and response type fields. A valid request
+type must have at least one bit set in the non-reserved bits of 15:0. A
+valid response type must be a non-zero value of the following
+expression:
+
+ANY | [(‘OR’ of Supplier Info Bits) & (‘OR’ of Snoop Info Bits)]
+If “ANY“ bit is set, the supplier and snoop info bits are ignored."
+
+So I defined SNB_L3_HIT and SNB_L3_MISS with ANY bit cleared, and
+Supplier Info Bits and Snoop Info Bits set.
+
+But again, I'm not sure if the combination is correct.
+May need some micro-benchmarks to verify it.
+
+Thanks,
+Lin Ming
+> 
+> Otherwise the patch looks good, but unverifiable so for me.
+> 
+> > +static __initconst const u64 snb_hw_cache_extra_regs
+> > +				[PERF_COUNT_HW_CACHE_MAX]
+> > +				[PERF_COUNT_HW_CACHE_OP_MAX]
+> > +				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
+> > +{
+> > + [ C(LL  ) ] = {
+> > +	[ C(OP_READ) ] = {
+> > +		[ C(RESULT_ACCESS) ] = SNB_DMND_READ | SNB_L3_ACCESS,
+> > +		[ C(RESULT_MISS)   ] = SNB_DMND_READ | SNB_L3_MISS,
+> > +	},
+> > +	[ C(OP_WRITE) ] = {
+> > +		[ C(RESULT_ACCESS) ] = SNB_DMND_WRITE | SNB_L3_ACCESS,
+> > +		[ C(RESULT_MISS)   ] = SNB_DMND_WRITE | SNB_L3_MISS,
+> > +	},
+> > +	[ C(OP_PREFETCH) ] = {
+> > +		[ C(RESULT_ACCESS) ] = SNB_DMND_PREFETCH | SNB_L3_ACCESS,
+> > +		[ C(RESULT_MISS)   ] = SNB_DMND_PREFETCH | SNB_L3_MISS,
+> > +	},
+> > + }
+> > +};
+> 
+
 
