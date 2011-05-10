@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab1EJG1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 02:27:01 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52664 "EHLO mx2.mail.elte.hu"
+	id S1753618Ab1EJGe5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 02:34:57 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35418 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781Ab1EJG1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 02:27:00 -0400
-Date: Tue, 10 May 2011 08:26:53 +0200
+	id S1752218Ab1EJGe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 02:34:56 -0400
+Date: Tue, 10 May 2011 08:34:45 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
 Subject: Re: [PATCH] x86: UV BAU fix for non-consecutive nasids
-Message-ID: <20110510062653.GA11595@elte.hu>
+Message-ID: <20110510063445.GB11595@elte.hu>
 References: <E1QJWvo-0006ug-Fd@eag09.americas.sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,23 +33,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Cliff Wickman <cpw@sgi.com> wrote:
 
-> From: Cliff Wickman <cpw@sgi.com>
-> 
-> This is a fix for the SGI Altix-UV Broadcast Assist Unit code, which is
-> used for TLB flushing.
-> 
-> This patch allows nasids (numa address space id's) to be non-consecutive, as is
-> the case when using nasid striding or in some certain hardware configurations.
-> It also provides a table in local memory for each cpu to translate target cpu
-> number to target pnode and nasid.
+> @@ -1365,12 +1373,14 @@ uv_activation_descriptor_init(int node,
+>  		memset(bd2, 0, sizeof(struct bau_desc));
+>  		bd2->header.sw_ack_flag = 1;
+>  		/*
+> -		 * base_dest_nodeid is the nasid of the first uvhub
+> -		 * in the partition. The bit map will indicate uvhub numbers,
+> -		 * which are 0-N in a partition. Pnodes are unique system-wide.
+> +		 * The base_dest_nasid set in the message header is the nasid
+> +		 * of the first uvhub in the partition. The bit map will
+> +		 * indicate destination pnode numbers relative to that base.
+> +		 * They may not be consecutive if nasid striding is being used.
+>  		 */
+> -		bd2->header.base_dest_nodeid = UV_PNODE_TO_NASID(uv_partition_base_pnode);
+> -		bd2->header.dest_subnodeid = 0x10; /* the LB */
+> +		bd2->header.base_dest_nasid =
+> +					UV_PNODE_TO_NASID(part_base_pnode);
+> +		bd2->header.dest_subnodeid = UV_LB_SUBNODEID;
+>  		bd2->header.command = UV_NET_ENDPOINT_INTD;
+>  		bd2->header.int_both = 1;
 
-This changelog is missing one or more of the following essential pieces
-of information:
+This code is sick. Illness: too long lines.
 
- - what user-visible problem is the patch solving
- - how was the problem triggered, how was the bug found
- - what/how many systems are affected
- - why should maintainers apply this patch right now
+checkpatch warned you but you applied the wrong cure and
+broke the lines in an ugly way.
+
+Can you	think of another cure? One of the many options:
+
+  - eliminate many repetitive strings
+  - reduce indentation by the introduction of helper inlines
+  - sensible shortening of variable/field/definition names
+
+... applies to this particular case and will solve the problem.
+
+> @@ -1528,6 +1539,15 @@ static int __init uv_init_per_cpu(int nu
+>  		bcp = &per_cpu(bau_control, cpu);
+>  		memset(bcp, 0, sizeof(struct bau_control));
+>  		pnode = uv_cpu_hub_info(cpu)->pnode;
+> +		if ((pnode - base_part_pnode) >= UV_DISTRIBUTION_SIZE) {
+> +			printk(KERN_EMERG
+> +				"cpu %d pnode %d-%d beyond %d; BAU disabled\n",
+> +				cpu, pnode, base_part_pnode,
+> +				UV_DISTRIBUTION_SIZE);
+
+See my points above.
+
+> @@ -1585,6 +1605,20 @@ static int __init uv_init_per_cpu(int nu
+>  nextsocket:
+>  			socket++;
+>  			socket_mask = (socket_mask >> 1);
+> +			/* each socket gets a local array of pnodes/hubs */
+> +			bcp = smaster;
+> +			bcp->target_hub_and_pnode = kmalloc_node(
+> +				sizeof(struct hub_and_pnode) *
+> +				num_possible_cpus(), GFP_KERNEL, bcp->osnode);
+> +			memset(bcp->target_hub_and_pnode, 0,
+> +				sizeof(struct hub_and_pnode) *
+> +				num_possible_cpus());
+> +			for_each_present_cpu(tcpu) {
+> +				bcp->target_hub_and_pnode[tcpu].pnode =
+> +					uv_cpu_hub_info(tcpu)->pnode;
+> +				bcp->target_hub_and_pnode[tcpu].uvhub =
+> +					uv_cpu_hub_info(tcpu)->numa_blade_id;
+> +			}
+
+See my points above.
 
 Thanks,
 
