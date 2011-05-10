@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab1EJI4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:56:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54114 "EHLO e9.ny.us.ibm.com"
+	id S932793Ab1EJI6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:58:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51109 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131Ab1EJI43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 04:56:29 -0400
-Date: Tue, 10 May 2011 01:56:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110510085623.GG2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110508151848.GA21906@linux.vnet.ibm.com>
- <20110509073636.GA18247@elte.hu>
- <BANLkTin82W0yZ5Nvv3Dp62X1eou_GxZ6EA@mail.gmail.com>
+	id S932131Ab1EJI6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 04:58:07 -0400
+Date: Tue, 10 May 2011 10:57:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
+Message-ID: <20110510085746.GG27426@elte.hu>
+References: <6921.1304989476@localhost>
+ <20110510082029.GF2258@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTin82W0yZ5Nvv3Dp62X1eou_GxZ6EA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110510082029.GF2258@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 02:09:21PM -0700, Yinghai Lu wrote:
-> On Mon, May 9, 2011 at 12:36 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> >> Hello, Ingo,
-> >>
-> >> This pull request covers RCU chnages for 2.6.40.  The major new features
-> >> are RCU priority boosting and the addition of kfree_rcu(), the latter
-> >> courtesy of Lai Jiangshan.  These two features cover well over half
-> >> of the commits.  There are a number of smaller features and bug fixes.
-> >> All have been sent to LKML in the following batches:
-> >>
-> >> 0.    https://lkml.org/lkml/2011/2/22/660: RCU priority boosting preview
-> >> 1.    https://lkml.org/lkml/2011/5/1/19: RCU priority boosting, kfree_rcu()
-> >> 2.    https://lkml.org/lkml/2011/5/2/40: More uses of kfree_rcu()
-> >> 3.    https://lkml.org/lkml/2011/5/8/60: miscellaneous
-> >>
-> >> The kfree_rcu() uses in the pull request have Acked-by:s from the
-> >> maintainers.  I have some additional kfree_rcu() requests that lack
-> >> Acked-by:s, and I will deal with these later.
-> >>
-> >> These channges are available in the -rcu git repository at:
-> >>
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-> >
-> > Pulled, thanks a lot Paul!
-> >
-> 
-> it seems with this one in tip, my 8 sockets test setup will report cpu stall.
-> 
-> after hard code to enable rcu_cpu_stall_suppress
-> 
-> Index: linux-2.6/kernel/rcutree.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/rcutree.c
-> +++ linux-2.6/kernel/rcutree.c
-> @@ -174,7 +174,7 @@ module_param(blimit, int, 0);
->  module_param(qhimark, int, 0);
->  module_param(qlowmark, int, 0);
-> 
-> -int rcu_cpu_stall_suppress __read_mostly;
-> +int rcu_cpu_stall_suppress __read_mostly = 1;
->  module_param(rcu_cpu_stall_suppress, int, 0644);
-> 
->  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
-> 
-> will get system hang after pnp ACPI init.
 
-Could you please send the stack traces from the RCU CPU stall?  Also,
-you do have ce31332d3c77532d6ea97ddcb475a2b02dd358b4 applied, correct?
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-							Thanx, Paul
+> -	raw_spin_lock_irqsave(&rnp->lock, flags);
+> -	rnp->wakemask |= rdp->grpmask;
+> -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> +	do {
+> +		old = rnp->wakemask;
+> +		new = old | rdp->grpmask;
+> +	} while (cmpxchg(&rnp->wakemask, old, new) != old);
+
+Hm, isnt this an inferior version of atomic_or_long() in essence?
+
+Note that atomic_or_long() is x86 only, so a generic one would have to be 
+offered too i suspect, atomic_cmpxchg() driven or so - which would look like 
+the above loop.
+
+Most architectures could offer atomic_or_long() i suspect.
+
+Thanks,
+
+	Ingo
