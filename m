@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab1EJOsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 10:48:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40862 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab1EJOr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 10:47:59 -0400
-Subject: Re: [PATCH 3/3] perf, tools: Add support for guest/host-only
- profiling
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-In-Reply-To: <1305038132-5080-4-git-send-email-joerg.roedel@amd.com>
-References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
-	 <1305038132-5080-4-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 16:50:08 +0200
-Message-ID: <1305039008.2914.98.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932625Ab1EJOyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 10:54:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46564 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752436Ab1EJOyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 10:54:24 -0400
+Date: Tue, 10 May 2011 16:54:21 +0200
+From: Jan Kara <jack@suse.cz>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jan Kara <jack@suse.cz>, "Darrick J. Wong" <djwong@us.ibm.com>,
+        Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110510145421.GJ4402@quack.suse.cz>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <87tyd31fkc.fsf@devron.myhome.or.jp>
+ <20110510123819.GB4402@quack.suse.cz>
+ <87hb924s2x.fsf@devron.myhome.or.jp>
+ <20110510132953.GE4402@quack.suse.cz>
+ <878vue4qjb.fsf@devron.myhome.or.jp>
+ <87zkmu3b2i.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zkmu3b2i.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
-> @@ -740,6 +740,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
->                         if (!exclude)
->                                 exclude = eu = ek = eh = 1;
->                         eh = 0;
-> +               } else if (*str == 'G') {
-> +                       eg   = 0;
-> +                       ehst = 1;
-> +               } else if (*str == 'H') {
-> +                       eg   = 1;
-> +                       ehst = 0; 
+On Tue 10-05-11 23:05:41, OGAWA Hirofumi wrote:
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+> 
+> > Jan Kara <jack@suse.cz> writes:
+> >
+> >>> I see. So many block layer stuff sounds like broken on corner case? If
+> >>> so, I more feel this approach should be temporary workaround, and should
+> >>> use another less-blocking approach.
+> >>   Not many but some... The alternative to less blocking approach is to do
+> >> copy-out before a page is submitted for IO (or various middle ground
+> >> alternatives of doing sometimes copyout, sometimes blocking...). That costs
+> >> some performance as well. We talked about it at LSF and the approach
+> >> Darrick is implementing was considered the least intrusive. There's really
+> >> no way to fix these corner cases and keep performance.
+> >
+> > You already considered, to copy only if page was writeback (like
+> > copy-on-write). I.e. if page is on I/O, copy, then switch the page for
+> > writing new data.
+> 
+> missed question mark in here.
+> 
+> Did you already consider, to copy only if page was writeback (like
+> copy-on-write)? I.e. if page is on I/O, copy, then switch the page for
+> writing new data.
+  Yes, that was considered as well. We'd have to essentially migrate the
+page that is under writeback and should be written to. You are going to pay
+the cost of page allocation, copy, increased memory & cache pressure.
+Depending on your backing storage and workload this may or may not be better
+than waiting for IO...
 
-This doesn't match the existing exclude logic, also eH and eG come to mind.
+								Honza
 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
