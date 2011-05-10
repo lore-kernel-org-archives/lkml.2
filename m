@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab1EJDyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 23:54:09 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50495 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab1EJDyI (ORCPT
+	id S932308Ab1EJD7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 23:59:24 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47416
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755626Ab1EJD7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 23:54:08 -0400
-Date: Mon, 9 May 2011 23:53:56 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.39-rc7
-Message-ID: <20110510035356.GA6954@dumpdata.com>
-References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DC8B6DB.0160:SCFMA922111,ss=1,fgs=0
+	Mon, 9 May 2011 23:59:23 -0400
+Date: Mon, 09 May 2011 20:58:51 -0700 (PDT)
+Message-Id: <20110509.205851.189693332.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this
+ time)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1304999271.3050.41.camel@edumazet-laptop>
+References: <6954.1304989523@localhost>
+	<1304994188.3050.17.camel@edumazet-laptop>
+	<1304999271.3050.41.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 07:49:48PM -0700, Linus Torvalds wrote:
-> So things have been pretty quiet, and unless something major comes up
-> I believe that this will be the last -rc.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Tue, 10 May 2011 05:47:51 +0200
 
-Oh no! I was hoping for an extra week!
+> [PATCH net-next-2.6] net: fix two lockdep splats
+> 
+> Commit e67f88dd12f6 (net: dont hold rtnl mutex during netlink dump
+> callbacks) switched rtnl protection to RCU, but we forgot to adjust two
+> rcu_dereference() lockdep annotations :
+> 
+> inet_get_link_af_size() or inet_fill_link_af() might be called with
+> rcu_read_lock or rtnl held, so use rcu_dereference_rtnl()
+> instead of rtnl_dereference()
+> 
+> Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-The patch that I asked to be pulled: (a38647837a411f7df79623128421eef2118b5884)
-"xen/mmu: Add workaround "x86-64, mm: Put early page table high"
-
-does not compleltly workaround the regression that the patch from Yinghai titled 
-'x86-64, mm: Put early page table high" introduced wherein Linux can't boot under Xen.
-
-The failure still encountered: https://lkml.org/lkml/2011/5/5/180, the
-previous git pull request with an outline of the problem https://lkml.org/lkml/2011/5/3/99
-and huge amount of details in http://marc.info/?i=1302607192-21355-2-git-send-email-stefano.stabellini@eu.citrix.com
-
-I was hoping that the rc6 could stretch out so that by the time hpa came back from
-his travels he would have had a chance to look at: https://lkml.org/lkml/2011/5/5/226
-(or git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-for-rc6)
-which has a more precise patch and fixes the regression.
-
-Linus, what is the right way to go about this?
+Applied, thanks everyone.
