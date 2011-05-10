@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab1EJUNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:13:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50678 "EHLO hera.kernel.org"
+	id S1751862Ab1EJUeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:34:44 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:33820 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451Ab1EJUNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:13:43 -0400
-Date: Tue, 10 May 2011 20:13:31 GMT
-From: tip-bot for Lin Ming <ming.m.lin@intel.com>
-Message-ID: <tip-2b348a77981227c6b64fb9cf19f7c711a6806bc9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        acme@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
-References: <1304066518-30420-2-git-send-email-ming.m.lin@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Fix the missed parameter initialization
-Git-Commit-ID: 2b348a77981227c6b64fb9cf19f7c711a6806bc9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751688Ab1EJUen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 16:34:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 10 May 2011 20:13:31 +0000 (UTC)
+Date: Tue, 10 May 2011 15:25:06 -0500
+Message-ID: <BANLkTinUp=CXNc+kvFF1vVunk32mDauD-A@mail.gmail.com>
+Subject: [PATCH 0/4] Initial TPS65912 PMIC driver
+From: Margarita Olaya <magi@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b348a77981227c6b64fb9cf19f7c711a6806bc9
-Gitweb:     http://git.kernel.org/tip/2b348a77981227c6b64fb9cf19f7c711a6806bc9
-Author:     Lin Ming <ming.m.lin@intel.com>
-AuthorDate: Fri, 29 Apr 2011 08:41:57 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 10 May 2011 17:06:23 +0200
+This is the initial version of the TPS65912 PMIC, a power managment IC
+for multimedia products.
 
-perf probe: Fix the missed parameter initialization
+The tps65912 consists of 4 DCDCs and 10 LDOs, that are able to supply
+voltage to main processor and other components. The chip includes a
+GPIO module.
 
-pubname_callback_param::found should be initialized to 0 in
-fastpath lookup, the structure is on the stack and
-uninitialized otherwise.
+Margarita Olaya Cabrera (4):
+  mfd: tps65912: Add new mfd device
+  tps65912: gpio: add gpio driver
+  tps65912: irq: add interrupt controller
+  tps65912: add regulator driver
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Link: http://lkml.kernel.org/r/1304066518-30420-2-git-send-email-ming.m.lin@intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/util/probe-finder.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index a7c7145..3b9d0b8 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1538,6 +1538,7 @@ static int find_probes(int fd, struct probe_finder *pf)
- 			.file	  = pp->file,
- 			.cu_die	  = &pf->cu_die,
- 			.sp_die	  = &pf->sp_die,
-+			.found	  = 0,
- 		};
- 		struct dwarf_callback_param probe_param = {
- 			.data = pf,
+ drivers/mfd/Kconfig                    |    8 +
+ drivers/mfd/Makefile                   |    1 +
+ drivers/mfd/tps65912-gpio.c            |   94 +++
+ drivers/mfd/tps65912-irq.c             |  224 ++++++++
+ drivers/mfd/tps65912.c                 |  387 +++++++++++++
+ drivers/regulator/Kconfig              |    6 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps65912-regulator.c |  966 ++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65912.h           |  465 +++++++++++++++
+ 9 files changed, 2152 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/tps65912-gpio.c
+ create mode 100644 drivers/mfd/tps65912-irq.c
+ create mode 100644 drivers/mfd/tps65912.c
+ create mode 100644 drivers/regulator/tps65912-regulator.c
+ create mode 100644 include/linux/mfd/tps65912.h
