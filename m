@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab1EJNr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 09:47:26 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:39399 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754735Ab1EJNrZ (ORCPT
+	id S1756403Ab1EJNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 09:47:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33936 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab1EJNr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 09:47:25 -0400
-Message-ID: <4DC941D4.8030409@st.com>
-Date: Tue, 10 May 2011 15:47:00 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 10 May 2011 09:47:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FhaJXhovWdm7UIN7TlQkzQ/d1A+aDucmnK/hyjObEb7XWFViByFNuyMUsD+gAIFqri
+         Ae+Hsk/mdZnb+WhfqYLe44IFPzoWASNqMGVAxUc3thVSHKG7BpgBmGJdzs4alcdhGtui
+         cEFD8gJeQzqFM8CRsPWmIICydG9lMelKXuG9k=
+Date: Tue, 10 May 2011 15:47:52 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 02/11] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110510134752.GW1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-3-git-send-email-tj@kernel.org>
+ <20110509161838.GA27473@redhat.com>
+ <20110510094650.GQ1661@htj.dyndns.org>
+ <20110510132001.GA21834@redhat.com>
 MIME-Version: 1.0
-To: David Decotigny <decot@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] net/stmmac: don't go through ethtool to start autonegociation
-References: <1304986748-15809-1-git-send-email-decot@google.com> <1304986748-15809-2-git-send-email-decot@google.com>
-In-Reply-To: <1304986748-15809-2-git-send-email-decot@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510132001.GA21834@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/10/2011 2:19 AM, David Decotigny wrote:
-> The driver used to call phy's ethtool configuration routine to start
-> autonegociation. This change has it call directly phy's routine to
-> start autonegociation.
+Hey, Oleg.
+
+On Tue, May 10, 2011 at 03:20:01PM +0200, Oleg Nesterov wrote:
+> > Hmmm... if killed, the tracee would go through __ptrace_unlink() which
+> > always clears JOBCTL_TRAP_MASK which includes JOBCTL_TRAP_SEIZE.  What
+> > am I missing?
 > 
-> IMPORTANT: initial version was hiding phy_start_aneg() return value,
->            this patch returns it (<0 upon error).
+> No. If killed, the tracee becomes a zombie (but see below). __ptrace_unlink()
+> won't be called until the tracee does wait().
+
+Ah, right.
+
+> Yes, and thus the tracee will loop forever until the tracer detaches, so
+> it can't even become a zombie. And the tracer can't detach via ptrace().
+
+I think this basically is the same problem as the using TRAPPING on
+PTRACE_DETACH one.  Do you recall the original version where TRAPPING
+was cleared on kill via clear_pending instead of at the end of
+do_signal_stop()?  I think that's what we should do.  We should be
+clearing these conditions when the actions which should override these
+conditions happen instead of trying to put them in the tracee
+expecting control to be at certain places and to me
+task_clear_jobctl_stop_pending() seems to be the best place to do
+that.  We might need to rename it and maybe add a parameter tho.
+
+How does it sound to you?  It would solve the TRAPPING issue too.
+
+> > > I never understood why ptrace_stop()->sigkill_pending() logic, I think
+> > > we should check fatal_signal_pending() unconditionally.
+> >
+> > Probably the best way to do it is adding fatal_signal_pending() into
+> > may_ptrace_stop() so that the failure path shares most of the code
+> > path instead of doing quick dirty exit?  It's just nasty to have early
+> > exit above there and walking through the normal code path wouldn't
+> > hurt SIGKILL either.
 > 
-> Tested: module compiles, NOT tested on real hardware.
-> Signed-off-by: David Decotigny <decot@google.com>
+> Yes, probably. But, apart from the user-visible change which needs another
+> discussion, there are more problems. fatal_signal_pending() can "wrongly"
+> return false if the caller is tracehook_report_exit(). OTOH, it can correctly
+> return true (exec), but we probably want to stop. Let's discuss this later,
+> I think this has nothing to do with your patches. The main problem is not
+> fatal_signal_pending(), we need the better definition of explicit SIGKILL
+> behaviour. Not for ptrace only, there are other issues.
 
-Sorry for the delay, I'm doing some tests with the stmmac on a "real"
-HW. I'll come back asap.
+Alright, let's put it aside for now.
 
-Regards
-Peppe
+Thank you.
 
-> ---
->  drivers/net/stmmac/stmmac_ethtool.c |   13 ++-----------
->  1 files changed, 2 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/net/stmmac/stmmac_ethtool.c b/drivers/net/stmmac/stmmac_ethtool.c
-> index 6f5aaeb..9c05cf0 100644
-> --- a/drivers/net/stmmac/stmmac_ethtool.c
-> +++ b/drivers/net/stmmac/stmmac_ethtool.c
-> @@ -236,17 +236,8 @@ stmmac_set_pauseparam(struct net_device *netdev,
->  	priv->flow_ctrl = new_pause;
->  
->  	if (phy->autoneg) {
-> -		if (netif_running(netdev)) {
-> -			struct ethtool_cmd cmd = { .cmd = ETHTOOL_SSET };
-> -			/* auto-negotiation automatically restarted */
-> -			cmd.supported = phy->supported;
-> -			cmd.advertising = phy->advertising;
-> -			cmd.autoneg = phy->autoneg;
-> -			ethtool_cmd_speed_set(&cmd, phy->speed);
-> -			cmd.duplex = phy->duplex;
-> -			cmd.phy_address = phy->addr;
-> -			ret = phy_ethtool_sset(phy, &cmd);
-> -		}
-> +		if (netif_running(netdev))
-> +			ret = phy_start_aneg(phy);
->  	} else
->  		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
->  					 priv->flow_ctrl, priv->pause);
-
+-- 
+tejun
