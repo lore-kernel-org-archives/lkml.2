@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab1EJFcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 01:32:52 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37957 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab1EJFcv convert rfc822-to-8bit (ORCPT
+	id S1753522Ab1EJFhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 01:37:50 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50350 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1EJFht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 01:32:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UqGp7xtVneFnT7F6CaNHF9FKSAf1ORonNGXy+k9exh4soQsWVs6+hekc27LEzuj0Ir
-         UGJ4v7MLt8RVMSTa2CB/j7p+iTQJGnxjEh0phhbScdb/Icn5F8M9BTtC7218VjMtd1Na
-         qXYtqvcyJ90QOFwXPvkjaV0QEE48Pu42cZXjQ=
-MIME-Version: 1.0
-In-Reply-To: <1304908814-23369-1-git-send-email-daniel.blueman@gmail.com>
-References: <1304908814-23369-1-git-send-email-daniel.blueman@gmail.com>
-Date: Tue, 10 May 2011 13:32:50 +0800
-Message-ID: <BANLkTi=H2hFmx1fBAocaU=UNrv_NisGqGg@mail.gmail.com>
-Subject: Re: [PATCH] ioapic: fix potential resume deadlock
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        H Peter Anvin <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 May 2011 01:37:49 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: Colin Ian King <colin.king@ubuntu.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: James Bottomley <James.Bottomley@suse.de>, Mel Gorman <mgorman@novell.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <20110506154444.GG6591@suse.de>
+References: <20110428171826.GZ4658@suse.de>
+	 <1304015436.2598.19.camel@mulgrave.site> <20110428192104.GA4658@suse.de>
+	 <1304020767.2598.21.camel@mulgrave.site>
+	 <1304025145.2598.24.camel@mulgrave.site>
+	 <1304030629.2598.42.camel@mulgrave.site> <20110503091320.GA4542@novell.com>
+	 <1304431982.2576.5.camel@mulgrave.site>
+	 <1304432553.2576.10.camel@mulgrave.site> <20110506074224.GB6591@suse.de>
+	 <20110506154444.GG6591@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 07:37:42 +0200
+Message-ID: <1305005862.1937.2.camel@hpmini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas, Ingo, HPA,
+On Fri, 2011-05-06 at 16:44 +0100, Mel Gorman wrote:
+> On Fri, May 06, 2011 at 08:42:24AM +0100, Mel Gorman wrote:
+> > 
+> > 1. High-order allocations? You machine is using i915 and RPC, something
+> >    neither of my test machine uses. i915 is potentially a source for
+> >    high-order allocations. I'm attaching a perl script. Please run it as
+> >    ./watch-highorder.pl --output /tmp/highorders.txt
+> >    while you are running tar. When kswapd is running for about 30
+> >    seconds, interrupt it with ctrl+c twice in quick succession and
+> >    post /tmp/highorders.txt
+> > 
+> 
+> Colin send me this information for his test case at least and I see
+> 
+> 11932 instances order=1 normal gfp_flags=GFP_NOWARN|GFP_NORETRY|GFP_COMP|GFP_NOMEMALLOC
+>  => alloc_pages_current+0xa5/0x110 <ffffffff81149ef5>
+>  => new_slab+0x1f5/0x290 <ffffffff81153645>
+>  => __slab_alloc+0x262/0x390 <ffffffff81155192>
+>  => kmem_cache_alloc+0x115/0x120 <ffffffff81155ab5>
+>  => mempool_alloc_slab+0x15/0x20 <ffffffff8110e705>
+>  => mempool_alloc+0x59/0x140 <ffffffff8110ea49>
+>  => bio_alloc_bioset+0x3e/0xf0 <ffffffff811976ae>
+>  => bio_alloc+0x15/0x30 <ffffffff81197805>
+> 
+> Colin and James: Did you happen to switch from SLAB to SLUB between
+> 2.6.37 and 2.6.38? My own tests were against SLAB which might be why I
+> didn't see the problem. Am restarting the tests with SLUB.
 
-On 9 May 2011 10:40, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
-> Fix a potential deadlock when resuming; here the calling function
-> has disabled interrupts, so we cannot sleep.
->
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
->
-> ---
->  arch/x86/kernel/apic/io_apic.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 45fd33d..df63620 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -621,14 +621,14 @@ struct IO_APIC_route_entry **alloc_ioapic_entries(void)
->        struct IO_APIC_route_entry **ioapic_entries;
->
->        ioapic_entries = kzalloc(sizeof(*ioapic_entries) * nr_ioapics,
-> -                               GFP_KERNEL);
-> +                               GFP_ATOMIC);
->        if (!ioapic_entries)
->                return 0;
->
->        for (apic = 0; apic < nr_ioapics; apic++) {
->                ioapic_entries[apic] =
->                        kzalloc(sizeof(struct IO_APIC_route_entry) *
-> -                               nr_ioapic_registers[apic], GFP_KERNEL);
-> +                               nr_ioapic_registers[apic], GFP_ATOMIC);
->                if (!ioapic_entries[apic])
->                        goto nomem;
->        }
+So I tested with SLAB instead of SLUB and I reliably ran my copy test
+for 4+ hours with several hundred iterations of the test.  (Apologies
+for taking time to respond, but I was travelling).
+> 
 
-Any feedback on this? I tested it on 2.6.39-rc6 and it does address
-the potential deadlock warning I receive when resuming from suspend.
-If positive, it would be good to get into -rc8, as rc7 is released.
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
