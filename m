@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab1EJMwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 08:52:10 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:12452 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab1EJMwI convert rfc822-to-8bit (ORCPT
+	id S1753533Ab1EJM7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:59:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41534 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751284Ab1EJM7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 08:52:08 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 115/206] Staging: hv: Use completion abstraction in
- struct netvsc_device
-Thread-Topic: [PATCH 115/206] Staging: hv: Use completion abstraction in
- struct netvsc_device
-Thread-Index: AQHMDpJQapLIrp9ArE6ZpS2eYB/RpZSGGdkA///ZN1A=
-Date: Tue, 10 May 2011 12:52:07 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481EEFD6@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
- <1304978288-22999-1-git-send-email-kys@microsoft.com>
- <1304978288-22999-115-git-send-email-kys@microsoft.com>
- <20110510070646.GB13847@infradead.org>
-In-Reply-To: <20110510070646.GB13847@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 10 May 2011 08:59:09 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Greg KH <gregkh@suse.de>, Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk, bp@amd64.org
+In-Reply-To: <20110506074120.GB21046@liondog.tnic>
+References: <20110419204117.979118654@clark.kroah.org>
+	 <1303263653.3464.65.camel@localhost> <20110420020128.GA27631@suse.de>
+	 <1303265862.3464.77.camel@localhost> <20110420031105.GA11945@suse.de>
+	 <1303274910.3464.95.camel@localhost> <20110420050617.GA16756@suse.de>
+	 <1303356555.3464.128.camel@localhost> <20110505225302.GC12316@suse.de>
+	 <20110506074120.GB21046@liondog.tnic>
+Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-UNiJWQsWBNwPhiiKxos2"
+Date: Tue, 10 May 2011 13:58:59 +0100
+Message-ID: <1305032339.4065.276.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [Stable-review] [12/28] x86, cpu: Clean up AMD erratum 400
+ workaround
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-UNiJWQsWBNwPhiiKxos2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Tuesday, May 10, 2011 3:07 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 115/206] Staging: hv: Use completion abstraction in struct
-> netvsc_device
-> 
-> > -	net_device->wait_condition = 0;
-> >  	ret = vmbus_sendpacket(device->channel, init_packet,
-> >  			       sizeof(struct nvsp_message),
-> >  			       (unsigned long)init_packet,
-> > @@ -272,10 +272,8 @@ static int netvsc_init_recv_buf(struct hv_device
-> *device)
-> >  		goto cleanup;
-> >  	}
-> >
-> > -	wait_event_timeout(net_device->channel_init_wait,
-> > -			net_device->wait_condition,
-> > -			msecs_to_jiffies(1000));
-> > -	BUG_ON(net_device->wait_condition == 0);
-> > +	t = wait_for_completion_timeout(&net_device->channel_init_wait, HZ);
-> > +	BUG_ON(t == 0);
-> 
-> I don't think you want a BUG_ON here, but rather fail the
-> initialization.
+On Fri, 2011-05-06 at 09:41 +0200, Borislav Petkov wrote:
+> Hey Ben,
+>=20
+> On Thu, May 05, 2011 at 03:53:02PM -0700, Greg KH wrote:
+> > On Thu, Apr 21, 2011 at 04:29:15AM +0100, Ben Hutchings wrote:
+> > > > We got a few new quirks added for AMD hardware platforms that fix
+> > > > problems.
+> > >=20
+> > > Maybe, but I still haven't seen anyone explain what those problems ar=
+e!
+> >=20
+> > I'll let the AMD people answer this.
+>=20
+> it's hard to follow back in this thread to what exactly you'd like to
+> have answered. Can you please repeat your questions concerning the AMD
+> backports? Is it, per chance, about Erratum 400 CPU f/m/s ranges that
+> got changed?
 
-This is existing code and all I did was change the synchronization 
-primitive used. Back in Feb. when this was done (prior to then), the 
-wait was indefinite and one of the comments that was
-longstanding was  that the wait had to be bounded and so these 
-timed waits were introduced. When this was done,  
-in some cases, there was no easy way to roll-back state if we did not
-get the response within our expected window of time. This is one 
-such instance where the guest is handing over the receive buffers
-(guest physical addresses) to the host. There was a discussion on this very
-topic on this mailing list and the consensus was to leave the BUG_ON()
-call in cases where we could not reasonably recover. 
- 
-> 
-> Also I think you really should add synchronous versions of
-> vmbus_sendpacket*, to the vmbus core so that all the synchronous waiting
-> can be consolidated into a few helpers instead of needing to opencode
-> it everywhere.
+I read that:
 
-True; but having a non-blocking interface at the lowest level gives you
-the most flexibility. In addition to this non-blocking interface, we
-may want to look at potentially a blocking interface. In the current
-code, the blocking primitive that is embedded in a higher level 
-abstraction is used for a variety of situations including the initial
-handshake which is what can be addressed with a synchronous API
-at the lowest level.
+"
+    Support for Always Running APIC timer (ARAT) was introduced in
+    commit db954b5898dd3ef3ef93f4144158ea8f97deb058. This feature
+    allows us to avoid switching timers from LAPIC to something else
+    (e.g. HPET) and go into timer broadcasts when entering deep
+    C-states.
+   =20
+    AMD processors don't provide a CPUID bit for that feature but
+    they also keep APIC timers running in deep C-states (except for
+    cases when the processor is affected by erratum 400). Therefore
+    we should set ARAT feature bit on AMD CPUs.
+"
 
-Regards,
+This implies that the HPET was previously used during deep C-states, and
+that all this erratum checking is about deciding whether the CPU has
+ARAT.  So what bug is being fixed by using ARAT instead of the HPET?
 
-K. Y
+Ben.
 
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-UNiJWQsWBNwPhiiKxos2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATck2jee/yOyVhhEJAQpDRxAAwYGkF9nqmC01FIH+CozFxFnZLoxqnGrv
+t3JEbcJvx21fsaeIJ6iDHgC8AkPBLqdtSt/7ILsQkprO4lgG/ISN3IUUt0xRgjDB
+HtqC1qrwcbAx34CgsnhwTJDAtb6lv2XocAtF9IObVx3uq2hn+W2ac5Y3Xkp/GUBj
+TRVW1hhylGmCQZ4xo2OSvACTQpIn/lTdYhRcymD0S3OdAOmeawiIUCX+cNT2oG6F
+gUEHl+ZcosrUb1L0MQiPtuICwzj2/+8zuFouS2CMbYNkjCxdtueVfaNw1V6XYXcK
+NqHmXxA17o1PlyFPlYRm+Oj4nj3qvt2W9F4k3cWBEnmfw4DHi2awFHiZ/cVhpoGZ
+ElMywDlzYE600+f/+qAliRaH/JiKrzR9ISpAFoQ1cU0oAc8Lm61qFLyDx06b0I6H
+DDy0WuB794jr0YdiYZgPUqIT4Lv2Yiuy+cXv431g8lHqtGR+qqi9yWDsTr4SsFlz
+YSwbXM7eAhJokJfzh352LXVxn8xwOR/GWZWviOt+O+T2DZ/c0JB+ZU3Ndqjf6+2U
+WHAqWd3eeBqsTOWUWCXjaRZQTR6X8vLa/DuQWhpOXz97OXVOECE6LA6xO5zzJ7oj
+nwX/OZZ92qKJdYzm0Elp+2Xaoo1GeoTaJNHvw7CYMKumCrRJixM27pyYKBsvkPqO
+L/E9vqxEUQw=
+=y9A+
+-----END PGP SIGNATURE-----
+
+--=-UNiJWQsWBNwPhiiKxos2--
