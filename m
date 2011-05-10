@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab1EJVs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:48:56 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36679 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1EJVsy convert rfc822-to-8bit (ORCPT
+	id S1752744Ab1EJVy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:54:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41943 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751361Ab1EJVyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:48:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DfFsWOO0FXJc7eNym5TlRQXc8myYuqwvCBMNyfCX86kJnV1+w1hxHBumf/sK+ed8cF
-         sQd5fOVjVFWNvqRxxUgz2mhNrbhhtqhGSCmqf1FusWCyo++0aQ/h1QBHNRti0GUlWw4z
-         n1/vS6IxLMrm2CjoHsuvvYUe+qzlEiBL8UaiM=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinnVwQbz+K32pyzLVCdz-fXUVUQ3g@mail.gmail.com>
-References: <BANLkTin=cU_kCSFfznna69pkgTsSNVjJgw@mail.gmail.com>
-	<BANLkTi=Lo4jRWbHhMLkJmOfg09s+ebDjcw@mail.gmail.com>
-	<1305054401.2939.52.camel@work-vm>
-	<BANLkTinnVwQbz+K32pyzLVCdz-fXUVUQ3g@mail.gmail.com>
-Date: Tue, 10 May 2011 23:48:53 +0200
-Message-ID: <BANLkTinjcVjb-1wZahonmP5tjxOzQfMeFw@mail.gmail.com>
-Subject: Re: [hrtimers] Re: Regression affecting b43 LP-PHY card
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: b43-dev <b43-dev@lists.infradead.org>, linux-wireless@vger.kernel.org,
-        Juan Carlos Romero <juancarlos.romero@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ben Greear <greearb@candelatech.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 May 2011 17:54:55 -0400
+Date: Tue, 10 May 2011 14:54:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: tracing: Add missing GFP flags to tracing
+Message-Id: <20110510145446.1f8e77e3.akpm@linux-foundation.org>
+In-Reply-To: <20110510100954.GC4146@suse.de>
+References: <20110510100954.GC4146@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/10 Rafał Miłecki <zajec5@gmail.com>:
-> 2011/5/10 John Stultz <john.stultz@linaro.org>:
->> On Tue, 2011-05-10 at 20:57 +0200, Rafał Miłecki wrote:
->>> W dniu 10 maja 2011 00:52 użytkownik Rafał Miłecki <zajec5@gmail.com> napisał:
->>> > In this situation we decided to bisect. I was a little afraid of last
->>> > merges so we took older 2.6.38 as GOOD (we tested this twice) and
->>> > wireless-testing commit before my ssb changes as BAD. Today Juan
->>> > finished bisecting kernel:
->>> > http://pastebin.com/HSKbRzpB
->>> >
->>> > According to his bisection the first bad commit is
->>> > e06383db9ec591696a06654257474b85bac1f8cb [0]:
->>> > hrtimers: extend hrtimer base code to handle more then 2 clockids
->>> >
->>> > Does it make any sense to you? Could this be some timing issue?
->>> >
->>> > It was too late to test this today, we (Juan) will work on this
->>> > tomorrow. It's impossible to revert this commit from HEAD of
->>> > wireless-testing, so my idea is to checkout commit, test, revert,
->>> > test.
->>> >
->>> > Did anyone else experience any similar problems with latest wireless-testing?
->>> >
->>> >
->>> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=e06383db9ec591696a06654257474b85bac1f8cb
->>>
->>> Today Juan checkouted commit e06383db9ec591696a06654257474b85bac1f8cb
->>> and tested it. He was disconnected really soon.
->>>
->>> Then he reverted e06383db9ec591696a06654257474b85bac1f8cb and tested
->>> again. Connection was stable, he downloaded 2GB file over network.
->>>
->>>
->>> John S.: your commit does not touch Broadcom card directly, but it
->>> seems it somehow affects it. I suspect there can be some timing issue.
->>> Do you have any idea what could it be, how can we debug this?
->>
->> Sorry for the trouble!
->>
->> My commit exposed a few spots where hrtimers were being initialized
->> before hrtimer_init is called, which caused problems. Thomas provided a
->> solution that makes such behavior still function ok:
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=ce31332d3c77532d6ea97ddcb475a2b02dd358b4
->>
->> Let me know if the issue is still reproducible with Linus' latest git
->> tree.
->
-> We were using wireless-testing git tree, commit:
-> 1e664a777e5eb4b23e65e76fbeadd2376fe8d8d8
->
-> I can not see ce31332d3c77532d6ea97ddcb475a2b02dd358b4 it git log.
-> I'll apply and test, thanks!
+On Tue, 10 May 2011 11:09:54 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-I can confirm updated wireless-testing resolves this issue!
+> include/linux/gfp.h and include/trace/events/gfpflags.h is out of
+> sync. When tracing is enabled, certain flags are not recognised and
+> the text output is less useful as a result.  Add the missing flags.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  include/trace/events/gfpflags.h |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+> index e3615c0..9fe3a366 100644
+> --- a/include/trace/events/gfpflags.h
+> +++ b/include/trace/events/gfpflags.h
+> @@ -10,6 +10,7 @@
+>   */
+>  #define show_gfp_flags(flags)						\
+>  	(flags) ? __print_flags(flags, "|",				\
+> +	{(unsigned long)GFP_TRANSHUGE,		"GFP_TRANSHUGE"},	\
+>  	{(unsigned long)GFP_HIGHUSER_MOVABLE,	"GFP_HIGHUSER_MOVABLE"}, \
+>  	{(unsigned long)GFP_HIGHUSER,		"GFP_HIGHUSER"},	\
+>  	{(unsigned long)GFP_USER,		"GFP_USER"},		\
+> @@ -32,6 +33,9 @@
+>  	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
+>  	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
+>  	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+> -	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"}		\
+> +	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
+> +	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
+> +	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
+> +	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
+>  	) : "GFP_NOWAIT"
 
-Too bad Juan spent 2-3 days on bisecting on his Atom... but at least
-we came and met ready fix. It could be pain to find a solution with
-out feedback only. I'm aware it was not very detailed.
+The patch seems somewhat needed in 2.6.38.x, but 2.6.38 doesn't have
+__GFP_OTHER_NODE.  So if you think this needs fixing in -stable, please
+prepare a separate patch for that.
 
-Thanks for your help :)
-
--- 
-Rafał
