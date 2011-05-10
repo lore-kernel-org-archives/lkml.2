@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab1EJUj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:39:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51220 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752253Ab1EJUj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:39:28 -0400
-Date: Tue, 10 May 2011 22:39:33 +0200
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Margarita Olaya <magi@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH 2/4] tps65912: gpio: add gpio driver
-Message-ID: <20110510203933.GC8726@opensource.wolfsonmicro.com>
-References: <BANLkTikxbzmSNTMCvrPbfygS+iSUBhE=-Q@mail.gmail.com>
+	id S1752471Ab1EJUmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:42:01 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41773 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab1EJUmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 16:42:00 -0400
+Date: Tue, 10 May 2011 22:41:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/3] perf support for amd guest/host-only bits
+Message-ID: <20110510204149.GE21903@elte.hu>
+References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
+ <20110510152132.GA25705@elte.hu>
+ <20110510155024.GG30996@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTikxbzmSNTMCvrPbfygS+iSUBhE=-Q@mail.gmail.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110510155024.GG30996@amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 03:25:35PM -0500, Margarita Olaya wrote:
 
->  drivers/mfd/Makefile         |    2 +-
->  drivers/mfd/tps65912-gpio.c  |   94 ++++++++++++++++++++++++++++++++++++++++++
+* Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
 
-We're mostly moving GPIO drivers to drivers/gpio these days - there's a
-push to move drivers into the appropriate subsystems (particularly
-focused on arch/arm but still).
+> On Tue, May 10, 2011 at 11:21:32AM -0400, Ingo Molnar wrote:
+> > 
+> > * Joerg Roedel <joerg.roedel@amd.com> wrote:
+> > 
+> > > So any feedback is greatly appreciated :-)
+> > 
+> > it's nice to see this hw feature utilized :)
+> 
+> Yeah, I planned to do this for some time now and finally found the time
+> to do it :)
+> 
+> > 
+> > > Diffstat:
+> > > 
+> > >  arch/x86/include/asm/perf_event.h    |    3 +++
+> > >  arch/x86/kernel/cpu/perf_event_amd.c |    6 ++++++
+> > >  include/linux/perf_event.h           |    5 ++++-
+> > >  kernel/perf_event.c                  |    4 ++++
+> > >  tools/perf/util/parse-events.c       |   10 +++++++++-
+> > >  5 files changed, 26 insertions(+), 2 deletions(-)
+> > 
+> > I see you have not touched tools/perf/builtin-kvm.c - how does this feature 
+> > integrate with the features of 'perf kvm'? (are you using perf kvm by any 
+> > chance?)
+> 
+> builtin-kvm looks like a wrapper for other perf-cmds which just sets up
+> some additional state to tell the sub-cmds that guest-symbols need to be
+> resolved and so on.
+>
+> Implementing this into the place where the other exclude-bits get set (which 
+> is in generic code) seemed like a good idea to me. Touching builtin-kvm was 
+> unnecessary for this.
 
-> +static void tps6591x_gpio_set(struct gpio_chip *gc, unsigned offset,
-> +			      int value)
-> +{
-> +	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
-> +
-> +	if (value)
-> +		tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
-> +							GPIO_SET_MASK);
-> +	else
-> +		tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
-> +							~GPIO_SET_MASK);
+ok, then let me put it in another way:
 
-Should one of those be clear_bits() given that there's such a function?
+'perf kvm' is the tool that is making Linux instrumentation friendlier to KVM 
+developers. Can you think of ways to utilize this new feature there?
 
-> +	tps65912->gpio.owner		= THIS_MODULE;
-> +	/* FIXME: should we use compilation macro for SPI */
-> +	tps65912->gpio.label		= tps65912->i2c_client->name;
+For example a new 'perf kvm stat' feature could pass the exclusion bits to perf 
+stat automatically. 'perf kvm record' could record on the guest only by 
+default.
 
-I guess dev_name() would do a reasonable job?
+Things like that.
+
+Thanks,
+
+	Ingo
