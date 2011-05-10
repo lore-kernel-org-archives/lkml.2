@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1EJNOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 09:14:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36777 "EHLO arroyo.ext.ti.com"
+	id S1755471Ab1EJNZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 09:25:18 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33300 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab1EJNOH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 09:14:07 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>, Greg KH <gregkh@suse.de>
-CC: Greg KH <greg@kroah.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>,
-        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 10 May 2011 18:43:45 +0530
-Subject: RE: [PATCH v4 08/11] tty: add pruss SUART driver
-Thread-Topic: [PATCH v4 08/11] tty: add pruss SUART driver
-Thread-Index: AcwPAKHg8HnHrxDxS6OKavbv7MGyOgAEyMVQ
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024CE6600F@dbde02.ent.ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
- <1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
- <20110425212056.GA29313@kroah.com>
- <B85A65D85D7EB246BE421B3FB0FBB593024CAE36A6@dbde02.ent.ti.com>
- <20110426124519.GC5977@suse.de>
- <35F38DB5B5C4408EA80AF0DB8A6FA178@subhasishg>
- <B85A65D85D7EB246BE421B3FB0FBB593024CBA9959@dbde02.ent.ti.com>
- <0B813DC0439B438BBB2B66A88B1A5F7F@subhasishg>
-In-Reply-To: <0B813DC0439B438BBB2B66A88B1A5F7F@subhasishg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752357Ab1EJNZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 09:25:15 -0400
+Date: Tue, 10 May 2011 06:16:15 -0700
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: various vmbus review comments
+Message-ID: <20110510131615.GA7113@suse.de>
+References: <20110503204641.GA11132@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481DFCFA@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110504163228.GA19754@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481E0694@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110509143352.GB29635@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481E95C6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20110510052425.GA31087@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0481EEFF1@TK5EX14MBXC128.redmond.corp.microsoft.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481EEFF1@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 16:24:35, Subhasish Ghosh wrote:
-> >> 
-> >> >>The driver should probably just get sram
-> >> >> space through platform data so that it doesn't depend on the
-> >> >> platform specific sram allocation function.
-> >> 
-> >> Are you suggesting that I go back to that implementation.
-> > 
-> > No, the platform code should use the SRAM allocator and
-> > pass on the allocated memory to the driver.
-> > 
+On Tue, May 10, 2011 at 01:00:26PM +0000, KY Srinivasan wrote:
 > 
-> Say, if the driver is loaded as a module.
-> If I allocate the sram in the platform code, how to I
-> free it when the driver is unloaded. 
+> 
+> > -----Original Message-----
+> > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > Sent: Tuesday, May 10, 2011 1:24 AM
+> > To: KY Srinivasan
+> > Cc: Christoph Hellwig; Greg KH; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > Subject: Re: various vmbus review comments
+> > 
+> > On Mon, May 09, 2011 at 02:56:52PM +0000, KY Srinivasan wrote:
+> > > I will address this. Greg had a concern about module reference counting
+> > > and looking at the current code, it did not appear to be an issue. The
+> > > change you are suggesting will not affect the vmbus core which is what I want
+> > > to focus on. I will however, fix this issue in the current round of patches I will
+> > > send out this week.
+> > 
+> > It very clearly affects the interface between the core and the
+> > functional drivers.  Trying to submit the core without making sure the
+> > interface is exports works properly is not an overly good idea.
+> 
+> I must be missing something here. As I look at the block driver (and
+> this is indicative of other drivers as well); the exit routine -
+> blkvsc_drv_exit, first iterates through all the devices it manages
+> and invokes device_unregister() on each of the devices and then 
+> invokes vmbus_child_driver_unregister() which is just a wrapper on
+> driver_unregister(). So, if I understand you correctly, you want the devices to
+> persist even if there is no driver bound to them.
 
-This is what I said in my last e-mail. What is
-the issue you see with this approach?
+That's how the Linux driver model should be used, so yes, that is the
+correct thing to do.
 
-| Thanks for the clarification. In this case, the driver
-| should use platform callbacks to get/put fast fifo
-| space. In case this callback is not populated by the
-| platform or returns an error, the driver should fall
-| back to allocating from DDR.
+thanks,
 
-Thanks,
-Sekhar
-
-
-
+greg k-h
