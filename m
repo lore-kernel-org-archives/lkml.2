@@ -1,94 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab1EJAY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 20:24:26 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45595 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab1EJAYY (ORCPT
+	id S1755928Ab1EJAUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 20:20:42 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:32856 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab1EJAUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 20:24:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:organization;
-	b=WuyOn1qSMM4dNmxZyjFJxy1tpuV5B+DXt4QSut5dv4zFcOTh20eSFG/Ui7MspQ7rF
-	LNiv6l8oxHSX99+tPpO1w==
-From: David Decotigny <decot@google.com>
-To: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: David Decotigny <decot@google.com>
-Subject: [PATCH 2/2] net/dl2k: Don't reconfigure link @100Mbps when disabling autoneg @1Gbps
-Date: Mon,  9 May 2011 17:19:08 -0700
-Message-Id: <1304986748-15809-3-git-send-email-decot@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1304986748-15809-1-git-send-email-decot@google.com>
-References: <1304986748-15809-1-git-send-email-decot@google.com>
-Organization: Google, Inc.
+	Mon, 9 May 2011 20:20:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH 2/8] mm: use walk_page_range() instead of custom page table walking code
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110509193650.GA2865@wicker.gateway.2wire.net>
+References: <20110509164034.164C.A69D9226@jp.fujitsu.com> <20110509193650.GA2865@wicker.gateway.2wire.net>
+Message-Id: <20110510092219.168E.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 10 May 2011 09:20:38 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The initial version of the driver used to force the link to 100Mbps
-when auto-negociation was disabled on a 1Gbps link, ignoring the
-requested link speed. Instead, this change refuses to change anything
-when it is asked to configure the link speed at 1Gbps without
-auto-negociation, but acts as requested in all the other cases.
+> On Mon, May 09, 2011 at 04:38:49PM +0900, KOSAKI Motohiro wrote:
+> > Hello,
+> > 
+> > sorry for the long delay.
+> 
+> Please, no apologies.  Thank you for the review!
+> 
+> > > In the specific case of show_numa_map(), the custom page table walking
+> > > logic implemented in mempolicy.c does not provide any special service
+> > > beyond that provided by walk_page_range().
+> > > 
+> > > Also, converting show_numa_map() to use the generic routine decouples
+> > > the function from mempolicy.c, allowing it to be moved out of the mm
+> > > subsystem and into fs/proc.
+> > > 
+> > > Signed-off-by: Stephen Wilson <wilsons@start.ca>
+> > > ---
+> > >  mm/mempolicy.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++-------
+> > >  1 files changed, 46 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> > > index 5bfb03e..dfe27e3 100644
+> > > --- a/mm/mempolicy.c
+> > > +++ b/mm/mempolicy.c
+> > > @@ -2568,6 +2568,22 @@ static void gather_stats(struct page *page, void *private, int pte_dirty)
+> > >  	md->node[page_to_nid(page)]++;
+> > >  }
+> > >  
+> > > +static int gather_pte_stats(pte_t *pte, unsigned long addr,
+> > > +		unsigned long pte_size, struct mm_walk *walk)
+> > > +{
+> > > +	struct page *page;
+> > > +
+> > > +	if (pte_none(*pte))
+> > > +		return 0;
+> > > +
+> > > +	page = pte_page(*pte);
+> > > +	if (!page)
+> > > +		return 0;
+> > 
+> > original check_pte_range() has following logic.
+> > 
+> >         orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+> >         do {
+> >                 struct page *page;
+> >                 int nid;
+> > 
+> >                 if (!pte_present(*pte))
+> >                         continue;
+> >                 page = vm_normal_page(vma, addr, *pte);
+> >                 if (!page)
+> >                         continue;
+> >                 /*
+> >                  * vm_normal_page() filters out zero pages, but there might
+> >                  * still be PageReserved pages to skip, perhaps in a VDSO.
+> >                  * And we cannot move PageKsm pages sensibly or safely yet.
+> >                  */
+> >                 if (PageReserved(page) || PageKsm(page))
+> >                         continue;
+> >                 gather_stats(page, private, pte_dirty(*pte));
+> > 
+> > Why did you drop a lot of check? Is it safe?
+> 
+> I must have been confused.  For one, walk_page_range() does not even
+> lock the pmd entry when iterating over the pte's.  I completely
+> overlooked that fact and so with that, the series is totally broken.
+> 
+> I am currently testing a slightly reworked set based on the following
+> variation.  When finished I will send v2 of the series which will
+> address all issues raised so far.
+> 
+> Thanks again for the review!
+> 
+> 
+> 
+> From 013a1e0fc96f8370339209f16d81df4ded40dbf2 Mon Sep 17 00:00:00 2001
+> From: Stephen Wilson <wilsons@start.ca>
+> Date: Mon, 9 May 2011 14:39:27 -0400
+> Subject: [PATCH] mm: use walk_page_range() instead of custom page table
+>  walking code
+> 
+> Converting show_numa_map() to use the generic routine decouples
+> the function from mempolicy.c, allowing it to be moved out of the mm
+> subsystem and into fs/proc.
+> 
+> Also, include KSM pages in /proc/pid/numa_maps statistics.  The pagewalk
+> logic implemented by check_pte_range() failed to account for such pages
+> as they were not applicable to the page migration case.
 
-IMPORTANT: Previously, the return value from mii_set_media() was
-           ignored. This patch uses it for its own return value.
+Seems very reasonable change.
 
-Tested: module compiling, NOT tested on real hardware.
-Signed-off-by: David Decotigny <decot@google.com>
----
- drivers/net/dl2k.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+> 
+> Signed-off-by: Stephen Wilson <wilsons@start.ca>
+> ---
+>  mm/mempolicy.c |   75 ++++++++++++++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 68 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 5bfb03e..945e85d 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -2531,6 +2531,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
+>  }
+>  
+>  struct numa_maps {
+> +	struct vm_area_struct *vma;
+>  	unsigned long pages;
+>  	unsigned long anon;
+>  	unsigned long active;
+> @@ -2568,6 +2569,41 @@ static void gather_stats(struct page *page, void *private, int pte_dirty)
+>  	md->node[page_to_nid(page)]++;
+>  }
+>  
+> +static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+> +		unsigned long end, struct mm_walk *walk)
+> +{
+> +	struct numa_maps *md;
+> +	spinlock_t *ptl;
+> +	pte_t *orig_pte;
+> +	pte_t *pte;
+> +
+> +	md = walk->private;
+> +	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+> +	do {
+> +		struct page *page;
+> +		int nid;
+> +
+> +		if (!pte_present(*pte))
+> +			continue;
+> +
+> +		page = vm_normal_page(md->vma, addr, *pte);
+> +		if (!page)
+> +			continue;
+> +
+> +		if (PageReserved(page))
+> +			continue;
+> +
+> +		nid = page_to_nid(page);
+> +		if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
+> +			continue;
+> +
+> +		gather_stats(page, md, pte_dirty(*pte));
+> +
+> +	} while (pte++, addr += PAGE_SIZE, addr != end);
+> +	pte_unmap_unlock(orig_pte, ptl);
+> +	return 0;
+> +}
 
-diff --git a/drivers/net/dl2k.c b/drivers/net/dl2k.c
-index c445457..1a4856b 100644
---- a/drivers/net/dl2k.c
-+++ b/drivers/net/dl2k.c
-@@ -1211,24 +1211,17 @@ static int rio_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
- 	if (cmd->autoneg == AUTONEG_ENABLE) {
- 		if (np->an_enable)
- 			return 0;
--		else {
--			np->an_enable = 1;
--			mii_set_media(dev);
--			return 0;
--		}
-+
-+		np->an_enable = 1;
- 	} else {
--		np->an_enable = 0;
--		if (np->speed == 1000) {
--			ethtool_cmd_speed_set(cmd, SPEED_100);
--			cmd->duplex = DUPLEX_FULL;
--			printk("Warning!! Can't disable Auto negotiation in 1000Mbps, change to Manual 100Mbps, Full duplex.\n");
--		}
- 		switch (ethtool_cmd_speed(cmd)) {
- 		case SPEED_10:
-+			np->an_enable = 0;
- 			np->speed = 10;
- 			np->full_duplex = (cmd->duplex == DUPLEX_FULL);
- 			break;
- 		case SPEED_100:
-+			np->an_enable = 0;
- 			np->speed = 100;
- 			np->full_duplex = (cmd->duplex == DUPLEX_FULL);
- 			break;
-@@ -1236,9 +1229,9 @@ static int rio_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
- 		default:
- 			return -EINVAL;
- 		}
--		mii_set_media(dev);
- 	}
--	return 0;
-+
-+	return mii_set_media(dev);
- }
- 
- static u32 rio_get_link(struct net_device *dev)
--- 
-1.7.3.1
+
+Looks completely good.
+	Reviewed-by KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+Thank you for great work!
+
+
 
