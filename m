@@ -1,59 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab1EJOnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 10:43:25 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:36367 "EHLO smtp.infotech.no"
+	id S1756478Ab1EJOfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 10:35:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35857 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062Ab1EJOnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 10:43:24 -0400
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 10:43:23 EDT
-Message-ID: <4DC94CEB.2000404@interlog.com>
-Date: Tue, 10 May 2011 10:34:19 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1755399Ab1EJOfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 10:35:13 -0400
+Date: Tue, 10 May 2011 15:35:09 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
+        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback related.
+Message-ID: <20110510143509.GD4146@suse.de>
+References: <1304025145.2598.24.camel@mulgrave.site>
+ <1304030629.2598.42.camel@mulgrave.site>
+ <20110503091320.GA4542@novell.com>
+ <1304431982.2576.5.camel@mulgrave.site>
+ <1304432553.2576.10.camel@mulgrave.site>
+ <20110506074224.GB6591@suse.de>
+ <20110506080728.GC6591@suse.de>
+ <1304964980.4865.53.camel@mulgrave.site>
+ <20110510102141.GA4149@novell.com>
+ <1305036064.6737.8.camel@mulgrave.site>
 MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
-        Matt Taggart <taggart@debian.org>,
-        "Martin K. Petersen" <martin.petersen@ORACLE.COM>
-Subject: [ANNOUNCE] lsscsi-0.25 released
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+In-Reply-To: <1305036064.6737.8.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lsscsi is a utility that uses sysfs in linux 2.6 series kernels
-to list information about SCSI devices and SCSI hosts. Both a
-compact format which is one line per device and a "classic"
-format (like the output of 'cat /proc/scsi/scsi') are supported.
 
-Version 0.25 is available at:
-     http://sg.danny.cz/scsi/lsscsi.html
-More information can be found on that page including examples
-and a Download section for tarballs, rpm and deb packages.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
 
-There have only been superficial changes to the beta release
-of 0.25 made in March 2011. The only adverse report was a
-problem when a kernel was configured with both
-CONFIG_SYSFS_DEPRECATED and CONFIG_SYSFS_DEPRECATED_V2.
+On Tue, May 10, 2011 at 09:01:04AM -0500, James Bottomley wrote:
+> On Tue, 2011-05-10 at 11:21 +0100, Mel Gorman wrote:
+> > I really would like to hear if the fix makes a big difference or
+> > if we need to consider forcing SLUB high-order allocations bailing
+> > at the first sign of trouble (e.g. by masking out __GFP_WAIT in
+> > allocate_slab). Even with the fix applied, kswapd might be waking up
+> > less but processes will still be getting stalled in direct compaction
+> > and direct reclaim so it would still be jittery.
+> 
+> "the fix" being this
+> 
+> https://lkml.org/lkml/2011/3/5/121
+> 
 
-The most commonly useful addition is the '--size' option:
-$ lsscsi -s
-[0:0:0:0]  disk  ATA    INTEL SSDSA2M080 2CV1  /dev/sda  80.0GB
-[6:0:0:0]  disk  Linux  scsi_debug       0004  /dev/sdb  4.29PB
+Drop this for the moment. It was a long shot at best and there is little
+evidence the problem is in this area.
 
+I'm attaching two patches. The first is the NO_KSWAPD one to stop
+kswapd being woken up by SLUB using speculative high-orders. The second
+one is more drastic and prevents slub entering direct reclaim or
+compaction. It applies on top of patch 1. These are both untested and
+afraid are a bit rushed as well :(
 
-ChangeLog:
-Version 0.25 2011/05/09 [svn: r92]
-   - add sas_port and fc_remote_ports transport information
-   - print enclosure_device entry
-   - add '--size' option to show size of disks
-   - add '--protmode' option to show protection information mode
+-- 
+Mel Gorman
+SUSE Labs
 
-Version 0.24 2010/06/12 [svn: r83]
-...
+--vkogqOf2sHV7VnPd
+Content-Type: text/x-patch; charset=iso-8859-15
+Content-Disposition: attachment; filename="mm-slub-do-not-wake-kswapd-for-slub-high-orders.patch"
 
-Doug Gilbert
+>From b48dee7d13980d4d901e3035dc6096c28c42c2ed Mon Sep 17 00:00:00 2001
+From: Mel Gorman <mgorman@suse.de>
+Date: Tue, 10 May 2011 15:13:30 +0100
+Subject: [PATCH] mm: slub: Do not wake kswapd for SLUBs speculative high-order allocations
+
+To avoid locking and per-cpu overhead, SLUB optimisically uses
+high-order allocations and falls back to lower allocations if they fail.
+However, by simply trying to allocate, kswapd is woken up to start
+reclaiming at that order. On a desktop system, two users report that the
+system is getting locked up with kswapd using large amounts of CPU.
+Using SLAB instead of SLUB makes this problem go away.
+
+This patch prevents kswapd being woken up for high-order allocations.
+
+Not-signed-off-yet: Mel Gorman <mgorman@suse.de>
+---
+ mm/slub.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 9d2e5e4..98c358d 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1170,7 +1170,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 	 * Let the initial higher-order allocation fail under memory pressure
+ 	 * so we fall-back to the minimum order allocation.
+ 	 */
+-	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
++	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_NOFAIL;
+ 
+ 	page = alloc_slab_page(alloc_gfp, node, oo);
+ 	if (unlikely(!page)) {
+
+--vkogqOf2sHV7VnPd
+Content-Type: text/x-patch; charset=iso-8859-15
+Content-Disposition: attachment; filename="mm-slub-do-not-take-expensive-steps-for-slub-high-orders.patch"
+
+>From 59220aa310c0ba60afee29eeea1e602f4a374c60 Mon Sep 17 00:00:00 2001
+From: Mel Gorman <mgorman@suse.de>
+Date: Tue, 10 May 2011 15:30:20 +0100
+Subject: [PATCH] mm: slub: Do not take expensive steps for SLUBs speculative high-order allocations
+
+To avoid locking and per-cpu overhead, SLUB optimisically uses
+high-order allocations and falls back to lower allocations if they
+fail.  However, by simply trying to allocate, the caller can enter
+compaction or reclaim - both of which are likely to cost more than
+the benefit of using high-order pages in SLUB. On a desktop system,
+two users report that the system is getting locked up with kswapd
+using large amounts of CPU. Using SLAB instead of SLUB makes this
+problem go away.
+
+This patch prevents SLUB taking any expensive steps when trying to use
+high-order allocations. Instead, it is expected to fall back to smaller
+orders more aggressively.
+
+Not-signed-off-yet: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c |    3 ++-
+ mm/slub.c       |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9f8a97b..f160d93 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1972,6 +1972,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const gfp_t wakes_kswapd = !(gfp_mask & __GFP_NO_KSWAPD);
+ 
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -1984,7 +1985,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 
+-	if (!wait) {
++	if (!wait && wakes_kswapd) {
+ 		/*
+ 		 * Not worth trying to allocate harder for
+ 		 * __GFP_NOMEMALLOC even if it can't schedule.
+diff --git a/mm/slub.c b/mm/slub.c
+index 98c358d..1071723 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1170,7 +1170,8 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 	 * Let the initial higher-order allocation fail under memory pressure
+ 	 * so we fall-back to the minimum order allocation.
+ 	 */
+-	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_NOFAIL;
++	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) &
++			~(__GFP_NOFAIL | __GFP_WAIT);
+ 
+ 	page = alloc_slab_page(alloc_gfp, node, oo);
+ 	if (unlikely(!page)) {
+
+--vkogqOf2sHV7VnPd--
