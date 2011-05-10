@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab1EJX4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 19:56:14 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:55663 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753518Ab1EJX4N (ORCPT
+	id S1753609Ab1EJXyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 19:54:12 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39271 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab1EJXyL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 19:56:13 -0400
-Date: Wed, 11 May 2011 01:45:26 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Maxim Osipov <maxim.osipov@gmail.com>
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
-Message-ID: <20110510234526.GC18929@game.jcrosoft.org>
-References: <4DC53134.8070706@gmail.com>
+	Tue, 10 May 2011 19:54:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=R2fxe6a8IRfEdvlqfZGwt1cJD2U8+6h7d/0SQs1Qddp6+Z9epqtomhuE621PIt+jhq
+         fDrekIOj6yvjEuGkOMAUiZJ4kjYSEuyIqNwdhtkcOnOeNBUZAnFM5106jdoOdMx78tk7
+         NAz1nz9ex476LSLfwpteCkJCeo+7AbNYmHNMk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DC53134.8070706@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 15031045233316375522
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <20110510055926.GA2747@redhat.com>
+References: <1304687191-23814-1-git-send-email-linus.walleij@stericsson.com>
+	<201105061522.33179.arnd@arndb.de>
+	<20110510055926.GA2747@redhat.com>
+Date: Wed, 11 May 2011 01:54:10 +0200
+X-Google-Sender-Auth: jhY2P9R9yXeCohuuz-XCicILwnQ
+Message-ID: <BANLkTim0uKnjhKdVookDY0LPfaoQFy_TRQ@mail.gmail.com>
+Subject: Re: [PATCH 10/10] mach-ux500: update and move cpufreq driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dave Jones <davej@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:47 Sat 07 May     , Maxim Osipov wrote:
-> Hello,
-> 
-> This patch enables external RTC support on AT91 Flexibity board.
-> 
-> Kind regards,
-> Maxim
-> 
-> 
-> Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
-> ---
->  arch/arm/mach-at91/board-flexibity.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
-> index c8a62dc..4fdc96c 100644
-> --- a/arch/arm/mach-at91/board-flexibity.c
-> +++ b/arch/arm/mach-at91/board-flexibity.c
-> @@ -1,7 +1,7 @@
->  /*
->   * linux/arch/arm/mach-at91/board-flexibity.c
->   *
-> - *  Copyright (C) 2010 Flexibity
-> + *  Copyright (C) 2010-2011 Flexibity
->   *  Copyright (C) 2005 SAN People
->   *  Copyright (C) 2006 Atmel
->   *
-> @@ -65,6 +65,13 @@ static struct at91_udc_data __initdata flexibity_udc_data = {
->  	.pullup_pin	= 0,		/* pull-up driven by UDC */
->  };
->  
-> +/* I2C devices */
-> +static struct i2c_board_info __initdata flexibity_i2c_devices[] = {
-> +	{
-> +		I2C_BOARD_INFO("ds1307", 0x68),
-> +	},
-> +};
-> +
-looks fine just one comment please add your board to the new at91sam9260_defconfig
+2011/5/10 Dave Jones <davej@redhat.com>:
 
-so we can compile it when compiling all the sam9260
+> Haven't had chance to really read much patches the last few days
+> (travelling until the 16th).  Due to the patch collisions we'll keep
+> seeing on kconfig/Makefiles, should these go via the cpufreq tree,
+> or do people want to still push them through their respective arch trees ?
 
-Best Regards,
-J.
+In this specific case it will likely have to be through my tree, since I'm
+not just messing with the cpufreq driver but also the thing it is using
+for communication proxy, i.e. the PRCMU MFD driver.
+
+I'm mainly after seeing if it's in shape to be pushed into drivers/cpufreq/*
+and then I will be rebasing and requesting Linus (Torvalds) to pull this
+after your cpufreq changes are gone in first.
+
+So right now I'm looking for ACKs.
+
+Thanks,
+Linus Walleij
