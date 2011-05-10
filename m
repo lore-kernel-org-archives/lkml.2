@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1EJJwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:52:43 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41074 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196Ab1EJJwm (ORCPT
+	id S1754857Ab1EJJxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 05:53:09 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57726 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab1EJJxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:52:42 -0400
-Message-ID: <4DC90AE8.101@parallels.com>
-Date: Tue, 10 May 2011 13:52:40 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
+	Tue, 10 May 2011 05:53:07 -0400
+Message-ID: <FBFC0000E34D487086421780A0F5252A@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <B85A65D85D7EB246BE421B3FB0FBB593024CD0B8CC@dbde02.ent.ti.com> <613E2AF627DE4ABE92AD42D5D9E1BFE5@subhasishg> <201105051612.18522.arnd@arndb.de>
+In-Reply-To: <201105051612.18522.arnd@arndb.de>
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+Date: Tue, 10 May 2011 15:23:18 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] tmpfs: fix race between umount and writepage
-References: <4DAFD0B1.9090603@parallels.com> <20110421064150.6431.84511.stgit@localhost6> <20110421124424.0a10ed0c.akpm@linux-foundation.org> <4DB0FE8F.9070407@parallels.com> <alpine.LSU.2.00.1105031223120.9845@sister.anvils> <4DC4D9A6.9070103@parallels.com> <alpine.LSU.2.00.1105071621330.3668@sister.anvils> <4DC691D0.6050104@parallels.com> <alpine.LSU.2.00.1105081234240.15963@sister.anvils>
-In-Reply-To: <alpine.LSU.2.00.1105081234240.15963@sister.anvils>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Sun, 8 May 2011, Konstantin Khlebnikov wrote:
->>
->> Ok, I can test final patch-set on the next week.
->> Also I can try to add some swapoff test-cases.
->
-> That would be helpful if you have the time: thank you.
+> Instead of passing a configuration file into the MFD driver and
+> calling it a firmware, I can see three other options that I believe
+> would be nicer:
+> 
+> 1. have a single firmware blob that describes the child devices
+> and the code that is to be loaded into both units. If they are
+> acting as one device, either make sure you only create one
+> child node, or create one with a name that no driver binds to.
+> 
+> 2. Call request_firmware separately for the two child devices,
+> and configure them separately based on the information in the
+> firmware files. In the case where they should act as a single
+> device, call the children e.g. "pruss-uart-a" and "pruss-uart-b",
+> then bind to both names in the pruss-uart drivers and only
+> start using the device when you have both nodes for the same
+> parent.
+> 
+> 3. Do the configuration through sysfs files in the MFD device node,
+> which then cause the creation of the child devices. This means you
+> need extra user space scripts to write the addititonal files, but
+> is also the most flexible way.
+> 
 
-I Confirm, patch 1/3 really fixes race between writepage and umount, as expected.
+Are you suggesting something like:
 
-In patch 2/3: race-window between unlock_page and iput extremely small.
-My test works fine in parallel with thirty random swapon-swapoff,
-but it works without this patch too, thus I cannot catch this race.
+/sys..../pruss/pru0/id
+/sys..../pruss/pru0/fw_name
+/sys..../pruss/pru0/load
 
-I apply patch 3/3 too, but have not tested this case.
+/sys..../pruss/pru1/id
+/sys..../pruss/pru1/fw_name
+/sys..../pruss/pru1/load
+
+I can program these configs and store them in the pru private.
+Then write something into load.
+This can load the PRU based upon the configs.
+But, I am not sure how to do this effectively using sysfs,
+I mean I don't want to end up writing six write and six read
+handlers. 
