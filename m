@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab1EJUI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:08:28 -0400
-Received: from kroah.org ([198.145.64.141]:45332 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab1EJUI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:08:27 -0400
-Date: Tue, 10 May 2011 13:01:54 -0700
-From: Greg KH <greg@kroah.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/23] intel_sst: Save audio state across D3 on Medfield
-Message-ID: <20110510200154.GA12044@kroah.com>
-References: <20110503174254.GA6545@kroah.com>
- <20110503222903.4200a6bd@lxorguk.ukuu.org.uk>
- <20110503213925.GA7453@opensource.wolfsonmicro.com>
- <20110503225316.5371c96b@lxorguk.ukuu.org.uk>
- <20110503220233.GB14080@kroah.com>
- <20110503222635.GA8035@opensource.wolfsonmicro.com>
- <20110503223237.GA25039@kroah.com>
- <20110503235917.0493fd0d@lxorguk.ukuu.org.uk>
- <20110503230630.GA26903@kroah.com>
- <20110504085753.GB9254@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110504085753.GB9254@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752565Ab1EJUMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:12:52 -0400
+Received: from lanfw001a.cxnet.dk ([87.72.215.196]:38779 "EHLO
+	lanfw001a.cxnet.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab1EJUMu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 16:12:50 -0400
+X-Greylist: delayed 565 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 16:12:50 EDT
+Subject: [ANNOUNCE] IPTV-Analyzer project released v0.9.0
+From: Jesper Dangaard Brouer <hawk@comx.dk>
+To: hawk@comx.dk
+Content-Type: text/plain; charset="UTF-8"
+Organization: ComX Networks A/S
+Date: Tue, 10 May 2011 16:03:19 -0400
+Message-ID: <1305057799.2688.8.camel@probook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 09:57:53AM +0100, Mark Brown wrote:
-> On Tue, May 03, 2011 at 04:06:30PM -0700, Greg KH wrote:
-> > On Tue, May 03, 2011 at 11:59:17PM +0100, Alan Cox wrote:
-> 
-> > > Best bet is to apply Mark's patch into your git tree then apply mine on
-> > > top I think. Git will see the same patch in both trees and resolve it all
-> > > nicely for -next.
-> 
-> > Have a pointer to which patch that was?
-> 
-> It's 774fd7 (sst: fix compile error) which is in -next.
 
-That's one of the, I needed another as well :)
+I'm happy to announce the first official release of the IPTV-Analyzer
+project, as an Open Source project.
 
-Anyway, I've queued all of these up now so hopefully we should all be in
-sync correctly.
+ Homepage:
+  http://www.iptv-analyzer.org
 
-thanks,
+ Git tree:
+  https://github.com/netoptimizer/IPTV-Analyzer
 
-greg k-h
+The IPTV-Analyzer is a continuous/real-time tool for analyzing the
+contents of MPEG2 Transport Stream (TS) packets, which is commonly
+used for IPTV multicast signals. The main purpose is continuous
+quality measurement, with a focus on detecting MPEG2 TS/CC packet
+drops.
+
+The core component is an iptables (Linux) kernel module, named
+"mpeg2ts".  This kernel module performs the real-time Deep Packet
+Inspection of the MPEG2-TS packets. Its highly performance optimized,
+written for parallel processing across CPU cores (via RCU locking) and
+hash tables are used for handling large number of streams. Statistics
+are exported via the proc filesystem (scalability is achieved via use
+of the seq_file proc API).  It scales to hundreds of IPTV channels,
+even on small ATOM based CPUs.
+
+Please send bugreports, patches, improvement, comments or insults to:
+ hawk@comx.dk
+
+-- 
+Best regards,
+  Jesper Dangaard Brouer
+  ComX Networks A/S
+  Linux Network Kernel Developer
+  Cand. Scient Datalog / MSc.CS
+  Author of http://adsl-optimizer.dk
+  LinkedIn: http://www.linkedin.com/in/brouer
+
