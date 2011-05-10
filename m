@@ -1,86 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab1EJBHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 21:07:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37378 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab1EJBHJ convert rfc822-to-8bit (ORCPT
+	id S1756024Ab1EJBXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 21:23:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1748 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab1EJBXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 21:07:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=dB6OMbpDwy1uDpKA9EA5nXaRw0REqUUksqrE7iedmGIiWDELOiP/6R7y2Msp1Jc8x6
-         LlNlC3rlDyH1uQFKjlxH1v2WNpiUs+UHQ0eIqzF6Z0J+MWJMk+ohLCuv3nBS0GFsOthq
-         HQam7bQDDvIcBwSX71DDGuzJoQhIct8cqIuzM=
+	Mon, 9 May 2011 21:23:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 09 May 2011 18:23:50 -0700
+Date: Mon, 9 May 2011 18:23:48 -0700
+From: rmorell@nvidia.com
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: mmap vs. ctime bug?
+Message-ID: <20110510012348.GJ3848@morell.nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <m1ei48zhyz.fsf@fess.ebiederm.org>
-References: <1304894407-32201-1-git-send-email-lucian.grijincu@gmail.com> <m1ei48zhyz.fsf@fess.ebiederm.org>
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Tue, 10 May 2011 03:06:15 +0200
-Message-ID: <BANLkTik2Y+Yy4kaa2cNUEvTMygXH6btWUg@mail.gmail.com>
-Subject: Re: [v2 000/115] faster tree-based sysctl implementation
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed; boundary="H8ygTp4AXg6deix2"
+Content-Disposition: inline
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 5:11 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> With respect to review and merging.  The priorities should be:
-> 1) Figure out what the users really need to do, before we change
->   everything so we only need one sweeping pass through the users
->   that hopefully simplifies them.
+
+--H8ygTp4AXg6deix2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+I tracked an intermittent failure in one of our build systems down to
+questionable kernel behavior.
+
+The makefile for the build seems completely reasonable.  It essentially does
+this (greatly simplified):
+output: $(OBJECTS)
+        ld -o output $(OBJECTS)
+        $(POSTPROCESS) output
+
+tarball.tgz: output
+        tar zcf tarball.tgz output
+
+$(POSTPROCESS) in this case is just a program that modifies some ELF headers.
+This program does so through libelf, but the important part is that libelf
+operates on the file using mmap().
+
+The problem is that the "tar" step sometimes fails with the error:
+/bin/tar: output: file changed as we read it
+
+As tar is adding a file to a tarball, it first stats the file, reads the entire
+file, then stats it again.  It reports the above error if the ctime does not
+match between the two stat calls.  In the case of the intermittent failure, the
+ctime does not match for the file as reported by stat(1).
+
+Adding a sync between the postprocess program's termination and the tar
+invocation "fixes" the problem, but adds a significant delay to the overall
+build time, so I'd prefer to not do that.
+
+I was able to reproduce the behavior with a simple test case (attached) with
+the latest git kernel built from 26822eebb25.  To run the test, simply
+put test.c and the Makefile in a new directory and run "make runtest".
+Note that the filesystem blocks and ctime change between the two stat
+invocations, although the mtime remains the same:
+
+# make runtest
+gcc test.c -o test
+rm -f out
+./test out
+stat out
+  File: `out'
+  Size: 268435456 	Blocks: 377096     IO Block: 4096   regular file
+Device: 304h/772d	Inode: 655367      Links: 1
+Access: (0600/-rw-------)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2011-05-09 18:06:24.000000000 -0700
+Modify: 2011-05-09 18:06:27.000000000 -0700
+Change: 2011-05-09 18:06:27.000000000 -0700
+sync
+stat out
+  File: `out'
+  Size: 268435456 	Blocks: 524808     IO Block: 4096   regular file
+Device: 304h/772d	Inode: 655367      Links: 1
+Access: (0600/-rw-------)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2011-05-09 18:06:24.000000000 -0700
+Modify: 2011-05-09 18:06:27.000000000 -0700
+Change: 2011-05-09 18:06:28.000000000 -0700
+
+(note: depending on your system, you may need to tweak the "SIZE" constant in
+test.c up to see ctime actually change at a resolution of 1s)
 
 
-The users of the API should not rely on the .child field of 'struct
-ctl_table' because we don't use that to encode the tree structure any
-more.
-That's absolutely the only thing that's changed in the API.
+Does this seem like a bug to anyone else?  For the normal "make" flow to work
+properly, files really need to be done changing by the time a process exits and
+wait(3) returns to the parent.  The heavy-hammer workaround of adding a
+sync(1) throws away a ton of potential benefit from the filesystem cache.
+Adding an msync(MS_SYNC) in the toy test app also "fixes" the problem, but
+that's not feasible in the production environment since libelf is doing the
+modification internally and besides, it seems like it shouldn't be necessary.
 
-Most of the sysctl users in the tree don't need any change and will
-work with the new sysctl just fine.
+If it matters, the filesystem is a dead simple ext3 with no special mount
+flags, but I suspect this is not specific to FS:
+# mount
+/dev/hda4 on / type ext3 (rw)
+[...]
 
-For the few that do, the first path of the series (the patches with
-"no-child" in the name) get's rid of the .child field by:
-a) replacing register_sysctl_table with register_sysctl_paths (very
-straight forward change and the new code is cleaner)
-b) registering files in multiple directories separately
+Thanks,
+Robert
 
+--H8ygTp4AXg6deix2
+Content-Type: text/x-c; charset=us-ascii
+Content-Disposition: attachment; filename="test.c"
 
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-That part of the patch series does not disturb the current
-functionality and does not depend of the later patches; it uses the
-current sysctl API to achieve the same goal.
+#define SIZE (256 * 1024 * 1024)
 
+int main(int argc, char **argv)
+{
+	char *ptr;
+	int fd, i;
 
+	if (argc < 2) {
+		printf("Usage: %s <filename>\n", argv[0]);
+		return 1;
+	}
 
-> 2) Ensure you have a version of the new interfaces ready at the
->   start of the patchset, so the sweeping changes can be made
->   incrementally.
->
-> 3) Clean up the users.
->
-> 4) Make simplifications because you don't have any old users left.
+	fd = open(argv[1], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	if (fd < 0) {
+		perror("Failed to open file");
+		return 1;
+	}
 
+	if (ftruncate(fd, SIZE)) {
+		perror("Failed to truncate to full size");
+		return 1;
+	}
 
-Hmm. I'm not sure if I understand you correctly.
+	ptr = mmap(NULL, SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+	if (ptr == MAP_FAILED) {
+		perror("Failed to mmap");
+		return 1;
+	}
 
-You want this so that the cleanup patches get in through the affected
-subsystems, and not in a big series that would possibly create merge
-problems with those trees?
+	/* touch each page */
+	for (i = 0; i < SIZE; i += 4096)
+		ptr[i] = 1;
 
-This wouldn't be too hard to do and wouldn't uglify the new interface
-too much, but I have limited time available to do this in the near
-future (exams and school projects). I'll see how I can squeeze this
-in.
+	/* Uncommenting the below line masks the problem */
+	/* msync(ptr, SIZE, MS_SYNC); */
 
--- 
- .
-..: Lucian
+	if (munmap(ptr, SIZE)) {
+		perror("Failed to munmap");
+		return 1;
+	}
+
+	close(fd);
+
+	return 0;
+}
+
+--H8ygTp4AXg6deix2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=Makefile
+
+test: test.c
+	gcc test.c -o test
+
+runtest: test
+	rm -f out
+	./test out
+	stat out
+	sync
+	stat out
+
+.PHONY: runtest
+
+--H8ygTp4AXg6deix2--
