@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab1EJX3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 19:29:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:9868 "EHLO
+	id S1753489Ab1EJXbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 19:31:14 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:9149 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab1EJX3G (ORCPT
+	with ESMTP id S1753451Ab1EJXbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 19:29:06 -0400
+	Tue, 10 May 2011 19:31:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=p/ngTETCcYEe0q948UjlYz5/5OKMASyHgH5a1oHF1ukU8x5ZCgWxCYGTBHxGJfGDO8
-         C8oU70DdaSbAkeSzAA5w==
-Date: Tue, 10 May 2011 16:29:02 -0700 (PDT)
+        b=J+3a2Xt6EIxsATv02TfhOZVFOqU1EWBk02wyF63D7844Hod/Xu9hJLingHdSQpnyfB
+         WTqdq08dea8cE0ZkL0Xw==
+Date: Tue, 10 May 2011 16:31:08 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -23,10 +23,10 @@ cc: CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
         Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/4] oom: improve dump_tasks() show items
-In-Reply-To: <20110510171600.16AB.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1105101623220.12477@chino.kir.corp.google.com>
-References: <20110509182110.167F.A69D9226@jp.fujitsu.com> <20110510171335.16A7.A69D9226@jp.fujitsu.com> <20110510171600.16AB.A69D9226@jp.fujitsu.com>
+Subject: Re: [PATCH 2/4] oom: kill younger process first
+In-Reply-To: <20110510171641.16AF.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1105101629590.12477@chino.kir.corp.google.com>
+References: <20110509182110.167F.A69D9226@jp.fujitsu.com> <20110510171335.16A7.A69D9226@jp.fujitsu.com> <20110510171641.16AF.A69D9226@jp.fujitsu.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -37,79 +37,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 10 May 2011, KOSAKI Motohiro wrote:
 
-> Recently, oom internal logic was dramatically changed. Thus
-> dump_tasks() is no longer useful. it has some meaningless
-> items and don't have some oom socre related items.
+> This patch introduces do_each_thread_reverse() and
+> select_bad_process() uses it. The benefits are two,
+> 1) oom-killer can kill younger process than older if
+> they have a same oom score. Usually younger process
+> is less important. 2) younger task often have PF_EXITING
+> because shell script makes a lot of short lived processes.
+> Reverse order search can detect it faster.
 > 
 
-This changelog is inaccurate.
+I like this change, thanks!  I'm suprised we haven't needed a 
+do_each_thread_reverse() in the past somewhere else in the kernel.
 
-dump_tasks() is actually useful as it currently stands; there are things 
-that you may add or remove but saying that it is "no longer useful" is an 
-exaggeration.
+Could you update the comment about do_each_thread() not being break-safe 
+in the second version, though?
 
-> This patch adapt displaying fields to new oom logic.
-> 
-> details
-> ==========
-> removed: pid (we always kill process. don't need thread id),
->          mm->total_vm (we no longer uses virtual memory size)
+After that:
 
-Showing mm->total_vm is still interesting to know what the old heuristic 
-would have used rather than the new heuristic, I'd prefer if we kept it.
+	Acked-by: David Rientjes <rientjes@google.com>
 
->          signal->oom_adj (we no longer uses it internally)
-> added: ppid (we often kill sacrifice child process)
-> modify: RSS (account mm->nr_ptes too)
-
-I'd prefer if ptes were shown independently from rss instead of adding it 
-to the thread's true rss usage and representing it as such.
-
-I think the cpu should also be removed.
-
-For the next version, could you show the old output and comparsion to new 
-output in the changelog?
-
-> 
+> Reported-by: CAI Qian <caiqian@redhat.com>
 > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > ---
+>  include/linux/sched.h |    6 ++++++
+>  mm/oom_kill.c         |    2 +-
+>  2 files changed, 7 insertions(+), 1 deletions(-)
 > 
-> Strictly speaking. this is NOT a part of oom fixing patches. but it's
-> necessary when I parse QAI's test result.
-> 
-> 
->  mm/oom_kill.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
-> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 013314a..a0a8339 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2194,6 +2194,9 @@ static inline unsigned long wait_task_inactive(struct task_struct *p,
+>  #define next_task(p) \
+>  	list_entry_rcu((p)->tasks.next, struct task_struct, tasks)
+>  
+> +#define prev_task(p) \
+> +	list_entry_rcu((p)->tasks.prev, struct task_struct, tasks)
+> +
+>  #define for_each_process(p) \
+>  	for (p = &init_task ; (p = next_task(p)) != &init_task ; )
+>  
+> @@ -2206,6 +2209,9 @@ extern bool current_is_single_threaded(void);
+>  #define do_each_thread(g, t) \
+>  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+>  
+> +#define do_each_thread_reverse(g, t) \
+> +	for (g = t = &init_task ; (g = t = prev_task(g)) != &init_task ; ) do
+> +
+>  #define while_each_thread(g, t) \
+>  	while ((t = next_thread(t)) != g)
+>  
 > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index f52e85c..118d958 100644
+> index 118d958..0cf5091 100644
 > --- a/mm/oom_kill.c
 > +++ b/mm/oom_kill.c
-> @@ -355,7 +355,7 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
->  	struct task_struct *p;
->  	struct task_struct *task;
+> @@ -282,7 +282,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  	struct task_struct *chosen = NULL;
+>  	*ppoints = 0;
 >  
-> -	pr_info("[ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name\n");
-> +	pr_info("[   pid]   ppid   uid      rss  cpu score_adj name\n");
->  	for_each_process(p) {
->  		if (oom_unkillable_task(p, mem, nodemask))
->  			continue;
-> @@ -370,11 +370,13 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
->  			continue;
->  		}
+> -	do_each_thread(g, p) {
+> +	do_each_thread_reverse(g, p) {
+>  		unsigned int points;
 >  
-> -		pr_info("[%5d] %5d %5d %8lu %8lu %3u     %3d         %5d %s\n",
-> -			task->pid, task_uid(task), task->tgid,
-> -			task->mm->total_vm, get_mm_rss(task->mm),
-> -			task_cpu(task), task->signal->oom_adj,
-> -			task->signal->oom_score_adj, task->comm);
-> +		pr_info("[%6d] %6d %5d %8lu %4u %9d %s\n",
-> +			task_tgid_nr(task), task_tgid_nr(task->real_parent),
-> +			task_uid(task),
-> +			get_mm_rss(task->mm) + p->mm->nr_ptes,
-> +			task_cpu(task),
-> +			task->signal->oom_score_adj,
-> +			task->comm);
->  		task_unlock(task);
->  	}
->  }
+>  		if (!p->mm)
