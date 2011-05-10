@@ -1,129 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab1EJQ6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 12:58:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59708 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751645Ab1EJQ5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 12:57:51 -0400
-Date: Tue, 10 May 2011 18:55:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
-        Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org
-Subject: Re: [PATCH 06/11] ptrace: make group stop state visible via
-	PTRACE_GETSIGINFO
-Message-ID: <20110510165545.GA30198@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-7-git-send-email-tj@kernel.org>
+	id S1751547Ab1EJQ5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 12:57:43 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37571 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab1EJQ5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 12:57:41 -0400
+Date: Tue, 10 May 2011 18:57:28 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mikew@google.com" <mikew@google.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH] pstore: EFI Support
+Message-ID: <20110510165728.GC3347@gere.osrc.amd.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
+ <20110510161137.GA14522@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304869745-1073-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110510161137.GA14522@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08, Tejun Heo wrote:
->
-> Ptracer can detect tracee entering group stop by watching for the
-> group stop trap; however, there is no reliable way to find out when
-> group stop ends - SIGCONT may be processed by another thread and
-> signal delivery is blocked while tracee is trapped.
+On Tue, May 10, 2011 at 09:11:37AM -0700, Greg KH wrote:
+> On Tue, May 10, 2011 at 11:00:44AM -0400, Seiji Aguchi wrote:
+> > Description of boot paremeters is following.
+> > 
+> >  - efi_pstore_enable
+> >    enable EFI support of pstore.
+> > 
+> >  - efi_pstore_len
+> >    Sets the buffer size of EFI variable space used by pstore.
+> 
+> Please don't add new boot parameters if at all possible.  Distros will
+> not know to enable them, and users don't know how to either.
+> 
+> Use sane defaults, and provide ways to override them if needed, but
+> don't rely on them for new functionality if at all possible.
+> 
+> Why would this option ever _not_ be something that should be enabled?
 
-Confused.
+Right, so if I understand this correctly, we want actually to _switch_
+to the EFI method if it is safer than APEI. So it should work like this:
+if the pstore detects that the system has EFI, it should switch to use
+it as a method for writing persistent records to NVRAM.
 
-> This patch adds siginfo.si_pt_flags and uses PTRACE_SI_STOPPED flag to
-> indicate whether group stop is in effect or not.  While tracee is
-> trapped for anything other than signal delivery and group stop itself,
-> tracer can use PTRACE_GETSIGINFO to access this information.  Note
-> that it's only available if tracee was seized.
+Btw, is this case of the possibility for APEI of corrupting NVRAM
+storage something you actually experienced on a real machine or simply a
+conclusion from looking at APEI code doing ioremap()?
 
-IOW, if the tracee reports via ptrace_notify*, the tracee can look at
-si_pt_flags == stop-in-effect. If the tracer reports a signal, the
-tracer obviously lacks this info, hmm.
+Thanks.
 
-Probably I need more time to get used to this... But at first glance
-this looks a bit unnatural. Say, can't we simply implement
-PTRACE_GET_GROUP_STOP_STATUS request which returns this (and probably
-more) info?
+-- 
+Regards/Gruss,
+Boris.
 
-> Later patches will deal with
-> notification and trap transition.
-
-OK, probably I'll understand the intent later.
-
-> __SI_TRAP is defined to implement copying of
-> the new field to userland.
-
-Heh. I am shy to admit, I didn't know copy_siginfo_to_user() trims
-si_code, that is why your change is correct but I spent a lot of time
-before I was able to understand this.
-
->   int main(int argc, char **argv)
->   {
-> 	  pid_t tracee, tracer;
-> 	  int i;
->
-> 	  tracee = fork();
-> 	  if (!tracee)
-> 		  while (1)
-> 			  nanosleep(&ts1s, NULL);
->
-> 	  tracer = fork();
-> 	  if (!tracer) {
-> 		  int last_stopped = 0, stopped;
-> 		  siginfo_t si;
->
-> 		  ptrace(PTRACE_SEIZE, tracee, NULL,
-> 			 (void *)(unsigned long)PTRACE_SEIZE_DEVEL);
-> 	  repeat:
-> 		  waitid(P_PID, tracee, NULL, WSTOPPED);
->
-> 		  if (!ptrace(PTRACE_GETSIGINFO, tracee, NULL, &si)) {
-> 			  if (si.si_code) {
-> 				  stopped = !!si.si_status;
-
-In this case this "si_code != 0" check is correct, but how can the
-tracer detect this case in general?
-
-> @@ -540,6 +542,17 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
->
->  	error = 0;
->  	*info = *child->last_siginfo;
-> +
-> +	/*
-> +	 * If reporting ptrace trap for a seized tracee, enable reporting
-> +	 * of info->si_pt_flags.
-> +	 */
-> +	if ((child->ptrace & PT_SEIZED) &&
-> +	    (info->si_code & (0x7f | ~0xffff)) == (__SI_TRAP | SIGTRAP)) {
-
-Can't we simply check (from->si_code & __SI_MASK) == __SI_TRAP ?
-
-> +		/* report whether group stop is in effect w/ SI_STOPPED */
-> +		if (sig->group_stop_count || (sig->flags & SIGNAL_STOP_STOPPED))
-
-We have more and more "group_stop_count || SIGNAL_STOP_STOPPED" checks,
-perhaps we should make a helper. Or at least invent the short name to
-denote the group-stopped-or-in-progress to simplify the discussions ;)
-
-
-Still, this is strange. With this change ptrace_getsiginfo() reports
-the extra "volatile" info which wasn't reported by the tracee itself.
-If the tracer does PTRACE_SETSIGINFO twice in a row, it can see the
-different si_pt_flags's.
-
-Oleg.
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
