@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab1EJIIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:08:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36966 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab1EJIIn (ORCPT
+	id S932375Ab1EJIMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:12:05 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33781 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab1EJIMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 04:08:43 -0400
-Subject: Re: [PATCH] wait: include linux/sched.h
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Kaywinnit L. Frye" <kaywinnit.lee.frye.2497@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-In-Reply-To: <20110506075408.GI23166@elte.hu>
-References: <1304372042-12098-1-git-send-email-kaywinnit.lee.frye.2497@gmail.com>
-	 <20110506075408.GI23166@elte.hu>
+	Tue, 10 May 2011 04:12:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: CAI Qian <caiqian@redhat.com>
+Subject: OOM Killer don't works at all if the system have >gigabytes memory (was Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable())
+Cc: kosaki.motohiro@jp.fujitsu.com, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <20110509182110.167F.A69D9226@jp.fujitsu.com>
+References: <1491537913.283996.1304930866703.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20110509182110.167F.A69D9226@jp.fujitsu.com>
+Message-Id: <20110510171335.16A7.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 10:11:43 +0200
-Message-ID: <1305015103.2914.17.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
+Date: Tue, 10 May 2011 17:11:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-06 at 09:54 +0200, Ingo Molnar wrote:
+(cc to oom interested people)
 
-> > diff --git a/include/linux/wait.h b/include/linux/wait.h
-> > index 3efc9f3..667a3d7 100644
-> > --- a/include/linux/wait.h
-> > +++ b/include/linux/wait.h
-> > @@ -22,6 +22,7 @@
-> >  #include <linux/list.h>
-> >  #include <linux/stddef.h>
-> >  #include <linux/spinlock.h>
-> > +#include <linux/sched.h>
-> >  #include <asm/system.h>
-> >  #include <asm/current.h>
+> > > > I have tested this for the latest mainline kernel using the
+> > > > reproducer
+> > > > attached, the system just hung or deadlock after oom. The whole oom
+> > > > trace is here.
+> > > > http://people.redhat.com/qcai/oom.log
+> > > >
+> > > > Did I miss anything?
+> > > 
+> > > Can you please try commit 929bea7c714220fc76ce3f75bef9056477c28e74?
+> > As I have mentioned that I have tested the latest mainline which have
+> > already included that fix. Also, does this problem only for x86? The
+> > testing was done using x86_64. Not sure if that would be a problem.
 > 
-> I'm quite sure this will break the build all around the place, because sched.h 
-> itself uses wait.h primitives.
+> No. I'm also using x86_64 and my machine completely works on current
+> latest linus tree. I confirmed it today.
 
-I'm very sure it will, people keep proposing this.
+> 4194288 pages RAM
 
-> To fix these super-headers like sched.h and to make wait.h self-sufficient the 
-> right and cleanest approach would be to split data types and primitive accessor 
-> functions from higher level helper methods (which inevitably mix different 
-> domains) and put them into two separate files.
-> 
-> We have a few such split files in the kernel tree, spinlock_types.h and 
-> spinlock_api.h, and this concept works reasonably well.
-> 
-> So here we'd need wait_types.h and wait_api.h and of course sched_types.h and 
-> sched_api.h.
-> 
-> For simplicity of migration wait_api.h could be wait.h itself and sched_api.h 
-> could be sched.h itself.
+You have 16GB RAM.
 
-Argh, please don't. I've been arguing against that for a while now.
+> Out of memory: Kill process 1175 (dhclient) score 1 or sacrifice child
+> Out of memory: Kill process 1247 (rsyslogd) score 1 or sacrifice child
+> Out of memory: Kill process 1284 (irqbalance) score 1 or sacrifice child
+> Out of memory: Kill process 1303 (rpcbind) score 1 or sacrifice child
+> Out of memory: Kill process 1321 (rpc.statd) score 1 or sacrifice child
+> Out of memory: Kill process 1333 (mdadm) score 1 or sacrifice child
+> Out of memory: Kill process 1365 (rpc.idmapd) score 1 or sacrifice child
+> Out of memory: Kill process 1403 (dbus-daemon) score 1 or sacrifice child
+> Out of memory: Kill process 1438 (acpid) score 1 or sacrifice child
+> Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
+> Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
+> Out of memory: Kill process 1487 (hald-addon-inpu) score 1 or sacrifice child
+> Out of memory: Kill process 1488 (hald-addon-acpi) score 1 or sacrifice child
+> Out of memory: Kill process 1507 (automount) score 1 or sacrifice child
 
-The right thing to do is to clean up sched.h and remove a lot of the
-non-scheduler bits in there, like all the process and signal bits.
+Oops.
+
+OK. That's known issue. Current OOM logic doesn't works if you have
+gigabytes RAM. because _all_ process have the exactly same score (=1).
+then oom killer just fallback to random process killer. It was made
+commit a63d83f427 (oom: badness heuristic rewrite). I pointed out
+it at least three times. You have to blame Google folks. :-/
+
+
+The problems are three.
+
+1) if two processes have the same oom score, we should kill younger process.
+   but current logic kill older. Oldest processes are typicall system daemons.
+2) Current logic use 'unsigned int' for internal score calculation. (exactly says,
+   it only use 0-1000 value). its very low precision calculation makes a lot of
+   same oom score and kill an ineligible process.
+3) Current logic give 3% of SystemRAM to root processes. It obviously too big
+   if you have plenty memory. Now, your fork-bomb processes have 500MB OOM immune
+   bonus. then your fork-bomb never ever be killed.
+
+
+CAI-san: I've made fixing patches. Can you please try them?
+
 
 
