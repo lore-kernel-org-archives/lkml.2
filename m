@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab1EJV7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:59:43 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35138
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752163Ab1EJV7l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:59:41 -0400
-Date: Tue, 10 May 2011 14:59:09 -0700 (PDT)
-Message-Id: <20110510.145909.193724537.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this
- time)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1305064116.2437.34.camel@edumazet-laptop>
-References: <1304999271.3050.41.camel@edumazet-laptop>
-	<20110509.205851.189693332.davem@davemloft.net>
-	<1305064116.2437.34.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752953Ab1EJV7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:59:30 -0400
+Received: from kroah.org ([198.145.64.141]:54736 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361Ab1EJV73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 17:59:29 -0400
+Date: Tue, 10 May 2011 14:59:21 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gma500: Add option to disable LVDS
+Message-ID: <20110510215921.GB12854@kroah.com>
+References: <20110510212038.GA3279@patrik-macbook>
+ <20110510224602.73b24d0a@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510224602.73b24d0a@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 10 May 2011 23:48:36 +0200
-
-> Le lundi 09 mai 2011 à 20:58 -0700, David Miller a écrit :
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Tue, 10 May 2011 05:47:51 +0200
->> 
->> > [PATCH net-next-2.6] net: fix two lockdep splats
->> > 
->> > Commit e67f88dd12f6 (net: dont hold rtnl mutex during netlink dump
->> > callbacks) switched rtnl protection to RCU, but we forgot to adjust two
->> > rcu_dereference() lockdep annotations :
->> > 
->> > inet_get_link_af_size() or inet_fill_link_af() might be called with
->> > rcu_read_lock or rtnl held, so use rcu_dereference_rtnl()
->> > instead of rtnl_dereference()
->> > 
->> > Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
->> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->> 
->> Applied, thanks everyone.
+On Tue, May 10, 2011 at 10:46:02PM +0100, Alan Cox wrote:
+> On Tue, 10 May 2011 23:20:38 +0200
+> Patrik Jakobsson <patrik.r.jakobsson@gmail.com> wrote:
 > 
-> David, I found you applied this patch for net-2.6, but it was
-> net-next-2.6 material only ...
+> > This patch adds the option to load the driver without LVDS support. Some platforms with the gma500 have nothing hooked up to LVDS but only uses SDVO. LVDS is still detected and added as an encoder which causes SDVO mode-setting to fail.
+> > 
+> > Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+> 
+> What platform is this - I'd really like to keep such things automatic and
+> also if possible make the code handle the case not blow up. The user
+> shouldn't have to deal with such funnies.
 
-Thanks for catching that, I'll fix this.
+I agree, there should be a way to automatically detect this, we don't
+need another-module-parameter for something like this if at all
+possible.
+
+thanks,
+
+greg k-h
