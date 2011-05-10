@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab1EJL7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 07:59:31 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:62166 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754434Ab1EJL73 (ORCPT
+	id S1753712Ab1EJL0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 07:26:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35012 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab1EJL0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 07:59:29 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGwnyU1R8iw3/2dsb2JhbAClfXjFWw6GAQSeUA
-Date: Tue, 10 May 2011 13:14:00 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Cc: "Linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCHv1 -next] WATCHDOG: Watchdog module of DA9052 device
-	driver
-Message-ID: <20110510111400.GB6865@infomag.iguana.be>
-References: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5B8E4@KCINPUNHJCMS01.kpit.com>
+	Tue, 10 May 2011 07:26:42 -0400
+Message-ID: <4DC92089.40305@ru.mvista.com>
+Date: Tue, 10 May 2011 15:24:57 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BA5B8E4@KCINPUNHJCMS01.kpit.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 7/7] usb: Adding SuperSpeed support to dummy_hcd
+References: <1304853414-10234-1-git-send-email-tlinder@codeaurora.org> <1304853414-10234-8-git-send-email-tlinder@codeaurora.org> <20110509174910.GA7025@linutronix.de>
+In-Reply-To: <20110509174910.GA7025@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashish, David,
+Hello.
 
-Driver looks OK at first glance. Will look at it some more later this week.
+On 09-05-2011 21:49, Sebastian Andrzej Siewior wrote:
 
-> +static int __devexit da9052_sm_remove(struct platform_device *dev)
-> +{
-> +       misc_deregister(&da9052_wdt_miscdev);
-> +       strobe_interval = 0;
-> +       strobe_mode = 0;
-> +       return 0;
-> +}
+>> +
+>> +	retval = usb_add_hcd(hs_hcd, 0, IRQF_DISABLED | IRQF_SHARED);
 
-Small remark: here I am missing a kfree(wdt);
+> Why IRQF_DISABLED | IRQF_SHARED? you don't interrupts at all.
 
-Kind regards,
-Wim.
+    Moreover, IRQF_DISABLED is a nop now, see <linux/interrupt.h>.
 
+WBR, Sergei
