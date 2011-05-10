@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab1EJBFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 21:05:55 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55243 "EHLO
+	id S1756000Ab1EJBFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 21:05:32 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55229 "EHLO
 	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756003Ab1EJBFk (ORCPT
+	with ESMTP id S1752560Ab1EJBFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 21:05:40 -0400
+	Mon, 9 May 2011 21:05:30 -0400
 X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
 To: Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this time)
 From: Valdis.Kletnieks@vt.edu
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1304989476_5294P";
+Content-Type: multipart/signed; boundary="==_Exmh_1304989523_5294P";
 	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Date: Mon, 09 May 2011 21:04:36 -0400
-Message-ID: <6921.1304989476@localhost>
+Date: Mon, 09 May 2011 21:05:23 -0400
+Message-ID: <6954.1304989523@localhost>
 X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
 X-Mirapoint-IP-Reputation: reputation=neutral-1,
 	source=Fixed,
 	refid=n/a,
 	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
 X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4DC88F2A.0036,ss=1,fgs=0,
+	refid=str=0001.0A020203.4DC88F56.001C,ss=1,fgs=0,
 	ip=71.62.120.129,
 	so=2010-07-22 22:03:31,
 	dmn=2009-09-10 00:05:08,
@@ -37,188 +36,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1304989476_5294P
+--==_Exmh_1304989523_5294P
 Content-Type: text/plain; charset=us-ascii
 
-Seen at boot earlier today. Interrupt, page fault, RCU, scheduler, and MM code
-in the tracebacks. Yee-hah.
+Seen during boot this afternoon:
 
-[   12.872150] usb 1-4: new high speed USB device number 3 using ehci_hcd
-[   12.986667] usb 1-4: New USB device found, idVendor=413c, idProduct=2513
-[   12.986679] usb 1-4: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-[   12.987691] hub 1-4:1.0: USB hub found
-[   12.987877] hub 1-4:1.0: 3 ports detected
-[   12.996372] input: PS/2 Generic Mouse as /devices/platform/i8042/serio1/input/input10
-[   13.071471] udevadm used greatest stack depth: 3984 bytes left
-[   13.172129] 
-[   13.172130] =======================================================
-[   13.172425] [ INFO: possible circular locking dependency detected ]
-[   13.172650] 2.6.39-rc6-mmotm0506 #1
-[   13.172773] -------------------------------------------------------
-[   13.172997] blkid/267 is trying to acquire lock:
-[   13.173009]  (&p->pi_lock){-.-.-.}, at: [<ffffffff81032d8f>] try_to_wake_up+0x29/0x1aa
-[   13.173009] 
-[   13.173009] but task is already holding lock:
-[   13.173009]  (rcu_node_level_0){..-...}, at: [<ffffffff810901cc>] rcu_cpu_kthread_timer+0x27/0x58
-[   13.173009] 
-[   13.173009] which lock already depends on the new lock.
-[   13.173009] 
-[   13.173009] 
-[   13.173009] the existing dependency chain (in reverse order) is:
-[   13.173009] 
-[   13.173009] -> #2 (rcu_node_level_0){..-...}:
-[   13.173009]        [<ffffffff810679b9>] check_prevs_add+0x8b/0x104
-[   13.173009]        [<ffffffff81067da1>] validate_chain+0x36f/0x3ab
-[   13.173009]        [<ffffffff8106846b>] __lock_acquire+0x369/0x3e2
-[   13.173009]        [<ffffffff81068a0f>] lock_acquire+0xfc/0x14c
-[   13.173009]        [<ffffffff815697f1>] _raw_spin_lock+0x36/0x45
-[   13.173009]        [<ffffffff81090794>] rcu_read_unlock_special+0x8c/0x1d5
-[   13.173009]        [<ffffffff8109092c>] __rcu_read_unlock+0x4f/0xd7
-[   13.173009]        [<ffffffff81027bd3>] rcu_read_unlock+0x21/0x23
-[   13.173009]        [<ffffffff8102cc34>] cpuacct_charge+0x6c/0x75
-[   13.173009]        [<ffffffff81030cc6>] update_curr+0x101/0x12e
-[   13.173009]        [<ffffffff810311d0>] check_preempt_wakeup+0xf7/0x23b
-[   13.173009]        [<ffffffff8102acb3>] check_preempt_curr+0x2b/0x68
-[   13.173009]        [<ffffffff81031d40>] ttwu_do_wakeup+0x76/0x128
-[   13.173009]        [<ffffffff81031e49>] ttwu_do_activate.constprop.63+0x57/0x5c
-[   13.173009]        [<ffffffff81031e96>] scheduler_ipi+0x48/0x5d
-[   13.173009]        [<ffffffff810177d5>] smp_reschedule_interrupt+0x16/0x18
-[   13.173009]        [<ffffffff815710f3>] reschedule_interrupt+0x13/0x20
-[   13.173009]        [<ffffffff810b66d1>] rcu_read_unlock+0x21/0x23
-[   13.173009]        [<ffffffff810b739c>] find_get_page+0xa9/0xb9
-[   13.173009]        [<ffffffff810b8b48>] filemap_fault+0x6a/0x34d
-[   13.173009]        [<ffffffff810d1a25>] __do_fault+0x54/0x3e6
-[   13.173009]        [<ffffffff810d447a>] handle_pte_fault+0x12c/0x1ed
-[   13.173009]        [<ffffffff810d48f7>] handle_mm_fault+0x1cd/0x1e0
-[   13.173009]        [<ffffffff8156cfee>] do_page_fault+0x42d/0x5de
-[   13.173009]        [<ffffffff8156a75f>] page_fault+0x1f/0x30
-[   13.173009] 
-[   13.173009] -> #1 (&rq->lock){-.-.-.}:
-[   13.173009]        [<ffffffff810679b9>] check_prevs_add+0x8b/0x104
-[   13.173009]        [<ffffffff81067da1>] validate_chain+0x36f/0x3ab
-[   13.173009]        [<ffffffff8106846b>] __lock_acquire+0x369/0x3e2
-[   13.173009]        [<ffffffff81068a0f>] lock_acquire+0xfc/0x14c
-[   13.173009]        [<ffffffff815697f1>] _raw_spin_lock+0x36/0x45
-[   13.173009]        [<ffffffff81027e19>] __task_rq_lock+0x8b/0xd3
-[   13.173009]        [<ffffffff81032f7f>] wake_up_new_task+0x41/0x108
-[   13.173009]        [<ffffffff810376c3>] do_fork+0x265/0x33f
-[   13.173009]        [<ffffffff81007d02>] kernel_thread+0x6b/0x6d
-[   13.173009]        [<ffffffff8153a9dd>] rest_init+0x21/0xd2
-[   13.173009]        [<ffffffff81b1db4f>] start_kernel+0x3bb/0x3c6
-[   13.173009]        [<ffffffff81b1d29f>] x86_64_start_reservations+0xaf/0xb3
-[   13.173009]        [<ffffffff81b1d393>] x86_64_start_kernel+0xf0/0xf7
-[   13.173009] 
-[   13.173009] -> #0 (&p->pi_lock){-.-.-.}:
-[   13.173009]        [<ffffffff81067788>] check_prev_add+0x68/0x20e
-[   13.173009]        [<ffffffff810679b9>] check_prevs_add+0x8b/0x104
-[   13.173009]        [<ffffffff81067da1>] validate_chain+0x36f/0x3ab
-[   13.173009]        [<ffffffff8106846b>] __lock_acquire+0x369/0x3e2
-[   13.173009]        [<ffffffff81068a0f>] lock_acquire+0xfc/0x14c
-[   13.173009]        [<ffffffff815698ea>] _raw_spin_lock_irqsave+0x44/0x57
-[   13.173009]        [<ffffffff81032d8f>] try_to_wake_up+0x29/0x1aa
-[   13.173009]        [<ffffffff81032f3c>] wake_up_process+0x10/0x12
-[   13.173009]        [<ffffffff810901e9>] rcu_cpu_kthread_timer+0x44/0x58
-[   13.173009]        [<ffffffff81045286>] call_timer_fn+0xac/0x1e9
-[   13.173009]        [<ffffffff8104556d>] run_timer_softirq+0x1aa/0x1f2
-[   13.173009]        [<ffffffff8103e487>] __do_softirq+0x109/0x26a
-[   13.173009]        [<ffffffff8157144c>] call_softirq+0x1c/0x30
-[   13.173009]        [<ffffffff81003207>] do_softirq+0x44/0xf1
-[   13.173009]        [<ffffffff8103e8b9>] irq_exit+0x58/0xc8
-[   13.173009]        [<ffffffff81017f5a>] smp_apic_timer_interrupt+0x79/0x87
-[   13.173009]        [<ffffffff81570fd3>] apic_timer_interrupt+0x13/0x20
-[   13.173009]        [<ffffffff810bd51a>] get_page_from_freelist+0x2aa/0x310
-[   13.173009]        [<ffffffff810bdf03>] __alloc_pages_nodemask+0x178/0x243
-[   13.173009]        [<ffffffff8101fe2f>] pte_alloc_one+0x1e/0x3a
-[   13.173009]        [<ffffffff810d27fe>] __pte_alloc+0x22/0x14b
-[   13.173009]        [<ffffffff810d48a8>] handle_mm_fault+0x17e/0x1e0
-[   13.173009]        [<ffffffff8156cfee>] do_page_fault+0x42d/0x5de
-[   13.173009]        [<ffffffff8156a75f>] page_fault+0x1f/0x30
-[   13.173009] 
-[   13.173009] other info that might help us debug this:
-[   13.173009] 
-[   13.173009] Chain exists of:
-[   13.173009]   &p->pi_lock --> &rq->lock --> rcu_node_level_0
-[   13.173009] 
-[   13.173009]  Possible unsafe locking scenario:
-[   13.173009] 
-[   13.173009]        CPU0                    CPU1
-[   13.173009]        ----                    ----
-[   13.173009]   lock(rcu_node_level_0);
-[   13.173009]                                lock(&rq->lock);
-[   13.173009]                                lock(rcu_node_level_0);
-[   13.173009]   lock(&p->pi_lock);
-[   13.173009] 
-[   13.173009]  *** DEADLOCK ***
-[   13.173009] 
-[   13.173009] 3 locks held by blkid/267:
-[   13.173009]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff8156cdb4>] do_page_fault+0x1f3/0x5de
-[   13.173009]  #1:  (&yield_timer){+.-...}, at: [<ffffffff810451da>] call_timer_fn+0x0/0x1e9
-[   13.173009]  #2:  (rcu_node_level_0){..-...}, at: [<ffffffff810901cc>] rcu_cpu_kthread_timer+0x27/0x58
-[   13.173009] 
-[   13.173009] stack backtrace:
-[   13.173009] Pid: 267, comm: blkid Not tainted 2.6.39-rc6-mmotm0506 #1
-[   13.173009] Call Trace:
-[   13.173009]  <IRQ>  [<ffffffff8154a529>] print_circular_bug+0xc8/0xd9
-[   13.173009]  [<ffffffff81067788>] check_prev_add+0x68/0x20e
-[   13.173009]  [<ffffffff8100c861>] ? save_stack_trace+0x28/0x46
-[   13.173009]  [<ffffffff810679b9>] check_prevs_add+0x8b/0x104
-[   13.173009]  [<ffffffff81067da1>] validate_chain+0x36f/0x3ab
-[   13.173009]  [<ffffffff8106846b>] __lock_acquire+0x369/0x3e2
-[   13.173009]  [<ffffffff81032d8f>] ? try_to_wake_up+0x29/0x1aa
-[   13.173009]  [<ffffffff81068a0f>] lock_acquire+0xfc/0x14c
-[   13.173009]  [<ffffffff81032d8f>] ? try_to_wake_up+0x29/0x1aa
-[   13.173009]  [<ffffffff810901a5>] ? rcu_check_quiescent_state+0x82/0x82
-[   13.173009]  [<ffffffff815698ea>] _raw_spin_lock_irqsave+0x44/0x57
-[   13.173009]  [<ffffffff81032d8f>] ? try_to_wake_up+0x29/0x1aa
-[   13.173009]  [<ffffffff81032d8f>] try_to_wake_up+0x29/0x1aa
-[   13.173009]  [<ffffffff810901a5>] ? rcu_check_quiescent_state+0x82/0x82
-[   13.173009]  [<ffffffff81032f3c>] wake_up_process+0x10/0x12
-[   13.173009]  [<ffffffff810901e9>] rcu_cpu_kthread_timer+0x44/0x58
-[   13.173009]  [<ffffffff810901a5>] ? rcu_check_quiescent_state+0x82/0x82
-[   13.173009]  [<ffffffff81045286>] call_timer_fn+0xac/0x1e9
-[   13.173009]  [<ffffffff810451da>] ? del_timer+0x75/0x75
-[   13.173009]  [<ffffffff810901a5>] ? rcu_check_quiescent_state+0x82/0x82
-[   13.173009]  [<ffffffff8104556d>] run_timer_softirq+0x1aa/0x1f2
-[   13.173009]  [<ffffffff8103e487>] __do_softirq+0x109/0x26a
-[   13.173009]  [<ffffffff8106365f>] ? tick_dev_program_event+0x37/0xf6
-[   13.173009]  [<ffffffff810a0e4a>] ? time_hardirqs_off+0x1b/0x2f
-[   13.173009]  [<ffffffff8157144c>] call_softirq+0x1c/0x30
-[   13.173009]  [<ffffffff81003207>] do_softirq+0x44/0xf1
-[   13.173009]  [<ffffffff8103e8b9>] irq_exit+0x58/0xc8
-[   13.173009]  [<ffffffff81017f5a>] smp_apic_timer_interrupt+0x79/0x87
-[   13.173009]  [<ffffffff81570fd3>] apic_timer_interrupt+0x13/0x20
-[   13.173009]  <EOI>  [<ffffffff810bd384>] ? get_page_from_freelist+0x114/0x310
-[   13.173009]  [<ffffffff810bd51a>] ? get_page_from_freelist+0x2aa/0x310
-[   13.173009]  [<ffffffff812220e7>] ? clear_page_c+0x7/0x10
-[   13.173009]  [<ffffffff810bd1ef>] ? prep_new_page+0x14c/0x1cd
-[   13.173009]  [<ffffffff810bd51a>] get_page_from_freelist+0x2aa/0x310
-[   13.173009]  [<ffffffff810bdf03>] __alloc_pages_nodemask+0x178/0x243
-[   13.173009]  [<ffffffff810d46b9>] ? __pmd_alloc+0x87/0x99
-[   13.173009]  [<ffffffff8101fe2f>] pte_alloc_one+0x1e/0x3a
-[   13.173009]  [<ffffffff810d46b9>] ? __pmd_alloc+0x87/0x99
-[   13.173009]  [<ffffffff810d27fe>] __pte_alloc+0x22/0x14b
-[   13.173009]  [<ffffffff810d48a8>] handle_mm_fault+0x17e/0x1e0
-[   13.173009]  [<ffffffff8156cfee>] do_page_fault+0x42d/0x5de
-[   13.173009]  [<ffffffff810d915f>] ? sys_brk+0x32/0x10c
-[   13.173009]  [<ffffffff810a0e4a>] ? time_hardirqs_off+0x1b/0x2f
-[   13.173009]  [<ffffffff81065c4f>] ? trace_hardirqs_off_caller+0x3f/0x9c
-[   13.173009]  [<ffffffff812235dd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[   13.173009]  [<ffffffff8156a75f>] page_fault+0x1f/0x30
-[   14.010075] usb 5-1: new full speed USB device number 2 using uhci_hcd
+[   43.309549] 
+[   43.309550] ===================================================
+[   43.309553] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   43.309555] ---------------------------------------------------
+[   43.309558] include/linux/inetdevice.h:226 invoked rcu_dereference_check() without protection!
+[   43.309560] 
+[   43.309561] other info that might help us debug this:
+[   43.309561] 
+[   43.309563] 
+[   43.309564] rcu_scheduler_active = 1, debug_locks = 1
+[   43.309567] 2 locks held by ip/1193:
+[   43.309568]  #0:  (nlk->cb_mutex){+.+...}, at: [<ffffffff81426c1d>] netlink_dump+0x45/0x1d0
+[   43.309579]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8141b9b9>] rtnl_dump_ifinfo+0x0/0x156
+[   43.309587] 
+[   43.309587] stack backtrace:
+[   43.309590] Pid: 1193, comm: ip Not tainted 2.6.39-rc6-mmotm0506 #1
+[   43.309592] Call Trace:
+[   43.309599]  [<ffffffff81066b6e>] lockdep_rcu_dereference+0x9a/0xa2
+[   43.309604]  [<ffffffff81468d41>] __in_dev_get_rtnl+0x3c/0x47
+[   43.309607]  [<ffffffff81468ef0>] inet_fill_link_af+0x12/0x5b
+[   43.309611]  [<ffffffff8141b8fc>] rtnl_fill_ifinfo+0x665/0x710
+[   43.309616]  [<ffffffff8141ba76>] rtnl_dump_ifinfo+0xbd/0x156
+[   43.309620]  [<ffffffff81426c37>] netlink_dump+0x5f/0x1d0
+[   43.309624]  [<ffffffff81404e3e>] ? consume_skb+0x8a/0x8f
+[   43.309628]  [<ffffffff81426fc8>] netlink_recvmsg+0x1dd/0x31d
+[   43.309632]  [<ffffffff813ff21f>] ? rcu_read_unlock+0x21/0x23
+[   43.309636]  [<ffffffff813fab57>] sock_recvmsg+0xed/0x112
+[   43.309641]  [<ffffffff810d1ebf>] ? might_fault+0x4e/0x9e
+[   43.309645]  [<ffffffff81068816>] ? __lock_release+0x93/0x9c
+[   43.309649]  [<ffffffff810d1ebf>] ? might_fault+0x4e/0x9e
+[   43.309652]  [<ffffffff810d1f08>] ? might_fault+0x97/0x9e
+[   43.309656]  [<ffffffff814065f8>] ? copy_from_user+0x3c/0x44
+[   43.309660]  [<ffffffff813fc047>] __sys_recvmsg+0x16c/0x224
+[   43.309665]  [<ffffffff81059240>] ? up_read+0x23/0x27
+[   43.309669]  [<ffffffff81065165>] ? arch_local_irq_save+0x9/0xc
+[   43.309673]  [<ffffffff810f736b>] ? fcheck_files+0xb4/0xeb
+[   43.309676]  [<ffffffff810f79f3>] ? fget_light+0x35/0x96
+[   43.309680]  [<ffffffff813fdded>] sys_recvmsg+0x3d/0x5b
+[   43.309686]  [<ffffffff815705bb>] system_call_fastpath+0x16/0x1b
+[   44.437679] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[   44.488363] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[   44.494680] ADDRCONF(NETDEV_UP): eth0: link is not ready
 
 
 
---==_Exmh_1304989476_5294P
+--==_Exmh_1304989523_5294P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFNyI8kcC3lWbTT17ARAivMAKCNgfkyh7qlP5u9AF8ZaojX0WfmDQCgoUc5
-NIpIvMs2pX2Pwwk4IVn5WtI=
-=fIEL
+iD8DBQFNyI9TcC3lWbTT17ARAiazAKCwBtiY3kI8n2VHTBfIyq8yMujczwCgqaXO
+qIO0BoK0g8BXHzKM0Kk6cxg=
+=IWq5
 -----END PGP SIGNATURE-----
 
---==_Exmh_1304989476_5294P--
+--==_Exmh_1304989523_5294P--
 
