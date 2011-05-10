@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab1EJPiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:38:52 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.186]:10169
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756624Ab1EJPiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:38:50 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LKZKSK-02-AH5-02
-X-M-MSG: 
-Date: Tue, 10 May 2011 17:38:55 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] perf, core: Introduce attrs to count in either host
- or guest mode
-Message-ID: <20110510153855.GE30996@amd.com>
-References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
- <1305038132-5080-2-git-send-email-joerg.roedel@amd.com>
- <1305038746.2914.94.camel@laptop>
- <20110510145902.GA30996@amd.com>
- <1305040709.2914.99.camel@laptop>
+	id S1756517Ab1EJPm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:42:26 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37680 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489Ab1EJPmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 11:42:25 -0400
+Date: Tue, 10 May 2011 08:41:11 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.39-rc6-mmotm0506 and -next - __kfree_rcu breaks
+ third-party kernel code
+Message-ID: <20110510154111.GJ2258@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <7961.1304953500@localhost>
+ <20110509091757.580f3f6c.randy.dunlap@oracle.com>
+ <14010.1304960192@localhost>
+ <4DC820F6.80809@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305040709.2914.99.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <4DC820F6.80809@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 11:18:29AM -0400, Peter Zijlstra wrote:
-> On Tue, 2011-05-10 at 16:59 +0200, Roedel, Joerg wrote:
-> > On Tue, May 10, 2011 at 10:45:46AM -0400, Peter Zijlstra wrote:
-> > > On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
-> > > > +       /* Can't exclude counting in guest and in host mode */
-> > > > +       if (attr.exclude_host && attr.exclude_guest)
-> > > > +               return -EINVAL;
-> > > 
-> > > Why not?
+On Mon, May 09, 2011 at 10:14:30AM -0700, Randy Dunlap wrote:
+> On 05/09/11 09:56, Valdis.Kletnieks@vt.edu wrote:
+> > On Mon, 09 May 2011 09:17:57 PDT, Randy Dunlap said:
 > > 
-> > By definition the counter won't count at all. The hardware just ignores
-> > the bits if they are both set. My rationale here was that it does not
-> > makes sense to setup a counter and exclude guest and host mode.
+> >> I'd be happy to see a simple fix, but we don't generally support building
+> >> external modules without using the kernel kbuild infrastructure AFAIK --
+> >> and when I add a Makefile along with your kernconf.c file, it builds successfully
+> >> on mmotm-2011-0506-1639.
+> > 
+> > And in fact the module *does* use the Makefile stuff for the actual build - it
+> > was just the installer's "am I looking at a sane 2.6 tree" sanity check that
+> > bombed. So I go looking for what special sauce the Makefile adds to make it
+> > work, and....
+> > 
+> > OK, *now* I'm confused.  The magic sauce appears to be "-Os". Adding that makes
+> > the compile work.  And for no obvious reason - there's something in there that
+> > causes indigestion, but only if the optimizer isn't invoked.
 > 
-> I would expect it to 'work' but simply return 0. If that isn't what the
-> AMD hardware does you need to fix that in the AMD driver.
+> You can disable that by disabling:
+> CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+> 
+> > *WTF*?
+> 
+> I dunno either.
 
-By 'work' you mean that userspace can set it up but it doesn't count at
-all in this situation? This would certainly be consistent behavior but I
-can't imagine any use-case for it so that this code assumes that such a
-situation is most likely a bug.
-I can certainly change that if wanted, but I think its better to inform
-userspace if we get weird values?
+It appears that some compilers at some optimization levels aren't willing
+to trace build-time constants through local parameters...  Could you please
+try out the following patch?
 
-Regards,
+							Thanx, Paul
 
-	Joerg
+------------------------------------------------------------------------
 
+rcu: avoid build error for third-party modules
 
+The initial definition of __kfree_rcu() checked a static inline function
+argument to see if it was a compile-time constant.  Apparently not all
+compilers are willing to put up with this at all optimization levels.
+Add a nasty comment and remove the warning, relying on the fact that
+__kfree_rcu() is called only from kfree_rcu(), which always passes in
+a compile-time constant.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 99f9aa7..58b13f1 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -814,13 +814,14 @@ static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+ 	return offset < 4096;
+ }
+ 
++/*
++ * Intended to be called only from the kfree_rcu() macro.
++ */
+ static __always_inline
+ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+ {
+ 	typedef void (*rcu_callback)(struct rcu_head *);
+ 
+-	BUILD_BUG_ON(!__builtin_constant_p(offset));
+-
+ 	/* See the kfree_rcu() header comment. */
+ 	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
+ 
