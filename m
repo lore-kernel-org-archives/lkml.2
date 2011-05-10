@@ -1,145 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab1EJST1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 14:19:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52400 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1EJST0 (ORCPT
+	id S1751910Ab1EJSZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:25:15 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56575 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab1EJSZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 14:19:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=iWgyhLJfEvZkB1+XcZrnJsZq1IfnQ9ex42ydSjwYXFWZllyS1G8t5TzMeihPH7BzVv
-         o+nzo0jfQau1hxeVLwJOtMiV4PtpEp9m2XpFJ1zajDpoVKDlk1p+Z520enAz/RYBHHFM
-         7N6ztNN10J4RcRd4YpOwHiFO/i7C1Mvy+Bk3w=
+	Tue, 10 May 2011 14:25:13 -0400
+Message-ID: <4DC982FF.6030502@kernel.org>
+Date: Tue, 10 May 2011 11:25:03 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <201105092122.32284.thomas@fjellstrom.ca>
-References: <201105071815.03318.thomas@fjellstrom.ca>
-	<BANLkTi=iV7Mg_4Lx_+Z6c7C2qzMxsf0Aew@mail.gmail.com>
-	<201105091532.48331.thomas@fjellstrom.ca>
-	<201105092122.32284.thomas@fjellstrom.ca>
-Date: Tue, 10 May 2011 14:19:25 -0400
-Message-ID: <BANLkTindMJ9vYarD+cRoaHaFB60SrvX6hQ@mail.gmail.com>
-Subject: Re: long delay when using HMDI output on RS780
-From: Jerome Glisse <j.glisse@gmail.com>
-To: thomas@fjellstrom.ca
-Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, Greg KH <greg@kroah.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: [PATCH 1/2] pci, sysfs: move bus cpuaffinity to class dev_attrs
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DC98307.00AD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 11:22 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
-> On May 9, 2011, Thomas Fjellstrom wrote:
->> On May 9, 2011, Alex Deucher wrote:
->> > On Mon, May 9, 2011 at 5:04 PM, Thomas Fjellstrom <thomas@fjellstrom.ca>
->>
->> wrote:
->> > > On May 9, 2011, Thomas Fjellstrom wrote:
->> > >> On May 9, 2011, Jerome Glisse wrote:
->> > >> > On Mon, May 9, 2011 at 3:50 PM, Thomas Fjellstrom
->> > >> > <thomas@fjellstrom.ca>
->> > >>
->> > >> wrote:
->> > >> > > On May 7, 2011, Thomas Fjellstrom wrote:
->> > >> > >> I just switched to using HDMI with my media center, and its
->> > >> > >> causing a 30+ second delay in the screen turning on, as well as
->> > >> > >> a 7 second delay in the X startup when it tries to fetch the
->> > >> > >> EDID
->> > >> > >> information. Basically I don't get any picture at all once KMS
->> > >> > >> initializes until after X has been up a few seconds.
->> > >> > >>
->> > >> > >> The odd thing is the monitor seems to think something is going
->> > >> > >> on, since it doesn't go to sleep or display its "No Signal" OSD,
->> > >> > >> but just after X starts up, it pops up the "Input
->> > >> > >> detected/switched" OSD, and the picture appears.
->> > >> > >>
->> > >> > >> The bios, grub2 (in both text mode and graphics mode), and the
->> > >> > >> initial linux kernel messages all display fine and immediately.
->> > >> > >> Its only once KMS and radeondrmfb initializes that there's a
->> > >> > >> problem (at least till X starts up).
->> > >> > >>
->> > >> > >> I've just built with a vanila 2.6.38.4 kernel from the stable git
->> > >> > >> repo, and have played with some EDID settings, trying to disable
->> > >> > >> edid where I could thinking thats what caused the problem. That
->> > >> > >> doesn't seem to be the case though. I also tried playing with the
->> > >> > >> video= kernel option, trying to force disable VGA-1, and set a
->> > >> > >> static mode for HDMI-A-1, but if I try, it seems to force disable
->> > >> > >> HDMI-A-1 instead of force the mode.
->> > >> > >>
->> > >> > >> With a DVI-D cable instead, the problem goes away.
->> > >> > >>
->> > >> > >> Attached are the dmesg and xorg.log files for the latest boot
->> > >> > >> with HDMI (no video= parameter, and EDID enabled, most settings
->> > >> > >> at defaults).
->> > >> > >>
->> > >> > >> What exactly would cause this, and is there a way I can fix it?
->> > >> > >
->> > >> > > I've been playing around with it more, and got it to not blank the
->> > >> > > screen after KMS init, /once/. So far no luck repeating that
->> > >> > > success.
->> > >> > >
->> > >> > > I've tried late, and early kms init, and currently have the radeon
->> > >> > > module and firmware compiled into the kernel. Boot times at least
->> > >> > > are fairly decent, about 8-10s till X starts, but about 25-35s
->> > >> > > till anything shows up.
->> > >> > >
->> > >> > > Some strangeness, I have the kernel set to force the hdmi output
->> > >> > > to on, with a very specific mode, that X tends to like, the vga
->> > >> > > port is forced disabled. X is set to ignore EDID, and also set to
->> > >> > > that specific mode that it tends to auto set itself. Regardless X
->> > >> > > still wants to pause for 7s 2-3 times while processing EDID info.
->> > >> > >
->> > >> > > I've attached the new dmesg and xorg logs from the latest
->> > >> > > attempts.
->> > >> > >
->> > >> > > Note, this only happens with KMS, with HDMI. disabling KMS, or
->> > >> > > using DVI makes the problem go away. Even grub's own graphical
->> > >> > > mode works fine, its only once KMS inits that things go bad, and
->> > >> > > its not till after X is up for a few seconds that something
->> > >> > > displays on my screen.
->> > >> > >
->> > >> > > --
->> > >> > > Thomas Fjellstrom
->> > >> > > thomas@fjellstrom.ca
->> > >> >
->> > >> > Please boot with drm.debug=4 and attach dmesg it should be more
->> > >> > verbose. You might also want to try booting with radeon.audio=0
->> > >>
->> > >> Hi, attached both one with just drm.debug=4, and one with that and
->> > >> radeon.audio=0.
->> > >>
->> > >> Now, I'm guessing its a bug in my monitor claiming it can do HDMI
->> > >> audio? As setting radeon.audio=0 seems to have fixed the blanking
->> > >> problem. And the dmesg logs seem to claim that radeon thinks it can
->> > >> do HDMI audio.
->> >
->> > Most likely the driver is sending the wrong packets for hdmi audio.
->> > Until that gets fixed up, it's probably best to disable hdmi audio if
->> > it's not working for you.
->>
->> Ok. I'll do that for now, since I have no need for HDMI audio atm. My
->> receiver is only capable of Dolby Pro Logic input, so eh.
->>
->> Would be nice to fix the xorg pauses. And whatever is causing the massive
->> amounts of drm log spam (yes, I could disable drm.debug, but that would
->> just hide the issue, as whatever it is, will keep doing whatever it is
->> doing regardless).
->
-> Any hints on where to look to fix the stalls when the xorg radeon driver starts
-> up?
->
 
-Is the Xserver block or is it just that there is no picture ? ie when
-you see somethings on the screen is it directly the gnome login screen
-or what ever should come first ? or do you then see gnome loading ?
+Requested by Greg KH
 
-If it's just black and then you directly got gnome-shell it's likely
-that your tv doesn't live hdmi mode change and take time before
-showing the picture.
+need to apply after
+ [PATCH -v4 1/3] pci: add rescan to /sys/.../pci_bus/.../
 
-Cheers,
-Jerome
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/bus.c       |    6 ------
+ drivers/pci/pci-sysfs.c |   36 ++++++++++++++++++++++++++++++++++++
+ drivers/pci/pci.h       |    2 --
+ drivers/pci/probe.c     |   42 ------------------------------------------
+ drivers/pci/remove.c    |    2 --
+ 5 files changed, 36 insertions(+), 52 deletions(-)
+
+Index: linux-2.6/drivers/pci/pci-sysfs.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci-sysfs.c
++++ linux-2.6/drivers/pci/pci-sysfs.c
+@@ -108,6 +108,40 @@ static ssize_t local_cpulist_show(struct
+ 	return len;
+ }
+ 
++/*
++ * PCI Bus Class Devices
++ */
++static ssize_t pci_bus_show_cpuaffinity(struct device *dev,
++					int type,
++					struct device_attribute *attr,
++					char *buf)
++{
++	int ret;
++	const struct cpumask *cpumask;
++
++	cpumask = cpumask_of_pcibus(to_pci_bus(dev));
++	ret = type ?
++		cpulist_scnprintf(buf, PAGE_SIZE-2, cpumask) :
++		cpumask_scnprintf(buf, PAGE_SIZE-2, cpumask);
++	buf[ret++] = '\n';
++	buf[ret] = '\0';
++	return ret;
++}
++
++static inline ssize_t pci_bus_show_cpumaskaffinity(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	return pci_bus_show_cpuaffinity(dev, 0, attr, buf);
++}
++
++static inline ssize_t pci_bus_show_cpulistaffinity(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	return pci_bus_show_cpuaffinity(dev, 1, attr, buf);
++}
++
+ /* show resources */
+ static ssize_t
+ resource_show(struct device * dev, struct device_attribute *attr, char * buf)
+@@ -370,6 +404,8 @@ struct device_attribute pcibus_dev_attrs
+ #ifdef CONFIG_HOTPLUG
+ 	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_bus_rescan_store),
+ #endif
++	__ATTR(cpuaffinity, S_IRUGO, pci_bus_show_cpumaskaffinity, NULL),
++	__ATTR(cpulistaffinity, S_IRUGO, pci_bus_show_cpulistaffinity, NULL),
+ 	__ATTR_NULL,
+ };
+ 
+Index: linux-2.6/drivers/pci/bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/bus.c
++++ linux-2.6/drivers/pci/bus.c
+@@ -163,12 +163,6 @@ int pci_bus_add_child(struct pci_bus *bu
+ 
+ 	bus->is_added = 1;
+ 
+-	retval = device_create_file(&bus->dev, &dev_attr_cpuaffinity);
+-	if (retval)
+-		return retval;
+-
+-	retval = device_create_file(&bus->dev, &dev_attr_cpulistaffinity);
+-
+ 	/* Create legacy_io and legacy_mem files for this bus */
+ 	pci_create_legacy_files(bus);
+ 
+Index: linux-2.6/drivers/pci/pci.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.h
++++ linux-2.6/drivers/pci/pci.h
+@@ -157,8 +157,6 @@ static inline int pci_no_d1d2(struct pci
+ }
+ extern struct device_attribute pci_dev_attrs[];
+ extern struct device_attribute pcibus_dev_attrs[];
+-extern struct device_attribute dev_attr_cpuaffinity;
+-extern struct device_attribute dev_attr_cpulistaffinity;
+ #ifdef CONFIG_HOTPLUG
+ extern struct bus_attribute pci_bus_attrs[];
+ #else
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -43,43 +43,6 @@ int no_pci_devices(void)
+ EXPORT_SYMBOL(no_pci_devices);
+ 
+ /*
+- * PCI Bus Class Devices
+- */
+-static ssize_t pci_bus_show_cpuaffinity(struct device *dev,
+-					int type,
+-					struct device_attribute *attr,
+-					char *buf)
+-{
+-	int ret;
+-	const struct cpumask *cpumask;
+-
+-	cpumask = cpumask_of_pcibus(to_pci_bus(dev));
+-	ret = type?
+-		cpulist_scnprintf(buf, PAGE_SIZE-2, cpumask) :
+-		cpumask_scnprintf(buf, PAGE_SIZE-2, cpumask);
+-	buf[ret++] = '\n';
+-	buf[ret] = '\0';
+-	return ret;
+-}
+-
+-static ssize_t inline pci_bus_show_cpumaskaffinity(struct device *dev,
+-					struct device_attribute *attr,
+-					char *buf)
+-{
+-	return pci_bus_show_cpuaffinity(dev, 0, attr, buf);
+-}
+-
+-static ssize_t inline pci_bus_show_cpulistaffinity(struct device *dev,
+-					struct device_attribute *attr,
+-					char *buf)
+-{
+-	return pci_bus_show_cpuaffinity(dev, 1, attr, buf);
+-}
+-
+-DEVICE_ATTR(cpuaffinity,     S_IRUGO, pci_bus_show_cpumaskaffinity, NULL);
+-DEVICE_ATTR(cpulistaffinity, S_IRUGO, pci_bus_show_cpulistaffinity, NULL);
+-
+-/*
+  * PCI Bus Class
+  */
+ static void release_pcibus_dev(struct device *dev)
+@@ -1469,9 +1432,6 @@ struct pci_bus * pci_create_bus(struct d
+ 	error = device_register(&b->dev);
+ 	if (error)
+ 		goto class_dev_reg_err;
+-	error = device_create_file(&b->dev, &dev_attr_cpuaffinity);
+-	if (error)
+-		goto dev_create_file_err;
+ 
+ 	/* Create legacy_io and legacy_mem files for this bus */
+ 	pci_create_legacy_files(b);
+@@ -1482,8 +1442,6 @@ struct pci_bus * pci_create_bus(struct d
+ 
+ 	return b;
+ 
+-dev_create_file_err:
+-	device_unregister(&b->dev);
+ class_dev_reg_err:
+ 	device_unregister(dev);
+ dev_reg_err:
+Index: linux-2.6/drivers/pci/remove.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/remove.c
++++ linux-2.6/drivers/pci/remove.c
+@@ -73,8 +73,6 @@ void pci_remove_bus(struct pci_bus *pci_
+ 		return;
+ 
+ 	pci_remove_legacy_files(pci_bus);
+-	device_remove_file(&pci_bus->dev, &dev_attr_cpuaffinity);
+-	device_remove_file(&pci_bus->dev, &dev_attr_cpulistaffinity);
+ 	device_unregister(&pci_bus->dev);
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
