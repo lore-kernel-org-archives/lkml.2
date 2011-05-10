@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874Ab1EJQAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 12:00:16 -0400
-Received: from sh.osrg.net ([192.16.179.4]:40119 "EHLO sh.osrg.net"
+	id S932897Ab1EJQCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 12:02:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13450 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932855Ab1EJQAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 12:00:15 -0400
-Date: Wed, 11 May 2011 00:59:38 +0900 (JST)
-Message-Id: <20110511.005938.137710056.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 fix for 2.6.39
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S932834Ab1EJQCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 12:02:02 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v4 0/3] Store and load PCI device saved state across function
+	resets
+To: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
+Cc: alex.williamson@redhat.com, kvm@vger.kernel.org, avi@redhat.com,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 10 May 2011 10:01:58 -0600
+Message-ID: <20110510155642.3490.61935.stgit@s20.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 11 May 2011 00:59:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+v3 -> v4:
+  Renamed struct pci_cap_saved -> struct pci_cap_saved_data and
+  the element name within struct pci_cap_saved_state to cap.
 
-please pull from:
+Jesse, I hope this helps provide the clarification you were looking
+for.  Thanks for the comments.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+v2 -> v3:
+  Saved structure has variable contents.
 
-to grab one regression fix.  This corrects an infinite loop bug that
-happened in an abnormal condition.
+v1 -> v2:
+  Make the pointer passed around less opaque for type safety.
 
-Thanks,
+Bug https://bugs.launchpad.net/qemu/+bug/754591 is caused because
+the KVM module attempts to do a pci_save_state() before assigning
+the device to a VM, expecting that the saved state will remain
+valid until we release the device.  This is in conflict with our
+need to reset devices using PCI sysfs during a VM reset to
+quiesce the device.  Any calls to pci_reset_function() will
+overwrite the device saved stated prior to reset, and reload and
+invalidate the state after.  KVM then ends up trying to restore
+the state, but it's already invalid, so the device ends up with
+reset values.
 
-Ryusuke Konishi
---
-The following changes since commit 693d92a1bbc9e42681c42ed190bd42b636ca876f:
+This series adds a mechanism to pull the saved state off the
+struct pci_dev and reload it later.  Thanks,
 
-  Linux 2.6.39-rc7 (2011-05-09 19:33:54 -0700)
+Alex
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git fixes
+---
 
-Ryusuke Konishi (1):
-      nilfs2: fix infinite loop in nilfs_palloc_freev function
+Alex Williamson (3):
+      KVM: Use pci_store/load_saved_state() around VM device usage
+      PCI: Add interfaces to store and load the device saved state
+      PCI: Track the size of each saved capability data area
 
- fs/nilfs2/alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nilfs2/alloc.c b/fs/nilfs2/alloc.c
-index 0a0a66d..f768448 100644
---- a/fs/nilfs2/alloc.c
-+++ b/fs/nilfs2/alloc.c
-@@ -646,7 +646,7 @@ int nilfs_palloc_freev(struct inode *inode, __u64 *entry_nrs, size_t nitems)
- 	unsigned long group, group_offset;
- 	int i, j, n, ret;
- 
--	for (i = 0; i < nitems; i += n) {
-+	for (i = 0; i < nitems; i = j) {
- 		group = nilfs_palloc_group(inode, entry_nrs[i], &group_offset);
- 		ret = nilfs_palloc_get_desc_block(inode, group, 0, &desc_bh);
- 		if (ret < 0)
+ drivers/pci/pci.c        |  110 ++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/kvm_host.h |    1 
+ include/linux/pci.h      |   15 +++++-
+ virt/kvm/assigned-dev.c  |   18 ++++++--
+ 4 files changed, 132 insertions(+), 12 deletions(-)
