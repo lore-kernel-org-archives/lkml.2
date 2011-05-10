@@ -1,112 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab1EJBte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 21:49:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43650 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab1EJBtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 21:49:32 -0400
-Date: Tue, 10 May 2011 11:49:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Somnath Kotur <somnath.kotur@emulex.com>,
-        Sathya Perla <sathya.perla@emulex.com>
-Subject: linux-next: manual merge of the net tree with the net-current tree
-Message-Id: <20110510114917.11f8738f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752558Ab1EJB72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 21:59:28 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:38884 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab1EJB70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 21:59:26 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+Date: Tue, 10 May 2011 10:59:15 +0900
+In-Reply-To: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+	(Darrick J. Wong's message of "Mon, 09 May 2011 16:03:18 -0700")
+Message-ID: <87tyd31fkc.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+"Darrick J. Wong" <djwong@us.ibm.com> writes:
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/net/benet/be_main.c between commit 6709d9521df0 ("be2net: Fixed
-bugs related to PVID") from the net-current tree and commit 15d721847f56
-("be2net: parse vid and vtm fields of rx-compl only if vlanf bit is set")
-from the net tree.
+> To assess the performance impact of stable page writes, I moved to a disk that
+> doesn't have DIF support so that I could measure just the impact of waiting for
+> writeback.  I first ran wac with 64 threads madly scribbling on a 64k file and
+> saw about a 12 percent performance decrease.  I then reran the wac program with
+> 64 threads and a 64MB file and saw about the same performance numbers.  As I
+> suspected, the patchset only seems to impact workloads that rewrite the same
+> memory page frequently.
+>
+> I am still chasing down what exactly is broken in ext3.  data=writeback mode
+> passes with no failures.  data=ordered, however, does not pass; my current
+> suspicion is that jbd is calling submit_bh on data buffers but doesn't call
+> page_mkclean to kick the userspace programs off the page before writing it.
+>
+> Per various comments regarding v3 of this patchset, I've integrated his
+> suggestions, reworked the patch descriptions to make it clearer which ones
+> touch all the filesystems and which ones are to fix remaining holes in specific
+> filesystems, and expanded the scope of filesystems that got fixed.
+>
+> As always, questions and comments are welcome; and thank you to all the
+> previous reviewers of this patchset.  I am also soliciting people's opinions on
+> whether or not these patches could go upstream for .40.
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
+I'd like to know those patches are on what state. Waiting in writeback
+page makes slower, like you mentioned it (I guess it would more
+noticeable if device was slower that like FAT uses). And I think
+currently it doesn't help anything others for blk-integrity stuff
+(without other technic, it doesn't help FS consistency)?
+
+So, why is this locking stuff enabled always? I think it would be better
+to enable only if blk-integrity stuff was enabled.
+
+If it was more sophisticate but more complex stuff (e.g. use
+copy-on-write technic for it), I would agree always enable though.
+
+Thanks.
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/benet/be_main.c
-index 9187fb4,7b19931..0000000
---- a/drivers/net/benet/be_main.c
-+++ b/drivers/net/benet/be_main.c
-@@@ -1103,9 -1102,14 +1104,14 @@@ static void be_parse_rx_compl_v1(struc
-  		AMAP_GET_BITS(struct amap_eth_rx_compl_v1, numfrags, compl);
-  	rxcp->pkt_type =
-  		AMAP_GET_BITS(struct amap_eth_rx_compl_v1, cast_enc, compl);
-- 	rxcp->vtm = AMAP_GET_BITS(struct amap_eth_rx_compl_v1, vtm, compl);
-- 	rxcp->vlan_tag = AMAP_GET_BITS(struct amap_eth_rx_compl_v1, vlan_tag,
-- 					compl);
-+ 	rxcp->rss_hash =
-+ 		AMAP_GET_BITS(struct amap_eth_rx_compl_v1, rsshash, rxcp);
-+ 	if (rxcp->vlanf) {
-+ 		rxcp->vtm = AMAP_GET_BITS(struct amap_eth_rx_compl_v1, vtm,
-+ 				compl);
- -		rxcp->vid = AMAP_GET_BITS(struct amap_eth_rx_compl_v1, vlan_tag,
-++		rxcp->vlan_tag = AMAP_GET_BITS(struct amap_eth_rx_compl_v1, vlan_tag,
-+ 				compl);
-+ 	}
-  }
-  
-  static void be_parse_rx_compl_v0(struct be_adapter *adapter,
-@@@ -1130,9 -1134,14 +1136,14 @@@
-  		AMAP_GET_BITS(struct amap_eth_rx_compl_v0, numfrags, compl);
-  	rxcp->pkt_type =
-  		AMAP_GET_BITS(struct amap_eth_rx_compl_v0, cast_enc, compl);
-- 	rxcp->vtm = AMAP_GET_BITS(struct amap_eth_rx_compl_v0, vtm, compl);
-- 	rxcp->vlan_tag = AMAP_GET_BITS(struct amap_eth_rx_compl_v0, vlan_tag,
-- 					compl);
-+ 	rxcp->rss_hash =
-+ 		AMAP_GET_BITS(struct amap_eth_rx_compl_v0, rsshash, rxcp);
-+ 	if (rxcp->vlanf) {
-+ 		rxcp->vtm = AMAP_GET_BITS(struct amap_eth_rx_compl_v0, vtm,
-+ 				compl);
- -		rxcp->vid = AMAP_GET_BITS(struct amap_eth_rx_compl_v0, vlan_tag,
-++		rxcp->vlan_tag = AMAP_GET_BITS(struct amap_eth_rx_compl_v0, vlan_tag,
-+ 				compl);
-+ 	}
-  }
-  
-  static struct be_rx_compl_info *be_rx_compl_get(struct be_rx_obj *rxo)
-@@@ -1154,17 -1163,19 +1165,20 @@@
-  	else
-  		be_parse_rx_compl_v0(adapter, compl, rxcp);
-  
-- 	/* vlanf could be wrongly set in some cards. ignore if vtm is not set */
-- 	if ((adapter->function_mode & 0x400) && !rxcp->vtm)
-- 		rxcp->vlanf = 0;
-+ 	if (rxcp->vlanf) {
-+ 		/* vlanf could be wrongly set in some cards.
-+ 		 * ignore if vtm is not set */
-+ 		if ((adapter->function_mode & 0x400) && !rxcp->vtm)
-+ 			rxcp->vlanf = 0;
-  
-- 	if (!lancer_chip(adapter))
-- 		rxcp->vlan_tag = swab16(rxcp->vlan_tag);
-+ 		if (!lancer_chip(adapter))
- -			rxcp->vid = swab16(rxcp->vid);
-++			rxcp->vlan_tag = swab16(rxcp->vlan_tag);
-  
-- 	if (((adapter->pvid & VLAN_VID_MASK) ==
-- 		(rxcp->vlan_tag & VLAN_VID_MASK)) &&
-- 		!adapter->vlan_tag[rxcp->vlan_tag])
-- 		rxcp->vlanf = 0;
- -		if ((adapter->pvid == rxcp->vid) &&
- -			!adapter->vlan_tag[rxcp->vid])
-++		if (((adapter->pvid & VLAN_VID_MASK) ==
-++			(rxcp->vlan_tag & VLAN_VID_MASK)) &&
-++			!adapter->vlan_tag[rxcp->vlan_tag])
-+ 			rxcp->vlanf = 0;
-+ 	}
-  
-  	/* As the compl has been parsed, reset it; we wont touch it again */
-  	compl->dw[offsetof(struct amap_eth_rx_compl_v1, valid) / 32] = 0;
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
