@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab1EJD7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 23:59:24 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47416
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755626Ab1EJD7X (ORCPT
+	id S1750943Ab1EJENA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 00:13:00 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39292 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750703Ab1EJEM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 23:59:23 -0400
-Date: Mon, 09 May 2011 20:58:51 -0700 (PDT)
-Message-Id: <20110509.205851.189693332.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this
- time)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1304999271.3050.41.camel@edumazet-laptop>
-References: <6954.1304989523@localhost>
-	<1304994188.3050.17.camel@edumazet-laptop>
-	<1304999271.3050.41.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 10 May 2011 00:12:58 -0400
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Fenghua Yu <fenghua.yu@intel.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-ia64@vger.kernel.org
+In-Reply-To: <BANLkTikUyUpa9-ZZBquHW4xSCEj8W8TgnA@mail.gmail.com>
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz>
+	 <alpine.LSU.2.00.1105081303540.16151@sister.anvils>
+	 <alpine.DEB.2.00.1105091307570.32299@artax.karlin.mff.cuni.cz>
+	 <BANLkTinCUQSjjif3op3H_9HDm5Eu-o+Luw@mail.gmail.com>
+	 <BANLkTim3kKJkisZK1mOgKhsEEs7FzZmyXA@mail.gmail.com>
+	 <1304979549.4865.56.camel@mulgrave.site>
+	 <BANLkTim7ATRyJ2NvoCj4Sv=7CLizKMd_WA@mail.gmail.com>
+	 <BANLkTi=DCKmN_BafFckKHOMfjWpVLQPDFA@mail.gmail.com>
+	 <BANLkTikkA5H2D23u23FV0cTcL2bAT8BKWQ@mail.gmail.com>
+	 <BANLkTikLJPCc5ffobAb5uhdryRqjGhpVAQ@mail.gmail.com>
+	 <BANLkTiksgtgviJGmq925OtLNU4QynVLVtg@mail.gmail.com>
+	 <BANLkTikUyUpa9-ZZBquHW4xSCEj8W8TgnA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 May 2011 23:12:53 -0500
+Message-ID: <1305000773.4865.62.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 10 May 2011 05:47:51 +0200
+On Mon, 2011-05-09 at 16:25 -0700, Linus Torvalds wrote:
+> On Mon, May 9, 2011 at 4:17 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Ok, I'll consider it tested. I'll commit it with Mikulas as author,
+> > but note that I edited it so he won't get the blame if there's some
+> > problem.
+> 
+> Oh, and I marked it for stable too, although I don't know if any
+> distribution really cares about parisc or ia64. And I'm not sure that
+> ia64 even saw the lvm2 failure case - I'd have expected to hear about
+> it if it actually happens there.
 
-> [PATCH net-next-2.6] net: fix two lockdep splats
-> 
-> Commit e67f88dd12f6 (net: dont hold rtnl mutex during netlink dump
-> callbacks) switched rtnl protection to RCU, but we forgot to adjust two
-> rcu_dereference() lockdep annotations :
-> 
-> inet_get_link_af_size() or inet_fill_link_af() might be called with
-> rcu_read_lock or rtnl held, so use rcu_dereference_rtnl()
-> instead of rtnl_dereference()
-> 
-> Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Well, it's a done deal, but here's the proof on parisc too:
 
-Applied, thanks everyone.
+Before:
+
+c0266000-c0289000 rwxp 00000000 00:00 0                                  [stack]
+c0266000-c0a66000 rwxp 00000000 00:00 0                                  [stack]
+
+After:
+
+bffee000-c0010000 rwxp 00000000 00:00 0                                  [stack]
+bffee000-c0010000 rwxp 00000000 00:00 0                                  [stack]
+
+James
+
+
