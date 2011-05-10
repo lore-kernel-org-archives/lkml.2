@@ -1,174 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab1EJOay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 10:30:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2248 "EHLO mx1.redhat.com"
+	id S1756503Ab1EJOnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 10:43:25 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:36367 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752379Ab1EJOax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 10:30:53 -0400
-Date: Tue, 10 May 2011 10:30:45 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] jump_label: check entries limit in __jump_label_update
-Message-ID: <20110510143045.GA2490@redhat.com>
-References: <1304523023-7501-1-git-send-email-jolsa@redhat.com>
- <20110509193248.GC2524@redhat.com>
- <20110510104346.GC1899@jolsa.brq.redhat.com>
+	id S1754062Ab1EJOnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 10:43:24 -0400
+X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 10:43:23 EDT
+Message-ID: <4DC94CEB.2000404@interlog.com>
+Date: Tue, 10 May 2011 10:34:19 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110510104346.GC1899@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Matt Taggart <taggart@debian.org>,
+        "Martin K. Petersen" <martin.petersen@ORACLE.COM>
+Subject: [ANNOUNCE] lsscsi-0.25 released
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 12:43:46PM +0200, Jiri Olsa wrote:
-> On Mon, May 09, 2011 at 03:32:48PM -0400, Jason Baron wrote:
-> > On Wed, May 04, 2011 at 05:30:23PM +0200, Jiri Olsa wrote:
-> > > When iterating the jump_label entries array (core or modules),
-> > > the __jump_label_update function peeks over the last entry.
-> > > 
-> > > The reason is that the end of the for loop depends on the key
-> > > value of the processed entry. Thus when going through the
-> > > last array entry, we will touch the memory behind the array
-> > > limit.
-> > > 
-> > > This bug probably will never be triggered, since most likely the
-> > > memory behind the jump_label entries will be accesable and the
-> > > entry->key will be different than the expected value.
-> > > 
-> > > 
-> > > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > > ---
-> > >  kernel/jump_label.c |   17 ++++++++++++-----
-> > >  1 files changed, 12 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> > > index 74d1c09..b2ee97a 100644
-> > > --- a/kernel/jump_label.c
-> > > +++ b/kernel/jump_label.c
-> > > @@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
-> > >  }
-> > >  
-> > >  static void __jump_label_update(struct jump_label_key *key,
-> > > -		struct jump_entry *entry, int enable)
-> > > +				struct jump_entry *entry,
-> > > +				struct jump_entry *stop, int enable)
-> > >  {
-> > > -	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
-> > > +	for (; (entry < stop) &&
-> > > +	      (entry->key == (jump_label_t)(unsigned long)key);
-> > > +	      entry++) {
-> > >  		/*
-> > >  		 * entry->code set to 0 invalidates module init text sections
-> > >  		 * kernel_text_address() verifies we are not in core kernel
-> > > @@ -158,6 +161,7 @@ early_initcall(jump_label_init);
-> > >  struct jump_label_mod {
-> > >  	struct jump_label_mod *next;
-> > >  	struct jump_entry *entries;
-> > > +	struct jump_entry *entries_stop;
-> > >  	struct module *mod;
-> > >  };
-> > >  
-> > > @@ -181,7 +185,8 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
-> > >  	struct jump_label_mod *mod = key->next;
-> > >  
-> > >  	while (mod) {
-> > > -		__jump_label_update(key, mod->entries, enable);
-> > > +		__jump_label_update(key, mod->entries, mod->entries_stop,
-> > > +				    enable);
-> > >  		mod = mod->next;
-> > 
-> > hmmm. Instead of adding a new field to the 'struct jump_label_mod' data
-> > structure (and thus increasing its footprint), why not use:
-> > mod->jump_entries +  mod->num_jump_entries here?
-> 
-> yep, overlooked the struct module pointer inside jump_label_mod
-> attaching new patch
-> 
-> thanks,
-> jirka
->  
-> ---
-> When iterating the jump_label entries array (core or modules),
-> the __jump_label_update function peeks over the last entry.
-> 
-> The reason is that the end of the for loop depends on the key
-> value of the processed entry. Thus when going through the
-> last array entry, we will touch the memory behind the array
-> limit.
-> 
-> This bug probably will never be triggered, since most likely the
-> memory behind the jump_label entries will be accesable and the
-> entry->key will be different than the expected value.
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/jump_label.c |   18 +++++++++++++-----
->  1 files changed, 13 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index 74d1c09..fa27e75 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -105,9 +105,12 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
->  }
->  
->  static void __jump_label_update(struct jump_label_key *key,
-> -		struct jump_entry *entry, int enable)
-> +				struct jump_entry *entry,
-> +				struct jump_entry *stop, int enable)
->  {
-> -	for (; entry->key == (jump_label_t)(unsigned long)key; entry++) {
-> +	for (; (entry < stop) &&
-> +	      (entry->key == (jump_label_t)(unsigned long)key);
-> +	      entry++) {
->  		/*
->  		 * entry->code set to 0 invalidates module init text sections
->  		 * kernel_text_address() verifies we are not in core kernel
-> @@ -181,7 +184,11 @@ static void __jump_label_mod_update(struct jump_label_key *key, int enable)
->  	struct jump_label_mod *mod = key->next;
->  
->  	while (mod) {
-> -		__jump_label_update(key, mod->entries, enable);
-> +		struct module *m = mod->mod;
-> +
-> +		__jump_label_update(key, mod->entries,
-> +				    m->jump_entries + m->num_jump_entries,
-> +				    enable);
->  		mod = mod->next;
->  	}
->  }
-> @@ -245,7 +252,8 @@ static int jump_label_add_module(struct module *mod)
->  		key->next = jlm;
->  
->  		if (jump_label_enabled(key))
-> -			__jump_label_update(key, iter, JUMP_LABEL_ENABLE);
-> +			__jump_label_update(key, iter, iter_stop,
-> +					    JUMP_LABEL_ENABLE);
->  	}
->  
->  	return 0;
-> @@ -371,7 +379,7 @@ static void jump_label_update(struct jump_label_key *key, int enable)
->  
->  	/* if there are no users, entry can be NULL */
->  	if (entry)
-> -		__jump_label_update(key, entry, enable);
-> +		__jump_label_update(key, entry, __stop___jump_table, enable);
->  
->  #ifdef CONFIG_MODULES
->  	__jump_label_mod_update(key, enable);
-> -- 
-> 1.7.1
-> 
+lsscsi is a utility that uses sysfs in linux 2.6 series kernels
+to list information about SCSI devices and SCSI hosts. Both a
+compact format which is one line per device and a "classic"
+format (like the output of 'cat /proc/scsi/scsi') are supported.
 
-Looks good.
+Version 0.25 is available at:
+     http://sg.danny.cz/scsi/lsscsi.html
+More information can be found on that page including examples
+and a Download section for tarballs, rpm and deb packages.
 
-Acked-by: Jason Baron <jbaron@redhat.com>
+There have only been superficial changes to the beta release
+of 0.25 made in March 2011. The only adverse report was a
+problem when a kernel was configured with both
+CONFIG_SYSFS_DEPRECATED and CONFIG_SYSFS_DEPRECATED_V2.
 
-Thanks,
+The most commonly useful addition is the '--size' option:
+$ lsscsi -s
+[0:0:0:0]  disk  ATA    INTEL SSDSA2M080 2CV1  /dev/sda  80.0GB
+[6:0:0:0]  disk  Linux  scsi_debug       0004  /dev/sdb  4.29PB
 
--Jason
+
+ChangeLog:
+Version 0.25 2011/05/09 [svn: r92]
+   - add sas_port and fc_remote_ports transport information
+   - print enclosure_device entry
+   - add '--size' option to show size of disks
+   - add '--protmode' option to show protection information mode
+
+Version 0.24 2010/06/12 [svn: r83]
+...
+
+Doug Gilbert
