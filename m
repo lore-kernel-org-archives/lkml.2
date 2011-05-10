@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab1EJK5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 06:57:55 -0400
-Received: from arcss01.ait.ac.at ([62.218.164.126]:42204 "EHLO mail.ait.ac.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752679Ab1EJK5y convert rfc822-to-8bit (ORCPT
+	id S1754848Ab1EJKx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 06:53:27 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:57109 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab1EJKxZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 06:57:54 -0400
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 06:57:54 EDT
-From: Fiedler Roman <Roman.Fiedler@ait.ac.at>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 10 May 2011 12:52:45 +0200
-Subject: cryptoloop device write lockup on initrd
-Thread-Topic: cryptoloop device write lockup on initrd
-Thread-Index: AcwO/zV2NkGXRzI2QGG4gMQmwevQDQ==
-Message-ID: <9F69795E29C890408AC2DAF646C89BB3799E704A6B@MAILBOX.arc.local>
-Accept-Language: en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 May 2011 06:53:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mXkF2q0/Vv+l/X9C51drNBon/RPfsH5TQIdBCPcCsD6t57QMz92ZqTJwyBe7l5PBIj
+         0YuPiwsUf5/GZ8NHo2VgR5e1bo++60L6pnieIRamEvhgT+tDe8dghpC4SpXaDLBCJhg7
+         tHaaSt0uCBdk7uCKstNFHlRwwZEKGTx/rx+Z0=
 MIME-Version: 1.0
+In-Reply-To: <20110510073551.GH11595@elte.hu>
+References: <1304908814-23369-1-git-send-email-daniel.blueman@gmail.com>
+	<20110510073551.GH11595@elte.hu>
+Date: Tue, 10 May 2011 18:53:24 +0800
+Message-ID: <BANLkTik0GTwV0Z21+UO69JX0cqjxwqu7jw@mail.gmail.com>
+Subject: Re: [PATCH] ioapic: fix potential resume deadlock
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        H Peter Anvin <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello list,
+On 10 May 2011 15:35, Ingo Molnar <mingo@elte.hu> wrote:
+> * Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+>
+>> Fix a potential deadlock when resuming; here the calling function
+>> has disabled interrupts, so we cannot sleep.
+>>
+>> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+>>
+>> ---
+>>  arch/x86/kernel/apic/io_apic.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>> index 45fd33d..df63620 100644
+>> --- a/arch/x86/kernel/apic/io_apic.c
+>> +++ b/arch/x86/kernel/apic/io_apic.c
+>> @@ -621,14 +621,14 @@ struct IO_APIC_route_entry **alloc_ioapic_entries(void)
+>>       struct IO_APIC_route_entry **ioapic_entries;
+>>
+>>       ioapic_entries = kzalloc(sizeof(*ioapic_entries) * nr_ioapics,
+>> -                             GFP_KERNEL);
+>> +                             GFP_ATOMIC);
+>>       if (!ioapic_entries)
+>>               return 0;
+>>
+>>       for (apic = 0; apic < nr_ioapics; apic++) {
+>>               ioapic_entries[apic] =
+>>                       kzalloc(sizeof(struct IO_APIC_route_entry) *
+>> -                             nr_ioapic_registers[apic], GFP_KERNEL);
+>> +                             nr_ioapic_registers[apic], GFP_ATOMIC);
+>>               if (!ioapic_entries[apic])
+>>                       goto nomem;
+>>       }
+>
+> Hm, there must be some other bug here.
+>
+> ioapic entries should be allocated on system bootup and should never really be
+> deallocated.
+>
+> The bug might be in the idea to call to enable_IR_x2apic() on resume - why are
+> ioapic entries reallocated there? That call in default_setup_apic_routing() was
+> introduced some time ago in:
+>
+>  fa47f7e52874: x86, x2apic: Simplify apic init in SMP and UP builds
+>
+> and that it results in reallocation in the suspend patch is distinctly wrong.
+>
+> I suspect the reason why this has not triggered for others is the relative
+> rarity of affected systems?
+>
+> Suresh?
 
-The following sequence of commands causes in 30%-50% of execution attempts  a lockup of the mke2fs process on an udev-running custom initrd, mke2fs cannot be killed afterwards. This only occurs on the first attempt after loading the initrd. If commands succeeded once, failure rate is 0% in repeated attempts on same initrd, even after unload of all modules.
+For reference, this is the warning I get on resume with debugging enabled:
 
-# Get a second chance for debugging (works only if openvt included in initrd)
-openvt -c 2 /bin/bash
-echo x > /key
-modprobe cryptoloop
-losetup -e aes-cbc-essiv:sha256 -k 256 --pass-fd 0 /dev/loop0 /dev/sda2 < /key
-mke2fs -t ext4 /dev/loop0 
-
-Since debugging on initrd is problematic, information is sparse. Could someone please do a quick check, if issue is even worth debugging. Since there seem to be no other reports and the workaround to reboot setup environment until successful is OK for me. If worth debugging, I could perform additional tests or try to create a minimal initrd stripped of private parts for public testing.
-
-
-cat /proc/version
-Linux version 2.6.38-8-generic (buildd@vernadsky) (gcc version 4.5.2 (Ubuntu/Linaro 4.5.2-8ubuntu3) ) #42-Ubuntu SMP Mon Apr 11 03:31:50 UTC 2011
-(This is standard ubuntu natty stock kernel.)
-
-ps aux | grep loop
-0          293  0.0  0.0      0     0 ?        S<   09:49   0:00 [loop0]
-0          307  0.1  0.4   2480  1220 ?        D    09:49   0:01 mke2fs -t ext4 /dev/loop0
-0          747  0.0  0.1   1948   392 ?        S    10:06   0:00 grep loop
-
-cat /proc/307/stack     (mke2fs process)
-[<c10eaa64>] balance_dirty_pages.clone.9+0x1e4/0x390
-[<c10eac71>] balance_dirty_pages_ratelimited_nr+0x61/0x70
-[<c10e190a>] generic_perform_write+0x14a/0x1b0
-[<c10e19c4>] generic_file_buffered_write+0x54/0x90
-[<c10e3910>] __generic_file_aio_write+0x220/0x4e0
-[<c115389c>] blkdev_aio_write+0x3c/0xa0
-[<c11269e4>] do_sync_write+0xa4/0xe0
-[<c11271a2>] vfs_write+0xa2/0x170
-[<c1127482>] sys_write+0x42/0x70
-[<c1509bf4>] syscall_call+0x7/0xb
-[<ffffffff>] 0xffffffff
-
-cat /proc/293/stack (loop kernel thread)
-[<c1341280>] loop_thread+0x100/0x200
-[<c106ce04>] kthread+0x74/0x80
-[<c100367e>] kernel_thread_helper+0x6/0x10
-[<ffffffff>] 0xffffffff
-
-cat /proc/modules
-cryptd 19801 0 - Live 0xd083f000
-aes_i586 16956 1 - Live 0xd0838000
-aes_generic 38023 1 aes_i586, Live 0xd082c000
-cryptoloop 12570 1 - Live 0xd07fc000
-ahci 21591 1 - Live 0xd080d000
-libahci 25548 1 ahci, Live 0xd0818000
-pcnet32 36760 0 - Live 0xd0802000
-
-(Strange - no sha256 module needed for essiv? Module also missing when mkfs works)
-
-End of dmesg log:
-[    3.152609] sd 2:0:0:0: [sda] 8388608 512-byte logical blocks: (4.29 GB/4.00 GiB)
-[    3.154885] sd 2:0:0:0: [sda] Write Protect is off
-[    3.159671] sd 2:0:0:0: [sda] Mode Sense: 00 3a 00 00
-[    3.160079] sd 2:0:0:0: Attached scsi generic sg1 type 0
-[    3.161818] sd 2:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-[    3.166600]  sda: sda1 sda2 sda3
-[    3.168131] sd 2:0:0:0: [sda] Attached SCSI disk
-[    4.598755] pcnet32 0000:00:03.0: eth0: link up
-[   15.042681] eth0: no IPv6 routers present
-[   70.532863]  sda: sda1 sda2 sda3
-[   70.545142]  sda: sda1 sda2 sda3
-[   73.673463] Intel AES-NI instructions are not detected.
-
-To consider:
-* If a dd if=/dev/zero count=1024 of=/dev/loop0 is put immediately in from of mkfs, dd  succeeds but mkfs fail. With 3 mkfs fails, no dd fail was observed before.
-* if a "dd if=/dev/zero of=/dev/loop0" is used, dd itself fails, syscall stack same as with mkfs (2 test, 1 fail). When dd OK, than mkfs also
-* When dd is working as usually, stack of dd can be same as in problematic dd/mkfs case, but stack changes to sync_buffer/cond_resched sometimes.
-* Could it be, that loading of crypt components is racy?
-
-Kind regards,
-Roman Fiedler
+BUG: sleeping function called from invalid context at mm/slub.c:824
+in_atomic(): 0, irqs_disabled(): 1, pid: 1842, name: pm-suspend
+INFO: lockdep is turned off.
+irq event stamp: 0
+hardirqs last  enabled at (0): [<          (null)>]           (null)
+hardirqs last disabled at (0): [<ffffffff8105eca2>] copy_process+
+0x4e2/0x1040
+softirqs last  enabled at (0): [<ffffffff8105eca2>] copy_process+0x4e2/0x1040
+softirqs last disabled at (0): [<          (null)>]           (null)
+Pid: 1842, comm: pm-suspend Tainted: G   M        2.6.39-rc6-330cd+ #3
+Call Trace:
+ [<ffffffff81098290>] ? print_irqtrace_events+0xd0/0xe0
+ [<ffffffff8104a11d>] __might_sleep+0xed/0x120
+ [<ffffffff8112f7c3>] __kmalloc+0xd3/0x140
+ [<ffffffff81025566>] alloc_ioapic_entries+0x66/0xb0
+ [<ffffffff81022bc5>] lapic_resume+0x265/0x350
+ [<ffffffff814059d5>] syscore_resume+0x35/0xd0
+ [<ffffffff810a8ace>] suspend_enter+0xde/0x120
+ [<ffffffff810a8b7a>] suspend_devices_and_enter+0x6a/0xb0
+ [<ffffffff810a8c91>] enter_state+0xd1/0x100
+ [<ffffffff810a81c6>] state_store+0xc6/0x100
+ [<ffffffff81329c37>] kobj_attr_store+0x17/0x20
+ [<ffffffff811a78d1>] sysfs_write_file+0xe1/0x160
+ [<ffffffff811400c6>] vfs_write+0xc6/0x180
+ [<ffffffff811403dc>] sys_write+0x4c/0x90
+ [<ffffffff8170927b>] system_call_fastpath+0x16/0x1b
+-- 
+Daniel J Blueman
