@@ -1,349 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1EJNYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 09:24:53 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:45127 "EHLO relay.sgi.com"
+	id S1755679Ab1EJN37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 09:29:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33491 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab1EJNYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 09:24:52 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] x86: UV BAU fix for non-consecutive nasids
-Cc: mingo@elte.hu
-Message-Id: <E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Tue, 10 May 2011 08:26:43 -0500
+	id S1753094Ab1EJN35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 09:29:57 -0400
+Date: Tue, 10 May 2011 15:29:53 +0200
+From: Jan Kara <jack@suse.cz>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jan Kara <jack@suse.cz>, "Darrick J. Wong" <djwong@us.ibm.com>,
+        Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110510132953.GE4402@quack.suse.cz>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <87tyd31fkc.fsf@devron.myhome.or.jp>
+ <20110510123819.GB4402@quack.suse.cz>
+ <87hb924s2x.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hb924s2x.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 10-05-11 22:12:54, OGAWA Hirofumi wrote:
+> Jan Kara <jack@suse.cz> writes:
+> 
+> >> I'd like to know those patches are on what state. Waiting in writeback
+> >> page makes slower, like you mentioned it (I guess it would more
+> >> noticeable if device was slower that like FAT uses). And I think
+> >> currently it doesn't help anything others for blk-integrity stuff
+> >> (without other technic, it doesn't help FS consistency)?
+> >> 
+> >> So, why is this locking stuff enabled always? I think it would be better
+> >> to enable only if blk-integrity stuff was enabled.
+> >> 
+> >> If it was more sophisticate but more complex stuff (e.g. use
+> >> copy-on-write technic for it), I would agree always enable though.
+> >   Well, also software RAID generally needs this feature (so that parity
+> > information / mirror can be properly kept in sync). Not that I'd advocate
+> > that this feature must be always enabled, it's just that there are also
+> > other users besides blk-integrity.
+> 
+> I see. So many block layer stuff sounds like broken on corner case? If
+> so, I more feel this approach should be temporary workaround, and should
+> use another less-blocking approach.
+  Not many but some... The alternative to less blocking approach is to do
+copy-out before a page is submitted for IO (or various middle ground
+alternatives of doing sometimes copyout, sometimes blocking...). That costs
+some performance as well. We talked about it at LSF and the approach
+Darrick is implementing was considered the least intrusive. There's really
+no way to fix these corner cases and keep performance. But indeed a plain
+SATA drive or a USB stick don't need stable pages so they wouldn't need to
+pay the cost. So it would be beneficial if the underlying block device
+propagated whether it needs stable writes or not and filesystem could turn
+on stable pages accordingly.
 
-
-From: Cliff Wickman <cpw@sgi.com>
-
-(patch v2 has improved changelog and correction of a broken line)
-
-This is a fix for the SGI Altix-UV Broadcast Assist Unit code, which is
-used for TLB flushing.
-
-Certain hardware configurations (that customers are ordering) cause nasids
-(numa address space id's) to be non-consecutive. Specifically, once you have
-more than 4 blades in a IRU (Individual Rack Unit - or 1/2 rack) but less
-than the maximum of 16, the nasid numbering becomes non-consecutive. 
-This currently results in a 'catastrophic error' (CATERR) detected by the
-firmware during OS boot.  The BAU is generating an 'INTD' request that is
-targeting a non-existent nasid value.
-Such configurations may also occur when a blade is configured off
-because of hardware errors. (There is one UV hub per blade.)
-
-This patch is required to support such configurations.
-
-The problem with the tlb_uv.c code is that is using the consecutive hub
-numbers as indices to the BAU distribution bit map. These are simply the
-ordinal position of the hub or blade within its partition.  It should be using
-physical node numbers (pnodes), which correspond to the physical nasid values.
-Use of the hub number only works as long as the nasids in the partition are
-consecutive and increase with a stride of 1.
-
-This patch changes the index to be the pnode number, thus allowing nasids
-to be non-consecutive.
-It also provides a table in local memory for each cpu to translate target cpu
-number to target pnode and nasid.
-And it improves naming to properly reflect 'node' and 'uvhub' versus 'nasid'.
-
-Diffed against 2.6.39-rc6
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
- arch/x86/include/asm/uv/uv_bau.h |   17 +++++--
- arch/x86/platform/uv/tlb_uv.c    |   92 ++++++++++++++++++++++++++-------------
- 2 files changed, 76 insertions(+), 33 deletions(-)
-
-Index: linux/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linux/arch/x86/include/asm/uv/uv_bau.h
-@@ -94,6 +94,8 @@
- /* after this # consecutive successes, bump up the throttle if it was lowered */
- #define COMPLETE_THRESHOLD 5
- 
-+#define UV_LB_SUBNODEID 0x10
-+
- /*
-  * number of entries in the destination side payload queue
-  */
-@@ -124,7 +126,7 @@
-  * The distribution specification (32 bytes) is interpreted as a 256-bit
-  * distribution vector. Adjacent bits correspond to consecutive even numbered
-  * nodeIDs. The result of adding the index of a given bit to the 15-bit
-- * 'base_dest_nodeid' field of the header corresponds to the
-+ * 'base_dest_nasid' field of the header corresponds to the
-  * destination nodeID associated with that specified bit.
-  */
- struct bau_target_uvhubmask {
-@@ -176,7 +178,7 @@ struct bau_msg_payload {
- struct bau_msg_header {
- 	unsigned int dest_subnodeid:6;	/* must be 0x10, for the LB */
- 	/* bits 5:0 */
--	unsigned int base_dest_nodeid:15; /* nasid of the */
-+	unsigned int base_dest_nasid:15; /* nasid of the */
- 	/* bits 20:6 */			  /* first bit in uvhub map */
- 	unsigned int command:8;	/* message type */
- 	/* bits 28:21 */
-@@ -378,6 +380,10 @@ struct ptc_stats {
- 	unsigned long d_rcanceled; /* number of messages canceled by resets */
- };
- 
-+struct hub_and_pnode {
-+	short uvhub;
-+	short pnode;
-+};
- /*
-  * one per-cpu; to locate the software tables
-  */
-@@ -399,10 +405,12 @@ struct bau_control {
- 	int baudisabled;
- 	int set_bau_off;
- 	short cpu;
-+	short osnode;
- 	short uvhub_cpu;
- 	short uvhub;
- 	short cpus_in_socket;
- 	short cpus_in_uvhub;
-+	short partition_base_pnode;
- 	unsigned short message_number;
- 	unsigned short uvhub_quiesce;
- 	short socket_acknowledge_count[DEST_Q_SIZE];
-@@ -422,15 +430,16 @@ struct bau_control {
- 	int congested_period;
- 	cycles_t period_time;
- 	long period_requests;
-+	struct hub_and_pnode *target_hub_and_pnode;
- };
- 
- static inline int bau_uvhub_isset(int uvhub, struct bau_target_uvhubmask *dstp)
- {
- 	return constant_test_bit(uvhub, &dstp->bits[0]);
- }
--static inline void bau_uvhub_set(int uvhub, struct bau_target_uvhubmask *dstp)
-+static inline void bau_uvhub_set(int pnode, struct bau_target_uvhubmask *dstp)
- {
--	__set_bit(uvhub, &dstp->bits[0]);
-+	__set_bit(pnode, &dstp->bits[0]);
- }
- static inline void bau_uvhubs_clear(struct bau_target_uvhubmask *dstp,
- 				    int nbits)
-Index: linux/arch/x86/platform/uv/tlb_uv.c
-===================================================================
---- linux.orig/arch/x86/platform/uv/tlb_uv.c
-+++ linux/arch/x86/platform/uv/tlb_uv.c
-@@ -699,16 +699,17 @@ const struct cpumask *uv_flush_tlb_other
- 					  struct mm_struct *mm,
- 					  unsigned long va, unsigned int cpu)
- {
--	int tcpu;
--	int uvhub;
- 	int locals = 0;
- 	int remotes = 0;
- 	int hubs = 0;
-+	int tcpu;
-+	int tpnode;
- 	struct bau_desc *bau_desc;
- 	struct cpumask *flush_mask;
- 	struct ptc_stats *stat;
- 	struct bau_control *bcp;
- 	struct bau_control *tbcp;
-+	struct hub_and_pnode *hpp;
- 
- 	/* kernel was booted 'nobau' */
- 	if (nobau)
-@@ -750,11 +751,18 @@ const struct cpumask *uv_flush_tlb_other
- 	bau_desc += UV_ITEMS_PER_DESCRIPTOR * bcp->uvhub_cpu;
- 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
- 
--	/* cpu statistics */
- 	for_each_cpu(tcpu, flush_mask) {
--		uvhub = uv_cpu_to_blade_id(tcpu);
--		bau_uvhub_set(uvhub, &bau_desc->distribution);
--		if (uvhub == bcp->uvhub)
-+		/*
-+		 * The distribution vector is a bit map of pnodes, relative
-+		 * to the partition base pnode (and the partition base nasid
-+		 * in the header).
-+		 * Translate cpu to pnode and hub using an array stored
-+		 * in local memory.
-+		 */
-+		hpp = &bcp->socket_master->target_hub_and_pnode[tcpu];
-+		tpnode = hpp->pnode - bcp->partition_base_pnode;
-+		bau_uvhub_set(tpnode, &bau_desc->distribution);
-+		if (hpp->uvhub == bcp->uvhub)
- 			locals++;
- 		else
- 			remotes++;
-@@ -855,7 +863,7 @@ void uv_bau_message_interrupt(struct pt_
-  * an interrupt, but causes an error message to be returned to
-  * the sender.
-  */
--static void uv_enable_timeouts(void)
-+static void __init uv_enable_timeouts(void)
- {
- 	int uvhub;
- 	int nuvhubs;
-@@ -1326,10 +1334,10 @@ static int __init uv_ptc_init(void)
- }
- 
- /*
-- * initialize the sending side's sending buffers
-+ * Initialize the sending side's sending buffers.
-  */
- static void
--uv_activation_descriptor_init(int node, int pnode)
-+uv_activation_descriptor_init(int node, int pnode, int base_pnode)
- {
- 	int i;
- 	int cpu;
-@@ -1352,11 +1360,11 @@ uv_activation_descriptor_init(int node,
- 	n = pa >> uv_nshift;
- 	m = pa & uv_mmask;
- 
-+	/* the 14-bit pnode */
- 	uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE,
- 			      (n << UV_DESC_BASE_PNODE_SHIFT | m));
--
- 	/*
--	 * initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
-+	 * Initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
- 	 * cpu even though we only use the first one; one descriptor can
- 	 * describe a broadcast to 256 uv hubs.
- 	 */
-@@ -1365,12 +1373,13 @@ uv_activation_descriptor_init(int node,
- 		memset(bd2, 0, sizeof(struct bau_desc));
- 		bd2->header.sw_ack_flag = 1;
- 		/*
--		 * base_dest_nodeid is the nasid of the first uvhub
--		 * in the partition. The bit map will indicate uvhub numbers,
--		 * which are 0-N in a partition. Pnodes are unique system-wide.
-+		 * The base_dest_nasid set in the message header is the nasid
-+		 * of the first uvhub in the partition. The bit map will
-+		 * indicate destination pnode numbers relative to that base.
-+		 * They may not be consecutive if nasid striding is being used.
- 		 */
--		bd2->header.base_dest_nodeid = UV_PNODE_TO_NASID(uv_partition_base_pnode);
--		bd2->header.dest_subnodeid = 0x10; /* the LB */
-+		bd2->header.base_dest_nasid = UV_PNODE_TO_NASID(base_pnode);
-+		bd2->header.dest_subnodeid = UV_LB_SUBNODEID;
- 		bd2->header.command = UV_NET_ENDPOINT_INTD;
- 		bd2->header.int_both = 1;
- 		/*
-@@ -1442,7 +1451,7 @@ uv_payload_queue_init(int node, int pnod
- /*
-  * Initialization of each UV hub's structures
-  */
--static void __init uv_init_uvhub(int uvhub, int vector)
-+static void __init uv_init_uvhub(int uvhub, int vector, int base_pnode)
- {
- 	int node;
- 	int pnode;
-@@ -1450,11 +1459,11 @@ static void __init uv_init_uvhub(int uvh
- 
- 	node = uvhub_to_first_node(uvhub);
- 	pnode = uv_blade_to_pnode(uvhub);
--	uv_activation_descriptor_init(node, pnode);
-+	uv_activation_descriptor_init(node, pnode, base_pnode);
- 	uv_payload_queue_init(node, pnode);
- 	/*
--	 * the below initialization can't be in firmware because the
--	 * messaging IRQ will be determined by the OS
-+	 * The below initialization can't be in firmware because the
-+	 * messaging IRQ will be determined by the OS.
- 	 */
- 	apicid = uvhub_to_first_apicid(uvhub) | uv_apicid_hibits;
- 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG,
-@@ -1491,10 +1500,11 @@ calculate_destination_timeout(void)
- /*
-  * initialize the bau_control structure for each cpu
-  */
--static int __init uv_init_per_cpu(int nuvhubs)
-+static int __init uv_init_per_cpu(int nuvhubs, int base_part_pnode)
- {
- 	int i;
- 	int cpu;
-+	int tcpu;
- 	int pnode;
- 	int uvhub;
- 	int have_hmaster;
-@@ -1528,6 +1538,15 @@ static int __init uv_init_per_cpu(int nu
- 		bcp = &per_cpu(bau_control, cpu);
- 		memset(bcp, 0, sizeof(struct bau_control));
- 		pnode = uv_cpu_hub_info(cpu)->pnode;
-+		if ((pnode - base_part_pnode) >= UV_DISTRIBUTION_SIZE) {
-+			printk(KERN_EMERG
-+				"cpu %d pnode %d-%d beyond %d; BAU disabled\n",
-+				cpu, pnode, base_part_pnode,
-+				UV_DISTRIBUTION_SIZE);
-+			return 1;
-+		}
-+		bcp->osnode = cpu_to_node(cpu);
-+		bcp->partition_base_pnode = uv_partition_base_pnode;
- 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
- 		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
- 		bdp = &uvhub_descs[uvhub];
-@@ -1536,7 +1555,7 @@ static int __init uv_init_per_cpu(int nu
- 		bdp->pnode = pnode;
- 		/* kludge: 'assuming' one node per socket, and assuming that
- 		   disabling a socket just leaves a gap in node numbers */
--		socket = (cpu_to_node(cpu) & 1);
-+		socket = bcp->osnode & 1;
- 		bdp->socket_mask |= (1 << socket);
- 		sdp = &bdp->socket[socket];
- 		sdp->cpu_number[sdp->num_cpus] = cpu;
-@@ -1585,6 +1604,20 @@ static int __init uv_init_per_cpu(int nu
- nextsocket:
- 			socket++;
- 			socket_mask = (socket_mask >> 1);
-+			/* each socket gets a local array of pnodes/hubs */
-+			bcp = smaster;
-+			bcp->target_hub_and_pnode = kmalloc_node(
-+				sizeof(struct hub_and_pnode) *
-+				num_possible_cpus(), GFP_KERNEL, bcp->osnode);
-+			memset(bcp->target_hub_and_pnode, 0,
-+				sizeof(struct hub_and_pnode) *
-+				num_possible_cpus());
-+			for_each_present_cpu(tcpu) {
-+				bcp->target_hub_and_pnode[tcpu].pnode =
-+					uv_cpu_hub_info(tcpu)->pnode;
-+				bcp->target_hub_and_pnode[tcpu].uvhub =
-+					uv_cpu_hub_info(tcpu)->numa_blade_id;
-+			}
- 		}
- 	}
- 	kfree(uvhub_descs);
-@@ -1637,21 +1670,22 @@ static int __init uv_bau_init(void)
- 	spin_lock_init(&disable_lock);
- 	congested_cycles = microsec_2_cycles(congested_response_us);
- 
--	if (uv_init_per_cpu(nuvhubs)) {
--		nobau = 1;
--		return 0;
--	}
--
- 	uv_partition_base_pnode = 0x7fffffff;
--	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
-+	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
- 		if (uv_blade_nr_possible_cpus(uvhub) &&
- 			(uv_blade_to_pnode(uvhub) < uv_partition_base_pnode))
- 			uv_partition_base_pnode = uv_blade_to_pnode(uvhub);
-+	}
-+
-+	if (uv_init_per_cpu(nuvhubs, uv_partition_base_pnode)) {
-+		nobau = 1;
-+		return 0;
-+	}
- 
- 	vector = UV_BAU_MESSAGE;
- 	for_each_possible_blade(uvhub)
- 		if (uv_blade_nr_possible_cpus(uvhub))
--			uv_init_uvhub(uvhub, vector);
-+			uv_init_uvhub(uvhub, vector, uv_partition_base_pnode);
- 
- 	uv_enable_timeouts();
- 	alloc_intr_gate(vector, uv_bau_message_intr1);
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
