@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab1EJIpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:45:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30974 "EHLO mga01.intel.com"
+	id S932755Ab1EJIrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 04:47:53 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48084 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756077Ab1EJIpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 04:45:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,345,1301900400"; 
-   d="scan'208";a="690555240"
-Date: Tue, 10 May 2011 10:45:01 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/19] mfd: Use mfd cell platform_data for wm8400 cells
- platform bits
-Message-ID: <20110510084500.GB17268@sortiz-mobl>
-References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
- <1304901131-7104-13-git-send-email-sameo@linux.intel.com>
- <20110509071341.GA21967@opensource.wolfsonmicro.com>
+	id S1756010Ab1EJIru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 04:47:50 -0400
+Date: Tue, 10 May 2011 10:47:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Michael Rubin <mrubin@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+Message-ID: <20110510084732.GE27426@elte.hu>
+References: <4DC45537.6070609@linux.intel.com>
+ <1304713252.25414.2532.camel@gandalf.stny.rr.com>
+ <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+ <20110507065803.GA23414@elte.hu>
+ <1304765110.25414.2564.camel@gandalf.stny.rr.com>
+ <20110507144402.GC2859@elte.hu>
+ <1304788829.11129.57.camel@frodo>
+ <20110507190033.GA11465@elte.hu>
+ <1304996847.2969.151.camel@frodo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110509071341.GA21967@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1304996847.2969.151.camel@frodo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-On Mon, May 09, 2011 at 09:13:42AM +0200, Mark Brown wrote:
-> On Mon, May 09, 2011 at 02:32:04AM +0200, Samuel Ortiz wrote:
-> 
-> >  static int wm8400_codec_probe(struct snd_soc_codec *codec)
-> >  {
-> > -	struct wm8400 *wm8400 = mfd_get_data(to_platform_device(codec->dev));
-> > +	struct wm8400 *wm8400 = codec->dev->platform_data;
-> 
-> It'd be better to use platform_get_drvdata() here rather than accessing
-> the pointer directly.
-Is the core codec code setting the driver_data pointer appropriately ?
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Cheers,
-Samuel.
+> [...] Thus a library is a perfect solution. [...]
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Btw., just to make things clear, if we indeed have a library to parse things 
+and if all apps use that then the ABI moves to another (library) level.
+
+The requirement from my maintenance POV is very, very simple: apps should not 
+break on new kernels. If this is achieved by making apps smarter then that's a 
+valid solution.
+
+Thanks,
+
+	Ingo
