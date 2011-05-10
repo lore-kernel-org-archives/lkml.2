@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab1EJExx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 00:53:53 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:8838 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750851Ab1EJExu (ORCPT
+	id S1752593Ab1EJFA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 01:00:57 -0400
+Received: from nm3-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.53]:36650 "HELO
+	nm3-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750812Ab1EJFA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 00:53:50 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AosEAG3CyE15LBzagWdsb2JhbACmAhUBARYmJcVODoYABJcOh08
-Date: Tue, 10 May 2011 14:53:46 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] writeback: refill b_io iff empty
-Message-ID: <20110510045346.GC19446@dastard>
-References: <20110420080336.441157866@intel.com>
- <20110420080918.560499032@intel.com>
- <20110504073931.GA22675@localhost>
- <20110505163708.GN5323@quack.suse.cz>
- <20110506052955.GA24904@localhost>
- <20110506142155.GD18982@quack.suse.cz>
- <20110510043104.GA14423@localhost>
+	Tue, 10 May 2011 01:00:56 -0400
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 01:00:55 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 932182.31147.bm@omp1003.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=GikfZZZlZyXzHC4gr1ML7W8HhFATbrgnWWYy8OnxrlHg9tqJvadHiHxsop6tiZ9v0LS5r5I8am6d0ulfpiaXh+rEvJZG0i/qIMnrDP6Qk+bsaUAX6KD7vqik+kuDOZ6ZsvcraQUe+1NgvtlfwSTBlNwV1TR/n8EHXRC1JLomF2I=;
+Message-ID: <737876.57935.qm@web121509.mail.ne1.yahoo.com>
+X-YMail-OSG: X90OKpkVM1m7IO0tMaFI4wsxJ5Tasu5nVMKoQusxHsenCMp
+ oa3UV0cs0cfCxKtE3EYg0woTaTPBVT9aTDAnZSmJzT6rfBKuQUTSggWgTasa
+ 6xNX9HBAI.O702V1hp.qX5mRB5zKPT5N1zVB6cgxTFQaoCQV00MWbBmPXrB_
+ j0V4Ph025TkntdEOKnId7WDnDAo76mERYRCOwxRUOlWpVdzADq8HzKyAVzbq
+ 8m47KrZiLnbox8zTb6jRB6RpNRjAooPoj.nWApMibI9pSAJIIp.KasNWLCYb
+ MHjwfADkp.yLY2JwpkbL8C5sGu1L8euom4zxsK8sCFU8M0RDFa4E7HUJXVqO
+ 618iRLc4EvrEt57ey.yUI96g_kjYWhBIZFpdZZbgqpWg8TGEBr.rfmDkMim4
+ qwzf27Mw-
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.110.299900
+Date: Mon, 9 May 2011 21:54:23 -0700 (PDT)
+From: Serge Myronyuk <sermyro@yahoo.com>
+Subject: r8712u driver
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110510043104.GA14423@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 12:31:04PM +0800, Wu Fengguang wrote:
-> On Fri, May 06, 2011 at 10:21:55PM +0800, Jan Kara wrote:
-> > On Fri 06-05-11 13:29:55, Wu Fengguang wrote:
-> > > On Fri, May 06, 2011 at 12:37:08AM +0800, Jan Kara wrote:
-> > > > On Wed 04-05-11 15:39:31, Wu Fengguang wrote:
-> > > > > To help understand the behavior change, I wrote the writeback_queue_io
-> > > > > trace event, and found very different patterns between
-> > > > > - vanilla kernel
-> > > > > - this patchset plus the sync livelock fixes
-> > > > > 
-> > > > > Basically the vanilla kernel each time pulls a random number of inodes
-> > > > > from b_dirty, while the patched kernel tends to pull a fixed number of
-> > > > > inodes (enqueue=1031) from b_dirty. The new behavior is very interesting...
-> > > >   This regularity is really strange. Did you have a chance to look more into
-> > > > it? I find it highly unlikely that there would be exactly 1031 dirty inodes
-> > > > in b_dirty list every time you call move_expired_inodes()...
-> > > 
-> > > Jan, I got some results for ext4. The total dd+tar+sync time is
-> > > decreased from 177s to 167s. The other numbers are either raised or
-> > > dropped.
-> >   Nice, but what I was more curious about was to understand why you saw
-> > enqueued=1031 all the time.
-> 
-> Maybe some unknown interactions with XFS? Attached is another trace
-> with both writeback_single_inode and writeback_queue_io.
+Dear sirs,
 
-Perhaps because write throttling is limiting the number of files
-being dirtied to match the number of files being cleaned? hence they
-age at roughly the same rate as writeback is cleaning them?
-Especially as most file are only a single page in size?
+I upgraded my ubuntu from 10.10 into 11.04 version.
+And after that I have issue with wireless connection:
+10 minutes network connection is working and 10 minutes
+network connection is down. And again 10 min - up, 10 min down.
 
-Or perhaps that is the rate at which IO completions are occurring
-and updating the inode size and redirtying the inode? After all,
-there are lots of inodes that are only state=I_DIRTY_SYNC and
-wrote=0 in the traces around when it starts going to ~1000 inodes
-per queue_io call....
+I am using r8712u driver.
 
-Or maybe a combination of both?
+Could you, please, help me and/or recommend good working driver?
 
-Cheers,
+Thank you very much!
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Best regards,
+Serge Myronyuk
