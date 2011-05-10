@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001Ab1EJQZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 12:25:39 -0400
-Received: from kroah.org ([198.145.64.141]:47555 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932828Ab1EJQZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 12:25:38 -0400
-Date: Tue, 10 May 2011 09:11:37 -0700
-From: Greg KH <greg@kroah.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mikew@google.com" <mikew@google.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH] pstore: EFI Support
-Message-ID: <20110510161137.GA14522@kroah.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
+	id S932925Ab1EJQMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 12:12:21 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:49768 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab1EJQMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 12:12:19 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Jan Kara <jack@suse.cz>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+	<87tyd31fkc.fsf@devron.myhome.or.jp>
+	<20110510123819.GB4402@quack.suse.cz>
+	<87hb924s2x.fsf@devron.myhome.or.jp>
+	<20110510132953.GE4402@quack.suse.cz>
+	<878vue4qjb.fsf@devron.myhome.or.jp>
+	<87zkmu3b2i.fsf@devron.myhome.or.jp>
+	<20110510145421.GJ4402@quack.suse.cz>
+Date: Wed, 11 May 2011 01:12:13 +0900
+In-Reply-To: <20110510145421.GJ4402@quack.suse.cz> (Jan Kara's message of
+	"Tue, 10 May 2011 16:54:21 +0200")
+Message-ID: <87zkmupmaq.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 11:00:44AM -0400, Seiji Aguchi wrote:
-> Description of boot paremeters is following.
-> 
->  - efi_pstore_enable
->    enable EFI support of pstore.
-> 
->  - efi_pstore_len
->    Sets the buffer size of EFI variable space used by pstore.
+Jan Kara <jack@suse.cz> writes:
 
-Please don't add new boot parameters if at all possible.  Distros will
-not know to enable them, and users don't know how to either.
+>> Did you already consider, to copy only if page was writeback (like
+>> copy-on-write)? I.e. if page is on I/O, copy, then switch the page for
+>> writing new data.
+>   Yes, that was considered as well. We'd have to essentially migrate the
+> page that is under writeback and should be written to. You are going to pay
+> the cost of page allocation, copy, increased memory & cache pressure.
+> Depending on your backing storage and workload this may or may not be better
+> than waiting for IO...
 
-Use sane defaults, and provide ways to override them if needed, but
-don't rely on them for new functionality if at all possible.
+Maybe possible, but you really think on usual case just blocking is
+better?
 
-Why would this option ever _not_ be something that should be enabled?
-
-thanks,
-
-greg k-h
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
