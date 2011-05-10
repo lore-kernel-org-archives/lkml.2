@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab1EJMgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 08:36:49 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59948 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab1EJMgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 08:36:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=hJVafdouADklsUey1CB8JrXlckC0FzzPRWmXA4I43MB52Z6bZ+1MijDp68Pl77HhrG
-         gpf2gZ/5kcZbQsRcpdydckUmMX+it8uTOCAj3IoFms0ZtMzZ5YxZJiiJVNuxGPbDKtOd
-         GSeaJZDSeQOI/NdOAr+oMsY3BSnqA7RhBTDlY=
-Subject: Re: [PATCH] drivers:regulator:change debug statement be consistent
- with the style of the rest.
-From: Wanlong Gao <wanlong.gao@gmail.com>
-Reply-To: wanlong.gao@gmail.com
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk
-In-Reply-To: <alpine.LNX.2.00.1105101011550.28291@pobox.suse.cz>
-References: <1302968543-3150-1-git-send-email-wanlong.gao@gmail.com>
-	 <20110416175440.GD25811@opensource.wolfsonmicro.com>
-	 <4DAA3A25.30501@gmail.com>
-	 <alpine.LNX.2.00.1105101011550.28291@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Linux kernel
-Date: Tue, 10 May 2011 20:36:35 +0800
-Message-ID: <1305030995.3140.0.camel@Tux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S932294Ab1EJMid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:38:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41735 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756426Ab1EJMia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 08:38:30 -0400
+Date: Tue, 10 May 2011 14:38:19 +0200
+From: Jan Kara <jack@suse.cz>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110510123819.GB4402@quack.suse.cz>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <87tyd31fkc.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tyd31fkc.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2011-05-10二的 10:12 +0200，Jiri Kosina写道：
-> On Sun, 17 Apr 2011, Wanlong Gao wrote:
+On Tue 10-05-11 10:59:15, OGAWA Hirofumi wrote:
+> "Darrick J. Wong" <djwong@us.ibm.com> writes:
 > 
-> > 
-> > 
-> > change the "mc13783_regulator_probe" string in the function
-> > "mc13783_regulator_probe"
-> > to "__func__" for the debug statement be consistent with the style of the rest
-> > of
-> > the file.
-> > 
-> > Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > 
-> > ---
-> >  drivers/regulator/mc13783-regulator.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/regulator/mc13783-regulator.c
-> > b/drivers/regulator/mc13783-regulator.c
-> > index 23249cb..b8a00c7 100644
-> > --- a/drivers/regulator/mc13783-regulator.c
-> > +++ b/drivers/regulator/mc13783-regulator.c
-> > @@ -341,7 +341,7 @@ static int __devinit mc13783_regulator_probe(struct
-> > platform_device *pdev)
-> >         struct mc13783_regulator_init_data *init_data;
-> >         int i, ret;
-> > 
-> > -       dev_dbg(&pdev->dev, "mc13783_regulator_probe id %d\n", pdev->id);
-> > +       dev_dbg(&pdev->dev, "%s id %d\n", __func__, pdev->id);
-> > 
-> >         priv = kzalloc(sizeof(*priv) +
-> >                         pdata->num_regulators * sizeof(priv->regulators[0]),
+> > To assess the performance impact of stable page writes, I moved to a disk that
+> > doesn't have DIF support so that I could measure just the impact of waiting for
+> > writeback.  I first ran wac with 64 threads madly scribbling on a 64k file and
+> > saw about a 12 percent performance decrease.  I then reran the wac program with
+> > 64 threads and a 64MB file and saw about the same performance numbers.  As I
+> > suspected, the patchset only seems to impact workloads that rewrite the same
+> > memory page frequently.
+> >
+> > I am still chasing down what exactly is broken in ext3.  data=writeback mode
+> > passes with no failures.  data=ordered, however, does not pass; my current
+> > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
+> > page_mkclean to kick the userspace programs off the page before writing it.
+> >
+> > Per various comments regarding v3 of this patchset, I've integrated his
+> > suggestions, reworked the patch descriptions to make it clearer which ones
+> > touch all the filesystems and which ones are to fix remaining holes in specific
+> > filesystems, and expanded the scope of filesystems that got fixed.
+> >
+> > As always, questions and comments are welcome; and thank you to all the
+> > previous reviewers of this patchset.  I am also soliciting people's opinions on
+> > whether or not these patches could go upstream for .40.
 > 
-> Applied.
+> I'd like to know those patches are on what state. Waiting in writeback
+> page makes slower, like you mentioned it (I guess it would more
+> noticeable if device was slower that like FAT uses). And I think
+> currently it doesn't help anything others for blk-integrity stuff
+> (without other technic, it doesn't help FS consistency)?
 > 
-> BTW, your mailer is damaging the in-line patches. I have fixed this now, 
-> but please fix that for your future submissions.
+> So, why is this locking stuff enabled always? I think it would be better
+> to enable only if blk-integrity stuff was enabled.
 > 
-> Thanks,
-> 
+> If it was more sophisticate but more complex stuff (e.g. use
+> copy-on-write technic for it), I would agree always enable though.
+  Well, also software RAID generally needs this feature (so that parity
+information / mirror can be properly kept in sync). Not that I'd advocate
+that this feature must be always enabled, it's just that there are also
+other users besides blk-integrity.
 
-Thanks, and I'll fix it next time.
-
-Wanlong Gao
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
