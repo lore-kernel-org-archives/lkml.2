@@ -1,149 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab1EJU16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:27:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55266 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab1EJU15 (ORCPT
+	id S1752866Ab1EJUqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:46:39 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57604 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751398Ab1EJUqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:27:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=LeB6mFwqSW+6sXH+1s34Ubj9De9zZArN9jUgXhaSFQUTaSyf+Pi4BuhirEJ4i4IRb
-	Mjcm4Ku0CbBCR0arGrEHg==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH v2] trace: Schedule a delayed work to call wakeup()
-Date: Tue, 10 May 2011 13:27:21 -0700
-Message-Id: <1305059241-7629-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
-References: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
+	Tue, 10 May 2011 16:46:37 -0400
+From: Alan Cox <alan@linux.jf.intel.com>
+Subject: [PATCH] gma500: enable GEM mmap
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Tue, 10 May 2011 21:27:31 +0100
+Message-ID: <20110510202645.23878.78117.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In using syscall tracing by concurrent processes, the wakeup() that is
-called in the event commit function causes contention on the spin lock
-of the waitqueue. I enabled sys_enter_getuid and sys_exit_getuid
-tracepoints, and by running getuid_microbench from autotest in parallel
-I found that the contention causes exponential latency increase in the
-tracing path.
+Support mapping of GEM objects. This ought to be a small plumbing change but
+instead we have to cut and paste a pile of stuff into the driver. This
+really wants to be handled *IN* GEM
 
-The autotest binary getuid_microbench calls getuid() in a tight loop for
-the given number of iterations and measures the average time required to
-complete a single invocation of syscall.
+You can now allocate, mmap and munmap GEM objects in the driver. You can't
+yet map them into the GART or display them however.
 
-The patch schedules a delayed work after 2 ms once an event commit calls
-to wake up the trace wait_queue. This removes the delay caused by
-contention on spin lock in wakeup() and amortizes the wakeup() calls
-scheduled over the 2 ms period.
-
-In the following example, the script enables the sys_enter_getuid and
-sys_exit_getuid tracepoints and runs the getuid_microbench in parallel
-with the given number of processes. The output clearly shows the latency
-increase caused by contentions.
-
-$ ~/getuid.sh 1
-1000000 calls in 0.720974253 s (720.974253 ns/call)
-
-$ ~/getuid.sh 2
-1000000 calls in 1.166457554 s (1166.457554 ns/call)
-1000000 calls in 1.168933765 s (1168.933765 ns/call)
-
-$ ~/getuid.sh 3
-1000000 calls in 1.783827516 s (1783.827516 ns/call)
-1000000 calls in 1.795553270 s (1795.553270 ns/call)
-1000000 calls in 1.796493376 s (1796.493376 ns/call)
-
-$ ~/getuid.sh 4
-1000000 calls in 4.483041796 s (4483.041796 ns/call)
-1000000 calls in 4.484165388 s (4484.165388 ns/call)
-1000000 calls in 4.484850762 s (4484.850762 ns/call)
-1000000 calls in 4.485643576 s (4485.643576 ns/call)
-
-$ ~/getuid.sh 5
-1000000 calls in 6.497521653 s (6497.521653 ns/call)
-1000000 calls in 6.502000236 s (6502.000236 ns/call)
-1000000 calls in 6.501709115 s (6501.709115 ns/call)
-1000000 calls in 6.502124100 s (6502.124100 ns/call)
-1000000 calls in 6.502936358 s (6502.936358 ns/call)
-
-After the patch, the latencies scale better.
-1000000 calls in 0.728720455 s (728.720455 ns/call)
-
-1000000 calls in 0.842782857 s (842.782857 ns/call)
-1000000 calls in 0.883803135 s (883.803135 ns/call)
-
-1000000 calls in 0.902077764 s (902.077764 ns/call)
-1000000 calls in 0.902838202 s (902.838202 ns/call)
-1000000 calls in 0.908896885 s (908.896885 ns/call)
-
-1000000 calls in 0.932523515 s (932.523515 ns/call)
-1000000 calls in 0.958009672 s (958.009672 ns/call)
-1000000 calls in 0.986188020 s (986.188020 ns/call)
-1000000 calls in 0.989771102 s (989.771102 ns/call)
-
-1000000 calls in 0.933518391 s (933.518391 ns/call)
-1000000 calls in 0.958897947 s (958.897947 ns/call)
-1000000 calls in 1.031038897 s (1031.038897 ns/call)
-1000000 calls in 1.089516025 s (1089.516025 ns/call)
-1000000 calls in 1.141998347 s (1141.998347 ns/call)
-
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
- kernel/trace/trace.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 51e4e4d..c72d150 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -343,26 +343,28 @@ unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
- static int trace_stop_count;
- static DEFINE_SPINLOCK(tracing_start_lock);
- 
-+static atomic_t scheduled = {0};
-+static void wakeup_work_handler(struct work_struct *work)
-+{
-+	wake_up(&trace_wait);
-+}
-+
-+static DECLARE_DELAYED_WORK(wakeup_work, wakeup_work_handler);
-+
- /**
-  * trace_wake_up - wake up tasks waiting for trace input
-  *
-- * Simply wakes up any task that is blocked on the trace_wait
-- * queue. These is used with trace_poll for tasks polling the trace.
-+ * Schedules a delayed work to wake up any task that is blocked on the
-+ * trace_wait queue. These is used with trace_poll for tasks polling the
-+ * trace.
-  */
- void trace_wake_up(void)
+ drivers/staging/gma500/psb_drv.c |    4 +-
+ drivers/staging/gma500/psb_gem.c |   86 ++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 84 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index 360d582..4da0b18 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -1422,11 +1422,11 @@ static struct drm_driver driver = {
+ 		 .open = drm_open,
+ 		 .release = drm_release,
+ 		 .unlocked_ioctl = psb_unlocked_ioctl,
+-		 .mmap = drm_mmap,
++		 .mmap = drm_gem_mmap,
+ 		 .poll = drm_poll,
+ 		 .fasync = drm_fasync,
+ 		 .read = drm_read,
+-		 },
++	 },
+ 	.name = DRIVER_NAME,
+ 	.desc = DRIVER_DESC,
+ 	.date = PSB_DRM_DRIVER_DATE,
+diff --git a/drivers/staging/gma500/psb_gem.c b/drivers/staging/gma500/psb_gem.c
+index 518f8c1..2132fe9 100644
+--- a/drivers/staging/gma500/psb_gem.c
++++ b/drivers/staging/gma500/psb_gem.c
+@@ -41,6 +41,15 @@ void psb_gem_free_object(struct drm_gem_object *obj)
  {
--	int cpu;
-+	const unsigned long delay = msecs_to_jiffies(2); //delay 2 ms
- 
- 	if (trace_flags & TRACE_ITER_BLOCK)
- 		return;
--	/*
--	 * The runqueue_is_locked() can fail, but this is the best we
--	 * have for now:
--	 */
--	cpu = get_cpu();
--	if (!runqueue_is_locked(cpu))
--		wake_up(&trace_wait);
--	put_cpu();
-+	schedule_delayed_work(&wakeup_work, delay);
+ 	struct gtt_range *gtt = container_of(obj, struct gtt_range, gem);
+ 	psb_gtt_free_range(obj->dev, gtt);
++	if (obj->map_list.map) {
++		/* Do things GEM should do for us */
++		struct drm_gem_mm *mm = obj->dev->mm_private;
++		struct drm_map_list *list = &obj->map_list;
++		drm_ht_remove_item(&mm->offset_hash, &list->hash);
++		drm_mm_put_block(list->file_offset_node);
++		kfree(list->map);
++		list->map = NULL;
++	}
+ 	drm_gem_object_release(obj);
  }
  
- static int __init set_buf_size(char *str)
--- 
-1.7.3.1
+@@ -51,6 +60,59 @@ int psb_gem_get_aperture(struct drm_device *dev, void *data,
+ }
+ 
+ /**
++ *	psb_gem_create_mmap_offset	-	invent an mmap offset
++ *	@obj: our object
++ *
++ *	This is basically doing by hand a pile of ugly crap which should
++ *	be done automatically by the GEM library code but isn't
++ */
++static int psb_gem_create_mmap_offset(struct drm_gem_object *obj)
++{
++	struct drm_device *dev = obj->dev;
++	struct drm_gem_mm *mm = dev->mm_private;
++	struct drm_map_list *list;
++	struct drm_local_map *map;
++	int ret;
++
++	list = &obj->map_list;
++	list->map = kzalloc(sizeof(struct drm_map_list), GFP_KERNEL);
++	if (list->map == NULL)
++		return -ENOMEM;
++	map = list->map;
++	map->type = _DRM_GEM;
++	map->size = obj->size;
++	map->handle =obj;
++
++	list->file_offset_node = drm_mm_search_free(&mm->offset_manager,
++					obj->size / PAGE_SIZE, 0, 0);
++	if (!list->file_offset_node) {
++		DRM_ERROR("failed to allocate offset for bo %d\n", obj->name);
++		ret = -ENOSPC;
++		goto free_it;
++	}
++	list->file_offset_node = drm_mm_get_block(list->file_offset_node,
++					obj->size / PAGE_SIZE, 0);
++	if (!list->file_offset_node) {
++		ret = -ENOMEM;
++		goto free_it;
++	}
++	list->hash.key = list->file_offset_node->start;
++	ret = drm_ht_insert_item(&mm->offset_hash, &list->hash);
++	if (ret) {
++		DRM_ERROR("failed to add to map hash\n");
++		goto free_mm;
++	}
++	return 0;
++
++free_mm:
++	drm_mm_put_block(list->file_offset_node);
++free_it:
++	kfree(list->map);
++	list->map = NULL;
++	return ret;
++}
++
++/**
+  *	psb_gem_dumb_map_gtt	-	buffer mapping for dumb interface
+  *	@file: our drm client file
+  *	@dev: drm device
+@@ -62,19 +124,35 @@ int psb_gem_get_aperture(struct drm_device *dev, void *data,
+ int psb_gem_dumb_map_gtt(struct drm_file *file, struct drm_device *dev,
+ 			 uint32_t handle, uint64_t *offset)
+ {
++	int ret = 0;
+ 	struct drm_gem_object *obj;
++
+ 	if (!(dev->driver->driver_features & DRIVER_GEM))
+ 		return -ENODEV;
++		
++	mutex_lock(&dev->struct_mutex);
++
+ 	/* GEM does all our handle to object mapping */
+ 	obj = drm_gem_object_lookup(dev, file, handle);
+-	if (obj == NULL)
+-		return -ENOENT;
++	if (obj == NULL) {
++		ret = -ENOENT;
++		goto unlock;
++	}
+ 	/* What validation is needed here ? */
+ 	
+-	/* GEM works out the hash offsets for us */
++	/* Make it mmapable */
++	if (!obj->map_list.map) {
++		ret = psb_gem_create_mmap_offset(obj);
++		if (ret)
++			goto out;
++	}
++	/* GEM should really work out the hash offsets for us */
+ 	*offset = (u64)obj->map_list.hash.key << PAGE_SHIFT;
++out:
+ 	drm_gem_object_unreference(obj);
+-	return 0;
++unlock:
++	mutex_unlock(&dev->struct_mutex);
++	return ret;
+ }
+ 
+ /**
 
