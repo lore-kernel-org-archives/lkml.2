@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab1EJMi1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 08:38:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36405 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753596Ab1EJMi0 convert rfc822-to-8bit (ORCPT
+	id S1756446Ab1EJMjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:39:09 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57676 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397Ab1EJMjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 08:38:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Sg4ZRG0aMtF8TdhColcbLZqfeANXjqU/7kpwrYHb4vg95AzmWKwnXxVpulK2CABS8q
-         bGhHgyYscvbTlVH4/BjSPvj+roonPoVuS1OHSfwicUGNdXzgHo7FIsGJBJtJ/fsL8aiZ
-         UulLhNhkxMFEmwpy9NACS6AFL2+c5RWzYFP5U=
+	Tue, 10 May 2011 08:39:08 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [URGENT - PATCH FOR 2.6.39] omap: iommu: Return IRQ_HANDLED in fault handler when no fault occured
+Date: Tue, 10 May 2011 14:39:56 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r3; KDE/4.6.2; x86_64; ; )
+Cc: linux-omap@vger.kernel.org, David Cohen <dacohen@gmail.com>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, linux-kernel@vger.kernel.org
+References: <1303912982-10309-1-git-send-email-laurent.pinchart@ideasonboard.com> <201104291203.11174.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201104291203.11174.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-In-Reply-To: <20110509140705.GA2219@zhy>
-References: <BANLkTi=tPbwNP3xDYZVHHqQ2zZujCBT6jw@mail.gmail.com>
-	<BANLkTimjkK-q63x5DrEj+9=pF8zbW7mJ2g@mail.gmail.com>
-	<BANLkTimrHnX5BcK5Q6eJgCAzP+j7azAqow@mail.gmail.com>
-	<20110509140705.GA2219@zhy>
-Date: Tue, 10 May 2011 20:38:24 +0800
-Message-ID: <BANLkTinrrV7LMqYz+CqkVzG-Bc6fj0vSXw@mail.gmail.com>
-Subject: Re: [PATCH] sched: shorten setting the allowed cpu mask of task
-From: Hillf Danton <dhillf@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105101439.56757.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 9, 2011 at 10:07 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Mon, May 09, 2011 at 08:52:53PM +0800, Hillf Danton wrote:
->> On Mon, May 9, 2011 at 12:39 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
->> > On Fri, May 6, 2011 at 8:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> >> When setting the allowed cpu mask for a given task, if the task is
->> >> already bound to certain cpu, after checking the validity of the new
->> >
->> > Maybe we don't need to restrict it only on task bound to certain cpu.
->> >
->> Hi Yong
->>
->> The original code guards, I guess, casual change in the mask of
->> allowed CPUs, if bounded,
->> for tasks such as the workers of work queue. So the restriction looks necessary.
->
-> Yeah, that is true; but I don't think we need to go ahead for
-> unbounded task if cpu_allowed will not be changed.
->
-> My thought is like below:
->
-> ---
-> Subject: [PATCH] sched: avoid going ahead if cpu_allowed will not be changed
->
-> If cpumask_equal(&p->cpus_allowed, new_mask) is true, seems
-> there is no reason to prevent set_cpus_allowed_ptr() return
-> directly.
->
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Hi Tony,
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+On Friday 29 April 2011 12:03:10 Laurent Pinchart wrote:
+> Hi Tony,
+> 
+> On Wednesday 27 April 2011 16:03:02 Laurent Pinchart wrote:
+> > The iommu shares an interrupt line with the OMAP3 ISP. The iommu
+> > interrupt handler must check the fault status and return IRQ_HANDLED
+> > when no fault occured.
+> > 
+> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> 
+> Could you please pick this one up for 2.6.39 ? As far as I know David is on
+> holidays so he might not be able to review the patch before the 2.6.39
+> release.
 
-> ---
->  kernel/sched.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index da93381..56bc1fa 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -5946,13 +5946,15 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->
->        rq = task_rq_lock(p, &flags);
->
-> +       if (cpumask_equal(&p->cpus_allowed, new_mask))
-> +               goto out;
-> +
->        if (!cpumask_intersects(new_mask, cpu_active_mask)) {
->                ret = -EINVAL;
->                goto out;
->        }
->
-> -       if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
-> -                    !cpumask_equal(&p->cpus_allowed, new_mask))) {
-> +       if (unlikely((p->flags & PF_THREAD_BOUND) && p != current)) {
->                ret = -EINVAL;
->                goto out;
->        }
-> --
-> 1.7.1
->
->
+Ping. Please.
+
+> > ---
+> > 
+> >  arch/arm/plat-omap/iommu.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > The OMAP3 ISP IOMMU got broken in 2.6.39-rc1 by
+> > 
+> > commit d594f1f31afe13edd8c02f3854a65cc58cfb3b74
+> > Author: David Cohen <dacohen@gmail.com>
+> > Date:   Wed Feb 16 19:35:51 2011 +0000
+> > 
+> >     omap: IOMMU: add support to callback during fault handling
+> >     
+> >     Add support to register an isr for IOMMU fault situations and adapt
+> >     it to allow such (*isr)() to be used as fault callback. Drivers
+> >     using
+> > 
+> > IOMMU module might want to be informed when errors happen in order to
+> > debug it or react.
+> > 
+> >     Signed-off-by: David Cohen <dacohen@gmail.com>
+> >     Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+> >     Signed-off-by: Tony Lindgren <tony@atomide.com>
+> > 
+> > This patch fixes it and should be pushed to mainline in 2.6.39. The OMAP3
+> > ISP driver, new in 2.6.39, would otherwise be totally broken until
+> > 2.6.40.
+> > 
+> > diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+> > index 8a51fd5..34fc31e 100644
+> > --- a/arch/arm/plat-omap/iommu.c
+> > +++ b/arch/arm/plat-omap/iommu.c
+> > @@ -793,6 +793,8 @@ static irqreturn_t iommu_fault_handler(int irq, void
+> > *data) clk_enable(obj->clk);
+> > 
+> >  	errs = iommu_report_fault(obj, &da);
+> >  	clk_disable(obj->clk);
+> > 
+> > +	if (errs == 0)
+> > +		return IRQ_HANDLED;
+> > 
+> >  	/* Fault callback or TLB/PTE Dynamic loading */
+> >  	if (obj->isr && !obj->isr(obj, da, errs, obj->isr_priv))
+
+-- 
+Regards,
+
+Laurent Pinchart
