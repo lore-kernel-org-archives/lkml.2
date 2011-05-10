@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab1EJQCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 12:02:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932894Ab1EJQCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 12:02:42 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v4 3/3] KVM: Use pci_store/load_saved_state() around VM device
-	usage
-To: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-Cc: alex.williamson@redhat.com, kvm@vger.kernel.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 10 May 2011 10:02:39 -0600
-Message-ID: <20110510160233.3490.18354.stgit@s20.home>
-In-Reply-To: <20110510155642.3490.61935.stgit@s20.home>
-References: <20110510155642.3490.61935.stgit@s20.home>
-User-Agent: StGIT/0.14.3
+	id S932914Ab1EJQCP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 12:02:15 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:33948 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932876Ab1EJQCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 12:02:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=onztyEAoj0ERpkNDC6pf0de7f
+	DLBrK730xxmJpAbBoVDXEEBA+3iRCMW4BkGWWMQ/eK9nFJPvPemG7072pAWMkek4
+	D+KHUKmbeXH8SCibK+GFzqaMpa+nVbP/aQMgfQvVtwrs4cJ4AHetpR9S+RKToSVg
+	opCmTFXi2hv4CbV9mc=
+Date: Tue, 10 May 2011 09:02:57 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Stefan Majer <stefan.majer@gmail.com>
+cc: Yehuda Sadeh Weinraub <yehudasa@gmail.com>, linux-net@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: Re: Kernel 2.6.38.6 page allocation failure (ixgbe)
+In-Reply-To: <BANLkTi=jZ-GA30_54kay3ouoNJvkwbVQ4w@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1105100900170.4299@cobra.newdream.net>
+References: <BANLkTinr34qmAE8RWVY0Wq_XMfOc0jTUzg@mail.gmail.com>
+ <BANLkTi=4DNyWaqqjK5sG5O9cNdfpuAqHWA@mail.gmail.com>
+ <BANLkTi=jZ-GA30_54kay3ouoNJvkwbVQ4w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store the device saved state so that we can reload the device back
-to the original state when it's unassigned.  This has the benefit
-that the state survives across pci_reset_function() calls via
-the PCI sysfs reset interface while the VM is using the device.
+Hi Stefan,
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Acked-by: Avi Kivity <avi@redhat.com>
----
+On Tue, 10 May 2011, Stefan Majer wrote:
+> Hi,
+> 
+> On Tue, May 10, 2011 at 4:20 PM, Yehuda Sadeh Weinraub
+> <yehudasa@gmail.com> wrote:
+> > On Tue, May 10, 2011 at 7:04 AM, Stefan Majer <stefan.majer@gmail.com> wrote:
+> >> Hi,
+> >>
+> >> im running 4 nodes with ceph on top of btrfs with a dualport Intel
+> >> X520 10Gb Ethernet Card with the latest 3.3.9 ixgbe driver.
+> >> during benchmarks i get the following stack.
+> >> I can easily reproduce this by simply running rados bench from a fast
+> >> machine using this 4 nodes as ceph cluster.
+> >> We saw this with stock ixgbe driver from 2.6.38.6 and with the latest
+> >> 3.3.9 ixgbe.
+> >> This kernel is tainted because we use fusion-io iodrives as journal
+> >> devices for btrfs.
+> >>
+> >> Any hints to nail this down are welcome.
+> >>
+> >> Greetings Stefan Majer
+> >>
+> >> May 10 15:26:40 os02 kernel: [ 3652.485219] cosd: page allocation
+> >> failure. order:2, mode:0x4020
+> >
+> > It looks like the machine running the cosd is crashing, is that the case?
+> 
+> No the machine is still running. Even the cosd is still there.
 
- include/linux/kvm_host.h |    1 +
- virt/kvm/assigned-dev.c  |   18 ++++++++++++++----
- 2 files changed, 15 insertions(+), 4 deletions(-)
+How much memory is (was?) cosd using?  Is it possible for you to watch RSS 
+under load when the errors trigger?
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ab42855..9272db0 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -513,6 +513,7 @@ struct kvm_assigned_dev_kernel {
- 	struct kvm *kvm;
- 	spinlock_t intx_lock;
- 	char irq_name[32];
-+	struct pci_saved_state *pci_saved_state;
- };
- 
- struct kvm_irq_mask_notifier {
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index ae72ae6..6cc4b97 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -197,8 +197,13 @@ static void kvm_free_assigned_device(struct kvm *kvm,
- {
- 	kvm_free_assigned_irq(kvm, assigned_dev);
- 
--	__pci_reset_function(assigned_dev->dev);
--	pci_restore_state(assigned_dev->dev);
-+	pci_reset_function(assigned_dev->dev);
-+	if (pci_load_and_free_saved_state(assigned_dev->dev,
-+					  &assigned_dev->pci_saved_state))
-+		printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
-+		       __func__, dev_name(&assigned_dev->dev->dev));
-+	else
-+		pci_restore_state(assigned_dev->dev);
- 
- 	pci_release_regions(assigned_dev->dev);
- 	pci_disable_device(assigned_dev->dev);
-@@ -516,7 +521,10 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 
- 	pci_reset_function(dev);
- 	pci_save_state(dev);
--
-+	match->pci_saved_state = pci_store_saved_state(dev);
-+	if (!match->pci_saved_state)
-+		printk(KERN_DEBUG "%s: Couldn't store %s saved state\n",
-+		       __func__, dev_name(&dev->dev));
- 	match->assigned_dev_id = assigned_dev->assigned_dev_id;
- 	match->host_segnr = assigned_dev->segnr;
- 	match->host_busnr = assigned_dev->busnr;
-@@ -546,7 +554,9 @@ out:
- 	mutex_unlock(&kvm->lock);
- 	return r;
- out_list_del:
--	pci_restore_state(dev);
-+	if (pci_load_and_free_saved_state(dev, &match->pci_saved_state))
-+		printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
-+		       __func__, dev_name(&dev->dev));
- 	list_del(&match->list);
- 	pci_release_regions(dev);
- out_disable:
+The osd throttles incoming client bandwidth, but it doesn't throttle 
+inter-osd traffic yet because it's not obvious how to avoid deadlock.  
+It's possible that one node is getting significantly behind the 
+others on the replicated writes and that is blowing up its memory 
+footprint.  There are a few ways we can address that, but I'd like to make 
+sure we understand the problem first.
 
+Thanks!
+sage
+
+
+ 
+> > Are you running both ceph kernel module on the same machine by any
+> > chance? If not, it can be some other fs bug (e.g., the underlying
+> > btrfs). Also, the stack here is quite deep, there's a chance for a
+> > stack overflow.
+> 
+> There is only the cosd running on these machines. We have 3 seperate
+> mons and clients which uses qemu-rbd.
+> 
+> 
+> > Thanks,
+> > Yehuda
+> >
+> 
+> 
+> Greetings
+> -- 
+> Stefan Majer
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
