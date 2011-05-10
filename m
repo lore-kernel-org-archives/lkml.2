@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab1EJXmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 19:42:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40969 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513Ab1EJXmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 19:42:54 -0400
-Message-ID: <4DC9CD60.6010200@zytor.com>
-Date: Tue, 10 May 2011 16:42:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1753739Ab1EJX4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 19:56:14 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:55663 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753518Ab1EJX4N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 19:56:13 -0400
+Date: Wed, 11 May 2011 01:45:26 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Maxim Osipov <maxim.osipov@gmail.com>
+Cc: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
+Message-ID: <20110510234526.GC18929@game.jcrosoft.org>
+References: <4DC53134.8070706@gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, mingo@elte.hu,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hpa@linux.intel.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: Linux 2.6.39-rc7
-References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com> <20110510035356.GA6954@dumpdata.com> <20110510233644.GA23858@dumpdata.com>
-In-Reply-To: <20110510233644.GA23858@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DC53134.8070706@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 15031045233316375522
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2011 04:36 PM, Konrad Rzeszutek Wilk wrote:
->>
->> I was hoping that the rc6 could stretch out so that by the time hpa came back from
->> his travels he would have had a chance to look at: https://lkml.org/lkml/2011/5/5/226
->
-> I had a chance to briefly talk on IRC with hpa and he mentioned I should
-> send a note to Ingo about this since hpa won't be able to do anything until Friday.
->
-> Ingo,
-> Not sure how familiar you are with this issue, but let me briefly explain it.
-> Yinghai provided a patch, which calls memblock_find_in_range(), then calls
-> kernel_physical_mapping_init, which populates the pagetable between pgt_buf_start
-> and pgt_buf_top and once it is done, calls memblock_x86_reserve_range with pgt_buf_start
-> and pgt_buf_end (wherein pgt_buf_end<=  pgt_buf_top). The memory between pgt_buf_end
-> and pgt_buf_top can be re-used later on and it is by other subsystems - NUMA for
-> example uses it.
->
-> Under Xen, the pagetables end up being marked RO, so what ends up happening is that
-> some pages from pgt_buf_end through pgt_buf_top end up RO and the system crashes during
-> bootup as NUMA subsystem tries to write to that area. The fix is to essentially mark the
-> area from pgt_buf_end through pgt_buf_top to RW.
->
-> Stefano posted a patch, which was Acked by Yinghai, but not so by hpa. The concerns
-> were that the patch inserts a hook just for this single case and there should be a better
-> way of doing this - where we either don't need a hook or provide an semantic explanation
-> of the pagetable building and build the patch from there.
->
-> Sadly there was/is not enough time in the 2.6.39 train to actually do it properly.
-> So I provided another patch (which Linus merged) which crudely tries to mark the area from
-> pgt_buf_end through pgt_buf_top to RW and all is done within the Xen MMU code. Sadly it
-> does not work on all machines.
->
-> Without a resolution to this, the Linux x86_64 kernel cannot boot under Xen. There are two
-> options left right now:
->   a). Revert 4b239f458c229de044d6905c2b0f9fe16ed9e01e (x86-64, mm: Put early page table high)
->   b). or revert the workaround that Linus merged and pick the one that Stefano came up with.
->       The patches are available in
->       git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-for-rc6
->
->       They touch the generic x86 MMU code.
->
+On 12:47 Sat 07 May     , Maxim Osipov wrote:
+> Hello,
+> 
+> This patch enables external RTC support on AT91 Flexibity board.
+> 
+> Kind regards,
+> Maxim
+> 
+> 
+> Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
+> ---
+>  arch/arm/mach-at91/board-flexibity.c |   12 +++++++++++-
+>  1 files changed, 11 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
+> index c8a62dc..4fdc96c 100644
+> --- a/arch/arm/mach-at91/board-flexibity.c
+> +++ b/arch/arm/mach-at91/board-flexibity.c
+> @@ -1,7 +1,7 @@
+>  /*
+>   * linux/arch/arm/mach-at91/board-flexibity.c
+>   *
+> - *  Copyright (C) 2010 Flexibity
+> + *  Copyright (C) 2010-2011 Flexibity
+>   *  Copyright (C) 2005 SAN People
+>   *  Copyright (C) 2006 Atmel
+>   *
+> @@ -65,6 +65,13 @@ static struct at91_udc_data __initdata flexibity_udc_data = {
+>  	.pullup_pin	= 0,		/* pull-up driven by UDC */
+>  };
+>  
+> +/* I2C devices */
+> +static struct i2c_board_info __initdata flexibity_i2c_devices[] = {
+> +	{
+> +		I2C_BOARD_INFO("ds1307", 0x68),
+> +	},
+> +};
+> +
+looks fine just one comment please add your board to the new at91sam9260_defconfig
 
-At this point this does indeed seem to be the only reasonable solution. 
-  I'm not happy about either the fix nor the fact that Xen is so fragile 
-yet wants to piggy back on generic x86 code, but for .39 there really 
-isn't much opportunity to fix it any other way.  Konrad has promised me 
-to personally drive the work to get a better fix in.
+so we can compile it when compiling all the sam9260
 
-Unfortunately as mentioned I am travelling at the moment and have 
-limited ability to fix this; if I get a chance I'll look at it and pull 
-it into tip, but under the circumstances I can't promise anything.
-
-	-hpa
+Best Regards,
+J.
