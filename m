@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab1EJI6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 04:58:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51109 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131Ab1EJI6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 04:58:07 -0400
-Date: Tue, 10 May 2011 10:57:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
-Message-ID: <20110510085746.GG27426@elte.hu>
-References: <6921.1304989476@localhost>
- <20110510082029.GF2258@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110510082029.GF2258@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756055Ab1EJJEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 05:04:44 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52384 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab1EJJEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 05:04:43 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 10 May 2011 17:57:46 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: mmotm 2011-05-06-16-39 uploaded
+Message-Id: <20110510175746.0a1fbe40.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201105070015.p470FlAR013200@imap1.linux-foundation.org>
+References: <201105070015.p470FlAR013200@imap1.linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 06 May 2011 16:39:31 -0700
+akpm@linux-foundation.org wrote:
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-> -	raw_spin_lock_irqsave(&rnp->lock, flags);
-> -	rnp->wakemask |= rdp->grpmask;
-> -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +	do {
-> +		old = rnp->wakemask;
-> +		new = old | rdp->grpmask;
-> +	} while (cmpxchg(&rnp->wakemask, old, new) != old);
+> memcg-reclaim-memory-from-nodes-in-round-robin-order.patch
+> memcg-reclaim-memory-from-nodes-in-round-robin-fix.patch
 
-Hm, isnt this an inferior version of atomic_or_long() in essence?
+I'm very sorry that this fix is required for this logic.
+==
 
-Note that atomic_or_long() is x86 only, so a generic one would have to be 
-offered too i suspect, atomic_cmpxchg() driven or so - which would look like 
-the above loop.
+next_scan_node_update is the time when scan_nodes nodemask should be updated.
+Then, time_after() is correct. Otherwise, next-scan_node_update is intialized
+to be 0 and time_before() returns always true, scan_nodes never be updated.
 
-Most architectures could offer atomic_or_long() i suspect.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
+Index: mmotm-May6/mm/memcontrol.c
+===================================================================
+--- mmotm-May6.orig/mm/memcontrol.c
++++ mmotm-May6/mm/memcontrol.c
+@@ -1517,7 +1517,7 @@ static void mem_cgroup_may_update_nodema
+ {
+ 	int nid;
+ 
+-	if (time_before(mem->next_scan_node_update, jiffies))
++	if (time_after(mem->next_scan_node_update, jiffies))
+ 		return;
+ 
+ 	mem->next_scan_node_update = jiffies + 10*HZ;
 
-	Ingo
