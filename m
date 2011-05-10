@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab1EJV4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:56:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13768 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab1EJV42 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:56:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,347,1301900400"; 
-   d="scan'208";a="745343278"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: David Miller <davem@davemloft.net>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "hadi@cyberus.ca" <hadi@cyberus.ca>,
-        "daniel.lezcano@free.fr" <daniel.lezcano@free.fr>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "renatowestphal@gmail.com" <renatowestphal@gmail.com>
-Date: Tue, 10 May 2011 14:56:25 -0700
-Subject: RE: [PATCH 0/7] Network namespace manipulation with file descriptors
-Thread-Topic: [PATCH 0/7] Network namespace manipulation with file
- descriptors
-Thread-Index: AcwOiWictlDJFPjTQf6XZMo0jqBNegA0xa1g
-Message-ID: <987664A83D2D224EAE907B061CE93D5301CCC622F4@orsmsx505.amr.corp.intel.com>
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
-	<20110509.120408.48494155.davem@davemloft.net>
-	<m1oc3btzk4.fsf@fess.ebiederm.org>
- <20110509.134007.116389415.davem@davemloft.net>
-In-Reply-To: <20110509.134007.116389415.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1753100Ab1EJV7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:59:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35138
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752163Ab1EJV7l convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 17:59:41 -0400
+Date: Tue, 10 May 2011 14:59:09 -0700 (PDT)
+Message-Id: <20110510.145909.193724537.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this
+ time)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1305064116.2437.34.camel@edumazet-laptop>
+References: <1304999271.3050.41.camel@edumazet-laptop>
+	<20110509.205851.189693332.davem@davemloft.net>
+	<1305064116.2437.34.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The conflicts on syscall syscall numbers are an unfortunate pain.
->
-> The way we've solved this before is the tree that cares pulls in
-> the net-next-2.6 tree to resolve the conflict.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Tue, 10 May 2011 23:48:36 +0200
 
-Actually it seems more common that new syscalls are only added to
-x86 (plus one or more other architectures that the author cares
-about). Then arch maintainers throw in a "wire up new syscalls"
-patch during the merge window when they see these new bits show up.
+> Le lundi 09 mai 2011 à 20:58 -0700, David Miller a écrit :
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Tue, 10 May 2011 05:47:51 +0200
+>> 
+>> > [PATCH net-next-2.6] net: fix two lockdep splats
+>> > 
+>> > Commit e67f88dd12f6 (net: dont hold rtnl mutex during netlink dump
+>> > callbacks) switched rtnl protection to RCU, but we forgot to adjust two
+>> > rcu_dereference() lockdep annotations :
+>> > 
+>> > inet_get_link_af_size() or inet_fill_link_af() might be called with
+>> > rcu_read_lock or rtnl held, so use rcu_dereference_rtnl()
+>> > instead of rtnl_dereference()
+>> > 
+>> > Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+>> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> 
+>> Applied, thanks everyone.
+> 
+> David, I found you applied this patch for net-2.6, but it was
+> net-next-2.6 material only ...
 
--Tony
-
-Oh - ia64 wiring looks good.
-
-Acked-by: Tony Luck <tony.luck@intel.com>
+Thanks for catching that, I'll fix this.
