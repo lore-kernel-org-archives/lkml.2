@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab1EJMl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 08:41:27 -0400
-Received: from vostochny.stro.at ([78.47.22.85]:47032 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932423Ab1EJMlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 08:41:25 -0400
-Date: Tue, 10 May 2011 12:41:23 +0000
-From: maximilian attems <max@stro.at>
-To: Nuno Subtil <subtil@gmail.com>
-Cc: Robert Gordon <robert@greenroomsoftware.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] deb-pkg: fix cross-compile build
-Message-ID: <20110510124123.GE13278@vostochny.stro.at>
-References: <1304488750-13606-1-git-send-email-subtil@gmail.com>
- <20110504204807.GB13293@sepie.suse.cz>
- <20110505090728.GC30678@vostochny.stro.at>
- <4DC2C568.9090803@greenroomsoftware.com>
- <BANLkTinjBun=TzjveEiJsEJYKH_+NRCP7Q@mail.gmail.com>
- <4DC2EB2B.1050203@greenroomsoftware.com>
- <BANLkTimApO4j-Hsvo2OCc=PnEdOhHu76OA@mail.gmail.com>
+	id S932377Ab1EJMlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:41:23 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:60585 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab1EJMlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 08:41:22 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DC9330A.5060106@cam.ac.uk>
+Date: Tue, 10 May 2011 13:43:54 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimApO4j-Hsvo2OCc=PnEdOhHu76OA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@suse.de>
+CC: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>
+Subject: Re: [PATCH 005/206] Staging: hv: Rename the device type variable
+References: <1304978242-22958-1-git-send-email-kys@microsoft.com> <1304978288-22999-1-git-send-email-kys@microsoft.com> <1304978288-22999-5-git-send-email-kys@microsoft.com> <4DC90F37.6010000@cam.ac.uk> <20110510121310.GA27396@suse.de>
+In-Reply-To: <20110510121310.GA27396@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 10:29:22PM -0700, Nuno Subtil wrote:
-> It looks like your patch duplicates the arch detection logic that's
-> already in create_package, except not completely. I think this is not
-> desirable.
+On 05/10/11 13:13, Greg KH wrote:
+> On Tue, May 10, 2011 at 11:11:03AM +0100, Jonathan Cameron wrote:
+>> On 05/09/11 22:54, K. Y. Srinivasan wrote:
+>>> Rename the variable g_blk_device_type.
+>> Why?
 > 
-> I modified your patch to isolate this logic into a separate function
-> and respect the KBUILD_DEBARCH override (which mostly means I moved
-> the original logic into a separate function). This should make your
-> case work as well, besides respecting the KBUILD_DEBARCH override.
+> Because "g_blk_device_type" is in Hungarian notation, which isn't needed
+> in the kernel.
 > 
-> Maks, Michal, can you please take a look at this new patch?
-
-thanks doing right now.
-
-Michal please hold off until I have time to give it some runs.
-
--- 
-maks
-
+Fair enough, I'd misunderstood what g_blk referred to. Sorry for the noise.
