@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab1EJUuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 16:50:19 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:45228 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab1EJUuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 16:50:17 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, "Darrick J. Wong" <djwong@us.ibm.com>,
-        Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
-	<87tyd31fkc.fsf@devron.myhome.or.jp>
-	<20110510133603.GA5823@infradead.org>
-	<874o524q9h.fsf@devron.myhome.or.jp>
-	<20110510144939.GI4402@quack.suse.cz>
-	<87aaeur31x.fsf@devron.myhome.or.jp>
-	<20110510170339.GA27538@infradead.org>
-Date: Wed, 11 May 2011 05:50:07 +0900
-In-Reply-To: <20110510170339.GA27538@infradead.org> (Christoph Hellwig's
-	message of "Tue, 10 May 2011 13:03:39 -0400")
-Message-ID: <87liyep9fk.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1751611Ab1EJUws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 16:52:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15844 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750Ab1EJUwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 16:52:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,347,1301900400"; 
+   d="scan'208";a="543677"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mikew@google.com" <mikew@google.com>,
+        Greg KH <greg@kroah.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Tue, 10 May 2011 13:52:46 -0700
+Subject: RE: [RFC][PATCH] pstore: EFI Support
+Thread-Topic: [RFC][PATCH] pstore: EFI Support
+Thread-Index: AcwPISM1GEJXxhgLR5+GANJ5FUBsAgAAAedAAAyixsA=
+Message-ID: <987664A83D2D224EAE907B061CE93D5301CCC62180@orsmsx505.amr.corp.intel.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4AKquAg000446
 
-Christoph Hellwig <hch@infradead.org> writes:
+> I would appreciate it if you could review usage of pstore on this patch.
 
-> On Wed, May 11, 2011 at 12:24:58AM +0900, OGAWA Hirofumi wrote:
->> > under writeback and when it's freed no writeback is started.
->> 
->> Sure for data -> data reallocated case. metadata -> data/metadata is
->> still there.
->
-> That's usually handled differently.  For XFS take a look at the
-> xfs_alloc_busy_* function.  For 2.6.40 they've been mostly rewritten
-> to rarely wait for the reuse but instead avoid busy blocks.  But that's
-> a real data integrity issue even without stable pages for I/O.
+There is an "in flight" set of patches to pstore posted by Chen Gong that
+add "open" and "close" operations to the pstore interface (to fix issues with
+remounting pstore - we need a way to let the underlying persistent store know
+that we want to rescan all the entries).  So you should look at that and take
+it into account.
 
-Sounds good. So... Are you suggesting this series should use better
-approach than just blocking?
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
