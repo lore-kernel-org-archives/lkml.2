@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab1EJNbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 09:31:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49540 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755567Ab1EJNbr (ORCPT
+	id S932209Ab1EJNgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 09:36:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56152 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755707Ab1EJNgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 09:31:47 -0400
-Date: Tue, 10 May 2011 14:32:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
-        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
-        "Andrew Morton \(commit_signer:1/4=25%\)" <akpm@linux-foundation.org>,
-        "Randy Dunlap \(commit_signer:1/4=25%\)" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 08/11] tty: add pruss SUART driver
-Message-ID: <20110510143243.3e6f4050@lxorguk.ukuu.org.uk>
-In-Reply-To: <F0818DA1343E4FF1B3096048359CCC4C@subhasishg>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com>
-	<1303474109-6212-9-git-send-email-subhasish@mistralsolutions.com>
-	<034A6447E0D54737B5CEE009A4D20B37@subhasishg>
-	<20110509144610.6b4f7090@lxorguk.ukuu.org.uk>
-	<3A9C5CD56396439DBF825BB4E5779DB9@subhasishg>
-	<20110509145534.2677dfa1@lxorguk.ukuu.org.uk>
-	<F0818DA1343E4FF1B3096048359CCC4C@subhasishg>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 May 2011 09:36:20 -0400
+Date: Tue, 10 May 2011 09:36:03 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110510133603.GA5823@infradead.org>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <87tyd31fkc.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tyd31fkc.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace all looks fine. I can't see anything else taking the lock so you'll
-need to do a bit more debugging and find out why the spin lock change
-makes the difference and what the real root cause is.
+On Tue, May 10, 2011 at 10:59:15AM +0900, OGAWA Hirofumi wrote:
+> I'd like to know those patches are on what state. Waiting in writeback
+> page makes slower, like you mentioned it (I guess it would more
+> noticeable if device was slower that like FAT uses). And I think
+> currently it doesn't help anything others for blk-integrity stuff
+> (without other technic, it doesn't help FS consistency)?
 
+It only makes things slower if we rewrite a region in a file that
+is currently undergoing writeback.  I'd be interested to know about
+real life applications doing that, and if they really are badly affect
+we should help them to work around that in userspace, e.g. by adding
+a fadvice will rewrite call that might be used to never write back
+that regions without an explicit fsync call.
 
