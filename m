@@ -1,132 +1,654 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1EJOkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 10:40:10 -0400
-Received: from fall-pradero.atl.sa.earthlink.net ([207.69.195.104]:33145 "EHLO
-	fall-pradero.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751345Ab1EJOkI (ORCPT
+	id S932538Ab1EJOEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 10:04:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51884 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab1EJOET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 10:40:08 -0400
-X-Greylist: delayed 1928 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 May 2011 10:40:08 EDT
-thread-index: AcwPGx94yjp/Nu7ORgikxe/iiLLtEA==
-Thread-Topic: I thought you would enjoy this page on villasitalia.com!
-From: <niceprofit@ymail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: I thought you would enjoy this page on villasitalia.com!
-Date: Tue, 10 May 2011 10:04:05 -0400
-Message-ID: <BFDA4A92A40F45C384C0734119D1A838@g27.win.smewh.net>
+	Tue, 10 May 2011 10:04:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=U8ZQmPS2bfb3ulSgrYiIXE12b2TyJDefDY62utth90htRaxZSoUKC84o9SvEjTK54V
+         QOrrgGY/And+lgDgUdulvRekWDOiMCQG3m4KEDJ+k90DZoZ28K+M0qydlJA7hZb4VbXO
+         /xn5PU1cBiRv0YUptJWSw3dGi/ESQR6YmcLV8=
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
+Date: Tue, 10 May 2011 16:04:07 +0200
+Message-ID: <BANLkTinr34qmAE8RWVY0Wq_XMfOc0jTUzg@mail.gmail.com>
+Subject: Kernel 2.6.38.6 page allocation failure (ixgbe)
+From: Stefan Majer <stefan.majer@gmail.com>
+To: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: ceph-devel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"niceprofit@ymail.com" <niceprofit@ymail.com> has recommended that you visit this page:
+Hi,
+
+im running 4 nodes with ceph on top of btrfs with a dualport Intel
+X520 10Gb Ethernet Card with the latest 3.3.9 ixgbe driver.
+during benchmarks i get the following stack.
+I can easily reproduce this by simply running rados bench from a fast
+machine using this 4 nodes as ceph cluster.
+We saw this with stock ixgbe driver from 2.6.38.6 and with the latest
+3.3.9 ixgbe.
+This kernel is tainted because we use fusion-io iodrives as journal
+devices for btrfs.
+
+Any hints to nail this down are welcome.
+
+Greetings Stefan Majer
+
+May 10 15:26:40 os02 kernel: [ 3652.485219] cosd: page allocation
+failure. order:2, mode:0x4020
+May 10 15:26:40 os02 kernel: [ 3652.485223] kswapd0: page allocation
+failure. order:2, mode:0x4020
+May 10 15:26:40 os02 kernel: [ 3652.485228] Pid: 57, comm: kswapd0
+Tainted: P        W   2.6.38.6-1.fits.1.el6.x86_64 #1
+May 10 15:26:40 os02 kernel: [ 3652.485230] Call Trace:
+May 10 15:26:40 os02 kernel: [ 3652.485232]  <IRQ>
+[<ffffffff81108ce7>] ? __alloc_pages_nodemask+0x6f7/0x8a0
+May 10 15:26:40 os02 kernel: [ 3652.485247]  [<ffffffff814b0ad0>] ?
+ip_local_deliver+0x80/0x90
+May 10 15:26:40 os02 kernel: [ 3652.485250] cosd: page allocation
+failure. order:2, mode:0x4020
+May 10 15:26:40 os02 kernel: [ 3652.485256]  [<ffffffff81146cd2>] ?
+kmalloc_large_node+0x62/0xb0
+May 10 15:26:40 os02 kernel: [ 3652.485259] Pid: 1849, comm: cosd
+Tainted: P        W   2.6.38.6-1.fits.1.el6.x86_64 #1
+May 10 15:26:40 os02 kernel: [ 3652.485261] Call Trace:
+May 10 15:26:40 os02 kernel: [ 3652.485264]  [<ffffffff8114becb>] ?
+__kmalloc_node_track_caller+0x15b/0x1d0
+May 10 15:26:40 os02 kernel: [ 3652.485266]  <IRQ>
+[<ffffffff81466f74>] ? __netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3652.485274]  [<ffffffff81108ce7>] ?
+__alloc_pages_nodemask+0x6f7/0x8a0
+May 10 15:26:40 os02 kernel: [ 3652.485277]  [<ffffffff81466713>] ?
+__alloc_skb+0x83/0x170
+May 10 15:26:40 os02 kernel: [ 3652.485281]  [<ffffffff814b0ad0>] ?
+ip_local_deliver+0x80/0x90
+May 10 15:26:40 os02 kernel: [ 3652.485283]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3652.485287]  [<ffffffff81146cd2>] ?
+kmalloc_large_node+0x62/0xb0
+May 10 15:26:40 os02 kernel: [ 3652.485297]  [<ffffffffa005d9aa>] ?
+ixgbe_alloc_rx_buffers+0x9a/0x450 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3652.485300]  [<ffffffff8114becb>] ?
+__kmalloc_node_track_caller+0x15b/0x1d0
+May 10 15:26:40 os02 kernel: [ 3652.485305]  [<ffffffff812b79e0>] ?
+swiotlb_map_page+0x0/0x110
+May 10 15:26:40 os02 kernel: [ 3652.485308]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3652.485315]  [<ffffffffa0060930>] ?
+ixgbe_poll+0x1140/0x1670 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3652.485318]  [<ffffffff81466713>] ?
+__alloc_skb+0x83/0x170
+May 10 15:26:40 os02 kernel: [ 3652.485323]  [<ffffffff810f33eb>] ?
+perf_pmu_enable+0x2b/0x40
+May 10 15:26:40 os02 kernel: [ 3652.485326]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3652.485330]  [<ffffffff81474eb2>] ?
+net_rx_action+0x102/0x2a0
+May 10 15:26:40 os02 kernel: [ 3652.485336]  [<ffffffffa005d9aa>] ?
+ixgbe_alloc_rx_buffers+0x9a/0x450 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3652.485341]  [<ffffffff8106b745>] ?
+__do_softirq+0xb5/0x210
+May 10 15:26:40 os02 kernel: [ 3652.485344]  [<ffffffff81474840>] ?
+napi_skb_finish+0x50/0x70
+May 10 15:26:40 os02 kernel: [ 3652.485348]  [<ffffffff810c7ca4>] ?
+handle_IRQ_event+0x54/0x180
+May 10 15:26:40 os02 kernel: [ 3652.485354]  [<ffffffffa0060930>] ?
+ixgbe_poll+0x1140/0x1670 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3652.485357]  [<ffffffff8106b7bd>] ?
+__do_softirq+0x12d/0x210
+May 10 15:26:40 os02 kernel: [ 3652.485360]  [<ffffffff810f33eb>] ?
+perf_pmu_enable+0x2b/0x40
+May 10 15:26:40 os02 kernel: [ 3652.485364]  [<ffffffff8100cf3c>] ?
+call_softirq+0x1c/0x30
+May 10 15:26:40 os02 kernel: [ 3652.485367]  [<ffffffff81474eb2>] ?
+net_rx_action+0x102/0x2a0
+May 10 15:26:40 os02 kernel: [ 3652.485369]  [<ffffffff8100e975>] ?
+do_softirq+0x65/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.485372]  [<ffffffff8106b745>] ?
+__do_softirq+0xb5/0x210
+May 10 15:26:40 os02 kernel: [ 3652.485375]  [<ffffffff8106b605>] ?
+irq_exit+0x95/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.485379]  [<ffffffff810c7ca4>] ?
+handle_IRQ_event+0x54/0x180
+May 10 15:26:40 os02 kernel: [ 3652.485383]  [<ffffffff8154a276>] ?
+do_IRQ+0x66/0xe0
+May 10 15:26:40 os02 kernel: [ 3652.485386]  [<ffffffff8106b7bd>] ?
+__do_softirq+0x12d/0x210
+May 10 15:26:40 os02 kernel: [ 3652.485389]  [<ffffffff81542a53>] ?
+ret_from_intr+0x0/0x15
+May 10 15:26:40 os02 kernel: [ 3652.485391]  <EOI>
+[<ffffffff8100cf3c>] ? call_softirq+0x1c/0x30
+May 10 15:26:40 os02 kernel: [ 3652.485397]  [<ffffffff81110a54>] ?
+shrink_inactive_list+0x164/0x460
+May 10 15:26:40 os02 kernel: [ 3652.485400]  [<ffffffff8100e975>] ?
+do_softirq+0x65/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.485404]  [<ffffffff8153facc>] ?
+schedule+0x44c/0xa10
+May 10 15:26:40 os02 kernel: [ 3652.485407]  [<ffffffff8106b605>] ?
+irq_exit+0x95/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.485412]  [<ffffffff81109b1a>] ?
+determine_dirtyable_memory+0x1a/0x30
+May 10 15:26:40 os02 kernel: [ 3652.485416]  [<ffffffff8154a276>] ?
+do_IRQ+0x66/0xe0
+May 10 15:26:40 os02 kernel: [ 3652.485419]  [<ffffffff81111453>] ?
+shrink_zone+0x3d3/0x530
+May 10 15:26:40 os02 kernel: [ 3652.485422]  [<ffffffff81542a53>] ?
+ret_from_intr+0x0/0x15
+May 10 15:26:40 os02 kernel: [ 3652.485423]  <EOI>
+[<ffffffff81074a4a>] ? del_timer_sync+0x3a/0x60
+May 10 15:26:40 os02 kernel: [ 3652.485430]  [<ffffffff812a774d>] ?
+copy_user_generic_string+0x2d/0x40
+May 10 15:26:40 os02 kernel: [ 3652.485435]  [<ffffffff811054a5>] ?
+zone_watermark_ok_safe+0xb5/0xd0
+May 10 15:26:40 os02 kernel: [ 3652.485439]  [<ffffffff810ff351>] ?
+iov_iter_copy_from_user_atomic+0x101/0x170
+May 10 15:26:40 os02 kernel: [ 3652.485442]  [<ffffffff81112a69>] ?
+kswapd+0x889/0xb20
+May 10 15:26:40 os02 kernel: [ 3652.485457]  [<ffffffffa026c91d>] ?
+btrfs_copy_from_user+0xcd/0x130 [btrfs]
+May 10 15:26:40 os02 kernel: [ 3652.485460]  [<ffffffff811121e0>] ?
+kswapd+0x0/0xb20
+May 10 15:26:40 os02 kernel: [ 3652.485472]  [<ffffffffa026d844>] ?
+__btrfs_buffered_write+0x1a4/0x330 [btrfs]
+May 10 15:26:40 os02 kernel: [ 3652.485476]  [<ffffffff810862b6>] ?
+kthread+0x96/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.485479]  [<ffffffff8117151f>] ?
+file_update_time+0x5f/0x170
+May 10 15:26:40 os02 kernel: [ 3652.485482]  [<ffffffff8100ce44>] ?
+kernel_thread_helper+0x4/0x10
+May 10 15:26:40 os02 kernel: [ 3652.485493]  [<ffffffffa026dc08>] ?
+btrfs_file_aio_write+0x238/0x4e0 [btrfs]
+May 10 15:26:40 os02 kernel: [ 3652.485496]  [<ffffffff81086220>] ?
+kthread+0x0/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.485507]  [<ffffffffa026d9d0>] ?
+btrfs_file_aio_write+0x0/0x4e0 [btrfs]
+May 10 15:26:40 os02 kernel: [ 3652.485511]  [<ffffffff8100ce40>] ?
+kernel_thread_helper+0x0/0x10
+May 10 15:26:40 os02 kernel: [ 3652.485515]  [<ffffffff81158ff3>] ?
+do_sync_readv_writev+0xd3/0x110
+May 10 15:26:40 os02 kernel: [ 3652.485516] Mem-Info:
+May 10 15:26:40 os02 kernel: [ 3652.485519]  [<ffffffff81163d42>] ?
+path_put+0x22/0x30
+May 10 15:26:40 os02 kernel: [ 3652.485521] Node 0 DMA per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.485525]  [<ffffffff812584a3>] ?
+selinux_file_permission+0xf3/0x150
+May 10 15:26:40 os02 kernel: [ 3652.485528] CPU    0: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485530] CPU    1: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485534]  [<ffffffff81251583>] ?
+security_file_permission+0x23/0x90
+May 10 15:26:40 os02 kernel: [ 3652.485535] CPU    2: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485538] CPU    3: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485542]  [<ffffffff81159f14>] ?
+do_readv_writev+0xd4/0x1e0
+May 10 15:26:40 os02 kernel: [ 3652.485544] CPU    4: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485547] CPU    5: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485550]  [<ffffffff81540d91>] ?
+mutex_lock+0x31/0x60
+May 10 15:26:40 os02 kernel: [ 3652.485552] CPU    6: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485554] CPU    7: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485557]  [<ffffffff8115a066>] ?
+vfs_writev+0x46/0x60
+May 10 15:26:40 os02 kernel: [ 3652.485558] Node 0 DMA32 per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.485562]  [<ffffffff8115a1a1>] ?
+sys_writev+0x51/0xc0
+May 10 15:26:40 os02 kernel: [ 3652.485564] CPU    0: hi:  186, btch:
+31 usd: 144
+May 10 15:26:40 os02 kernel: [ 3652.485567] CPU    1: hi:  186, btch:
+31 usd: 198
+May 10 15:26:40 os02 kernel: [ 3652.485571]  [<ffffffff8100c002>] ?
+system_call_fastpath+0x16/0x1b
+May 10 15:26:40 os02 kernel: [ 3652.485573] CPU    2: hi:  186, btch:
+31 usd: 180
+May 10 15:26:40 os02 kernel: [ 3652.485574] Mem-Info:
+May 10 15:26:40 os02 kernel: [ 3652.485576] CPU    3: hi:  186, btch:
+31 usd: 171
+May 10 15:26:40 os02 kernel: [ 3652.485578] Node 0 CPU    4: hi:  186,
+btch:  31 usd: 159
+May 10 15:26:40 os02 kernel: [ 3652.485581] DMA per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.485582] CPU    5: hi:  186, btch:
+31 usd:  69
+May 10 15:26:40 os02 kernel: [ 3652.485585] CPU    0: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485587] CPU    6: hi:  186, btch:
+31 usd: 180
+May 10 15:26:40 os02 kernel: [ 3652.485589] CPU    1: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485591] CPU    7: hi:  186, btch:
+31 usd: 184
+May 10 15:26:40 os02 kernel: [ 3652.485593] CPU    2: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485594] Node 0 CPU    3: hi:    0,
+btch:   1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485597] Normal per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.485598] CPU    4: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485600] CPU    0: hi:  186, btch:
+31 usd: 100
+May 10 15:26:40 os02 kernel: [ 3652.485602] CPU    5: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485604] CPU    1: hi:  186, btch:
+31 usd:  47
+May 10 15:26:40 os02 kernel: [ 3652.485606] CPU    6: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485608] CPU    2: hi:  186, btch:
+31 usd: 168
+May 10 15:26:40 os02 kernel: [ 3652.485610] CPU    7: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.485612] CPU    3: hi:  186, btch:
+31 usd: 140
+May 10 15:26:40 os02 kernel: [ 3652.485614] Node 0 CPU    4: hi:  186,
+btch:  31 usd: 177
+May 10 15:26:40 os02 kernel: [ 3652.485617] DMA32 per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.485618] CPU    5: hi:  186, btch:
+31 usd:  77
+May 10 15:26:40 os02 kernel: [ 3652.485621] CPU    0: hi:  186, btch:
+31 usd: 144
+May 10 15:26:40 os02 kernel: [ 3652.485623] CPU    6: hi:  186, btch:
+31 usd: 168
+May 10 15:26:40 os02 kernel: [ 3652.485625] CPU    1: hi:  186, btch:
+31 usd: 198
+May 10 15:26:40 os02 kernel: [ 3652.485627] CPU    7: hi:  186, btch:
+31 usd:  68
+May 10 15:26:40 os02 kernel: [ 3652.485629] CPU    2: hi:  186, btch:
+31 usd: 180
+May 10 15:26:40 os02 kernel: [ 3652.485634] active_anon:255806
+inactive_anon:19454 isolated_anon:0
+May 10 15:26:40 os02 kernel: [ 3652.485636]  active_file:420093
+inactive_file:5180559 isolated_file:0
+May 10 15:26:40 os02 kernel: [ 3652.485637]  unevictable:50582
+dirty:314034 writeback:8484 unstable:0
+May 10 15:26:40 os02 kernel: [ 3652.485639]  free:30074
+slab_reclaimable:35739 slab_unreclaimable:13526
+May 10 15:26:40 os02 kernel: [ 3652.485641]  mapped:3440 shmem:51
+pagetables:1342 bounce:0
+May 10 15:26:40 os02 kernel: [ 3652.485643] CPU    3: hi:  186, btch:
+31 usd: 171
+May 10 15:26:40 os02 kernel: [ 3652.485644] Node 0 CPU    4: hi:  186,
+btch:  31 usd: 159
+May 10 15:26:40 os02 kernel: [ 3652.485652] DMA free:15852kB min:12kB
+low:12kB high:16kB active_anon:0kB inactive_anon:0kB active_file:0kB
+inactive_file:0kB unevictable:0kB isolated(anon):0kB
+isolated(file):0kB present:15660kB mlocked:0kB dirty:0kB writeback:0kB
+mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB
+kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB
+writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
+May 10 15:26:40 os02 kernel: [ 3652.485659] CPU    5: hi:  186, btch:
+31 usd:  69
+May 10 15:26:40 os02 kernel: [ 3652.485661] lowmem_reserve[]:CPU    6:
+hi:  186, btch:  31 usd: 180
+May 10 15:26:40 os02 kernel: [ 3652.485663]  0CPU    7: hi:  186,
+btch:  31 usd: 184
+May 10 15:26:40 os02 kernel: [ 3652.485665]  2991Node 0  24201Normal per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.485668]  24201CPU    0: hi:  186,
+btch:  31 usd: 100
+May 10 15:26:40 os02 kernel: [ 3652.485671]
+May 10 15:26:40 os02 kernel: [ 3652.485672] CPU    1: hi:  186, btch:
+31 usd:  47
+May 10 15:26:40 os02 kernel: [ 3652.485674] Node 0 CPU    2: hi:  186,
+btch:  31 usd: 168
+May 10 15:26:40 os02 kernel: [ 3652.485682] DMA32 free:85748kB
+min:2460kB low:3072kB high:3688kB active_anon:20480kB
+inactive_anon:5268kB active_file:151588kB inactive_file:2645188kB
+unevictable:72kB isolated(anon):0kB isolated(file):0kB
+present:3063392kB mlocked:0kB dirty:210820kB writeback:0kB
+mapped:648kB shmem:0kB slab_reclaimable:28400kB
+slab_unreclaimable:2152kB kernel_stack:520kB pagetables:100kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+May 10 15:26:40 os02 kernel: [ 3652.485690] CPU    3: hi:  186, btch:
+31 usd: 140
+May 10 15:26:40 os02 kernel: [ 3652.485691] lowmem_reserve[]:CPU    4:
+hi:  186, btch:  31 usd: 177
+May 10 15:26:40 os02 kernel: [ 3652.485693]  0CPU    5: hi:  186,
+btch:  31 usd:  77
+May 10 15:26:40 os02 kernel: [ 3652.485696]  0CPU    6: hi:  186,
+btch:  31 usd: 168
+May 10 15:26:40 os02 kernel: [ 3652.485698]  21210CPU    7: hi:  186,
+btch:  31 usd:  68
+May 10 15:26:40 os02 kernel: [ 3652.485701]  21210active_anon:255806
+inactive_anon:19454 isolated_anon:0
+May 10 15:26:40 os02 kernel: [ 3652.485705]  active_file:420093
+inactive_file:5180559 isolated_file:0
+May 10 15:26:40 os02 kernel: [ 3652.485706]  unevictable:50582
+dirty:314034 writeback:8484 unstable:0
+May 10 15:26:40 os02 kernel: [ 3652.485707]  free:30074
+slab_reclaimable:35739 slab_unreclaimable:13526
+May 10 15:26:40 os02 kernel: [ 3652.485708]  mapped:3440 shmem:51
+pagetables:1342 bounce:0
+May 10 15:26:40 os02 kernel: [ 3652.485709]
+May 10 15:26:40 os02 kernel: [ 3652.485710] Node 0 Node 0 DMA
+free:15852kB min:12kB low:12kB high:16kB active_anon:0kB
+inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB
+isolated(anon):0kB isolated(file):0kB present:15660kB mlocked:0kB
+dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB
+slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB
+bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
+May 10 15:26:40 os02 kernel: [ 3652.485724] Normal free:18696kB
+min:17440kB low:21800kB high:26160kB active_anon:1002744kB
+inactive_anon:72548kB active_file:1528784kB inactive_file:18077048kB
+unevictable:202256kB isolated(anon):0kB isolated(file):0kB
+present:21719040kB mlocked:0kB dirty:1045316kB writeback:33936kB
+mapped:13112kB shmem:204kB slab_reclaimable:114556kB
+slab_unreclaimable:51952kB kernel_stack:3768kB pagetables:5268kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:32
+all_unreclaimable? no
+May 10 15:26:40 os02 kernel: [ 3652.485731]
+lowmem_reserve[]:lowmem_reserve[]: 0 0 2991 0 24201 0 24201 0
+May 10 15:26:40 os02 kernel: [ 3652.485737]
+May 10 15:26:40 os02 kernel: [ 3652.485738] Node 0 Node 0 DMA32
+free:85748kB min:2460kB low:3072kB high:3688kB active_anon:20480kB
+inactive_anon:5268kB active_file:151588kB inactive_file:2645188kB
+unevictable:72kB isolated(anon):0kB isolated(file):0kB
+present:3063392kB mlocked:0kB dirty:210820kB writeback:0kB
+mapped:648kB shmem:0kB slab_reclaimable:28400kB
+slab_unreclaimable:2152kB kernel_stack:520kB pagetables:100kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+May 10 15:26:40 os02 kernel: [ 3652.485747] DMA:
+lowmem_reserve[]:1*4kB  01*8kB  00*16kB  212101*32kB  212101*64kB
+May 10 15:26:40 os02 kernel: [ 3652.485754] 1*128kB Node 0 1*256kB
+Normal free:18696kB min:17440kB low:21800kB high:26160kB
+active_anon:1002744kB inactive_anon:72548kB active_file:1528784kB
+inactive_file:18077048kB unevictable:202256kB isolated(anon):0kB
+isolated(file):0kB present:21719040kB mlocked:0kB dirty:1045316kB
+writeback:33936kB mapped:13112kB shmem:204kB slab_reclaimable:114556kB
+slab_unreclaimable:51952kB kernel_stack:3768kB pagetables:5268kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:32
+all_unreclaimable? no
+May 10 15:26:40 os02 kernel: [ 3652.485764] 0*512kB
+lowmem_reserve[]:1*1024kB  01*2048kB  03*4096kB  0= 15852kB
+May 10 15:26:40 os02 kernel: [ 3652.485771]  0Node 0
+May 10 15:26:40 os02 kernel: [ 3652.485773] DMA32: Node 0 59*4kB DMA:
+125*8kB 1*4kB 66*16kB 1*8kB 80*32kB 0*16kB 188*64kB 1*32kB 51*128kB
+1*64kB 15*256kB 1*128kB 40*512kB 1*256kB 31*1024kB 0*512kB 1*2048kB
+1*1024kB 1*4096kB 1*2048kB = 85620kB
+May 10 15:26:40 os02 kernel: [ 3652.485789] 3*4096kB Node 0 = 15852kB
+May 10 15:26:40 os02 kernel: [ 3652.485791] Normal: Node 0 3930*4kB
+DMA32: 0*8kB 59*4kB 1*16kB 125*8kB 0*32kB 66*16kB 0*64kB 80*32kB
+0*128kB 188*64kB 1*256kB 51*128kB 1*512kB 15*256kB 0*1024kB 40*512kB
+1*2048kB 31*1024kB 0*4096kB 1*2048kB = 18552kB
+May 10 15:26:40 os02 kernel: [ 3652.485807] 1*4096kB 5651289 total
+pagecache pages
+May 10 15:26:40 os02 kernel: [ 3652.485809] = 85620kB
+May 10 15:26:40 os02 kernel: [ 3652.485810] 0 pages in swap cache
+May 10 15:26:40 os02 kernel: [ 3652.485811] Node 0 Swap cache stats:
+add 0, delete 0, find 0/0
+May 10 15:26:40 os02 kernel: [ 3652.485814] Normal: Free swap  = 1048572kB
+May 10 15:26:40 os02 kernel: [ 3652.485815] 3930*4kB Total swap = 1048572kB
+May 10 15:26:40 os02 kernel: [ 3652.485817] 0*8kB 1*16kB 0*32kB 0*64kB
+0*128kB 1*256kB 1*512kB 0*1024kB 1*2048kB 0*4096kB = 18552kB
+May 10 15:26:40 os02 kernel: [ 3652.485822] 5651289 total pagecache pages
+May 10 15:26:40 os02 kernel: [ 3652.485823] 0 pages in swap cache
+May 10 15:26:40 os02 kernel: [ 3652.485824] Swap cache stats: add 0,
+delete 0, find 0/0
+May 10 15:26:40 os02 kernel: [ 3652.485825] Free swap  = 1048572kB
+May 10 15:26:40 os02 kernel: [ 3652.485826] Total swap = 1048572kB
+May 10 15:26:40 os02 kernel: [ 3652.486439] kworker/0:1: page
+allocation failure. order:2, mode:0x4020
+May 10 15:26:40 os02 kernel: [ 3652.486443] Pid: 0, comm: kworker/0:1
+Tainted: P        W   2.6.38.6-1.fits.1.el6.x86_64 #1
+May 10 15:26:40 os02 kernel: [ 3652.486446] Call Trace:
+May 10 15:26:40 os02 kernel: [ 3652.486448]  <IRQ>
+[<ffffffff81108ce7>] ? __alloc_pages_nodemask+0x6f7/0x8a0
+May 10 15:26:40 os02 kernel: [ 3652.486459]  [<ffffffff814b0ad0>] ?
+ip_local_deliver+0x80/0x90
+May 10 15:26:40 os02 kernel: [ 3652.486464]  [<ffffffff81146cd2>] ?
+kmalloc_large_node+0x62/0xb0
+May 10 15:26:40 os02 kernel: [ 3652.486468]  [<ffffffff8114becb>] ?
+__kmalloc_node_track_caller+0x15b/0x1d0
+May 10 15:26:40 os02 kernel: [ 3652.486473]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3652.486476]  [<ffffffff81466713>] ?
+__alloc_skb+0x83/0x170
+May 10 15:26:40 os02 kernel: [ 3652.486479]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3652.486489]  [<ffffffffa005d9aa>] ?
+ixgbe_alloc_rx_buffers+0x9a/0x450 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3652.486494]  [<ffffffff81474840>] ?
+napi_skb_finish+0x50/0x70
+May 10 15:26:40 os02 kernel: [ 3652.486501]  [<ffffffffa0060930>] ?
+ixgbe_poll+0x1140/0x1670 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3652.486506]  [<ffffffff81013379>] ?
+sched_clock+0x9/0x10
+May 10 15:26:40 os02 kernel: [ 3652.486510]  [<ffffffff81474eb2>] ?
+net_rx_action+0x102/0x2a0
+May 10 15:26:40 os02 kernel: [ 3652.486514]  [<ffffffff8106b745>] ?
+__do_softirq+0xb5/0x210
+May 10 15:26:40 os02 kernel: [ 3652.486520]  [<ffffffff8108aec4>] ?
+hrtimer_interrupt+0x134/0x240
+May 10 15:26:40 os02 kernel: [ 3652.486523]  [<ffffffff8100cf3c>] ?
+call_softirq+0x1c/0x30
+May 10 15:26:40 os02 kernel: [ 3652.486526]  [<ffffffff8100e975>] ?
+do_softirq+0x65/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.486529]  [<ffffffff8106b605>] ?
+irq_exit+0x95/0xa0
+May 10 15:26:40 os02 kernel: [ 3652.486533]  [<ffffffff8154a360>] ?
+smp_apic_timer_interrupt+0x70/0x9b
+May 10 15:26:40 os02 kernel: [ 3652.486536]  [<ffffffff8100c9f3>] ?
+apic_timer_interrupt+0x13/0x20
+May 10 15:26:40 os02 kernel: [ 3652.486538]  <EOI>
+[<ffffffff812db311>] ? intel_idle+0xc1/0x120
+May 10 15:26:40 os02 kernel: [ 3652.486544]  [<ffffffff812db2f4>] ?
+intel_idle+0xa4/0x120
+May 10 15:26:40 os02 kernel: [ 3652.486549]  [<ffffffff8143bca5>] ?
+cpuidle_idle_call+0xb5/0x240
+May 10 15:26:40 os02 kernel: [ 3652.486554]  [<ffffffff8100aa87>] ?
+cpu_idle+0xb7/0x110
+May 10 15:26:40 os02 kernel: [ 3652.486558]  [<ffffffff81538ffe>] ?
+start_secondary+0x21f/0x221
+May 10 15:26:40 os02 kernel: [ 3652.486561] Mem-Info:
+May 10 15:26:40 os02 kernel: [ 3652.486562] Node 0 DMA per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.486564] CPU    0: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486567] CPU    1: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486569] CPU    2: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486571] CPU    3: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486573] CPU    4: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486575] CPU    5: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486578] CPU    6: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486580] CPU    7: hi:    0, btch:
+ 1 usd:   0
+May 10 15:26:40 os02 kernel: [ 3652.486581] Node 0 DMA32 per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.486584] CPU    0: hi:  186, btch:
+31 usd: 144
+May 10 15:26:40 os02 kernel: [ 3652.486586] CPU    1: hi:  186, btch:
+31 usd: 198
+May 10 15:26:40 os02 kernel: [ 3652.486588] CPU    2: hi:  186, btch:
+31 usd: 180
+May 10 15:26:40 os02 kernel: [ 3652.486590] CPU    3: hi:  186, btch:
+31 usd: 172
+May 10 15:26:40 os02 kernel: [ 3652.486593] CPU    4: hi:  186, btch:
+31 usd: 159
+May 10 15:26:40 os02 kernel: [ 3652.486595] CPU    5: hi:  186, btch:
+31 usd:  69
+May 10 15:26:40 os02 kernel: [ 3652.486597] CPU    6: hi:  186, btch:
+31 usd: 180
+May 10 15:26:40 os02 kernel: [ 3652.486599] CPU    7: hi:  186, btch:
+31 usd: 184
+May 10 15:26:40 os02 kernel: [ 3652.486601] Node 0 Normal per-cpu:
+May 10 15:26:40 os02 kernel: [ 3652.486603] CPU    0: hi:  186, btch:
+31 usd: 162
+May 10 15:26:40 os02 kernel: [ 3652.486605] CPU    1: hi:  186, btch:
+31 usd:  47
+May 10 15:26:40 os02 kernel: [ 3652.486608] CPU    2: hi:  186, btch:
+31 usd: 168
+May 10 15:26:40 os02 kernel: [ 3652.486610] CPU    3: hi:  186, btch:
+31 usd: 141
+May 10 15:26:40 os02 kernel: [ 3652.486612] CPU    4: hi:  186, btch:
+31 usd: 177
+May 10 15:26:40 os02 kernel: [ 3652.486614] CPU    5: hi:  186, btch:
+31 usd:  77
+May 10 15:26:40 os02 kernel: [ 3652.486616] CPU    6: hi:  186, btch:
+31 usd: 168
+May 10 15:26:40 os02 kernel: [ 3652.486618] CPU    7: hi:  186, btch:
+31 usd: 174
+May 10 15:26:40 os02 kernel: [ 3652.486624] active_anon:255806
+inactive_anon:19454 isolated_anon:0
+May 10 15:26:40 os02 kernel: [ 3652.486625]  active_file:420093
+inactive_file:5180745 isolated_file:0
+May 10 15:26:40 os02 kernel: [ 3652.486627]  unevictable:50582
+dirty:314470 writeback:8484 unstable:0
+May 10 15:26:40 os02 kernel: [ 3652.486628]  free:29795
+slab_reclaimable:35739 slab_unreclaimable:13526
+May 10 15:26:40 os02 kernel: [ 3652.486629]  mapped:3440 shmem:51
+pagetables:1342 bounce:0
+May 10 15:26:40 os02 kernel: [ 3652.486631] Node 0 DMA free:15852kB
+min:12kB low:12kB high:16kB active_anon:0kB inactive_anon:0kB
+active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB
+isolated(file):0kB present:15660kB mlocked:0kB dirty:0kB writeback:0kB
+mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB
+kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB
+writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
+May 10 15:26:40 os02 kernel: [ 3652.486642] lowmem_reserve[]: 0 2991 24201 24201
+May 10 15:26:40 os02 kernel: [ 3652.486645] Node 0 DMA32 free:85748kB
+min:2460kB low:3072kB high:3688kB active_anon:20480kB
+inactive_anon:5268kB active_file:151588kB inactive_file:2645188kB
+unevictable:72kB isolated(anon):0kB isolated(file):0kB
+present:3063392kB mlocked:0kB dirty:210820kB writeback:0kB
+mapped:648kB shmem:0kB slab_reclaimable:28400kB
+slab_unreclaimable:2152kB kernel_stack:520kB pagetables:100kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+May 10 15:26:40 os02 kernel: [ 3652.486657] lowmem_reserve[]: 0 0 21210 21210
+May 10 15:26:40 os02 kernel: [ 3652.486660] Node 0 Normal free:17580kB
+min:17440kB low:21800kB high:26160kB active_anon:1002744kB
+inactive_anon:72548kB active_file:1528784kB inactive_file:18077792kB
+unevictable:202256kB isolated(anon):0kB isolated(file):0kB
+present:21719040kB mlocked:0kB dirty:1047060kB writeback:33936kB
+mapped:13112kB shmem:204kB slab_reclaimable:114556kB
+slab_unreclaimable:51952kB kernel_stack:3768kB pagetables:5268kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:64
+all_unreclaimable? no
+May 10 15:26:40 os02 kernel: [ 3652.486673] lowmem_reserve[]: 0 0 0 0
+May 10 15:26:40 os02 kernel: [ 3652.486675] Node 0 DMA: 1*4kB 1*8kB
+0*16kB 1*32kB 1*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB
+3*4096kB = 15852kB
+May 10 15:26:40 os02 kernel: [ 3652.486684] Node 0 DMA32: 59*4kB
+125*8kB 66*16kB 80*32kB 188*64kB 51*128kB 15*256kB 40*512kB 31*1024kB
+1*2048kB 1*4096kB = 85620kB
+May 10 15:26:40 os02 kernel: [ 3652.486692] Node 0 Normal: 3705*4kB
+12*8kB 16*16kB 4*32kB 1*64kB 0*128kB 1*256kB 1*512kB 0*1024kB 1*2048kB
+0*4096kB = 18180kB
+May 10 15:26:40 os02 kernel: [ 3652.486700] 5651289 total pagecache pages
+May 10 15:26:40 os02 kernel: [ 3652.486702] 0 pages in swap cache
+May 10 15:26:40 os02 kernel: [ 3652.486704] Swap cache stats: add 0,
+delete 0, find 0/0
+May 10 15:26:40 os02 kernel: [ 3652.486705] Free swap  = 1048572kB
+May 10 15:26:40 os02 kernel: [ 3652.486707] Total swap = 1048572kB
+May 10 15:26:40 os02 kernel: [ 3652.562795] 6291440 pages RAM
+May 10 15:26:40 os02 kernel: [ 3652.562798] 108688 pages reserved
+May 10 15:26:40 os02 kernel: [ 3652.562799] 5429575 pages shared
+May 10 15:26:40 os02 kernel: [ 3652.562801] 783596 pages non-shared
+May 10 15:26:40 os02 kernel: [ 3652.651570] 6291440 pages RAM
+May 10 15:26:40 os02 kernel: [ 3652.651572] 108688 pages reserved
+May 10 15:26:40 os02 kernel: [ 3652.651573] 5430055 pages shared
+May 10 15:26:40 os02 kernel: [ 3652.651575] 782974 pages non-shared
+May 10 15:26:40 os02 kernel: [ 3652.721553] 6291440 pages RAM
+May 10 15:26:40 os02 kernel: [ 3652.721555] 108688 pages reserved
+May 10 15:26:40 os02 kernel: [ 3652.721556] 5430961 pages shared
+May 10 15:26:40 os02 kernel: [ 3652.721557] 781496 pages non-shared
+May 10 15:26:40 os02 kernel: [ 3654.349865] Pid: 1846, comm: cosd
+Tainted: P        W   2.6.38.6-1.fits.1.el6.x86_64 #1
+May 10 15:26:40 os02 kernel: [ 3654.358792] Call Trace:
+May 10 15:26:40 os02 kernel: [ 3654.361519]  <IRQ>
+[<ffffffff81108ce7>] ? __alloc_pages_nodemask+0x6f7/0x8a0
+May 10 15:26:40 os02 kernel: [ 3654.369495]  [<ffffffff814b0ad0>] ?
+ip_local_deliver+0x80/0x90
+May 10 15:26:40 os02 kernel: [ 3654.376005]  [<ffffffff81146cd2>] ?
+kmalloc_large_node+0x62/0xb0
+May 10 15:26:40 os02 kernel: [ 3654.382703]  [<ffffffff8114becb>] ?
+__kmalloc_node_track_caller+0x15b/0x1d0
+May 10 15:26:40 os02 kernel: [ 3654.390464]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3654.397163]  [<ffffffff81466713>] ?
+__alloc_skb+0x83/0x170
+May 10 15:26:40 os02 kernel: [ 3654.403277]  [<ffffffff81466f74>] ?
+__netdev_alloc_skb+0x24/0x50
+May 10 15:26:40 os02 kernel: [ 3654.409970]  [<ffffffffa005d9aa>] ?
+ixgbe_alloc_rx_buffers+0x9a/0x450 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3654.417926]  [<ffffffff812b79e0>] ?
+swiotlb_map_page+0x0/0x110
+May 10 15:26:40 os02 kernel: [ 3654.424432]  [<ffffffffa0060930>] ?
+ixgbe_poll+0x1140/0x1670 [ixgbe]
+May 10 15:26:40 os02 kernel: [ 3654.431518]  [<ffffffff810f33eb>] ?
+perf_pmu_enable+0x2b/0x40
+May 10 15:26:40 os02 kernel: [ 3654.437924]  [<ffffffff81474eb2>] ?
+net_rx_action+0x102/0x2a0
+May 10 15:26:40 os02 kernel: [ 3654.444329]  [<ffffffff8106b745>] ?
+__do_softirq+0xb5/0x210
+May 10 15:26:40 os02 kernel: [ 3654.450541]  [<ffffffff810c7ca4>] ?
+handle_IRQ_event+0x54/0x180
+May 10 15:26:40 os02 kernel: [ 3654.457138]  [<ffffffff8106b7bd>] ?
+__do_softirq+0x12d/0x210
+May 10 15:26:40 os02 kernel: [ 3654.463446]  [<ffffffff8100cf3c>] ?
+call_softirq+0x1c/0x30
+May 10 15:26:40 os02 kernel: [ 3654.469562]  [<ffffffff8100e975>] ?
+do_softirq+0x65/0xa0
+May 10 15:26:40 os02 kernel: [ 3654.475484]  [<ffffffff8106b605>] ?
+irq_exit+0x95/0xa0
+May 10 15:26:40 os02 kernel: [ 3654.481218]  [<ffffffff8154a276>] ?
+do_IRQ+0x66/0xe0
+May 10 15:26:40 os02 kernel: [ 3654.486754]  [<ffffffff81542a53>] ?
+ret_from_intr+0x0/0x15
+May 10 15:26:40 os02 kernel: [ 3654.492867]  <EOI>
+[<ffffffff81286919>] ? __make_request+0x149/0x4c0
+May 10 15:26:40 os02 kernel: [ 3654.500061]  [<ffffffff812868e4>] ?
+__make_request+0x114/0x4c0
+May 10 15:26:41 os02 kernel: [ 3654.506565]  [<ffffffff812841bd>] ?
+generic_make_request+0x2fd/0x5e0
+May 10 15:26:41 os02 kernel: [ 3654.513649]  [<ffffffff8142742b>] ?
+dm_get_live_table+0x4b/0x60
+May 10 15:26:41 os02 kernel: [ 3654.520248]  [<ffffffff81427bc1>] ?
+dm_merge_bvec+0xc1/0x140
+May 10 15:26:41 os02 kernel: [ 3654.526555]  [<ffffffff81284526>] ?
+submit_bio+0x86/0x110
+May 10 15:26:41 os02 kernel: [ 3654.532574]  [<ffffffff8118deac>] ?
+dio_bio_submit+0xbc/0xc0
+May 10 15:26:41 os02 kernel: [ 3654.538881]  [<ffffffff8118df40>] ?
+dio_send_cur_page+0x90/0xc0
+May 10 15:26:41 os02 kernel: [ 3654.545478]  [<ffffffff8118dfd5>] ?
+submit_page_section+0x65/0x180
+May 10 15:26:41 os02 kernel: [ 3654.552370]  [<ffffffff8118e918>] ?
+__blockdev_direct_IO+0x678/0xb30
+May 10 15:26:41 os02 kernel: [ 3654.559454]  [<ffffffff81250eaf>] ?
+security_inode_getsecurity+0x1f/0x30
+May 10 15:26:41 os02 kernel: [ 3654.566924]  [<ffffffff8118c627>] ?
+blkdev_direct_IO+0x57/0x60
+May 10 15:26:41 os02 kernel: [ 3654.573414]  [<ffffffff8118b760>] ?
+blkdev_get_blocks+0x0/0xc0
+May 10 15:26:41 os02 kernel: [ 3654.579954]  [<ffffffff811008f2>] ?
+generic_file_direct_write+0xc2/0x190
+May 10 15:26:41 os02 kernel: [ 3654.587424]  [<ffffffff811715b6>] ?
+file_update_time+0xf6/0x170
+May 10 15:26:41 os02 kernel: [ 3654.594025]  [<ffffffff811023eb>] ?
+__generic_file_aio_write+0x32b/0x460
+May 10 15:26:41 os02 kernel: [ 3654.601494]  [<ffffffff8105c9e0>] ?
+wake_up_state+0x10/0x20
 
 
 
+and so on.
 
-Hello Friend,
-
-Commission Takers! Serious Change Your Life Style w/in Minutes!!!
-
-Brand *New* Softwere Helps Bank $3,618,482 With Zero Marketing Costs And No Tecnical Skills
-With one click of a button, you had easy money rolling into your account!
-
-Congratulations: Take Your Waiting $700 Hot Commissions Now!!!
-
-It's So Simple you can use the one-click software and secure yor financial future Forever.
-It Doesn't Matter Where In The World You Are If You Have An Internet Connection & A PC You 
-Can Earn The $700 For Just A Few Minutes Of Clicking A Mouse "
-
-It's Easy To Make Money Everyday Even If You're Starting From Scratch With
-Zero Knowledge, Experience Or Budget!I'll Show You Exactly How.
-
-We've Start putting everyday 28 Members in YOUR TEAM for the May 5 to 12/2011
-weekly commission cycle...and GROWING everyday earn by $100 up to $200 or more.
-
-IMPORTANT:Advance Don't delay on May 12/2011,is the Cut-Off day to lock  
-in your position then faster you act the higher commission you  will earn!!!
-
-Go Here To Secure not less than $700 commission Now and it still growing as  
-many people joining under you. if you secure your position right away:The $700
-Commission will Arrive Through your Paypal or Credit Card on June/20/2011...Hurry  
-this limited time, only 8 Positions are available Now.
-
-Once you enter a valid credit card number or paypal account after procces, you will 
-be able to earn $700 in less than  2 hours a day.I will show you how we do that 
-and then I will help you through  the process so that YOU SUCCEED! And Enjoy!!! 
-
-You can claim your commission $700 USD in any ATM After your membership is valid in process.
-
-Click Below!!!And Join Right Now..
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2982596&referrer=dollarhere=%3E
-
->>>> This Snapshots is Proven Earn When You Join Early <<<<<<<<
-
-TYPE   DATE & TIME ------- NEW MEMBERS ----------- COUNTRY
-
-P --- MAY. 9 @ 2:38  AM-- Jenny Lopez------------- United States
-P --- MAY. 9 @ 2:53  AM-- Andy William ----------- United Kingdom
-P --- MAY. 9 @ 2:56  AM-- Jeffrey Jacobs---------- Germany
-M --- MAY. 9 @ 4:19  AM-- Mayeth Thompson--------- Singapore
-P --- MAY. 9 @ 4:28  AM-- Chandrena White--------- Italy
-P --- MAY. 8 @ 2:38  AM-- Jinky Buffer------------ United States
-P --- MAY. 8 @ 2:53  AM-- Ailaine Smith ---------- United Kingdom
-P --- MAY. 8 @ 2:56  AM-- Mandene Jonhson--------- Germany
-M --- MAY. 8 @ 4:19  AM-- Cristian Gatmaitan------ Singapore
-P --- MAY. 8 @ 4:28  AM-- Jhon Carmalon----------- Italy
-M --- MAY. 8 @ 6:01  AM-- lalaine Anderson-------- Australia
-P --- MAY. 7 @ 7:11  AM-- Rebecca Underwood------- Hungary
-P --- MAY. 7 @ 7:39  AM-- Jericho Jackson--------- Canada
-P --- MAY. 7 @ 9:42  AM-- Thomas Silva ----------- Sri Lanka
-M --- MAY. 7 @ 9:58  PM-- Grace Taylor------------ United States
-P --- MAY. 7 @ 10:21 PM-- Gina Henry-------------- New Zealand
-P --- MAY. 6 @ 11:24 PM-- Mohammed Ahmen --------- Romania
-M --- MAY. 6 @ 11:33 PM-- Tracey Duncan----------- Puerto Rico
-P --- MAY. 6 @ 11:41 PM-- Jane Stawrt------------- United States
-P --- MAY. 6 @ 11:47 PM-- Janice Youngstown------- Taiwan
-P --- MAY. 6 @ 11:53 PM-- Shirley Ong------------- China
-P --- MAY. 6 @ 1:45  AM-- Ryann Lambert ---------- Europe
-M --- MAY. 5 @ 12:34 AM-- Nick Gauci ------------- Calefornia
-M --- MAY. 5 @ 10:24 AM-- Don Riley -------------- Netherland
-P --- MAY. 5 @ 10:30 AM-- Lorne Whittaker -------- Swetzerland
-P --- MAY. 5 @ 02:14 AM-- Ashwani Vohra ---------- Brazil
-M --- MAY. 5 @ 2:34  AM-- Kevin Hunt ------------- United States
-P --- MAY. 5 @ 1:54  AM-- Charles Brown----------- United States
-
-Therefore, you have a GUARANTEED $700 CommissionS  every month from now on!
-
-Earn $25 Per Process! Each $25 x 28 = $700 Commission will be yours...
-
-Be Sure to Copy the link below & Paste into your browser and press enter:
-To Secure your $700 commission!
-
-You will access your $700 in any ATM when you Join early our weekly cycle.
- 
-Click Below!!!And Join Right Now..
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2982596&referrer=dollarhere=%3E
-
-After Finish payment of $25 you could have earn $700 Automatic regular recieved      
-commissions in every 20th of the month direct to your Account.Today is $700       
-Commission in each  Member Who start and join Today before cut-off....    
-
-You must UPGRADE right away or before others do....
-
-Business Manager Success, Sam Benjamin 
- 
-MAIN OFFICE, USA, UK, Australia, Asia, Europe
-
-
-
-
-
-
-Site privacy policy: This page was sent using the villasitalia.com send-to-a-friend link. Your email has not been added to any list and has not been recorded at our site.
+-- 
+Stefan Majer
