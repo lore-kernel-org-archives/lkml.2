@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab1EJSzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 14:55:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:52804 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1EJSzh (ORCPT
+	id S1751895Ab1EJS5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:57:31 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56225 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab1EJS53 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 14:55:37 -0400
+	Tue, 10 May 2011 14:57:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fS9WOlQ/W1U8ixAgyEZCgdr/CTTCX/3fb+14xAx0yU3qaHDu28ET2QMHcz/UXnwloH
-         9JKZDop6zFnFMMDNucCA==
+         :content-type:content-transfer-encoding;
+        b=d/s4rpea5tuT4iViid4fcWBbH86ZMgrS6wa4mrFjsZXtct74itgJGcY2WA77lNCJAa
+         sb7rC8Ro8HqDtQ9bAGJQT8MQ/7bCBAOSIUeRhmN/GUwRPbGfsDDN48+N+//P9fqdsCkM
+         1h6Ox0YfytdzMaQ9lNWnbjB9HhObWSQfNu3oY=
 MIME-Version: 1.0
-In-Reply-To: <4DC90AE8.101@parallels.com>
-References: <4DAFD0B1.9090603@parallels.com>
-	<20110421064150.6431.84511.stgit@localhost6>
-	<20110421124424.0a10ed0c.akpm@linux-foundation.org>
-	<4DB0FE8F.9070407@parallels.com>
-	<alpine.LSU.2.00.1105031223120.9845@sister.anvils>
-	<4DC4D9A6.9070103@parallels.com>
-	<alpine.LSU.2.00.1105071621330.3668@sister.anvils>
-	<4DC691D0.6050104@parallels.com>
-	<alpine.LSU.2.00.1105081234240.15963@sister.anvils>
-	<4DC90AE8.101@parallels.com>
-Date: Tue, 10 May 2011 11:55:26 -0700
-Message-ID: <BANLkTi=pev65quykAhp6SeisxyW7=A3fGA@mail.gmail.com>
-Subject: Re: [PATCH v2] tmpfs: fix race between umount and writepage
-From: Hugh Dickins <hughd@google.com>
-To: Konstantin Khlebnikov <khlebnikov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTin=cU_kCSFfznna69pkgTsSNVjJgw@mail.gmail.com>
+References: <BANLkTin=cU_kCSFfznna69pkgTsSNVjJgw@mail.gmail.com>
+Date: Tue, 10 May 2011 20:57:28 +0200
+Message-ID: <BANLkTi=Lo4jRWbHhMLkJmOfg09s+ebDjcw@mail.gmail.com>
+Subject: [hrtimers] Re: Regression affecting b43 LP-PHY card
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: b43-dev <b43-dev@lists.infradead.org>, linux-wireless@vger.kernel.org,
+        Juan Carlos Romero <juancarlos.romero@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Ben Greear <greearb@candelatech.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jamie Lokier <jamie@shareable.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 2:52 AM, Konstantin Khlebnikov
-<khlebnikov@parallels.com> wrote:
-> Hugh Dickins wrote:
->>
->> On Sun, 8 May 2011, Konstantin Khlebnikov wrote:
->>>
->>> Ok, I can test final patch-set on the next week.
->>> Also I can try to add some swapoff test-cases.
->>
->> That would be helpful if you have the time: thank you.
+W dniu 10 maja 2011 00:52 użytkownik Rafał Miłecki <zajec5@gmail.com> napisał:
+> Juan owns Lenovo affected by well-known LP-PHY DMA errors. His testing
+> procedure is following:
+> modprobe wl; connect; download sth small; rmmod wl;
+> modprobe b43; download 2GB
 >
-> I Confirm, patch 1/3 really fixes race between writepage and umount, as
-> expected.
-
-Good, thank you (but that path was identical to what you'd already tested).
-
+> When working on DMA errors we discovered that wireless-testing is not
+> working well for him. Even after performing above procedure his
+> machine disconnects quickly and he is not able to reconnect. We tested
+> 2.6.39-rc6 from tarball and it was working fine. I'd like to highlight
+> here, that we were switching between mainline and wireless-testing few
+> times. It is not a random issue.
 >
-> In patch 2/3: race-window between unlock_page and iput extremely small.
-
-(I should clarify that the main race window is actually much wider
-than that.  That page lock is only effective at holding off
-shmem_evict_inode() while the page is in the file's pagecache -
-between the (old positioning of) mutex_unlock(&shmem_swaplist_mutex)
-and the add_to_page_cache_locked(), the page is just in swapcache and
-so not recognizably attached to the file: shmem_evict_inode() will
-call shmem_truncate_range(), and that would find the swp_entry_t, but
-it frees it with a free_swap_and_cache() - which does not wait if it
-cannot trylock the page.)
-
-> My test works fine in parallel with thirty random swapon-swapoff,
-> but it works without this patch too, thus I cannot catch this race.
-
-Thanks for trying.  Given my difficulty in reproducing your umount
-case, I'm not at all surprised that you didn't manage to reproduce
-this swapoff case.  Indeed, I didn't even try to reproduce it myself:
-I just saw the theoretical possibility once you'd warned me of
-igrab(), and tested that this igrab-less approach works as well as the
-old approach, without risking that race.
-
+> I suspected this regression could be caused by my recent ssb patches.
+> So I reverted all of them but this didn't help.
 >
-> I apply patch 3/3 too, but have not tested this case.
+> In this situation we decided to bisect. I was a little afraid of last
+> merges so we took older 2.6.38 as GOOD (we tested this twice) and
+> wireless-testing commit before my ssb changes as BAD. Today Juan
+> finished bisecting kernel:
+> http://pastebin.com/HSKbRzpB
+>
+> According to his bisection the first bad commit is
+> e06383db9ec591696a06654257474b85bac1f8cb [0]:
+> hrtimers: extend hrtimer base code to handle more then 2 clockids
+>
+> Does it make any sense to you? Could this be some timing issue?
+>
+> It was too late to test this today, we (Juan) will work on this
+> tomorrow. It's impossible to revert this commit from HEAD of
+> wireless-testing, so my idea is to checkout commit, test, revert,
+> test.
+>
+> Did anyone else experience any similar problems with latest wireless-testing?
+>
+>
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=e06383db9ec591696a06654257474b85bac1f8cb
 
-Fine, that part I could reproduce fairly easily for myself, and the
-fix tested out fine.
+Today Juan checkouted commit e06383db9ec591696a06654257474b85bac1f8cb
+and tested it. He was disconnected really soon.
 
-Thanks,
-Hugh
+Then he reverted e06383db9ec591696a06654257474b85bac1f8cb and tested
+again. Connection was stable, he downloaded 2GB file over network.
+
+
+John S.: your commit does not touch Broadcom card directly, but it
+seems it somehow affects it. I suspect there can be some timing issue.
+Do you have any idea what could it be, how can we debug this?
+
+-- 
+Rafał
