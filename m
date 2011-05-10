@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab1EJLJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 07:09:49 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62269 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336Ab1EJLJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 07:09:47 -0400
-From: Niels de Vos <ndevos@redhat.com>
-To: linux-omap@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Sanjeev Premi <premi@ti.com>, Niels de Vos <ndevos@redhat.com>
-Subject: [PATCH V2] omap2/omapfb: make DBG() more resistant in if-else constructions
-Date: Tue, 10 May 2011 12:07:33 +0100
-Message-Id: <1305025653-17138-1-git-send-email-ndevos@redhat.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <BANLkTinEJZ=fvJmWRkQ7kKyxbFRaJnum7g@mail.gmail.com>
-References: <BANLkTinEJZ=fvJmWRkQ7kKyxbFRaJnum7g@mail.gmail.com>
+	id S1753196Ab1EJLIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 07:08:31 -0400
+Received: from smtpout06.highway.telekom.at ([195.3.96.89]:21757 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752213Ab1EJLIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 07:08:30 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: i915/kms/backlight-combo mode problem
+Date: Tue, 10 May 2011 13:08:23 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.5; KDE/4.6.2; x86_64; ; )
+Cc: Michael Chang <mchang@novell.com>, Joey Lee <jlee@novell.com>,
+        chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org,
+        tiwai@suse.de
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <BANLkTimtvAWeS-t3bWjJmdVtyaPDw2uWDA@mail.gmail.com> <BANLkTi=hUBrKnbrF+Q_ZOxdUPVSOUYUm2Q@mail.gmail.com>
+In-Reply-To: <BANLkTi=hUBrKnbrF+Q_ZOxdUPVSOUYUm2Q@mail.gmail.com>
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105101308.24662@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When DBG() is used in a simple if-else, the resulting code path
-currently depends on the definition of DBG(). Inserting the statement in
-a "do { ... } while (0)" prevents this possible misuse.
+* Michael Chang -- Tuesday 10 May 2011:
+> Could you please try this patch and get the log ? We wonder why
+> is_backlight_combination_mode () returns false.
 
-Signed-off-by: Niels de Vos <ndevos@redhat.com>
+This information was already buried in the bugzilla thread:
 
----
-V2: add the missing closing }
+  https://bugzilla.kernel.org/show_bug.cgi?id=31522
+  "It turned out that on this machine INTEL_INFO(dev)->gen equals 4,
+  and is_backlight_combination_mode() returns 0x40000000."
 
-Note, I have not found any offenders, but a mistake can easily be made.
-The following example shows what can go wrong if little intention is
-paid to the definition of the DBG() macro.
 
-Example:
-	if something_went_wrong()
-		DBG("oh no, something went wrong!\n");
-	else
-		printk("all went fine\n");
+But to say it again in your words:   :-)
 
-Old result where the else is placed inside the first if-statment:
-	if something_went_wrong() {
-		if (omapfb_debug) {
-			printk(KERN_DEBUG "oh no, something went wrong!\n");
-		} else {
-			printk("all went fine\n");
-		}
-	}
+  [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824  (0x40000000)
 
-New result where the else is an alternative to the first if-statement:
-	if something_went_wrong() {
-		do {
-			if (omapfb_debug)
-				printk(KERN_DEBUG "oh no, something went wrong!\n");
-		} while (0);
-	} else {
-		printk("all went fine\n");
-	}
----
- drivers/video/omap2/omapfb/omapfb.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+6x during boot-up, and several times later when changing the backlight
+brightness.
 
-diff --git a/drivers/video/omap2/omapfb/omapfb.h b/drivers/video/omap2/omapfb/omapfb.h
-index 1305fc9..456c586 100644
---- a/drivers/video/omap2/omapfb/omapfb.h
-+++ b/drivers/video/omap2/omapfb/omapfb.h
-@@ -34,8 +34,10 @@
- #ifdef DEBUG
- extern unsigned int omapfb_debug;
- #define DBG(format, ...) \
--	if (omapfb_debug) \
--		printk(KERN_DEBUG "OMAPFB: " format, ## __VA_ARGS__)
-+	do { \
-+		if (omapfb_debug) \
-+			printk(KERN_DEBUG "OMAPFB: " format, ## __VA_ARGS__); \
-+	} while (0)
- #else
- #define DBG(format, ...)
- #endif
--- 
-1.7.4.4
 
+This was with 8b061610dac3a3b89770c85ad63b481a47b0c38e. And now
+I have a little shocker for you (and me): because this was a
+vanilla kernel (apart from these debug messages), the screen went
+black again, like I knew it. But pressing the "brightness down"
+key turns the backlight on! I can't believe that I haven't tested
+that. I guess I've only tried "brightness up" and "display toggle".
+Those don't turn backlight on. Or maybe somethine else relevant
+meanwhile changed in the i915 drivers. (I've regularly been
+updating to HEAD.)  
+
+So, the problem was just the initial state all the time?
+
+m.
