@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab1EJDr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 May 2011 23:47:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38278 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab1EJDrz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 May 2011 23:47:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=MINS1IUB3Prsr1sG2Ecasb02xw/D7lnsummtUKtcbSBVfZDRfUmCuyU71Sy3Eb5Fle
-         xqm+nON2+OSrXbtl+n76Zw/F22/1TyNVyR/NbKStoE0eDqgUE2nBw+97Xm8QX2ma/eD2
-         nUvpQtm5rLck3+H3ynqUefN8bKb6UEpp9uFM4=
-Subject: Re: 2.6.39-rc6-mmotm0506 - another lockdep splat (networking this
- time)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <1304994188.3050.17.camel@edumazet-laptop>
-References: <6954.1304989523@localhost>
-	 <1304994188.3050.17.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 May 2011 05:47:51 +0200
-Message-ID: <1304999271.3050.41.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1755583Ab1EJDqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 May 2011 23:46:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57470 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab1EJDqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 May 2011 23:46:13 -0400
+Message-ID: <4DC8B5DE.1090103@cn.fujitsu.com>
+Date: Tue, 10 May 2011 11:49:50 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH] blk-throttle: Use task_subsys_state() to determine a
+ task's blkio_cgroup
+References: <20110509134915.GC5975@redhat.com>
+In-Reply-To: <20110509134915.GC5975@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-10 11:46:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-10 11:46:28,
+	Serialize complete at 2011-05-10 11:46:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 10 mai 2011 à 04:23 +0200, Eric Dumazet a écrit :
-
-> Thanks for the report, I am taking a look how to fix this.
+Vivek Goyal wrote:
+> Currentlly we first map the task to cgroup and then cgroup to
+> blkio_cgroup. There is a more direct way to get to blkio_cgroup
+> from task using task_subsys_state(). Use that.
 > 
+> The real reason for the fix is that it also avoids a race in generic
+> cgroup code. During remount/umount rebind_subsystems() is called and
+> it can do following with and rcu protection.
+> 
+> cgrp->subsys[i] = NULL;
+> 
+> That means if somebody got hold of cgroup under rcu and then it tried
+> to do cgroup->subsys[] to get to blkio_cgroup, it would get NULL which
+> is wrong. I was running into this race condition with ltp running on a
+> upstream derived kernel and that lead to crash.
+> 
+> So ideally we should also fix cgroup generic code to wait for rcu
+> grace period before setting pointer to NULL. Li Zefan is not very keen
+> on introducing synchronize_wait() as he thinks it will slow
+> down moun/remount/umount operations.
+> 
+> So for the time being atleast fix the kernel crash by taking a more
+> direct route to blkio_cgroup.
+> 
+> One tester had reported a crash while running LTP on a derived kernel
+> and with this fix crash is no more seen while the test has been
+> running for over 6 days.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-OK here is the official patch submission
-
-Thanks Valdis !
-
-[PATCH net-next-2.6] net: fix two lockdep splats
-
-Commit e67f88dd12f6 (net: dont hold rtnl mutex during netlink dump
-callbacks) switched rtnl protection to RCU, but we forgot to adjust two
-rcu_dereference() lockdep annotations :
-
-inet_get_link_af_size() or inet_fill_link_af() might be called with
-rcu_read_lock or rtnl held, so use rcu_dereference_rtnl()
-instead of rtnl_dereference()
-
-Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- net/ipv4/devinet.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index cd9ca08..6b1eb92 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1369,7 +1369,7 @@ errout:
- 
- static size_t inet_get_link_af_size(const struct net_device *dev)
- {
--	struct in_device *in_dev = __in_dev_get_rtnl(dev);
-+	struct in_device *in_dev = rcu_dereference_rtnl(dev->ip_ptr);
- 
- 	if (!in_dev)
- 		return 0;
-@@ -1379,7 +1379,7 @@ static size_t inet_get_link_af_size(const struct net_device *dev)
- 
- static int inet_fill_link_af(struct sk_buff *skb, const struct net_device *dev)
- {
--	struct in_device *in_dev = __in_dev_get_rtnl(dev);
-+	struct in_device *in_dev = rcu_dereference_rtnl(dev->ip_ptr);
- 	struct nlattr *nla;
- 	int i;
- 
-
-
+Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
