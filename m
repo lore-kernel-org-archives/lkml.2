@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab1EJPBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 11:01:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60160 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab1EJPBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 11:01:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,346,1301900400"; 
-   d="scan'208";a="640680611"
-Date: Tue, 10 May 2011 23:00:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 03/17] writeback: introduce
- writeback_control.inodes_cleaned
-Message-ID: <20110510150055.GA7835@localhost>
-References: <20110506030821.523093711@intel.com>
- <20110506031612.167620443@intel.com>
- <20110506143614.GF18982@quack.suse.cz>
- <20110510022336.GB6758@localhost>
- <20110510135200.GH4402@quack.suse.cz>
+	id S1756557Ab1EJPF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 11:05:59 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:59438
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756505Ab1EJPF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 11:05:57 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LKZJ6Z-01-71Z-02
+X-M-MSG: 
+Date: Tue, 10 May 2011 17:04:12 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        benh <benh@kernel.crashing.org>, Anton Blanchard <anton@samba.org>,
+        davem <davem@davemloft.net>
+Subject: Re: [PATCH 2/3] perf, x86: Use GO/HO bits in perf-ctr
+Message-ID: <20110510150412.GB30996@amd.com>
+References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com>
+ <1305038132-5080-3-git-send-email-joerg.roedel@amd.com>
+ <1305038900.2914.97.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110510135200.GH4402@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305038900.2914.97.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 09:52:00PM +0800, Jan Kara wrote:
-> On Tue 10-05-11 10:23:36, Wu Fengguang wrote:
-> > On Fri, May 06, 2011 at 10:36:14PM +0800, Jan Kara wrote:
-> > > On Fri 06-05-11 11:08:24, Wu Fengguang wrote:
-> > > > The flusher works on dirty inodes in batches, and may quit prematurely
-> > > > if the batch of inodes happen to be metadata-only dirtied: in this case
-> > > > wbc->nr_to_write won't be decreased at all, which stands for "no pages
-> > > > written" but also mis-interpreted as "no progress".
-> > > > 
-> > > > So introduce writeback_control.inodes_cleaned to count the inodes get
-> > > > cleaned.  A non-zero value means there are some progress on writeback,
-> > > > in which case more writeback can be tried.
-> > > > 
-> > > > about v1: The initial version was to count successful ->write_inode()
-> > > > calls.  However it leads to busy loops for sync() over NFS, because NFS
-> > > > ridiculously returns 0 (success) while at the same time redirties the
-> > > > inode.  The NFS case can be trivially fixed, however there may be more
-> > > > hidden bugs in other filesystems..
-> > >   I think Christoph didn't like this patch
-> > > (https://lkml.org/lkml/2011/5/4/123) and suggested that inodes_cleaned
-> > > should remain local to fs-writeback.c...
-> > 
-> > Yes, he didn't like introducing one more field to writeback_control,
-> > which will be removed in patch 14. (It will be a lot of fuss to move
-> > patch 14 here or move this logic after patch 14.)
->   Yes, I've noticed (after I've sent this email) that you eventually remove
-> the code later in the series :). So I wonder would it be that much work to
-> just drop this patch? It's kind of dumb to add a new code which is removed
-> a few patches later. But I'm stopping bitching about this now ;).
+On Tue, May 10, 2011 at 10:48:20AM -0400, Peter Zijlstra wrote:
+> On Tue, 2011-05-10 at 16:35 +0200, Joerg Roedel wrote:
+> > The AMD perf-counters support counting in guest or host-mode
+> > only. Make use of that feature when user-space specified
+> > guest/host-mode only counting.
+> 
+> Subject mentions x86, does Intel have anything similar so you can make
+> it work for them too?
 
-OK, thanks. I'm just uncomfortable that something will be broken in
-between some commits if simply drop this patch :)
+Intel does not support guest or host-only counting in the hardware (at
+least according to my documentation). If wanted it could be approximated by
+enabling/disabling the counters in the guest-entry path.
+So subject should better say "perf, amd", right?
 
-Thanks,
-Fengguang
+> Also, might be nice to ask the power and sparc64 people if their archs
+> can also differentiate between guest and host thingies.
+
+Right, I don't know if their hardware has similar features. I'll try to
+find this out.
+
+	Joerg
+
+
