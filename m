@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173Ab1EJR1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 13:27:00 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39651 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1EJR07 convert rfc822-to-8bit (ORCPT
+	id S1751348Ab1EJR3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 13:29:21 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41695 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750704Ab1EJR3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 13:26:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTik8DBNKrFE_hZi5FtxUY7Hw_BBR2Q@mail.gmail.com>
-References: <BANLkTik8DBNKrFE_hZi5FtxUY7Hw_BBR2Q@mail.gmail.com>
-Date: Tue, 10 May 2011 13:26:58 -0400
-Message-ID: <BANLkTi=Y1TOqU+Pzx0cJ=c0oMxhMptR7=Q@mail.gmail.com>
-Subject: Re: selinux troubleshooting
-From: Eric Paris <eparis@parisplace.org>
-To: Mark Leeds <markleeds2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, selinux@lists.fedoraproject.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 May 2011 13:29:20 -0400
+Subject: Re: [BUG] fatal hang untarring 90GB file, possibly writeback
+ related.
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Mel Gorman <mgorman@novell.com>, Jan Kara <jack@suse.cz>,
+        colin.king@canonical.com, Chris Mason <chris.mason@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <20110510171726.GE4146@suse.de>
+References: <1304432553.2576.10.camel@mulgrave.site>
+	 <20110506074224.GB6591@suse.de> <20110506080728.GC6591@suse.de>
+	 <1304964980.4865.53.camel@mulgrave.site> <20110510102141.GA4149@novell.com>
+	 <1305036064.6737.8.camel@mulgrave.site> <20110510143509.GD4146@suse.de>
+	 <1305041397.6737.12.camel@mulgrave.site>
+	 <1305043052.6737.17.camel@mulgrave.site>
+	 <1305047154.6737.22.camel@mulgrave.site>  <20110510171726.GE4146@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 May 2011 12:29:13 -0500
+Message-ID: <1305048553.6737.28.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 11:18 AM, Mark Leeds <markleeds2@gmail.com> wrote:
-> Hello all: I'm a total newbie with the kernel and I've never used this
-> list before so excuse me if this is not the correct place to ask this
-> question. or if I don't follow the positing directions correctly.
->
-> I am running fedora 14.0 and when I do uname - a, I get
->
-> Linux localhost.local 2.6.35.10-74.fc14.i686 #1 SMP Thu Dec 23
-> 16:17:40 UTC 2010 i686 i686 i386 GNU/Linux
-> :/home/markleeds/rpmbuild#
->
-> But today I've been trying to run an R  job ( see www.r-project.org
-> for details about R )  in the background and
-> it just dies without any error messages. well, it does in the sense
-> that the operating system hangs and I need to
-> shut down the computer by pulling the plug out and putting it back in.
-> There's no other way as far as
-> I can tell because the computer just freezes essentially.
+On Tue, 2011-05-10 at 18:17 +0100, Mel Gorman wrote:
+> On Tue, May 10, 2011 at 12:05:54PM -0500, James Bottomley wrote:
+> > On Tue, 2011-05-10 at 15:57 +0000, James Bottomley wrote:
+> > > On Tue, 2011-05-10 at 10:29 -0500, James Bottomley wrote:
+> > > > On Tue, 2011-05-10 at 15:35 +0100, Mel Gorman wrote:
+> > > > > On Tue, May 10, 2011 at 09:01:04AM -0500, James Bottomley wrote:
+> > > > > > On Tue, 2011-05-10 at 11:21 +0100, Mel Gorman wrote:
+> > > > > > > I really would like to hear if the fix makes a big difference or
+> > > > > > > if we need to consider forcing SLUB high-order allocations bailing
+> > > > > > > at the first sign of trouble (e.g. by masking out __GFP_WAIT in
+> > > > > > > allocate_slab). Even with the fix applied, kswapd might be waking up
+> > > > > > > less but processes will still be getting stalled in direct compaction
+> > > > > > > and direct reclaim so it would still be jittery.
+> > > > > > 
+> > > > > > "the fix" being this
+> > > > > > 
+> > > > > > https://lkml.org/lkml/2011/3/5/121
+> > > > > > 
+> > > > > 
+> > > > > Drop this for the moment. It was a long shot at best and there is little
+> > > > > evidence the problem is in this area.
+> > > > > 
+> > > > > I'm attaching two patches. The first is the NO_KSWAPD one to stop
+> > > > > kswapd being woken up by SLUB using speculative high-orders. The second
+> > > > > one is more drastic and prevents slub entering direct reclaim or
+> > > > > compaction. It applies on top of patch 1. These are both untested and
+> > > > > afraid are a bit rushed as well :(
+> > > > 
+> > > > Preliminary results with both patches applied still show kswapd
+> > > > periodically going up to 99% but it doesn't stay there, it comes back
+> > > > down again (and, obviously, the system doesn't hang).
+> > > 
+> > > This is a second run with the watch highorders.
+> > > 
+> > > At the end of the run, the system hung temporarily and now comes back
+> > > with CPU3 spinning in all system time at kswapd shrink_slab
+> > 
+> > Here's a trace in the same situation with the ftrace stack entries
+> > bumped to 16 as requested on IRC.  There was no hang for this one.
+> > 
+> 
+> Ok, so the bulk of the high-order allocs are coming from
+> 
+> > 140162 instances order=1 normal gfp_flags=GFP_NOWARN|GFP_NORETRY|GFP_COMP|GFP_NOMEMALLOC|
+> >  => __alloc_pages_nodemask+0x754/0x792 <ffffffff810dc0de>
+> >  => alloc_pages_current+0xbe/0xd8 <ffffffff81105459>
+> >  => alloc_slab_page+0x1c/0x4d <ffffffff8110c5fe>
+> >  => new_slab+0x50/0x199 <ffffffff8110dc48>
+> >  => __slab_alloc+0x24a/0x328 <ffffffff8146ab86>
+> >  => kmem_cache_alloc+0x77/0x105 <ffffffff8110e450>
+> >  => mempool_alloc_slab+0x15/0x17 <ffffffff810d6e85>
+> >  => mempool_alloc+0x68/0x116 <ffffffff810d70fa>
+> >  => bio_alloc_bioset+0x35/0xc3 <ffffffff81144dd8>
+> >  => bio_alloc+0x15/0x24 <ffffffff81144ef5>
+> >  => submit_bh+0x6d/0x105 <ffffffff811409f6>
+> >  => __block_write_full_page+0x1e7/0x2d7 <ffffffff81141fac>
+> >  => block_write_full_page_endio+0x8a/0x97 <ffffffff81143671>
+> >  => block_write_full_page+0x15/0x17 <ffffffff81143693>
+> >  => mpage_da_submit_io+0x31a/0x395 <ffffffff811935d8>
+> >  => mpage_da_map_and_submit+0x2ca/0x2e0 <ffffffff81196e88>
+> > 
+> 
+> That at least is in line with the large untar and absolves i915
+> from being the main cause of trouble. The lack of the hang implies
+> that SLUB doing high order allocations is stressing the system too
+> much and needs to be more willing to fall back to order-0 although
+> it does not adequately explain why it hung as opposed to just being
+> incredible slow.
+> 
+> I'm also still concerned with the reports of getting stuck in a heavy
+> loop on the i915 shrinker so will try again reproducing this locally
+> with a greater focus on something X related happening at the same time.
+> 
+> One thing at a time though, SLUB needs to be less aggressive so I'll
+> prepare a series in the morning, have another go at generating data
+> and see what shakes out.
 
-I'd say you have 2 separate problems.  The first is this problem.  If
-your box really is locking up hard like this it's almost certainly
-unrelated to the later SELinux denial.  Can we try to see if the
-kernel is outputting any kind of traceback or error information?
-There are a couple of ways to do this.  Boot into runlevel 3,
-reproduce your problem, see if any kernel messages are printed on the
-screen.  Set up a remote serial console and capture the console that
-way.  Set up netconsole and capture the console that way.  I'd like to
-know why the box locked up hard and if it's a kernel problem it
-usually gives some indication on the console.
+As a final data point, I tried slub_max_order=0.  kswapd is much more
+quiescent (it calms down to nothing).  It shows spikes of up to 70% and
+once up to 99% though, but it doesn't go up to 99% and stay there like
+it did previously.  This is just with top, so it's a bit inaccurate.
 
-> Then I was poking around to see if I could find any info I went into
-> the selinux troubleshooter.
->
-> there is a red dot and two yellow dots below it. each says something.
->
-> next to the red dot:  "if you do not think /usr/lib/R/bin/exec/R
-> should need to map low
-> memory in the kernel"
+James
 
-I'm betting this is an unrelated problem and likely something the R
-code is doing which is generally seen as a bad idea.  I've cc'd the
-fedora selinux list to help with this issue (might I suggest people
-responding to this part of the issue drop lkml and people responding
-to the hard lockup drop the fedora-selinux-list?)  Might you be
-willing to include the output of ausearch -m AVC in a message to the
-fedora selinux list?
 
-You can make sure that SELinux is not the cause of your hard lockup by
-running (as root) "setenforce 0" before you reproduce the issue.  If
-you are still able to make the box lock up this is definitely not
-related to SELinux.
-
-Hope we can help!
--Eric
