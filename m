@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1EJMv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 08:51:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42106 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413Ab1EJMv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 08:51:27 -0400
-Date: Tue, 10 May 2011 14:51:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
- writeback for various fses
-Message-ID: <20110510125124.GD4402@quack.suse.cz>
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+	id S1755399Ab1EJMwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 08:52:10 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:12452 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab1EJMwI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 08:52:08 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 115/206] Staging: hv: Use completion abstraction in
+ struct netvsc_device
+Thread-Topic: [PATCH 115/206] Staging: hv: Use completion abstraction in
+ struct netvsc_device
+Thread-Index: AQHMDpJQapLIrp9ArE6ZpS2eYB/RpZSGGdkA///ZN1A=
+Date: Tue, 10 May 2011 12:52:07 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481EEFD6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1304978242-22958-1-git-send-email-kys@microsoft.com>
+ <1304978288-22999-1-git-send-email-kys@microsoft.com>
+ <1304978288-22999-115-git-send-email-kys@microsoft.com>
+ <20110510070646.GB13847@infradead.org>
+In-Reply-To: <20110510070646.GB13847@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
-> I am still chasing down what exactly is broken in ext3.  data=writeback mode
-> passes with no failures.  data=ordered, however, does not pass; my current
-> suspicion is that jbd is calling submit_bh on data buffers but doesn't call
-> page_mkclean to kick the userspace programs off the page before writing it.
-  Yes, ext3 in data=ordered mode writes pages from
-journal_commit_transaction() via submit_bh() without clearing page dirty
-bits thus page_mkclean() is not called for these pages. Frankly, do you
-really want to bother with adding support for ext2 and ext3? People can use
-ext4 as a fs driver when they want to start using blk-integrity support.
-Especially ext2 patch looks really painful and just from a quick look I can
-see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Tuesday, May 10, 2011 3:07 AM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
+> Subject: Re: [PATCH 115/206] Staging: hv: Use completion abstraction in struct
+> netvsc_device
+> 
+> > -	net_device->wait_condition = 0;
+> >  	ret = vmbus_sendpacket(device->channel, init_packet,
+> >  			       sizeof(struct nvsp_message),
+> >  			       (unsigned long)init_packet,
+> > @@ -272,10 +272,8 @@ static int netvsc_init_recv_buf(struct hv_device
+> *device)
+> >  		goto cleanup;
+> >  	}
+> >
+> > -	wait_event_timeout(net_device->channel_init_wait,
+> > -			net_device->wait_condition,
+> > -			msecs_to_jiffies(1000));
+> > -	BUG_ON(net_device->wait_condition == 0);
+> > +	t = wait_for_completion_timeout(&net_device->channel_init_wait, HZ);
+> > +	BUG_ON(t == 0);
+> 
+> I don't think you want a BUG_ON here, but rather fail the
+> initialization.
+
+This is existing code and all I did was change the synchronization 
+primitive used. Back in Feb. when this was done (prior to then), the 
+wait was indefinite and one of the comments that was
+longstanding was  that the wait had to be bounded and so these 
+timed waits were introduced. When this was done,  
+in some cases, there was no easy way to roll-back state if we did not
+get the response within our expected window of time. This is one 
+such instance where the guest is handing over the receive buffers
+(guest physical addresses) to the host. There was a discussion on this very
+topic on this mailing list and the consensus was to leave the BUG_ON()
+call in cases where we could not reasonably recover. 
+ 
+> 
+> Also I think you really should add synchronous versions of
+> vmbus_sendpacket*, to the vmbus core so that all the synchronous waiting
+> can be consolidated into a few helpers instead of needing to opencode
+> it everywhere.
+
+True; but having a non-blocking interface at the lowest level gives you
+the most flexibility. In addition to this non-blocking interface, we
+may want to look at potentially a blocking interface. In the current
+code, the blocking primitive that is embedded in a higher level 
+abstraction is used for a variety of situations including the initial
+handshake which is what can be addressed with a synchronous API
+at the lowest level.
+
+Regards,
+
+K. Y
+
