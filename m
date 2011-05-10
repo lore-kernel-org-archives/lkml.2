@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab1EJN37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 09:29:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33491 "EHLO mx1.suse.de"
+	id S1755905Ab1EJNcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 09:32:45 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:23539 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753094Ab1EJN35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 09:29:57 -0400
-Date: Tue, 10 May 2011 15:29:53 +0200
-From: Jan Kara <jack@suse.cz>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jan Kara <jack@suse.cz>, "Darrick J. Wong" <djwong@us.ibm.com>,
-        Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
- writeback for various fses
-Message-ID: <20110510132953.GE4402@quack.suse.cz>
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
- <87tyd31fkc.fsf@devron.myhome.or.jp>
- <20110510123819.GB4402@quack.suse.cz>
- <87hb924s2x.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hb924s2x.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751157Ab1EJNco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 09:32:44 -0400
+Date: Tue, 10 May 2011 16:32:40 +0300 (EEST)
+Message-Id: <20110510.163240.175424489831028844.Hiroshi.DOYU@nokia.com>
+To: laurent.pinchart@ideasonboard.com
+Cc: tony@atomide.com, linux-omap@vger.kernel.org, dacohen@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [URGENT - PATCH FOR 2.6.39] omap: iommu: Return IRQ_HANDLED in
+ fault handler when no fault occured
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <201105101439.56757.laurent.pinchart@ideasonboard.com>
+References: <1303912982-10309-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	<201104291203.11174.laurent.pinchart@ideasonboard.com>
+	<201105101439.56757.laurent.pinchart@ideasonboard.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 10-05-11 22:12:54, OGAWA Hirofumi wrote:
-> Jan Kara <jack@suse.cz> writes:
-> 
-> >> I'd like to know those patches are on what state. Waiting in writeback
-> >> page makes slower, like you mentioned it (I guess it would more
-> >> noticeable if device was slower that like FAT uses). And I think
-> >> currently it doesn't help anything others for blk-integrity stuff
-> >> (without other technic, it doesn't help FS consistency)?
-> >> 
-> >> So, why is this locking stuff enabled always? I think it would be better
-> >> to enable only if blk-integrity stuff was enabled.
-> >> 
-> >> If it was more sophisticate but more complex stuff (e.g. use
-> >> copy-on-write technic for it), I would agree always enable though.
-> >   Well, also software RAID generally needs this feature (so that parity
-> > information / mirror can be properly kept in sync). Not that I'd advocate
-> > that this feature must be always enabled, it's just that there are also
-> > other users besides blk-integrity.
-> 
-> I see. So many block layer stuff sounds like broken on corner case? If
-> so, I more feel this approach should be temporary workaround, and should
-> use another less-blocking approach.
-  Not many but some... The alternative to less blocking approach is to do
-copy-out before a page is submitted for IO (or various middle ground
-alternatives of doing sometimes copyout, sometimes blocking...). That costs
-some performance as well. We talked about it at LSF and the approach
-Darrick is implementing was considered the least intrusive. There's really
-no way to fix these corner cases and keep performance. But indeed a plain
-SATA drive or a USB stick don't need stable pages so they wouldn't need to
-pay the cost. So it would be beneficial if the underlying block device
-propagated whether it needs stable writes or not and filesystem could turn
-on stable pages accordingly.
+From: ext Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [URGENT - PATCH FOR 2.6.39] omap: iommu: Return IRQ_HANDLED in fault handler when no fault occured
+Date: Tue, 10 May 2011 14:39:56 +0200
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Hi Tony,
+> 
+> On Friday 29 April 2011 12:03:10 Laurent Pinchart wrote:
+>> Hi Tony,
+>> 
+>> On Wednesday 27 April 2011 16:03:02 Laurent Pinchart wrote:
+>> > The iommu shares an interrupt line with the OMAP3 ISP. The iommu
+>> > interrupt handler must check the fault status and return IRQ_HANDLED
+>> > when no fault occured.
+>> > 
+>> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> 
+>> Could you please pick this one up for 2.6.39 ? As far as I know David is on
+>> holidays so he might not be able to review the patch before the 2.6.39
+>> release.
+> 
+> Ping. Please.
+
+Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
