@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab1EJVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 17:54:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41943 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab1EJVyz (ORCPT
+	id S1752978Ab1EJV4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 17:56:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13768 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752319Ab1EJV42 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 17:54:55 -0400
-Date: Tue, 10 May 2011 14:54:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: tracing: Add missing GFP flags to tracing
-Message-Id: <20110510145446.1f8e77e3.akpm@linux-foundation.org>
-In-Reply-To: <20110510100954.GC4146@suse.de>
-References: <20110510100954.GC4146@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 May 2011 17:56:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,347,1301900400"; 
+   d="scan'208";a="745343278"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: David Miller <davem@davemloft.net>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "hadi@cyberus.ca" <hadi@cyberus.ca>,
+        "daniel.lezcano@free.fr" <daniel.lezcano@free.fr>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        "renatowestphal@gmail.com" <renatowestphal@gmail.com>
+Date: Tue, 10 May 2011 14:56:25 -0700
+Subject: RE: [PATCH 0/7] Network namespace manipulation with file descriptors
+Thread-Topic: [PATCH 0/7] Network namespace manipulation with file
+ descriptors
+Thread-Index: AcwOiWictlDJFPjTQf6XZMo0jqBNegA0xa1g
+Message-ID: <987664A83D2D224EAE907B061CE93D5301CCC622F4@orsmsx505.amr.corp.intel.com>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<20110509.120408.48494155.davem@davemloft.net>
+	<m1oc3btzk4.fsf@fess.ebiederm.org>
+ <20110509.134007.116389415.davem@davemloft.net>
+In-Reply-To: <20110509.134007.116389415.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 May 2011 11:09:54 +0100
-Mel Gorman <mgorman@suse.de> wrote:
+>> The conflicts on syscall syscall numbers are an unfortunate pain.
+>
+> The way we've solved this before is the tree that cares pulls in
+> the net-next-2.6 tree to resolve the conflict.
 
-> include/linux/gfp.h and include/trace/events/gfpflags.h is out of
-> sync. When tracing is enabled, certain flags are not recognised and
-> the text output is less useful as a result.  Add the missing flags.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  include/trace/events/gfpflags.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-> index e3615c0..9fe3a366 100644
-> --- a/include/trace/events/gfpflags.h
-> +++ b/include/trace/events/gfpflags.h
-> @@ -10,6 +10,7 @@
->   */
->  #define show_gfp_flags(flags)						\
->  	(flags) ? __print_flags(flags, "|",				\
-> +	{(unsigned long)GFP_TRANSHUGE,		"GFP_TRANSHUGE"},	\
->  	{(unsigned long)GFP_HIGHUSER_MOVABLE,	"GFP_HIGHUSER_MOVABLE"}, \
->  	{(unsigned long)GFP_HIGHUSER,		"GFP_HIGHUSER"},	\
->  	{(unsigned long)GFP_USER,		"GFP_USER"},		\
-> @@ -32,6 +33,9 @@
->  	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
->  	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
->  	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
-> -	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"}		\
-> +	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
-> +	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
-> +	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
-> +	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
->  	) : "GFP_NOWAIT"
+Actually it seems more common that new syscalls are only added to
+x86 (plus one or more other architectures that the author cares
+about). Then arch maintainers throw in a "wire up new syscalls"
+patch during the merge window when they see these new bits show up.
 
-The patch seems somewhat needed in 2.6.38.x, but 2.6.38 doesn't have
-__GFP_OTHER_NODE.  So if you think this needs fixing in -stable, please
-prepare a separate patch for that.
+-Tony
 
+Oh - ia64 wiring looks good.
+
+Acked-by: Tony Luck <tony.luck@intel.com>
