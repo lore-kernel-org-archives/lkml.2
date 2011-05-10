@@ -1,655 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331Ab1EJRzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 13:55:08 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:8976 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab1EJRzG (ORCPT
+	id S1751476Ab1EJSFi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 14:05:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17503 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab1EJSFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 13:55:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6342"; a="90392380"
-Message-ID: <4DC97BF8.6090400@codeaurora.org>
-Date: Tue, 10 May 2011 10:55:04 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 10 May 2011 14:05:37 -0400
+Message-ID: <4DC97E49.7040401@kernel.org>
+Date: Tue, 10 May 2011 11:04:57 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Anirudh Ghayal <aghayal@codeaurora.org>
-CC: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH V2] drivers: rtc: Add support for Qualcomm PMIC8xxx RTC
-References: <1304574535-23710-1-git-send-email-aghayal@codeaurora.org>
-In-Reply-To: <1304574535-23710-1-git-send-email-aghayal@codeaurora.org>
+To: paulmck@linux.vnet.ibm.com
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+References: <20110508151848.GA21906@linux.vnet.ibm.com> <20110509073636.GA18247@elte.hu> <BANLkTin82W0yZ5Nvv3Dp62X1eou_GxZ6EA@mail.gmail.com> <20110510085623.GG2258@linux.vnet.ibm.com>
+In-Reply-To: <20110510085623.GG2258@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DC97E5B.00BB,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/4/2011 10:48 PM, Anirudh Ghayal wrote:
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index ca91c3c..40a6e66 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -74,6 +74,7 @@ obj-$(CONFIG_RTC_DRV_PCF2123)	+= rtc-pcf2123.o
->  obj-$(CONFIG_RTC_DRV_PCF50633)	+= rtc-pcf50633.o
->  obj-$(CONFIG_RTC_DRV_PL030)	+= rtc-pl030.o
->  obj-$(CONFIG_RTC_DRV_PL031)	+= rtc-pl031.o
-> +obj-$(CONFIG_RTC_DRV_PM8XXX)    += rtc-pm8xxx.o
+On 05/10/2011 01:56 AM, Paul E. McKenney wrote:
+> On Mon, May 09, 2011 at 02:09:21PM -0700, Yinghai Lu wrote:
+>> On Mon, May 9, 2011 at 12:36 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>>>
+>>> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+>>>
+>>>> Hello, Ingo,
+>>>>
+>>>> This pull request covers RCU chnages for 2.6.40.  The major new features
+>>>> are RCU priority boosting and the addition of kfree_rcu(), the latter
+>>>> courtesy of Lai Jiangshan.  These two features cover well over half
+>>>> of the commits.  There are a number of smaller features and bug fixes.
+>>>> All have been sent to LKML in the following batches:
+>>>>
+>>>> 0.    https://lkml.org/lkml/2011/2/22/660: RCU priority boosting preview
+>>>> 1.    https://lkml.org/lkml/2011/5/1/19: RCU priority boosting, kfree_rcu()
+>>>> 2.    https://lkml.org/lkml/2011/5/2/40: More uses of kfree_rcu()
+>>>> 3.    https://lkml.org/lkml/2011/5/8/60: miscellaneous
+>>>>
+>>>> The kfree_rcu() uses in the pull request have Acked-by:s from the
+>>>> maintainers.  I have some additional kfree_rcu() requests that lack
+>>>> Acked-by:s, and I will deal with these later.
+>>>>
+>>>> These channges are available in the -rcu git repository at:
+>>>>
+>>>>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
+>>>
+>>> Pulled, thanks a lot Paul!
+>>>
+>>
+>> it seems with this one in tip, my 8 sockets test setup will report cpu stall.
+>>
+>> after hard code to enable rcu_cpu_stall_suppress
+>>
+>> Index: linux-2.6/kernel/rcutree.c
+>> ===================================================================
+>> --- linux-2.6.orig/kernel/rcutree.c
+>> +++ linux-2.6/kernel/rcutree.c
+>> @@ -174,7 +174,7 @@ module_param(blimit, int, 0);
+>>  module_param(qhimark, int, 0);
+>>  module_param(qlowmark, int, 0);
+>>
+>> -int rcu_cpu_stall_suppress __read_mostly;
+>> +int rcu_cpu_stall_suppress __read_mostly = 1;
+>>  module_param(rcu_cpu_stall_suppress, int, 0644);
+>>
+>>  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
+>>
+>> will get system hang after pnp ACPI init.
+> 
+> Could you please send the stack traces from the RCU CPU stall?  Also,
+> you do have ce31332d3c77532d6ea97ddcb475a2b02dd358b4 applied, correct?
+> 
+> 							Thanx, Paul
 
-Please use a tab instead of spaces here.
+Do not have time to bisect it at this point.
 
-> +
-> +/* RTC Register offsets from RTC CTRL REG */
-> +#define PM8XXX_ALARM_CTRL_OFFSET 0x01
-> +#define PM8XXX_RTC_WRITE_OFFSET 0x02
-> +#define PM8XXX_RTC_READ_OFFSET 0x06
-> +#define PM8XXX_ALARM_RW_OFFSET 0x0A
-> +
-> +/* RTC_CTRL register bit fields */
-> +#define PM8xxx_RTC_ENABLE	BIT(7)
-> +#define PM8xxx_RTC_ALARM_ENABLE	BIT(1)
-> +#define PM8xxx_RTC_ALARM_CLEAR  BIT(0)
+can you prepare clean revert patch for following commit to test?
 
-Tabs here too I think?
+commit a00e0d714fbded07a7a2254391ce9ed5a5cb9d82
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Tue Feb 8 17:14:39 2011 -0800
 
-> +
-> +#define NUM_8_BIT_RTC_REGS	0x4
-> +
-> +/**
-> + * struct pm8xxx_rtc - rtc driver internal structure
-> + * @rtc: rtc device for this driver
-> + * @rtc_alarm_irq: rtc alarm irq number
-> + */
-> +struct pm8xxx_rtc {
-> +	struct rtc_device *rtc;
-> +	int rtc_alarm_irq;
-> +	int rtc_base;
-> +	int rtc_read_base;
-> +	int rtc_write_base;
-> +	int alarm_rw_base;
-> +	u8  ctrl_reg;
-> +	struct device *rtc_dev;
-> +	spinlock_t ctrl_reg_lock;
-> +};
-> +
+    rcu: Remove conditional compilation for RCU CPU stall warnings
 
-Can you document all fields?
 
-> +/*
-> + * The RTC registers need to be read/written one byte at a time. This is a
-> + * hardware limitation.
-> + */
-> +
-> +static int pm8xxx_read_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
-> +			int base, int count)
-> +{
-> +	int i, rc;
-> +	struct device *parent = rtc_dd->rtc_dev->parent;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		rc = pm8xxx_readb(parent, base + i, &rtc_val[i]);
-> +		if (rc < 0) {
-> +			dev_err(rtc_dd->rtc_dev, "PM8xxx read failed\n");
+Thanks
 
-Please remove these printks in the wrapper functions and put more
-informative error messages at their call sites.
-
-> +			return rc;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int pm8xxx_write_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
-> +			int base, int count)
-> +{
-> +	int i, rc;
-> +	struct device *parent = rtc_dd->rtc_dev->parent;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		rc = pm8xxx_writeb(parent, base + i, rtc_val[i]);
-> +		if (rc < 0) {
-> +			dev_err(rtc_dd->rtc_dev, "PM8xxx write failed\n");
-> +			return rc;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +
-> +/*
-> + * Steps to write the RTC registers.
-> + * 1. Disable alarm if enabled.
-> + * 2. Write 0x00 to LSB.
-> + * 3. Write Byte[1], Byte[2], Byte[3] then Byte[0].
-> + * 4. Enable alarm if disabled in step 1.
-> + */
-> +static int
-> +pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +	int rc;
-> +	unsigned long secs, irq_flags;
-> +	u8 value[4], reg = 0, alarm_enabled = 0, ctrl_reg;
-
-Why doesn't value[] use NUM_8_BIT_RTC_REGS instead of hard-coded 4?
-
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +	rtc_tm_to_time(tm, &secs);
-> +
-> +	value[0] = secs & 0xFF;
-> +	value[1] = (secs >> 8) & 0xFF;
-> +	value[2] = (secs >> 16) & 0xFF;
-> +	value[3] = (secs >> 24) & 0xFF;
-
-And then this could be a loop
-
-for (int i = 0; i < ARRAY_SIZE(value); i++) {
-     value[i] = secs & 0xFF;
-     secs >>= 8;
-}
-
-> +
-> +	dev_dbg(dev, "Seconds value to be written to RTC = %lu\n", secs);
-> +
-> +	spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +	ctrl_reg = rtc_dd->ctrl_reg;
-> +
-> +	if (ctrl_reg & PM8xxx_RTC_ALARM_ENABLE) {
-> +		alarm_enabled = 1;
-> +		ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
-> +		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
-> +									1);
-> +		if (rc < 0) {
-> +			dev_err(dev, "PM8xxx write failed\n");
-> +			goto rtc_rw_fail;
-> +		}
-> +	} else
-> +		spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +	/* Write Byte[1], Byte[2], Byte[3], Byte[0] */
-
-This comment looks misplaced. Perhaps it should be after you write an
-0x0 to Byte[0]? Or just flat out removed.
-
-> +	/* Write 0 to Byte[0] */
-> +	reg = 0;
-> +	rc = pm8xxx_write_wrapper(rtc_dd, &reg, rtc_dd->rtc_write_base, 1);
-> +	if (rc < 0) {
-> +		dev_err(dev, "PM8xxx write failed\n");
-> +		goto rtc_rw_fail;
-> +	}
-> +
-> +	/* Write Byte[1], Byte[2], Byte[3] */
-> +	rc = pm8xxx_write_wrapper(rtc_dd, value + 1,
-> +					rtc_dd->rtc_write_base + 1, 3);
-> +	if (rc < 0) {
-> +		dev_err(dev, "Write to RTC registers failed\n");
-> +		goto rtc_rw_fail;
-> +	}
-> +
-> +	/* Write Byte[0] */
-> +	rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->rtc_write_base, 1);
-> +	if (rc < 0) {
-> +		dev_err(dev, "Write to RTC register failed\n");
-> +		goto rtc_rw_fail;
-> +	}
-> +
-> +	if (alarm_enabled) {
-> +		ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
-> +		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
-> +									1);
-> +		if (rc < 0) {
-> +			dev_err(dev, "PM8xxx write failed\n");
-> +			goto rtc_rw_fail;
-> +		}
-> +	}
-> +
-> +	rtc_dd->ctrl_reg = ctrl_reg;
-
-Hm. This looks wrong since you're modifying the shadow version of
-ctrl_reg without the lock being held in all cases. Are you sure this is ok?
-
-> +
-> +rtc_rw_fail:
-> +	if (alarm_enabled)
-> +		spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +	return rc;
-> +}
-> +
-> +static int
-> +pm8xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +	int rc;
-> +	u8 value[4], reg;
-> +	unsigned long secs;
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +	rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->rtc_read_base,
-> +							NUM_8_BIT_RTC_REGS);
-> +	if (rc < 0) {
-> +		dev_err(dev, "RTC time read failed\n");
-> +		return rc;
-> +	}
-> +
-> +	/*
-> +	 * Read the LSB again and check if there has been a carry over.
-> +	 * If there is, redo the read operation.
-> +	 */
-> +	rc = pm8xxx_read_wrapper(rtc_dd, &reg, rtc_dd->rtc_read_base, 1);
-
-It might be clearer to replace all pm8xxx_write_wrapper() calls with
-pm8xxx_writeb() when their last argument is 1.
-
-> +	if (rc < 0) {
-> +		dev_err(dev, "PM8xxx read failed\n");
-> +		return rc;
-> +	}
-> +
-> +	if (unlikely(reg < value[0])) {
-> +		rc = pm8xxx_read_wrapper(rtc_dd, value,
-> +				rtc_dd->rtc_read_base, NUM_8_BIT_RTC_REGS);
-> +		if (rc < 0) {
-> +			dev_err(dev, "RTC time read failed\n");
-> +			return rc;
-> +		}
-> +	}
-> +
-> +	secs = value[0] | (value[1] << 8) | (value[2] << 16) \
-> +						| (value[3] << 24);
-
-The '\' is unnecessary.
-
-> +
-> +	rtc_time_to_tm(secs, tm);
-> +
-> +	rc = rtc_valid_tm(tm);
-> +	if (rc < 0) {
-> +		dev_err(dev, "Invalid time read from PM8xxx\n");
-> +		return rc;
-> +	}
-> +
-> +	dev_dbg(dev, "secs = %lu, h:m:s == %d:%d:%d, d/m/y = %d/%d/%d\n",
-> +			secs, tm->tm_hour, tm->tm_min, tm->tm_sec,
-> +			tm->tm_mday, tm->tm_mon, tm->tm_year);
-> +
-> +	return 0;
-> +}
-> +
-> +static int
-> +pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-> +{
-> +	int rc;
-> +	u8 value[4], ctrl_reg;
-> +	unsigned long secs, secs_rtc, irq_flags;
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +	struct rtc_time rtc_tm;
-> +
-> +	rtc_tm_to_time(&alarm->time, &secs);
-> +
-> +	/*
-> +	 * Read the current RTC time and verify if the alarm time is in the
-> +	 * past. If yes, return invalid.
-> +	 */
-> +	rc = pm8xxx_rtc_read_time(dev, &rtc_tm);
-> +	if (rc < 0) {
-> +		dev_err(dev, "Unamble to read RTC time\n");
-
-s/Unamble/Unable/
-
-> +		return -EINVAL;
-> +	}
-> +
-> +	rtc_tm_to_time(&rtc_tm, &secs_rtc);
-> +	if (secs < secs_rtc) {
-> +		dev_err(dev, "Trying to set alarm in the past\n");
-> +		return -EINVAL;
-> +	}
-
-I wonder why this check is here at all. The RTC layer already checks for
-setting an alarm in the past, right? Why can't we rely on that? If we
-can't, shouldn't we return -ETIME instead of -EINVAL?
-
-> +
-> +	value[0] = secs & 0xFF;
-> +	value[1] = (secs >> 8) & 0xFF;
-> +	value[2] = (secs >> 16) & 0xFF;
-> +	value[3] = (secs >> 24) & 0xFF;
-> +
-> +	spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +	rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
-> +							NUM_8_BIT_RTC_REGS);
-> +	if (rc < 0) {
-> +		dev_err(dev, "Write to RTC ALARM registers failed\n");
-> +		goto rtc_rw_fail;
-> +	}
-> +
-> +	ctrl_reg = rtc_dd->ctrl_reg;
-> +	ctrl_reg = (alarm->enabled) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
-
-Please drop unnecessary () around alarm->enabled.
-
-> +					(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
-> +
-> +	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +	if (rc < 0) {
-> +		dev_err(dev, "PM8xxx write failed\n");
-> +		goto rtc_rw_fail;
-> +	}
-> +
-> +	rtc_dd->ctrl_reg = ctrl_reg;
-> +
-> +	dev_dbg(dev, "Alarm Set for h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
-> +			alarm->time.tm_hour, alarm->time.tm_min,
-> +			alarm->time.tm_sec, alarm->time.tm_mday,
-> +			alarm->time.tm_mon, alarm->time.tm_year);
-> +rtc_rw_fail:
-> +	spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +	return rc;
-> +}
-> +
-> +static int
-> +pm8xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-> +{
-> +	int rc;
-> +	u8 value[4];
-> +	unsigned long secs;
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +	rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
-> +			NUM_8_BIT_RTC_REGS);
-> +	if (rc < 0) {
-> +		dev_err(dev, "RTC alarm time read failed\n");
-> +		return rc;
-> +	}
-> +
-> +	secs = value[0] | (value[1] << 8) | (value[2] << 16) | \
-> +						 (value[3] << 24);
-
-The '\' is unnecessary here too.
-
-> +
-> +	rtc_time_to_tm(secs, &alarm->time);
-> +
-> +	rc = rtc_valid_tm(&alarm->time);
-> +	if (rc < 0) {
-> +		dev_err(dev, "Invalid time read from PM8xxx\n");
-
-Do you really need to say PM8xxx in any of these printks? They're
-already prefixed by "rtc-pm8xxx:".
-
-> +		return rc;
-> +	}
-> +
-> +	dev_dbg(dev, "Alarm set for - h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
-> +		alarm->time.tm_hour, alarm->time.tm_min,
-> +				alarm->time.tm_sec, alarm->time.tm_mday,
-> +				alarm->time.tm_mon, alarm->time.tm_year);
-> +
-> +	return 0;
-> +}
-> +
-> +
-> +static int
-> +pm8xxx_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
-> +{
-> +	int rc;
-> +	unsigned long irq_flags;
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +	u8 ctrl_reg;
-> +
-> +	spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +	ctrl_reg = rtc_dd->ctrl_reg;
-> +	ctrl_reg = (enable) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
-> +				(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
-> +
-> +	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +	if (rc < 0) {
-> +		dev_err(dev, "PM8xxx write failed\n");
-> +		goto rtc_rw_fail;
-> +	}
-> +
-> +	rtc_dd->ctrl_reg = ctrl_reg;
-> +
-> +rtc_rw_fail:
-> +	spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +	return rc;
-> +}
-> +
-> +static struct rtc_class_ops pm8xxx_rtc_ops = {
-> +	.read_time	= pm8xxx_rtc_read_time,
-> +	.set_alarm	= pm8xxx_rtc_set_alarm,
-> +	.read_alarm	= pm8xxx_rtc_read_alarm,
-> +	.alarm_irq_enable = pm8xxx_rtc_alarm_irq_enable,
-> +};
-> +
-> +static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
-> +{
-> +	struct pm8xxx_rtc *rtc_dd = dev_id;
-> +	u8 ctrl_reg;
-> +	int rc;
-> +	unsigned long irq_flags;
-> +
-> +	rtc_update_irq(rtc_dd->rtc, 1, RTC_IRQF | RTC_AF);
-> +
-> +	spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +	/* Clear the alarm enable bit */
-> +	ctrl_reg = rtc_dd->ctrl_reg;
-> +	ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
-> +
-> +	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +	if (rc < 0) {
-> +		spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +		dev_err(rtc_dd->rtc_dev, "PM8xxx write failed!\n");
-> +		goto rtc_alarm_handled;
-> +	}
-> +
-> +	rtc_dd->ctrl_reg = ctrl_reg;
-> +	spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
-> +
-> +	/* Clear RTC alarm register */
-> +	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
-> +						PM8XXX_ALARM_CTRL_OFFSET, 1);
-> +	if (rc < 0) {
-> +		dev_err(rtc_dd->rtc_dev, "PM8xxx write failed!\n");
-> +		goto rtc_alarm_handled;
-> +	}
-> +
-> +	ctrl_reg &= ~PM8xxx_RTC_ALARM_CLEAR;
-> +	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
-> +						PM8XXX_ALARM_CTRL_OFFSET, 1);
-> +	if (rc < 0)
-> +		dev_err(rtc_dd->rtc_dev, "PM8xxx write failed!\n");
-> +
-> +rtc_alarm_handled:
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit pm8xxx_rtc_probe(struct platform_device *pdev)
-> +{
-> +	int rc;
-> +	u8 ctrl_reg;
-> +	bool rtc_write_enable = false;
-> +	struct pm8xxx_rtc *rtc_dd;
-> +	struct resource *rtc_resource;
-> +	const struct pm8xxx_rtc_platform_data *pdata = mfd_get_data(pdev);
-> +
-> +	if (pdata != NULL)
-> +		rtc_write_enable = pdata->rtc_write_enable;
-> +
-> +	rtc_dd = kzalloc(sizeof(*rtc_dd), GFP_KERNEL);
-> +	if (rtc_dd == NULL) {
-> +		dev_err(&pdev->dev, "Unable to allocate memory!\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	/* Initialise spinlock to protect RTC cntrol register */
-
-s/cntrol/control/
-
-> +	spin_lock_init(&rtc_dd->ctrl_reg_lock);
-> +
-> +	rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
-> +	if (rtc_dd->rtc_alarm_irq < 0) {
-> +		dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
-> +		rc = -ENXIO;
-> +		goto fail_rtc_enable;
-> +	}
-> +
-> +	rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
-> +							"pmic_rtc_base");
-> +	if (!(rtc_resource && rtc_resource->start)) {
-> +		dev_err(&pdev->dev, "RTC IO resource absent!\n");
-> +		rc = -ENXIO;
-> +		goto fail_rtc_enable;
-> +	}
-> +
-> +	rtc_dd->rtc_base = rtc_resource->start;
-> +
-> +	/* Setup RTC register addresses */
-> +	rtc_dd->rtc_write_base = rtc_dd->rtc_base + PM8XXX_RTC_WRITE_OFFSET;
-> +	rtc_dd->rtc_read_base = rtc_dd->rtc_base + PM8XXX_RTC_READ_OFFSET;
-> +	rtc_dd->alarm_rw_base = rtc_dd->rtc_base + PM8XXX_ALARM_RW_OFFSET;
-> +
-> +	rtc_dd->rtc_dev = &(pdev->dev);
-> +
-> +	/* Check if the RTC is on, else turn it on */
-> +	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> +	if (rc < 0) {
-> +		dev_err(&pdev->dev, "PM8xxx read failed!\n");
-> +		goto fail_rtc_enable;
-> +	}
-> +
-> +	if (!(ctrl_reg & PM8xxx_RTC_ENABLE)) {
-> +		ctrl_reg |= PM8xxx_RTC_ENABLE;
-> +		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
-> +									1);
-> +		if (rc < 0) {
-> +			dev_err(&pdev->dev, "PM8xxx write failed!\n");
-> +			goto fail_rtc_enable;
-> +		}
-> +	}
-> +
-> +	rtc_dd->ctrl_reg = ctrl_reg;
-> +	if (rtc_write_enable == true)
-> +		pm8xxx_rtc_ops.set_time = pm8xxx_rtc_set_time;
-> +
-> +	platform_set_drvdata(pdev, rtc_dd);
-> +
-> +	/* Register the RTC device */
-> +	rtc_dd->rtc = rtc_device_register("pm8xxx_rtc", &pdev->dev,
-> +				&pm8xxx_rtc_ops, THIS_MODULE);
-> +	if (IS_ERR(rtc_dd->rtc)) {
-> +		dev_err(&pdev->dev, "%s: RTC registration failed (%ld)\n",
-> +					__func__, PTR_ERR(rtc_dd->rtc));
-> +		rc = PTR_ERR(rtc_dd->rtc);
-> +		goto fail_rtc_enable;
-> +	}
-> +
-> +	/* Request the alarm IRQ */
-> +	rc = request_any_context_irq(rtc_dd->rtc_alarm_irq,
-> +				 pm8xxx_alarm_trigger, IRQF_TRIGGER_RISING,
-> +				 "pm8xxx_rtc_alarm", rtc_dd);
-> +	if (rc < 0) {
-> +		dev_err(&pdev->dev, "Request IRQ failed (%d)\n", rc);
-> +		goto fail_req_irq;
-> +	}
-> +
-> +	device_init_wakeup(&pdev->dev, 1);
-> +
-> +	dev_dbg(&pdev->dev, "Probe success !!\n");
-> +
-> +	return 0;
-> +
-> +fail_req_irq:
-> +	rtc_device_unregister(rtc_dd->rtc);
-> +fail_rtc_enable:
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(rtc_dd);
-> +	return rc;
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int pm8xxx_rtc_resume(struct device *dev)
-> +{
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +	if (device_may_wakeup(dev))
-> +		disable_irq_wake(rtc_dd->rtc_alarm_irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int pm8xxx_rtc_suspend(struct device *dev)
-> +{
-> +	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
-> +
-> +	if (device_may_wakeup(dev))
-> +		enable_irq_wake(rtc_dd->rtc_alarm_irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct dev_pm_ops pm8xxx_rtc_pm_ops = {
-> +	.suspend = pm8xxx_rtc_suspend,
-> +	.resume = pm8xxx_rtc_resume,
-> +};
-> +#endif
-
-Missing a newline here? Also, can you move the probe and remove
-functions next to each other and move the pm related functions somewhere
-else (preferably above the probe and remove)?
-
-> +static int __devexit pm8xxx_rtc_remove(struct platform_device *pdev)
-> +{
-> +	struct pm8xxx_rtc *rtc_dd = platform_get_drvdata(pdev);
-> +
-> +	device_init_wakeup(&pdev->dev, 0);
-> +	free_irq(rtc_dd->rtc_alarm_irq, rtc_dd);
-> +	rtc_device_unregister(rtc_dd->rtc);
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(rtc_dd);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver pm8xxx_rtc_driver = {
-> +	.probe		= pm8xxx_rtc_probe,
-> +	.remove		= __devexit_p(pm8xxx_rtc_remove),
-> +	.driver	= {
-> +		.name	= PM8XXX_RTC_DEV_NAME,
-> +		.owner	= THIS_MODULE,
-> +#ifdef CONFIG_PM
-> +		.pm	= &pm8xxx_rtc_pm_ops,
-> +#endif
-> +	},
-> +};
-> +
-> +static int __init pm8xxx_rtc_init(void)
-> +{
-> +	return platform_driver_register(&pm8xxx_rtc_driver);
-> +}
-> +module_init(pm8xxx_rtc_init);
-> +
-> +static void __exit pm8xxx_rtc_exit(void)
-> +{
-> +	platform_driver_unregister(&pm8xxx_rtc_driver);
-> +}
-> +module_exit(pm8xxx_rtc_exit);
-> +
-> +MODULE_ALIAS("platform:rtc-pm8xxx");
-> +MODULE_DESCRIPTION("PMIC8xxx RTC driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR("Anirudh Ghayal <aghayal@codeaurora.org>");
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Yinghai Lu
