@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1EJJu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 05:50:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64051 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab1EJJu1 (ORCPT
+	id S1754426Ab1EJJwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 05:52:43 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41074 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab1EJJwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 05:50:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fBs4m7KFUkaEdEDPDeINmwuuekGER0K+/ZPBTr5GS1JZmep+cDEs8KiSBUjDH6d/Zr
-         y/YNzQHaGcpYaPY5gFAfVPNn1Ybgwa8tH/p3GgsIOQp7GWlNxmxypBK8IyR4+2Gd1Bu0
-         jOM9241KZgtxreFI5SvgeIA+VALdg0PLaV/Nw=
-Date: Tue, 10 May 2011 11:50:22 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
-Message-ID: <20110510095022.GR1661@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-5-git-send-email-tj@kernel.org>
- <20110509165857.GA30607@redhat.com>
+	Tue, 10 May 2011 05:52:42 -0400
+Message-ID: <4DC90AE8.101@parallels.com>
+Date: Tue, 10 May 2011 13:52:40 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509165857.GA30607@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] tmpfs: fix race between umount and writepage
+References: <4DAFD0B1.9090603@parallels.com> <20110421064150.6431.84511.stgit@localhost6> <20110421124424.0a10ed0c.akpm@linux-foundation.org> <4DB0FE8F.9070407@parallels.com> <alpine.LSU.2.00.1105031223120.9845@sister.anvils> <4DC4D9A6.9070103@parallels.com> <alpine.LSU.2.00.1105071621330.3668@sister.anvils> <4DC691D0.6050104@parallels.com> <alpine.LSU.2.00.1105081234240.15963@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1105081234240.15963@sister.anvils>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hugh Dickins wrote:
+> On Sun, 8 May 2011, Konstantin Khlebnikov wrote:
+>>
+>> Ok, I can test final patch-set on the next week.
+>> Also I can try to add some swapoff test-cases.
+>
+> That would be helpful if you have the time: thank you.
 
-On Mon, May 09, 2011 at 06:58:57PM +0200, Oleg Nesterov wrote:
-> Right now I am a bit puzzled why do we have 2 bits, JOBCTL_TRAP_INTERRUPT
-> and JOBCTL_TRAP_SEIZE... But I didn't read this + other patches yet.
+I Confirm, patch 1/3 really fixes race between writepage and umount, as expected.
 
-It eventually ends up with three trap flags - SEIZE, INTERRUPT and
-NOTIFY.  They all use PTRACE_EVENT_INTERRUPT trap but are different as
-for when they're cleared.  SEIZE is cleared after any trap.  INTERRUPT
-is cleared after an INTERRUPT trap and NOTIFY is cleared after
-GETSIGINFO.  We can add different pending flags and adjust INTERRUPT
-flag according to different pending conditions but I think it's
-cleaner to have multiple trap flags than multiplexing things over
-single trap flag.
+In patch 2/3: race-window between unlock_page and iput extremely small.
+My test works fine in parallel with thirty random swapon-swapoff,
+but it works without this patch too, thus I cannot catch this race.
 
-> At first glance, JOBCTL_TRAP_INTERRUPT has the same problem with the
-> killed tracee. I think this is easy to fix.
-
-Again, isn't this cleared during __ptrace_unlink()?
-
-Thanks.
-
--- 
-tejun
+I apply patch 3/3 too, but have not tested this case.
