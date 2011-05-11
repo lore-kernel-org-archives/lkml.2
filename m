@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab1EKRLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:11:36 -0400
-Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:37354 "EHLO
-	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1EKRLe (ORCPT
+	id S1756698Ab1EKQ0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:26:37 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61492 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755093Ab1EKQ0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:11:34 -0400
-X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 13:11:34 EDT
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Allen Kay <allen.m.kay@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1103161610110.3382@kaball-desktop>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
-	 <20110304104251.45b257c4@jbarnes-desktop>
-	 <1299595858.17339.512.camel@zakaz.uk.xensource.com>
-	 <1299601032.17339.525.camel@zakaz.uk.xensource.com>
-	 <alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
-	 <20110316083205.405910ac@jbarnes-desktop>
-	 <alpine.DEB.2.00.1103161610110.3382@kaball-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 14:33:38 +0100
-Message-ID: <1305120818.26692.394.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 62.200.22.2
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
- register_slot
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+	Wed, 11 May 2011 12:26:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ctS6wAVc0r5ZNO9atuZfLJtvspOMnToiBwqeKybP4YmbvhU4gM3S8W2PH1VMK4EXnS
+         4OGRcHDFiLk74eBnH6BXOx3gndwteZh6SJz8jKxccIYifIavUCMxB9bANHkC4IGXbCbA
+         WSWJeDaP7DreXRKS5x3hxQC57Mria9ZY4bSYY=
+Date: Wed, 11 May 2011 15:33:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf: Carve out cgroup-related code
+Message-ID: <20110511133340.GB1846@nowhere>
+References: <1305119816-26280-1-git-send-email-bp@amd64.org>
+ <1305119816-26280-2-git-send-email-bp@amd64.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305119816-26280-2-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesse,
+(Adding Stephane in Cc)
 
-On Wed, 2011-03-16 at 16:13 +0000, Stefano Stabellini wrote:
-> On Wed, 16 Mar 2011, Jesse Barnes wrote:
-> > On Wed, 16 Mar 2011 12:34:10 +0000
-> > Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > 
-> > > Jesse,
-> > > do you have any comments on the following patch?
-> > > Also, are you OK with taking "set current_state to D0 in register_slot"
-> > > in your tree? Otherwise should I send a pull request to Linus with the
-> > > patch and your ack?
-> > 
-> > Yeah, I think the patch is ok, I can send it to Linus either as part of
-> > my 2.6.39 pull req (though it's probably too late for that) or in my
-> > next -fixes pull.
+On Wed, May 11, 2011 at 03:16:55PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Great, thanks!
+> Move cgroup perf support into a different compilation module -
+> kernel/events/cgroup.c - thus slimming perf_event.c some more.
 > 
-> Just to be clear there are two different patches, the first one is "set
-> current_state to D0 in register_slot":
+> While at it,
 > 
-> https://lkml.org/lkml/2011/2/28/296
+> * push some oneliners into perf_event.h now that they're used in
+> multiple .c files.
 > 
-> the second one by Ian Campbell is "acpiphp: assume device is in state D0
-> after powering on a slot.":
+> * drop is_cgroup_event() check for perf_cgroup_defer_enabled() at its
+> callsite in __perf_event_enable since the latter does the check anyway.
 > 
-> https://lkml.org/lkml/2011/3/8/212
+> No functional change.
+> 
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
-Looks like the first of these is in your tree but not the second. Do you
-want me to resend and/or rework it?
+BTW, before you do it yourself, I have a patch pending that splits the buffer
+part from the core.
 
-Ian.
-
--- 
-Ian Campbell
-Current Noise: Anathema - Dreaming Light
-
-I never met a woman I couldn't drink pretty.
-
+Just to avoid effort duplicates... :)
