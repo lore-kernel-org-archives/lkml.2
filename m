@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab1EKRxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:53:44 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51210 "EHLO kernel.dk"
+	id S1751896Ab1EKSKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 14:10:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47966 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870Ab1EKRxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:53:43 -0400
-Message-ID: <4DCACD25.6060107@kernel.dk>
-Date: Wed, 11 May 2011 19:53:41 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] (xen) stable/blkfront for 2.6.40
-References: <20110510171107.GA939@dumpdata.com>
-In-Reply-To: <20110510171107.GA939@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751430Ab1EKSKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 14:10:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
+   d="scan'208";a="434450253"
+Date: Wed, 11 May 2011 18:55:53 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gma500: Skip bogus LVDS VBT mode and check for LVDS
+ before adding backlight
+Message-ID: <20110511185553.5260805f@bob.linux.org.uk>
+In-Reply-To: <20110511172053.GA3557@patrik-macbook>
+References: <20110511172053.GA3557@patrik-macbook>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-10 19:11, Konrad Rzeszutek Wilk wrote:
-> Hey Jens,
-> 
-> Please pull:
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/blkfront
-> 
-> which has changes since git commit 8e10cd74342c7f5ce259cceca36f6eba084f5d58
-> Linus Torvalds (1):
->     Linux 2.6.39-rc5
-> 
-> The git commit includes a bug-fix, and a set of patches to allow the blkfront
-> driver to use 'feature-flush-cache' feature. The 'flush-cache' is basically
-> the equivalent of the new REQ_FLUSH command (the old 'feature-barrier' is
-> still present in the driver in case the backend supports that).
-> 
-> If you prefer for me to ask Linus to pull this git tree since it includes
-> a patch to the include/xen/interface/.. directory - I can do that as long as
-> you are OK with that.
+On Wed, 11 May 2011 19:20:53 +0200
+Patrik Jakobsson <patrik.r.jakobsson@gmail.com> wrote:
 
-I don't mind pulling it directly, that's fine. But you are based on
-2.6.39-rc5, you should be based on for-2.6.40/drivers (or core) instead.
-If I pull the above, I end up getting all the changes from rc4..rc5 as
-well.
+> On the Fit-PC2 the VBT reports an invalid fixed panel mode for LVDS,
+> this gets in the way for SDVO. This patch makes VBT parsing skip the
+> invalid mode. When there is no LVDS output the backlight support
+> crashes so the patch also checks for this before enabling it.
 
--- 
-Jens Axboe
+Looks good for now. The backlight is a bit more complicated I think
+(users can turn on the LVDS at runtime in theory) but we can handle
+that later so long as we tag it with a /* FIXME: Handle turning on LVDS
+at runtime */
 
+Alan
