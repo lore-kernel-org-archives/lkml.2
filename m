@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831Ab1EKQ5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:57:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65322 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab1EKQ5i (ORCPT
+	id S1752841Ab1EKRSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:18:06 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:59094 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab1EKRSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:57:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PAmIZAlZBMqXW/P1hvKMQP/knlxHlCZvVtb715VybTs6tH7BIHlUQyZfMy1enCwATV
-         l8nwyUSIRT81oXkvzFR7312l1JeU/5lzxqM47tfB22BbBv2+NQNzt2W+kCv1hT/yqZJK
-         V1GsBZzJ7AOQuz2LC8H30PBN8QOH/nBeQQjYc=
-Date: Wed, 11 May 2011 11:28:48 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        eric.dumazet@gmail.com, cl@linux.com, npiggin@kernel.dk
-Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
-Message-ID: <20110511092848.GE1661@htj.dyndns.org>
-References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110511081012.903869567@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 11 May 2011 13:18:01 -0400
+From: Stefan Bader <stefan.bader@canonical.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [2.6.32+drm33-longterm] Patch "drm/radeon/kms: fix bad shift in atom iio table parser" has been added to staging queue
+Date: Wed, 11 May 2011 11:29:56 +0200
+Message-Id: <1305106196-19269-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Shaohua.
+This is a note to let you know that I have just added a patch titled
 
-On Wed, May 11, 2011 at 04:10:12PM +0800, Shaohua Li wrote:
-> The new implementation uses lglock to protect percpu data. Each cpu has its
-> private lock while other cpu doesn't take. In this way _add doesn't need take
-> global lock anymore and remove the deviation. This still gives me about
-> about 5x ~ 6x faster (not that faster than the original 7x faster, but still
-> good) with the workload mentioned in patch 4.
+    drm/radeon/kms: fix bad shift in atom iio table parser
 
-I'm afraid I'm not too thrilled about lglock + atomic64 usage.  It is
-a very patchy approach which addresses a very specific use case which
-might just need a higher @batch.  I just can't see enough benefits to
-justify the overhead and complexity.  :-(
+to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
+
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
+
+If you, or anyone else, feels it should not be added to the drm33-longterm tree,
+please reply to this email not later than 8 days after this email was sent.
 
 Thanks.
+-Stefan
 
--- 
-tejun
+------
+
+>From 24b424d58a72306ff413315f01f12dab43ac783c Mon Sep 17 00:00:00 2001
+From: Alex Deucher <alexdeucher@gmail.com>
+Date: Thu, 14 Apr 2011 11:19:50 -0400
+Subject: [PATCH] drm/radeon/kms: fix bad shift in atom iio table parser
+
+commit 8e461123f28e6b17456225e70eb834b3b30d28bb upstream.
+
+Noticed by Patrick Lowry.
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+---
+ drivers/gpu/drm/radeon/atom.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/atom.c b/drivers/gpu/drm/radeon/atom.c
+index b1f929d..052312f 100644
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -128,7 +128,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
+ 		case ATOM_IIO_MOVE_INDEX:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((index >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -138,7 +138,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
+ 		case ATOM_IIO_MOVE_DATA:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((data >> CU8(base + 2)) &
+ 			     (0xFFFFFFFF >> (32 - CU8(base + 1)))) << CU8(base +
+@@ -148,7 +148,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
+ 		case ATOM_IIO_MOVE_ATTR:
+ 			temp &=
+ 			    ~((0xFFFFFFFF >> (32 - CU8(base + 1))) <<
+-			      CU8(base + 2));
++			      CU8(base + 3));
+ 			temp |=
+ 			    ((ctx->
+ 			      io_attr >> CU8(base + 2)) & (0xFFFFFFFF >> (32 -
+--
+1.7.0.4
+
