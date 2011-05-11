@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab1EKB6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 21:58:49 -0400
-Received: from kroah.org ([198.145.64.141]:35707 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab1EKB6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 21:58:47 -0400
-Date: Tue, 10 May 2011 18:56:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
-Message-ID: <20110511015650.GA6840@kroah.com>
-References: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
- <20110510200801.GA8125@kroah.com>
- <BANLkTimimx-pW9mOtb_9yM5XcQ5nOeGYug@mail.gmail.com>
+	id S1753528Ab1EKCXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 22:23:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59603 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab1EKCXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 22:23:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Nm0S6U5QnbvtlZ4P2HxI7TkcQHwIINVRwsjoJztIkw1BBtTyVD/AgorasPIRwdWo+C
+         DtN4i+oETf/BvYqhJXQgjg/Mv8v6XK7FpR0MieOmyhvIH39uK14zgQ/ftn4vj3bIn2x5
+         vNXgW+eRc/zmIgdU4QrRINM87sRcyMC/mn45U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimimx-pW9mOtb_9yM5XcQ5nOeGYug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 11 May 2011 10:23:16 +0800
+Message-ID: <BANLkTi=yWrPiz9Wp0H46at4NVfMSJ8n1uw@mail.gmail.com>
+Subject: [PATCH] touchscreen: check kzalloc memory for data first
+From: Steven Liu <lingjiujianke@gmail.com>
+To: jy0922.shim@samsung.com
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        dmitry.torokhov@gmail.com, liuqi@thunderst.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 02:07:33AM +0200, Linus Walleij wrote:
-> 2011/5/10 Greg KH <greg@kroah.com>:
-> 
-> > On Tue, May 10, 2011 at 05:10:32PM +0200, Par-Gunnar Hjalmdahl wrote:
-> >> This patch adds support for the ST-Ericsson CG2900
-> >> Connectivity Combo controller (Bluetooth, FM, GPS).
-> >>
-> >> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-> >> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> >
-> > {sigh}
-> >
-> > This breaks the build again, the error messages are below :(
-> 
-> I suspect the problem is that Per-Gunnar does not know how to reproduce
-> your build errors. Are you building for some x86 combination, allyes, etc
-> for example? This is likely currently only tested and applicable for ux500
-> so a simple  "depends on ARCH_U8500" under config CG2900 may solve
-> stuff.
+Hi Joonyoung Shim ,
 
-All I did was merely enable the driver to be built on my desktop,
-something that any developer should have done, right?
+            Can this patch be fixed in?
 
-And why can't the code be built for any architecture, what is forcing it
-for only one platform?  That's not the way drivers should be written,
-right?
 
-So please fix the real problem, don't just confine it to one
-architecture, what is to keep this from showing up on another chip soon?
+if kzalloc memroy for data was faild, it will multi free data
+memory space. so check the data memory first, is it kzalloc faild
+for data, it should goto end and do nothing.
 
-thanks,
+Signed-off-by: LiuQi <lingjiujianke@gmail.com>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c
+b/drivers/input/touchscreen/atmel_mxt_ts.c
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1039,8 +1039,15 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 		return -EINVAL;
+
+ 	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
++
++	if(!data){
++		dev_err(&client->dev, "Failed to allocate memory\n");
++		error = -ENOMEM;
++		goto err_alloc_data_mem_faild;
++	}
++
+ 	input_dev = input_allocate_device();
+-	if (!data || !input_dev) {
++	if (!input_dev) {
+ 		dev_err(&client->dev, "Failed to allocate memory\n");
+ 		error = -ENOMEM;
+ 		goto err_free_mem;
+@@ -1107,9 +1114,10 @@ err_free_irq:
+ 	free_irq(client->irq, data);
+ err_free_object:
+ 	kfree(data->object_table);
+-err_free_mem:
+ 	input_free_device(input_dev);
++err_free_mem:
+ 	kfree(data);
++err_alloc_data_mem_faild:
+ 	return error;
+ }
+
+
+
+
+
+
+
+Best Regards
+
+Steven Liu
