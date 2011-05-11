@@ -1,103 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab1EKVjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:39:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45702 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756028Ab1EKVjX (ORCPT
+	id S1756808Ab1EKVm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:42:56 -0400
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:40902 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756239Ab1EKVmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:39:23 -0400
-Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using
- high-order allocations
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	Wed, 11 May 2011 17:42:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
+	:cc:date:in-reply-to:references:content-type
+	:content-transfer-encoding:message-id:mime-version; q=dns; s=
+	sasl; b=PjgYuLaZHUFFpxvIYVClZ14HXdjmRTiISoCtgRlhFCdF9j3xJRsntedJ
+	r5wGeOqEkCY+Y4uHDT6nVB4eTLsqWhA2kqjeQf7yXsi5Owq7ti3ZlZ/BsJvbw6il
+	MiPBL8eYbZliedXiUjNAxo2kVwISZdLtgMu6QwC1yd6vJ31r5HA=
+Subject: Re: [PATCH 3/7] ns proc: Add support for the network namespace.
+From: Nathan Lynch <ntl@pobox.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Date: Wed, 11 May 2011 16:42:33 -0500
+In-Reply-To: <m139kkncpe.fsf@fess.ebiederm.org>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+ <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+ <1304735101-1824-3-git-send-email-ebiederm@xmission.com>
+ <1305141705.1236.49.camel@orca.stoopid.dyndns.org>
+ <m139kkncpe.fsf@fess.ebiederm.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 16:39:20 -0500
-Message-ID: <1305149960.2606.53.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1305150164.1236.51.camel@orca.stoopid.dyndns.org>
+Mime-Version: 1.0
+X-Pobox-Relay-ID: E5A3E4EE-7C17-11E0-9391-BBB7F5B2FB1A-04752483!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 16:29 +0100, Mel Gorman wrote:
-> Debian (and probably Ubuntu) have recently have changed to the default
-> option of SLUB. There are a few reports of people experiencing hangs
-> when copying large amounts of data with kswapd using a large amount of
-> CPU. It appears this is down to SLUB using high orders by default and
-> the page allocator and reclaim struggling to keep up. The following
-> three patches reduce the cost of using those high orders.
+On Wed, 2011-05-11 at 14:34 -0700, Eric W. Biederman wrote:
+> Nathan Lynch <ntl@pobox.com> writes:
 > 
-> Patch 1 prevents kswapd waking up in response to SLUBs speculative
-> 	use of high orders. This eliminates the hangs and while the
-> 	system can still stall for long periods, it recovers.
+> > On Fri, 2011-05-06 at 19:24 -0700, Eric W. Biederman wrote:
+> >> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> >> index 3f86026..bf7707e 100644
+> >> --- a/net/core/net_namespace.c
+> >> +++ b/net/core/net_namespace.c
+> >> @@ -573,3 +573,34 @@ void unregister_pernet_device(struct pernet_operations *ops)
+> >>  	mutex_unlock(&net_mutex);
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(unregister_pernet_device);
+> >> +
+> >> +#ifdef CONFIG_NET_NS
+> >> +static void *netns_get(struct task_struct *task)
+> >> +{
+> >> +	struct net *net;
+> >> +	rcu_read_lock();
+> >> +	net = get_net(task->nsproxy->net_ns);
+> >
+> > This should use task_nsproxy() and check the result before grabbing the
+> > net_ns, but I think you fix that in a later patch.
+> >
+> > Regardless, it looks as if all the proc_ns_ops->get() implementations
+> > really just want the nsproxy, so maybe the get() methods should take
+> > that instead of the task_struct, and proc_ns_instantiate() should do
+> > something like:
+> >
+> > struct nsproxy *nsproxy;
+> > ...
+> >
+> > ei->ns_ops = ns_ops;
+> > error = -ESRCH;
+> > rcu_read_lock();
+> > nsproxy = task_nsproxy(task);
+> > rcu_read_unlock();
+> > if (!nsproxy)
+> > 	got out;
+> > ei->ns = ns_ops->get(nsproxy);
+> >
+> >
+> > So then the zombie check is consolidated in one place instead of having
+> > to do it in every get() method.
 > 
-> Patch 2 further reduces the cost by prevent SLUB entering direct
-> 	compaction or reclaim paths on the grounds that falling
-> 	back to order-0 should be cheaper.
+> For the pid namespace at least I want the task not the nsproxy,
+> so I can use task_active_pid_namespace().
 > 
-> Patch 3 defaults SLUB to using order-0 on the grounds that the
-> 	systems that heavily benefit from using high-order are also
-> 	sized to fit in physical memory. On such systems, they should
-> 	manually tune slub_max_order=3.
+> I admit that is a little asymmetrical with the install, but at
+> least until the details of getting the pid namespace working in
+> this context are worked out I don't want to reconsider the
+> current design.
 > 
-> My own data on this is not great. I haven't really been able to
-> reproduce the same problem locally but a significant failing is
-> that the tests weren't stressing X but I couldn't make meaningful
-> comparisons by just randomly clicking on things (working on fixing
-> this problem).
+> There is also the user namespace that does not even exist in
+> nsproxy to consider.  I will worry about that namespace when
+> it happens.
 > 
-> The test case is simple. "download tar" wgets a large tar file and
-> stores it locally. "unpack" is expanding it (15 times physical RAM
-> in this case) and "delete source dirs" is the tarfile being deleted
-> again. I also experimented with having the tar copied numerous times
-> and into deeper directories to increase the size but the results were
-> not particularly interesting so I left it as one tar.
-> 
-> Test server, 4 CPU threads (AMD Phenom), x86_64, 2G of RAM, no X running
->                              -       nowake    
->              largecopy-vanilla       kswapd-v1r1  noexstep-v1r1     default0-v1r1
-> download tar           94 ( 0.00%)   94 ( 0.00%)   94 ( 0.00%)   93 ( 1.08%)
-> unpack tar            521 ( 0.00%)  551 (-5.44%)  482 ( 8.09%)  488 ( 6.76%)
-> delete source dirs    208 ( 0.00%)  218 (-4.59%)  194 ( 7.22%)  194 ( 7.22%)
-> MMTests Statistics: duration
-> User/Sys Time Running Test (seconds)        740.82    777.73    739.98    747.47
-> Total Elapsed Time (seconds)               1046.66   1273.91    962.47    936.17
-> 
-> Disabling kswapd alone hurts performance slightly even though testers
-> report it fixes hangs. I would guess it's because SLUB callers are
-> calling direct reclaim more frequently (I belatedly noticed that
-> compaction was disabled so it's not a factor) but haven't confirmed
-> it. However, preventing kswapd waking or entering direct reclaim and
-> having SLUB falling back to order-0 performed noticeably faster. Just
-> using order-0 in the first place was fastest of all.
-> 
-> I tried running the same test on a test laptop but unfortunately
-> due to a misconfiguration the results were lost. It would take a few
-> hours to rerun so am posting without them.
-> 
-> If the testers verify this series help and we agree the patches are
-> appropriate, they should be considered a stable candidate for 2.6.38.
+> Ultimately nsproxy is an space/time optimization that not all
+> namespaces use so forcing it in the design is probably not
+> what we want.
 
-OK, I confirm that I can't seem to break this one.  No hangs visible,
-even when loading up the system with firefox, evolution, the usual
-massive untar, X and even a distribution upgrade.
+Okay.
 
-You can add my tested-by
 
-James
+> >> +	rcu_read_unlock();
+> >> +	return net;
+> >> +}
+> >> +
+> >> +static void netns_put(void *ns)
+> >> +{
+> >> +	put_net(ns);
+> >> +}
+> >> +
+> >> +static int netns_install(struct nsproxy *nsproxy, void *ns)
+> >> +{
+> >> +	put_net(nsproxy->net_ns);
+> >> +	nsproxy->net_ns = get_net(ns);
+> >> +	return 0;
+> >> +}
+> >
+> > This introduces a window where, potentially, nsproxy->net_ns is stale
+> > before it is updated with the namespace which is being attached, no? 
+> > (Same concern applies to other install methods in the patch set).  It
+> > seems possible to oops the kernel in this window by looking up
+> > /proc/$PID/ns/net while $PID is in the midst of setns().
+> 
+> Except the nsproxy being referred to is a brand new nsproxy, with an
+> extra reference count on every namespace.  current->nsproxy still
+> contains the reference counts of the current process.
+
+Ahh, yeah.  Got it.  Thanks.
+
 
 
