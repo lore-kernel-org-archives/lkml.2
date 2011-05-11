@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab1EKWgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:36:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42702 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab1EKWgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:36:32 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=8nV5T6KIBtlHwaK_uPcA:9 a=nW4brO--zp0RQele7aEA:7 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Fix powerTOP regression with 2.6.39-rc5
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Michael Rubin <mrubin@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <20110511215111.GA16355@elte.hu>
-References: <1304713252.25414.2532.camel@gandalf.stny.rr.com>
-	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
-	 <20110507065803.GA23414@elte.hu>
-	 <1304765110.25414.2564.camel@gandalf.stny.rr.com>
-	 <20110507144402.GC2859@elte.hu> <1304788829.11129.57.camel@frodo>
-	 <20110507190033.GA11465@elte.hu> <1304996847.2969.151.camel@frodo>
-	 <20110510084158.GC27426@elte.hu> <1305032797.2943.34.camel@frodo>
-	 <20110511215111.GA16355@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 18:36:23 -0400
-Message-ID: <1305153383.19008.1.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S932533Ab1EKWgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:36:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15461 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754280Ab1EKWgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 18:36:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
+   d="scan'208";a="641471759"
+From: Andi Kleen <andi@firstfloor.org>
+To: "Fenghua Yu" <fenghua.yu@intel.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] x86, cpu: Enable/disable SMEP
+References: <1305141480-843-1-git-send-email-fenghua.yu@intel.com>
+	<1305141480-843-4-git-send-email-fenghua.yu@intel.com>
+Date: Wed, 11 May 2011 15:36:30 -0700
+In-Reply-To: <1305141480-843-4-git-send-email-fenghua.yu@intel.com> (Fenghua
+	Yu's message of "Wed, 11 May 2011 12:18:00 -0700")
+Message-ID: <m2k4dwj24x.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 23:51 +0200, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+"Fenghua Yu" <fenghua.yu@intel.com> writes:
+  
+> +static int disable_smep;
 
-> Also note that IMO there is no long-term technical problem really: i agree with 
-> you that we can eventually get rid of the 4 bytes bkl field as well, if all 
-> affected apps migrate to libperf.so in an orderly fashion.
+If you add a __initdata here the whole thing will completely disappear
+after boot.
 
-OK Ingo,
+> @@ -867,6 +886,8 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
+>  	/* Init Machine Check Exception if available. */
+>  	mcheck_cpu_init(c);
+>  
+> +	setup_smep(c);
 
-I'll make this my top priority. Then who knows? Maybe I'll start looking
-at what I can make of your trace program. ;)
+My feeling is you're setting this too late. In theory there could be
+early overflows. Better use a early_param and set it as early
+as possible, directly after the cpuid flags are set up in early
+initialization.
 
-Thanks,
-
--- Steve
-
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
