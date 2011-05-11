@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab1EKPtj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:49:39 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:49240 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755423Ab1EKPth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:49:37 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>
-Subject: [PATCH] RapidIO: Fix default routing initialization
-Date: Wed, 11 May 2011 10:46:03 -0400
-Message-Id: <1305125163-14590-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1754300Ab1EKPyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:54:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59522 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab1EKPyf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:54:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=qgVGg/YXwmWPNRNyRvQAX9vo+HsD764ZKVTCvgWKBPARgsSxMsXS19zYD0wzSDtWB7
+         pcVuWo+zB0gTH2wU13VdxWqhQ0s5/5gwXIfn/rkbGYnZcIvRIr7IuAQNnNQzZP/TJISB
+         vQXGZBIs+gw7v3b4fqdxUV/U3m8R/7uGwRT/0=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinDiGCaKPtS+ZpKf2swJpParJ4eew@mail.gmail.com>
+References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+ <BANLkTi=y60Jt3-OMzbxQJzGkvzCzNJfJtA@mail.gmail.com> <BANLkTimfFEv+vZ8dYvhG0oj2Q4g+KnG4aA@mail.gmail.com>
+ <BANLkTinDiGCaKPtS+ZpKf2swJpParJ4eew@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 11 May 2011 10:47:19 -0400
+Message-ID: <BANLkTi=JXq+V783amiJB-qLX=7PaeH-83w@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Speed up the symbols' resolution process V4
+To: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix switch initialization to ensure that all switches have default
-routing disabled. This guarantees that no unexpected RapidIO packets
-arrive to the default port set by reset and there is no default routing
-destination until it is properly configured by software.
+On Wed, May 11, 2011 at 05:19, Alessio Igor Bogani wrote:
+>> name.  so rather than "__", use "+".
+>
+> Sorry I don't think that is a good choice from a long term point of
+> view. What do you think to add MODULE_SYMBOL_PREFIX to section names
+> instead? In this way symbol and section names should always be
+> different also on symbol prefixed archs (which are blackfin and
+> h8300).
 
-This update also unifies handling of unmapped destinations by tsi57x,
-IDT Gen1 and IDT Gen2 switches.
+that doesnt work.  it simply delays the problem to another set of
+underscores.  so with that change, local_bh_enable/_local_bh_enable
+work, but now send_remote_softirq/__send_remote_softirq fail:
+  CC      kernel/softirq.o
+nano /tmp/cconhYy1.s: Assembler messages:
+/tmp/cconhYy1.s:3664: Error: symbol `___ksymtab___send_remote_softirq'
+is already defined
+make[1]: *** [kernel/softirq.o] Error 1
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
----
- drivers/rapidio/switches/idt_gen2.c |    9 +++++++++
- drivers/rapidio/switches/idtcps.c   |    6 ++++++
- drivers/rapidio/switches/tsi57x.c   |    6 ++++++
- 3 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/rapidio/switches/idt_gen2.c b/drivers/rapidio/switches/idt_gen2.c
-index ac2701b..043ee31 100644
---- a/drivers/rapidio/switches/idt_gen2.c
-+++ b/drivers/rapidio/switches/idt_gen2.c
-@@ -95,6 +95,9 @@ idtg2_route_add_entry(struct rio_mport *mport, u16 destid, u8 hopcount,
- 	else
- 		table++;
- 
-+	if (route_port == RIO_INVALID_ROUTE)
-+		route_port = IDT_DEFAULT_ROUTE;
-+
- 	rio_mport_write_config_32(mport, destid, hopcount,
- 				  LOCAL_RTE_CONF_DESTID_SEL, table);
- 
-@@ -411,6 +414,12 @@ static int idtg2_switch_init(struct rio_dev *rdev, int do_enum)
- 	rdev->rswitch->em_handle = idtg2_em_handler;
- 	rdev->rswitch->sw_sysfs = idtg2_sysfs;
- 
-+	if (do_enum) {
-+		/* Ensure that default routing is disabled on startup */
-+		rio_write_config_32(rdev,
-+				    RIO_STD_RTE_DEFAULT_PORT, IDT_NO_ROUTE);
-+	}
-+
- 	return 0;
- }
- 
-diff --git a/drivers/rapidio/switches/idtcps.c b/drivers/rapidio/switches/idtcps.c
-index 3a97107..d06ee2d 100644
---- a/drivers/rapidio/switches/idtcps.c
-+++ b/drivers/rapidio/switches/idtcps.c
-@@ -26,6 +26,9 @@ idtcps_route_add_entry(struct rio_mport *mport, u16 destid, u8 hopcount,
- {
- 	u32 result;
- 
-+	if (route_port == RIO_INVALID_ROUTE)
-+		route_port = CPS_DEFAULT_ROUTE;
-+
- 	if (table == RIO_GLOBAL_TABLE) {
- 		rio_mport_write_config_32(mport, destid, hopcount,
- 				RIO_STD_RTE_CONF_DESTID_SEL_CSR, route_destid);
-@@ -130,6 +133,9 @@ static int idtcps_switch_init(struct rio_dev *rdev, int do_enum)
- 		/* set TVAL = ~50us */
- 		rio_write_config_32(rdev,
- 			rdev->phys_efptr + RIO_PORT_LINKTO_CTL_CSR, 0x8e << 8);
-+		/* Ensure that default routing is disabled on startup */
-+		rio_write_config_32(rdev,
-+				    RIO_STD_RTE_DEFAULT_PORT, CPS_NO_ROUTE);
- 	}
- 
- 	return 0;
-diff --git a/drivers/rapidio/switches/tsi57x.c b/drivers/rapidio/switches/tsi57x.c
-index d322fa0..10e7ddc 100644
---- a/drivers/rapidio/switches/tsi57x.c
-+++ b/drivers/rapidio/switches/tsi57x.c
-@@ -303,6 +303,12 @@ static int tsi57x_switch_init(struct rio_dev *rdev, int do_enum)
- 	rdev->rswitch->em_init = tsi57x_em_init;
- 	rdev->rswitch->em_handle = tsi57x_em_handler;
- 
-+	if (do_enum) {
-+		/* Ensure that default routing is disabled on startup */
-+		rio_write_config_32(rdev, RIO_STD_RTE_DEFAULT_PORT,
-+				    RIO_INVALID_ROUTE);
-+	}
-+
- 	return 0;
- }
- 
--- 
-1.7.3.1
-
+so any option that involves using underscores as the separator will
+not work.  pick something else, like "+" or "." or ...  i dont see a
+problem with using these.
+-mike
