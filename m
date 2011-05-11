@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab1EKQlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:41:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60202 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754869Ab1EKQlQ (ORCPT
+	id S1755715Ab1EKPwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:52:53 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57130 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755600Ab1EKPwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:41:16 -0400
-Date: Wed, 11 May 2011 15:36:07 +0200
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: TPS65910 depends on I2C and must be built in
-Message-ID: <20110511133607.GC12469@opensource.wolfsonmicro.com>
-References: <20110511122738.93d239cb.sfr@canb.auug.org.au>
- <1305103667-17454-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1305120918.3277.16.camel@odin>
+	Wed, 11 May 2011 11:52:51 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] sst: tweak the shared functions so we don't crash the ASoC
+ driver
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Wed, 11 May 2011 14:38:26 +0100
+Message-ID: <20110511133728.6372.74986.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305120918.3277.16.camel@odin>
-X-Cookie: Reply hazy, ask again later.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 02:35:18PM +0100, Liam Girdwood wrote:
+From: Alan Cox <alan@linux.intel.com>
 
-> Thanks, Applied the exact same patch from Jorge (sent a few hours
-> before).
+The ASoC driver is currently pulling bits from staging rather than its own
+copy. Post all the merges and fixes we've put back an assumption that
+crashes ASoC so we need to fix it differently.
 
-Mutter, mutter, send to list, mutter, mutter.  :)
+(See 0ed625b2f2751c249417bd28694e37ef48eb5fbb)
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ .../staging/intel_sst/intel_sst_drv_interface.c    |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+
+diff --git a/drivers/staging/intel_sst/intel_sst_drv_interface.c b/drivers/staging/intel_sst/intel_sst_drv_interface.c
+index 6b4b752..1021477 100644
+--- a/drivers/staging/intel_sst/intel_sst_drv_interface.c
++++ b/drivers/staging/intel_sst/intel_sst_drv_interface.c
+@@ -526,7 +526,9 @@ int register_sst_card(struct intel_sst_card_ops *card)
+ 		pr_err("Repeat for registration..denied\n");
+ 		return -EBADRQC;
+ 	}
+-	sst_drv_ctx->scard_ops->card_status = SND_CARD_UN_INIT;
++	/* The ASoC code doesn't set scard_ops */
++	if (sst_drv_ctx->scard_ops)
++		sst_drv_ctx->scard_ops->card_status = SND_CARD_UN_INIT;
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(register_sst_card);
+
