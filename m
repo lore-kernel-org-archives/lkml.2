@@ -1,135 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab1EKWwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:52:44 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:52848 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab1EKWwl (ORCPT
+	id S932655Ab1EKWxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:53:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59546 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932565Ab1EKWxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:52:41 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Nathan Lynch <ntl@pobox.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linux Containers <containers@lists.osdl.org>,
-        Renato Westphal <renatowestphal@gmail.com>
-Subject: Re: [PATCH 1/7] ns: proc files for namespace naming policy.
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
-	<1304735101-1824-1-git-send-email-ebiederm@xmission.com>
-	<1305141667.1236.47.camel@orca.stoopid.dyndns.org>
-Date: Wed, 11 May 2011 15:52:35 -0700
-In-Reply-To: <1305141667.1236.47.camel@orca.stoopid.dyndns.org> (Nathan
-	Lynch's message of "Wed, 11 May 2011 14:20:48 -0500")
-Message-ID: <m1oc38luj0.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+DawsZrS2TkupbfrpAJPW1ABnlMxIES1I=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Wed, 11 May 2011 18:53:35 -0400
+Date: Wed, 11 May 2011 15:53:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: mmotm 2011-04-29 - wonky VmRSS and VmHWM values after swapping
+Message-Id: <20110511155324.5c366900.akpm@linux-foundation.org>
+In-Reply-To: <1305043485.2914.110.camel@laptop>
+References: <201104300002.p3U02Ma2026266@imap1.linux-foundation.org>
+	<49683.1304296014@localhost>
+	<8185.1304347042@localhost>
+	<20110502164430.eb7d451d.akpm@linux-foundation.org>
+	<1305043485.2914.110.camel@laptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nathan Lynch <ntl@pobox.com> writes:
+On Tue, 10 May 2011 18:04:45 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> Hi Eric,
->
-> A few comments on your patch set.
->
->
-> On Fri, 2011-05-06 at 19:24 -0700, Eric W. Biederman wrote:
->> diff --git a/fs/proc/inode.c b/fs/proc/inode.c
->> index d15aa1b..74b48cf 100644
->> --- a/fs/proc/inode.c
->> +++ b/fs/proc/inode.c
->> @@ -28,6 +28,7 @@ static void proc_evict_inode(struct inode *inode)
->>  {
->>  	struct proc_dir_entry *de;
->>  	struct ctl_table_header *head;
->> +	const struct proc_ns_operations *ns_ops;
->>  
->>  	truncate_inode_pages(&inode->i_data, 0);
->>  	end_writeback(inode);
->> @@ -44,6 +45,10 @@ static void proc_evict_inode(struct inode *inode)
->>  		rcu_assign_pointer(PROC_I(inode)->sysctl, NULL);
->>  		sysctl_head_put(head);
->>  	}
->> +	/* Release any associated namespace */
->> +	ns_ops = PROC_I(inode)->ns_ops;
->> +	if (ns_ops && ns_ops->put)
->> +		ns_ops->put(PROC_I(inode)->ns);
->
-> Is it ever valid for ns_ops->put to be null?  If not, I suggest removing
-> the check.
->
->
->> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
->> new file mode 100644
->> index 0000000..6ae9f07
->> --- /dev/null
->> +++ b/fs/proc/namespaces.c
->
-> ...
->
->> +static struct dentry *proc_ns_dir_lookup(struct inode *dir,
->> +				struct dentry *dentry, struct nameidata *nd)
->> +{
->> +	struct dentry *error;
->> +	struct task_struct *task = get_proc_task(dir);
->> +	const struct proc_ns_operations **entry, **last;
->> +	unsigned int len = dentry->d_name.len;
->> +
->> +	error = ERR_PTR(-ENOENT);
->> +
->> +	if (!task)
->> +		goto out_no_task;
->> +
->> +	error = ERR_PTR(-EPERM);
->> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
->> +		goto out;
->> +
->> +	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
->> +	for (entry = ns_entries; entry <= last; entry++) {
->> +		if (strlen((*entry)->name) != len)
->> +			continue;
->> +		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
->> +			break;
->> +	}
->> +	if (entry > last)
->> +		goto out;
->
-> This returns EPERM when it should return ENOENT?
+> > hm, me too.  After boot, hald has a get_mm_counter(mm, MM_ANONPAGES) of
+> > 0xffffffffffff3c27.  Bisected to Pater's
+> > mm-extended-batches-for-generic-mmu_gather.patch, can't see how it did
+> > that.
+> > 
+> 
+> I haven't quite figured out how to reproduce, but does the below cure
+> things? If so, it should probably be folded into the first patch
+> (mm-mmu_gather-rework.patch?) since that is the one introducing this.
+> 
+> ---
+> Subject: mm: Fix RSS zap_pte_range() accounting
+> 
+> Since we update the RSS counters when breaking out of the loop and
+> release the PTE lock, we should start with fresh deltas when we
+> restart the gather loop.
+> 
+> Reported-by: Valdis.Kletnieks@vt.edu
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+> Index: linux-2.6/mm/memory.c
+> ===================================================================
+> --- linux-2.6.orig/mm/memory.c
+> +++ linux-2.6/mm/memory.c
+> @@ -1120,8 +1120,8 @@ static unsigned long zap_pte_range(struc
+>  	spinlock_t *ptl;
+>  	pte_t *pte;
+>  
+> -	init_rss_vec(rss);
+>  again:
+> +	init_rss_vec(rss);
+>  	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+>  	arch_enter_lazy_mmu_mode();
+>  	do {
 
-Good catch.
-
-And fixed now.
-
->>  union proc_op {
->>  	int (*proc_get_link)(struct inode *, struct path *);
->>  	int (*proc_read)(struct task_struct *task, char *page);
->> @@ -268,6 +284,8 @@ struct proc_inode {
->>  	struct proc_dir_entry *pde;
->>  	struct ctl_table_header *sysctl;
->>  	struct ctl_table *sysctl_entry;
->> +	void *ns;
->> +	const struct proc_ns_operations *ns_ops;
->>  	struct inode vfs_inode;
->>  };
->
-> Not that I have any better ideas, but it seems a bit undesirable to
-> increase the size of proc_inode for this one purpose.
-
-Of the options I could think of this was the cleanest, and proc_inode
-is just a caching data structure which means that the effect should be
-comparatively minimal.
-
-That said I won't oppose a change at some point to reduce the
-proc_inode, there are a lot of fields that are not used for most proc
-entries.
-
-Eric
-
+That fixed the negative hald VmHWM output on my test box.
