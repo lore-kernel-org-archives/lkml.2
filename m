@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1EKQaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:30:14 -0400
-Received: from nm19-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.133]:40496 "HELO
-	nm19-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757631Ab1EKQaI (ORCPT
+	id S1755345Ab1EKQUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:20:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40659 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab1EKQUw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:30:08 -0400
-X-Yahoo-Newman-Id: 383960.23435.bm@omp1023.mail.bf1.yahoo.com
-Cc: recipient list not shown:;
-Message-ID: <349017.32703.qm@smtp101.biz.mail.bf1.yahoo.com>
-X-Yahoo-SMTP: 28motZCswBAG51D5R6cAAdoOHVBTfQhOFw--
-X-YMail-OSG: LjyFCdsVM1mazFzRShvUHdg5of0dEoD2AF3JrGzoL0N01dv
- NIprN8H2vKCdNCTFERUfM05CptJE1dvgrRQaghMNsPh1L2akM.YYBoxaF0DO
- gZUAlRnTAf1Dkdu3.DAoZ.i7FzCyayj0eji2Dt3LEWdZJBVJyPqRuo6clGFW
- Szotyi7lvrNx2.s5ca0thITbDzFw6FKJ4.R9z5lKPUu15UBBmUCzX0JGisbE
- I4Rnkm7QF6l.lRHsuLPVQUAoEGPuLkum.YstrB6jLMYdDoOHBOuD01ueAFEO
- bNzzZjmorbee6kBklZneyjY4h3S_R0xDbg1PZFzzZkLTLxeB_1T1_B9ccHI4
- yraH3abHhGy0m_idpXtuhawZUyNV8fuCbK4mK1mCcpJALc1UGWgk1X69XyHR
- SH9B5h3v6xEjPBN5wo7yDZm.BR.YmMo2Cp43CZ0BwxibH.MM4uDYfgcEXscj
- _89sP4USS6nzon8hGQ_.XF_gXDzxvSpXKSHDLqnbjLBMjZ9Nem.4KZohttdc
- qI3Unt6EhfHynBWIhWlVDkGKlRULb5El9wAWB3U7nYPeE16X21a41gPgFF43
- YnDkTc6DLZsBgbJmvyhOlmkxseuvNsF5BqZbLXgAZmsfC8OMI.VCwqtoxYA8
- gXN3FSvwlr2MXvwawKbPDEEWGtAwoWy_dGP99QJkY9MeFWHEwK7pOiefvOWZ
- ZqJOenRhBQwwksV19bb7V0Dwr95gFEpdXoscAsoCmmSXiGtaA3GEeoP9eCyx
- oQfqHIKPYqsUUpPuwCCrW4q5WlGKDQZqiVvu9usD9JyANailbCkRQtl2mkLD
- nL4pfa.Ux7BuUIdaTOscbf1Pl_VlIPu8pDTHno9E2m.6gdJRPRA2etpppdDa
- NmPY4F04BXR.Crcg8QYdMeY2.IloBd4k86AerIIs4DXRHwn8UIa43KyqHP_a
- sfHFeodx.nn44oAmZr59rv9F3pRq6_b4rwYHeCY3Srdgb8Hhvk1b8fBDjVIz
- NVmK5wfQOYgtJC2pw44bshCoa3ee.YlyPSNcOBtVYM8aadp3XR_aKS1OBOTu
- vcY4KsshLPIkS_K1ZceHy6dcXa0v634V9derDPGfqsfiHZZ_IIWauNHs2Yjd
- uSdaOel1mcfa3DmcF_6ZiZhxM9fwqALD86tOdPfO5aFzXe3n7yOUmOseUT2b
- ZwoNOEVQ4oG2p_BbpxLYwMvRBJD832riETdHnf9aI6sK3ILzHjRb5g6SaBG2
- TxMmZKnGkANY2udbfk1sfiUbfbfNfVPV.cG8VkWm0Edmw6qgBmoZMsfOMTW0
- xjKjk7WMbf0aA7zla9XDfKWAH6rv1rh.QFfHe14te7FguW54A5QrgKQQKk7J
- tqRZ6h7hUSXb8C4KzDwbaoF212q2VjIGSfUGLZvZT6EVL8osx3w_H4WaTx5U
- qhntExPr3zQ3t6kDQtQfWnsoiCRvZ9Z3LEmHYo8e86rg9n4k3RIgbIyaWD1e
- EDbJtjkNkEYAA.Hvwau.oa7ENQkP8oAL6MQ.psjTdpuItV4rz70.H1mqNxPz
- CDvcUr6wgR4eVTP2CV21sgS0Am.Q_I.o5MiSKBx_ARUu5F68tObXllNZA98p
- DVLOu0C_R
-X-Yahoo-Newman-Property: ymail-5
-Reply-To: <davidxxx51@mail.kz>
-From: "David Scott" <michelle@yakpasman.com>
-Subject: from David Scott  
-Date: Wed, 11 May 2011 09:18:34 -0700
+	Wed, 11 May 2011 12:20:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=XNrBzf/C/6zcmD3dOIpD98RqKxP30zB1trOpOgdyapvuKW2uCPsWiVtgmlap7lD0c6
+         Z+xRlipXW2ASx//RDD3k0poScuLB2fnDnIHuEFS599jgJfbeQEmPsrWsVpNPIVPOcmJm
+         BJDBCv4dV3iCQvvWc74EZELHIHnEyPGhJPh7g=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20110511132218.GG1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <20110510095022.GR1661@htj.dyndns.org> <20110510140620.GB21834@redhat.com>
+ <201105102359.58900.vda.linux@googlemail.com> <20110511091955.GD1661@htj.dyndns.org>
+ <BANLkTikQm1PVCW3164g0bfgU9fs4MMTfNA@mail.gmail.com> <20110511132218.GG1661@htj.dyndns.org>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Wed, 11 May 2011 12:20:11 -0400
+Message-ID: <BANLkTi=mm_rUXcH4Ufq_GdMLnpz4N7B_vg@mail.gmail.com>
+Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a Client that wishes to Invest Her financial Estate in Your Country, can You be of Assistance as a Partner? I will give Details when You Reply. This Transaction will demand Absolute Secrecy from You. representative.email: davidxxx50@mail.kz
+On Wed, May 11, 2011 at 09:22, Tejun Heo <tj@kernel.org> wrote:
+> Hey,
+>
+> On Wed, May 11, 2011 at 02:23:44PM +0200, Denys Vlasenko wrote:
+>> I understand this. I am trying to understand what feature are you trying
+>> to provide to userland, or what problematic race scenario you are trying
+>> to make resolve-able *in userland* by making "stop" and "cont"
+>> notifications sticky wrt GETSIGINFO. I just don't see this scenario.
+>
+> If you still don't see how events can get lost, I'm afraid I can't
+> explain any better.  You're repeating that exit_code can record the
+> event until it's fetched but it doesn't queue and any trap will
+> overwrite it and debuggers don't have to call GETSIGINFO after each
+> trap - it only has to do so for signal delivery, group stop and
+> INTERRUPT trap.  So, it can just look at the exit_code (which doesn't
+> indicate continuation) and let tracee return to userland.
+>
+> Maybe I'm horribly confused.  Oleg, am I?
 
-David Scott
+If a process issues PTRACE_INTERRUPT, it just wants the target process
+to stop. Presumably it doesn't really care _why_, as long as it
+doesn't introduce spurious effects visible to the target. As such, if
+the process stops on its own due to some other trap, that ought to be
+good enough, right? Is there really a need for a trap that will be
+reliably echoed back to the trapping process?
