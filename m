@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab1EKPis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:38:48 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:42111 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab1EKPip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:38:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ceHkXSITnY/INtfe+YJVjRg125vXy+2t7jgroKz/vWpsjxS43Lz/I2cV9OpMbehL+G
-         teR9kWACmFPP9WYgS3SVrH4YCB+4QZbHYRx8S2VT5nz9BBWrOxoT4pjMQJ8nfHbaMEUr
-         5P9gROWmEOA2hnBD4RFi5hUrEnftT3rtgIOyE=
-Subject: Re: [PATCH] blk-throttle: fix typos on struct throtl_grp init code
-From: Namhyung Kim <namhyung@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110511142853.GE31633@redhat.com>
-References: <20110511130732.GB31633@redhat.com>
-	 <1305120045-5111-1-git-send-email-namhyung@gmail.com>
-	 <20110511133033.GD31633@redhat.com> <1305123242.1561.20.camel@leonhard>
-	 <20110511142853.GE31633@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 23:38:48 +0900
-Message-ID: <1305124728.1561.24.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1757671Ab1EKQpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:45:16 -0400
+Received: from void.printf.net ([89.145.121.20]:52754 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754590Ab1EKQpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:45:12 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Subject: Re: [PATCH v4] sdio: optimized SDIO IRQ handling for single irq
+References: <1305100416-5395-1-git-send-email-per.forlin@linaro.org>
+Date: Wed, 11 May 2011 10:40:13 -0400
+In-Reply-To: <1305100416-5395-1-git-send-email-per.forlin@linaro.org> (Per
+	Forlin's message of "Wed, 11 May 2011 09:53:35 +0200")
+Message-ID: <m3d3jp2tde.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-05-11 (수), 10:28 -0400, Vivek Goyal:
-> On Wed, May 11, 2011 at 11:14:02PM +0900, Namhyung Kim wrote:
-> > 2011-05-11 (수), 09:30 -0400, Vivek Goyal:
-> > > On Wed, May 11, 2011 at 10:20:45PM +0900, Namhyung Kim wrote:
-> > > > s/td/tg/
-> > > 
-> > > I think jens would like to have little more changelog than that.
-> > > 
-> > 
-> > OK, let me clarify this first: My first patch was trivial but second one
-> > seems not. AFAICS it could affect when the bps/iops bandwidth change
-> > applies - maybe delayed to next @tg->disptime? - if there are concurrent
-> > cgroup init and limit change tasks, right? Or do you have something need
-> > to be included in the changelog?
-> 
-> Just say that when a new group is initialized, set tg->limits_changed =
-> false instead of setting td->limits_changed to false.
-> 
-> We do memset 0 on all newly allocated objects to this might not be
-> required at all. 
-> 
-> So how about just getting rid of td->limits_changed assignments and
-> not do explicit tg->limits_changed as that is implicit in zeroing of
-> newly allocated object.
-> 
-> Thanks
-> Vivek
-> 
+Hi Per,
 
-Sounds good to me. I'll cook a new patch :)
+On Wed, May 11 2011, Per Forlin wrote:
+> Optimize performance for single irq
+>
+> Changes since v2.
+>  * Rebase on mmc-next, change of line numbers no code changes.
+>
+> Stefan Nilsson XK (1):
+>   sdio: optimized SDIO IRQ handling for single irq
+>
+>  drivers/mmc/core/sdio_irq.c |   33 ++++++++++++++++++++++++++++++++-
+>  include/linux/mmc/card.h    |    1 +
+>  2 files changed, 33 insertions(+), 1 deletions(-)
 
-Thanks.
+Odd, still doesn't apply here:
 
+error: patch failed: drivers/mmc/core/sdio_irq.c:42
+error: drivers/mmc/core/sdio_irq.c: patch does not apply
 
+patch -p1 says:
+Hunk #2 succeeded at 53 with fuzz 1.
+
+So this still isn't rebased onto mmc-next properly.  There haven't been
+any changes to drivers/mmc/core/sdio_irq.c since 2008, though, so now
+I'm wondering where you got the fuzz from..
+
+- Chris.
 -- 
-Regards,
-Namhyung Kim
-
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
