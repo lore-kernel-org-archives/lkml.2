@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab1EKPyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:54:31 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23335 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab1EKPy2 (ORCPT
+	id S1754578Ab1EKQLy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:11:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34313 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab1EKQJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:54:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6342"; a="90762657"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: <balbi@ti.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'Maya Erez'" <merez@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1304853414-10234-1-git-send-email-tlinder@codeaurora.org> <1304853414-10234-6-git-send-email-tlinder@codeaurora.org> <20110509092555.GF1254@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110509092555.GF1254@legolas.emea.dhcp.ti.com>
-Subject: RE: [PATCH v9 5/7] usb: Add streams support to the gadget framework
-Date: Wed, 11 May 2011 16:29:44 +0300
-Message-ID: <000a01cc0fdf$7fa623e0$7ef26ba0$@org>
+	Wed, 11 May 2011 12:09:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=V3TI8GIgARNB6Vr1KrDaYtPlLXQMhVybeuAFcBxv+ya2qEgpGpo4hQ5QZIUXAjFeHL
+         c+CdQCgcSrt/yRm5N7XXq69D/3ksrcr6ThMHbJxT8NYUl/Wp+JnOZQx8kv0z3U4cVJ/V
+         Sd6a3IlErFetMRONq4A/tM5z+oadMNrmew+9M=
+Date: Wed, 11 May 2011 15:30:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 2/2] perf: Carve out callchain functionality
+Message-ID: <20110511133009.GA1846@nowhere>
+References: <1305119816-26280-1-git-send-email-bp@amd64.org>
+ <1305119816-26280-3-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcwOKxQRblPU21FVTEekdy+oay8p2wBshbzg
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305119816-26280-3-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe
-
-> > @@ -129,6 +132,22 @@ ep_matches (
-> >  	}
-> >
-> >  	/*
-> > +	 * Get the number of required streams from the EP companion
-> > +	 * descriptor and see if the EP matches it
-> > +	 */
-> > +	if (usb_endpoint_xfer_bulk(desc)) {
-> > +		if (ep_comp) {
-> > +			num_req_streams = ep_comp->bmAttributes & 0x1f;
-> > +			if (num_req_streams > ep->max_streams)
-> > +				return 0;
+On Wed, May 11, 2011 at 03:16:56PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> We would like the gadget drivers to all with all controllers, this
-> would
-> likely be better to ask from controller driver for N streams but work
-> if
-> we get less ? Something like:
+> Move callchain-related code into its own module:
+> kernel/events/callchain.c
 > 
-> struct usb_gadget_ops {
-> 	...
-> 	request_stream(struct usb_gadget *g, int max_streams);
-> };
+> No functionality change.
 > 
-> if (usb_endpoint_xfer_bulk(desc)) {
-> 	if (ep_comp) {
-> 		num_req_streams = usb_gadget_request_streams(gadget,
-> 			ep_comp->bmAttributes & 0x1f);
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  include/linux/perf_event.h |    7 +-
+>  kernel/events/Makefile     |    2 +-
+>  kernel/events/callchain.c  |  182 +++++++++++++++++++++++++++++++++
+>  kernel/events/core.c       |  237 +++++--------------------------------------
+>  4 files changed, 217 insertions(+), 211 deletions(-)
+>  create mode 100644 kernel/events/callchain.c
 > 
-> 		/* now patch ep_comp descriptor */
-> 		ep_comp->bmAttributes = num_req_streams;
-> 	}
-> }
-> 
-> this way, different function drivers can request for a different number
-> of streams and controller driver is required to keep track of total
-> number of streams, and number of "busy" streams.
-> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 687f852..7978850 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -961,7 +961,6 @@ enum event_type_t {
+>  };
+>  
+>  #ifdef CONFIG_PERF_EVENTS
+> -
+>  extern struct list_head pmus;
+>  extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
+>  extern void perf_pmu_unregister(struct pmu *pmu);
+> @@ -1201,6 +1200,12 @@ static inline void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
+>  extern int
+>  task_function_call(struct task_struct *p, int (*func) (void *info), void *info);
+>  extern u64 perf_event_time(struct perf_event *event);
+> +
+> +extern int get_recursion_context(int *recursion);
+> +extern inline void put_recursion_context(int *recursion, int rctx);
+> +extern void put_callchain_buffers(void);
+> +extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
+> +extern int get_callchain_buffers(void);
 
-I'm not sure I understand what you meant by the above..
-When choosing this approach we thought of the following design:
-Each controller knows how many streams it supports for each endpoint and
-inits the ep->max_streams filed accordingly. Each gadget driver declares the
-number of streams it wishes to operate with using the comp_desc and if the
-endpoint can support the requested number of streams - it's allocated for
-that gadget driver. If no matching endpoint is found - it's up to the gadget
-driver to decide what to do next. One approach could be to try and configure
-the endpoint with less streams. For example in UAS if configuring the
-endpoint with streams>0 fails, we fall  back to HS mode where no streams are
-required.
+I think it would be better to have these in a private kernel/events/events.h
 
-Does this address your concerns? Perhaps this is what you meant...
+Other than that, looks good, thanks.
 
-> Another approach would be to require function drivers to request the
-> streams during bind by themselves and only give this layer correct
-> descriptors, which allow you to make those arguments const.
-
-Actually, during bind we still don't know the connection speed so the number
-of streams can't be determined at that point. For example: when UAS gadget
-driver operates in HS mode the number of streams is 0, when in SS > 0. I
-think this is the right place for streams configuration.
-
-
-Best regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
-
-
-
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
