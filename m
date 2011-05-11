@@ -1,87 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab1EKQOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:14:51 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1163 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757081Ab1EKQOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:14:47 -0400
-Message-ID: <4DCA9899.6070403@canonical.com>
-Date: Wed, 11 May 2011 16:09:29 +0200
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+	id S1756913Ab1EKQHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:07:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34566 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755633Ab1EKQHn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:07:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dX51zolWRRd2G77V2qtayBBW5V1WN+uGhuW26DiXV/PmIHn1DtTQI2TwerjkJ0hVFi
+         P7RsKf99xgv6UExSP3KjwlvgmQs6GYLTlDdE17BwBJAw7OWAQSbZ8iG22ZWmSU+AEs2j
+         RtAricvS9RM/nlwou/2Qf7COFilgyVxreB6Qk=
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org,
-        Andy Whitcroft <andy.whitcroft@canonical.com>
-Subject: Re: [PATCH V3] fbcon -- fix race between open and removal of framebuffers
-References: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com>	<4DC94314.8050701@canonical.com> <20110510234424.5a5b7a08@neptune.home>
-In-Reply-To: <20110510234424.5a5b7a08@neptune.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1305122055.2914.220.camel@laptop>
+References: <BANLkTi=qPWxRAa6+dT3ohEP6Z=0v+e4EXA@mail.gmail.com>
+	<1305016329.2914.22.camel@laptop>
+	<BANLkTin5iNMt2autv3TJpCvTQUoKsSzhTA@mail.gmail.com>
+	<1305122055.2914.220.camel@laptop>
+Date: Wed, 11 May 2011 22:10:34 +0800
+Message-ID: <BANLkTikShtNvCcz5hfm5kgUwBwS1LqF9xg@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix constructing the span cpu mask of sched domain
+From: Hillf Danton <dhillf@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2011 11:44 PM, Bruno Pr�mont wrote:
-> On Tue, 10 May 2011 Tim Gardner<tim.gardner@canonical.com>  wrote:
->>  From ca3ef33e2235c88856a6257c0be63192ab56c678 Mon Sep 17 00:00:00 2001
->> From: Andy Whitcroft<apw@canonical.com>
->> Date: Thu, 29 Jul 2010 16:48:20 +0100
->> Subject: [PATCH] fbcon -- fix race between open and removal of framebuffers
+On Wed, May 11, 2011 at 9:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-05-11 at 21:26 +0800, Hillf Danton wrote:
+>> Your work for rewriting NUMA support, published at
+>>          http://marc.info/?l=linux-kernel&m=130218515520540
+>> is patched by changing how level is computed and by changing how it is
+>> used to build the mask.
 >>
->> Currently there is no locking for updates to the registered_fb list.
->> This allows an open through /dev/fbN to pick up a registered framebuffer
->> pointer in parallel with it being released, as happens when a conflicting
->> framebuffer is ejected or on module unload.  There is also no reference
->> counting on the framebuffer descriptor which is referenced from all open
->> files, leading to references to released or reused memory to persist on
->> these open files.
+>> When computing, some valid levels are lost in your work.
 >>
->> This patch adds a reference count to the framebuffer descriptor to prevent
->> it from being released until after all pending opens are closed.  This
->> allows the pending opens to detect the closed status and unmap themselves.
->> It also adds locking to the framebuffer lookup path, locking it against
->> the removal path such that it is possible to atomically lookup and take a
->> reference to the descriptor.  It also adds locking to the read and write
->> paths which currently could access the framebuffer descriptor after it
->> has been freed.  Finally it moves the device to FBINFO_STATE_REMOVED to
->> indicate that all access should be errored for this device.
+>> When building mask, nodes are selected only if they have same distance,
+>> thus nodes of less distance are also masked out since the computation of
+>> level now is tough.
+>>
+>> Without MUNA hardware, I did not test the patch:(
 >
-> What framebuffer drivers was this patch tested with? Just x86 with
-> mainstream GPU (intel/amd/nvidia KMS) in compination with vgafb/vesafb or
-> did it see some testing with other framebuffers like those from embedded
-> world?
+> I do have a (tiny) NUMA box (2 nodes) but that actually booted with the
+> old code too, Andreas Hermann from AMD (CC'ed) is usually willing to
+> test such patches on somewhat larger systems. Please send a full patch
+> against tip/master for him to apply.
 >
+Oh my God, I am not good at playing game with git, already laughed by many
+guys on LKML. As you see, I delivered all works based on diff through 512K ADSL,
+things like "git clone" sounds really monstrous.
 
-This patch is also in all of the armel (OMAP3/OMAP4) kernels.
+Would you please, Peter, teach me how to play git, since I want to do more?
 
-> Otherwise a much smaller (memory leaking) patch would be to just change
-> vesafb/vgafb to not free their fb_info after unregistration as was suggested
-> by Alan Cox.
->
+And the patch is delivered to Andreas this time.
 
-Sure, I suppose thats possible, but this is the patch that I have working.
+Hillf
+---
 
-<snip>
+--- numa_by_peter.c	2011-05-11 20:22:10.000000000 +0800
++++ numa_by_hillf.c	2011-05-11 21:06:26.000000000 +0800
+@@ -1,6 +1,5 @@
+ static void sched_init_numa(void)
+ {
+-	int next_distance, curr_distance = node_distance(0, 0);
+ 	struct sched_domain_topology_level *tl;
+ 	int level = 0;
+ 	int i, j, k;
+@@ -11,21 +10,34 @@ static void sched_init_numa(void)
+ 	if (!sched_domains_numa_distance)
+ 		return;
 
->
-> This only partially protects the list and count as two concurrent
-> framebuffer registrations do still race against each other.
-> For the issue addressed by this patch I don't think it makes sense to
-> have this spinlock at all as it's only used in get_framebuffer_info()
-> and in put_framebuffer_info() and put_framebuffer_info() doesn't even
-> look at registered_fb or num_registered_fb.
-> Such a spinlock makes sense in a separate patch that really protects
-> all access to registered_fb or num_registered_fb, be it during framebuffer
-> (un)registration or during access from fbcon.
->
+-	next_distance = curr_distance;
+-	for (i = 0; i < nr_node_ids; i++) {
+-		for (j = 0; j < nr_node_ids; j++) {
+-			int distance = node_distance(0, j);
+-			printk("distance(0,%d): %d\n", j, distance);
+-			if (distance > curr_distance &&
+-					(distance < next_distance ||
+-					 next_distance == curr_distance))
+-				next_distance = distance;
++	for (j = 0; j < nr_node_ids; j++) {
++		int distance = node_distance(0, j);
++		printk("distance(0,%d): %d\n", j, distance);
++		if (j == 0) {
++			sched_domains_numa_distance[j] = distance;
++			sched_domains_numa_levels = ++level;
++			continue;
+ 		}
+-		if (next_distance != curr_distance) {
+-			sched_domains_numa_distance[level++] = next_distance;
++		for (i = 0; i < level; i++) {
++			/* check if already exist */
++			if (distance == sched_domains_numa_distance[i])
++				goto next_node;
++			/* sort and insert it */
++			if (distance < sched_domains_numa_distance[i])
++				break;
++		}
++		if (i == level) {
++			sched_domains_numa_distance[level++] = distance;
+ 			sched_domains_numa_levels = level;
+-			curr_distance = next_distance;
+-		} else break;
++			continue;
++		}
++		for (k = level -1; k >= i; k--)
++			sched_domains_numa_distance[k+1] =
++			sched_domains_numa_distance[k];
++		sched_domains_numa_distance[i] = distance;
++		sched_domains_numa_levels = ++level;
++next_node:
++		;
+ 	}
 
-Our goal was merely to stop the user space open/close races. I agree 
-that the framebuffer registration list needs more orthogonal protection, 
-but that is going to be a much larger patch.
+ 	sched_domains_numa_masks = kzalloc(sizeof(void *) * level, GFP_KERNEL);
+@@ -44,8 +56,9 @@ static void sched_init_numa(void)
+ 			struct cpumask *mask =
+ 				per_cpu_ptr(sched_domains_numa_masks[i], j);
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
++			cpumask_clear(mask);
+ 			for (k = 0; k < nr_node_ids; k++) {
+-				if (node_distance(cpu_to_node(j), k) >
++				if (node_distance(cpu_to_node(j), k) !=
+ 						sched_domains_numa_distance[i])
+ 					continue;
