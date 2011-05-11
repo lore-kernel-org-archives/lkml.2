@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab1EKSLl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 14:11:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43425 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab1EKSLk convert rfc822-to-8bit (ORCPT
+	id S1757376Ab1EKQmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:42:05 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:55158 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab1EKQmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 14:11:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=B81fs+BCKACPsxrEJWwhbnp0m99nGoq20rr/XGBe82ffc9ohgnNplVhcP2TMUjFd71
-         r1ADqY25v0brV3oqgEVIXrtCmPW3TVPxJt61PsSOwoZTJsnXV/o2e7Mj5W4Q4HR7RBY1
-         P38Pb1e2Xtv5WzdHDxJxWIZqPkWmWzCSAT8io=
+	Wed, 11 May 2011 12:42:01 -0400
+Date: Wed, 11 May 2011 09:25:00 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2] x86: UV BAU fix for non-consecutive nasids
+Message-ID: <20110511072500.GJ22551@elte.hu>
+References: <E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=y60Jt3-OMzbxQJzGkvzCzNJfJtA@mail.gmail.com>
-References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
-	<BANLkTi=y60Jt3-OMzbxQJzGkvzCzNJfJtA@mail.gmail.com>
-Date: Wed, 11 May 2011 09:04:20 +0200
-X-Google-Sender-Auth: KrbM_-A08nayBM4ysLxaAyWlrPo
-Message-ID: <BANLkTimfFEv+vZ8dYvhG0oj2Q4g+KnG4aA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Speed up the symbols' resolution process V4
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Frysinger,
 
-2011/5/11 Mike Frysinger <vapier.adi@gmail.com>:
-> this breaks symbol prefixed arches (like Blackfin):
->  CC      kernel/softirq.o
-> /tmp/ccp3A6LU.s: Assembler messages:
-> /tmp/ccp3A6LU.s:3734: Error: symbol `___ksymtab__local_bh_enable' is
-> already defined
-> make[1]: *** [kernel/softirq.o] Error 1
+* Cliff Wickman <cpw@sgi.com> wrote:
 
-Could you provide the preprocessed file and details about the toolchain used?
+> From: Cliff Wickman <cpw@sgi.com>
+> 
+> (patch v2 has improved changelog and correction of a broken line)
 
-Thanks!
+but i did not point out just a single broken line - there's literally a dozen 
+in your patch, still!
 
-Ciao,
-Alessio
+*All* of these measures i mentioned in my previous mail:
+
+  - eliminate many repetitive strings
+  - reduce indentation by the introduction of helper inlines
+  - sensible shortening of variable/field/definition names
+
+... applies to this particular case and will solve the problem.
+
+This whole file is still utterly ugly and i'm not surprised at all it's showing 
+bugs. Functions are still *way* too large and the code is hard to read.
+
+If you don't know how to simplify a particular function then please ask but i 
+see half a dozen things that could be done to clean up any of these big 
+functions, just at a first quick glance. Those patterns of code ugliness repeat 
+all over the whole file!
+
+I dont mind if you do it as delta patches after this fix (so that the fix stays 
+mergable) but we need to see progress in this code first, the pain in this file 
+has been going on for *way* too long.
+
+Thanks,
+
+	Ingo
