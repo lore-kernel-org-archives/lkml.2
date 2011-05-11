@@ -1,118 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1EKCby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 22:31:54 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:35520 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab1EKCbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 22:31:52 -0400
-Date: Tue, 10 May 2011 22:30:44 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: avagin@gmail.com, Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Message-ID: <1889981320.330808.1305081044822.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110510171335.16A7.A69D9226@jp.fujitsu.com>
-Subject: Re: OOM Killer don't works at all if the system have >gigabytes
- memory (was Re: [PATCH] mm: check zone->all_unreclaimable in
- all_unreclaimable())
+	id S1753829Ab1EKCme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 22:42:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49274 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859Ab1EKCmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 22:42:33 -0400
+Message-ID: <4DC9F803.3050602@cn.fujitsu.com>
+Date: Wed, 11 May 2011 10:44:19 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2] KVM: MMU: optimize pte write path if don't have protected
+ sp
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-11 10:42:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-11 10:42:45,
+	Serialize complete at 2011-05-11 10:42:45
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Simply return from kvm_mmu_pte_write path if no shadow page is
+write-protected, then we can avoid to walk all shadow pages and hold
+mmu-lock
 
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |   12 +++++++++++-
+ 2 files changed, 12 insertions(+), 1 deletions(-)
 
------ Original Message -----
-> (cc to oom interested people)
-> 
-> > > > > I have tested this for the latest mainline kernel using the
-> > > > > reproducer
-> > > > > attached, the system just hung or deadlock after oom. The
-> > > > > whole oom
-> > > > > trace is here.
-> > > > > http://people.redhat.com/qcai/oom.log
-> > > > >
-> > > > > Did I miss anything?
-> > > >
-> > > > Can you please try commit
-> > > > 929bea7c714220fc76ce3f75bef9056477c28e74?
-> > > As I have mentioned that I have tested the latest mainline which
-> > > have
-> > > already included that fix. Also, does this problem only for x86?
-> > > The
-> > > testing was done using x86_64. Not sure if that would be a
-> > > problem.
-> >
-> > No. I'm also using x86_64 and my machine completely works on current
-> > latest linus tree. I confirmed it today.
-> 
-> > 4194288 pages RAM
-> 
-> You have 16GB RAM.
-> 
-> > Out of memory: Kill process 1175 (dhclient) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1247 (rsyslogd) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1284 (irqbalance) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1303 (rpcbind) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1321 (rpc.statd) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1333 (mdadm) score 1 or sacrifice child
-> > Out of memory: Kill process 1365 (rpc.idmapd) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1403 (dbus-daemon) score 1 or sacrifice
-> > child
-> > Out of memory: Kill process 1438 (acpid) score 1 or sacrifice child
-> > Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
-> > Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
-> > Out of memory: Kill process 1487 (hald-addon-inpu) score 1 or
-> > sacrifice child
-> > Out of memory: Kill process 1488 (hald-addon-acpi) score 1 or
-> > sacrifice child
-> > Out of memory: Kill process 1507 (automount) score 1 or sacrifice
-> > child
-> 
-> Oops.
-> 
-> OK. That's known issue. Current OOM logic doesn't works if you have
-> gigabytes RAM. because _all_ process have the exactly same score (=1).
-> then oom killer just fallback to random process killer. It was made
-> commit a63d83f427 (oom: badness heuristic rewrite). I pointed out
-> it at least three times. You have to blame Google folks. :-/
-> 
-> 
-> The problems are three.
-> 
-> 1) if two processes have the same oom score, we should kill younger
-> process.
-> but current logic kill older. Oldest processes are typicall system
-> daemons.
-> 2) Current logic use 'unsigned int' for internal score calculation.
-> (exactly says,
-> it only use 0-1000 value). its very low precision calculation makes a
-> lot of
-> same oom score and kill an ineligible process.
-> 3) Current logic give 3% of SystemRAM to root processes. It obviously
-> too big
-> if you have plenty memory. Now, your fork-bomb processes have 500MB
-> OOM immune
-> bonus. then your fork-bomb never ever be killed.
-> 
-> 
-> CAI-san: I've made fixing patches. Can you please try them?
-Sure, I saw there were some discussion going on between you and David
-about your patches. Does it make more sense for me to test those after
-you have settled down technical arguments?
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index d2ac8e2..d2e5fb8 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -442,6 +442,7 @@ struct kvm_arch {
+ 	unsigned int n_requested_mmu_pages;
+ 	unsigned int n_max_mmu_pages;
+ 	atomic_t invlpg_counter;
++	atomic_t indirect_shadow_pages;
+ 	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+ 	/*
+ 	 * Hash table of struct kvm_mmu_page.
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 2841805..7e6117dc 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1038,8 +1038,10 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	hlist_del(&sp->hash_link);
+ 	list_del(&sp->link);
+ 	free_page((unsigned long)sp->spt);
+-	if (!sp->role.direct)
++	if (!sp->role.direct) {
+ 		free_page((unsigned long)sp->gfns);
++		atomic_dec(&kvm->arch.indirect_shadow_pages);
++	}
+ 	kmem_cache_free(mmu_page_header_cache, sp);
+ 	kvm_mod_used_mmu_pages(kvm, -1);
+ }
+@@ -1536,6 +1538,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 			kvm_sync_pages(vcpu, gfn);
+ 
+ 		account_shadowed(vcpu->kvm, gfn);
++		atomic_inc(&vcpu->kvm->arch.indirect_shadow_pages);
+ 	}
+ 	if (shadow_trap_nonpresent_pte != shadow_notrap_nonpresent_pte)
+ 		vcpu->arch.mmu.prefetch_page(vcpu, sp);
+@@ -3233,6 +3236,13 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	int level, npte, invlpg_counter, r, flooded = 0;
+ 	bool remote_flush, local_flush, zap_page;
+ 
++	/*
++	 * If we don't have indirect shadow pages, it means no page is
++	 * write-protected, so we can simply exit.
++	 */
++	if (!atomic_read(&vcpu->kvm->arch.indirect_shadow_pages))
++		return;
++
+ 	zap_page = remote_flush = local_flush = false;
+ 	offset = offset_in_page(gpa);
+ 
+-- 
+1.7.4.4
