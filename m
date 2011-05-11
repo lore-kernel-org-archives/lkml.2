@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab1EKUrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 16:47:48 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:36552 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755619Ab1EKUrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 16:47:46 -0400
-Date: Wed, 11 May 2011 13:47:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+	id S1755716Ab1EKUxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 16:53:17 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59356 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755635Ab1EKUxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 16:53:16 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        David Miller <davem@davemloft.net>
-Subject: Re: PM / Wakeup: remove useless synchronize_rcu() call
-Message-ID: <20110511204743.GD2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1305144959.3232.5.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305144959.3232.5.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 15:53:11 -0500
+Message-ID: <1305147191.2606.51.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 10:15:59PM +0200, Eric Dumazet wrote:
-> wakeup_source_add() adds an item into wakeup_sources list.
+On Wed, 2011-05-11 at 13:38 -0700, David Rientjes wrote:
+> On Wed, 11 May 2011, Mel Gorman wrote:
 > 
-> There is no need to call synchronize_rcu() at this point.
+> > To avoid locking and per-cpu overhead, SLUB optimisically uses
+> > high-order allocations up to order-3 by default and falls back to
+> > lower allocations if they fail. While care is taken that the caller
+> > and kswapd take no unusual steps in response to this, there are
+> > further consequences like shrinkers who have to free more objects to
+> > release any memory. There is anecdotal evidence that significant time
+> > is being spent looping in shrinkers with insufficient progress being
+> > made (https://lkml.org/lkml/2011/4/28/361) and keeping kswapd awake.
+> > 
+> > SLUB is now the default allocator and some bug reports have been
+> > pinned down to SLUB using high orders during operations like
+> > copying large amounts of data. SLUBs use of high-orders benefits
+> > applications that are sized to memory appropriately but this does not
+> > necessarily apply to large file servers or desktops.  This patch
+> > causes SLUB to use order-0 pages like SLAB does by default.
+> > There is further evidence that this keeps kswapd's usage lower
+> > (https://lkml.org/lkml/2011/5/10/383).
+> > 
 > 
-> Its only needed in wakeup_source_remove()
+> This is going to severely impact slub's performance for applications on 
+> machines with plenty of memory available where fragmentation isn't a 
+> concern when allocating from caches with large object sizes (even 
+> changing the min order of kamlloc-256 from 1 to 0!) by default for users 
+> who don't use slub_max_order=3 on the command line.  SLUB relies heavily 
+> on allocating from the cpu slab and freeing to the cpu slab to avoid the 
+> slowpaths, so higher order slabs are important for its performance.
 > 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> I can get numbers for a simple netperf TCP_RR benchmark with this change 
+> applied to show the degradation on a server with >32GB of RAM with this 
+> patch applied.
+> 
+> It would be ideal if this default could be adjusted based on the amount of 
+> memory available in the smallest node to determine whether we're concerned 
+> about making higher order allocations.  (Using the smallest node as a 
+> metric so that mempolicies and cpusets don't get unfairly biased against.)  
+> With the previous changes in this patchset, specifically avoiding waking 
+> kswapd and doing compaction for the higher order allocs before falling 
+> back to the min order, it shouldn't be devastating to try an order-3 alloc 
+> that will fail quickly.
 
-Reviewed-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+So my testing has shown that simply booting the kernel with
+slub_max_order=0 makes the hang I'm seeing go away.  This definitely
+implicates the higher order allocations in the kswapd problem.  I think
+it would be wise not to make it the default until we can sort out the
+root cause.
 
-> CC: David Miller <davem@davemloft.net>,
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  drivers/base/power/wakeup.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-> index abbbd33..84f7c7d 100644
-> --- a/drivers/base/power/wakeup.c
-> +++ b/drivers/base/power/wakeup.c
-> @@ -110,7 +110,6 @@ void wakeup_source_add(struct wakeup_source *ws)
->  	spin_lock_irq(&events_lock);
->  	list_add_rcu(&ws->entry, &wakeup_sources);
->  	spin_unlock_irq(&events_lock);
-> -	synchronize_rcu();
->  }
->  EXPORT_SYMBOL_GPL(wakeup_source_add);
-> 
-> 
-> 
+James
+
+
+
+
