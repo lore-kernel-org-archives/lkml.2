@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab1EKQUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:20:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40659 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab1EKQUw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:20:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=XNrBzf/C/6zcmD3dOIpD98RqKxP30zB1trOpOgdyapvuKW2uCPsWiVtgmlap7lD0c6
-         Z+xRlipXW2ASx//RDD3k0poScuLB2fnDnIHuEFS599jgJfbeQEmPsrWsVpNPIVPOcmJm
-         BJDBCv4dV3iCQvvWc74EZELHIHnEyPGhJPh7g=
+	id S1756200Ab1EKQVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:21:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34993 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753569Ab1EKQVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:21:01 -0400
+Date: Wed, 11 May 2011 18:20:30 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephan =?iso-8859-1?Q?B=E4rwolf?= 
+	<stephan.baerwolf@tu-ilmenau.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nikhil Rao <ncrao@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: fix/optimise calculation of weight-inverse
+Message-ID: <20110511162030.GA2638@elte.hu>
+References: <4DCAB351.4010204@tu-ilmenau.de>
 MIME-Version: 1.0
-In-Reply-To: <20110511132218.GG1661@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <20110510095022.GR1661@htj.dyndns.org> <20110510140620.GB21834@redhat.com>
- <201105102359.58900.vda.linux@googlemail.com> <20110511091955.GD1661@htj.dyndns.org>
- <BANLkTikQm1PVCW3164g0bfgU9fs4MMTfNA@mail.gmail.com> <20110511132218.GG1661@htj.dyndns.org>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Wed, 11 May 2011 12:20:11 -0400
-Message-ID: <BANLkTi=mm_rUXcH4Ufq_GdMLnpz4N7B_vg@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DCAB351.4010204@tu-ilmenau.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 09:22, Tejun Heo <tj@kernel.org> wrote:
-> Hey,
->
-> On Wed, May 11, 2011 at 02:23:44PM +0200, Denys Vlasenko wrote:
->> I understand this. I am trying to understand what feature are you trying
->> to provide to userland, or what problematic race scenario you are trying
->> to make resolve-able *in userland* by making "stop" and "cont"
->> notifications sticky wrt GETSIGINFO. I just don't see this scenario.
->
-> If you still don't see how events can get lost, I'm afraid I can't
-> explain any better.  You're repeating that exit_code can record the
-> event until it's fetched but it doesn't queue and any trap will
-> overwrite it and debuggers don't have to call GETSIGINFO after each
-> trap - it only has to do so for signal delivery, group stop and
-> INTERRUPT trap.  So, it can just look at the exit_code (which doesn't
-> indicate continuation) and let tracee return to userland.
->
-> Maybe I'm horribly confused.  Oleg, am I?
 
-If a process issues PTRACE_INTERRUPT, it just wants the target process
-to stop. Presumably it doesn't really care _why_, as long as it
-doesn't introduce spurious effects visible to the target. As such, if
-the process stops on its own due to some other trap, that ought to be
-good enough, right? Is there really a need for a trap that will be
-reliably echoed back to the trapping process?
+* Stephan Bärwolf <stephan.baerwolf@tu-ilmenau.de> wrote:
+
+> If the inverse loadweight should be zero, function "calc_delta_mine"
+> calculates the inverse of "lw->weight" (in 32bit integer ops).
+> 
+> This calculation is actually a little bit impure (because it is
+> inverting something around "lw-weight"+1), especially when
+> "lw->weight" becomes smaller. (This could explain some aritmetical
+> issues for small shares...)
+> 
+> The correct inverse would be 1/lw->weight multiplied by
+> "WMULT_CONST" for fixcomma-scaling it into integers.
+> (So WMULT_CONST/lw->weight ...)
+> 
+> For safety it is also important to check if division by zero
+> could happen...
+> 
+> The old, impure algorithm took two divisions for inverting lw->weight,
+> the new, more exact one only takes one and an additional unlikely-if.
+> 
+> Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
+> ---
+>  kernel/sched.c |   12 +++++++++---
+>  1 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 312f8b9..bb55996 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -1307,15 +1307,21 @@ calc_delta_mine(unsigned long delta_exec,
+> unsigned long weight,
+>  {
+>      u64 tmp;
+>  
+> +    tmp = (u64)delta_exec * weight;
+> +
+> +    // actually we would have to trap - division by zero - but we stay
+> and pretend the limit of the operation...
+> +    if (unlikely(lw->weight == 0)) {
+> +        if (unlikely(tmp == ((u64)0))) return (unsigned long)0;
+> +        else return (unsigned long)LONG_MAX;
+
+Can lw->weight ever be zero here? I dont think so - and if it is then getting a 
+kernel crash there is preferred to hiding it.
+
+Once we do that your patch becomes a lot simpler.
+
+> +    }
+> +
+>      if (!lw->inv_weight) {
+>          if (BITS_PER_LONG > 32 && unlikely(lw->weight >= WMULT_CONST))
+>              lw->inv_weight = 1;
+>          else
+> -            lw->inv_weight = 1 + (WMULT_CONST-lw->weight/2)
+> -                / (lw->weight+1);
+> +            lw->inv_weight = WMULT_CONST / lw->weight;
+
+hm, i definitely think there was a rounding reason for that - but apparently 
+i'm an idiot who does not add comments to non-obvious code! :-)
+
+Peter, do you remember this?
+
+>      }
+>  
+> -    tmp = (u64)delta_exec * weight;
+
+I agree that moving this multiplication early in the sequence is better for 
+micro-performance regardless of the lw->weight optimization you do: it can be 
+executed in parallel.
+
+Thanks,
+
+	Ingo
