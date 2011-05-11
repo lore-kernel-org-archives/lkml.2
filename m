@@ -1,96 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab1EKWaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:30:19 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:38699 "EHLO relay.sgi.com"
+	id S932328Ab1EKWeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:34:00 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:47086 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932229Ab1EKWaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:30:18 -0400
-Date: Wed, 11 May 2011 17:30:14 -0500
-From: Russ Anderson <rja@sgi.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Russ Anderson <rja@sgi.com>
-Subject: [bug] mm: hugepages can cause negative commitlimit
-Message-ID: <20110511223013.GA8231@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
+	id S932074Ab1EKWd6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 18:33:58 -0400
+X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
+   d="scan'208";a="547296228"
+Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Cc: Peng Huang <shawn.p.huang@gmail.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110511221750.GA9776@boyd.l.tihix.com>
+References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+	 <1305148125.21868.2.camel@lade.trondhjem.org>
+	 <20110511221750.GA9776@boyd.l.tihix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 11 May 2011 18:33:57 -0400
+Message-ID: <1305153237.26971.4.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 11 May 2011 22:33:58.0522 (UTC) FILETIME=[84D6F5A0:01CC102B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the total size of hugepages allocated on a system is
-over half of the total memory size, commitlimit becomes
-a negative number.
+On Wed, 2011-05-11 at 17:17 -0500, Tyler Hicks wrote:
+> On Wed May 11, 2011 at 05:08:45PM -0400, Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> > On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
+> > > lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
+> > > indirectly, that causes the kernel crash.
+> > > 
+> > > RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
+> > > nfs_lookup_revalidate+0x21/0x4a0 [nfs]
+> > > RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+> > > 
+> > > Call Trace:
+> > >  [<ffffffff81164a17>] do_revalidate+0x17/0x60
+> > >  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
+> > >  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
+> > >  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
+> > >  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
+> > >  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
+> > >  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
+> > >  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
+> > >  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
+> > >  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
+> > >  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
+> > >  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
+> > >  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
+> > >  [<ffffffff811692f7>] user_path_at+0x57/0xa0
+> > >  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
+> > >  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
+> > >  [<ffffffff8116b990>] ? filldir+0x0/0xe0
+> > >  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
+> > >  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
+> > >  [<ffffffff8159c995>] ? page_fault+0x25/0x30
+> > >  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+> > > 
+> > > Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
+> > > ---
+> > >  fs/nfs/dir.c |    2 +-
+> > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> > > index 2c3eb33..9452aa5 100644
+> > > --- a/fs/nfs/dir.c
+> > > +++ b/fs/nfs/dir.c
+> > > @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+> > >  	struct nfs_fattr *fattr = NULL;
+> > >  	int error;
+> > >  
+> > > -	if (nd->flags & LOOKUP_RCU)
+> > > +	if (nd != NULL && nd->flags & LOOKUP_RCU)
+> > >  		return -ECHILD;
+> > >  
+> > >  	parent = dget_parent(dentry);
+> > 
+> > That's exactly what Tyler Hicks proposed last week and which was NACKed.
+> > We simply won't support layered filesystems that don't do intents.
+> 
+> But you _did_ support it up until
+> 34286d66 "fs: rcu-walk aware d_revalidate method"
+> 
+> I see why you wouldn't want NULL nameidata in the NFSv4 specific
+> functions, but don't quite understand the opposition against it in NFSv3
+> (nfs_lookup_revalidate). The one-liner above would allow users to begin
+> using eCryptfs on top of NFSv3 clients immediately, with no side effects
+> to NFS.
 
-What happens in fs/proc/meminfo.c is this calculation:
-
-        allowed = ((totalram_pages - hugetlb_total_pages())
-                * sysctl_overcommit_ratio / 100) + total_swap_pages;
-
-The problem is that hugetlb_total_pages() is larger than
-totalram_pages resulting in a negative number.  Since
-allowed is an unsigned long the negative shows up as a
-big number.
-
-A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
-
-A symptom of this problem is that /proc/meminfo prints a
-very large CommitLimit number.
-
-CommitLimit:    737869762947802600 kB
-
-To reproduce the problem reserve over half of memory as hugepages.
-For example "default_hugepagesz=1G hugepagesz=1G hugepages=64
-Then look at /proc/meminfo .
-
-uv1-sys:~ # cat /proc/meminfo
-MemTotal:       32395508 kB
-MemFree:        32029276 kB
-Buffers:            8656 kB
-Cached:            89548 kB
-SwapCached:            0 kB
-Active:            55336 kB
-Inactive:          73916 kB
-Active(anon):      31220 kB
-Inactive(anon):       36 kB
-Active(file):      24116 kB
-Inactive(file):    73880 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-SwapTotal:             0 kB
-SwapFree:              0 kB
-Dirty:              1692 kB
-Writeback:             0 kB
-AnonPages:         31132 kB
-Mapped:            15668 kB
-Shmem:               152 kB
-Slab:              70256 kB
-SReclaimable:      17148 kB
-SUnreclaim:        53108 kB
-KernelStack:        6536 kB
-PageTables:         3704 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:    737869762947802600 kB
-Committed_AS:     394044 kB
-VmallocTotal:   34359738367 kB
-VmallocUsed:      713960 kB
-VmallocChunk:   34325764204 kB
-HardwareCorrupted:     0 kB
-HugePages_Total:      32
-HugePages_Free:       32
-HugePages_Rsvd:        0
-HugePages_Surp:        0
-Hugepagesize:    1048576 kB
-DirectMap4k:       16384 kB
-DirectMap2M:     2064384 kB
-DirectMap1G:    65011712 kB
-
+Because even on NFSv3 it breaks exclusive creates.
 
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
