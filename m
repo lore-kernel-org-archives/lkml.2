@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab1EKWfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:35:07 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53394 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932224Ab1EKWfF (ORCPT
+	id S932505Ab1EKWgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:36:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42702 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab1EKWgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:35:05 -0400
-MIME-Version: 1.0
-Date: Wed, 11 May 2011 18:35:05 -0400
-Message-ID: <BANLkTi=XNyR8GD43GGnMag+=JmhUd_5HtA@mail.gmail.com>
-Subject: [PATCH] scsi/sd: fix suspend with USB-connected Android phone (one line)
-From: Charles Hannum <root@ihack.net>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=485b397b93f122dc0d04a307af2a
+	Wed, 11 May 2011 18:36:32 -0400
+X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=UZYI7n2t75YA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=8nV5T6KIBtlHwaK_uPcA:9 a=nW4brO--zp0RQele7aEA:7 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Fix powerTOP regression with 2.6.39-rc5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Michael Rubin <mrubin@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20110511215111.GA16355@elte.hu>
+References: <1304713252.25414.2532.camel@gandalf.stny.rr.com>
+	 <BANLkTim9YvResB+PwRp7QTK-a5VNg2PvmQ@mail.gmail.com>
+	 <20110507065803.GA23414@elte.hu>
+	 <1304765110.25414.2564.camel@gandalf.stny.rr.com>
+	 <20110507144402.GC2859@elte.hu> <1304788829.11129.57.camel@frodo>
+	 <20110507190033.GA11465@elte.hu> <1304996847.2969.151.camel@frodo>
+	 <20110510084158.GC27426@elte.hu> <1305032797.2943.34.camel@frodo>
+	 <20110511215111.GA16355@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 18:36:23 -0400
+Message-ID: <1305153383.19008.1.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---485b397b93f122dc0d04a307af2a
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2011-05-11 at 23:51 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Short version: My laptop doesn't suspend when my Android phone is
-connected and has been =93ejected=94.
+> Also note that IMO there is no long-term technical problem really: i agree with 
+> you that we can eventually get rid of the 4 bytes bkl field as well, if all 
+> affected apps migrate to libperf.so in an orderly fashion.
 
-Long version:
+OK Ingo,
 
-Android phones connect as USB mass storage devices. =A0After the =93Turn
-on USB storage=94 button has been clicked, there are a few different
-ways to detach the =93disk=94:
+I'll make this my top priority. Then who knows? Maybe I'll start looking
+at what I can make of your trace program. ;)
 
-1) pull the cable
-2) click =93Turn off USB storage=94
-3) =93eject=94 the device
+Thanks,
 
-In cases 2 & 3, the USB device is still attached to the system, but
-will now return MEDIUM NOT PRESENT for many commands, including
-SYNCHRONIZE CACHE=97basically it acts like any device with removable
-media. =A0However, the act of the =93media=94 being removed does not
-invalidate sdkp->WCE; therefore sd_shutdown() and sd_suspend() still
-call sd_sync_cache(), which *fails* because it gets a MEDIUM NOT
-PRESENT sense code. =A0In the sd_suspend() case, this causes the entire
-suspend to fail, and the laptop rewakes immediately.
+-- Steve
 
-There are a few different ways to fix this; e.g. one could
-specifically test media_not_present() if a sense code is returned in
-sd_sync_cache(). =A0However, the following patch seems simpler, and
-avoids calling sd_sync_cache() at all in this case. =A0sdkp->WCE will be
-reset when new medium is recognized and sd_read_cache_type() is
-called. =A0Note this code always gets called=97it's in the same path as
-sd_read_capacity(), which has to be called for the device to be usable
-again; thus the patch is inherently safe.
 
-Kernel tested: 2.6.38 (Ubuntu Natty)
-
---485b397b93f122dc0d04a307af2a
-Content-Type: text/x-patch; charset=US-ASCII; name="sd-suspend.diff"
-Content-Disposition: attachment; filename="sd-suspend.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gnkukf650
-
-LS0tIGxpbnV4LTIuNi4zOC9kcml2ZXJzL3Njc2kvc2QuYy5vcmlnCTIwMTEtMDUtMTEgMTg6MDg6
-NDQuOTY5NDk3OTc2IC0wNDAwCisrKyBsaW51eC0yLjYuMzgvZHJpdmVycy9zY3NpL3NkLmMJMjAx
-MS0wNS0xMSAxNToyNjoxNS40Mzk2MTA3NjAgLTA0MDAKQEAgLTk5Niw2ICs5OTYsNyBAQAogCWlm
-IChzZGtwLT5kZXZpY2UtPnJlbW92YWJsZSkgewogCQlzZGtwLT5tZWRpYV9wcmVzZW50ID0gMDsK
-IAkJc2RrcC0+Y2FwYWNpdHkgPSAwOworCQlzZGtwLT5XQ0UgPSAwOwogCX0KIH0KIAo=
---485b397b93f122dc0d04a307af2a--
