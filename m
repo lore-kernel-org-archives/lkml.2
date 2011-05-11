@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab1EKCyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 22:54:25 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:56237 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753540Ab1EKCyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 22:54:24 -0400
-Date: Tue, 10 May 2011 19:53:38 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Nat Gurumoorthy <natg@google.com>
-CC: Jean Delvare <khali@linux-fr.org>, Wim Van Sebroeck <wim@iguana.be>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>
-Subject: Re: [PATCH v10 2/2] Use "request_muxed_region" in it87 hwmon
- drivers
-Message-ID: <20110511025338.GB4051@ericsson.com>
-References: <1304966644-19798-1-git-send-email-natg@google.com>
- <1304966731-19896-1-git-send-email-natg@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1304966731-19896-1-git-send-email-natg@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753936Ab1EKDDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 23:03:55 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:47548 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab1EKDDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 23:03:53 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8; format=flowed
+X-AuditID: cbfee61a-b7c84ae000006ee6-c3-4dc9fc915714
+Date: Wed, 11 May 2011 12:03:43 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH] touchscreen: check kzalloc memory for data first
+In-reply-to: <BANLkTi=yWrPiz9Wp0H46at4NVfMSJ8n1uw@mail.gmail.com>
+To: Steven Liu <lingjiujianke@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        dmitry.torokhov@gmail.com, liuqi@thunderst.com
+Message-id: <4DC9FC8F.7020305@samsung.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13)
+ Gecko/20101207 Thunderbird/3.1.7
+References: <BANLkTi=yWrPiz9Wp0H46at4NVfMSJ8n1uw@mail.gmail.com>
+X-OriginalArrivalTime: 11 May 2011 03:03:45.0754 (UTC)
+ FILETIME=[0AC4CBA0:01CC0F88]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 02:45:31PM -0400, Nat Gurumoorthy wrote:
-> 02 - Chages to hwmon it87 driver to use "request_muxed_region"
-> Serialize access to the hardware by using "request_muxed_region" macro defined
-> by Alan Cox. Call to this macro will hold off the requestor if the resource is
-> currently busy. "superio_enter" will return an error if call to 
-> "request_muxed_region" fails. Rest of the code change is to ripple an error
-> return from superio_enter to the top level.
-> 
-> Signed-off-by: Nat Gurumoorthy <natg@google.com>
+Hi, Steven.
 
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+On 2011-05-11 오전 11:23, Steven Liu wrote:
+> Hi Joonyoung Shim ,
+>
+>              Can this patch be fixed in?
+>
+>
+> if kzalloc memroy for data was faild, it will multi free data
+> memory space. so check the data memory first, is it kzalloc faild
+> for data, it should goto end and do nothing.
+>
 
+Hmm, I don't think this patch needs. If you see the codes, there is no
+multi free data memory, just free data and input_dev. This both free
+are no problem because when the pointer is NULL, no operation is
+perfomed in the free function.
+
+Thanks.
