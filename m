@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab1EKW0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:26:30 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:54165 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab1EKWZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:25:13 -0400
+	id S932355Ab1EKWZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:25:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56595 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932326Ab1EKWZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 18:25:16 -0400
 From: Nishanth Aravamudan <nacc@us.ibm.com>
 To: Milton Miller <miltonm@bga.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
+        Paul Mackerras <paulus@samba.org>, Arnd Bergmann <arnd@arndb.de>,
         Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Anton Blanchard <anton@samba.org>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>,
         Will Schmidt <will_schmidt@vnet.ibm.com>,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 4/8] pseries/iommu: cleanup ddw naming
-Date: Wed, 11 May 2011 15:25:00 -0700
-Message-Id: <1305152704-4864-5-git-send-email-nacc@us.ibm.com>
+        cbe-oss-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 5/8] powerpc: override dma_get_required_mask by platform hook and ops
+Date: Wed, 11 May 2011 15:25:01 -0700
+Message-Id: <1305152704-4864-6-git-send-email-nacc@us.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
 References: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
@@ -27,170 +30,225 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Milton Miller <miltonm@bga.com>
 
-When using a property refering to the availibily of dynamic dma windows
-call it ddw_avail not ddr_avail.
+The hook dma_get_required_mask is supposed to return the mask required
+by the platform to operate efficently.  The generic version of
+dma_get_required_mask in driver/base/platform.c returns a mask based
+only on max_pfn.  However, this is likely too big for iommu systems
+and could be too small for platforms that require a dma offset or have
+a secondary window at a high offset.
 
-dupe_ddw_if_already_created does not dupilcate anything, it only finds
-and reuses the windows we already created, so rename it to
-find_existing_ddw.  Also, it does not need the pci device node, so
-remove that argument.
+Override the default, provide a hook in ppc_md used by pseries lpar and
+cell, and provide the default answer based on memblock_end_of_DRAM(),
+with hooks for get_dma_offset, and provide an implementation for iommu
+that looks at the defined table size.  Coverting from the end address
+to the required bit mask is based on the generic implementation.
+
+The need for this was discovered when the qla2xxx driver switched to
+64 bit dma then reverted to 32 bit when dma_get_required_mask said
+32 bits was sufficient.
 
 Signed-off-by: Milton Miller <miltonm@bga.com>
 Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/iommu.c |   42 ++++++++++++++-----------------
- 1 files changed, 19 insertions(+), 23 deletions(-)
+ arch/powerpc/include/asm/dma-mapping.h |    3 ++
+ arch/powerpc/include/asm/machdep.h     |    3 +-
+ arch/powerpc/kernel/dma-iommu.c        |   13 ++++++++++
+ arch/powerpc/kernel/dma.c              |   39 ++++++++++++++++++++++++++++++++
+ arch/powerpc/platforms/cell/iommu.c    |   12 +++++++++
+ arch/powerpc/platforms/pseries/iommu.c |   27 ++++++++++++++++++++++
+ 6 files changed, 96 insertions(+), 1 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
+index dd70fac..8135e66 100644
+--- a/arch/powerpc/include/asm/dma-mapping.h
++++ b/arch/powerpc/include/asm/dma-mapping.h
+@@ -20,6 +20,8 @@
+ 
+ #define DMA_ERROR_CODE		(~(dma_addr_t)0x0)
+ 
++#define ARCH_HAS_DMA_GET_REQUIRED_MASK
++
+ /* Some dma direct funcs must be visible for use in other dma_ops */
+ extern void *dma_direct_alloc_coherent(struct device *dev, size_t size,
+ 				       dma_addr_t *dma_handle, gfp_t flag);
+@@ -69,6 +71,7 @@ static inline unsigned long device_to_mask(struct device *dev)
+  */
+ #ifdef CONFIG_PPC64
+ extern struct dma_map_ops dma_iommu_ops;
++extern u64 dma_iommu_get_required_mask(struct device *dev);
+ #endif
+ extern struct dma_map_ops dma_direct_ops;
+ 
+diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
+index e4f0191..5837881 100644
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -100,8 +100,9 @@ struct machdep_calls {
+ 	void		(*pci_dma_dev_setup)(struct pci_dev *dev);
+ 	void		(*pci_dma_bus_setup)(struct pci_bus *bus);
+ 
+-	/* Platform set_dma_mask override */
++	/* Platform set_dma_mask and dma_get_required_mask overrides */
+ 	int		(*dma_set_mask)(struct device *dev, u64 dma_mask);
++	u64		(*dma_get_required_mask)(struct device *dev);
+ 
+ 	int		(*probe)(void);
+ 	void		(*setup_arch)(void); /* Optional, may be NULL */
+diff --git a/arch/powerpc/kernel/dma-iommu.c b/arch/powerpc/kernel/dma-iommu.c
+index e755415..1f2a711 100644
+--- a/arch/powerpc/kernel/dma-iommu.c
++++ b/arch/powerpc/kernel/dma-iommu.c
+@@ -90,6 +90,19 @@ static int dma_iommu_dma_supported(struct device *dev, u64 mask)
+ 		return 1;
+ }
+ 
++u64 dma_iommu_get_required_mask(struct device *dev)
++{
++	struct iommu_table *tbl = get_iommu_table_base(dev);
++	u64 mask;
++	if (!tbl)
++		return 0;
++
++	mask = 1ULL < (fls_long(tbl->it_offset + tbl->it_size) - 1);
++	mask += mask - 1;
++
++	return mask;
++}
++
+ struct dma_map_ops dma_iommu_ops = {
+ 	.alloc_coherent	= dma_iommu_alloc_coherent,
+ 	.free_coherent	= dma_iommu_free_coherent,
+diff --git a/arch/powerpc/kernel/dma.c b/arch/powerpc/kernel/dma.c
+index d238c08..97fe867 100644
+--- a/arch/powerpc/kernel/dma.c
++++ b/arch/powerpc/kernel/dma.c
+@@ -172,6 +172,45 @@ int dma_set_mask(struct device *dev, u64 dma_mask)
+ }
+ EXPORT_SYMBOL(dma_set_mask);
+ 
++u64 dma_get_required_mask(struct device *dev)
++{
++	struct dma_map_ops *dma_ops = get_dma_ops(dev);
++	u64 mask, end = 0;
++
++	if (ppc_md.dma_get_required_mask)
++		return ppc_md.dma_get_required_mask(dev);
++
++	if (unlikely(dma_ops == NULL))
++		return 0;
++
++#ifdef CONFIG_PPC64
++	else if (dma_ops == &dma_iommu_ops)
++		return dma_iommu_get_required_mask(dev);
++#endif
++#ifdef CONFIG_SWIOTLB
++	else if (dma_ops == &swiotlb_dma_ops) {
++		u64 max_direct_dma_addr = dev->archdata.max_direct_dma_addr;
++
++		end = memblock_end_of_DRAM();
++		if (max_direct_dma_addr && end > max_direct_dma_addr)
++			end = max_direct_dma_addr;
++		end += get_dma_offset(dev);
++	}
++#endif
++	else if (dma_ops == &dma_direct_ops)
++		end = memblock_end_of_DRAM() + get_dma_offset(dev);
++	else {
++		WARN_ONCE(1, "%s: unknown ops %p\n", __func__, dma_ops);
++		end = memblock_end_of_DRAM();
++	}
++
++	mask = 1ULL << (fls64(end) - 1);
++	mask += mask - 1;
++
++	return mask;
++}
++EXPORT_SYMBOL_GPL(dma_get_required_mask);
++
+ static int __init dma_init(void)
+ {
+        dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
+diff --git a/arch/powerpc/platforms/cell/iommu.c b/arch/powerpc/platforms/cell/iommu.c
+index 26a0671..5ef55f3 100644
+--- a/arch/powerpc/platforms/cell/iommu.c
++++ b/arch/powerpc/platforms/cell/iommu.c
+@@ -1159,6 +1159,17 @@ static int __init setup_iommu_fixed(char *str)
+ }
+ __setup("iommu_fixed=", setup_iommu_fixed);
+ 
++static u64 cell_dma_get_required_mask(struct device *dev)
++{
++	if (!dev->dma_mask)
++		return 0;
++
++	if (iommu_fixed_disabled && get_dma_ops(dev) == &dma_iommu_ops)
++		return dma_iommu_get_required_mask(dev);
++
++	return DMA_BIT_MASK(64);
++}
++
+ static int __init cell_iommu_init(void)
+ {
+ 	struct device_node *np;
+@@ -1175,6 +1186,7 @@ static int __init cell_iommu_init(void)
+ 
+ 	/* Setup various ppc_md. callbacks */
+ 	ppc_md.pci_dma_dev_setup = cell_pci_dma_dev_setup;
++	ppc_md.dma_get_required_mask = cell_dma_get_required_mask;
+ 	ppc_md.tce_build = tce_build_cell;
+ 	ppc_md.tce_free = tce_free_cell;
+ 
 diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-index a48f126..01faab9 100644
+index 01faab9..fe5eded 100644
 --- a/arch/powerpc/platforms/pseries/iommu.c
 +++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -659,16 +659,16 @@ static void remove_ddw(struct device_node *np)
- {
- 	struct dynamic_dma_window_prop *dwp;
- 	struct property *win64;
--	const u32 *ddr_avail;
-+	const u32 *ddw_avail;
- 	u64 liobn;
- 	int len, ret;
- 
--	ddr_avail = of_get_property(np, "ibm,ddw-applicable", &len);
-+	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
- 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
- 	if (!win64)
- 		return;
- 
--	if (!ddr_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
-+	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
- 		goto delprop;
- 
- 	dwp = win64->value;
-@@ -684,15 +684,15 @@ static void remove_ddw(struct device_node *np)
- 		pr_debug("%s successfully cleared tces in window.\n",
- 			 np->full_name);
- 
--	ret = rtas_call(ddr_avail[2], 1, 1, NULL, liobn);
-+	ret = rtas_call(ddw_avail[2], 1, 1, NULL, liobn);
- 	if (ret)
- 		pr_warning("%s: failed to remove direct window: rtas returned "
- 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
--			np->full_name, ret, ddr_avail[2], liobn);
-+			np->full_name, ret, ddw_avail[2], liobn);
- 	else
- 		pr_debug("%s: successfully removed direct window: rtas returned "
- 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
--			np->full_name, ret, ddr_avail[2], liobn);
-+			np->full_name, ret, ddw_avail[2], liobn);
- 
- delprop:
- 	ret = prom_remove_property(np, win64);
-@@ -701,16 +701,12 @@ delprop:
- 			np->full_name, ret);
+@@ -1077,12 +1077,38 @@ check_mask:
+ 	return 0;
  }
  
--static u64 dupe_ddw_if_already_created(struct pci_dev *dev, struct device_node *pdn)
-+static u64 find_existing_ddw(struct device_node *pdn)
- {
--	struct device_node *dn;
--	struct pci_dn *pcidn;
- 	struct direct_window *window;
- 	const struct dynamic_dma_window_prop *direct64;
- 	u64 dma_addr = 0;
++static u64 dma_get_required_mask_pSeriesLP(struct device *dev)
++{
++	if (!dev->dma_mask)
++		return 0;
++
++	if (!disable_ddw && dev_is_pci(dev)) {
++		struct pci_dev *pdev = to_pci_dev(dev);
++		struct device_node *dn;
++
++		dn = pci_device_to_OF_node(pdev);
++
++		/* search upwards for ibm,dma-window */
++		for (; dn && PCI_DN(dn) && !PCI_DN(dn)->iommu_table;
++				dn = dn->parent)
++			if (of_get_property(dn, "ibm,dma-window", NULL))
++				break;
++		/* if there is a ibm,ddw-applicable property require 64 bits */
++		if (dn && PCI_DN(dn) &&
++				of_get_property(dn, "ibm,ddw-applicable", NULL))
++			return DMA_BIT_MASK(64);
++	}
++
++	return dma_iommu_get_required_mask(dev);
++}
++
+ #else  /* CONFIG_PCI */
+ #define pci_dma_bus_setup_pSeries	NULL
+ #define pci_dma_dev_setup_pSeries	NULL
+ #define pci_dma_bus_setup_pSeriesLP	NULL
+ #define pci_dma_dev_setup_pSeriesLP	NULL
+ #define dma_set_mask_pSeriesLP		NULL
++#define dma_get_required_mask_pSeriesLP	NULL
+ #endif /* !CONFIG_PCI */
  
--	dn = pci_device_to_OF_node(dev);
--	pcidn = PCI_DN(dn);
- 	spin_lock(&direct_window_list_lock);
- 	/* check if we already created a window and dupe that config if so */
- 	list_for_each_entry(window, &direct_window_list, list) {
-@@ -758,7 +754,7 @@ static int find_existing_ddw_windows(void)
- }
- machine_arch_initcall(pseries, find_existing_ddw_windows);
- 
--static int query_ddw(struct pci_dev *dev, const u32 *ddr_avail,
-+static int query_ddw(struct pci_dev *dev, const u32 *ddw_avail,
- 			struct ddw_query_response *query)
- {
- 	struct device_node *dn;
-@@ -779,15 +775,15 @@ static int query_ddw(struct pci_dev *dev, const u32 *ddr_avail,
- 	if (pcidn->eeh_pe_config_addr)
- 		cfg_addr = pcidn->eeh_pe_config_addr;
- 	buid = pcidn->phb->buid;
--	ret = rtas_call(ddr_avail[0], 3, 5, (u32 *)query,
-+	ret = rtas_call(ddw_avail[0], 3, 5, (u32 *)query,
- 		  cfg_addr, BUID_HI(buid), BUID_LO(buid));
- 	dev_info(&dev->dev, "ibm,query-pe-dma-windows(%x) %x %x %x"
--		" returned %d\n", ddr_avail[0], cfg_addr, BUID_HI(buid),
-+		" returned %d\n", ddw_avail[0], cfg_addr, BUID_HI(buid),
- 		BUID_LO(buid), ret);
- 	return ret;
- }
- 
--static int create_ddw(struct pci_dev *dev, const u32 *ddr_avail,
-+static int create_ddw(struct pci_dev *dev, const u32 *ddw_avail,
- 			struct ddw_create_response *create, int page_shift,
- 			int window_shift)
- {
-@@ -812,12 +808,12 @@ static int create_ddw(struct pci_dev *dev, const u32 *ddr_avail,
- 
- 	do {
- 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
--		ret = rtas_call(ddr_avail[1], 5, 4, (u32 *)create, cfg_addr,
-+		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
- 				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
- 	} while (rtas_busy_delay(ret));
- 	dev_info(&dev->dev,
- 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
--		"(liobn = 0x%x starting addr = %x %x)\n", ddr_avail[1],
-+		"(liobn = 0x%x starting addr = %x %x)\n", ddw_avail[1],
- 		 cfg_addr, BUID_HI(buid), BUID_LO(buid), page_shift,
- 		 window_shift, ret, create->liobn, create->addr_hi, create->addr_lo);
- 
-@@ -843,14 +839,14 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	int page_shift;
- 	u64 dma_addr, max_addr;
- 	struct device_node *dn;
--	const u32 *uninitialized_var(ddr_avail);
-+	const u32 *uninitialized_var(ddw_avail);
- 	struct direct_window *window;
- 	struct property *win64;
- 	struct dynamic_dma_window_prop *ddwprop;
- 
- 	mutex_lock(&direct_window_init_mutex);
- 
--	dma_addr = dupe_ddw_if_already_created(dev, pdn);
-+	dma_addr = find_existing_ddw(pdn);
- 	if (dma_addr != 0)
- 		goto out_unlock;
- 
-@@ -862,8 +858,8 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	 * for the given node in that order.
- 	 * the property is actually in the parent, not the PE
- 	 */
--	ddr_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
--	if (!ddr_avail || len < 3 * sizeof(u32))
-+	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
-+	if (!ddw_avail || len < 3 * sizeof(u32))
- 		goto out_unlock;
- 
-        /*
-@@ -873,7 +869,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	 * of page sizes: supported and supported for migrate-dma.
- 	 */
- 	dn = pci_device_to_OF_node(dev);
--	ret = query_ddw(dev, ddr_avail, &query);
-+	ret = query_ddw(dev, ddw_avail, &query);
- 	if (ret != 0)
- 		goto out_unlock;
- 
-@@ -922,7 +918,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 		goto out_free_prop;
- 	}
- 
--	ret = create_ddw(dev, ddr_avail, &create, page_shift, len);
-+	ret = create_ddw(dev, ddw_avail, &create, page_shift, len);
- 	if (ret != 0)
- 		goto out_free_prop;
- 
+ static int iommu_mem_notifier(struct notifier_block *nb, unsigned long action,
+@@ -1186,6 +1212,7 @@ void iommu_init_early_pSeries(void)
+ 		ppc_md.pci_dma_bus_setup = pci_dma_bus_setup_pSeriesLP;
+ 		ppc_md.pci_dma_dev_setup = pci_dma_dev_setup_pSeriesLP;
+ 		ppc_md.dma_set_mask = dma_set_mask_pSeriesLP;
++		ppc_md.dma_get_required_mask = dma_get_required_mask_pSeriesLP;
+ 	} else {
+ 		ppc_md.tce_build = tce_build_pSeries;
+ 		ppc_md.tce_free  = tce_free_pSeries;
 -- 
 1.7.4.1
 
