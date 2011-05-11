@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1EKPtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:49:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60650 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755423Ab1EKPs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:48:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,351,1301900400"; 
-   d="scan'208";a="190151"
-Date: Wed, 11 May 2011 10:23:29 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 16/19] mfd: Use mfd cell platform_data for tps6105x
- cells platform bits
-Message-ID: <20110511082328.GA2637@sortiz-mobl>
-References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
- <1304901131-7104-17-git-send-email-sameo@linux.intel.com>
- <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
+	id S1755954Ab1EKPzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:55:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56873 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab1EKPzO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:55:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=X5hLGz6s6Vkl9tOUDCNr4JfuwMm8oYLY6FOWa2T1nRG5zUP2VX3huC5ciasMz5fH5e
+         uBXC2aNXmq36Rz37s68srycGwhsRlfodj4vw1wT4FqVlUtc+fHXT0GMqKNxAfOK+mVGV
+         EQdSflEe0U4mtZNNQwlCIP4WEbVUeyQj8a2rs=
+Date: Wed, 11 May 2011 10:29:47 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
+Message-ID: <20110511082947.GB1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-5-git-send-email-tj@kernel.org>
+ <20110509165857.GA30607@redhat.com>
+ <20110510095022.GR1661@htj.dyndns.org>
+ <20110510140620.GB21834@redhat.com>
+ <20110510142033.GY1661@htj.dyndns.org>
+ <20110510180811.GB32637@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
+In-Reply-To: <20110510180811.GB32637@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hello,
 
-On Mon, May 09, 2011 at 09:05:19AM +0200, Linus Walleij wrote:
-> 2011/5/9 Samuel Ortiz <sameo@linux.intel.com>:
-> 
-> > With the addition of a platform device mfd_cell pointer, MFD drivers
-> > can go back to passing platform data back to their sub drivers.
-> > This allows for an mfd_cell->mfd_data removal and thus keep the
-> > sub drivers MFD agnostic. This is mostly needed for non MFD aware
-> > sub drivers.
+On Tue, May 10, 2011 at 08:08:11PM +0200, Oleg Nesterov wrote:
+> On 05/10, Tejun Heo wrote:
+> > > And, you know, I am not sure this is very clear. What if we change the
+> > > rules so that PTRACE_SEIZE always reports PTRACE_EVENT_INTERRUPT like
+> > > PTRACE_INTERRUPT? This looks more symmetrical and simple to me. IOW,
+> > > ptrace(PTRACE_SEIZE) simply implies the implicit PTRACE_INTERRUPT.
 > >
-> > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+> > Actually, that was my initial implementation but as we don't guarantee
+> > that the first trap would be an INTERRUPT one,
 > 
-> I have some question marks on this one...
-> 
-> > --- a/drivers/mfd/tps6105x.c
-> > +++ b/drivers/mfd/tps6105x.c
-> > @@ -183,7 +183,8 @@ static int __devinit tps6105x_probe(struct i2c_client *client,
-> >        /* Set up and register the platform devices. */
-> >        for (i = 0; i < ARRAY_SIZE(tps6105x_cells); i++) {
-> >                /* One state holder for all drivers, this is simple */
-> > -               tps6105x_cells[i].mfd_data = tps6105x;
-> > +               tps6105x_cells[i].platform_data = tps6105x;
-> > +               tps6105x_cells[i].pdata_size = sizeof(*tps6105x);
-> 
-> ACK
-> 
-> > --- a/drivers/regulator/tps6105x-regulator.c
-> > +++ b/drivers/regulator/tps6105x-regulator.c
-> > @@ -137,7 +137,7 @@ static struct regulator_desc tps6105x_regulator_desc = {
-> >  */
-> >  static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
-> >  {
-> > -       struct tps6105x *tps6105x = mfd_get_data(pdev);
-> > +       struct tps6105x *tps6105x = pdev->dev.platform_data;
-> 
-> Can you use platform_get_drvdata(pdev); instead?
-I suppose you mean dev_get_platdata() ?
+> Yes, and ptrace(PTRACE_INTERRUPT) doesn't guarantee this too,
 
+Yeah, sure.
 
-> >        struct tps6105x_platform_data *pdata = tps6105x->pdata;
-> >        int ret;
-> >
-> > @@ -164,7 +164,7 @@ static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
-> >
-> >  static int __devexit tps6105x_regulator_remove(struct platform_device *pdev)
-> >  {
-> > -       struct tps6105x *tps6105x = platform_get_drvdata(pdev);
-> > +       struct tps6105x *tps6105x = pdev->dev.platform_data;
+> > so it seemed nicer to
+> > avoid double trapping after SEIZE.
 > 
-> And this is a NO-OP, actually a bug in the present code, just leave it
-> as it is and the other changes removing the mfd->mfd_data fixes the bug...
-I agree it's a bug in the current code. But I need to fetch the platform_data
-pointer, so here again I would have to call dev_get_platdata().
+> Why? We can simply say that ptrace(PTRACE_SEIZE) == attach + INTERRUPT,
+> the rules are the same.
 
-Cheers,
-Samuel.
+I guess the thing I wanted to avoid was programs looping over
+PTRACE_CONT waiting for the INTERRUPT trap to happen.
 
+But, yeah, it might be easier to explain that way.  Maybe I'll change
+it.  I don't know.
 
-> Yours,
-> Linus Walleij
+> Hmm. Suddenly I got lost. Perhaps instead JOBCTL_TRAP_INTERRUPT should
+> be cleared on any trap too, like SEIZE.
+
+I don't think that's a good idea especially because there are
+functionality differences among different traps.  ie. group stop and
+interrupt traps support re-trapping on job control events while other
+traps don't, so there will be cases where the debugger wants to put
+tracee specifically into INTERRUPT trap.  It's just cleaner to use and
+say that if you ask for INTERRUPT, you get an INTERRUPT.
+
+> > One apparently is clone.  What were the others?
+> 
+> clone() is special because (I think) auto-attach should obviously
+> inherit PT_SEIZED. ptrace_init_task() copies PT_SEIZED correctly, so
+> we should only change tracehook_report_clone().
+
+Alright.
+
+> Another special (and nasty!) case is PTRACE_TRACEME. I do not know
+> how often it is used, but probabaly it is important enough. At least,
+> iirc, it is used by strace. Probably we need PTRACE_SEIZEME as well.
+
+I don't agree.  PTRACE_TRACEME predates PTRACE_ATTACH and is
+completely redundant.  If you can make the child do PTRACE_TRACEME,
+you might as well just make it do pause() and PTRACE_SEIZE yourself,
+so unless there's something PTRACE_SEIZE can't do, I don't think I'll
+be adding SEIZEME.
+
+> > At first I made PTRACE_INTERRUPT noop if it was already in INTERRUPT
+> > trap but then changed my mind because guaranteeing that there will be
+> > at least one PTRACE_EVENT_INTERRUPT trap after PTRACE_INTERRUPT seems
+> > better than having subtle behavior difference which might be nicer in
+> > limited use cases.
+> 
+> No, I meant -EALREADY if JOBCTL_TRAP_INTERRUPT is pending set but not
+> yet reported. But anyway, this is really minor.
+
+Sure, noop or -EALREADY or whatever.  As I wrote above, I think it's
+better not to add special cases, so the rule becomes "if you schedule
+an INTERRUPT, you'll get at least one INTERRUPT in the future, no
+matter what."
+
+Thanks.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+tejun
