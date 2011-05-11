@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab1EKQkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:40:24 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:40386 "EHLO
-	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab1EKQkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:40:18 -0400
-Date: Wed, 11 May 2011 15:03:39 +0200 (CEST)
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: Christoph Hellwig <hch@infradead.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 10/14] HPFS: Implement fsync for hpfs
-In-Reply-To: <20110510080349.GC13420@infradead.org>
-Message-ID: <alpine.DEB.2.00.1105111502300.23587@artax.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1105082029340.7013@artax.karlin.mff.cuni.cz> <20110510080349.GC13420@infradead.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Personality-Disorder: Schizoid
+	id S1753769Ab1EKPiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:38:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16163 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189Ab1EKPiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:38:14 -0400
+Date: Wed, 11 May 2011 09:07:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk-throttle: fix a typo in blk_throtl_init()
+Message-ID: <20110511130732.GB31633@redhat.com>
+References: <1305118862-4861-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305118862-4861-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 10 May 2011, Christoph Hellwig wrote:
-
-> On Sun, May 08, 2011 at 08:44:19PM +0200, Mikulas Patocka wrote:
-> > Index: linux-2.6.39-rc5-fast/fs/hpfs/file.c
-> > ===================================================================
-> > --- linux-2.6.39-rc5-fast.orig/fs/hpfs/file.c	2011-05-05 01:02:43.000000000 +0200
-> > +++ linux-2.6.39-rc5-fast/fs/hpfs/file.c	2011-05-05 01:02:56.000000000 +0200
-> > @@ -20,8 +20,8 @@ static int hpfs_file_release(struct inod
-> >  
-> >  int hpfs_file_fsync(struct file *file, int datasync)
-> >  {
-> > -	/*return file_fsync(file, datasync);*/
-> > -	return 0; /* Don't fsync :-) */
-> > +	struct inode *inode = file->f_mapping->host;
-> > +	return sync_blockdev(inode->i_sb->s_bdev);
+On Wed, May 11, 2011 at 10:01:02PM +0900, Namhyung Kim wrote:
+> s/td/tg/
 > 
-> So you push all dirty data into buffers immediately and don't have
-> anything else to write back?
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/blk-throttle.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 0475a22a420d..e7986b8a0085 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -1072,7 +1072,7 @@ int blk_throtl_init(struct request_queue *q)
+>  	/* Practically unlimited BW */
+>  	tg->bps[0] = tg->bps[1] = -1;
+>  	tg->iops[0] = tg->iops[1] = -1;
+> -	td->limits_changed = false;
+> +	tg->limits_changed = false;
+>  
 
-Data are written in vfs_fsync_range ... so fsync should write just 
-metadata. I write all metadata, HPFS is not performance-sensitive anyway, 
-so there is no need to differentiate metadata for a specific file.
+Thanks Namhyung. I noticed it recently too. There is one more such typo
+in throtl_find_alloc_tg(). Can you fix that too and repost the patch.
 
-Mikulas
+Thanks
+Vivek
