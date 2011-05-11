@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab1EKVPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:15:54 -0400
-Received: from kroah.org ([198.145.64.141]:59131 "EHLO coco.kroah.org"
+	id S1756486Ab1EKVIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:08:52 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:18577 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756176Ab1EKVOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:14:47 -0400
-Date: Wed, 11 May 2011 14:08:37 -0700
-From: Greg KH <greg@kroah.com>
-To: matt mooney <mfmooney@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 06/12] staging: usbip: stub_main.c: code cleanup
-Message-ID: <20110511210837.GA4893@kroah.com>
-References: <cover.1305103212.git.mfm@muteddisk.com>
- <3a932c55376e57a96881a654a0f6c3e6837f400e.1305103212.git.mfm@muteddisk.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3a932c55376e57a96881a654a0f6c3e6837f400e.1305103212.git.mfm@muteddisk.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756239Ab1EKVIr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 17:08:47 -0400
+X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
+   d="scan'208";a="547278257"
+Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Peng Huang <shawn.p.huang@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 11 May 2011 17:08:45 -0400
+Message-ID: <1305148125.21868.2.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 11 May 2011 21:08:46.0282 (UTC) FILETIME=[9DB50AA0:01CC101F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 01:54:18AM -0700, matt mooney wrote:
-> Reorder functions; remove match_find() and replace with
-> get_busid_idx(); change other functions to use get_busid_idx(); and
-> code cleanup in the other functions.
+On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
+> lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
+> indirectly, that causes the kernel crash.
 > 
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
+> RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
+> nfs_lookup_revalidate+0x21/0x4a0 [nfs]
+> RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+> 
+> Call Trace:
+>  [<ffffffff81164a17>] do_revalidate+0x17/0x60
+>  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
+>  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
+>  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
+>  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
+>  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
+>  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
+>  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
+>  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
+>  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
+>  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
+>  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
+>  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
+>  [<ffffffff811692f7>] user_path_at+0x57/0xa0
+>  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
+>  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
+>  [<ffffffff8116b990>] ? filldir+0x0/0xe0
+>  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
+>  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
+>  [<ffffffff8159c995>] ? page_fault+0x25/0x30
+>  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
 > ---
-> I apologize for this one. I realize that I should have split it into two with
-> the reorder being separate.
+>  fs/nfs/dir.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index 2c3eb33..9452aa5 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  	struct nfs_fattr *fattr = NULL;
+>  	int error;
+>  
+> -	if (nd->flags & LOOKUP_RCU)
+> +	if (nd != NULL && nd->flags & LOOKUP_RCU)
+>  		return -ECHILD;
+>  
+>  	parent = dget_parent(dentry);
 
-Yes, please split it up.
+That's exactly what Tyler Hicks proposed last week and which was NACKed.
+We simply won't support layered filesystems that don't do intents.
 
-> Also, it seems as if there is a synchronization problem carried over from the
-> original code in get_busid_priv(). An address into the busid_table is returned
-> and then the element is accessed and modified elsewhere. Right? Or am I missing
-> something.
+IOW: Feel free to change the above to.
 
-You might be correct, I don't really know.
+if (nd == NULL)
+     return -EIO;
 
-thanks,
 
-greg k-h
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
