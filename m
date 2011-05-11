@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1EKQWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:22:03 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58840 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab1EKQTA (ORCPT
+	id S1756623Ab1EKQ3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:29:50 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59886 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab1EKQ3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:19:00 -0400
-Subject: Re: [tip:timers/core] timerfd: Allow timers to be cancelled when
- clock was set
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        johnstul@us.ibm.com, davidel@xmailserver.org, virtuoso@slind.org,
-        tglx@linutronix.de, chris.friesen@genband.com, kirill@shutemov.name,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
-References: <tip-99ee5315dac6211e972fa3f23bcc9a0343ff58c4@git.kernel.org>
-	 <1305109433.2914.208.camel@laptop>
-	 <BANLkTi=j6eSyyEdGgUeZhQLJVa+meK_W6A@mail.gmail.com>
-	 <1305121541.2914.213.camel@laptop>
-	 <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 16:01:58 +0200
-Message-ID: <1305122518.2914.224.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 May 2011 12:29:48 -0400
+Date: Wed, 11 May 2011 16:02:08 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] perf: Carve out cgroup-related code
+Message-ID: <20110511140208.GD25827@aftab>
+References: <20110511121135.GA25865@aftab>
+ <1305121600.2914.214.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305121600.2914.214.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 15:52 +0200, Kay Sievers wrote:
+On Wed, May 11, 2011 at 09:46:40AM -0400, Peter Zijlstra wrote:
+> On Wed, 2011-05-11 at 14:11 +0200, Borislav Petkov wrote:
+> >  include/linux/perf_event.h |  138 ++++++++++++-
 > 
-> No, fixed time spans have never been a problem, and are not the
-> example here. It's about the normal wall clock, that wakes up every
-> minute and updates the numbers on the screen. 
+> I don't like exposing all that in a kernel wide header.. should we maybe
+> have kernel/events/internal.h?
 
-'wakes up every minute' sounds like a fixed time interval to me.
+Sounds prudent. Maybe add a patch ontop that moves all perf_event.h
+exports which are shared _only_ between kernel/events/*.c compilation
+units to an internal.h header? Ingo?
 
-Anyway, I still don't agree with the current implementation, its adding
-overhead to timer fast-paths for a definite slow-path.
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
