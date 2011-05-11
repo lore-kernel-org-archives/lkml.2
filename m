@@ -1,75 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab1EKTYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:24:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48352 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab1EKTYY (ORCPT
+	id S1754908Ab1EKTa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:30:58 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51274 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755048Ab1EKTaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:24:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QpkwjqR5aqdOq75P0ZywcihqZvqiuv5z2/XLT9VliD52XRJQaO5bAI1OyEpezYfdlK
-         4v28HURu8p+8pbls+IvCp2hxIqv9G/vsI4GPHkCvr+m7+tEDycSOvtnGx6Nzol2RBXEp
-         xssNx+LtQ2ufhztNgaDHbZg1qAMLr4NyLXS/8=
-Date: Wed, 11 May 2011 21:24:20 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Bryan Donlan <bdonlan@gmail.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
-Message-ID: <20110511192420.GB24245@mtj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <20110510095022.GR1661@htj.dyndns.org>
- <20110510140620.GB21834@redhat.com>
- <201105102359.58900.vda.linux@googlemail.com>
- <20110511091955.GD1661@htj.dyndns.org>
- <BANLkTikQm1PVCW3164g0bfgU9fs4MMTfNA@mail.gmail.com>
- <20110511132218.GG1661@htj.dyndns.org>
- <BANLkTi=mm_rUXcH4Ufq_GdMLnpz4N7B_vg@mail.gmail.com>
+	Wed, 11 May 2011 15:30:55 -0400
+Date: Wed, 11 May 2011 15:27:42 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2011-05-11
+Message-ID: <20110511192742.GG2490@tuxdriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=mm_rUXcH4Ufq_GdMLnpz4N7B_vg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Dave,
 
-On Wed, May 11, 2011 at 12:20:11PM -0400, Bryan Donlan wrote:
-> If a process issues PTRACE_INTERRUPT, it just wants the target process
-> to stop. Presumably it doesn't really care _why_, as long as it
-> doesn't introduce spurious effects visible to the target. As such, if
-> the process stops on its own due to some other trap, that ought to be
-> good enough, right? Is there really a need for a trap that will be
-> reliably echoed back to the trapping process?
+Here are a few more late-breakers that I would like to see in 2.6.39.
+The one from Luca fixes a problem that can cause devices to be unable
+to (re-)associate after a disconnect.  The ath9k fix from Mohammed
+fixes a WARNING, the one from Paul fixes a locking issue that can
+lead to data corruption, and the one from Stanislaw fixes a crash
+documented in bug 34452.  All are small and all but one are contained
+within their respective drivers.
 
-It can go either way.  I just chose one.  One use case which made me
-favor not clearing INTERRUPT on other traps was that INTERRUPT, along
-with group stop trap, is special in that it allows notification
-re-traps.  It serves as per-tracee job control trap site which
-debugger can use as it pleases.
+Please let me know if there are problems!
 
-As such, there are times where debugger wants to put tracee into that
-specific trap.  If INTERRUPT gets cleared on every trap, it would have
-to set INTERRUPT on each trap until it reaches INTERRUPT trap which
-seemed kinda silly and given that INTERRUPT may happen for spurious
-notification reasons, there didn't seem much point in avoiding the
-trap because there was another trap.
+John
 
-That said, as it makes INTERRUPT behavior different from SEIZE and I
-think occassional multiple traps on SEIZE could be uglier.  I think
-I'll change it such that it clears on any trap.  If debugger wants to
-put tracee specifically into INTERRUPT trap, it will have to raise it
-after each unsuccessful trap.  It would be annoying but I suppose it's
-lesser of the two evils.
+---
 
-Thanks.
+The following changes since commit 9bbc052d5e63512b0ce4e201ea97e12fba9fda82:
 
+  Merge branch 'pablo/nf-2.6-updates' of git://1984.lsi.us.es/net-2.6 (2011-05-10 15:04:35 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Luciano Coelho (1):
+      mac80211: don't start the dynamic ps timer if not associated
+
+Mohammed Shafi Shajakhan (1):
+      ath9k: Fix a warning due to a queued work during S3 state
+
+Paul Fox (1):
+      libertas: fix cmdpendingq locking
+
+Stanislaw Gruszka (1):
+      iwlegacy: fix IBSS mode crashes
+
+ drivers/net/wireless/ath/ath9k/main.c    |    8 ++++++++
+ drivers/net/wireless/iwlegacy/iwl-core.c |    7 +++++++
+ drivers/net/wireless/iwlegacy/iwl-dev.h  |    6 ++++++
+ drivers/net/wireless/libertas/cmd.c      |    6 ++++--
+ net/mac80211/tx.c                        |    4 ++++
+ 5 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 17d04ff..1482fa6 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -2141,6 +2141,8 @@ static void ath9k_set_coverage_class(struct ieee80211_hw *hw, u8 coverage_class)
+ static void ath9k_flush(struct ieee80211_hw *hw, bool drop)
+ {
+ 	struct ath_softc *sc = hw->priv;
++	struct ath_hw *ah = sc->sc_ah;
++	struct ath_common *common = ath9k_hw_common(ah);
+ 	int timeout = 200; /* ms */
+ 	int i, j;
+ 
+@@ -2149,6 +2151,12 @@ static void ath9k_flush(struct ieee80211_hw *hw, bool drop)
+ 
+ 	cancel_delayed_work_sync(&sc->tx_complete_work);
+ 
++	if (sc->sc_flags & SC_OP_INVALID) {
++		ath_dbg(common, ATH_DBG_ANY, "Device not present\n");
++		mutex_unlock(&sc->mutex);
++		return;
++	}
++
+ 	if (drop)
+ 		timeout = 1;
+ 
+diff --git a/drivers/net/wireless/iwlegacy/iwl-core.c b/drivers/net/wireless/iwlegacy/iwl-core.c
+index 2b08efb..dcbb2ef 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-core.c
++++ b/drivers/net/wireless/iwlegacy/iwl-core.c
+@@ -2155,6 +2155,13 @@ int iwl_legacy_mac_config(struct ieee80211_hw *hw, u32 changed)
+ 			goto set_ch_out;
+ 		}
+ 
++		if (priv->iw_mode == NL80211_IFTYPE_ADHOC &&
++		    !iwl_legacy_is_channel_ibss(ch_info)) {
++			IWL_DEBUG_MAC80211(priv, "leave - not IBSS channel\n");
++			ret = -EINVAL;
++			goto set_ch_out;
++		}
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 
+ 		for_each_context(priv, ctx) {
+diff --git a/drivers/net/wireless/iwlegacy/iwl-dev.h b/drivers/net/wireless/iwlegacy/iwl-dev.h
+index 9ee849d..f43ac1e 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-dev.h
++++ b/drivers/net/wireless/iwlegacy/iwl-dev.h
+@@ -1411,6 +1411,12 @@ iwl_legacy_is_channel_passive(const struct iwl_channel_info *ch)
+ 	return (!(ch->flags & EEPROM_CHANNEL_ACTIVE)) ? 1 : 0;
+ }
+ 
++static inline int
++iwl_legacy_is_channel_ibss(const struct iwl_channel_info *ch)
++{
++	return (ch->flags & EEPROM_CHANNEL_IBSS) ? 1 : 0;
++}
++
+ static inline void
+ __iwl_legacy_free_pages(struct iwl_priv *priv, struct page *page)
+ {
+diff --git a/drivers/net/wireless/libertas/cmd.c b/drivers/net/wireless/libertas/cmd.c
+index 7e8a658..f3ac624 100644
+--- a/drivers/net/wireless/libertas/cmd.c
++++ b/drivers/net/wireless/libertas/cmd.c
+@@ -1339,8 +1339,8 @@ int lbs_execute_next_command(struct lbs_private *priv)
+ 				    cpu_to_le16(PS_MODE_ACTION_EXIT_PS)) {
+ 					lbs_deb_host(
+ 					       "EXEC_NEXT_CMD: ignore ENTER_PS cmd\n");
+-					list_del(&cmdnode->list);
+ 					spin_lock_irqsave(&priv->driver_lock, flags);
++					list_del(&cmdnode->list);
+ 					lbs_complete_command(priv, cmdnode, 0);
+ 					spin_unlock_irqrestore(&priv->driver_lock, flags);
+ 
+@@ -1352,8 +1352,8 @@ int lbs_execute_next_command(struct lbs_private *priv)
+ 				    (priv->psstate == PS_STATE_PRE_SLEEP)) {
+ 					lbs_deb_host(
+ 					       "EXEC_NEXT_CMD: ignore EXIT_PS cmd in sleep\n");
+-					list_del(&cmdnode->list);
+ 					spin_lock_irqsave(&priv->driver_lock, flags);
++					list_del(&cmdnode->list);
+ 					lbs_complete_command(priv, cmdnode, 0);
+ 					spin_unlock_irqrestore(&priv->driver_lock, flags);
+ 					priv->needtowakeup = 1;
+@@ -1366,7 +1366,9 @@ int lbs_execute_next_command(struct lbs_private *priv)
+ 				       "EXEC_NEXT_CMD: sending EXIT_PS\n");
+ 			}
+ 		}
++		spin_lock_irqsave(&priv->driver_lock, flags);
+ 		list_del(&cmdnode->list);
++		spin_unlock_irqrestore(&priv->driver_lock, flags);
+ 		lbs_deb_host("EXEC_NEXT_CMD: sending command 0x%04x\n",
+ 			    le16_to_cpu(cmd->command));
+ 		lbs_submit_command(priv, cmdnode);
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index ce4596e..bd1224f 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -237,6 +237,10 @@ ieee80211_tx_h_dynamic_ps(struct ieee80211_tx_data *tx)
+ 				     &local->dynamic_ps_disable_work);
+ 	}
+ 
++	/* Don't restart the timer if we're not disassociated */
++	if (!ifmgd->associated)
++		return TX_CONTINUE;
++
+ 	mod_timer(&local->dynamic_ps_timer, jiffies +
+ 		  msecs_to_jiffies(local->hw.conf.dynamic_ps_timeout));
+ 
 -- 
-tejun
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
