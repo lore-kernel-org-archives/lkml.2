@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1EKX77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 19:59:59 -0400
-Received: from mail1.SerNet.de ([193.175.80.2]:58566 "EHLO mail.SerNet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab1EKX74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 19:59:56 -0400
-X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 19:59:56 EDT
-Date: Thu, 12 May 2011 00:16:13 +0200
-From: =?iso-8859-1?Q?Bj=F6rn?= JACKE <bj@SerNet.DE>
-To: "Ted Ts'o" <tytso@mit.edu>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
-        sandeen@redhat.com, bfields@fieldses.org, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl
- interoperability
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20110228211145.GG28617@thunk.org>
+	id S932207Ab1EKWSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:18:01 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:54425 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab1EKWR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 18:17:59 -0400
+Date: Wed, 11 May 2011 17:17:50 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Peng Huang <shawn.p.huang@gmail.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
+Message-ID: <20110511221750.GA9776@boyd.l.tihix.com>
+References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+ <1305148125.21868.2.camel@lade.trondhjem.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-ripemd160;
-	protocol="application/pgp-signature"; boundary="2fHTh5uZTiUOsy+g"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110228211145.GG28617@thunk.org>
-X-Q: Sprechen und Hoeren ist Befruchten und Empfangen. (Novalis)
-Message-Id: <E1QKJAl-00DGc7-EB@intern.SerNet.DE>
-Organization: SerNet GmbH, Goettingen, Germany
+In-Reply-To: <1305148125.21868.2.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed May 11, 2011 at 05:08:45PM -0400, Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
+> > lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
+> > indirectly, that causes the kernel crash.
+> > 
+> > RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
+> > nfs_lookup_revalidate+0x21/0x4a0 [nfs]
+> > RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+> > 
+> > Call Trace:
+> >  [<ffffffff81164a17>] do_revalidate+0x17/0x60
+> >  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
+> >  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
+> >  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
+> >  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
+> >  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
+> >  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
+> >  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
+> >  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
+> >  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
+> >  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
+> >  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
+> >  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
+> >  [<ffffffff811692f7>] user_path_at+0x57/0xa0
+> >  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
+> >  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
+> >  [<ffffffff8116b990>] ? filldir+0x0/0xe0
+> >  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
+> >  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
+> >  [<ffffffff8159c995>] ? page_fault+0x25/0x30
+> >  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+> > 
+> > Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
+> > ---
+> >  fs/nfs/dir.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> > index 2c3eb33..9452aa5 100644
+> > --- a/fs/nfs/dir.c
+> > +++ b/fs/nfs/dir.c
+> > @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+> >  	struct nfs_fattr *fattr = NULL;
+> >  	int error;
+> >  
+> > -	if (nd->flags & LOOKUP_RCU)
+> > +	if (nd != NULL && nd->flags & LOOKUP_RCU)
+> >  		return -ECHILD;
+> >  
+> >  	parent = dget_parent(dentry);
+> 
+> That's exactly what Tyler Hicks proposed last week and which was NACKed.
+> We simply won't support layered filesystems that don't do intents.
 
---2fHTh5uZTiUOsy+g
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But you _did_ support it up until
+34286d66 "fs: rcu-walk aware d_revalidate method"
 
-Hi,
+I see why you wouldn't want NULL nameidata in the NFSv4 specific
+functions, but don't quite understand the opposition against it in NFSv3
+(nfs_lookup_revalidate). The one-liner above would allow users to begin
+using eCryptfs on top of NFSv3 clients immediately, with no side effects
+to NFS.
 
-On 2011-02-28 at 16:11 -0500 Ted Ts'o sent off:
-> What is the current status of this patch series?  I seem to remember
-> that Christoph and Al Viro had some objections; have those been
-> cleared yet?  If not, can you summarize what their objections are?
->=20
-> To be honest I haven't been paying super close attention to this patch
-> series, and I'm curious what needs to happen with it one way or
-> another.
+Tyler
 
-after the discussion of this path submission thread are there any major or
-minor issues left that prevent these to go upstream? I'd really love to see
-NFSv4 ACLs being available on Linux, too.
-
-Cheers
-Bj=F6rn
-
---2fHTh5uZTiUOsy+g
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEAREDAAYFAk3LCq0ACgkQdoo0s+hIejnNDQCfaSJOqCApOflElPSFaoZyR8cb
-x+cAnAo+J0M54Xew09v2pPF4RIl3Ed9O
-=Vaef
------END PGP SIGNATURE-----
-
---2fHTh5uZTiUOsy+g--
+> 
+> IOW: Feel free to change the above to.
+> 
+> if (nd == NULL)
+>      return -EIO;
+> 
+> 
+> 
+> 
+> -- 
+> Trond Myklebust
+> Linux NFS client maintainer
+> 
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
