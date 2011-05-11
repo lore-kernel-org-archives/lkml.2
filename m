@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1EKDE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 23:04:27 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43804 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914Ab1EKDEZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 23:04:25 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Parisc List <linux-parisc@vger.kernel.org>
-Subject: Re: Please include the namespace file-descriptors tree in linux-next
-References: <m1sjsmp44c.fsf@fess.ebiederm.org>
-	<20110511102736.7a9dc881.sfr@canb.auug.org.au>
-Date: Tue, 10 May 2011 20:04:17 -0700
-In-Reply-To: <20110511102736.7a9dc881.sfr@canb.auug.org.au> (Stephen
-	Rothwell's message of "Wed, 11 May 2011 10:27:36 +1000")
-Message-ID: <m1sjsmdjke.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/4LzgqUqhlsgCZDS8zsnel+2dZNE5yFqI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	id S1754109Ab1EKDN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 23:13:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55676 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753960Ab1EKDN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 23:13:58 -0400
+Date: Wed, 11 May 2011 13:06:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: linux-next: manual merge of the suspend tree with the mips tree
+Message-Id: <20110511130618.581a89a3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__11_May_2011_13_06_18_+1000_VCnLaaL5rnJV58Oc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
+--Signature=_Wed__11_May_2011_13_06_18_+1000_VCnLaaL5rnJV58Oc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Eric,
->
-> On Tue, 10 May 2011 15:44:51 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
->>
->> These changes have just been through review and I expect
->> to send Linus a pull request when the merge window opens.
->> 
->> This tree holds changes that significantly simply the userspace
->> interface to working with namespaces.
->> 
->> I had to pull some of net-next and the parisc tress to be able to
->> avoid conflicts with system call numbers.  Hopefully that is not
->> a problem.
->
-> That should be fine as Dave's tree never rebases and the parisc tree
-> looks pretty stable.  Just keep an eye on those trees, just in case.
+Hi Rafael,
 
-Good point.  I have talked to James and Dave so they know I pulled their
-trees.  My lazy side says I expect you will get a merge conflict with my
-tree in linux-next if someone rebases.  But I will definitely keep my
-eyes out and at the very least double check that all is well before I
-send Linus a pull request.  
+Today's linux-next merge of the suspend tree got a conflict in
+arch/mips/alchemy/common/dbdma.c between commit 02810a022fd9 ("MIPS:
+Alchemy: Convert dbdma.c to syscore_ops") from the mips tree and commit
+4d0fb1376519 ("PM / MIPS: Use struct syscore_ops instead of sysdevs for
+PM (v2)") from the suspend tree.
 
-Eric
+These seem to be trying to do the same thing.  I used the version from
+the mips tree for now.  Please sort this out ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__11_May_2011_13_06_18_+1000_VCnLaaL5rnJV58Oc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNyf0qAAoJEDMEi1NhKgbsV9QH+wYxbnxaUj4WIcxfuWd38KXt
+VxFAByAqGg894nLHksZ088vveOdkQ2Fb2Sfq53M0BtN820fAOSPWrWEJx/bSt+vH
+1e2HMy478rqp3iDTP3V3RjsOE/U/Xkc1RShJfGURSNC+xCjg3y0WWB96wgReCi5g
+ScuU9dZCAcZ6S/ItOkx7xk9x0akfvYVFIWYeRhJ9F+W+wdJ/4K5l/kOi1vDRlEGv
+M5gAdPU2DCoqZOxviCzfJTsbkDV1fgEb2M1JjWt8xFxJ0UiW8bVJgHnIIsuSRhJL
+C/J0Y3Og9NnDUiolgqrMtDFSzy95NshFLzfeRQKVJMhlKhLc/PCaPGmCqIlRhi8=
+=ZtjR
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__11_May_2011_13_06_18_+1000_VCnLaaL5rnJV58Oc--
