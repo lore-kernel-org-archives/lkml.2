@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab1EKQcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:32:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58635 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362Ab1EKQcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:32:51 -0400
-Date: Wed, 11 May 2011 14:09:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the namespace tree
-Message-Id: <20110511140900.bbafb560.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_May_2011_14_09_00_+1000_YPXj=fzsQ8_WS7hb"
+	id S1754215Ab1EKPjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:39:32 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:54192 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab1EKPj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:39:28 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: manual merge of the namespace tree with the m68k tree
+References: <20110511140225.2c7e300f.sfr@canb.auug.org.au>
+Date: Tue, 10 May 2011 21:17:31 -0700
+In-Reply-To: <20110511140225.2c7e300f.sfr@canb.auug.org.au> (Stephen
+	Rothwell's message of "Wed, 11 May 2011 14:02:25 +1000")
+Message-ID: <m1liydeuqs.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18KTU9wrLrmEt41Q2UZiCz6ksHrckshGi8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_May_2011_14_09_00_+1000_YPXj=fzsQ8_WS7hb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Hi Eric,
+> Hi Eric,
+>
+> Today's linux-next merge of the namespace tree got a conflict in
+> arch/m68k/kernel/entry_mm.S between commit 55e1af1ab184 ("m68k: Merge mmu
+> and non-mmu versions of sys_call_table") from the m68k tree and commit
+> e975ee91dcc1 ("ns: Wire up the setns system call") from the namespace
+> tree.
+>
+> I just used the m68k version of that file and that should be all that is
+> necessary.
 
-After merging the namespace tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Sounds good.  Gert asked me to check in that conflict (probably so
+bisects will continue to work), and if the commit id is right it looks
+like the m68k tree is seeing active development on that change right now.
 
-In file included from arch/powerpc/platforms/cell/spu_callbacks.c:49:
-arch/powerpc/include/asm/systbl.h:356: error: 'sys_setns' undeclared here (=
-not in a function)
+Eric
 
-Caused by commit e975ee91dcc1 ("ns: Wire up the setns system call").
-sys_setns should be declared in include/linux/syscalls.h.
-
-I have dropped the namespace tree for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__11_May_2011_14_09_00_+1000_YPXj=fzsQ8_WS7hb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNygvcAAoJEDMEi1NhKgbs+MYH/1dQLIMzkgd6/8+0kXfcwb83
-zCL2TuQMQvN70HyiQ2a9SWdx0t4fbvVkYKgdVnkGOQ2wCvnfC85mh0sNzKMIezZh
-4vY2qcHZY7SLCcEtckfFtMhxMuKbiNm/Jw8287akwoGsd5JZUqcyfd+eLcJOPK1E
-OW3vzkNcgrMp3+nldZ1iLJ0WG77mEltMQPlIXn1aiAqBXIG8t9pNpQQ+Us8FjTFL
-KEW1K2enDFuNCTGqE3DFkli5ltDJFPijwJCbf8bkloM9FcpYKox0PtWFt5KkJCGX
-9Pjgkrh/CubFlwhJv8E+tp9U875m1jVlC7LheDipmNZEB4m0hITNBMTIiqXgl6Y=
-=FqXF
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_May_2011_14_09_00_+1000_YPXj=fzsQ8_WS7hb--
