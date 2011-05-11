@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab1EKP6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:58:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58316 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab1EKP6N (ORCPT
+	id S1757871Ab1EKQ6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:58:51 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41909 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757786Ab1EKQ6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:58:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Mt9JRuK3QxC4X0FNNLfn8ogQVLjNUKpvEefkculcF0SLR7XEaRQcwbEJoAxVIf5bF7
-         8Scly2WLvsgq+1W0oa0oDivCStRoj5LSIWspPSJXb6G46Co3XWQdFASFDTQFf/iIx7Jx
-         Od4Hf/3vkR6ZJt1p7LQVrbmW55P/ncXibmio4=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH] blk-throttle: fix a typo in blk_throtl_init()
-Date: Wed, 11 May 2011 22:01:02 +0900
-Message-Id: <1305118862-4861-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.5
+	Wed, 11 May 2011 12:58:50 -0400
+Date: Wed, 11 May 2011 14:02:58 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, alan@linux.intel.com, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gma500: Add option to disable LVDS
+Message-ID: <20110511130258.GA29435@srcf.ucam.org>
+References: <20110510212038.GA3279@patrik-macbook>
+ <20110510224602.73b24d0a@lxorguk.ukuu.org.uk>
+ <BANLkTikz+PrQY2egkPTiacDSH5-Gkqkbww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikz+PrQY2egkPTiacDSH5-Gkqkbww@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/td/tg/
+On Wed, May 11, 2011 at 01:18:07AM +0200, Patrik Jakobsson wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-throttle.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> I agree, it's not a good way to handle it, but since I haven't been
+> able to pinpoint the problem (and this is staging) it's something that
+> works for now. Perhaps a nicer way to get around it is by checking
+> against the dmi system id. That way it would be transparent to the
+> user. But you might prefer we fix the real problem instead of hacking
+> around it.
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 0475a22a420d..e7986b8a0085 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -1072,7 +1072,7 @@ int blk_throtl_init(struct request_queue *q)
- 	/* Practically unlimited BW */
- 	tg->bps[0] = tg->bps[1] = -1;
- 	tg->iops[0] = tg->iops[1] = -1;
--	td->limits_changed = false;
-+	tg->limits_changed = false;
- 
- 	/*
- 	 * Set root group reference to 2. One reference will be dropped when
+Assuming the VBT data is anything like 915, it should be possible to 
+parse LVDS presence that way.
+
 -- 
-1.7.5
-
+Matthew Garrett | mjg59@srcf.ucam.org
