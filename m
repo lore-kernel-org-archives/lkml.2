@@ -1,224 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab1EKTUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:20:36 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63067 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750840Ab1EKTUf (ORCPT
+	id S1754577Ab1EKTVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:21:18 -0400
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:49595 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab1EKTVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:20:35 -0400
-Message-ID: <4DCAE163.2050602@metafoo.de>
-Date: Wed, 11 May 2011 12:20:03 -0700
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "'Grant Likely'" <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        toshiharu-linux@dsn.okisemi.com
-Subject: Re: Question: GPIO driver how to get irq_base
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com>
-In-Reply-To: <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 May 2011 15:21:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
+	:cc:date:in-reply-to:references:content-type
+	:content-transfer-encoding:message-id:mime-version; q=dns; s=
+	sasl; b=sIIJqGmgONMZe3CJt4jUujq2uyJ0FCLDCfKbrkDmrYO00JpTdn3s0ua9
+	7IHWz4P3K7qgMaFnmKrEGmG/wpY4TQCw2u1JGK6souQvxsgKW+n0+cQEuDxhq+vb
+	K1afrqlX3gyk1/yOFkIi5lmJ2Yj+2oxjp7vSU/9d++PxOKDQSq0=
+Subject: Re: [PATCH 1/7] ns: proc files for namespace naming policy.
+From: Nathan Lynch <ntl@pobox.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Date: Wed, 11 May 2011 14:20:48 -0500
+In-Reply-To: <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+ <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1305141667.1236.47.camel@orca.stoopid.dyndns.org>
+Mime-Version: 1.0
+X-Pobox-Relay-ID: 1CDF8490-7C04-11E0-AF58-BBB7F5B2FB1A-04752483!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2011 10:54 PM, Tomoya MORINAGA wrote:
-> Hi Lars,
-> 
-> Did you see this email ?
-> I'm waiting for your response.
-> 
+Hi Eric,
 
-Hi
-
-Well, it looks as if io-apic assumes that IRQ18 is reserved for itself, while
-it actually is requested by your driver. But that's all I can say. I'm not
-familiar with the x86 irq code, so I've no idea what the proper fix would be.
-
-- Lars
+A few comments on your patch set.
 
 
-> Thanks,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
-> 
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org 
->> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of 
->> Tomoya MORINAGA
->> Sent: Monday, April 25, 2011 1:04 PM
->> To: 'Lars-Peter Clausen'
->> Cc: 'Grant Likely'; linux-kernel@vger.kernel.org; 
->> toshiharu-linux@dsn.okisemi.com
->> Subject: RE: Question: GPIO driver how to get irq_base
->>
->> Hi Lars,
->>
->> On Saturday, April 23, 2011 7:15 PM, Lars-Peter Clausen wrote:
->>> It looks as both your driver and IO-APIC have allocated the 
->> same IRQ. 
->>> You could try to add some debug code to 
->> alloc_irq_and_cfg_at to figure 
->>> out what is going wrong.
->>>
->>> - Lars
->>
->> Adding debug code like below.
->>
->> //////////////////////////////////////////////////////////////
->> ///////////////////////////////////
->> static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, 
->> int node) {
->> 	int res = irq_alloc_desc_at(at, node);
->> 	struct irq_cfg *cfg;
->> printk("%s:1 at=%d node=%d res=%d\n", __func__, at, node, res);
->> 	if (res < 0) {
->> printk("%s:2\n", __func__);
->> 		if (res != -EEXIST)
->> 			return NULL;
->> printk("%s:3\n", __func__);
->> 		cfg = get_irq_chip_data(at);
->> printk("%s:4\n", __func__);
->> 		if (cfg)
->> 			return cfg;
->> 	}
->>
->> 	cfg = alloc_irq_cfg(at, node);
->> printk("%s:5cfg=%p\n", __func__, cfg);
->> 	if (cfg)
->> 		set_irq_chip_data(at, cfg);
->> 	else
->> 		irq_free_desc(at);
->> printk("%s:6cfg=%p\n", __func__, cfg);
->> 	return cfg;
->> }
->> //////////////////////////////////////////////////////////////
->> ///////////////////////////////////
->>
->> The following is kernel boot log.
->>
->> alloc_irq_and_cfg_at:1 at=1 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=0 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=3 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=4 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=5 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=6 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=7 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=8 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=9 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=10 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=11 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=12 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=13 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=14 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:1 at=15 node=0 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->> alloc_irq_and_cfg_at:1 at=4 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->> alloc_irq_and_cfg_at:1 at=8 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->> alloc_irq_and_cfg_at:1 at=13 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->> alloc_irq_and_cfg_at:1 at=1 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->> alloc_irq_and_cfg_at:1 at=12 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->> alloc_irq_and_cfg_at:1 at=16 node=-1 res=16 
->> alloc_irq_and_cfg_at:5cfg=f599c1b0
->> alloc_irq_and_cfg_at:6cfg=f599c1b0
->>
->> alloc_irq_and_cfg_at:1 at=17 node=-1 res=17 
->> alloc_irq_and_cfg_at:5cfg=f599c1a0
->> alloc_irq_and_cfg_at:6cfg=f599c1a0
->>
->> alloc_irq_and_cfg_at:1 at=19 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->> alloc_irq_and_cfg_at:5cfg=f5957dc0
->> alloc_irq_and_cfg_at:6cfg=f5957dc0
->>
->> alloc_irq_and_cfg_at:1 at=18 node=-1 res=-17
->> alloc_irq_and_cfg_at:2
->> alloc_irq_and_cfg_at:3
->> alloc_irq_and_cfg_at:4
->>
->>
->> With Best Regards,
->> -----------------------------------------
->> Tomoya MORINAGA
->> OKI SEMICONDUCTOR CO., LTD.
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe 
->> linux-kernel" in the body of a message to 
->> majordomo@vger.kernel.org More majordomo info at  
->> http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
+On Fri, 2011-05-06 at 19:24 -0700, Eric W. Biederman wrote:
+> diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+> index d15aa1b..74b48cf 100644
+> --- a/fs/proc/inode.c
+> +++ b/fs/proc/inode.c
+> @@ -28,6 +28,7 @@ static void proc_evict_inode(struct inode *inode)
+>  {
+>  	struct proc_dir_entry *de;
+>  	struct ctl_table_header *head;
+> +	const struct proc_ns_operations *ns_ops;
+>  
+>  	truncate_inode_pages(&inode->i_data, 0);
+>  	end_writeback(inode);
+> @@ -44,6 +45,10 @@ static void proc_evict_inode(struct inode *inode)
+>  		rcu_assign_pointer(PROC_I(inode)->sysctl, NULL);
+>  		sysctl_head_put(head);
+>  	}
+> +	/* Release any associated namespace */
+> +	ns_ops = PROC_I(inode)->ns_ops;
+> +	if (ns_ops && ns_ops->put)
+> +		ns_ops->put(PROC_I(inode)->ns);
+
+Is it ever valid for ns_ops->put to be null?  If not, I suggest removing
+the check.
+
+
+> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+> new file mode 100644
+> index 0000000..6ae9f07
+> --- /dev/null
+> +++ b/fs/proc/namespaces.c
+
+...
+
+> +static struct dentry *proc_ns_dir_lookup(struct inode *dir,
+> +				struct dentry *dentry, struct nameidata *nd)
+> +{
+> +	struct dentry *error;
+> +	struct task_struct *task = get_proc_task(dir);
+> +	const struct proc_ns_operations **entry, **last;
+> +	unsigned int len = dentry->d_name.len;
+> +
+> +	error = ERR_PTR(-ENOENT);
+> +
+> +	if (!task)
+> +		goto out_no_task;
+> +
+> +	error = ERR_PTR(-EPERM);
+> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+> +		goto out;
+> +
+> +	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
+> +	for (entry = ns_entries; entry <= last; entry++) {
+> +		if (strlen((*entry)->name) != len)
+> +			continue;
+> +		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
+> +			break;
+> +	}
+> +	if (entry > last)
+> +		goto out;
+
+This returns EPERM when it should return ENOENT?
+
+
+> +
+> +	error = proc_ns_instantiate(dir, dentry, task, *entry);
+> +out:
+> +	put_task_struct(task);
+> +out_no_task:
+> +	return error;
+> +}
+
+...
+
+> --- a/include/linux/proc_fs.h
+> +++ b/include/linux/proc_fs.h
+> @@ -250,6 +257,15 @@ kclist_add(struct kcore_list *new, void *addr, size_t size, int type)
+>  extern void kclist_add(struct kcore_list *, void *, size_t, int type);
+>  #endif
+>  
+> +struct nsproxy;
+> +struct proc_ns_operations {
+> +	const char *name;
+> +	int type;
+> +	void *(*get)(struct task_struct *task);
+> +	void (*put)(void *ns);
+> +	int (*install)(struct nsproxy *nsproxy, void *ns);
+> +};
+> +
+>  union proc_op {
+>  	int (*proc_get_link)(struct inode *, struct path *);
+>  	int (*proc_read)(struct task_struct *task, char *page);
+> @@ -268,6 +284,8 @@ struct proc_inode {
+>  	struct proc_dir_entry *pde;
+>  	struct ctl_table_header *sysctl;
+>  	struct ctl_table *sysctl_entry;
+> +	void *ns;
+> +	const struct proc_ns_operations *ns_ops;
+>  	struct inode vfs_inode;
+>  };
+
+Not that I have any better ideas, but it seems a bit undesirable to
+increase the size of proc_inode for this one purpose.
+
 
