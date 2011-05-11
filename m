@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1EKPoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:44:10 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:44674 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754546Ab1EKPoH (ORCPT
+	id S1754718Ab1EKPon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:44:43 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33672 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab1EKPoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:44:07 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=bsf5E42v+FhKBk/pyJxMWpxECYDl03Sbra0huR/ArJ4Xzy51ustDoH55Nn7c878dKo5YPwEB7BxRDBydvw2a74Q7/eFa4EZ0l/ZBcghXoFDyIvCKMecd0E8+41Y62NdB;
-Date: Wed, 11 May 2011 08:43:54 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Allen Kay <allen.m.kay@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
- register_slot
-Message-ID: <20110511084354.49eee757@jbarnes-desktop>
-In-Reply-To: <1305120818.26692.394.camel@zakaz.uk.xensource.com>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
-	<20110304104251.45b257c4@jbarnes-desktop>
-	<1299595858.17339.512.camel@zakaz.uk.xensource.com>
-	<1299601032.17339.525.camel@zakaz.uk.xensource.com>
-	<alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
-	<20110316083205.405910ac@jbarnes-desktop>
-	<alpine.DEB.2.00.1103161610110.3382@kaball-desktop>
-	<1305120818.26692.394.camel@zakaz.uk.xensource.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 11 May 2011 11:44:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=iiJFZo9UXzdDBV88e8BeEPcU8peRyOclZrwGiZ1MZtj1ya01kOPYL9B6VyG9gfpb4i
+         ctruGJyOBx33Ht7fomjs9UY85rYi75hjboKcJCQTjitlhu4pLzXKPU1pkezevIrE736L
+         GUHtxun4cxUZ9CRGJS5AlHEfZFCNIbR9tYOwc=
+MIME-Version: 1.0
+In-Reply-To: <1305127885.2914.241.camel@laptop>
+References: <tip-99ee5315dac6211e972fa3f23bcc9a0343ff58c4@git.kernel.org>
+ <1305109433.2914.208.camel@laptop> <BANLkTi=j6eSyyEdGgUeZhQLJVa+meK_W6A@mail.gmail.com>
+ <1305121541.2914.213.camel@laptop> <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
+ <1305122518.2914.224.camel@laptop> <BANLkTim5WzcrzSiqhwXrhDDwcxF=JTpZew@mail.gmail.com>
+ <1305124250.2914.225.camel@laptop> <BANLkTimvqAY9hwHujUVoQhN2eZQz-MVhgg@mail.gmail.com>
+ <1305125333.2914.229.camel@laptop> <BANLkTi=aOsRs4iS_j41=NNESC2rgmwtpbg@mail.gmail.com>
+ <1305126680.2914.238.camel@laptop> <BANLkTinFwmd-gEmSFpTuBg_dueXWGg5mxQ@mail.gmail.com>
+ <1305127885.2914.241.camel@laptop>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 11 May 2011 17:44:01 +0200
+Message-ID: <BANLkTi==fti+0ABXscjRCT5JUnfy0eH63g@mail.gmail.com>
+Subject: Re: [tip:timers/core] timerfd: Allow timers to be cancelled when
+ clock was set
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        johnstul@us.ibm.com, davidel@xmailserver.org, virtuoso@slind.org,
+        tglx@linutronix.de, chris.friesen@genband.com, kirill@shutemov.name,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011 14:33:38 +0100
-Ian Campbell <ijc@hellion.org.uk> wrote:
+On Wed, May 11, 2011 at 17:31, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-05-11 at 17:17 +0200, Kay Sievers wrote:
+>>
+>> If you think that needs to change, please discuss/provide
+>> alternatives, which we can check if they sufficiently work for us,
+>> like we did with this patch.
+>
+> Since this is a published interface that's not the way things work,
+> first thing is to revert this to avoid us getting stuck with this crap.
 
-> Hi Jesse,
-> 
-> On Wed, 2011-03-16 at 16:13 +0000, Stefano Stabellini wrote:
-> > On Wed, 16 Mar 2011, Jesse Barnes wrote:
-> > > On Wed, 16 Mar 2011 12:34:10 +0000
-> > > Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > > 
-> > > > Jesse,
-> > > > do you have any comments on the following patch?
-> > > > Also, are you OK with taking "set current_state to D0 in register_slot"
-> > > > in your tree? Otherwise should I send a pull request to Linus with the
-> > > > patch and your ack?
-> > > 
-> > > Yeah, I think the patch is ok, I can send it to Linus either as part of
-> > > my 2.6.39 pull req (though it's probably too late for that) or in my
-> > > next -fixes pull.
-> > 
-> > Great, thanks!
-> > 
-> > Just to be clear there are two different patches, the first one is "set
-> > current_state to D0 in register_slot":
-> > 
-> > https://lkml.org/lkml/2011/2/28/296
-> > 
-> > the second one by Ian Campbell is "acpiphp: assume device is in state D0
-> > after powering on a slot.":
-> > 
-> > https://lkml.org/lkml/2011/3/8/212
-> 
-> Looks like the first of these is in your tree but not the second. Do you
-> want me to resend and/or rework it?
+What? That is not merged. Anything that would need fixing can still be
+fixed. But I guess you need to do more than just calling it 'crap'.
 
-Yeah, please re-send it, I confused the two and thought Stefano's was
-sufficient.
+>> But please stop rhetorically asking me if I want a slower kernel, and
+>> chance your tone. That will get us nowhere.
+>
+> Ah, we've got our patch and we'll stick to it no matter what the
+> consequences,
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> very good attitude that.
+
+It's not my patch. I just like its interface very much.
+
+Kay
