@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1EKRRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:17:48 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:37861 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab1EKRRm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:17:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=tscj2IU2y2Jypf6Lp665xxmj+aY07OeFXgM0sLNzpE0BmRvnkl8lgPkmI9C2G9QgIl
-         r+HYE4gkW2Ig4+gvb3WHXdLcKnMeABA2To51rJG3OjMJq3aJ6O+JWvnogOaL/Mr+MQTu
-         z0KsPGFxAAf0r+2YjmCl4SNdo4sNlr/+o34WM=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v1 10/10] add tracepoints
-Date: Thu, 12 May 2011 02:16:49 +0900
-Message-Id: <18652a0d98658a118d52d124b1d9f9c4a9702638.1305132792.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1305132792.git.minchan.kim@gmail.com>
-References: <cover.1305132792.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1305132792.git.minchan.kim@gmail.com>
-References: <cover.1305132792.git.minchan.kim@gmail.com>
+	id S1753367Ab1EKRTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:19:18 -0400
+Received: from tex.lwn.net ([70.33.254.29]:43197 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439Ab1EKRRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 13:17:34 -0400
+Date: Wed, 11 May 2011 11:17:32 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH 3/5] PM: Support for system-wide power transitions in
+ generic power domains
+Message-ID: <20110511111732.2f75713a@bike.lwn.net>
+In-Reply-To: <201105082324.19674.rjw@sisk.pl>
+References: <201104290154.12966.rjw@sisk.pl>
+	<201105082320.57185.rjw@sisk.pl>
+	<201105082324.19674.rjw@sisk.pl>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds some tracepints for see the effect this patch
-series.
-This tracepoints isn't for merge but just see the effect.
+Hi, Rafael,
 
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/compaction.c |    2 ++
- mm/migrate.c    |    7 +++++++
- mm/vmscan.c     |    3 +--
- 3 files changed, 10 insertions(+), 2 deletions(-)
+One small question that came to mind as I was looking at this patch:
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 00e710a..92c180d 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -16,6 +16,7 @@
- #include <linux/sysfs.h>
- #include "internal.h"
- 
-+#include <trace/events/inorder_putback.h>
- #define CREATE_TRACE_POINTS
- #include <trace/events/compaction.h>
- 
-@@ -333,6 +334,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 		if (__isolate_inorder_lru_page(page, mode, 0, &prev_page) != 0)
- 			continue;
- 
-+		trace_mm_compact_isolate(prev_page, page);
- 		VM_BUG_ON(PageTransCompound(page));
- 
- 		/* Successfully isolated */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index f94fe65..6a2eca9 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -39,6 +39,9 @@
- 
- #include "internal.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/inorder_putback.h>
-+
- #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
- 
- /*
-@@ -96,10 +99,12 @@ void putback_inorder_lru_pages(struct inorder_lru *l)
- 		spin_lock_irq(&zone->lru_lock);
- 		prev = page->ilru.prev_page;
- 		if (keep_lru_order(page, prev)) {
-+			trace_mm_compaction_inorder(page, page);
- 			putback_page_to_lru(page, prev);
- 			spin_unlock_irq(&zone->lru_lock);
- 		}
- 		else {
-+			trace_mm_compaction_outoforder(page, page);
- 			spin_unlock_irq(&zone->lru_lock);
- 			putback_lru_page(page);
- 		}
-@@ -1052,6 +1057,7 @@ move_newpage:
- 	if (keep_lru_order(page, prev_page)) {
- 		putback_page_to_lru(newpage, prev_page);
- 		spin_unlock_irq(&zone->lru_lock);
-+		trace_mm_compaction_inorder(page, newpage);
- 		/*
- 		 * The newpage will replace LRU position of old page and
- 		 * old one would be freed. So let's adjust prev_page of pages
-@@ -1063,6 +1069,7 @@ move_newpage:
- 	else {
- 
- 		spin_unlock_irq(&zone->lru_lock);
-+		trace_mm_compaction_inorder(page, newpage);
- 		putback_lru_page(newpage);
- 	}
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 62d5186..2e7cbad 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -49,10 +49,9 @@
- #include <linux/swapops.h>
- 
- #include "internal.h"
--
-+#include <trace/events/inorder_putback.h>
- #define CREATE_TRACE_POINTS
- #include <trace/events/vmscan.h>
--
- /*
-  * reclaim_mode determines how the inactive list is shrunk
-  * RECLAIM_MODE_SINGLE: Reclaim only order-0 pages
--- 
-1.7.1
+> +/**
+> + * pm_genpd_powered_down - Check if power has been removed from a power domain.
+> + * @genpd: Power domain to check.
+> + */
+> +static bool pm_genpd_powered_down(struct generic_power_domain *genpd)
+> +{
+> +	bool ret;
+> +
+> +	mutex_lock(&genpd->lock);
+> +	ret = genpd->power_is_off;
+> +	mutex_unlock(&genpd->lock);
+> +
+> +	return ret;
 
+I'm not quite sure why this function exists?  The lock doesn't really
+change anything, since the power state can change before or after this
+check regardless.  If you need the power state to be stable, it seems like
+the lock needs to be taken further up the stack; otherwise simply checking
+genpd->power_is_off directly would seem to be sufficient. Am I missing
+something?
+
+Thanks,
+
+jon
