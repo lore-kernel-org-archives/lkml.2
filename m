@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab1EKWxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:53:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59546 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932565Ab1EKWxf (ORCPT
+	id S932643Ab1EKWy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:54:26 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48879 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab1EKWyY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:53:35 -0400
-Date: Wed, 11 May 2011 15:53:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: mmotm 2011-04-29 - wonky VmRSS and VmHWM values after swapping
-Message-Id: <20110511155324.5c366900.akpm@linux-foundation.org>
-In-Reply-To: <1305043485.2914.110.camel@laptop>
-References: <201104300002.p3U02Ma2026266@imap1.linux-foundation.org>
-	<49683.1304296014@localhost>
-	<8185.1304347042@localhost>
-	<20110502164430.eb7d451d.akpm@linux-foundation.org>
-	<1305043485.2914.110.camel@laptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 May 2011 18:54:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WMz15hMC75j9r7xQ1Y7ZbiNHL5zUsCncRxBH8U2xRTLQqwM53KaldMJbj/+q1bp+wD
+         Dx+brLVC1ngq79nlukAOOt1cYNfBrQhzn73KBaBjdQArtmYfnWLKl84KibDsDHgbvEMH
+         HqgUwKgVxFPvjQmfO4SteKKY2Ba+2F+wbA+q0=
+MIME-Version: 1.0
+In-Reply-To: <20110511210745.GA4875@kroah.com>
+References: <cover.1305103212.git.mfm@muteddisk.com>
+	<56b004a084644ec7e9f632d6633aa34177a59818.1305103212.git.mfm@muteddisk.com>
+	<20110511210745.GA4875@kroah.com>
+Date: Wed, 11 May 2011 15:54:23 -0700
+Message-ID: <BANLkTi=R7cwFGbrMiQAENS4R1BivREEh0A@mail.gmail.com>
+Subject: Re: [PATCH 03/12] staging: usbip: fix header includes
+From: matt mooney <mfmooney@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 May 2011 18:04:45 +0200
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Wed, May 11, 2011 at 2:07 PM, Greg KH <greg@kroah.com> wrote:
+> On Wed, May 11, 2011 at 01:54:15AM -0700, matt mooney wrote:
+>> Modify header directives to include what is needed by each file and
+>> not already included in its own header.
+>
+> This patch didn't apply properly:
+>        patching file drivers/staging/usbip/stub.h
+>        patching file drivers/staging/usbip/stub_dev.c
+>        patching file drivers/staging/usbip/stub_main.c
+>        patching file drivers/staging/usbip/stub_rx.c
+>        patching file drivers/staging/usbip/stub_tx.c
+>        patching file drivers/staging/usbip/usbip_common.c
+>        patching file drivers/staging/usbip/usbip_common.h
+>        patching file drivers/staging/usbip/usbip_event.c
+>        patching file drivers/staging/usbip/vhci.h
+>        patching file drivers/staging/usbip/vhci_hcd.c
+>        patching file drivers/staging/usbip/vhci_rx.c
+>        patching file drivers/staging/usbip/vhci_sysfs.c
+>        Hunk #1 FAILED at 17.
+>        1 out of 1 hunk FAILED -- saving rejects to file drivers/staging/usbip/vhci_sysfs.c.rej
+>        patching file drivers/staging/usbip/vhci_tx.c
+>
+> What tree did you make it against?
 
-> > hm, me too.  After boot, hald has a get_mm_counter(mm, MM_ANONPAGES) of
-> > 0xffffffffffff3c27.  Bisected to Pater's
-> > mm-extended-batches-for-generic-mmu_gather.patch, can't see how it did
-> > that.
-> > 
-> 
-> I haven't quite figured out how to reproduce, but does the below cure
-> things? If so, it should probably be folded into the first patch
-> (mm-mmu_gather-rework.patch?) since that is the one introducing this.
-> 
-> ---
-> Subject: mm: Fix RSS zap_pte_range() accounting
-> 
-> Since we update the RSS counters when breaking out of the loop and
-> release the PTE lock, we should start with fresh deltas when we
-> restart the gather loop.
-> 
-> Reported-by: Valdis.Kletnieks@vt.edu
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
-> Index: linux-2.6/mm/memory.c
-> ===================================================================
-> --- linux-2.6.orig/mm/memory.c
-> +++ linux-2.6/mm/memory.c
-> @@ -1120,8 +1120,8 @@ static unsigned long zap_pte_range(struc
->  	spinlock_t *ptl;
->  	pte_t *pte;
->  
-> -	init_rss_vec(rss);
->  again:
-> +	init_rss_vec(rss);
->  	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
->  	arch_enter_lazy_mmu_mode();
->  	do {
+Hmm, this was all done on linux-next-20110510. I will rebase it onto
+your staging-next tree and resend it.
 
-That fixed the negative hald VmHWM output on my test box.
+-- 
+GPG-Key: 9AFE00EA
