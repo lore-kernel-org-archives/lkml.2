@@ -1,247 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab1EKP6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:58:40 -0400
-Received: from zfrontend2.aha.ru ([195.2.83.148]:35992 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754402Ab1EKP6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:58:38 -0400
-From: "werner" <w.landgraf@ru.ru>
-Subject: 2.6.39-rc7-git1 boot error message (no crash)
-To: linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Wed, 11 May 2011 00:58:11 -0400
-Message-ID: <web-520830057@zbackend1.aha.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+	id S1752602Ab1EKR2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:28:40 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:24824 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab1EKR2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 13:28:38 -0400
+X-AuditID: cbfee61b-b7bb4ae000002c54-a5-4dca1c22065e
+Date: Wed, 11 May 2011 14:18:24 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [RFC PATCH v3 1/2] PM / Core: suspend_again callback for suspend_ops.
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
+        Len Brown <len.brown@intel.com>
+Message-id: <1305091105-27173-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 11 May 2011 05:18:25.0817 (UTC)
+ FILETIME=[DADC9090:01CC0F9A]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below an error message during boot, on a Qosmio Toshiba 
-Laptop of a neighbour, no crash and normal working.  On a 
-Packard-Bell laptop of another person, nor on my own 
-computer, occurs this error message.
+A system or a device may need to control suspend/wakeup events. It may
+want to wakeup the system after a predefined amount of time or at a
+predefined event decided while entering suspend for polling or delayed
+work. Then, it may want to enter suspend again if its predefined wakeup
+condition is the only wakeup reason and there is no outstanding events;
+thus, it does not wakeup the userspace unnecessary or unnecessary
+devices and keeps suspended as long as possible (saving the power).
 
-Probably not important.
+Enabling a system to wakeup after a specified time can be easily
+achieved by using RTC. However, to enter suspend again immediately
+without invoking userland and unrelated devices, we need additional
+features in the suspend framework.
 
-For avaliation / check / correction.
+Such need comes from:
 
+1. Monitoring a critical device status without interrupts that can
+wakeup the system. (in-suspend polling)
+ An example is ambient temperature monitoring that needs to shut down
+the system or a specific device function if it is too hot or cold. The
+temperature of a specific device may be needed to be monitored as well;
+e.g., a charger monitors battery temperature in order to stop charging
+if overheated.
 
-W.Landgraf
+2. Execute critical "delayed work" at suspend.
+ A driver or a system/board may have a delayed work (or any similar
+things) that it wants to execute at the requested time.
+ For example, some chargers want to check the battery voltage some
+time (e.g., 30 seconds) after the battery is fully charged and the
+charger has stopped. Then, the charger restarts charging if the voltage
+has dropped more than a threshold, which is smaller than "restart-charger"
+voltage, which is a threshold to restart charging regardless of the
+time passed.
 
+This patch allows to add "suspend_again" callback at struct
+platform_suspend_ops and let the "suspend_again" callback return true if
+the system is required to enter suspend again after the current instance
+of wakeup. Device-wise suspend_again implemented at dev_pm_ops or
+syscore is not done because: a) suspend_again feature is usually under
+platform-wise decision and controls the behavior of the whole platform
+and b) There are very limited devices related to the usage cases of
+suspend_again; chargers and temperature sensors are mentioned so far.
 
-================
-May 11 01:01:46 localhost kernel: ------------[ cut here 
-]------------
-May 11 01:01:46 localhost kernel: WARNING: at 
-fs/sysfs/dir.c:455 sysfs_add_one+0x83/0x95()
-May 11 01:01:46 localhost kernel: Hardware name: Qosmio 
-E10
-May 11 01:01:46 localhost kernel: sysfs: cannot create 
-duplicate filename 
-'/devices/pci0000:00/0000:00:1e.0/0000:02:0b.4/microamps_requested_vmmc'
-May 11 01:01:46 localhost kernel: Modules linked in:
-May 11 01:01:46 localhost kernel: Pid: 1, comm: swapper 
-Not tainted 2.6.39-rc7-git1-i486-1sys #1
-May 11 01:01:46 localhost kernel: Call Trace:
-May 11 01:01:46 localhost kernel:  [<c112d5e2>] ? 
-sysfs_add_one+0x83/0x95
-May 11 01:01:46 localhost kernel:  [<c1040e25>] 
-warn_slowpath_common+0x7a/0x8f
-May 11 01:01:46 localhost kernel:  [<c112d5e2>] ? 
-sysfs_add_one+0x83/0x95
-May 11 01:01:46 localhost kernel:  [<c1040ec5>] 
-warn_slowpath_fmt+0x33/0x35
-May 11 01:01:46 localhost kernel:  [<c112d5e2>] 
-sysfs_add_one+0x83/0x95
-May 11 01:01:46 localhost kernel:  [<c112cfd8>] 
-sysfs_add_file_mode+0x4a/0x72
-May 11 01:01:46 localhost kernel:  [<c112d018>] 
-sysfs_add_file+0x18/0x1c
-May 11 01:01:46 localhost kernel:  [<c112d0b3>] 
-sysfs_create_file+0x25/0x27
-May 11 01:01:46 localhost kernel:  [<c1792ac8>] 
-device_create_file+0x18/0x1a
-May 11 01:01:46 localhost kernel:  [<c1693b3a>] 
-create_regulator+0xd8/0x21d
-May 11 01:01:46 localhost kernel:  [<c1693dde>] 
-_regulator_get+0x15f/0x1ba
-May 11 01:01:46 localhost kernel:  [<c1693e5c>] 
-regulator_get+0xf/0x11
-May 11 01:01:46 localhost kernel:  [<c1cd492d>] 
-sdhci_add_host+0x586/0x6d1
-May 11 01:01:46 localhost kernel:  [<c15945ab>] ? 
-pci_ioremap_bar+0x5b/0x60
-May 11 01:01:46 localhost kernel:  [<c1eb3c28>] 
-sdhci_pci_probe_slot+0x1c1/0x204
-May 11 01:01:46 localhost kernel:  [<c1eb3d71>] ? 
-sdhci_pci_probe+0x106/0x1cd
-May 11 01:01:46 localhost kernel:  [<c1eb3dd9>] 
-sdhci_pci_probe+0x16e/0x1cd
-May 11 01:01:46 localhost kernel:  [<c15947dd>] 
-local_pci_probe+0x41/0x85
-May 11 01:01:46 localhost kernel:  [<c1595352>] 
-pci_device_probe+0x48/0x6b
-May 11 01:01:46 localhost kernel:  [<c1794899>] 
-really_probe+0x7f/0x11c
-May 11 01:01:46 localhost kernel:  [<c179b256>] ? 
-pm_runtime_barrier+0x4d/0x79
-May 11 01:01:46 localhost kernel:  [<c1794967>] 
-driver_probe_device+0x31/0x46
-May 11 01:01:46 localhost kernel:  [<c17949c4>] 
-__driver_attach+0x48/0x64
-May 11 01:01:46 localhost kernel:  [<c17941f6>] 
-bus_for_each_dev+0x42/0x6c
-May 11 01:01:46 localhost kernel:  [<c179473f>] 
-driver_attach+0x1e/0x20
-May 11 01:01:46 localhost kernel:  [<c179497c>] ? 
-driver_probe_device+0x46/0x46
-May 11 01:01:46 localhost kernel:  [<c1793c0b>] 
-bus_add_driver+0xc6/0x20a
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c1794eef>] 
-driver_register+0x98/0xf8
-May 11 01:01:46 localhost kernel:  [<c1794eef>] ? 
-driver_register+0x98/0xf8
-May 11 01:01:46 localhost kernel:  [<c1695525>] ? 
-tty_register_driver+0x15e/0x1e2
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c1595541>] 
-__pci_register_driver+0x3d/0x96
-May 11 01:01:46 localhost kernel:  [<c1ec9c37>] ? 
-printk+0x1d/0x1f
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c24ba7de>] 
-sdhci_drv_init+0x14/0x16
-May 11 01:01:46 localhost kernel:  [<c1001174>] 
-do_one_initcall+0x8c/0x142
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c1082dfc>] ? 
-irq_to_desc+0x8/0x1e
-May 11 01:01:46 localhost kernel:  [<c24ba7ca>] ? 
-sdhci_drv_init+0x22/0x22
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c245b293>] 
-kernel_init+0x96/0x12a
-May 11 01:01:46 localhost kernel:  [<c1ecd4c6>] 
-kernel_thread_helper+0x6/0x10
-May 11 01:01:46 localhost kernel: ---[ end trace 
-acbbad639e5c6e5b ]---
-May 11 01:01:46 localhost kernel: create_regulator: dummy: 
-could not add regulator_dev requested microamps sysfs 
-entry
-May 11 01:01:46 localhost kernel: _regulator_get: 
-0000:02:0b.4 supply vmmc not found, using dummy regulator
-May 11 01:01:46 localhost kernel: ------------[ cut here 
-]------------
-May 11 01:01:46 localhost kernel: WARNING: at 
-fs/sysfs/dir.c:455 sysfs_add_one+0x83/0x95()
-May 11 01:01:46 localhost kernel: Hardware name: Qosmio 
-E10
-May 11 01:01:46 localhost kernel: sysfs: cannot create 
-duplicate filename 
-'/devices/pci0000:00/0000:00:1e.0/0000:02:0b.4/microamps_requested_vmmc'
-May 11 01:01:46 localhost kernel: Modules linked in:
-May 11 01:01:46 localhost kernel: Pid: 1, comm: swapper 
-Tainted: G        W   2.6.39-rc7-git1-i486-1sys #1
-May 11 01:01:46 localhost kernel: Call Trace:
-May 11 01:01:46 localhost kernel:  [<c112d5e2>] ? 
-sysfs_add_one+0x83/0x95
-May 11 01:01:46 localhost kernel:  [<c1040e25>] 
-warn_slowpath_common+0x7a/0x8f
-May 11 01:01:46 localhost kernel:  [<c112d5e2>] ? 
-sysfs_add_one+0x83/0x95
-May 11 01:01:46 localhost kernel:  [<c1040ec5>] 
-warn_slowpath_fmt+0x33/0x35
-May 11 01:01:46 localhost kernel:  [<c112d5e2>] 
-sysfs_add_one+0x83/0x95
-May 11 01:01:46 localhost kernel:  [<c112cfd8>] 
-sysfs_add_file_mode+0x4a/0x72
-May 11 01:01:46 localhost kernel:  [<c112d018>] 
-sysfs_add_file+0x18/0x1c
-May 11 01:01:46 localhost kernel:  [<c112d0b3>] 
-sysfs_create_file+0x25/0x27
-May 11 01:01:46 localhost kernel:  [<c1792ac8>] 
-device_create_file+0x18/0x1a
-May 11 01:01:46 localhost kernel:  [<c1693b3a>] 
-create_regulator+0xd8/0x21d
-May 11 01:01:46 localhost kernel:  [<c1693dde>] 
-_regulator_get+0x15f/0x1ba
-May 11 01:01:46 localhost kernel:  [<c1693e5c>] 
-regulator_get+0xf/0x11
-May 11 01:01:46 localhost kernel:  [<c1cd492d>] 
-sdhci_add_host+0x586/0x6d1
-May 11 01:01:46 localhost kernel:  [<c15945ab>] ? 
-pci_ioremap_bar+0x5b/0x60
-May 11 01:01:46 localhost kernel:  [<c1eb3c28>] 
-sdhci_pci_probe_slot+0x1c1/0x204
-May 11 01:01:46 localhost kernel:  [<c1eb3d71>] ? 
-sdhci_pci_probe+0x106/0x1cd
-May 11 01:01:46 localhost kernel:  [<c1eb3dd9>] 
-sdhci_pci_probe+0x16e/0x1cd
-May 11 01:01:46 localhost kernel:  [<c15947dd>] 
-local_pci_probe+0x41/0x85
-May 11 01:01:46 localhost kernel:  [<c1595352>] 
-pci_device_probe+0x48/0x6b
-May 11 01:01:46 localhost kernel:  [<c1794899>] 
-really_probe+0x7f/0x11c
-May 11 01:01:46 localhost kernel:  [<c179b256>] ? 
-pm_runtime_barrier+0x4d/0x79
-May 11 01:01:46 localhost kernel:  [<c1794967>] 
-driver_probe_device+0x31/0x46
-May 11 01:01:46 localhost kernel:  [<c17949c4>] 
-__driver_attach+0x48/0x64
-May 11 01:01:46 localhost kernel:  [<c17941f6>] 
-bus_for_each_dev+0x42/0x6c
-May 11 01:01:46 localhost kernel:  [<c179473f>] 
-driver_attach+0x1e/0x20
-May 11 01:01:46 localhost kernel:  [<c179497c>] ? 
-driver_probe_device+0x46/0x46
-May 11 01:01:46 localhost kernel:  [<c1793c0b>] 
-bus_add_driver+0xc6/0x20a
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c1794eef>] 
-driver_register+0x98/0xf8
-May 11 01:01:46 localhost kernel:  [<c1794eef>] ? 
-driver_register+0x98/0xf8
-May 11 01:01:46 localhost kernel:  [<c1695525>] ? 
-tty_register_driver+0x15e/0x1e2
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c1595541>] 
-__pci_register_driver+0x3d/0x96
-May 11 01:01:46 localhost kernel:  [<c1ec9c37>] ? 
-printk+0x1d/0x1f
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c24ba7de>] 
-sdhci_drv_init+0x14/0x16
-May 11 01:01:46 localhost kernel:  [<c1001174>] 
-do_one_initcall+0x8c/0x142
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c1082dfc>] ? 
-irq_to_desc+0x8/0x1e
-May 11 01:01:46 localhost kernel:  [<c24ba7ca>] ? 
-sdhci_drv_init+0x22/0x22
-May 11 01:01:46 localhost kernel:  [<c245b1fd>] ? 
-parse_early_options+0x25/0x25
-May 11 01:01:46 localhost kernel:  [<c245b293>] 
-kernel_init+0x96/0x12a
-May 11 01:01:46 localhost kernel:  [<c1ecd4c6>] 
-kernel_thread_helper+0x6/0x10
-May 11 01:01:46 localhost kernel: ---[ end trace 
-acbbad639e5c6e5c ]---
-May 11 01:01:46 localhost kernel: create_regulator: dummy: 
-could not add regulator_dev requested microamps sysfs 
-entry
+With suspend_again callback registered at struct platform_suspend_ops
+suspend_ops in kernel/power/suspend.c with suspend_set_ops by the
+platform, the suspend framework tries to enter suspend again by
+looping suspend_enter() if suspend_again has returned true and there has
+been no errors in the suspending sequence or pending wakeups (by
+pm_wakeup_pending).
+
+Tested at Exynos4-NURI.
+
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+--
+Changed from v2:
+	- moved (again) from dev_pm_ops to suspend_ops
+	- settled suspend_again point at around suspend_enter().
+Changes from v1:
+	- moved from syscore to dev_pm_ops
+	- added generic ops for subsystems.
+	- cleaned up suspend_again code at kernel/power/suspend.
 ---
-Professional hosting for everyone - http://www.host.ru
+ include/linux/suspend.h |    8 ++++++++
+ kernel/power/suspend.c  |   13 ++++++++++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 5a89e36..caf5e97 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -92,6 +92,13 @@ typedef int __bitwise suspend_state_t;
+  *	@enter() and @wake(), even if any of them fails.  It is executed after
+  *	a failing @prepare.
+  *
++ * @suspend_again: Returns whether the system should suspend again (true) or
++ *	not (false). If the platform wants to poll sensors or execute some
++ *	code during suspended without invoking userspace and most of devices,
++ *	suspend_again callback is the place assuming that periodic-wakeup or
++ *	alarm-wakeup is already setup. This allows to execute some codes while
++ *	being kept suspended in the view of userland and devices.
++ *
+  * @end: Called by the PM core right after resuming devices, to indicate to
+  *	the platform that the system has returned to the working state or
+  *	the transition to the sleep state has been aborted.
+@@ -113,6 +120,7 @@ struct platform_suspend_ops {
+ 	int (*enter)(suspend_state_t state);
+ 	void (*wake)(void);
+ 	void (*finish)(void);
++	bool (*suspend_again)(void);
+ 	void (*end)(void);
+ 	void (*recover)(void);
+ };
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 08515b4..e655f43 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -128,10 +128,12 @@ void __attribute__ ((weak)) arch_suspend_enable_irqs(void)
+ /**
+  *	suspend_enter - enter the desired system sleep state.
+  *	@state:		state to enter
++ *	@pm_wkup_pending:	indicates that the power transition in progress
++ *				should be aborted.
+  *
+  *	This function should be called after devices have been suspended.
+  */
+-static int suspend_enter(suspend_state_t state)
++static int suspend_enter(suspend_state_t state, bool *pm_wkup_pending)
+ {
+ 	int error;
+ 
+@@ -167,7 +169,8 @@ static int suspend_enter(suspend_state_t state)
+ 	if (!error)
+ 		error = syscore_suspend();
+ 	if (!error) {
+-		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
++		*pm_wkup_pending = pm_wakeup_pending();
++		if (!(suspend_test(TEST_CORE) || *pm_wkup_pending)) {
+ 			error = suspend_ops->enter(state);
+ 			events_check_enabled = false;
+ 		}
+@@ -202,6 +205,7 @@ static int suspend_enter(suspend_state_t state)
+ int suspend_devices_and_enter(suspend_state_t state)
+ {
+ 	int error;
++	bool pm_wkup_pending = false;
+ 
+ 	if (!suspend_ops)
+ 		return -ENOSYS;
+@@ -224,7 +228,10 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 	if (suspend_test(TEST_DEVICES))
+ 		goto Recover_platform;
+ 
+-	error = suspend_enter(state);
++	do {
++		error = suspend_enter(state, &pm_wkup_pending);
++	} while (suspend_ops->suspend_again && suspend_ops->suspend_again() &&
++		 !error && !pm_wkup_pending);
+ 
+  Resume_devices:
+ 	suspend_test_start();
+-- 
+1.7.4.1
+
