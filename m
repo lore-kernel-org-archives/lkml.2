@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab1EKVHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:07:21 -0400
+	id S1756307Ab1EKVHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:07:08 -0400
 Received: from c-76-97-164-112.hsd1.ga.comcast.net ([76.97.164.112]:55110 "EHLO
 	deneb.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756176Ab1EKVHL (ORCPT
+	with ESMTP id S1756176Ab1EKVG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:07:11 -0400
+	Wed, 11 May 2011 17:06:56 -0400
 X-Greylist: delayed 3155 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 17:06:39 EDT
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 08/16] C6X: add include files
-Date: Wed, 11 May 2011 16:13:55 -0400
-Message-Id: <1305144843-5058-9-git-send-email-msalter@redhat.com>
+Subject: [PATCH 09/16] C6X: add kernel files
+Date: Wed, 11 May 2011 16:13:56 -0400
+Message-Id: <1305144843-5058-10-git-send-email-msalter@redhat.com>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1305144843-5058-8-git-send-email-msalter@redhat.com>
+In-Reply-To: <1305144843-5058-9-git-send-email-msalter@redhat.com>
 References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
  <1305144843-5058-2-git-send-email-msalter@redhat.com>
  <1305144843-5058-3-git-send-email-msalter@redhat.com>
@@ -23,1083 +23,303 @@ References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
  <1305144843-5058-6-git-send-email-msalter@redhat.com>
  <1305144843-5058-7-git-send-email-msalter@redhat.com>
  <1305144843-5058-8-git-send-email-msalter@redhat.com>
+ <1305144843-5058-9-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/include/asm/Kbuild              |    2 +
- arch/c6x/include/asm/asm-offsets.h       |    1 +
- arch/c6x/include/asm/atomic.h            |    6 +
- arch/c6x/include/asm/auxvec.h            |    6 +
- arch/c6x/include/asm/bitops.h            |  181 +++++++++++++++
- arch/c6x/include/asm/bitsperlong.h       |    6 +
- arch/c6x/include/asm/bug.h               |    6 +
- arch/c6x/include/asm/bugs.h              |    6 +
- arch/c6x/include/asm/byteorder.h         |   12 +
- arch/c6x/include/asm/cache.h             |  373 ++++++++++++++++++++++++++++++
- arch/c6x/include/asm/cacheflush.h        |   67 ++++++
- arch/c6x/include/asm/checksum.h          |  116 +++++++++
- arch/c6x/include/asm/clkdev.h            |   45 ++++
- arch/c6x/include/asm/clock.h             |   73 ++++++
- arch/c6x/include/asm/cputime.h           |    6 +
- arch/c6x/include/asm/current.h           |    6 +
- arch/c6x/include/asm/delay.h             |   69 ++++++
- arch/c6x/include/asm/device.h            |    6 +
- arch/c6x/include/asm/div64.h             |    6 +
- arch/c6x/include/asm/dma-mapping.h       |  302 ++++++++++++++++++++++++
- arch/c6x/include/asm/dma.h               |   25 ++
- arch/c6x/include/asm/elf.h               |  115 +++++++++
- arch/c6x/include/asm/emergency-restart.h |    6 +
- arch/c6x/include/asm/errno.h             |    6 +
- arch/c6x/include/asm/fb.h                |    6 +
- arch/c6x/include/asm/fcntl.h             |    6 +
- arch/c6x/include/asm/ftrace.h            |    6 +
- arch/c6x/include/asm/futex.h             |    6 +
- arch/c6x/include/asm/gemac.h             |  146 ++++++++++++
- arch/c6x/include/asm/gmdio.h             |  217 +++++++++++++++++
- arch/c6x/include/asm/hardirq.h           |   22 ++
- arch/c6x/include/asm/hardware.h          |   21 ++
- arch/c6x/include/asm/hw_irq.h            |    6 +
- arch/c6x/include/asm/io.h                |    6 +
- arch/c6x/include/asm/ioctl.h             |    6 +
- arch/c6x/include/asm/ioctls.h            |    6 +
- arch/c6x/include/asm/ipcbuf.h            |    6 +
- arch/c6x/include/asm/irq.h               |  101 ++++++++
- arch/c6x/include/asm/irq_regs.h          |    6 +
- arch/c6x/include/asm/irqflags.h          |   71 ++++++
- arch/c6x/include/asm/kdebug.h            |    6 +
- arch/c6x/include/asm/kmap_types.h        |    6 +
- arch/c6x/include/asm/leds.h              |   22 ++
- arch/c6x/include/asm/linkage.h           |    6 +
- arch/c6x/include/asm/local.h             |    6 +
- arch/c6x/include/asm/mman.h              |    7 +
- arch/c6x/include/asm/mmu.h               |   20 ++
- arch/c6x/include/asm/mmu_context.h       |    6 +
- arch/c6x/include/asm/module.h            |   35 +++
- arch/c6x/include/asm/msgbuf.h            |    6 +
- arch/c6x/include/asm/mutex.h             |    6 +
- arch/c6x/include/asm/page.h              |   11 +
- arch/c6x/include/asm/param.h             |    6 +
- arch/c6x/include/asm/pci.h               |    6 +
- arch/c6x/include/asm/percpu.h            |    6 +
- arch/c6x/include/asm/pgalloc.h           |    6 +
- arch/c6x/include/asm/pgtable.h           |   83 +++++++
- arch/c6x/include/asm/pll.h               |   79 +++++++
- arch/c6x/include/asm/pm.h                |   48 ++++
- arch/c6x/include/asm/poll.h              |    6 +
- arch/c6x/include/asm/posix_types.h       |    6 +
- arch/c6x/include/asm/processor.h         |  118 ++++++++++
- arch/c6x/include/asm/procinfo.h          |   30 +++
- arch/c6x/include/asm/ptrace.h            |  186 +++++++++++++++
- arch/c6x/include/asm/resource.h          |    6 +
- arch/c6x/include/asm/scatterlist.h       |    6 +
- arch/c6x/include/asm/sections.h          |   17 ++
- arch/c6x/include/asm/segment.h           |    1 +
- arch/c6x/include/asm/sembuf.h            |    6 +
- arch/c6x/include/asm/serial.h            |   25 ++
- arch/c6x/include/asm/setup.h             |   49 ++++
- arch/c6x/include/asm/sgmii.h             |   53 +++++
- arch/c6x/include/asm/shmbuf.h            |    6 +
- arch/c6x/include/asm/shmparam.h          |    6 +
- arch/c6x/include/asm/sigcontext.h        |   83 +++++++
- arch/c6x/include/asm/siginfo.h           |    6 +
- arch/c6x/include/asm/signal.h            |   17 ++
- arch/c6x/include/asm/socket.h            |    6 +
- arch/c6x/include/asm/sockios.h           |    6 +
- arch/c6x/include/asm/stat.h              |    6 +
- arch/c6x/include/asm/statfs.h            |    6 +
- arch/c6x/include/asm/string.h            |   29 +++
- arch/c6x/include/asm/swab.h              |    6 +
- arch/c6x/include/asm/syscalls.h          |   58 +++++
- arch/c6x/include/asm/system.h            |  194 ++++++++++++++++
- arch/c6x/include/asm/termbits.h          |    6 +
- arch/c6x/include/asm/termios.h           |    6 +
- arch/c6x/include/asm/thread_info.h       |  123 ++++++++++
- arch/c6x/include/asm/timer.h             |   31 +++
- arch/c6x/include/asm/timex.h             |   43 ++++
- arch/c6x/include/asm/tlb.h               |    8 +
- arch/c6x/include/asm/tlbflush.h          |    6 +
- arch/c6x/include/asm/topology.h          |    6 +
- arch/c6x/include/asm/traps.h             |   39 +++
- arch/c6x/include/asm/types.h             |    6 +
- arch/c6x/include/asm/uaccess.h           |  103 ++++++++
- arch/c6x/include/asm/ucontext.h          |    6 +
- arch/c6x/include/asm/unaligned.h         |  290 +++++++++++++++++++++++
- arch/c6x/include/asm/unistd.h            |   32 +++
- arch/c6x/include/asm/user.h              |    1 +
- arch/c6x/include/asm/vga.h               |    6 +
- 101 files changed, 4106 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/Kbuild
- create mode 100644 arch/c6x/include/asm/asm-offsets.h
- create mode 100644 arch/c6x/include/asm/atomic.h
- create mode 100644 arch/c6x/include/asm/auxvec.h
- create mode 100644 arch/c6x/include/asm/bitops.h
- create mode 100644 arch/c6x/include/asm/bitsperlong.h
- create mode 100644 arch/c6x/include/asm/bug.h
- create mode 100644 arch/c6x/include/asm/bugs.h
- create mode 100644 arch/c6x/include/asm/byteorder.h
- create mode 100644 arch/c6x/include/asm/cache.h
- create mode 100644 arch/c6x/include/asm/cacheflush.h
- create mode 100644 arch/c6x/include/asm/checksum.h
- create mode 100644 arch/c6x/include/asm/clkdev.h
- create mode 100644 arch/c6x/include/asm/clock.h
- create mode 100644 arch/c6x/include/asm/cputime.h
- create mode 100644 arch/c6x/include/asm/current.h
- create mode 100644 arch/c6x/include/asm/delay.h
- create mode 100644 arch/c6x/include/asm/device.h
- create mode 100644 arch/c6x/include/asm/div64.h
- create mode 100644 arch/c6x/include/asm/dma-mapping.h
- create mode 100644 arch/c6x/include/asm/dma.h
- create mode 100644 arch/c6x/include/asm/elf.h
- create mode 100644 arch/c6x/include/asm/emergency-restart.h
- create mode 100644 arch/c6x/include/asm/errno.h
- create mode 100644 arch/c6x/include/asm/fb.h
- create mode 100644 arch/c6x/include/asm/fcntl.h
- create mode 100644 arch/c6x/include/asm/ftrace.h
- create mode 100644 arch/c6x/include/asm/futex.h
- create mode 100644 arch/c6x/include/asm/gemac.h
- create mode 100644 arch/c6x/include/asm/gmdio.h
- create mode 100644 arch/c6x/include/asm/hardirq.h
- create mode 100644 arch/c6x/include/asm/hardware.h
- create mode 100644 arch/c6x/include/asm/hw_irq.h
- create mode 100644 arch/c6x/include/asm/io.h
- create mode 100644 arch/c6x/include/asm/ioctl.h
- create mode 100644 arch/c6x/include/asm/ioctls.h
- create mode 100644 arch/c6x/include/asm/ipcbuf.h
- create mode 100644 arch/c6x/include/asm/irq.h
- create mode 100644 arch/c6x/include/asm/irq_regs.h
- create mode 100644 arch/c6x/include/asm/irqflags.h
- create mode 100644 arch/c6x/include/asm/kdebug.h
- create mode 100644 arch/c6x/include/asm/kmap_types.h
- create mode 100644 arch/c6x/include/asm/leds.h
- create mode 100644 arch/c6x/include/asm/linkage.h
- create mode 100644 arch/c6x/include/asm/local.h
- create mode 100644 arch/c6x/include/asm/mman.h
- create mode 100644 arch/c6x/include/asm/mmu.h
- create mode 100644 arch/c6x/include/asm/mmu_context.h
- create mode 100644 arch/c6x/include/asm/module.h
- create mode 100644 arch/c6x/include/asm/msgbuf.h
- create mode 100644 arch/c6x/include/asm/mutex.h
- create mode 100644 arch/c6x/include/asm/page.h
- create mode 100644 arch/c6x/include/asm/param.h
- create mode 100644 arch/c6x/include/asm/pci.h
- create mode 100644 arch/c6x/include/asm/percpu.h
- create mode 100644 arch/c6x/include/asm/pgalloc.h
- create mode 100644 arch/c6x/include/asm/pgtable.h
- create mode 100644 arch/c6x/include/asm/pll.h
- create mode 100644 arch/c6x/include/asm/pm.h
- create mode 100644 arch/c6x/include/asm/poll.h
- create mode 100644 arch/c6x/include/asm/posix_types.h
- create mode 100644 arch/c6x/include/asm/processor.h
- create mode 100644 arch/c6x/include/asm/procinfo.h
- create mode 100644 arch/c6x/include/asm/ptrace.h
- create mode 100644 arch/c6x/include/asm/resource.h
- create mode 100644 arch/c6x/include/asm/scatterlist.h
- create mode 100644 arch/c6x/include/asm/sections.h
- create mode 100644 arch/c6x/include/asm/segment.h
- create mode 100644 arch/c6x/include/asm/sembuf.h
- create mode 100644 arch/c6x/include/asm/serial.h
- create mode 100644 arch/c6x/include/asm/setup.h
- create mode 100644 arch/c6x/include/asm/sgmii.h
- create mode 100644 arch/c6x/include/asm/shmbuf.h
- create mode 100644 arch/c6x/include/asm/shmparam.h
- create mode 100644 arch/c6x/include/asm/sigcontext.h
- create mode 100644 arch/c6x/include/asm/siginfo.h
- create mode 100644 arch/c6x/include/asm/signal.h
- create mode 100644 arch/c6x/include/asm/socket.h
- create mode 100644 arch/c6x/include/asm/sockios.h
- create mode 100644 arch/c6x/include/asm/stat.h
- create mode 100644 arch/c6x/include/asm/statfs.h
- create mode 100644 arch/c6x/include/asm/string.h
- create mode 100644 arch/c6x/include/asm/swab.h
- create mode 100644 arch/c6x/include/asm/syscalls.h
- create mode 100644 arch/c6x/include/asm/system.h
- create mode 100644 arch/c6x/include/asm/termbits.h
- create mode 100644 arch/c6x/include/asm/termios.h
- create mode 100644 arch/c6x/include/asm/thread_info.h
- create mode 100644 arch/c6x/include/asm/timer.h
- create mode 100644 arch/c6x/include/asm/timex.h
- create mode 100644 arch/c6x/include/asm/tlb.h
- create mode 100644 arch/c6x/include/asm/tlbflush.h
- create mode 100644 arch/c6x/include/asm/topology.h
- create mode 100644 arch/c6x/include/asm/traps.h
- create mode 100644 arch/c6x/include/asm/types.h
- create mode 100644 arch/c6x/include/asm/uaccess.h
- create mode 100644 arch/c6x/include/asm/ucontext.h
- create mode 100644 arch/c6x/include/asm/unaligned.h
- create mode 100644 arch/c6x/include/asm/unistd.h
- create mode 100644 arch/c6x/include/asm/user.h
- create mode 100644 arch/c6x/include/asm/vga.h
+ arch/c6x/kernel/Makefile       |   13 +
+ arch/c6x/kernel/asm-offsets.c  |  127 ++++++
+ arch/c6x/kernel/c6x_ksyms.c    |   75 ++++
+ arch/c6x/kernel/clkdev.c       |  192 +++++++++
+ arch/c6x/kernel/early_printk.c |   81 ++++
+ arch/c6x/kernel/entry.S        |  851 ++++++++++++++++++++++++++++++++++++++++
+ arch/c6x/kernel/head.S         |  127 ++++++
+ arch/c6x/kernel/irq.c          |  119 ++++++
+ arch/c6x/kernel/module.c       |  249 ++++++++++++
+ arch/c6x/kernel/process.c      |  349 ++++++++++++++++
+ arch/c6x/kernel/ptrace.c       |  284 +++++++++++++
+ arch/c6x/kernel/setup.c        |  550 ++++++++++++++++++++++++++
+ arch/c6x/kernel/signal.c       |  384 ++++++++++++++++++
+ arch/c6x/kernel/switch_to.S    |   67 ++++
+ arch/c6x/kernel/sys_c6x.c      |  111 ++++++
+ arch/c6x/kernel/tags.c         |   98 +++++
+ arch/c6x/kernel/tags.h         |   82 ++++
+ arch/c6x/kernel/time.c         |   55 +++
+ arch/c6x/kernel/traps.c        |  416 ++++++++++++++++++++
+ arch/c6x/kernel/vectors.S      |   81 ++++
+ arch/c6x/kernel/vmlinux.lds.S  |  205 ++++++++++
+ 21 files changed, 4516 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/kernel/Makefile
+ create mode 100644 arch/c6x/kernel/asm-offsets.c
+ create mode 100644 arch/c6x/kernel/c6x_ksyms.c
+ create mode 100644 arch/c6x/kernel/clkdev.c
+ create mode 100644 arch/c6x/kernel/early_printk.c
+ create mode 100644 arch/c6x/kernel/entry.S
+ create mode 100644 arch/c6x/kernel/head.S
+ create mode 100644 arch/c6x/kernel/irq.c
+ create mode 100644 arch/c6x/kernel/module.c
+ create mode 100644 arch/c6x/kernel/process.c
+ create mode 100644 arch/c6x/kernel/ptrace.c
+ create mode 100644 arch/c6x/kernel/setup.c
+ create mode 100644 arch/c6x/kernel/signal.c
+ create mode 100644 arch/c6x/kernel/switch_to.S
+ create mode 100644 arch/c6x/kernel/sys_c6x.c
+ create mode 100644 arch/c6x/kernel/tags.c
+ create mode 100644 arch/c6x/kernel/tags.h
+ create mode 100644 arch/c6x/kernel/time.c
+ create mode 100644 arch/c6x/kernel/traps.c
+ create mode 100644 arch/c6x/kernel/vectors.S
+ create mode 100644 arch/c6x/kernel/vmlinux.lds.S
 
-diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
+diff --git a/arch/c6x/kernel/Makefile b/arch/c6x/kernel/Makefile
 new file mode 100644
-index 0000000..b200fda
+index 0000000..25cdded
 --- /dev/null
-+++ b/arch/c6x/include/asm/Kbuild
-@@ -0,0 +1,2 @@
-+include include/asm-generic/Kbuild.asm
++++ b/arch/c6x/kernel/Makefile
+@@ -0,0 +1,13 @@
++#
++# Makefile for arch/c6x/kernel/
++#
 +
-diff --git a/arch/c6x/include/asm/asm-offsets.h b/arch/c6x/include/asm/asm-offsets.h
++extra-y	 := head.o vmlinux.lds
++
++obj-y 	 := process.o traps.o irq.o signal.o ptrace.o \
++	    setup.o sys_c6x.o time.o \
++            switch_to.o entry.o vectors.o c6x_ksyms.o tags.o
++
++obj-$(CONFIG_MODULES)          += module.o
++obj-$(CONFIG_COMMON_CLKDEV)    += clkdev.o
++obj-$(CONFIG_EARLY_PRINTK)     += early_printk.o
+diff --git a/arch/c6x/kernel/asm-offsets.c b/arch/c6x/kernel/asm-offsets.c
 new file mode 100644
-index 0000000..d370ee3
+index 0000000..52fca25
 --- /dev/null
-+++ b/arch/c6x/include/asm/asm-offsets.h
-@@ -0,0 +1 @@
-+#include <generated/asm-offsets.h>
-diff --git a/arch/c6x/include/asm/atomic.h b/arch/c6x/include/asm/atomic.h
-new file mode 100644
-index 0000000..d995e0e
---- /dev/null
-+++ b/arch/c6x/include/asm/atomic.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_ATOMIC_H
-+#define _ASM_C6X_ATOMIC_H
-+
-+#include <asm-generic/atomic.h>
-+
-+#endif /* _ASM_C6X_ATOMIC_H */
-diff --git a/arch/c6x/include/asm/auxvec.h b/arch/c6x/include/asm/auxvec.h
-new file mode 100644
-index 0000000..8d881e6
---- /dev/null
-+++ b/arch/c6x/include/asm/auxvec.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_AUXVEC_H
-+#define _ASM_C6X_AUXVEC_H
-+
-+#include <asm-generic/auxvec.h>
-+
-+#endif /* _ASM_C6X_AUXVEC_H */
-diff --git a/arch/c6x/include/asm/bitops.h b/arch/c6x/include/asm/bitops.h
-new file mode 100644
-index 0000000..c7391b4
---- /dev/null
-+++ b/arch/c6x/include/asm/bitops.h
-@@ -0,0 +1,181 @@
++++ b/arch/c6x/kernel/asm-offsets.c
+@@ -0,0 +1,127 @@
 +/*
-+ *  linux/include/asm-c6x/bitops.h
++ * Generate definitions needed by assembly language modules.
++ * This code generates raw asm output which is post-processed
++ * to extract and format the required data.
++ */
++
++#include <linux/types.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/dma-mapping.h>
++#include <linux/thread_info.h>
++#include <asm/procinfo.h>
++#include <linux/kbuild.h>
++#include <linux/unistd.h>
++
++void foo(void)
++{
++	OFFSET(REGS_A16,	pt_regs, a16);
++	OFFSET(REGS_A17,	pt_regs, a17);
++	OFFSET(REGS_A18,	pt_regs, a18);
++	OFFSET(REGS_A19,	pt_regs, a19);
++	OFFSET(REGS_A20,	pt_regs, a20);
++	OFFSET(REGS_A21,	pt_regs, a21);
++	OFFSET(REGS_A22,	pt_regs, a22);
++	OFFSET(REGS_A23,	pt_regs, a23);
++	OFFSET(REGS_A24,	pt_regs, a24);
++	OFFSET(REGS_A25,	pt_regs, a25);
++	OFFSET(REGS_A26,	pt_regs, a26);
++	OFFSET(REGS_A27,	pt_regs, a27);
++	OFFSET(REGS_A28,	pt_regs, a28);
++	OFFSET(REGS_A29,	pt_regs, a29);
++	OFFSET(REGS_A30,	pt_regs, a30);
++	OFFSET(REGS_A31,	pt_regs, a31);
++
++	OFFSET(REGS_B16,	pt_regs, b16);
++	OFFSET(REGS_B17,	pt_regs, b17);
++	OFFSET(REGS_B18,	pt_regs, b18);
++	OFFSET(REGS_B19,	pt_regs, b19);
++	OFFSET(REGS_B20,	pt_regs, b20);
++	OFFSET(REGS_B21,	pt_regs, b21);
++	OFFSET(REGS_B22,	pt_regs, b22);
++	OFFSET(REGS_B23,	pt_regs, b23);
++	OFFSET(REGS_B24,	pt_regs, b24);
++	OFFSET(REGS_B25,	pt_regs, b25);
++	OFFSET(REGS_B26,	pt_regs, b26);
++	OFFSET(REGS_B27,	pt_regs, b27);
++	OFFSET(REGS_B28,	pt_regs, b28);
++	OFFSET(REGS_B29,	pt_regs, b29);
++	OFFSET(REGS_B30,	pt_regs, b30);
++	OFFSET(REGS_B31,	pt_regs, b31);
++
++	OFFSET(REGS_A0,		pt_regs, a0);
++	OFFSET(REGS_A1,		pt_regs, a1);
++	OFFSET(REGS_A2,		pt_regs, a2);
++	OFFSET(REGS_A3,		pt_regs, a3);
++	OFFSET(REGS_A4,		pt_regs, a4);
++	OFFSET(REGS_A5,		pt_regs, a5);
++	OFFSET(REGS_A6,		pt_regs, a6);
++	OFFSET(REGS_A7,		pt_regs, a7);
++	OFFSET(REGS_A8,		pt_regs, a8);
++	OFFSET(REGS_A9,		pt_regs, a9);
++	OFFSET(REGS_A10,	pt_regs, a10);
++	OFFSET(REGS_A11,	pt_regs, a11);
++	OFFSET(REGS_A12,	pt_regs, a12);
++	OFFSET(REGS_A13,	pt_regs, a13);
++	OFFSET(REGS_A14,	pt_regs, a14);
++	OFFSET(REGS_A15,	pt_regs, a15);
++
++	OFFSET(REGS_B0,		pt_regs, b0);
++	OFFSET(REGS_B1,		pt_regs, b1);
++	OFFSET(REGS_B2,		pt_regs, b2);
++	OFFSET(REGS_B3,		pt_regs, b3);
++	OFFSET(REGS_B4,		pt_regs, b4);
++	OFFSET(REGS_B5,		pt_regs, b5);
++	OFFSET(REGS_B6,		pt_regs, b6);
++	OFFSET(REGS_B7,		pt_regs, b7);
++	OFFSET(REGS_B8,		pt_regs, b8);
++	OFFSET(REGS_B9,		pt_regs, b9);
++	OFFSET(REGS_B10,	pt_regs, b10);
++	OFFSET(REGS_B11,	pt_regs, b11);
++	OFFSET(REGS_B12,	pt_regs, b12);
++	OFFSET(REGS_B13,	pt_regs, b13);
++	OFFSET(REGS_DP,		pt_regs, dp);
++	OFFSET(REGS_SP,		pt_regs, sp);
++
++	OFFSET(REGS_TSR,	pt_regs, tsr);
++	OFFSET(REGS_ORIG_A4,	pt_regs, orig_a4);
++
++	DEFINE(REGS__END,	sizeof(struct pt_regs));
++	BLANK();
++
++	OFFSET(THREAD_PC,	thread_struct, pc);
++	OFFSET(THREAD_B15_14,	thread_struct, b15_14);
++	OFFSET(THREAD_A15_14,	thread_struct, a15_14);
++	OFFSET(THREAD_B13_12,	thread_struct, b13_12);
++	OFFSET(THREAD_A13_12,	thread_struct, a13_12);
++	OFFSET(THREAD_B11_10,	thread_struct, b11_10);
++	OFFSET(THREAD_A11_10,	thread_struct, a11_10);
++	OFFSET(THREAD_RICL_ICL,	thread_struct, ricl_icl);
++	BLANK();
++
++	OFFSET(TASK_STATE,	task_struct, state);
++	BLANK();
++
++	OFFSET(THREAD_INFO_FLAGS,	thread_info, flags);
++	OFFSET(THREAD_INFO_PREEMPT_COUNT, thread_info, preempt_count);
++	BLANK();
++
++	/* These would be unneccessary if we ran asm files
++	 * through the preprocessor.
++	 */
++	DEFINE(KTHREAD_SIZE, THREAD_SIZE);
++	DEFINE(KTHREAD_SHIFT, THREAD_SHIFT);
++	DEFINE(KTHREAD_START_SP, THREAD_START_SP);
++	DEFINE(ENOSYS_, ENOSYS);
++	DEFINE(NR_SYSCALLS_, __NR_syscalls);
++
++	DEFINE(_TIF_SYSCALL_TRACE, (1<<TIF_SYSCALL_TRACE));
++	DEFINE(_TIF_NOTIFY_RESUME, (1<<TIF_NOTIFY_RESUME));
++	DEFINE(_TIF_SIGPENDING, (1<<TIF_SIGPENDING));
++	DEFINE(_TIF_NEED_RESCHED, (1<<TIF_NEED_RESCHED));
++	DEFINE(_TIF_POLLING_NRFLAG, (1<<TIF_POLLING_NRFLAG));
++
++	DEFINE(_TIF_ALLWORK_MASK, TIF_ALLWORK_MASK);
++	DEFINE(_TIF_WORK_MASK, TIF_WORK_MASK);
++}
++
+diff --git a/arch/c6x/kernel/c6x_ksyms.c b/arch/c6x/kernel/c6x_ksyms.c
+new file mode 100644
+index 0000000..8ee8a93
+--- /dev/null
++++ b/arch/c6x/kernel/c6x_ksyms.c
+@@ -0,0 +1,75 @@
++/*
++ *  linux/arch/c6x/kernel/c6x_ksyms.c
 + *
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
++ *
 + */
-+#ifndef _ASM_C6X_BITOPS_H
-+#define _ASM_C6X_BITOPS_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/bitops.h>
-+
-+#include <asm/system.h>
-+#include <asm/byteorder.h>
++#include <linux/module.h>
++#include <asm/checksum.h>
++#include <linux/io.h>
 +
 +/*
-+ * clear_bit() doesn't provide any barrier for the compiler.
++ * libgcc functions - used internally by the compiler...
 + */
-+#define smp_mb__before_clear_bit() barrier()
-+#define smp_mb__after_clear_bit()  barrier()
++extern int __c6xabi_divi(int dividend, int divisor);
++EXPORT_SYMBOL(__c6xabi_divi);
 +
-+static inline void set_bit(int nr, volatile void *addr)
-+{
-+	volatile unsigned long *a = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long flags;
++extern unsigned __c6xabi_divu(unsigned	dividend, unsigned divisor);
++EXPORT_SYMBOL(__c6xabi_divu);
 +
-+	local_irq_save(flags);
-+	*a |= mask;
-+	local_irq_restore(flags);
-+}
++extern int __c6xabi_remi(int dividend, int divisor);
++EXPORT_SYMBOL(__c6xabi_remi);
 +
-+static inline void clear_bit(int nr, volatile void *addr)
-+{
-+	volatile unsigned long *a = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long flags;
++extern unsigned __c6xabi_remu(unsigned	dividend, unsigned divisor);
++EXPORT_SYMBOL(__c6xabi_remu);
 +
-+	local_irq_save(flags);
-+	*a &= ~mask;
-+	local_irq_restore(flags);
-+}
++extern int __c6xabi_divremi(int dividend, int divisor);
++EXPORT_SYMBOL(__c6xabi_divremi);
 +
-+static inline void change_bit(int nr, volatile void *addr)
-+{
-+	volatile unsigned long *a = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long flags;
++extern unsigned __c6xabi_divremu(unsigned  dividend, unsigned divisor);
++EXPORT_SYMBOL(__c6xabi_divremu);
 +
-+	local_irq_save(flags);
-+	*a ^= mask;
-+	local_irq_restore(flags);
-+}
++extern unsigned long long __c6xabi_mpyll(unsigned long long src1,
++					 unsigned long long src2);
++EXPORT_SYMBOL(__c6xabi_mpyll);
 +
-+static inline int test_and_set_bit(int nr, volatile void *addr)
-+{
-+	volatile unsigned long *a = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long flags;
-+	int retval;
++extern unsigned long long __c6xabi_divull(unsigned long long n,
++					  unsigned long long d);
++EXPORT_SYMBOL(__c6xabi_divull);
 +
-+	local_irq_save(flags);
-+	retval = (mask & *a) != 0;
-+	*a |= mask;
-+	local_irq_restore(flags);
-+	return retval;
-+}
++extern long long __c6xabi_negll(long long src);
++EXPORT_SYMBOL(__c6xabi_negll);
 +
-+static inline int test_and_clear_bit(int nr, volatile void *addr)
-+{
-+	unsigned long *a = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long retval;
-+	unsigned long flags;
++extern unsigned long long __c6xabi_llshl(unsigned long long src1, uint src2);
++EXPORT_SYMBOL(__c6xabi_llshl);
 +
-+	local_irq_save(flags);
-+	retval = (mask & *a) != 0;
-+	*a &= ~mask;
-+	local_irq_restore(flags);
-+	return retval;
-+}
++extern long long __c6xabi_llshr(long long src1, uint src2);
++EXPORT_SYMBOL(__c6xabi_llshr);
 +
-+static inline int test_and_change_bit(int nr, volatile void *addr)
-+{
-+	unsigned long *a = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long flags;
-+	int retval;
++extern unsigned long long __c6xabi_llshru(unsigned long long src1, uint src2);
++EXPORT_SYMBOL(__c6xabi_llshru);
 +
-+	local_irq_save(flags);
-+	retval = (mask & *a) != 0;
-+	*a ^= mask;
-+	local_irq_restore(flags);
-+	return retval;
-+}
++extern void __c6xabi_strasgi(int *dst, const int *src, unsigned cnt);
++EXPORT_SYMBOL(__c6xabi_strasgi);
 +
-+/*
-+ * We are lucky, DSP is perfect for bitops: do it in 3 cycles
-+ */
++extern void __c6xabi_push_rts(void);
++EXPORT_SYMBOL(__c6xabi_push_rts);
 +
-+/**
-+ * __ffs - find first bit in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no bit exists, so code should check against 0 first.
-+ * Note __ffs(0) = undef, __ffs(1) = 0, __ffs(0x80000000) = 31.
-+ *
-+ */
-+static inline unsigned long __ffs(unsigned long x)
-+{
-+	asm (" bitr  .M1  %0,%0\n"
-+	     " nop\n"
-+	     " lmbd  .L1  1,%0,%0\n"
-+	     : "+a"(x));
++extern void __c6xabi_pop_rts(void);
++EXPORT_SYMBOL(__c6xabi_pop_rts);
 +
-+	return x;
-+}
++extern void __c6xabi_strasgi_64plus(int *dst, const int *src, unsigned cnt);
++EXPORT_SYMBOL(__c6xabi_strasgi_64plus);
 +
-+/*
-+ * ffz - find first zero in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no zero exists, so code should check against ~0UL first.
-+ */
-+#define ffz(x) __ffs(~(x))
++/* lib functions */
++EXPORT_SYMBOL(memcpy);
++EXPORT_SYMBOL(csum_partial);
++EXPORT_SYMBOL(ip_fast_csum);
 +
-+/**
-+ * fls - find last (most-significant) bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as ffs.
-+ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
-+ */
-+static inline int fls(int x)
-+{
-+	if (!x)
-+		return 0;
-+
-+	asm (" lmbd  .L1  1,%0,%0\n" : "+a"(x));
-+
-+	return 32 - x;
-+}
-+
-+/**
-+ * ffs - find first bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as
-+ * the libc and compiler builtin ffs routines, therefore
-+ * differs in spirit from the above ffz (man ffs).
-+ * Note ffs(0) = 0, ffs(1) = 1, ffs(0x80000000) = 32.
-+ */
-+static inline int ffs(int x)
-+{
-+	if (!x)
-+		return 0;
-+
-+	return __ffs(x) + 1;
-+}
-+
-+#include <asm-generic/bitops/__fls.h>
-+#include <asm-generic/bitops/fls64.h>
-+#include <asm-generic/bitops/find.h>
-+
-+#include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/hweight.h>
-+#include <asm-generic/bitops/lock.h>
-+
-+#include <asm-generic/bitops/non-atomic.h>
-+#include <asm-generic/bitops/le.h>
-+#include <asm-generic/bitops/ext2-atomic.h>
-+
-+#endif /* __KERNEL__ */
-+#endif /* _ASM_C6X_BITOPS_H */
-diff --git a/arch/c6x/include/asm/bitsperlong.h b/arch/c6x/include/asm/bitsperlong.h
+diff --git a/arch/c6x/kernel/clkdev.c b/arch/c6x/kernel/clkdev.c
 new file mode 100644
-index 0000000..2cd2b80
+index 0000000..747c316
 --- /dev/null
-+++ b/arch/c6x/include/asm/bitsperlong.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_BITSPERLONG_H
-+#define _ASM_C6X_BITSPERLONG_H
-+
-+#include <asm-generic/bitsperlong.h>
-+
-+#endif /* _ASM_C6X_BITSPERLONG_H */
-diff --git a/arch/c6x/include/asm/bug.h b/arch/c6x/include/asm/bug.h
-new file mode 100644
-index 0000000..6dbbb6e
---- /dev/null
-+++ b/arch/c6x/include/asm/bug.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_BUG_H
-+#define _ASM_C6X_BUG_H
-+
-+#include <asm-generic/bug.h>
-+
-+#endif /* _ASM_C6X_BUG_H */
-diff --git a/arch/c6x/include/asm/bugs.h b/arch/c6x/include/asm/bugs.h
-new file mode 100644
-index 0000000..c810e54
---- /dev/null
-+++ b/arch/c6x/include/asm/bugs.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_BUGS_H
-+#define _ASM_C6X_BUGS_H
-+
-+#include <asm-generic/bugs.h>
-+
-+#endif /* _ASM_C6X_BUGS_H */
-diff --git a/arch/c6x/include/asm/byteorder.h b/arch/c6x/include/asm/byteorder.h
-new file mode 100644
-index 0000000..166038d
---- /dev/null
-+++ b/arch/c6x/include/asm/byteorder.h
-@@ -0,0 +1,12 @@
-+#ifndef _ASM_C6X_BYTEORDER_H
-+#define _ASM_C6X_BYTEORDER_H
-+
-+#include <asm/types.h>
-+
-+#ifdef _BIG_ENDIAN
-+#include <linux/byteorder/big_endian.h>
-+#else /* _BIG_ENDIAN */
-+#include <linux/byteorder/little_endian.h>
-+#endif /* _BIG_ENDIAN */
-+
-+#endif /* _ASM_BYTEORDER_H */
-diff --git a/arch/c6x/include/asm/cache.h b/arch/c6x/include/asm/cache.h
-new file mode 100644
-index 0000000..00f66a6
---- /dev/null
-+++ b/arch/c6x/include/asm/cache.h
-@@ -0,0 +1,373 @@
++++ b/arch/c6x/kernel/clkdev.c
+@@ -0,0 +1,192 @@
 +/*
-+ *  linux/include/asm-c6x/cache.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2005, 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_CACHE_H
-+#define _ASM_C6X_CACHE_H
-+
-+#include <linux/irqflags.h>
-+#include <asm/hardware.h>
-+#include <mach/cache.h>
-+
-+/*
-+ * Current C6x architecture does not support hw cache coherency
-+ */
-+#define arch_is_coherent()    0
-+
-+/*
-+ * For practical reasons the L1_CACHE_BYTES defines should not be smaller than
-+ * the L2 line size
-+ */
-+#define L1_CACHE_BYTES        L2_CACHE_BYTES
-+
-+#define L2_CACHE_ALIGN_LOW(x) \
-+	(((x) & ~(L2_CACHE_BYTES - 1)))
-+#define L2_CACHE_ALIGN_UP(x) \
-+	(((x) + (L2_CACHE_BYTES - 1)) & ~(L2_CACHE_BYTES - 1))
-+#define L2_CACHE_ALIGN_CNT(x) \
-+	(((x) + (sizeof(int) - 1)) & ~(sizeof(int) - 1))
-+
-+#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
-+#define ARCH_SLAB_MINALIGN	L1_CACHE_BYTES
-+
-+/*
-+ * Align a physical address to MAR regions
-+ */
-+#define CACHE_REGION_START(v) (((u32) (v)) & ~(IMCR_MAR_SIZE - 1))
-+#define CACHE_REGION_END(v)   (((u32) (v) + (IMCR_MAR_SIZE - 1)) & ~(IMCR_MAR_SIZE - 1))
-+
-+/*
-+ * CCFG register values and bits
-+ */
-+#define L2MODE_0K_CACHE   0x0
-+#define L2MODE_32K_CACHE  0x1
-+#define L2MODE_64K_CACHE  0x2
-+#define L2MODE_128K_CACHE 0x3
-+#define L2MODE_256K_CACHE 0x7
-+
-+#define L2PRIO_URGENT     0x0
-+#define L2PRIO_HIGH       0x1
-+#define L2PRIO_MEDIUM     0x2
-+#define L2PRIO_LOW        0x3
-+
-+#define CCFG_ID           0x100   /* Invalidate L1P bit */
-+#define CCFG_IP           0x200   /* Invalidate L1D bit */
-+
-+/*
-+ * L1 & L2 caches generic functions
-+ */
-+#define imcr_get(reg)	(*((volatile unsigned int *) (reg)))
-+#define imcr_set(reg, value)					\
-+	do {							\
-+		*((volatile unsigned int *) (reg)) = (value);	\
-+		(value) = *((volatile unsigned int *) (reg));	\
-+	} while (0)
-+
-+/*
-+ * Generic function to perform a block cache operation as
-+ * invalidate or writeback/invalidate
-+ */
-+static inline void cache_block_operation(unsigned int *start,
-+					 unsigned int *end,
-+					 unsigned int bar_reg,
-+					 unsigned int wc_reg)
-+{
-+	unsigned long flags;
-+	unsigned int wcnt =
-+		(L2_CACHE_ALIGN_CNT((unsigned int) end)
-+		 - L2_CACHE_ALIGN_LOW((unsigned int) start)) >> 2;
-+	unsigned int wc = 0;
-+
-+	for (; wcnt; wcnt -= wc, start += wc) {
-+loop:
-+		local_irq_save(flags);
-+
-+		/*
-+		 * If another cache operation is occuring
-+		 */
-+		if (unlikely(*((volatile unsigned int *) wc_reg))) {
-+			local_irq_restore(flags);
-+
-+			/* Wait for previous operation completion */
-+			while (*((volatile unsigned int *) wc_reg))
-+				;
-+
-+			/* Try again */
-+			goto loop;
-+		}
-+
-+		*((volatile unsigned int *) bar_reg) =
-+			L2_CACHE_ALIGN_LOW((unsigned int) start);
-+
-+		if (wcnt > 0xffff)
-+			wc = 0xffff;
-+		else
-+			wc = wcnt;
-+
-+		/* Set word count value in the WC register */
-+		*((volatile unsigned int *) wc_reg) = wc & 0xffff;
-+
-+		local_irq_restore(flags);
-+
-+		/* Wait for completion */
-+		while (*((volatile unsigned int *) wc_reg))
-+			;
-+	}
-+}
-+
-+static inline void cache_block_operation_nowait(unsigned int *start,
-+						unsigned int *end,
-+						unsigned int bar_reg,
-+						unsigned int wc_reg)
-+{
-+	unsigned long flags;
-+	unsigned int wcnt =
-+		(L2_CACHE_ALIGN_CNT((unsigned int) end)
-+		 - L2_CACHE_ALIGN_LOW((unsigned int) start)) >> 2;
-+	unsigned int wc = 0;
-+
-+	for (; wcnt; wcnt -= wc, start += wc) {
-+
-+		local_irq_save(flags);
-+
-+		*((volatile unsigned int *) bar_reg) =
-+			L2_CACHE_ALIGN_LOW((unsigned int) start);
-+
-+		if (wcnt > 0xffff)
-+			wc = 0xffff;
-+		else
-+			wc = wcnt;
-+
-+		/* Set word count value in the WC register */
-+		*((volatile unsigned int *) wc_reg) = wc & 0xffff;
-+
-+		local_irq_restore(flags);
-+
-+		/* Don't wait for completion on last cache operation */
-+		if (wcnt > 0xffff)
-+			while (*((volatile unsigned int *) wc_reg))
-+				;
-+	}
-+}
-+
-+static inline void cache_block_operation_wait(unsigned int wc_reg)
-+{
-+	/* Wait for completion */
-+	while (*((volatile unsigned int *) wc_reg))
-+		;
-+}
-+
-+/*
-+ * L1 caches management
-+ */
-+
-+/*
-+ * Disable L1 caches
-+ */
-+static inline void L1_cache_off(void)
-+{
-+	unsigned int cfg = 0;
-+	imcr_set(IMCR_L1PCFG, cfg);
-+	imcr_set(IMCR_L1DCFG, cfg);
-+}
-+
-+/*
-+ * Enable L1 caches
-+ */
-+static inline void L1_cache_on(void)
-+{
-+	unsigned int cfg = 7;
-+	imcr_set(IMCR_L1PCFG, cfg);
-+	imcr_set(IMCR_L1DCFG, cfg);
-+}
-+
-+/*
-+ *  L1P global-invalidate all
-+ */
-+static inline void L1P_cache_global_invalidate(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1PINV, set);
-+	while (imcr_get(IMCR_L1PINV) & 1)
-+		;
-+}
-+
-+/*
-+ *  L1D global-invalidate all
-+ *
-+ * Warning: this operation causes all updated data in L1D to
-+ * be discarded rather than written back to the lower levels of
-+ * memory
-+ */
-+static inline void L1D_cache_global_invalidate(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1DINV, set);
-+	while (imcr_get(IMCR_L1DINV) & 1)
-+		;
-+}
-+
-+static inline void L1D_cache_global_writeback(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1DWB, set);
-+	while (imcr_get(IMCR_L1DWB) & 1)
-+		;
-+}
-+
-+static inline void L1D_cache_global_writeback_invalidate(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1DWBINV, set);
-+	while (imcr_get(IMCR_L1DWBINV) & 1)
-+		;
-+}
-+
-+/*
-+ *  L1 block operations
-+ */
-+#define L1P_cache_block_invalidate(start, end)             \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L1PIBAR, IMCR_L1PIWC)
-+
-+#define L1D_cache_block_invalidate(start, end)		   \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L1DIBAR, IMCR_L1DIWC)
-+
-+#define L1D_cache_block_writeback_invalidate(start, end)   \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L1DWIBAR, IMCR_L1DWIWC)
-+
-+#define L1D_cache_block_writeback(start, end)		   \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L1DWBAR, IMCR_L1DWWC)
-+
-+#ifdef CONFIG_TMS320C6X_CACHES_ON
-+/*
-+ * L2 caches management
-+ */
-+
-+/*
-+ * Set L2 operation mode
-+ */
-+static inline void L2_cache_set_mode(unsigned int mode)
-+{
-+	unsigned int ccfg = imcr_get(IMCR_CCFG);
-+
-+	/* Clear and set the L2MODE bits in CCFG */
-+	ccfg &= ~7;
-+	ccfg |= (mode & 7);
-+	imcr_set(IMCR_CCFG, ccfg);
-+}
-+
-+/*
-+ *  L2 global-writeback and global-invalidate all
-+ */
-+static inline void L2_cache_global_writeback_invalidate(void)
-+{
-+	*((volatile unsigned int *) (IMCR_L2WBINV)) = 1;
-+	while (*((volatile unsigned int *) (IMCR_L2WBINV)))
-+		;
-+}
-+
-+/*
-+ *  L2 global-writeback all
-+ */
-+static inline void L2_cache_global_writeback(void)
-+{
-+	*((volatile unsigned int *) (IMCR_L2WB)) = 1;
-+	while (*((volatile unsigned int *) (IMCR_L2WB)))
-+		;
-+}
-+
-+/*
-+ *  L2 block operations
-+ */
-+#define L2_cache_block_invalidate(start, end)              \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L2IBAR, IMCR_L2IWC)
-+
-+#define L2_cache_block_writeback(start, end)		   \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L2WBAR, IMCR_L2WWC)
-+
-+#define L2_cache_block_writeback_invalidate(start, end)	   \
-+	cache_block_operation((unsigned int *) (start),	   \
-+			      (unsigned int *) (end),	   \
-+			      IMCR_L2WIBAR, IMCR_L2WIWC)
-+
-+#define L2_cache_block_invalidate_nowait(start, end)		  \
-+	cache_block_operation_nowait((unsigned int *) (start),	  \
-+				     (unsigned int *) (end),	  \
-+				     IMCR_L2IBAR, IMCR_L2IWC)
-+
-+#define L2_cache_block_invalidate_wait()	      \
-+	cache_block_operation_wait(IMCR_L2IWC)
-+
-+#define L2_cache_block_writeback_nowait(start, end)		  \
-+	cache_block_operation_nowait((unsigned int *) (start),	  \
-+				     (unsigned int *) (end),	  \
-+				     IMCR_L2WBAR, IMCR_L2WWC)
-+
-+#define L2_cache_block_writeback_wait()		      \
-+	cache_block_operation_wait(IMCR_L2WWC)
-+
-+#define L2_cache_block_writeback_invalidate_nowait(start, end)	  \
-+	cache_block_operation_nowait((unsigned int *) (start),	  \
-+				     (unsigned int *) (end),	  \
-+				     IMCR_L2WIBAR, IMCR_L2WIWC)
-+
-+#define L2_cache_block_writeback_invalidate_wait()    \
-+	cache_block_operation_wait(IMCR_L2WIWC)
-+
-+/*
-+ * Cacheability controls
-+ */
-+static inline void enable_caching(unsigned long start, unsigned long end)
-+{
-+	unsigned int *mar = (unsigned int *) IMCR_MAR_BASE + (start >> 24);
-+	unsigned int *mar_e = (unsigned int *) IMCR_MAR_BASE + (end >> 24);
-+
-+	for (; mar <= mar_e; mar++)
-+		*mar |= 1;
-+}
-+
-+static inline void disable_caching(unsigned long start, unsigned long end)
-+{
-+	unsigned int *mar = (unsigned int *) IMCR_MAR_BASE + (start >> 24);
-+	unsigned int *mar_e = (unsigned int *) IMCR_MAR_BASE + (end >> 24);
-+
-+	for (; mar <= mar_e; mar++)
-+		*mar &= ~1;
-+}
-+
-+#else /* CONFIG_TMS320C6X_CACHES_ON */
-+#define L2_cache_set_mode(mode)
-+#define L2_cache_global_writeback_invalidate()
-+#define L2_cache_global_writeback()
-+#define L2_cache_block_invalidate(start, end)
-+#define L2_cache_block_writeback(start, end)
-+#define L2_cache_block_writeback_invalidate(start, end)
-+#define L2_cache_block_invalidate_nowait(start, end)
-+#define L2_cache_block_invalidate_wait()
-+#define L2_cache_block_writeback_nowait(start, end)
-+#define L2_cache_block_writeback_wait()
-+#define L2_cache_block_writeback_invalidate_nowait(start, end)
-+#define L2_cache_block_writeback_invalidate_wait()
-+
-+#endif /* CONFIG_TMS320C6X_CACHES_ON */
-+#endif /* _ASM_C6X_CACHE_H */
-diff --git a/arch/c6x/include/asm/cacheflush.h b/arch/c6x/include/asm/cacheflush.h
-new file mode 100644
-index 0000000..f56fa4c
---- /dev/null
-+++ b/arch/c6x/include/asm/cacheflush.h
-@@ -0,0 +1,67 @@
-+/*
-+ *  linux/include/asm-c6x/pgalloc.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_CACHEFLUSH_H
-+#define _ASM_C6X_CACHEFLUSH_H
-+
-+#include <linux/spinlock.h>
-+
-+#include <asm/setup.h>
-+#include <asm/cache.h>
-+#include <asm/mman.h>
-+#include <asm/page.h>
-+#include <asm/string.h>
-+
-+/*
-+ * virtually-indexed cache management (our cache is physically indexed)
-+ */
-+#define flush_cache_all()			do {} while (0)
-+#define flush_cache_mm(mm)			do {} while (0)
-+#define flush_cache_dup_mm(mm)			do {} while (0)
-+#define flush_cache_range(mm, start, end)	do {} while (0)
-+#define flush_cache_page(vma, vmaddr, pfn)	do {} while (0)
-+#define flush_cache_vmap(start, end)		do {} while (0)
-+#define flush_cache_vunmap(start, end)		do {} while (0)
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 0
-+#define flush_dcache_page(page)			do {} while (0)
-+#define flush_dcache_mmap_lock(mapping)		do {} while (0)
-+#define flush_dcache_mmap_unlock(mapping)	do {} while (0)
-+
-+/*
-+ * physically-indexed cache management
-+ */
-+#define flush_icache_range(s, e)				  \
-+	do {							  \
-+		L1D_cache_block_writeback((s), (e));		  \
-+		L1P_cache_block_invalidate((s), (e));		  \
-+	} while (0)
-+
-+#define flush_icache_page(vma, page)					  \
-+do {								  \
-+	if ((vma)->vm_flags & PROT_EXEC)				  \
-+		L1D_cache_block_writeback_invalidate(page_address(page),  \
-+			(unsigned long) page_address(page) + PAGE_SIZE)); \
-+		L1P_cache_block_invalidate(page_address(page),		  \
-+			(unsigned long) page_address(page) + PAGE_SIZE)); \
-+} while (0)
-+
-+
-+#define copy_to_user_page(vma, page, vaddr, dst, src, len) \
-+do {						     \
-+	memcpy(dst, src, len);			     \
-+	flush_icache_range((unsigned) (dst), (unsigned) (dst) + (len)); \
-+} while (0)
-+
-+#define copy_from_user_page(vma, page, vaddr, dst, src, len) \
-+	memcpy(dst, src, len)
-+
-+#endif /* _ASM_C6X_CACHEFLUSH_H */
-diff --git a/arch/c6x/include/asm/checksum.h b/arch/c6x/include/asm/checksum.h
-new file mode 100644
-index 0000000..9813a80
---- /dev/null
-+++ b/arch/c6x/include/asm/checksum.h
-@@ -0,0 +1,116 @@
-+/*
-+ *  linux/include/asm-c6x/checksum.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_CHECKSUM_H
-+#define _ASM_C6X_CHECKSUM_H
-+
-+#include <asm/byteorder.h>
-+
-+/*
-+ * Computes the checksum of a memory block at buff, length len,
-+ * and adds in "sum" (32-bit)
-+ *
-+ * returns a 32-bit number suitable for feeding into itself
-+ * or csum_tcpudp_magic
-+ *
-+ * this function must be called with even lengths, except
-+ * for the last fragment, which may be odd
-+ *
-+ * it's best to have buff aligned on a 32-bit boundary
-+ */
-+extern __wsum csum_partial(const void *buff, int len, __wsum sum);
-+
-+/*
-+ * The same as csum_partial, but copies from src while it checksums
-+ *
-+ * here even more important to align src and dst on a 32-bit (or even
-+ * better 64-bit) boundary
-+ */
-+extern __wsum csum_partial_copy(const void *src, void *dst, int len, __wsum sum);
-+
-+/*
-+ * This is a new version of the above that records errors it finds in *errp,
-+ * but continues and zeros the rest of the buffer.
-+ */
-+#define csum_partial_copy_nocheck csum_partial_copy
-+
-+/*
-+ * The same as csum_partial_copy, but copies from user space.
-+ *
-+ * here even more important to align src and dst on a 32-bit (or even
-+ * better 64-bit) boundary
-+ */
-+#define csum_partial_copy_from_user(src, dst, len, sum, err_ptr) \
-+	csum_partial_copy(src, dst, len, sum)
-+
-+/*
-+ * This is a version of ip_compute_csum() optimized for IP headers,
-+ * which always checksum on 4 octet boundaries.
-+ *
-+ */
-+extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
-+
-+/*
-+ * Fold a partial checksum
-+ */
-+static inline __sum16 csum_fold(__wsum csum)
-+{
-+	u32 sum = (u32)csum;
-+	sum = (sum & 0xffff) + (sum >> 16);
-+	sum = (sum & 0xffff) + (sum >> 16);
-+	return (__sum16)~sum;
-+}
-+
-+/*
-+ * Computes the checksum of the TCP/UDP pseudo-header
-+ */
-+static inline __wsum
-+csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
-+		  unsigned short proto, __wsum sum)
-+{
-+	unsigned long long s = (__force u32)sum;
-+
-+	s += (__force u32)saddr;
-+	s += (__force u32)daddr;
-+#ifdef _BIG_ENDIAN
-+	s += proto + len;
-+#else
-+	s += (proto + len) << 8;
-+#endif
-+	s += (s >> 32);
-+
-+	return (__force __wsum)s;
-+}
-+
-+/*
-+ * Computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented
-+ */
-+static inline __sum16
-+csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
-+		  unsigned short proto, __wsum sum)
-+{
-+	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
-+}
-+
-+/*
-+ * This routine is used for miscellaneous IP-like checksums, mainly
-+ * in icmp.c
-+ */
-+static inline __sum16
-+ip_compute_csum(const void *buff, int len)
-+{
-+	extern unsigned int do_csum(const unsigned char *, size_t);
-+	return (__force __sum16)~do_csum(buff, len);
-+}
-+
-+#endif /* _ASM_C6X_CHECKSUM_H */
-diff --git a/arch/c6x/include/asm/clkdev.h b/arch/c6x/include/asm/clkdev.h
-new file mode 100644
-index 0000000..aff359c
---- /dev/null
-+++ b/arch/c6x/include/asm/clkdev.h
-@@ -0,0 +1,45 @@
-+/*
-+ *  arch/c6x/include/asm/clkdev.h
++ *  arch/c6x/kernel/clkdev.c
 + *
 + *  Copyright (C) 2010 Texas Instruments Incorporated
 + *  Author: Mark Salter <msalter@redhat.com>
 + *
-+ *  Original code from: arch/arm/include/asm/clkdev.h
++ *  Original code from: arch/arm/common/clkdev.c
 + *
 + *  Copyright (C) 2008 Russell King.
 + *
@@ -1109,3842 +329,4393 @@ index 0000000..aff359c
 + *
 + * Helper for the clk API to assist looking up a struct clk.
 + */
-+#ifndef _ASM_CLKDEV_H
-+#define _ASM_CLKDEV_H
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/device.h>
++#include <linux/list.h>
++#include <linux/errno.h>
++#include <linux/err.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/mutex.h>
++#include <linux/clk.h>
 +
-+struct clk;
-+struct device;
++#include <asm/clkdev.h>
 +
-+struct clk_lookup {
-+	struct list_head	node;
-+	const char		*dev_id;
-+	const char		*con_id;
-+	struct clk		*clk;
++static LIST_HEAD(clocks);
++static DEFINE_MUTEX(clocks_mutex);
++
++
++int __weak __clk_get(struct clk *clk)
++{
++	return 1;
++}
++
++void __weak __clk_put(struct clk *clk)
++{
++}
++
++/*
++ * Find the correct struct clk for the device and connection ID.
++ * We do slightly fuzzy matching here:
++ *  An entry with a NULL ID is assumed to be a wildcard.
++ *  If an entry has a device ID, it must match
++ *  If an entry has a connection ID, it must match
++ * Then we take the most specific entry - with the following
++ * order of precedence: dev+con > dev only > con only.
++ */
++static struct clk *clk_find(const char *dev_id, const char *con_id)
++{
++	struct clk_lookup *p;
++	struct clk *clk = NULL;
++	int match, best = 0;
++
++	list_for_each_entry(p, &clocks, node) {
++		match = 0;
++		if (p->dev_id) {
++			if (!dev_id || strcmp(p->dev_id, dev_id))
++				continue;
++			match += 2;
++		}
++		if (p->con_id) {
++			if (!con_id || strcmp(p->con_id, con_id))
++				continue;
++			match += 1;
++		}
++		if (match == 0)
++			continue;
++
++		if (match > best) {
++			clk = p->clk;
++			best = match;
++		}
++	}
++	return clk;
++}
++
++struct clk *clk_get_sys(const char *dev_id, const char *con_id)
++{
++	struct clk *clk;
++
++	mutex_lock(&clocks_mutex);
++	clk = clk_find(dev_id, con_id);
++	if (clk && !__clk_get(clk))
++		clk = NULL;
++	mutex_unlock(&clocks_mutex);
++
++	return clk ? clk : ERR_PTR(-ENOENT);
++}
++EXPORT_SYMBOL(clk_get_sys);
++
++struct clk *clk_get(struct device *dev, const char *con_id)
++{
++	const char *dev_id = dev ? dev_name(dev) : NULL;
++
++	return clk_get_sys(dev_id, con_id);
++}
++EXPORT_SYMBOL(clk_get);
++
++void clk_put(struct clk *clk)
++{
++	__clk_put(clk);
++}
++EXPORT_SYMBOL(clk_put);
++
++void clkdev_add(struct clk_lookup *cl)
++{
++	mutex_lock(&clocks_mutex);
++	list_add_tail(&cl->node, &clocks);
++	mutex_unlock(&clocks_mutex);
++}
++EXPORT_SYMBOL(clkdev_add);
++
++void __init clkdev_add_table(struct clk_lookup *cl, size_t num)
++{
++	mutex_lock(&clocks_mutex);
++	while (num--) {
++		list_add_tail(&cl->node, &clocks);
++		cl++;
++	}
++	mutex_unlock(&clocks_mutex);
++}
++
++#define MAX_DEV_ID	20
++#define MAX_CON_ID	16
++
++struct clk_lookup_alloc {
++	struct clk_lookup cl;
++	char	dev_id[MAX_DEV_ID];
++	char	con_id[MAX_CON_ID];
 +};
 +
 +struct clk_lookup *clkdev_alloc(struct clk *clk, const char *con_id,
-+	const char *dev_fmt, ...);
++	const char *dev_fmt, ...)
++{
++	struct clk_lookup_alloc *cla;
 +
-+void clkdev_add(struct clk_lookup *cl);
-+void clkdev_drop(struct clk_lookup *cl);
++	cla = kzalloc(sizeof(*cla), GFP_KERNEL);
++	if (!cla)
++		return NULL;
 +
-+void clkdev_add_table(struct clk_lookup *, size_t);
-+int clk_add_alias(const char *, const char *, char *, struct device *);
++	cla->cl.clk = clk;
++	if (con_id) {
++		strlcpy(cla->con_id, con_id, sizeof(cla->con_id));
++		cla->cl.con_id = cla->con_id;
++	}
 +
-+int __clk_get(struct clk *clk);
-+void __clk_put(struct clk *clk);
++	if (dev_fmt) {
++		va_list ap;
 +
-+int clk_register(struct clk *clk);
-+void clk_unregister(struct clk *clk);
++		va_start(ap, dev_fmt);
++		vscnprintf(cla->dev_id, sizeof(cla->dev_id), dev_fmt, ap);
++		cla->cl.dev_id = cla->dev_id;
++		va_end(ap);
++	}
 +
-+#endif /* _ASM_CLKDEV_H */
-diff --git a/arch/c6x/include/asm/clock.h b/arch/c6x/include/asm/clock.h
-new file mode 100644
-index 0000000..d8f1a77
---- /dev/null
-+++ b/arch/c6x/include/asm/clock.h
-@@ -0,0 +1,73 @@
++	return &cla->cl;
++}
++EXPORT_SYMBOL(clkdev_alloc);
++
++int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
++	struct device *dev)
++{
++	struct clk *r = clk_get(dev, id);
++	struct clk_lookup *l;
++
++	if (IS_ERR(r))
++		return PTR_ERR(r);
++
++	l = clkdev_alloc(r, alias, alias_dev_name);
++	clk_put(r);
++	if (!l)
++		return -ENODEV;
++	clkdev_add(l);
++	return 0;
++}
++EXPORT_SYMBOL(clk_add_alias);
++
 +/*
-+ * TI C64X clock definitions
++ * clkdev_drop - remove a clock dynamically allocated
++ */
++void clkdev_drop(struct clk_lookup *cl)
++{
++	mutex_lock(&clocks_mutex);
++	list_del(&cl->node);
++	mutex_unlock(&clocks_mutex);
++	kfree(cl);
++}
++EXPORT_SYMBOL(clkdev_drop);
+diff --git a/arch/c6x/kernel/early_printk.c b/arch/c6x/kernel/early_printk.c
+new file mode 100644
+index 0000000..06a72fd
+--- /dev/null
++++ b/arch/c6x/kernel/early_printk.c
+@@ -0,0 +1,81 @@
++/*
++ *  linux/arch/c6x/kernel/early_printk.c
 + *
-+ * Copyright (C) 2010 Texas Instruments.
-+ * Contributed by: Mark Salter <msalter@redhat.com>
-+ *
-+ * Copied heavily from arm/mach-davinci/clock.h, so:
-+ *
-+ * Copyright (C) 2006-2007 Texas Instruments.
-+ * Copyright (C) 2008-2009 Deep Root Systems, LLC
++ *  Copyright (C) 2011 Texas Instruments Incoporated
++ *  Author: Mark Salter <msalter@redhat.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ASM_C6X_CLOCK_H
-+#define _ASM_C6X_CLOCK_H
++#include <linux/kernel.h>
++#include <linux/console.h>
++#include <linux/init.h>
++#include <linux/string.h>
++#include <asm/setup.h>
 +
-+#include <mach/pll.h>
 +
-+#ifndef __ASSEMBLER__
++static void (*early_write)(const char *s, unsigned n);
 +
-+#include <linux/list.h>
-+#include <asm/clkdev.h>
++static int __initdata keep_early;
 +
-+struct pll_data {
-+	u32 phys_base;
-+	void __iomem *base;
-+	u32 num;
-+	u32 flags;
-+	u32 input_rate;
-+};
-+#define PLL_HAS_PREDIV		0x01
++static void early_console_write(struct console *con, const char *s, unsigned n)
++{
++	early_write(s, n);
++}
 +
-+struct clk {
-+	struct list_head	node;
-+	struct module		*owner;
-+	const char		*name;
-+	unsigned long		rate;
-+	int			usecount;
-+	u32			flags;
-+	struct clk		*parent;
-+	struct list_head	children;	/* list of children */
-+	struct list_head	childnode;	/* parent's child list node */
-+	struct pll_data		*pll_data;
-+	u32			div;
-+	unsigned long (*recalc) (struct clk *);
-+	int (*set_rate) (struct clk *clk, unsigned long rate);
-+	int (*round_rate) (struct clk *clk, unsigned long rate);
++static struct console early_console = {
++	.write =	early_console_write,
++	.flags =	CON_PRINTBUFFER,
++	.index =	-1,
 +};
 +
-+/* Clock flags: SoC-specific flags start at BIT(16) */
-+#define ALWAYS_ENABLED		BIT(1)
-+#define CLK_PLL			BIT(2) /* PLL-derived clock */
-+#define PRE_PLL			BIT(3) /* source is before PLL mult/div */
-+#define FIXED_DIV_PLL		BIT(4) /* fixed divisor from PLL */
-+#define FIXED_RATE_PLL		BIT(5) /* fixed ouput rate PLL */
++void early_printk(const char *fmt, ...)
++{
++	char buf[512];
++	int n;
++	va_list ap;
 +
-+#define CLK(dev, con, ck)	\
-+	{			\
-+		.dev_id = dev,	\
-+		.con_id = con,	\
-+		.clk = ck,	\
-+	}			\
++	va_start(ap, fmt);
++	n = vscnprintf(buf, sizeof(buf), fmt, ap);
++	early_write(buf, n);
++	va_end(ap);
++}
 +
-+int c6x_clk_init(struct clk_lookup *clocks);
-+int c6x_set_pllrate(struct pll_data *pll, unsigned int prediv,
-+		    unsigned int mult);
++static int __init setup_early_printk(char *str)
++{
++	if (!str)
++		return 0;
 +
++	if (early_write != NULL)
++		return 0;
++
++#ifdef CONFIG_HVC_C6X
++	if (!strncmp(str, "hvc", 3)) {
++		str += 3;
++		early_write = hvc_c6x_early_puts;
++		strcpy(early_console.name, "early_hvc");
++	}
 +#endif
 +
-+#endif /* _ASM_C6X_CLOCK_H */
-diff --git a/arch/c6x/include/asm/cputime.h b/arch/c6x/include/asm/cputime.h
++	if (strncmp(str, ",keep", 5) == 0)
++		keep_early = 1;
++
++	if (likely(early_write)) {
++
++		if (keep_early)
++			early_console.flags &= ~CON_BOOT;
++		else
++			early_console.flags |= CON_BOOT;
++
++		register_console(&early_console);
++		printk(KERN_INFO "early printk enabled on %s%d\n",
++			early_console.name,
++			early_console.index);
++	}
++
++	return 0;
++}
++early_param("earlyprintk", setup_early_printk);
++
+diff --git a/arch/c6x/kernel/entry.S b/arch/c6x/kernel/entry.S
 new file mode 100644
-index 0000000..e352391
+index 0000000..e35dd2d
 --- /dev/null
-+++ b/arch/c6x/include/asm/cputime.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_CPUTIME_H
-+#define _ASM_C6X_CPUTIME_H
++++ b/arch/c6x/kernel/entry.S
+@@ -0,0 +1,851 @@
++;
++;  linux/arch/c6x/kernel/entry.s
++;
++;  Port on Texas Instruments TMS320C6x architecture
++;
++;  Copyright (C) 2004, 2005, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++;  Author: Aurelien Jacquiot (aurelien.jacquiot@virtuallogix.com)
++;  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
++;
++;  This program is free software; you can redistribute it and/or modify
++;  it under the terms of the GNU General Public License version 2 as
++;  published by the Free Software Foundation.
++;
 +
-+#include <asm-generic/cputime.h>
++	.altmacro
++#define _DEFINE_MACRO(name,args...) .macro name args
 +
-+#endif /* _ASM_C6X_CPUTIME_H */
-diff --git a/arch/c6x/include/asm/current.h b/arch/c6x/include/asm/current.h
++#include <linux/sys.h>
++#include <linux/linkage.h>
++#include <asm/thread_info.h>
++#include <asm/asm-offsets.h>
++#include <asm/unistd.h>
++#include <asm/errno.h>
++
++; Registers naming
++#define DP	B14
++#define SP	B15
++
++#ifndef CONFIG_PREEMPT
++#define resume_kernel restore_all
++#endif
++
++	;; Entry management functions
++		.global	ret_from_exception
++		.global	ret_from_interrupt
++
++	;; Interrupt handlers
++		.global	_int4_handler
++		.global	_int5_handler
++		.global	_int6_handler
++		.global	_int7_handler
++		.global	_int8_handler
++		.global	_int9_handler
++		.global	_int10_handler
++		.global	_int11_handler
++		.global	_int12_handler
++		.global	_int13_handler
++		.global	_int14_handler
++		.global	_int15_handler
++		.global	_bad_interrupt
++		.global	_nmi_handler
++
++	;;
++	;;  This defines the normal kernel pt_regs layout.
++	;;
++_DEFINE_MACRO(SAVE_ALL,__rp,__tsr)
++	STW	.D2T2	B0,*SP--[2]		; save original B0
++	MVKL	.S2	current_ksp,B0
++	MVKH	.S2	current_ksp,B0
++	LDW	.D2T2	*B0,B1			; KSP
++
++	NOP	3
++	STW	.D2T2	B1,*+SP[1]		; save original B1
++	XOR	.D2	SP,B1,B0		; (SP ^ KSP)
++	LDW	.D2T2	*+SP[1],B1		; restore B0/B1
++	LDW	.D2T2	*++SP[2],B0
++	SHR	.S2	B0,THREAD_SHIFT,B0	; 0 if already using kernel stack
++
++  [B0]	STDW	.D2T2	SP:DP,*--B1[1]		; user: save user sp/dp on kernel stack
++  [B0]	MV	.S2	B1,SP			;    and switch to kernel stack
++||[!B0] STDW	.D2T2	SP:DP,*--SP[1]		; kernel: save on current stack
++
++	SUBAW	.D2	SP,2,SP
++
++	ADD	.D1X	SP,-8,A15
++ ||	STDW	.D2T1	A15:A14,*SP--[16]	; save A15:A14
++
++	STDW	.D2T2	B13:B12,*SP--[1]
++ ||	STDW	.D1T1	A13:A12,*A15--[1]
++ ||	MVC	.S2	__rp,B13
++
++	STDW	.D2T2	B11:B10,*SP--[1]
++ ||	STDW	.D1T1	A11:A10,*A15--[1]
++ ||	MVC	.S2	CSR,B12
++
++	STDW	.D2T2	B9:B8,*SP--[1]
++ ||	STDW	.D1T1	A9:A8,*A15--[1]
++ ||	MVC	.S2	RILC,B11
++	STDW	.D2T2	B7:B6,*SP--[1]
++ ||	STDW	.D1T1	A7:A6,*A15--[1]
++ ||	MVC	.S2	ILC,B10
++
++	STDW	.D2T2	B5:B4,*SP--[1]
++ ||	STDW	.D1T1	A5:A4,*A15--[1]
++
++	STDW	.D2T2	B3:B2,*SP--[1]
++ ||	STDW	.D1T1	A3:A2,*A15--[1]
++ ||	MVC	.S2	__tsr,B5
++
++	STDW	.D2T2	B1:B0,*SP--[1]
++ ||	STDW	.D1T1	A1:A0,*A15--[1]
++ ||	MV	.S1X	B5,A5
++
++	STDW	.D2T2	B31:B30,*SP--[1]
++ ||	STDW	.D1T1	A31:A30,*A15--[1]
++	STDW	.D2T2	B29:B28,*SP--[1]
++ ||	STDW	.D1T1	A29:A28,*A15--[1]
++	STDW	.D2T2	B27:B26,*SP--[1]
++ ||	STDW	.D1T1	A27:A26,*A15--[1]
++	STDW	.D2T2	B25:B24,*SP--[1]
++ ||	STDW	.D1T1	A25:A24,*A15--[1]
++	STDW	.D2T2	B23:B22,*SP--[1]
++ ||	STDW	.D1T1	A23:A22,*A15--[1]
++	STDW	.D2T2	B21:B20,*SP--[1]
++ ||	STDW	.D1T1	A21:A20,*A15--[1]
++	STDW	.D2T2	B19:B18,*SP--[1]
++ ||	STDW	.D1T1	A19:A18,*A15--[1]
++	STDW	.D2T2	B17:B16,*SP--[1]
++ ||	STDW	.D1T1	A17:A16,*A15--[1]
++
++	STDW	.D2T2	B13:B12,*SP--[1]	; save PC and CSR
++
++	STDW	.D2T2	B11:B10,*SP--[1]	; save RILC and ILC
++	STDW	.D2T1	A5:A4,*SP--[1]		; save TSR and orig A4
++
++	;; We left an unused word on the stack just above pt_regs.
++	;; It is used to save whether or not this frame is due to
++	;; a syscall. It is cleared here, but the syscall handler
++	;; sets it to a non-zero value.
++	MVK	.L2	0,B1
++	STW	.D2T2	B1,*+SP(REGS__END+8)	; clear syscall flag
++	.endm
++
++_DEFINE_MACRO(SAVE_ALL_EXCEPT)
++	SAVE_ALL NRP,NTSR
++	.endm
++
++_DEFINE_MACRO(SAVE_ALL_INT)
++	SAVE_ALL IRP,ITSR
++	.endm
++
++_DEFINE_MACRO(RESTORE_ALL,__rp,__tsr)
++
++	LDDW	.D2T2	*++SP[1],B9:B8		; get TSR (B9)
++	LDDW	.D2T2	*++SP[1],B11:B10	; get RILC (B11) and ILC (B10)
++	LDDW	.D2T2	*++SP[1],B13:B12	; get PC (B13) and CSR (B12)
++
++	ADDAW	.D1X	SP,30,A15
++
++	LDDW	.D1T1	*++A15[1],A17:A16
++ ||	LDDW	.D2T2	*++SP[1],B17:B16
++	LDDW	.D1T1	*++A15[1],A19:A18
++ ||	LDDW	.D2T2	*++SP[1],B19:B18
++	LDDW	.D1T1	*++A15[1],A21:A20
++ ||	LDDW	.D2T2	*++SP[1],B21:B20
++	LDDW	.D1T1	*++A15[1],A23:A22
++ ||	LDDW	.D2T2	*++SP[1],B23:B22
++	LDDW	.D1T1	*++A15[1],A25:A24
++ ||	LDDW	.D2T2	*++SP[1],B25:B24
++	LDDW	.D1T1	*++A15[1],A27:A26
++ ||	LDDW	.D2T2	*++SP[1],B27:B26
++	LDDW	.D1T1	*++A15[1],A29:A28
++ ||	LDDW	.D2T2	*++SP[1],B29:B28
++	LDDW	.D1T1	*++A15[1],A31:A30
++ ||	LDDW	.D2T2	*++SP[1],B31:B30
++
++	LDDW	.D1T1	*++A15[1],A1:A0
++ ||	LDDW	.D2T2	*++SP[1],B1:B0
++
++	LDDW	.D1T1	*++A15[1],A3:A2
++ ||	LDDW	.D2T2	*++SP[1],B3:B2
++ ||	MVC	.S2	B9,__tsr
++	LDDW	.D1T1	*++A15[1],A5:A4
++ ||	LDDW	.D2T2	*++SP[1],B5:B4
++ ||	MVC	.S2	B11,RILC
++	LDDW	.D1T1	*++A15[1],A7:A6
++ ||	LDDW	.D2T2	*++SP[1],B7:B6
++ ||	MVC	.S2	B10,ILC
++
++	LDDW	.D1T1	*++A15[1],A9:A8
++ ||	LDDW	.D2T2	*++SP[1],B9:B8
++ ||	MVC	.S2	B13,__rp
++
++	LDDW	.D1T1	*++A15[1],A11:A10
++ ||	LDDW	.D2T2	*++SP[1],B11:B10
++ ||	MVC	.S2	B12,CSR
++
++	LDDW	.D1T1	*++A15[1],A13:A12
++ ||	LDDW	.D2T2	*++SP[1],B13:B12
++
++	MV	.D2X	A15,SP
++ ||	MVKL	.S1	current_ksp,A15
++	MVKH	.S1	current_ksp,A15
++ ||	ADDAW	.D1X	SP,6,A14
++	STW	.D1T1	A14,*A15	; save kernel stack pointer
++
++	LDDW	.D2T1	*++SP[1],A15:A14
++
++	B	.S2	__rp		; return from interruption
++	LDDW	.D2T2	*+SP[1],SP:DP
++	NOP	4
++	.endm
++
++_DEFINE_MACRO(RESTORE_ALL_EXCEPT)
++	RESTORE_ALL NRP,NTSR
++	.endm
++
++_DEFINE_MACRO(RESTORE_ALL_INT)
++	RESTORE_ALL IRP,ITSR
++	.endm
++
++_DEFINE_MACRO(MASK_SYSCALL)
++	.endm
++
++_DEFINE_MACRO(UNMASK_SYSCALL)
++	.endm
++
++_DEFINE_MACRO(MASK_INT,reg)
++	MVC	.S2	CSR,reg
++	CLR	.S2	reg,0,0,reg
++	MVC	.S2	reg,CSR
++	.endm
++
++	;; Enable interrupts
++_DEFINE_MACRO(UNMASK_INT,reg)
++	MVC	.S2	CSR,reg
++	SET	.S2	reg,0,0,reg
++	MVC	.S2	reg,CSR
++	.endm
++
++	;;
++	;; Call c6x_do_IRQ with the corresponding int number and regs
++	;;
++_DEFINE_MACRO(CALL_INT,int)
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	c6x_do_IRQ,A0
++	MVKH	.S1	c6x_do_IRQ,A0
++	BNOP	.S2X	A0,1
++	MVK	.S1	int,A4
++	ADDAW	.D2	SP,2,B4
++	MVKL	.S2	ret_from_interrupt,B3
++	MVKH	.S2	ret_from_interrupt,B3
++#else
++	CALLP   .S2	c6x_do_IRQ,B3
++ ||	MVK	.S1	int,A4
++ ||	ADDAW	.D2	SP,2,B4
++	B	.S1	ret_from_interrupt
++	NOP	5
++#endif
++	.endm
++
++_DEFINE_MACRO(GET_THREAD_INFO,reg)
++	SHR	.S1X	SP,THREAD_SHIFT,reg
++	SHL	.S1	reg,THREAD_SHIFT,reg
++	.endm
++
++	.sect	".data"
++
++	.global	current_ksp
++current_ksp:
++	.word	init_thread_union + THREAD_START_SP
++
++	.sect	".text"
++
++	;;
++	;; Jump to schedule() then return to ret_from_exception
++	;;
++_reschedule:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	schedule,A0
++	MVKH	.S1	schedule,A0
++	B	.S2X	A0
++#else
++	B	.S1	schedule
++#endif
++	ADDKPC	.S2	ret_from_exception,B3,4
++
++	;;
++	;; Called before syscall handler when process is being debugged
++	;;
++tracesys_on:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	syscall_trace_entry,A0
++	MVKH	.S1	syscall_trace_entry,A0
++	B	.S2X	A0
++#else
++	B	.S1	syscall_trace_entry
++#endif
++	ADDKPC	.S2	ret_from_syscall_trace,B3,3
++	ADD	.S1X	8,SP,A4
++
++ret_from_syscall_trace:
++	;; tracing returns (possibly new) syscall number
++	MV	.D2X	A4,B0
++ ||	MVK	.S2	__NR_syscalls,B1
++	CMPLTU	.L2	B0,B1,B1
++
++ [!B1]	BNOP	.S2	ret_from_syscall_function,5
++ ||	MVK	.S1	-ENOSYS,A4
++
++	;; reload syscall args from (possibly modified) stack frame
++	LDW	.D2T2	*+SP(REGS_B4+8),B4
++	LDW	.D2T1	*+SP(REGS_A6+8),A6
++	LDW	.D2T2	*+SP(REGS_B6+8),B6
++	LDW	.D2T1	*+SP(REGS_A8+8),A8
++	LDW	.D2T2	*+SP(REGS_B8+8),B8
++
++	;; Get syscall handler addr from sys_call_table:
++	MVKL	.S2	sys_call_table,B1
++	MVKH	.S2	sys_call_table,B1
++	LDW	.D2T2	*+B1[B0],B0		; B0 = sys_call_table[__NR_*]
++	MVKL	.S2	ret_from_syscall_function,B3
++	MVKH	.S2	ret_from_syscall_function,B3
++	NOP	2
++	BNOP	.S2	B0,5			; branch to syscall handler
++ ||	LDW	.D2T1	*+SP(REGS_ORIG_A4+8),A4
++
++syscall_exit_work:
++	AND	.D1	_TIF_SYSCALL_TRACE,A2,A0
++ [!A0]	BNOP	.S1	work_pending,5
++ [A0]	B	.S2	syscall_trace_exit
++	ADDKPC	.S2	resume_userspace,B3,1
++	MVC	.S2	CSR,B1
++	SET	.S2	B1,0,0,B1
++	MVC	.S2	B1,CSR		; enable ints
++
++work_pending:
++	AND	.D1	_TIF_NEED_RESCHED,A2,A0
++ [!A0]	BNOP	.S1	work_notifysig,5
++
++work_resched:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	schedule,A1
++	MVKH	.S1	schedule,A1
++	B	.S2X	A1
++#else
++	B	.S2	schedule
++#endif
++	ADDKPC	.S2	work_rescheduled,B3,4
++work_rescheduled:
++	;; make sure we don't miss an interrupt setting need_resched or
++	;; sigpending between sampling and the rti
++	MASK_INT B2
++	GET_THREAD_INFO A12
++	LDW	.D1T1	*+A12(THREAD_INFO_FLAGS),A2
++	MVK	.S1	_TIF_WORK_MASK,A1
++	MVK	.S1	_TIF_NEED_RESCHED,A3
++	NOP	2
++	AND	.D1	A1,A2,A0
++ ||	AND	.S1	A3,A2,A1
++ [!A0]	BNOP	.S1	restore_all,5
++ [A1]	BNOP	.S1	work_resched,5
++
++work_notifysig:
++	B	.S2	do_notify_resume
++	LDW	.D2T1	*+SP(REGS__END+8),A6 ; syscall flag
++	ADDKPC	.S2	resume_userspace,B3,1
++	ADD	.S1X	8,SP,A4		; pt_regs pointer is first arg
++	MV	.D2X	A2,B4		; thread_info flags is second arg
++
++ret_from_exception:
++#ifdef CONFIG_PREEMPT
++	MASK_INT B2
++#endif
++	;;
++	;; On C64x+, the return way from exception and interrupt
++	;; is a little bit different
++	;;
++ret_from_interrupt:
++	;;
++	;; Check if we are comming from user mode.
++	;;
++	LDW	.D2T2	*+SP(REGS_TSR+8),B0
++	MVK	.S2	0x40,B1
++	NOP	3
++	AND	.D2	B0,B1,B0
++ [!B0]	BNOP	.S2	resume_kernel,5
++
++resume_userspace:
++	;; make sure we don't miss an interrupt setting need_resched or
++	;; sigpending between sampling and the rti
++	MASK_INT B2
++	GET_THREAD_INFO A12
++	LDW	.D1T1	*+A12(THREAD_INFO_FLAGS),A2
++	MVK	.S1	_TIF_WORK_MASK,A1
++	MVK	.S1	_TIF_NEED_RESCHED,A3
++	NOP	2
++	AND	.D1	A1,A2,A0
++ [A0]	BNOP	.S1	work_pending,5
++	BNOP	.S1	restore_all,5
++
++	;;
++	;; System call handling
++	;; B0 = syscall number (in sys_call_table)
++	;; A4,B4,A6,B6,A8,B8 = arguments of the syscall function
++	;; A4 is the return value register
++	;;
++system_call_saved:
++	MVK	.L2	1,B2
++	STW	.D2T2	B2,*+SP(REGS__END+8)	; set syscall flag
++	MVC	.S2	B2,ECR			; acknowledge the software exception
++
++	UNMASK_INT B2			; re-enable global IT
++
++system_call_saved_noack:
++	;; Check system call number
++	MVK	.S2	__NR_syscalls,B1
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	sys_ni_syscall,A0
++#endif
++	CMPLTU	.L2	B0,B1,B1
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKH	.S1	sys_ni_syscall,A0
++#endif
++
++	;; Check for ptrace
++	GET_THREAD_INFO A12
++
++#ifdef CONFIG_BIG_KERNEL
++ [!B1]	B	.S2X	A0
++#else
++ [!B1]	B	.S2	sys_ni_syscall
++#endif
++ [!B1]	ADDKPC	.S2	ret_from_syscall_function,B3,4
++
++	;; Get syscall handler addr from sys_call_table:
++	MVKL	.S2	sys_call_table,B1
++	MVKH	.S2	sys_call_table,B1
++	LDW	.D2T2	*+B1[B0],B0		; B0 = _sys_call_table[__NR_*]
++ ||	LDW	.D1T1	*+A12(THREAD_INFO_FLAGS),A2
++	NOP	4
++	AND	.D1	_TIF_SYSCALL_TRACE,A2,A2 ; check for TIF_SYSCALL_TRACE flag
++ [A2]	BNOP	.S1	tracesys_on,5		 ; call syscall_trace_entry before syscall function
++
++	;; Branch to the corresponding syscall
++	B	.S2	B0
++	ADDKPC	.S2	ret_from_syscall_function,B3,4
++
++ret_from_syscall_function:
++	STW	.D2T1	A4,*+SP(REGS_A4+8)	; save return value in A4
++						; original A4 is in orig_A4
++syscall_exit:
++	;; make sure we don't miss an interrupt setting need_resched or
++	;; sigpending between sampling and the rti
++	MASK_INT B2
++	LDW	.D1T1	*+A12(THREAD_INFO_FLAGS),A2
++	MVK	.S1	_TIF_ALLWORK_MASK,A1
++	NOP	3
++	AND	.D1	A1,A2,A2 ; check for work to do
++ [A2]	BNOP	.S1	syscall_exit_work,5
++
++restore_all:
++	RESTORE_ALL_EXCEPT
++
++	;;
++	;; After a fork we jump here directly from resume,
++	;; so that A4 contains the previous task structure.
++	;;
++	.global	ret_from_fork
++ret_from_fork:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	schedule_tail,A0
++	MVKH	.S1	schedule_tail,A0
++	B	.S2X	A0
++#else
++	B	.S2	schedule_tail
++#endif
++	ADDKPC	.S2	ret_from_fork_2,B3,4
++ret_from_fork_2:
++	;; return 0 in A4 for child process
++	GET_THREAD_INFO A12
++	BNOP	.S2	syscall_exit,3
++	MVK	.L2	0,B0
++	STW	.D2T2	B0,*+SP(REGS_A4+8)
++
++	;;
++	;; These are the interrupt handlers, responsible for calling __do_IRQ()
++	;; int6 is used for syscalls (see _system_call entry)
++	;;
++_int4_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 4
++
++_int5_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 5
++
++_int6_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 6
++
++_int7_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 7
++
++_int8_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 8
++
++_int9_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 9
++
++_int10_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 10
++
++_int11_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 11
++
++_int12_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 12
++
++_int13_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 13
++
++_int14_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 14
++
++_int15_handler:
++	SAVE_ALL_INT
++	MASK_SYSCALL
++	CALL_INT 15
++
++	;;
++	;; Handler for uninitialized and spurious interrupts
++	;;
++	.global _bad_interrupt
++_bad_interrupt:
++	B	.S2	IRP
++	NOP	5
++
++	;;
++	;; Handler for NMI (C6x) and exceptions (C64x+)
++	;;
++	.global _nmi_handler
++_nmi_handler:
++	SAVE_ALL_EXCEPT
++
++	MVC	.S2	EFR,B2
++	CMPEQ	.L2	1,B2,B2
++ ||	MVC	.S2	TSR,B1
++	CLR	.S2	B1,10,10,B1
++	MVC	.S2	B1,TSR
++#ifdef CONFIG_BIG_KERNEL
++ [!B2]	MVKL	.S1	process_exception,A0
++ [!B2]	MVKH	.S1	process_exception,A0
++ [!B2]	B	.S2X	A0
++#else
++ [!B2]	B	.S2	process_exception
++#endif
++ [B2]	B	.S2	system_call_saved
++ [!B2]	ADDAW	.D2	SP,2,B1
++ [!B2]	MV	.D1X	B1,A4
++	ADDKPC	.S2	ret_from_trap,B3,2
++
++ret_from_trap:
++	MV	.D2X	A4,B0
++ [!B0]	BNOP	.S2	ret_from_exception,5
++
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S2	system_call_saved_noack,B3
++	MVKH	.S2	system_call_saved_noack,B3
++#endif
++
++	LDW	.D2T2	*+SP(REGS_B0+8),B0
++	LDW	.D2T1	*+SP(REGS_A4+8),A4
++	LDW	.D2T2	*+SP(REGS_B4+8),B4
++	LDW	.D2T1	*+SP(REGS_A6+8),A6
++	LDW	.D2T2	*+SP(REGS_B6+8),B6
++	LDW	.D2T1	*+SP(REGS_A8+8),A8
++#ifdef CONFIG_BIG_KERNEL
++ ||	B	.S2	B3
++#else
++ ||	B	.S2	system_call_saved_noack
++#endif
++	LDW	.D2T2	*+SP(REGS_B8+8),B8
++	NOP	4
++
++	;;
++	;; Jump to schedule() then return to ret_from_isr
++	;;
++#ifdef	CONFIG_PREEMPT
++irq_reschedule:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	schedule,A0
++	MVKH	.S1	schedule,A0
++	B	.S2X	A0
++#else
++	B	.S2	schedule
++#endif
++	ADDKPC	.S2	ret_from_interrupt,B3,4
++
++resume_kernel:
++	GET_THREAD_INFO A12
++	LDW	.D1T1	*+A12(THREAD_INFO_PREEMPT_COUNT),A1
++	NOP	4
++ [A1]	BNOP	.S2	restore_all,5
++
++preempt_schedule:
++	GET_THREAD_INFO A2
++	LDW	.D1T1	*+A2(THREAD_INFO_FLAGS),A1
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S2	preempt_schedule_irq,B0
++	MVKH	.S2	preempt_schedule_irq,B0
++	NOP	2
++#else
++	NOP	4
++#endif
++	AND	.D1	_TIF_NEED_RESCHED,A1,A1	; check for TIF_NEED_RESCHED flag
++ [!A1]	BNOP	.S2	restore_all,5
++#ifdef CONFIG_BIG_KERNEL
++	B	.S2	B0
++#else
++	B	.S2	preempt_schedule_irq
++#endif
++	ADDKPC	.S2	preempt_schedule,B3,4
++#endif
++
++	.global enable_exception
++enable_exception:
++	DINT
++	MVC	.S2	TSR,B0
++	MVC	.S2	B3,NRP
++	MVK	.L2	0xc,B1
++	OR	.D2	B0,B1,B0
++	MVC	.S2	B0,TSR			;  Set GEE and XEN in TSR
++	B	.S2	NRP
++	NOP	5
++
++	.global sys_sigaltstack
++sys_sigaltstack:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	do_sigaltstack,A0	; branch to do_sigaltstack
++	MVKH	.S1	do_sigaltstack,A0
++	B	.S2X	A0
++#else
++	B	.S2	do_sigaltstack
++#endif
++	LDW	.D2T1	*+SP(REGS_SP+8),A6
++	NOP	4
++
++	;; kernel_execve
++	.global kernel_execve
++kernel_execve:
++	MVK	.S2	__NR_execve,B0
++	SWE
++	BNOP	.S2	B3,5
++
++	;;
++	;; Special system calls
++	;; return address is in B3
++	;;
++	.global sys_clone
++sys_clone:
++	ADD	.D1X	SP,8,A4
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	c6x_clone,A0
++	MVKH	.S1	c6x_clone,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	c6x_clone
++	NOP	5
++#endif
++
++	.global sys_vfork
++sys_vfork:
++	ADD	.D1X	SP,8,A4
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	c6x_vfork,A0		; branch to _c6x_vfork(struct pt_regs *regs)
++	MVKH	.S1	c6x_vfork,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	c6x_vfork
++	NOP	5
++#endif
++
++	.global sys_rt_sigreturn
++sys_rt_sigreturn:
++	ADD	.D1X	SP,8,A4
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	do_rt_sigreturn,A0	; branch to _do_rt_sigreturn
++	MVKH	.S1	do_rt_sigreturn,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	do_rt_sigreturn
++	NOP	5
++#endif
++
++	.global sys_execve
++sys_execve:
++	ADDAW	.D2	SP,2,B6			; put regs addr in 4th parameter
++						; & adjust regs stack addr
++	LDW	.D2T2	*+SP(REGS_B4+8),B4
++
++	;; c6x_execve(char *name, char **argv, char **envp, struct pt_regs *regs)
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	c6x_execve,A0
++	MVKH	.S1	c6x_execve,A0
++	B	.S2X	A0
++#else
++ ||	B	.S2	c6x_execve
++#endif
++	STW	.D2T2	B3,*SP--[2]
++	ADDKPC	.S2	ret_from_c6x_execve,B3,3
++
++ret_from_c6x_execve:
++	LDW	.D2T2	*++SP[2],B3
++	NOP	4
++	BNOP	.S2	B3,5
++
++	.global sys_pread_c6x
++sys_pread_c6x:
++	MV	.D2X	A8,B7
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	sys_pread64,A0
++	MVKH	.S1	sys_pread64,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	sys_pread64
++	NOP	5
++#endif
++
++	.global sys_pwrite_c6x
++sys_pwrite_c6x:
++	MV	.D2X	A8,B7
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	sys_pwrite64,A0
++	MVKH	.S1	sys_pwrite64,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	sys_pwrite64
++	NOP	5
++#endif
++
++	.global sys_truncate64_c6x
++sys_truncate64_c6x:
++	MV	.D2X	A6,B5
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	sys_truncate64,A0
++	MVKH	.S1	sys_truncate64,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	sys_truncate64
++	NOP	5
++#endif
++
++	.global sys_ftruncate64_c6x
++sys_ftruncate64_c6x:
++	MV	.D2X	A6,B5
++#ifdef CONFIG_BIG_KERNEL
++ ||	MVKL	.S1	sys_ftruncate64,A0
++	MVKH	.S1	sys_ftruncate64,A0
++	BNOP	.S2X	A0,5
++#else
++ ||	B	.S2	sys_ftruncate64
++	NOP	5
++#endif
++
++#ifdef __ARCH_WANT_SYSCALL_OFF_T
++;; On Entry
++;;   A4 - fd
++;;   B4 - offset_lo (LE), offset_hi (BE)
++;;   A6 - offset_lo (BE), offset_hi (LE)
++;;   B6 - len
++;;   A8 - advice
++	.global sys_fadvise64_c6x
++sys_fadvise64_c6x:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	sys_fadvise64,A0
++	MVKH	.S1	sys_fadvise64,A0
++	BNOP	.S2X	A0,2
++#else
++	B	.S2	sys_fadvise64
++	NOP	2
++#endif
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	MV	.L2	B4,B5
++ ||	MV	.D2X	A6,B4
++#else
++	MV	.D2X	A6,B5
++#endif
++	MV	.D1X	B6,A6
++	MV	.D2X	A8,B6
++#endif
++
++;; On Entry
++;;   A4 - fd
++;;   B4 - offset_lo (LE), offset_hi (BE)
++;;   A6 - offset_lo (BE), offset_hi (LE)
++;;   B6 - len_lo (LE), len_hi (BE)
++;;   A8 - len_lo (BE), len_hi (LE)
++;;   B8 - advice
++	.global sys_fadvise64_64_c6x
++sys_fadvise64_64_c6x:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	sys_fadvise64_64,A0
++	MVKH	.S1	sys_fadvise64_64,A0
++	BNOP	.S2X	A0,2
++#else
++	B	.S2	sys_fadvise64_64
++	NOP	2
++#endif
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	MV	.L2	B4,B5
++ ||	MV	.D2X	A6,B4
++	MV	.L1	A8,A6
++ ||	MV	.D1X	B6,A7
++#else
++	MV	.D2X	A6,B5
++	MV	.L1	A8,A7
++ ||	MV	.D1X	B6,A6
++#endif
++	MV	.L2	B8,B6
++
++;; On Entry
++;;   A4 - fd
++;;   B4 - mode
++;;   A6 - offset_hi
++;;   B6 - offset_lo
++;;   A8 - len_hi
++;;   B8 - len_lo
++	.global sys_fallocate_c6x
++sys_fallocate_c6x:
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	sys_fallocate,A0
++	MVKH	.S1	sys_fallocate,A0
++	BNOP	.S2X	A0,1
++#else
++	B	.S2	sys_fallocate
++	NOP
++#endif
++	MV	.D1	A6,A7
++	MV	.D1X	B6,A6
++	MV	.D2X	A8,B7
++	MV	.D2	B8,B6
+diff --git a/arch/c6x/kernel/head.S b/arch/c6x/kernel/head.S
 new file mode 100644
-index 0000000..7841d42
+index 0000000..af1934c
 --- /dev/null
-+++ b/arch/c6x/include/asm/current.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_CURRENT_H
-+#define _ASM_C6X_CURRENT_H
++++ b/arch/c6x/kernel/head.S
+@@ -0,0 +1,127 @@
++;
++;  linux/arch/c6x/kernel/head.s
++;
++;  Port on Texas Instruments TMS320C6x architecture
++;
++;  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++;  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++;
++;  This program is free software; you can redistribute it and/or modify
++;  it under the terms of the GNU General Public License version 2 as
++;  published by the Free Software Foundation.
++;
 +
-+#include <asm-generic/current.h>
++#include "tags.h"
 +
-+#endif /* _ASM_C6X_CURRENT_H */
-diff --git a/arch/c6x/include/asm/delay.h b/arch/c6x/include/asm/delay.h
++	.global	_c_int00
++_c_int00:
++	;; Save tag magic and pointer
++	MV	.S1	A4,A10
++	MV	.S2	B4,B10
++
++#ifdef CONFIG_XIP_KERNEL
++	;; Setup a temporary stack to use when calling C code to
++	;; relocate XIP data.
++	MVKL	.S2	_end,B15
++	MVKH	.S2	_end,B15
++	ADDAW	.D2     B15,4096,B15
++	AND	.D2	~7,B15,B15
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S2	c6x_relocate_xip_data,B0
++	MVKH	.S2	c6x_relocate_xip_data,B0
++	B	.S2	B0
++	ADDKPC	.S2	_ret_from_reloc,B3,4
++_ret_from_reloc:
++#else
++	CALLP   .S2	c6x_relocate_xip_data,B3
++#endif
++#else
++	;; Set the stack pointer
++	MVKL	.S2	current_ksp,B0
++	MVKH	.S2	current_ksp,B0
++	LDW	.D2T2	*B0,B15
++	NOP	4
++	AND	.D2	~7,B15,B15
++#endif
++
++#ifdef CONFIG_MTD_UCLINUX
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S2	c6x_mtd_early_init,B0
++	MVKH	.S2	c6x_mtd_early_init,B0
++	B	.S2	B0
++	ADDKPC	.S2	_ret_from_mtd_early_init,B3,4
++_ret_from_mtd_early_init:
++#else
++	CALLP	.S2	c6x_mtd_early_init,B3
++#endif
++#endif
++
++	;; Set global page pointer in B14
++	MVKL	.S2	__bss_start,B14
++	MVKH	.S2	__bss_start,B14
++
++	;; Clear bss area
++	MVKL	.S1	__bss_start,A4
++	MVKH	.S1	__bss_start,A4
++	MVKL	.S1	__bss_stop,A6
++	MVKH	.S1	__bss_stop,A6
++
++	CMPLTU	.L1	A4,A6,A1
++ [!A1]	B	.S1	__bss_done
++	ZERO	.L2	B4
++	SUB	.L1	A6,A4,A5
++	SHR	.S1	A5,2,A3
++	NOP	2
++
++	SUB	.L2X	A3,1,B0
++  ||	MV	.L1X	B4,A3
++
++__bss_loop:
++	STW	.D1T1	A3,*A4++
++|| [B0]	BNOP	.S1	__bss_loop,5
++|| [B0]	SUB	.L2	B0,1,B0
++
++__bss_done:
++
++	;; Clear GIE and PGIE
++	MVC	.S2	CSR,B2
++	CLR	.S2	B2,0,1,B2
++	MVC	.S2	B2,CSR
++	MVC	.S2	TSR,B2
++	CLR	.S2	B2,0,1,B2
++	MVC	.S2	B2,TSR
++	MVC	.S2	ITSR,B2
++	CLR	.S2	B2,0,1,B2
++	MVC	.S2	B2,ITSR
++	MVC	.S2	NTSR,B2
++	CLR	.S2	B2,0,1,B2
++	MVC	.S2	B2,NTSR
++
++#ifdef CONFIG_XIP_KERNEL
++	;; Set the stack pointer
++	MVKL	.S2	current_ksp,B0
++	MVKH	.S2	current_ksp,B0
++	LDW	.D2T2	*B0,B15
++	NOP	4
++	AND	.D2	~7,B15,B15
++#endif
++
++	MVKL	.S2	TAGS_MAGIC,B0
++	MVKH	.S2	TAGS_MAGIC,B0
++	CMPEQ	.L1	A10,A0,A0
++	MVKL	.S2	c6x_tags_pointer,B1
++	MVKH	.S2	c6x_tags_pointer,B1
++  [!A0] MVK	.S2	0,B10
++	STW	.D2T2	B10,*B1
++
++	;; Jump to Linux init
++#ifdef CONFIG_BIG_KERNEL
++	MVKL	.S1	start_kernel,A0
++	MVKH	.S1	start_kernel,A0
++	B	.S2X	A0
++#else
++	B	.S2	start_kernel
++#endif
++	NOP	5
++L1:	BNOP	.S2	L1,5
++
+diff --git a/arch/c6x/kernel/irq.c b/arch/c6x/kernel/irq.c
 new file mode 100644
-index 0000000..d18f3b8
+index 0000000..323d119
 --- /dev/null
-+++ b/arch/c6x/include/asm/delay.h
-@@ -0,0 +1,69 @@
++++ b/arch/c6x/kernel/irq.c
+@@ -0,0 +1,119 @@
 +/*
-+ *  linux/include/asm-c6x/delay.h
++ *  linux/arch/c6x/kernel/irq.c
 + *
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
++ *
++ *  C6x general interrupt handling code.
 + */
-+#ifndef _ASM_C6X_DELAY_H
-+#define _ASM_C6X_DELAY_H
++#include <linux/types.h>
++#include <linux/sched.h>
++#include <linux/kernel_stat.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/hardirq.h>
++#include <linux/seq_file.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/io.h>
 +
-+#include <linux/kernel.h>
++#include <asm/system.h>
++#include <asm/irq.h>
++#include <asm/traps.h>
++#include <asm/page.h>
++#include <asm/hardirq.h>
++#include <asm/hardware.h>
 +
-+extern unsigned int ticks_per_ns_scaled;
++DECLARE_PER_CPU(struct kernel_stat, kstat);
 +
-+static inline void __delay(unsigned long loops)
++unsigned long irq_err_count;
++
++#ifndef hw_to_kernel_irq
++#define hw_to_kernel_irq(hw) (hw)
++#endif
++
++static void mask_core_irq(struct irq_data *data)
 +{
-+	uint32_t tmp;
-+
-+	/* 6 cycles per loop */
-+	asm volatile ("        mv    .s1  %0,%1\n"
-+		      "0: [%1] b     .s1  0b\n"
-+		      "        add   .l1  -6,%0,%0\n"
-+		      "        cmplt .l1  1,%0,%1\n"
-+		      "        nop   3\n"
-+		      : "+a"(loops), "=A"(tmp));
++	BUG_ON(data->irq >= NR_SYS_IRQS);
++	and_creg(IER, ~(1 << data->irq));
 +}
 +
-+static inline void _c6x_tickdelay(unsigned int x)
++static void unmask_core_irq(struct irq_data *data)
 +{
-+	uint32_t cnt, endcnt;
-+
-+	asm volatile ("        mvc   .s2   TSCL,%0\n"
-+		      "        add   .s2x  %0,%1,%2\n"
-+		      " ||     mvk   .l2   1,B0\n"
-+		      "0: [B0] b     .s2   0b\n"
-+		      "        mvc   .s2   TSCL,%0\n"
-+		      "        sub   .s2   %0,%2,%0\n"
-+		      "        cmpgt .l2   0,%0,B0\n"
-+		      "        nop   2\n"
-+		      : "=b"(cnt), "+a"(x), "=b"(endcnt) : : "B0");
++	BUG_ON(data->irq >= NR_SYS_IRQS);
++	or_creg(IER, 1 << data->irq);
 +}
 +
-+/* use scaled math to avoid slow division */
-+#define C6X_NDELAY_SCALE 10
++static struct irq_chip core_irq_chip = {
++	.name		= "C64x+",
++	.irq_mask	= mask_core_irq,
++	.irq_unmask	= unmask_core_irq,
++};
 +
-+static inline void _ndelay(unsigned int n)
++void ack_bad_irq(int irq)
 +{
-+	_c6x_tickdelay((ticks_per_ns_scaled * n) >> C6X_NDELAY_SCALE);
++	printk(KERN_ERR "IRQ: spurious interrupt %d\n", irq);
++	irq_err_count++;
 +}
 +
-+static inline void _udelay(unsigned int n)
++asmlinkage void c6x_do_IRQ(unsigned int prio, struct pt_regs *regs)
 +{
-+	while (n >= 10) {
-+		_ndelay(10000);
-+		n -= 10;
-+	}
-+	while (n-- > 0)
-+		_ndelay(1000);
++	struct pt_regs *old_regs = set_irq_regs(regs);
++
++	irq_enter();
++
++	BUG_ON(prio >= NR_SYS_IRQS);
++
++	generic_handle_irq(hw_to_kernel_irq(prio));
++
++	irq_exit();
++
++	set_irq_regs(old_regs);
 +}
 +
-+#define udelay(x) _udelay((unsigned int)(x))
-+#define ndelay(x) _ndelay((unsigned int)(x))
-+
-+#endif /* _ASM_C6X_DELAY_H */
-diff --git a/arch/c6x/include/asm/device.h b/arch/c6x/include/asm/device.h
-new file mode 100644
-index 0000000..0313e82
---- /dev/null
-+++ b/arch/c6x/include/asm/device.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_DEVICE_H
-+#define _ASM_C6X_DEVICE_H
-+
-+#include <asm-generic/device.h>
-+
-+#endif /* _ASM_C6X_DEVICE_H */
-diff --git a/arch/c6x/include/asm/div64.h b/arch/c6x/include/asm/div64.h
-new file mode 100644
-index 0000000..46943e6
---- /dev/null
-+++ b/arch/c6x/include/asm/div64.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_DIV64_H
-+#define _ASM_C6X_DIV64_H
-+
-+#include <asm-generic/div64.h>
-+
-+#endif /* _ASM_C6X_DIV64_H */
-diff --git a/arch/c6x/include/asm/dma-mapping.h b/arch/c6x/include/asm/dma-mapping.h
-new file mode 100644
-index 0000000..52aa79b
---- /dev/null
-+++ b/arch/c6x/include/asm/dma-mapping.h
-@@ -0,0 +1,302 @@
-+/*
-+ *  linux/arch/c6x/include/asm/dma-mapping.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot <aurelien.jacquiot@ti.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+#ifndef _ASM_C6X_DMA_MAPPING_H
-+#define _ASM_C6X_DMA_MAPPING_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/mm.h>
-+#include <linux/mm_types.h>
-+#include <linux/scatterlist.h>
-+
-+#include <asm/io.h>
-+#include <asm/types.h>
-+#include <asm-generic/dma-coherent.h>
-+
-+#define dma_supported(d, m)	    (1)
-+
-+#define __pfn_to_bus(pfn)	   ((pfn) << PAGE_SHIFT)
-+#define __bus_to_pfn(paddr)	   ((paddr) >> PAGE_SHIFT)
-+#define __bus_to_phys(x)	   (x)
-+#define __phys_to_bus(x)	   (x)
-+#define __bus_to_virt(b)	   phys_to_virt(__bus_to_phys(b))
-+#define __virt_to_bus(v)	   __phys_to_bus(virt_to_phys(v))
-+
-+/*
-+ * page_to_dma/dma_to_virt/virt_to_dma are architecture private functions
-+ * used internally by the DMA-mapping API to provide DMA addresses. They
-+ * must not be used by drivers.
-+ */
-+static inline dma_addr_t page_to_dma(struct device *dev, struct page *page)
++void __init init_IRQ(void)
 +{
-+	return (dma_addr_t)__pfn_to_bus(page_to_pfn(page));
-+}
-+
-+static inline struct page *dma_to_page(struct device *dev, dma_addr_t addr)
-+{
-+	return pfn_to_page(__bus_to_pfn(addr));
-+}
-+
-+static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
-+{
-+	return (void *)__bus_to_virt(addr);
-+}
-+
-+static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
-+{
-+	return (dma_addr_t)__virt_to_bus(addr);
-+}
-+
-+static inline int dma_map_sg(struct device *dev, struct scatterlist *sglist, int nents,
-+			     enum dma_data_direction direction)
-+{
-+	struct scatterlist *sg;
 +	int i;
 +
-+	BUG_ON(direction == DMA_NONE);
-+
-+	for_each_sg(sglist, sg, nents, i) {
-+		BUG_ON(!sg_page(sg));
-+
-+		sg->dma_address = sg_phys(sg);
-+	}
-+
-+	return nents;
-+}
-+
-+static inline void dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nhwentries,
-+				enum dma_data_direction direction)
-+{
-+	BUG_ON(direction == DMA_NONE);
-+}
-+
-+extern int __dma_is_coherent(struct device *dev, dma_addr_t handle);
-+
-+static inline int dma_is_consistent(struct device *dev, dma_addr_t handle)
-+{
-+	if (arch_is_coherent() || __dma_is_coherent(dev, handle))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+/*
-+ * DMA errors are defined by all-bits-set in the DMA address.
-+ */
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	return dma_addr == ~0;
-+}
-+
-+/**
-+ * dma_alloc_coherent - allocate consistent memory for DMA
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @size: required memory size
-+ * @handle: bus-specific DMA address
-+ *
-+ * Allocate some uncached, unbuffered memory for a device for
-+ * performing DMA.  This function allocates pages, and will
-+ * return the CPU-viewed address, and sets @handle to be the
-+ * device-viewed address.
-+ */
-+extern void *dma_alloc_coherent(struct device *, size_t, dma_addr_t *, gfp_t);
-+
-+/**
-+ * dma_free_coherent - free memory allocated by dma_alloc_coherent
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @size: size of memory originally requested in dma_alloc_coherent
-+ * @cpu_addr: CPU-view address returned from dma_alloc_coherent
-+ * @handle: device-view address returned from dma_alloc_coherent
-+ *
-+ * Free (and unmap) a DMA buffer previously allocated by
-+ * dma_alloc_coherent().
-+ *
-+ * References to memory and mappings associated with cpu_addr/handle
-+ * during and after this call executing are illegal.
-+ */
-+extern void dma_free_coherent(struct device *, size_t, void *, dma_addr_t);
-+
-+#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent((d), (s), (h), (f))
-+#define dma_free_noncoherent(d, s, v, h)  dma_free_coherent((d), (s), (v), (h))
-+
-+extern void __dma_single_cpu_to_dev(const void *kaddr, size_t size,
-+				    enum dma_data_direction dir);
-+
-+extern void __dma_single_dev_to_cpu(const void *kaddr, size_t size,
-+				    enum dma_data_direction dir);
-+
-+extern void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
-+				  size_t size, enum dma_data_direction dir);
-+
-+extern void __dma_page_dev_to_cpu(struct page *page, unsigned long off,
-+				  size_t size, enum dma_data_direction dir);
-+
-+/**
-+ * dma_map_single - map a single buffer for streaming DMA
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @cpu_addr: CPU direct mapped address of buffer
-+ * @size: size of buffer to map
-+ * @dir: DMA transfer direction
-+ *
-+ * Ensure that any data held in the cache is appropriately discarded
-+ * or written back.
-+ *
-+ * The device owns this memory once this call has completed.  The CPU
-+ * can regain ownership by calling dma_unmap_single() or
-+ * dma_sync_single_for_cpu().
-+ */
-+static inline dma_addr_t dma_map_single(struct device *dev, void *cpu_addr,
-+		size_t size, enum dma_data_direction dir)
-+{
-+	BUG_ON(!valid_dma_direction(dir));
-+
-+	__dma_single_cpu_to_dev(cpu_addr, size, dir);
-+
-+	return virt_to_dma(dev, cpu_addr);
-+}
-+
-+/**
-+ * dma_map_page - map a portion of a page for streaming DMA
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @page: page that buffer resides in
-+ * @offset: offset into page for start of buffer
-+ * @size: size of buffer to map
-+ * @dir: DMA transfer direction
-+ *
-+ * Ensure that any data held in the cache is appropriately discarded
-+ * or written back.
-+ *
-+ * The device owns this memory once this call has completed.  The CPU
-+ * can regain ownership by calling dma_unmap_page().
-+ */
-+static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
-+	     unsigned long offset, size_t size, enum dma_data_direction dir)
-+{
-+	BUG_ON(!valid_dma_direction(dir));
-+
-+	__dma_page_cpu_to_dev(page, offset, size, dir);
-+
-+	return page_to_dma(dev, page) + offset;
-+}
-+
-+/**
-+ * dma_unmap_single - unmap a single buffer previously mapped
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @handle: DMA address of buffer
-+ * @size: size of buffer (same as passed to dma_map_single)
-+ * @dir: DMA transfer direction (same as passed to dma_map_single)
-+ *
-+ * Unmap a single streaming mode DMA translation.  The handle and size
-+ * must match what was provided in the previous dma_map_single() call.
-+ * All other usages are undefined.
-+ *
-+ * After this call, reads by the CPU to the buffer are guaranteed to see
-+ * whatever the device wrote there.
-+ */
-+static inline void
-+dma_unmap_single(struct device *dev, dma_addr_t handle,
-+		 size_t size, enum dma_data_direction dir)
-+{
-+	__dma_single_dev_to_cpu(dma_to_virt(dev, handle), size, dir);
-+}
-+
-+/**
-+ * dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @handle: DMA address of buffer
-+ * @size: size of buffer (same as passed to dma_map_page)
-+ * @dir: DMA transfer direction (same as passed to dma_map_page)
-+ *
-+ * Unmap a page streaming mode DMA translation.  The handle and size
-+ * must match what was provided in the previous dma_map_page() call.
-+ * All other usages are undefined.
-+ *
-+ * After this call, reads by the CPU to the buffer are guaranteed to see
-+ * whatever the device wrote there.
-+ */
-+static inline void dma_unmap_page(struct device *dev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir)
-+{
-+	__dma_page_dev_to_cpu(dma_to_page(dev, handle), handle & ~PAGE_MASK,
-+		size, dir);
-+}
-+
-+/**
-+ * dma_sync_single_range_for_cpu
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @handle: DMA address of buffer
-+ * @offset: offset of region to start sync
-+ * @size: size of region to sync
-+ * @dir: DMA transfer direction (same as passed to dma_map_single)
-+ *
-+ * Make physical memory consistent for a single streaming mode DMA
-+ * translation after a transfer.
-+ *
-+ * If you perform a dma_map_single() but wish to interrogate the
-+ * buffer using the cpu, yet do not wish to teardown the PCI dma
-+ * mapping, you must call this function before doing so.  At the
-+ * next point you give the PCI dma address back to the card, you
-+ * must first the perform a dma_sync_for_device, and then the
-+ * device again owns the buffer.
-+ */
-+static inline void dma_sync_single_range_for_cpu(struct device *dev,
-+		dma_addr_t handle, unsigned long offset, size_t size,
-+		enum dma_data_direction dir)
-+{
-+	BUG_ON(!valid_dma_direction(dir));
-+
-+	__dma_single_dev_to_cpu(dma_to_virt(dev, handle) + offset, size, dir);
-+}
-+
-+static inline void dma_sync_single_range_for_device(struct device *dev,
-+		dma_addr_t handle, unsigned long offset, size_t size,
-+		enum dma_data_direction dir)
-+{
-+	BUG_ON(!valid_dma_direction(dir));
-+
-+	__dma_single_cpu_to_dev(dma_to_virt(dev, handle) + offset, size, dir);
-+}
-+
-+static inline void dma_sync_single_for_cpu(struct device *dev,
-+		dma_addr_t handle, size_t size, enum dma_data_direction dir)
-+{
-+	dma_sync_single_range_for_cpu(dev, handle, 0, size, dir);
-+}
-+
-+static inline void dma_sync_single_for_device(struct device *dev,
-+		dma_addr_t handle, size_t size, enum dma_data_direction dir)
-+{
-+	dma_sync_single_range_for_device(dev, handle, 0, size, dir);
-+}
-+
-+static inline void
-+dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nents,
-+		    enum dma_data_direction dir)
-+{
-+	BUG_ON(!valid_dma_direction(dir));
-+}
-+
-+static inline void
-+dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nents,
-+		    enum dma_data_direction dir)
-+{
-+	BUG_ON(!valid_dma_direction(dir));
-+}
-+
-+extern int coherent_mem_init(void);
-+extern unsigned long dma_memory_start;
-+extern unsigned long dma_memory_size;
-+
-+#endif /* __KERNEL__ */
-+#endif	/* _ASM_C6X_DMA_MAPPING_H */
-diff --git a/arch/c6x/include/asm/dma.h b/arch/c6x/include/asm/dma.h
-new file mode 100644
-index 0000000..0431395
---- /dev/null
-+++ b/arch/c6x/include/asm/dma.h
-@@ -0,0 +1,25 @@
-+/*
-+ *  linux/include/asm-c6x/dma.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_DMA_H
-+#define _ASM_C6X_DMA_H
-+
-+#define MAX_DMA_ADDRESS  0xFFFFFFFF
-+#define MAX_DMA_CHANNELS 64
-+
-+/* Reserve a DMA channel */
-+extern int request_dma(unsigned int dmanr, const char *device_id);
-+
-+/* Release it again */
-+extern void free_dma(unsigned int dmanr);
-+
-+#endif /* _ASM_C6X_DMA_H */
-diff --git a/arch/c6x/include/asm/elf.h b/arch/c6x/include/asm/elf.h
-new file mode 100644
-index 0000000..272c3ae
---- /dev/null
-+++ b/arch/c6x/include/asm/elf.h
-@@ -0,0 +1,115 @@
-+/*
-+ *  linux/include/asm-c6x/elf.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_ELF_H
-+#define _ASM_C6X_ELF_H
-+
-+/*
-+ * ELF register definitions..
-+ */
-+#include <asm/ptrace.h>
-+
-+typedef unsigned long elf_greg_t;
-+typedef unsigned long elf_fpreg_t;
-+
-+#define ELF_NGREG  58
-+#define ELF_NFPREG 1
-+
-+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
-+typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
-+
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ */
-+#define elf_check_arch(x) ((x)->e_machine == EM_TI_C6000)
-+
-+#define elf_check_const_displacement(x) (1)
-+
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#ifdef __LITTLE_ENDIAN__
-+#define ELF_DATA	ELFDATA2LSB
-+#else
-+#define ELF_DATA	ELFDATA2MSB
-+#endif
-+
-+#define ELF_CLASS	ELFCLASS32
-+#define ELF_ARCH	EM_TI_C6000
-+
-+/* Nothing for now. Need to setup DP... */
-+#define ELF_PLAT_INIT(_r)
-+
-+#define USE_ELF_CORE_DUMP
-+#define ELF_EXEC_PAGESIZE	4096
-+
-+#define ELF_CORE_COPY_REGS(_dest, _regs)		\
-+	memcpy((char *) &_dest, (char *) _regs,		\
-+	sizeof(struct pt_regs));
-+
-+/* This yields a mask that user programs can use to figure out what
-+   instruction set this cpu supports.  */
-+
-+#define ELF_HWCAP	(0)
-+
-+/* This yields a string that ld.so will use to load implementation
-+   specific libraries for optimization.  This is more specific in
-+   intent than poking at uname or /proc/cpuinfo.  */
-+
-+#define ELF_PLATFORM  (NULL)
-+
-+#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-+
-+/* C6X specific section types */
-+#define SHT_C6000_UNWIND	0x70000001
-+#define SHT_C6000_PREEMPTMAP	0x70000002
-+#define SHT_C6000_ATTRIBUTES	0x70000003
-+
-+/* C6X specific DT_ tags */
-+#define DT_C6000_DSBT_BASE	0x70000000
-+#define DT_C6000_DSBT_SIZE	0x70000001
-+#define DT_C6000_PREEMPTMAP	0x70000002
-+#define DT_C6000_DSBT_INDEX	0x70000003
-+
-+/* C6X specific relocs */
-+#define R_C6000_NONE		0
-+#define R_C6000_ABS32		1
-+#define R_C6000_ABS16		2
-+#define R_C6000_ABS8		3
-+#define R_C6000_PCR_S21		4
-+#define R_C6000_PCR_S12		5
-+#define R_C6000_PCR_S10		6
-+#define R_C6000_PCR_S7		7
-+#define R_C6000_ABS_S16		8
-+#define R_C6000_ABS_L16		9
-+#define R_C6000_ABS_H16		10
-+#define R_C6000_SBR_U15_B	11
-+#define R_C6000_SBR_U15_H	12
-+#define R_C6000_SBR_U15_W	13
-+#define R_C6000_SBR_S16		14
-+#define R_C6000_SBR_L16_B	15
-+#define R_C6000_SBR_L16_H	16
-+#define R_C6000_SBR_L16_W	17
-+#define R_C6000_SBR_H16_B	18
-+#define R_C6000_SBR_H16_H	19
-+#define R_C6000_SBR_H16_W	20
-+#define R_C6000_SBR_GOT_U15_W	21
-+#define R_C6000_SBR_GOT_L16_W	22
-+#define R_C6000_SBR_GOT_H16_W	23
-+#define R_C6000_DSBT_INDEX	24
-+#define R_C6000_PREL31		25
-+#define R_C6000_COPY		26
-+#define R_C6000_ALIGN		253
-+#define R_C6000_FPHEAD		254
-+#define R_C6000_NOCMP		255
-+
-+#endif /*_ASM_C6X_ELF_H */
-diff --git a/arch/c6x/include/asm/emergency-restart.h b/arch/c6x/include/asm/emergency-restart.h
-new file mode 100644
-index 0000000..6cc0cf1
---- /dev/null
-+++ b/arch/c6x/include/asm/emergency-restart.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_EMERGENCY_RESTART_H
-+#define _ASM_C6X_EMERGENCY_RESTART_H
-+
-+#include <asm-generic/emergency-restart.h>
-+
-+#endif /* _ASM_C6X_EMERGENCY_RESTART_H */
-diff --git a/arch/c6x/include/asm/errno.h b/arch/c6x/include/asm/errno.h
-new file mode 100644
-index 0000000..7f74f4a
---- /dev/null
-+++ b/arch/c6x/include/asm/errno.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_ERRNO_H
-+#define _ASM_C6X_ERRNO_H
-+
-+#include <asm-generic/errno.h>
-+
-+#endif /* _ASM_C6X_ERRNO_H */
-diff --git a/arch/c6x/include/asm/fb.h b/arch/c6x/include/asm/fb.h
-new file mode 100644
-index 0000000..392e52a
---- /dev/null
-+++ b/arch/c6x/include/asm/fb.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_FB_H
-+#define _ASM_C6X_FB_H
-+
-+#include <asm-generic/fb.h>
-+
-+#endif /* _ASM_C6X_FB_H */
-diff --git a/arch/c6x/include/asm/fcntl.h b/arch/c6x/include/asm/fcntl.h
-new file mode 100644
-index 0000000..7a8f9eb
---- /dev/null
-+++ b/arch/c6x/include/asm/fcntl.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_FCNTL_H
-+#define _ASM_C6X_FCNTL_H
-+
-+#include <asm-generic/fcntl.h>
-+
-+#endif /* _ASM_C6X_FCNTL_H */
-diff --git a/arch/c6x/include/asm/ftrace.h b/arch/c6x/include/asm/ftrace.h
-new file mode 100644
-index 0000000..3701958
---- /dev/null
-+++ b/arch/c6x/include/asm/ftrace.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_FTRACE_H
-+#define _ASM_C6X_FTRACE_H
-+
-+/* empty */
-+
-+#endif /* _ASM_C6X_FTRACE_H */
-diff --git a/arch/c6x/include/asm/futex.h b/arch/c6x/include/asm/futex.h
-new file mode 100644
-index 0000000..d492f20
---- /dev/null
-+++ b/arch/c6x/include/asm/futex.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_FUTEX_H
-+#define _ASM_C6X_FUTEX_H
-+
-+#include <asm-generic/futex.h>
-+
-+#endif /* _ASM_C6X_FUTEX_H */
-diff --git a/arch/c6x/include/asm/gemac.h b/arch/c6x/include/asm/gemac.h
-new file mode 100644
-index 0000000..c73c65a
---- /dev/null
-+++ b/arch/c6x/include/asm/gemac.h
-@@ -0,0 +1,146 @@
-+/*
-+ *  linux/include/asm-c6x/gemac.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Nicolas Videau <nicolas.videau@jaluna.com>
-+ *	    Aurelien Jacquiot <a-jacquiot@ti.com>
-+ *
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_GEMAC_H
-+#define _ASM_C6X_GEMAC_H
-+
-+#ifdef __KERNEL__
-+
-+/*
-+ * Tx and Rx buffers parameters (total should be lower than 512)
-+ */
-+#define QUEUE_NUM	  8			 /* Number of queues in the EMAC */
-+#define DESC_NUM	  512			 /* Max number of descriptors in the descriptor
-+						    memory (invariant) */
-+#define QUEUE_DESC_NUM	  (DESC_NUM / QUEUE_NUM) /* Number of descriptors per queue */
-+#define MAC_ADDR_NUM	  32			 /* Number of MAC addresses */
-+
-+#define TX_RING_SIZE	  (QUEUE_DESC_NUM / 2)	 /* Must be a power of 2 */
-+#define RX_RING_SIZE	  (QUEUE_DESC_NUM - TX_RING_SIZE)
-+#define RX_RING_MOD_MAX   (RX_RING_SIZE - 1)
-+#define TX_RING_MOD_MASK  (TX_RING_SIZE - 1)
-+
-+#define PKT_MTU_CRC	  (ETH_FRAME_LEN + 4)
-+#define PKT_MTU_NOCRC	  ETH_FRAME_LEN
-+
-+#define TX_TIMEOUT	  (2*HZ)
-+#define EMAC_TIMER_PERIOD (HZ/10)
-+
-+#define GEMAC_RESET_COLD  1
-+#define GEMAC_RESET_WARM  2
-+
-+#define IDX_TO_CHAN(i)	  (i)			  /* Convert index to channel */
-+#define IDX_TO_MAC(i)	  ((i) << 1)		  /* Convert index to MAC addr offset */
-+#define DEV_TO_MAC(d)	  ((d) * CORE_NUM)	  /* Convert dev_id to MAC addr offset */
-+
-+/*
-+ * EMAC descriptor
-+ */
-+struct emac_desc {
-+	struct emac_desc  *next;
-+	u8		  *buff;
-+	u32		  buff_offset_len;
-+	u32		  packet_flags_len;
-+};
-+
-+/*
-+ * Private EMAC information
-+ */
-+struct emac_private {
-+	struct sk_buff *tx_skbuff[TX_RING_SIZE]; /* software TX skbuff ring */
-+	struct sk_buff *rx_skbuff[RX_RING_SIZE]; /* software RX skbuff ring */
-+	unsigned long skb_cur;
-+	unsigned long skb_tx_dirty;
-+	unsigned long skb_rx_dirty;
-+	unsigned long count_tx;
-+
-+	struct emac_desc *rx_desc_base;
-+	struct emac_desc *tx_desc_base; /* address of rx and tx buffers base */
-+	struct emac_desc *cur_rx;
-+	struct emac_desc *cur_tx;	/* the next free ring entries */
-+	struct emac_desc *dirty_tx;	/* the ring entry to be freed */
-+	struct emac_desc *head_tx;	/* the new list head to be sent */
-+
-+	struct net_device *dev;
-+
-+	unsigned long mode_flags;
-+	unsigned long slave;
-+	unsigned long packet_mtu;
-+	unsigned long tx_full;
-+	unsigned long fatal_error;
-+	spinlock_t    lock;
-+	unsigned long emac_reg_base;
-+	unsigned long ectl_reg_base;
-+	unsigned long emac_dsc_base;
-+	unsigned long mdio_reg_base;
-+#ifdef EMAC_HAS_ALE_SUPPORT
-+	unsigned int  mcast_valid_len;
-+	unsigned int *mcast_infos;
-+#endif
-+};
-+
-+/*
-+ * EMAC Configuration information
-+ */
-+struct emac_config {
-+	u32 flags;
-+	u32 enetaddr[6];
-+};
-+
-+#define emac_setbit_reg(reg, val)					\
-+	(*((volatile u32 *) (ep->emac_reg_base + (reg))) |= (u32) (val))
-+
-+#define emac_clearbit_reg(reg, val)					\
-+	(*((volatile u32 *) (ep->emac_reg_base + (reg))) &= ~((u32) (val)))
-+
-+#define emac_set_reg(reg, val)						\
-+	(*((volatile u32 *) (ep->emac_reg_base + (reg))) = (u32) (val))
-+
-+#define emac_get_reg(reg)				\
-+	(*((volatile u32 *) (ep->emac_reg_base + (reg))))
-+
-+#define emac_addr_reg(reg)				\
-+	((volatile u32 *) (ep->emac_reg_base + (reg)))
-+
-+#define emac_set_stat(w, reg)			\
-+	do {					\
-+		u32 stat = emac_get_reg(reg);	\
-+		emac_set_reg(reg, stat);	\
-+		stat += (w);			\
-+		(w) = stat;			\
-+	} while (0)
-+
-+#if defined(CONFIG_SOC_TMS320C6457) || defined(CONFIG_SOC_TMS320C6472) || defined(CONFIG_SOC_TMS320C6474)
-+#define ectl_setbit_reg(reg, val)					\
-+	(*((volatile u32 *) (ep->ectl_reg_base + (reg))) |= (u32) (val))
-+
-+#define ectl_clearbit_reg(reg, val)					\
-+	(*((volatile u32 *) (ep->ectl_reg_base + (reg))) &= ~((u32) (val)))
-+
-+#define ectl_set_reg(reg, val)						\
-+	(*((volatile u32 *) (ep->ectl_reg_base + (reg))) = (u32) (val))
-+
-+#define ectl_get_reg(reg)				\
-+	(*((volatile u32 *) (ep->ectl_reg_base + (reg))))
-+
-+/* Value for interrupt pacing: (CPUCLK/6) / 250000 (1/4us) = 0x29a on 1GHz DSP */
-+#define gemac_int_prescaler()					\
-+	((c6x_core_freq / 6) / 250000)
-+
-+#endif /* defined(CONFIG_SOC_TMS320C6457) || defined(CONFIG_SOC_TMS320C6472) || defined(CONFIG_SOC_TMS320C6474) */
-+
-+#include <mach/gemac.h>
-+
-+#endif /* __KERNEL__ */
-+#endif /* _ASM_C6X_EMAC_H */
-diff --git a/arch/c6x/include/asm/gmdio.h b/arch/c6x/include/asm/gmdio.h
-new file mode 100644
-index 0000000..af0b177
---- /dev/null
-+++ b/arch/c6x/include/asm/gmdio.h
-@@ -0,0 +1,217 @@
-+/*
-+ *  linux/include/asm-c6x/gmdio.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Nicolas Videau (nicolas.videau@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_GMDIO_H
-+#define _ASM_C6X_GMDIO_H
-+
-+#ifdef __KERNEL__
-+#include <mach/dscr.h>
-+#include <mach/gmdio.h>
-+
-+#define MDIO_VERSION		  0x000 /* Module Version Register */
-+#define MDIO_CONTROL		  0x004 /* Module Control Register */
-+#define MDIO_ALIVE		  0x008 /* PHY "Alive" Indication Register */
-+#define MDIO_LINK		  0x00c /* PHY Link Status Register */
-+#define MDIO_LINKINTRAW		  0x010 /* Link Status Change Interrupt Register */
-+#define MDIO_LINKINTMASKED	  0x014 /* Link Status Change Interrupt Register (Masked) */
-+#define MDIO_USERINTRAW		  0x020 /* User Command Complete Interrupt */
-+#define MDIO_USERINTMASKED	  0x024 /* User Command Complete Interrupt (Masked) */
-+#define MDIO_USERINTMASKSET	  0x028 /* Enable User Command Complete Interrupt Mask */
-+#define MDIO_USERINTMASKCLEAR	  0x02c /* Disable User Command Complete Interrupt Mask */
-+#define MDIO_USERACCESS0	  0x080 /* User Access Register 0 */
-+#define MDIO_USERPHYSEL0	  0x084 /* User PHY Select Register 0 */
-+#define MDIO_USERACCESS1	  0x088 /* User Access Register 1 */
-+#define MDIO_USERPHYSEL1	  0x08c /* User PHY Select Register 1 */
-+
-+#define EMAC_M_CLKDIV		 ((1 << 16) - 1)
-+
-+#define EMAC_B_FAULTENB		 (1 << 18)
-+#define EMAC_B_FAULT		 (1 << 19)
-+#define EMAC_B_PREAMBLE		 (1 << 20)
-+#define EMAC_B_ENABLE		 (1 << 30)
-+#define EMAC_B_IDLE		 (1 << 31)
-+
-+#define MDIO_B_ACK		 (1 << 29)
-+#define MDIO_B_WRITE		 (1 << 30)
-+#define MDIO_B_GO		 (1 << 31) /* for USERACESS */
-+
-+#define mdio_setbit_reg(reg, val) \
-+	(*((volatile u32 *) (MDIO_REG_BASE + (reg))) |= (u32) (val))
-+
-+#define mdio_clearbit_reg(reg, val) \
-+	(*((volatile u32 *) (MDIO_REG_BASE + (reg))) &= ~((u32) (val)))
-+
-+#define mdio_set_reg(reg, val) \
-+	(*((volatile u32 *) (MDIO_REG_BASE + (reg))) = (u32) (val))
-+
-+#define mdio_get_reg(reg) \
-+	(*((volatile u32 *) (MDIO_REG_BASE + (reg))))
-+
-+#define mdio_addr_reg(reg) \
-+	((volatile u32 *) (MDIO_REG_BASE + (reg)))
-+
-+
-+/*
-+ * MDIO status
-+ */
-+struct mdio_status {
-+	unsigned int mode;
-+	unsigned int phy_state;
-+	unsigned int phy_ticks;
-+	unsigned int phy_addr;
-+	unsigned int pending_status;
-+	unsigned int link_status;
-+	unsigned int macsel;
-+	unsigned int emac_txidver;
-+};
-+
-+/*
-+ * MDIO events
-+ */
-+#define MDIO_EVENT_NOCHANGE	 0   /* No change from previous status */
-+#define MDIO_EVENT_LINKDOWN	 1   /* Link down event */
-+#define MDIO_EVENT_LINKUP	 2   /* Link (or re-link) event */
-+#define MDIO_EVENT_PHYERROR	 3   /* No PHY connected */
-+
-+/*
-+ * MDIO link status values
-+ */
-+#define MDIO_LINKSTATUS_NOLINK	 0
-+#define MDIO_LINKSTATUS_HD10	 1
-+#define MDIO_LINKSTATUS_FD10	 2
-+#define MDIO_LINKSTATUS_HD100	 3
-+#define MDIO_LINKSTATUS_FD100	 4
-+#define MDIO_LINKSTATUS_FD1000	 5
-+
-+/*
-+ * MDIO configuration mode flags
-+ */
-+#define MDIO_MODE_AUTONEG	 0x0001 /* Use Autonegotiate	     */
-+#define MDIO_MODE_HD10		 0x0002 /* Use 10Mb/s Half Duplex    */
-+#define MDIO_MODE_FD10		 0x0004 /* Use 10Mb/s Full Duplex    */
-+#define MDIO_MODE_HD100		 0x0008 /* Use 100Mb/s Half Duplex   */
-+#define MDIO_MODE_FD100		 0x0010 /* Use 100Mb/s Full Duplex   */
-+#define MDIO_MODE_FD1000	 0x0020 /* Use 1000Mb/s Full Duplex  */
-+#define MDIO_MODE_LOOPBACK	 0x0040 /* Use PHY Loopback	     */
-+#define MDIO_MODE_NWAYACTIVE	 0x0080 /* NWAY is currently active  */
-+#define MDIO_MODE_EXTLOOPBACK	 0x0100 /* Use external PHY Loopback */
-+
-+/*
-+ * MDIO states in the PHY state machine
-+ */
-+#define MDIO_PHY_MDIOINIT	 0
-+#define MDIO_PHY_RESET		 1
-+#define MDIO_PHY_NWAYSTART	 2
-+#define MDIO_PHY_NWAYWAIT	 3
-+#define MDIO_PHY_LINKWAIT	 4
-+#define MDIO_PHY_LINKED		 5
-+
-+/*
-+ * PHY control registers
-+ */
-+#define MDIO_PHY_REG_CONTROL	 0
-+#define MDIO_PHY_REG_STATUS	 1
-+#define MDIO_PHY_REG_ID1	 2
-+#define MDIO_PHY_REG_ID2	 3
-+#define MDIO_PHY_REG_ADVERTISE	 4
-+#define MDIO_PHY_REG_PARTNER	 5
-+#define MDIO_PHY_REG_1000CONTROL 9
-+#define MDIO_PHY_REG_1000STATUS  0xA
-+#define MDIO_PHY_REG_EXTSTATUS	 0xF
-+#define MDIO_PHY_REG_SHADOW	 0x18
-+#define MDIO_PHY_REG_ACCESS	 0x1C
-+
-+#define MDIO_PHY_B_SPEEDMSB	 (1<<6)
-+#define MDIO_PHY_B_DUPLEXFULL	 (1<<8)
-+#define MDIO_PHY_B_AUTORESTART	 (1<<9)
-+#define MDIO_PHY_B_ISOLATE	 (1<<10)
-+#define MDIO_PHY_B_POWERDOWN	 (1<<11)
-+#define MDIO_PHY_B_AUTONEGEN	 (1<<12)
-+#define MDIO_PHY_B_SPEEDLSB	 (1<<13)
-+#define MDIO_PHY_B_SPEED100	 (1<<13)
-+#define MDIO_PHY_B_LOOPBACK	 (1<<14)
-+#define MDIO_PHY_B_RESET	 (1<<15)    /* for CONTROL */
-+
-+#define MDIO_PHY_B_FD100	 (1<<14)
-+#define MDIO_PHY_B_HD100	 (1<<13)
-+#define MDIO_PHY_B_FD10		 (1<<12)
-+#define MDIO_PHY_B_HD10		 (1<<11)
-+#define MDIO_PHY_B_EXTSTATUS	 (1<<8)
-+#define MDIO_PHY_B_NOPREAMBLE	 (1<<6)
-+#define MDIO_PHY_B_AUTOCOMPLETE  (1<<5)
-+#define MDIO_PHY_B_REMOTEFAULT	 (1<<4)
-+#define MDIO_PHY_B_AUTOCAPABLE	 (1<<3)
-+#define MDIO_PHY_B_LINKSTATUS	 (1<<2)
-+#define MDIO_PHY_B_JABBER	 (1<<1)
-+#define MDIO_PHY_B_EXTENDED	 (1<<0)     /* for STATUS */
-+
-+#define MDIO_PHY_B_NEXTPAGE	 (1<<15)
-+#define MDIO_PHY_B_ACK		 (1<<14)
-+#define MDIO_PHY_B_FAULT	 (1<<13)
-+#define MDIO_PHY_B_PAUSE	 (1<<10)
-+#define MDIO_PHY_B_AFD100	 (1<<8)
-+#define MDIO_PHY_B_AHD100	 (1<<7)
-+#define MDIO_PHY_B_AFD10	 (1<<6)
-+#define MDIO_PHY_B_AHD10	 (1<<5)
-+#define MDIO_PHY_B_MSGMASK	 (0x1F)
-+#define MDIO_PHY_B_MSG		 (1<<0)     /* for ADVERTISE and PARTNER */
-+
-+#define MDIO_PHY_ADV_FD1000	 (1<<9)     /* for 1000CONTROL */
-+
-+#define MDIO_PHY_PRT_FD1000	 (1<<11)    /* for 1000STATUS */
-+
-+#define MDIO_PHY_EXT_FD1000	 (1<<13)    /* for EXTSTATUS */
-+
-+#define MDIO_PHY_B_EXTLOOPBACK	 0x8400
-+#define MDIO_PHY_B_RGMIIMODE	 0xF080
-+#define MDIO_PHY_B_INBAND	 0xF1C7     /* for SHADOW */
-+
-+#define MDIO_PHY_B_COPPER	 0xFC00     /* for ACCESS */
-+
-+
-+#define mdio_phy_read(regadr, phyadr)			\
-+	mdio_set_reg(MDIO_USERACCESS0, MDIO_B_GO |	\
-+		     ((phyadr & 0x1f) << 16) |		\
-+		     ((regadr & 0x1f) << 21))
-+
-+#define mdio_phy_write(regadr, phyadr, data)		\
-+	mdio_set_reg(MDIO_USERACCESS0, MDIO_B_GO |	\
-+		     MDIO_B_WRITE |			\
-+		     ((phyadr & 0x1f) << 16) |		\
-+		     ((regadr & 0x1f) << 21) |		\
-+		     ((data & 0xffff)))
-+
-+#define mdio_phy_wait()					\
-+	while (mdio_get_reg(MDIO_USERACCESS0) & MDIO_B_GO)
-+
-+#define mdio_phy_wait_res(results)				   \
-+	do {							   \
-+		while (mdio_get_reg(MDIO_USERACCESS0) & MDIO_B_GO) \
-+			;					   \
-+		results = mdio_get_reg(MDIO_USERACCESS0) & 0xffff; \
-+	} while (0)
-+
-+#define mdio_phy_wait_res_ack(results, ack)				\
-+	do {								\
-+		while (mdio_get_reg(MDIO_USERACCESS0) & MDIO_B_GO)	\
-+			;						\
-+		results = mdio_get_reg(MDIO_USERACCESS0) & 0xffff;	\
-+		ack = (mdio_get_reg(MDIO_USERACCESS0) & MDIO_B_ACK) >> 29; \
-+	} while (0)
-+
-+extern int mdio_init(unsigned int txid_version);
-+extern unsigned int mdio_get_status(void);
-+extern unsigned int mdio_timer_tick(void);
-+extern unsigned int mdio_get_macsel(void);
-+
-+#endif /* __KERNEL__ */
-+#endif /* _ASM_C6X_GMDIO_H */
-diff --git a/arch/c6x/include/asm/hardirq.h b/arch/c6x/include/asm/hardirq.h
-new file mode 100644
-index 0000000..19c4a56
---- /dev/null
-+++ b/arch/c6x/include/asm/hardirq.h
-@@ -0,0 +1,22 @@
-+/*
-+ *  linux/include/asm-c6x/hardirq.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_C6X_HARDIRQ_H
-+#define _ASM_C6X_HARDIRQ_H
-+
-+extern void ack_bad_irq(int irq);
-+#define ack_bad_irq ack_bad_irq
-+
-+#include <asm-generic/hardirq.h>
-+
-+#endif /* _ASM_C6X_HARDIRQ_H */
-diff --git a/arch/c6x/include/asm/hardware.h b/arch/c6x/include/asm/hardware.h
-new file mode 100644
-index 0000000..69db640
---- /dev/null
-+++ b/arch/c6x/include/asm/hardware.h
-@@ -0,0 +1,21 @@
-+/*
-+ *  linux/include/asm-c6x/hardware.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x/C6x+ architecture
-+ *
-+ *  Copyright (C) 2005, 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_HARDWARE_H
-+#define _ASM_C6X_HARDWARE_H
-+
-+#define __SYSREG(ADDR, TYPE) (*(volatile TYPE*)(ADDR))
-+#define __SYSREGA(ADDR, TYPE) ((volatile TYPE*)(ADDR))
-+
-+#include <mach/hardware.h>
-+
-+#endif /* _ASM_C6X_HARDWARE_H */
-diff --git a/arch/c6x/include/asm/hw_irq.h b/arch/c6x/include/asm/hw_irq.h
-new file mode 100644
-index 0000000..7c159eb
---- /dev/null
-+++ b/arch/c6x/include/asm/hw_irq.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_HW_IRQ_H
-+#define _ASM_C6X_HW_IRQ_H
-+
-+#include <asm-generic/hw_irq.h>
-+
-+#endif /* _ASM_C6X_HW_IRQ_H */
-diff --git a/arch/c6x/include/asm/io.h b/arch/c6x/include/asm/io.h
-new file mode 100644
-index 0000000..e7a0353
---- /dev/null
-+++ b/arch/c6x/include/asm/io.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_IO_H
-+#define _ASM_C6X_IO_H
-+
-+#include <asm-generic/io.h>
-+
-+#endif /* _ASM_C6X_IO_H */
-diff --git a/arch/c6x/include/asm/ioctl.h b/arch/c6x/include/asm/ioctl.h
-new file mode 100644
-index 0000000..53fd15e
---- /dev/null
-+++ b/arch/c6x/include/asm/ioctl.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_IOCTL_H
-+#define _ASM_C6X_IOCTL_H
-+
-+#include <asm-generic/ioctl.h>
-+
-+#endif /* _ASM_C6X_IOCTL_H */
-diff --git a/arch/c6x/include/asm/ioctls.h b/arch/c6x/include/asm/ioctls.h
-new file mode 100644
-index 0000000..fd43676
---- /dev/null
-+++ b/arch/c6x/include/asm/ioctls.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_IOCTLS_H
-+#define _ASM_C6X_IOCTLS_H
-+
-+#include <asm-generic/ioctls.h>
-+
-+#endif /* _ASM_C6X_IOCTLS_H */
-diff --git a/arch/c6x/include/asm/ipcbuf.h b/arch/c6x/include/asm/ipcbuf.h
-new file mode 100644
-index 0000000..9f2d5f0
---- /dev/null
-+++ b/arch/c6x/include/asm/ipcbuf.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_IPCBUF_H
-+#define _ASM_C6X_IPCBUF_H
-+
-+#include <asm-generic/ipcbuf.h>
-+
-+#endif /* _ASM_C6X_IPCBUF_H */
-diff --git a/arch/c6x/include/asm/irq.h b/arch/c6x/include/asm/irq.h
-new file mode 100644
-index 0000000..177f7db
---- /dev/null
-+++ b/arch/c6x/include/asm/irq.h
-@@ -0,0 +1,101 @@
-+/*
-+ *  linux/include/asm-c6x/irq.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_IRQ_H
-+#define _ASM_C6X_IRQ_H
-+
-+#include <asm/hardware.h>
-+#include <asm/percpu.h>
-+
-+#include <mach/irq.h>
-+
-+#define irq_canonicalize(irq)  (irq)
++	/* Mask all general IRQs */
++	and_creg(IER, ~0xfff0);
++
++	for (i = 0; i < NR_SYS_IRQS; i++)
++		irq_set_chip_and_handler(i, &core_irq_chip, handle_level_irq);
 +
 +#ifdef CONFIG_PIC_C64XPLUS
-+#define NR_IRQS (NR_SOC_IRQS + NR_BOARD_IRQS)
++	init_pic_c64xplus();
++#endif
++
++	/* Clear all general IRQ flags */
++	set_creg(ICR, 0xfff0);
++}
++
++/* This is only necessary to squelch some warning about
++ * IRQs being enabled early. radix_tree_init() leaves
++ * interrupts enabled during early boot when they should
++ * be disabled. None of the individual bits in IER are
++ * enabled so we don't actually get interrupts, just the
++ * warning from init/main.c boot code.
++ */
++int __init __weak arch_early_irq_init(void)
++{
++	/* clear interrupt flags */
++	set_creg(ICR, 0xfff0);
++	local_irq_disable();
++	return 0;
++}
++
++int arch_show_interrupts(struct seq_file *p, int prec)
++{
++	seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
++	return 0;
++}
++
+diff --git a/arch/c6x/kernel/module.c b/arch/c6x/kernel/module.c
+new file mode 100644
+index 0000000..8356f99
+--- /dev/null
++++ b/arch/c6x/kernel/module.c
+@@ -0,0 +1,249 @@
++/*
++ *  linux/arch/c6x/kernel/module.c
++ *
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2005, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Thomas Charleux (thomas.charleux@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This file handles the architecture-dependent parts of process handling.
++ */
++#include <linux/moduleloader.h>
++#include <linux/elf.h>
++#include <linux/vmalloc.h>
++#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/string.h>
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <asm/byteorder.h>
++
++#if 0
++#define DEBUGP(fmt...) printk(KERN_INFO fmt)
 +#else
-+#define NR_IRQS (NR_SYS_IRQS + NR_BOARD_IRQS)
++#define DEBUGP(fmt...)
 +#endif
 +
-+/*
-+ * Number of C6x interrupt vectors.
-+ *
-+ * There are 16 vectors. One each is used by Reset and NMI. Two are reserved.
-+ * The remaining 12 vectors are used to route SoC interrupt sources. These
-+ * interrupt vectors are prioritized with INT4 having the highest priority
-+ * and INT15 having the lowest.
-+ *
-+ * The C64x+ megamodule provides a way to combine SoC IRQ sources into a single
-+ * IRQ vector. There are four combined sources, each of which feed into one of
-+ * the 12 general interrupt vectors. The remaining 8 vectors can each route a
-+ * single SoC interrupt directly.
-+ *
-+ */
-+#define NR_SYS_IRQS 16
-+
-+/*
-+ * Processor interrupt vector definitions
-+ * Interrupt sources are prioritized from INT0 (highest) to INT15 (lowest).
-+ */
-+#define INT0		    0	 /* RESET */
-+#define INT1		    1	 /* NMI */
-+#define INT2		    2	 /* Reserved */
-+#define INT3		    3	 /* Reserved */
-+#define INT4		    4	 /* level 4 interrupt */
-+#define INT5		    5	 /* level 5 interrupt */
-+#define INT6		    6	 /* level 6 interrupt */
-+#define INT7		    7	 /* level 7 interrupt */
-+#define INT8		    8	 /* level 8 interrupt */
-+#define INT9		    9	 /* level 9 interrupt */
-+#define INT10		    10	 /* level 10 interrupt */
-+#define INT11		    11	 /* level 11 interrupt */
-+#define INT12		    12	 /* level 12 interrupt */
-+#define INT13		    13	 /* level 13 interrupt */
-+#define INT14		    14	 /* level 14 interrupt */
-+#define INT15		    15	 /* level 15 interrupt */
-+
-+#ifdef CONFIG_PIC_C64XPLUS
-+/* holds mapping of hw interrupt number to kernel IRQ number */
-+extern uint16_t prio_to_irq[];
-+
-+#define hw_to_kernel_irq(hw) prio_to_irq[(hw)]
-+
-+/*
-+ * Functions used to map interrupts from one level to another.
-+ *
-+ * For irq_map:
-+ *    irq_src is a kernel IRQ number corresponding to megamodule combiner event
-+ *    irq_dst is a hardware interrupt number (INT4 - INT15)
-+ *
-+ * For irq_cic_map:
-+ *    irq_src is a kernel IRQ number corresponding to CIC combiner event
-+ *    irq_dst is a kernel IRQ number corresponding to megamodule combiner event
-+ *
-+ * In order to map a CIC event directly to a core hardware interrupt, it must
-+ * first be mapped to a megamodule event with irq_cic_map(). Then the megamodule
-+ * event can be mapped to a core hardware interrupt with irq_map().
-+ *
-+ */
-+extern void irq_map(unsigned int irq_src, unsigned int irq_dst);
-+extern void irq_cic_map(unsigned int irq_src, unsigned int irq_dst);
-+extern void cic_raw_map(unsigned int src, unsigned int dst, int core);
-+
-+extern void __init init_pic_c64xplus(void);
-+#endif
-+
-+extern void init_IRQ(void);
-+
-+struct pt_regs;
-+
-+extern asmlinkage void c6x_do_IRQ(unsigned int prio, struct pt_regs *regs);
-+
-+#endif /* _ASM_C6X_IRQ_H */
-diff --git a/arch/c6x/include/asm/irq_regs.h b/arch/c6x/include/asm/irq_regs.h
-new file mode 100644
-index 0000000..143adfe
---- /dev/null
-+++ b/arch/c6x/include/asm/irq_regs.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_IRQ_REGS_H
-+#define _ASM_C6X_IRQ_REGS_H
-+
-+#include <asm-generic/irq_regs.h>
-+
-+#endif /* _ASM_C6X_IRQ_REGS_H */
-diff --git a/arch/c6x/include/asm/irqflags.h b/arch/c6x/include/asm/irqflags.h
-new file mode 100644
-index 0000000..bac497f
---- /dev/null
-+++ b/arch/c6x/include/asm/irqflags.h
-@@ -0,0 +1,71 @@
-+/* C6X IRQ flag handling
-+ *
-+ * Copyright (C) 2010 Texas Instruments Incorporated
-+ * Written by Mark Salter (msalter@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifndef _ASM_IRQFLAGS_H
-+#define _ASM_IRQFLAGS_H
-+
-+#ifndef __ASSEMBLY__
-+
-+/* read interrupt enabled status */
-+static inline unsigned long arch_local_save_flags(void)
++void *module_alloc(unsigned long size)
 +{
-+	unsigned long flags;
-+
-+	asm volatile (" mvc .s2 CSR,%0\n" : "=b"(flags));
-+	return flags;
++	if (size == 0)
++		return NULL;
++	return vmalloc_exec(size);
 +}
 +
-+/* set interrupt enabled status */
-+static inline void arch_local_irq_restore(unsigned long flags)
++
++/* Free memory returned from module_alloc */
++void module_free(struct module *mod, void *module_region)
 +{
-+	asm volatile (" mvc .s2 %0,CSR\n" : : "b"(flags));
++	vfree(module_region);
++	/* FIXME: If module_region == mod->init_region, trim exception
++	   table entries. */
 +}
 +
-+/* unconditionally enable interrupts */
-+static inline void arch_local_irq_enable(void)
-+{
-+	unsigned long flags = arch_local_save_flags();
-+	flags |= 1;
-+	arch_local_irq_restore(flags);
-+}
-+
-+/* unconditionally disable interrupts */
-+static inline void arch_local_irq_disable(void)
-+{
-+	unsigned long flags = arch_local_save_flags();
-+	flags &= ~1;
-+	arch_local_irq_restore(flags);
-+}
-+
-+/* get status and disable interrupts */
-+static inline unsigned long arch_local_irq_save(void)
-+{
-+	unsigned long flags;
-+
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags & ~1);
-+	return flags;
-+}
-+
-+/* test flags */
-+static inline int arch_irqs_disabled_flags(unsigned long flags)
-+{
-+	return (flags & 1) == 0;
-+}
-+
-+/* test hardware interrupt enable bit */
-+static inline int arch_irqs_disabled(void)
-+{
-+	return arch_irqs_disabled_flags(arch_local_save_flags());
-+}
-+
-+#endif /* __ASSEMBLY__ */
-+#endif /* __ASM_IRQFLAGS_H */
-diff --git a/arch/c6x/include/asm/kdebug.h b/arch/c6x/include/asm/kdebug.h
-new file mode 100644
-index 0000000..d2c70ad
---- /dev/null
-+++ b/arch/c6x/include/asm/kdebug.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_KDEBUG_H
-+#define _ASM_C6X_KDEBUG_H
-+
-+#include <asm-generic/kdebug.h>
-+
-+#endif /* _ASM_C6X_KDEBUG_H */
-diff --git a/arch/c6x/include/asm/kmap_types.h b/arch/c6x/include/asm/kmap_types.h
-new file mode 100644
-index 0000000..696057f
---- /dev/null
-+++ b/arch/c6x/include/asm/kmap_types.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_KMAP_TYPES_H
-+#define _ASM_C6X_KMAP_TYPES_H
-+
-+#include <asm-generic/kmap_types.h>
-+
-+#endif /* _ASM_C6X_KMAP_TYPES_H */
-diff --git a/arch/c6x/include/asm/leds.h b/arch/c6x/include/asm/leds.h
-new file mode 100644
-index 0000000..bdd17da
---- /dev/null
-+++ b/arch/c6x/include/asm/leds.h
-@@ -0,0 +1,22 @@
 +/*
-+ *  arch/c6x/include/asm/leds.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2010 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
++ * finish loading the module
 + */
-+#ifndef _ASM_C6X_LEDS_H
-+#define _ASM_C6X_LEDS_H
-+
-+#include <mach/board.h>
-+
-+#ifndef __ASSEMBLY__
-+extern void c6x_arch_idle_led(int state);
-+#endif
-+
-+#endif /* _ASM_C6X_LEDS_H */
-diff --git a/arch/c6x/include/asm/linkage.h b/arch/c6x/include/asm/linkage.h
-new file mode 100644
-index 0000000..d6807e9
---- /dev/null
-+++ b/arch/c6x/include/asm/linkage.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_LINKAGE_H
-+#define _ASM_C6X_LINKAGE_H
-+
-+#include <asm-generic/linkage.h>
-+
-+#endif /* _ASM_C6X_LINKAGE_H */
-diff --git a/arch/c6x/include/asm/local.h b/arch/c6x/include/asm/local.h
-new file mode 100644
-index 0000000..17a94b4
---- /dev/null
-+++ b/arch/c6x/include/asm/local.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_LOCAL_H
-+#define _ASM_C6X_LOCAL_H
-+
-+#include <asm-generic/local.h>
-+
-+#endif /* _ASM_C6X_LOCAL_H */
-diff --git a/arch/c6x/include/asm/mman.h b/arch/c6x/include/asm/mman.h
-new file mode 100644
-index 0000000..8234838
---- /dev/null
-+++ b/arch/c6x/include/asm/mman.h
-@@ -0,0 +1,7 @@
-+#ifndef _ASM_C6X_MMAN_H
-+#define _ASM_C6X_MMAN_H
-+
-+#include <asm-generic/mman.h>
-+
-+#endif /* _ASM_C6X_MMAN_H */
-+
-diff --git a/arch/c6x/include/asm/mmu.h b/arch/c6x/include/asm/mmu.h
-new file mode 100644
-index 0000000..8d376e9
---- /dev/null
-+++ b/arch/c6x/include/asm/mmu.h
-@@ -0,0 +1,20 @@
-+/*
-+ *  linux/include/asm-c6x/mmu.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_MMU_H
-+#define _ASM_C6X_MMU_H
-+
-+typedef struct {
-+	unsigned long		end_brk;
-+} mm_context_t;
-+
-+#endif /* _ASM_C6X_MMU_H */
-diff --git a/arch/c6x/include/asm/mmu_context.h b/arch/c6x/include/asm/mmu_context.h
-new file mode 100644
-index 0000000..7b222ba
---- /dev/null
-+++ b/arch/c6x/include/asm/mmu_context.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_MMU_CONTEXT_H
-+#define _ASM_C6X_MMU_CONTEXT_H
-+
-+#include <asm-generic/mmu_context.h>
-+
-+#endif /* _ASM_C6X_MMU_CONTEXT_H */
-diff --git a/arch/c6x/include/asm/module.h b/arch/c6x/include/asm/module.h
-new file mode 100644
-index 0000000..d76d106
---- /dev/null
-+++ b/arch/c6x/include/asm/module.h
-@@ -0,0 +1,35 @@
-+/*
-+ *  arch/c6x/include/asm/module.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.34 by: Mark Salter (msalter@redhat.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_MODULE_H
-+#define _ASM_C6X_MODULE_H
-+
-+#define Elf_Shdr	Elf32_Shdr
-+#define Elf_Sym		Elf32_Sym
-+#define Elf_Ehdr	Elf32_Ehdr
-+#define Elf_Addr	Elf32_Addr
-+#define Elf_Word	Elf32_Word
-+
-+/*
-+ * This file contains the C6x architecture specific module code.
-+ */
-+struct mod_arch_specific {
-+};
-+
-+struct loaded_sections {
-+	unsigned int new_vaddr;
-+	unsigned int loaded;
-+};
-+
-+#endif /* _ASM_C6X_MODULE_H */
-diff --git a/arch/c6x/include/asm/msgbuf.h b/arch/c6x/include/asm/msgbuf.h
-new file mode 100644
-index 0000000..14f063e
---- /dev/null
-+++ b/arch/c6x/include/asm/msgbuf.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_MSGBUF_H
-+#define _ASM_C6X_MSGBUF_H
-+
-+#include <asm-generic/msgbuf.h>
-+
-+#endif /* _ASM_C6X_MSGBUF_H */
-diff --git a/arch/c6x/include/asm/mutex.h b/arch/c6x/include/asm/mutex.h
-new file mode 100644
-index 0000000..7a7248e
---- /dev/null
-+++ b/arch/c6x/include/asm/mutex.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_MUTEX_H
-+#define _ASM_C6X_MUTEX_H
-+
-+#include <asm-generic/mutex-null.h>
-+
-+#endif /* _ASM_C6X_MUTEX_H */
-diff --git a/arch/c6x/include/asm/page.h b/arch/c6x/include/asm/page.h
-new file mode 100644
-index 0000000..d18e2b0
---- /dev/null
-+++ b/arch/c6x/include/asm/page.h
-@@ -0,0 +1,11 @@
-+#ifndef _ASM_C6X_PAGE_H
-+#define _ASM_C6X_PAGE_H
-+
-+#define VM_DATA_DEFAULT_FLAGS \
-+	(VM_READ | VM_WRITE | \
-+	((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0) | \
-+		 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+
-+#include <asm-generic/page.h>
-+
-+#endif /* _ASM_C6X_PAGE_H */
-diff --git a/arch/c6x/include/asm/param.h b/arch/c6x/include/asm/param.h
-new file mode 100644
-index 0000000..986e6c5
---- /dev/null
-+++ b/arch/c6x/include/asm/param.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_PARAM_H
-+#define _ASM_C6X_PARAM_H
-+
-+#include <asm-generic/param.h>
-+
-+#endif /* _ASM_C6X_PARAM_H */
-diff --git a/arch/c6x/include/asm/pci.h b/arch/c6x/include/asm/pci.h
-new file mode 100644
-index 0000000..d7da231
---- /dev/null
-+++ b/arch/c6x/include/asm/pci.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_PCI_H
-+#define _ASM_C6X_PCI_H
-+
-+#include <asm-generic/pci.h>
-+
-+#endif /* _ASM_C6X_PCI_H */
-diff --git a/arch/c6x/include/asm/percpu.h b/arch/c6x/include/asm/percpu.h
-new file mode 100644
-index 0000000..dbb7dc5
---- /dev/null
-+++ b/arch/c6x/include/asm/percpu.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_PERCPU_H
-+#define _ASM_C6X_PERCPU_H
-+
-+#include <asm-generic/percpu.h>
-+
-+#endif /* _ASM_C6X_PERCPU_H */
-diff --git a/arch/c6x/include/asm/pgalloc.h b/arch/c6x/include/asm/pgalloc.h
-new file mode 100644
-index 0000000..aff53f7
---- /dev/null
-+++ b/arch/c6x/include/asm/pgalloc.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_PGALLOC_H
-+#define _ASM_C6X_PGALLOC_H
-+
-+#include <asm-generic/pgalloc.h>
-+
-+#endif /* _ASM_C6X_PGALLOC_H */
-diff --git a/arch/c6x/include/asm/pgtable.h b/arch/c6x/include/asm/pgtable.h
-new file mode 100644
-index 0000000..4e849d7
---- /dev/null
-+++ b/arch/c6x/include/asm/pgtable.h
-@@ -0,0 +1,83 @@
-+/*
-+ *  linux/include/asm-c6x/pgtable.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PGTABLE_H
-+#define _ASM_C6X_PGTABLE_H
-+
-+#include <asm-generic/4level-fixup.h>
-+
-+#include <asm/setup.h>
-+#include <asm/page.h>
-+
-+/*
-+ * All 32bit addresses are effectively valid for vmalloc...
-+ * Sort of meaningless for non-VM targets.
-+ */
-+#define	VMALLOC_START	0
-+#define	VMALLOC_END	0xffffffff
-+
-+#define pgd_present(pgd)	(1)
-+#define pgd_none(pgd)		(0)
-+#define pgd_bad(pgd)		(0)
-+#define pgd_clear(pgdp)
-+#define kern_addr_valid(addr) (1)
-+
-+#define pmd_offset(a, b)	((void *)0)
-+#define pmd_none(x)		(!pmd_val(x))
-+#define pmd_present(x)		(pmd_val(x))
-+#define pmd_clear(xp)		do { set_pmd(xp, __pmd(0)); } while (0)
-+#define pmd_bad(x)		(pmd_val(x) & ~PAGE_MASK)
-+
-+#define PAGE_NONE		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_SHARED		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_COPY		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_READONLY	        __pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_KERNEL		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define pgprot_noncached(prot)	(prot)
-+
-+extern void paging_init(void);
-+
-+#define __swp_type(x)		(0)
-+#define __swp_offset(x)		(0)
-+#define __swp_entry(typ, off)	((swp_entry_t) { ((typ) | ((off) << 7)) })
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+#define __swp_entry_to_pte(x)	((pte_t) { (x).val })
-+
-+static inline int pte_file(pte_t pte)
++int module_finalize(const Elf_Ehdr *hdr,
++		    const Elf_Shdr *sechdrs,
++		    struct module *me)
 +{
 +	return 0;
 +}
 +
-+#define set_pte(pteptr, pteval) (*(pteptr) = pteval)
-+#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
++/*
++ * finish clearing the module
++ */
++void module_arch_cleanup(struct module *mod)
++{
++	module_bug_cleanup(mod);
++}
++
++
++/* We don't need anything special. */
++int module_frob_arch_sections(Elf_Ehdr *hdr,
++			      Elf_Shdr *sechdrs,
++			      char *secstrings,
++			      struct module *mod)
++{
++	return 0;
++}
++
++static inline int fixup_pcr(u32 *ip, Elf32_Addr dest, u32 maskbits, int shift)
++{
++	u32 opcode;
++	long ep = (long)ip & ~31;
++	long delta = ((long)dest - ep) >> 2;
++	long mask = (1 << maskbits) - 1;
++
++	if ((delta >> (maskbits - 1)) == 0 ||
++	    (delta >> (maskbits - 1)) == -1) {
++		opcode = *ip;
++		opcode &= ~(mask << shift);
++		opcode |= ((delta & mask) << shift);
++		*ip = opcode;
++
++		DEBUGP("REL PCR_S%d[%p] dest[0p] opcode[%08x]\n",
++		       maskbits, ip, (void *)dest, opcode);
++
++		return 0;
++	}
++	printk(KERN_ERR "PCR_S%d reloc %p -> %p out of range!\n",
++	       maskbits, ip, (void *)dest);
++
++	return -1;
++}
 +
 +/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
++ * apply a REL relocation
 + */
-+#define ZERO_PAGE(vaddr)	virt_to_page(empty_zero_page)
-+extern unsigned long empty_zero_page;
++int apply_relocate(Elf32_Shdr *sechdrs,
++		   const char *strtab,
++		   unsigned int symindex,
++		   unsigned int relsec,
++		   struct module *me)
++{
++	Elf32_Rel *rel = (void *) sechdrs[relsec].sh_addr;
++	Elf_Sym *sym;
++	u32 *location;
++	unsigned int i;
++	Elf32_Addr v;
++	Elf_Addr offset = 0;
 +
-+#define swapper_pg_dir ((pgd_t *) 0)
++	DEBUGP("Applying relocate section %u to %u with offset[0x%x]\n", relsec,
++	       sechdrs[relsec].sh_info, offset);
++
++	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
++		/* This is where to make the change */
++		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
++			+ rel[i].r_offset - offset;
++
++		/* This is the symbol it is referring to.  Note that all
++		   undefined symbols have been resolved.  */
++		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
++			+ ELF32_R_SYM(rel[i].r_info);
++
++		/* this is the adjustment to be made */
++		v = sym->st_value;
++
++		switch (ELF32_R_TYPE(rel[i].r_info)) {
++		case R_C6000_ABS32:
++			DEBUGP("REL ABS32: [%p] = 0x%x\n", location, v);
++			*location = v;
++			break;
++		case R_C6000_ABS16:
++			DEBUGP("REL ABS16: [%p] = 0x%x\n", location, v);
++			*(u16 *)location = v;
++			break;
++		case R_C6000_ABS8:
++			DEBUGP("REL ABS8: [%p] = 0x%x\n", location, v);
++			*(u8 *)location = v;
++			break;
++		case R_C6000_PCR_S21:
++			if (fixup_pcr(location, v, 21, 7))
++				return -ENOEXEC;
++			break;
++		case R_C6000_PCR_S12:
++			if (fixup_pcr(location, v, 12, 16))
++				return -ENOEXEC;
++			break;
++		case R_C6000_PCR_S10:
++			if (fixup_pcr(location, v, 10, 13))
++				return -ENOEXEC;
++			break;
++		default:
++			printk(KERN_ERR "module %s: Unknown REL relocation: %u\n",
++			       me->name, ELF32_R_TYPE(rel[i].r_info));
++			return -ENOEXEC;
++		}
++	}
++
++	return 0;
++}
 +
 +/*
-+ * No page table caches to initialise
++ * apply a RELA relocation
 + */
-+#define pgtable_cache_init()   do { } while (0)
-+#define io_remap_pfn_range      remap_pfn_range
++int apply_relocate_add(Elf32_Shdr *sechdrs,
++		       const char *strtab,
++		       unsigned int symindex,
++		       unsigned int relsec,
++		       struct module *me)
++{
++	Elf32_Rela *rel = (void *) sechdrs[relsec].sh_addr;
++	Elf_Sym *sym;
++	u32 *location, opcode;
++	unsigned int i;
++	Elf32_Addr v;
++	Elf_Addr offset = 0;
 +
-+#define io_remap_page_range(vma, vaddr, paddr, size, prot)		\
-+		remap_pfn_range(vma, vaddr, (paddr) >> PAGE_SHIFT, size, prot)
++	DEBUGP("Applying relocate section %u to %u with offset 0x%x\n", relsec,
++	       sechdrs[relsec].sh_info, offset);
 +
-+#include <asm-generic/pgtable.h>
++	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
++		/* This is where to make the change */
++		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
++			+ rel[i].r_offset - offset;
 +
-+#endif /* _ASM_C6X_PGTABLE_H */
-diff --git a/arch/c6x/include/asm/pll.h b/arch/c6x/include/asm/pll.h
++		/* This is the symbol it is referring to.  Note that all
++		   undefined symbols have been resolved.  */
++		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
++			+ ELF32_R_SYM(rel[i].r_info);
++
++		/* this is the adjustment to be made */
++		v = sym->st_value + rel[i].r_addend;
++
++		switch (ELF32_R_TYPE(rel[i].r_info)) {
++		case R_C6000_ABS32:
++			DEBUGP("RELA ABS32: [%p] = 0x%x\n", location, v);
++			*location = v;
++			break;
++		case R_C6000_ABS16:
++			DEBUGP("RELA ABS16: [%p] = 0x%x\n", location, v);
++			*(u16 *)location = v;
++			break;
++		case R_C6000_ABS8:
++			DEBUGP("RELA ABS8: [%p] = 0x%x\n", location, v);
++			*(u8 *)location = v;
++			break;
++		case R_C6000_ABS_L16:
++			opcode = *location;
++			opcode &= ~0x7fff80;
++			opcode |= ((v & 0xffff) << 7);
++			DEBUGP("RELA ABS_L16[%p] v[0x%x] opcode[0x%x]\n",
++			       location, v, opcode);
++			*location = opcode;
++			break;
++		case R_C6000_ABS_H16:
++			opcode = *location;
++			opcode &= ~0x7fff80;
++			opcode |= ((v >> 9) & 0x7fff80);
++			DEBUGP("RELA ABS_H16[%p] v[0x%x] opcode[0x%x]\n",
++			       location, v, opcode);
++			*location = opcode;
++			break;
++		case R_C6000_PCR_S21:
++			if (fixup_pcr(location, v, 21, 7))
++				return -ENOEXEC;
++			break;
++		case R_C6000_PCR_S12:
++			if (fixup_pcr(location, v, 12, 16))
++				return -ENOEXEC;
++			break;
++		case R_C6000_PCR_S10:
++			if (fixup_pcr(location, v, 10, 13))
++				return -ENOEXEC;
++			break;
++		default:
++			printk(KERN_ERR "module %s: Unknown RELA relocation: %u\n",
++			       me->name, ELF32_R_TYPE(rel[i].r_info));
++			return -ENOEXEC;
++		}
++	}
++
++	return 0;
++}
++
+diff --git a/arch/c6x/kernel/process.c b/arch/c6x/kernel/process.c
 new file mode 100644
-index 0000000..86bcdd8
+index 0000000..3aea8b8
 --- /dev/null
-+++ b/arch/c6x/include/asm/pll.h
-@@ -0,0 +1,79 @@
++++ b/arch/c6x/kernel/process.c
+@@ -0,0 +1,349 @@
 +/*
-+ *  linux/include/asm-c6x/pll.h
++ *  linux/arch/c6x/kernel/process.c
 + *
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Nicolas Videau (nicolas.videau@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PLL_H
-+#define _ASM_C6X_PLL_H
-+
-+#include <asm/io.h>
-+#include <mach/pll.h>
-+
-+#ifdef ARCH_PLL1_BASE
-+#define pll1_set_reg(reg, val) \
-+	(*(volatile unsigned long *)(ARCH_PLL1_BASE + (reg)) = (val))
-+
-+#define pll1_get_reg(reg) \
-+	(*(volatile unsigned long *)(ARCH_PLL1_BASE + (reg)))
-+
-+#define pll1_clearbit_reg(reg, val) \
-+	pll1_set_reg((reg), pll1_get_reg(reg) & ~((u32)(val)))
-+
-+#define pll1_setbit_reg(reg, val) \
-+	pll1_set_reg((reg), pll1_get_reg(reg) | (u32)(val))
-+
-+static inline void pll1_wait_gostat(void)
-+{
-+	while (pll1_get_reg(PLLSTAT) & PLLSTAT_GOSTAT)
-+		;
-+}
-+#endif /* ARCH_PLL1_BASE */
-+
-+#ifdef ARCH_PLL2_BASE
-+#define pll2_set_reg(reg, val) \
-+	(*(volatile unsigned long *)(ARCH_PLL2_BASE + (reg)) = (val))
-+
-+#define pll2_get_reg(reg) \
-+	(*(volatile unsigned long *)(ARCH_PLL2_BASE + (reg)))
-+
-+#define pll2_clearbit_reg(reg, val) \
-+	pll2_set_reg((reg), pll2_get_reg(reg) & ~((u32)(val)))
-+
-+#define pll2_setbit_reg(reg, val) \
-+	pll2_set_reg((reg), pll2_get_reg(reg) | (u32)(val))
-+
-+static inline void pll2_wait_gostat(void)
-+{
-+	while (pll2_get_reg(PLLSTAT) & PLLSTAT_GOSTAT)
-+		;
-+}
-+#endif /* ARCH_PLL2_BASE */
-+
-+#ifdef ARCH_PLL3_BASE
-+#define pll3_set_reg(reg, val) \
-+	(*(volatile unsigned long *)(ARCH_PLL3_BASE + (reg)) = (val))
-+
-+#define pll3_get_reg(reg) \
-+	(*(volatile unsigned long *)(ARCH_PLL3_BASE + (reg)))
-+
-+#define pll3_clearbit_reg(reg, val) \
-+	pll3_set_reg((reg), pll3_get_reg(reg) & ~((u32)(val)))
-+
-+#define pll3_setbit_reg(reg, val) \
-+	pll3_set_reg((reg), pll3_get_reg(reg) | (u32)(val))
-+
-+static inline void pll3_wait_gostat(void)
-+{
-+	while (pll3_get_reg(PLLSTAT) & PLLSTAT_GOSTAT)
-+		;
-+}
-+#endif /* ARCH_PLL2_BASE */
-+
-+#endif /*_ASM_C6X_PLL_H */
-diff --git a/arch/c6x/include/asm/pm.h b/arch/c6x/include/asm/pm.h
-new file mode 100644
-index 0000000..1bc387f
---- /dev/null
-+++ b/arch/c6x/include/asm/pm.h
-@@ -0,0 +1,48 @@
-+/*
-+ *  linux/include/asm-c6x/pm.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
++ *
++ *  This file handles the architecture-dependent parts of process handling.
 + */
-+#ifndef _ASM_C6X_PM_H
-+#define _ASM_C6X_PM_H
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/smp.h>
++#include <linux/stddef.h>
++#include <linux/unistd.h>
++#include <linux/ptrace.h>
++#include <linux/slab.h>
++#include <linux/user.h>
++#include <linux/reboot.h>
++#include <linux/init_task.h>
++#include <linux/mqueue.h>
++#include <linux/stddef.h>
++#include <linux/module.h>
++#include <linux/tick.h>
++#include <linux/sched.h>
 +
-+#define PWRD_NONE	 0x00
-+#define PWRD_PD1A	 0x09
-+#define PWRD_PD1B	 0x11
-+#define PWRD_PD2	 0x1a
-+#define PWRD_PD3	 0x1c
-+#define PWRD_IDLE	 0xff
++#include <asm/uaccess.h>
++#include <asm/system.h>
++#include <asm/traps.h>
++#include <asm/setup.h>
++#include <asm/pgtable.h>
++#include <asm/pm.h>
++#include <asm/string.h>
++#include <asm/syscalls.h>
 +
-+#define pwrd_set(pwrd)	 or_creg(CSR, ((pwrd) & 0xff) << 10))
-+#define do_idle()	 asm(" IDLE\n")
++#include <mach/board.h>  /* for c6x_arch_idle_led() */
 +
-+#define PWR_PDCTL_BASE	 0x019c0200
-+
-+#define PWR_PDCTL_MCBSP2 0x10
-+#define PWR_PDCTL_MCBSP1 0x08
-+#define PWR_PDCTL_MCBSP0 0x04
-+#define PWR_PDCTL_EMIF	 0x02
-+#define PWR_PDCTL_DMA	 0x01
-+#define PWR_PDCTL_ALL	 0x1f
-+
-+#define pwr_pdctl_setbit(val) \
-+	(*((volatile unsigned int *) PWR_PDCTL_BASE) |= (unsigned int) (val))
-+
-+#define pwr_pdctl_clearbit(val) \
-+	(*((volatile unsigned int *) PWR_PDCTL_BASE) &= ~((unsigned int) (val)))
-+
-+#define pwr_pdctl_set(val) \
-+	(*((volatile unsigned int *) PWR_PDCTL_BASE) = (unsigned int) (val))
-+
-+#define pwr_pdctl_get() \
-+	(*((volatile unsigned int *) PWR_PDCTL_BASE))
-+
-+#endif /* _ASM_C6X_PM_H */
-+
-diff --git a/arch/c6x/include/asm/poll.h b/arch/c6x/include/asm/poll.h
-new file mode 100644
-index 0000000..2d5834e
---- /dev/null
-+++ b/arch/c6x/include/asm/poll.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_POLL_H
-+#define _ASM_C6X_POLL_H
-+
-+#include <asm-generic/poll.h>
-+
-+#endif /* _ASM_C6X_POLL_H */
-diff --git a/arch/c6x/include/asm/posix_types.h b/arch/c6x/include/asm/posix_types.h
-new file mode 100644
-index 0000000..3585157
---- /dev/null
-+++ b/arch/c6x/include/asm/posix_types.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_POSIX_TYPES_H
-+#define _ASM_C6X_POSIX_TYPES_H
-+
-+#include <asm-generic/posix_types.h>
-+
-+#endif /* _ASM_C6X_POSIX_TYPES_H */
-diff --git a/arch/c6x/include/asm/processor.h b/arch/c6x/include/asm/processor.h
-new file mode 100644
-index 0000000..bb5678d
---- /dev/null
-+++ b/arch/c6x/include/asm/processor.h
-@@ -0,0 +1,118 @@
++static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
++static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
 +/*
-+ * linux/include/asm-c6x/processor.h
++ * Initial thread structure.
++ *
++ * We need to make sure that this is THREAD_SIZE aligned due to the
++ * way process stacks are handled. This is done by having a special
++ * "init_task" linker map entry..
++ */
++union thread_union init_thread_union __init_task_data =	{
++	INIT_THREAD_INFO(init_task)
++};
++
++/*
++ * Initial task structure.
++ *
++ * All other task structs will be allocated on slabs in fork.c
++ */
++struct task_struct init_task = INIT_TASK(init_task);
++EXPORT_SYMBOL(init_task);
++
++extern asmlinkage void ret_from_fork(void);
++
++/*
++ * power off function, if any
++ */
++void (*pm_power_off)(void);
++EXPORT_SYMBOL(pm_power_off);
++
++/*
++ * power management idle function, if any..
++ */
++void (*pm_idle)(void);
++EXPORT_SYMBOL(pm_idle);
++
++static void default_idle(void)
++{
++#if defined(CONFIG_PM)
++	pwrd_set(PWRD_PD1A);
++#endif
++#ifndef CONFIG_ARCH_SIM
++	do_idle(); /* do nothing until interrupt */
++#endif
++}
++
++/*
++ * The idle loop for C64x
++ */
++void cpu_idle(void)
++{
++	/* endless idle loop with no priority at all */
++	while (1) {
++#ifdef CONFIG_TICK_ONESHOT
++		tick_nohz_stop_sched_tick(1);
++#endif
++		while (!need_resched()) {
++			void (*idle)(void);
++
++			smp_rmb();
++			idle = pm_idle;
++			if (!idle)
++				idle = default_idle;
++			idle();
++		}
++#ifdef CONFIG_TICK_ONESHOT
++		tick_nohz_restart_sched_tick();
++#endif
++		preempt_enable_no_resched();
++		schedule();
++		preempt_disable();
++	}
++}
++
++void machine_restart(char *__unused)
++{
++	while (1)
++		;
++}
++
++void machine_halt(void)
++{
++	while (1)
++		;
++}
++
++void machine_power_off(void)
++{
++	while (1)
++		;
++}
++
++void show_regs(struct pt_regs *regs)
++{
++	printk(KERN_INFO "\n");
++	printk(KERN_INFO "PC: %08lx SP: %08lx\n",
++	       regs->pc, regs->sp);
++	printk(KERN_INFO "Status: %08lx ORIG_A4: %08lx\n",
++	       regs->csr, regs->orig_a4);
++	printk(KERN_INFO "A0: %08lx  B0: %08lx\n",
++	       regs->a0, regs->b0);
++	printk(KERN_INFO "A1: %08lx  B1: %08lx\n",
++	       regs->a1, regs->b1);
++	printk(KERN_INFO "A2: %08lx  B2: %08lx\n",
++	       regs->a2, regs->b2);
++	printk(KERN_INFO "A3: %08lx  B3: %08lx\n",
++	       regs->a3, regs->b3);
++	printk(KERN_INFO "A4: %08lx  B4: %08lx\n",
++	       regs->a4, regs->b4);
++	printk(KERN_INFO "A5: %08lx  B5: %08lx\n",
++	       regs->a5, regs->b5);
++	printk(KERN_INFO "A6: %08lx  B6: %08lx\n",
++	       regs->a6, regs->b6);
++	printk(KERN_INFO "A7: %08lx  B7: %08lx\n",
++	       regs->a7, regs->b7);
++	printk(KERN_INFO "A8: %08lx  B8: %08lx\n",
++	       regs->a8, regs->b8);
++	printk(KERN_INFO "A9: %08lx  B9: %08lx\n",
++	       regs->a9, regs->b9);
++	printk(KERN_INFO "A10: %08lx  B10: %08lx\n",
++	       regs->a10, regs->b10);
++	printk(KERN_INFO "A11: %08lx  B11: %08lx\n",
++	       regs->a11, regs->b11);
++	printk(KERN_INFO "A12: %08lx  B12: %08lx\n",
++	       regs->a12, regs->b12);
++	printk(KERN_INFO "A13: %08lx  B13: %08lx\n",
++	       regs->a13, regs->b13);
++	printk(KERN_INFO "A14: %08lx  B14: %08lx\n",
++	       regs->a14, regs->dp);
++	printk(KERN_INFO "A15: %08lx  B15: %08lx\n",
++	       regs->a15, regs->sp);
++	printk(KERN_INFO "A16: %08lx  B16: %08lx\n",
++	       regs->a16, regs->b16);
++	printk(KERN_INFO "A17: %08lx  B17: %08lx\n",
++	       regs->a17, regs->b17);
++	printk(KERN_INFO "A18: %08lx  B18: %08lx\n",
++	       regs->a18, regs->b18);
++	printk(KERN_INFO "A19: %08lx  B19: %08lx\n",
++	       regs->a19, regs->b19);
++	printk(KERN_INFO "A20: %08lx  B20: %08lx\n",
++	       regs->a20, regs->b20);
++	printk(KERN_INFO "A21: %08lx  B21: %08lx\n",
++	       regs->a21, regs->b21);
++	printk(KERN_INFO "A22: %08lx  B22: %08lx\n",
++	       regs->a22, regs->b22);
++	printk(KERN_INFO "A23: %08lx  B23: %08lx\n",
++	       regs->a23, regs->b23);
++	printk(KERN_INFO "A24: %08lx  B24: %08lx\n",
++	       regs->a24, regs->b24);
++	printk(KERN_INFO "A25: %08lx  B25: %08lx\n",
++	       regs->a25, regs->b25);
++	printk(KERN_INFO "A26: %08lx  B26: %08lx\n",
++	       regs->a26, regs->b26);
++	printk(KERN_INFO "A27: %08lx  B27: %08lx\n",
++	       regs->a27, regs->b27);
++	printk(KERN_INFO "A28: %08lx  B28: %08lx\n",
++	       regs->a28, regs->b28);
++	printk(KERN_INFO "A29: %08lx  B29: %08lx\n",
++	       regs->a29, regs->b29);
++	printk(KERN_INFO "A30: %08lx  B30: %08lx\n",
++	       regs->a30, regs->b30);
++	printk(KERN_INFO "A31: %08lx  B31: %08lx\n",
++	       regs->a31, regs->b31);
++}
++
++
++static void kernel_thread_helper(int dummy, void *arg, int (*fn)(void *))
++{
++	do_exit(fn(arg));
++}
++
++/*
++ * Create a kernel thread
++ */
++int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags)
++{
++	struct pt_regs regs;
++
++	/*
++	 * copy_thread sets a4 to zero (child return from fork)
++	 * so we can't just set things up to directly return to
++	 * fn.
++	 */
++	memset(&regs, 0, sizeof(regs));
++	regs.b4 = (unsigned long) arg;
++	regs.a6 = (unsigned long) fn;
++	regs.pc = (unsigned long) kernel_thread_helper;
++	local_save_flags(regs.csr);
++	regs.csr |= 1;
++	regs.tsr = 5; /* Set GEE and GIE in TSR */
++
++	/* Ok, create the new process.. */
++	return do_fork(flags | CLONE_VM | CLONE_UNTRACED, -1, &regs, 0, NULL, NULL);
++}
++EXPORT_SYMBOL(kernel_thread);
++
++void flush_thread(void)
++{
++}
++
++void exit_thread(void)
++{
++}
++
++/*
++ * vfork syscall is deprecated but uClibc tests for _NR_vfork as a check
++ * for __libc_vfork() existence. So we provide the syscall even though
++ * __libc_vfork() actually uses the clone syscall.
++ */
++asmlinkage int c6x_vfork(struct pt_regs *regs)
++{
++	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->sp, regs, 0, NULL, NULL);
++}
++
++asmlinkage int c6x_clone(struct pt_regs *regs)
++{
++	unsigned long clone_flags;
++	unsigned long newsp;
++
++	/* syscall puts clone_flags in A4 and usp in B4 */
++	clone_flags = regs->orig_a4;
++	if (regs->b4)
++		newsp = regs->b4;
++	else
++		newsp = regs->sp;
++
++	return do_fork(clone_flags, newsp, regs, 0, (int __user *)regs->a6, (int __user *)regs->b6);
++}
++
++/*
++ * Do necessary setup to start up a newly executed thread.
++ */
++void start_thread(struct pt_regs *regs, unsigned int pc, unsigned long usp)
++{
++	/*
++	 * The binfmt loader will setup a "full" stack, but the C6X
++	 * operates an "empty" stack. So we adjust the usp so that
++	 * argc doesn't get destroyed if an interrupt is taken before
++	 * it is read from the stack.
++	 *
++	 * NB: Library startup code needs to match this.
++	 */
++	usp -= 8;
++
++	set_fs(USER_DS);
++	regs->pc  = pc;
++	regs->sp  = usp;
++	regs->tsr |= 0x40; /* set user mode */
++	current->thread.usp = usp;
++}
++
++/*
++ * Copy a new thread context in its stack.
++ */
++int copy_thread(unsigned long clone_flags, unsigned long usp,
++		unsigned long ustk_size,
++		struct task_struct *p, struct pt_regs *regs)
++{
++	struct pt_regs *childregs;
++
++	childregs = task_pt_regs(p);
++
++	*childregs = *regs;
++	childregs->a4 = 0;
++
++	if (usp == -1)
++		/* case of  __kernel_thread: we return to supervisor space */
++		childregs->sp = (unsigned long)(childregs + 1);
++	else
++		/* Otherwise use the given stack */
++		childregs->sp = usp;
++
++	/* Set usp/ksp */
++	p->thread.usp = childregs->sp;
++	/* switch_to uses stack to save/restore 14 callee-saved regs */
++	thread_saved_ksp(p) = (unsigned long)childregs - 8;
++	p->thread.pc = (unsigned int) ret_from_fork;
++	p->thread.wchan	= (unsigned long) ret_from_fork;
++	return 0;
++}
++
++/*
++ * c6x_execve() executes a new program.
++ */
++asmlinkage long c6x_execve(const char __user *name,
++			   const char __user *const __user *argv,
++			   const char __user *const __user *envp,
++			   struct pt_regs *regs)
++{
++	int error;
++	char *filename;
++
++	filename = getname(name);
++	error = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		goto out;
++
++	error = do_execve(filename, argv, envp, regs);
++	putname(filename);
++out:
++	return error;
++}
++
++unsigned long get_wchan(struct task_struct *p)
++{
++	return p->thread.wchan;
++}
+diff --git a/arch/c6x/kernel/ptrace.c b/arch/c6x/kernel/ptrace.c
+new file mode 100644
+index 0000000..fd38463
+--- /dev/null
++++ b/arch/c6x/kernel/ptrace.c
+@@ -0,0 +1,284 @@
++/*
++ *  linux/arch/c6x/kernel/ptrace.c
++ *
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/string.h>
++#include <linux/signal.h>
++#include <linux/mm.h>
++#include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/user.h>
++#include <linux/timer.h>
++#include <linux/security.h>
++#include <linux/tracehook.h>
++#include <linux/uaccess.h>
++
++#include <asm/segment.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/system.h>
++#include <asm/atomic.h>
++#include <asm/cacheflush.h>
++
++/*
++ * does not yet catch signals sent when the child dies.
++ * in exit.c or in signal.c.
++ */
++
++/* Find the stack offset for a register */
++#define PT_REG(reg)	  ((int)&((struct pt_regs *)0)->reg)
++#define PT_REG_SIZE	  (sizeof(struct pt_regs))
++
++#ifdef _BIG_ENDIAN
++#define PT_REGPAIR(odd, even) PT_REG(odd), PT_REG(even)
++#else
++#define PT_REGPAIR(odd, even) PT_REG(even), PT_REG(odd)
++#endif
++
++/* Mapping from PT_xxx to the stack offset at which the register is
++   saved.  Notice that usp has no stack-slot and needs to be treated
++   specially (see get_reg/put_reg below). */
++
++static int regoff[] = {
++	PT_REGPAIR(tsr, orig_a4),
++	PT_REGPAIR(rilc, ilc),
++	PT_REGPAIR(pc, csr),
++
++	PT_REGPAIR(b17, b16),
++	PT_REGPAIR(b19, b18),
++	PT_REGPAIR(b21, b20),
++	PT_REGPAIR(b23, b22),
++	PT_REGPAIR(b25, b24),
++	PT_REGPAIR(b27, b26),
++	PT_REGPAIR(b29, b28),
++	PT_REGPAIR(b31, b30),
++
++	PT_REGPAIR(b1, b0),
++	PT_REGPAIR(b3, b2),
++	PT_REGPAIR(b5, b4),
++	PT_REGPAIR(b7, b6),
++	PT_REGPAIR(b9, b8),
++	PT_REGPAIR(b11, b10),
++	PT_REGPAIR(b13, b12),
++
++	PT_REGPAIR(a17, a16),
++	PT_REGPAIR(a19, a18),
++	PT_REGPAIR(a21, a20),
++	PT_REGPAIR(a23, a22),
++	PT_REGPAIR(a25, a24),
++	PT_REGPAIR(a27, a26),
++	PT_REGPAIR(a29, a28),
++	PT_REGPAIR(a31, a30),
++
++	PT_REGPAIR(a1, a0),
++	PT_REGPAIR(a3, a2),
++	PT_REGPAIR(a5, a4),
++	PT_REGPAIR(a7, a6),
++	PT_REGPAIR(a9, a8),
++	PT_REGPAIR(a11, a10),
++	PT_REGPAIR(a13, a12),
++
++	PT_REGPAIR(a15, a14),
++	PT_REGPAIR(sp, dp),
++};
++
++/*
++ * Get a register number from live pt_regs for the specified task.
++ */
++static inline long get_reg(struct task_struct *task, int regno)
++{
++	unsigned long  *addr;
++	struct pt_regs *regs = task_pt_regs(task);
++
++	if (regno < sizeof(regoff)/sizeof(regoff[0]))
++		addr = (unsigned long *) ((unsigned long) regs + regoff[regno]);
++	else
++		return 0;
++	return *addr;
++}
++
++/*
++ * Write contents of register REGNO in task TASK.
++ */
++static inline int put_reg(struct task_struct *task,
++			  int regno,
++			  unsigned long data)
++{
++	unsigned long *addr;
++	struct pt_regs *regs = task_pt_regs(task);
++
++	if (regno < sizeof(regoff)/sizeof(regoff[0]))
++		addr = (unsigned long *)((unsigned long) regs + regoff[regno]);
++	else
++		return -1;
++	*addr = data;
++	return 0;
++}
++
++static inline int read_long(struct task_struct *tsk,
++			    unsigned long addr,
++			    unsigned long *result)
++{
++	*result = *(unsigned long *)addr;
++	return 0;
++}
++
++static inline int write_long(struct task_struct *tsk,
++			     unsigned long addr,
++			     unsigned long data)
++{
++	*(unsigned long *) addr = data;
++	return 0;
++}
++
++/*
++ * Called by kernel/ptrace.c when detaching.
++ */
++void ptrace_disable(struct task_struct *child)
++{
++	/* nothing to do */
++}
++
++/*
++ * Read the word at offset "off" into the user area.  We
++ * actually access the pt_regs stored on the kernel stack.
++ */
++static int ptrace_read_user(struct task_struct *tsk, unsigned long off,
++			    unsigned long __user *ret)
++{
++	unsigned long tmp;
++	unsigned long index = off/sizeof(unsigned long);
++
++	if (off & 3)
++		return -EIO;
++
++
++	tmp = 0;
++	if (off < PT_REG_SIZE)
++		tmp = get_reg(tsk, index);
++	else
++		return -EIO;
++
++	return put_user(tmp, ret);
++}
++
++/*
++ * Perform ptrace request
++ */
++long arch_ptrace(struct task_struct *child, long request,
++		 unsigned long addr, unsigned long data)
++{
++	struct pt_regs *regs, newregs;
++	unsigned long tmp;
++	int ret = 0;
++
++	switch (request) {
++		/*
++		 * read word at location "addr" in the child process.
++		 */
++	case PTRACE_PEEKTEXT:
++	case PTRACE_PEEKDATA:
++		ret = read_long(child, addr, &tmp);
++		if (!ret)
++			ret = put_user(tmp, (unsigned long __user *) data);
++		break;
++
++		/*
++		 * read the word at location "addr" in the user registers.
++		 */
++	case PTRACE_PEEKUSR:
++		ret = ptrace_read_user(child, addr, (unsigned long __user *) data);
++		break;
++
++		/*
++		 * write the word at location addr.
++		 */
++	case PTRACE_POKETEXT:
++		ret = write_long(child, addr, data);
++		flush_icache_range(addr, addr + 4);
++		break;
++
++	case PTRACE_POKEDATA:
++		ret = write_long(child, addr, data);
++		break;
++
++		/*
++		 * write the word at location addr in the user registers.
++		 */
++	case PTRACE_POKEUSR:
++		ret = -EIO;
++		if (addr & 3 || addr < 0)
++			break;
++
++		if (addr < PT_REG_SIZE)
++			ret = put_reg(child, (int)addr >> 2, data);
++		break;
++
++		/*
++		 * get all gp regs from the child.
++		 */
++	case PTRACE_GETREGS:
++		regs = task_pt_regs(child);
++		if (copy_to_user((void __user *)data, regs,
++				 sizeof(struct pt_regs)))
++			ret = -EFAULT;
++		break;
++
++		/*
++		 * set all gp regs in the child.
++		 */
++	case PTRACE_SETREGS:
++		ret = -EFAULT;
++		if (copy_from_user(&newregs, (void __user *)data,
++				   sizeof(struct pt_regs)) == 0) {
++			regs = task_pt_regs(child);
++			*regs = newregs;
++			ret = 0;
++		}
++		break;
++
++	default:
++		ret = ptrace_request(child, request, addr, data);
++		break;
++	}
++
++	return ret;
++}
++
++/*
++ * handle tracing of system call entry
++ * - return the revised system call number or ULONG_MAX to cause ENOSYS
++ */
++asmlinkage unsigned long syscall_trace_entry(struct pt_regs *regs)
++{
++	if (tracehook_report_syscall_entry(regs))
++		/* tracing decided this syscall should not happen, so
++		 * We'll return a bogus call number to get an ENOSYS
++		 * error, but leave the original number in
++		 * regs->orig_a4
++		 */
++		return ULONG_MAX;
++
++	return regs->b0;
++}
++
++/*
++ * handle tracing of system call exit
++ */
++asmlinkage void syscall_trace_exit(struct pt_regs *regs)
++{
++	tracehook_report_syscall_exit(regs, 0);
++}
+diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
+new file mode 100644
+index 0000000..8da373e
+--- /dev/null
++++ b/arch/c6x/kernel/setup.c
+@@ -0,0 +1,550 @@
++/*
++ *  linux/arch/c6x/kernel/setup.c
++ *
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This file handles the architecture-dependent parts of system setup
++ */
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/fs.h>
++#include <linux/fb.h>
++#include <linux/genhd.h>
++#include <linux/errno.h>
++#include <linux/console.h>
++#include <linux/string.h>
++#include <linux/delay.h>
++#include <linux/bootmem.h>
++#include <linux/seq_file.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/mm.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/cache.h>
++#include <linux/pm.h>
++#include <linux/dma-mapping.h>
++
++#ifdef CONFIG_MTD_UCLINUX
++#include <linux/mtd/map.h>
++#include <linux/ext2_fs.h>
++#include <linux/cramfs_fs.h>
++#include <linux/romfs_fs.h>
++#endif
++
++#include <asm/setup.h>
++#include <asm/irq.h>
++#include <asm/hardware.h>
++#include <asm/sections.h>
++
++#include <mach/board.h>
++
++#ifdef CONFIG_BLK_DEV_INITRD
++#include <linux/initrd.h>
++#include <asm/pgtable.h>
++#endif
++
++#include "tags.h"
++
++unsigned long memory_start;
++unsigned long memory_end;
++
++static char c6x_command_line[COMMAND_LINE_SIZE];
++static const char default_command_line[COMMAND_LINE_SIZE] __section(.cmdline) =
++	CONFIG_CMDLINE;
++static const char *cpu_name, *cpu_voltage, *mmu, *fpu, *soc_rev;
++static char __cpu_rev[5], *cpu_rev;
++static size_t initrd_size = CONFIG_BLK_DEV_RAM_SIZE*1024;
++static unsigned int core_id;
++
++#if defined(CONFIG_MTD_PLATRAM) || defined(CONFIG_MTD_PLATRAM_MODULE)
++unsigned int c6x_platram_start;
++unsigned int c6x_platram_size;
++#endif
++
++#if defined(CONFIG_VGA_CONSOLE)
++struct screen_info screen_info;
++#endif
++
++/*
++ * Mach dep functions
++ */
++
++struct tag_header *c6x_tags_pointer __initdata;
++
++unsigned int ticks_per_ns_scaled;
++EXPORT_SYMBOL(ticks_per_ns_scaled);
++
++unsigned int c6x_core_freq;
++EXPORT_SYMBOL(c6x_core_freq);
++
++static void __init get_cpuinfo(void)
++{
++	unsigned cpu_id, rev_id, csr;
++	struct clk *coreclk = clk_get_sys(NULL, "core");
++	unsigned long core_khz;
++
++	if (!IS_ERR(coreclk))
++		c6x_core_freq = clk_get_rate(coreclk);
++	else {
++		printk(KERN_WARNING
++		       "Cannot find core clock frequency. Using 700MHz\n");
++		c6x_core_freq = 700000000;
++	}
++
++	core_khz = c6x_core_freq / 1000;
++
++	ticks_per_ns_scaled =
++		((uint64_t)core_khz << C6X_NDELAY_SCALE) / 1000000;
++
++	csr = get_creg(CSR);
++	cpu_id = csr >> 24;
++	rev_id = (csr >> 16) & 0xff;
++
++	mmu         = "none";
++	cpu_voltage = "unknown";
++
++	switch (cpu_id) {
++	case 0:
++		cpu_name = "C67x";
++		fpu = "yes";
++		break;
++	case 2:
++		cpu_name = "C62x";
++		fpu = "none";
++		break;
++	case 8:
++		cpu_name = "C64x";
++		fpu = "none";
++		break;
++	case 12:
++		cpu_name = "C64x";
++		fpu = "none";
++		break;
++	case 16:
++		cpu_name = "C64x+";
++		cpu_voltage = "1.2";
++		fpu = "none";
++		break;
++	default:
++		cpu_name = "unknown";
++		fpu = "none";
++	}
++
++	if (cpu_id < 16) {
++		switch (rev_id) {
++		case 0x1:
++			if (cpu_id > 8) {
++				cpu_rev = "DM640/DM641/DM642/DM643";
++				cpu_voltage = "1.2 - 1.4";
++			} else {
++				cpu_rev = "C6201";
++				cpu_voltage = "2.5";
++			}
++			break;
++		case 0x2:
++			cpu_rev = "C6201B/C6202/C6211";
++			cpu_voltage = "1.8";
++			break;
++		case 0x3:
++			cpu_rev = "C6202B/C6203/C6204/C6205";
++			cpu_voltage = "1.5";
++			break;
++		case 0x201:
++			cpu_rev = "C6701 revision 0 (early CPU)";
++			cpu_voltage = "1.8";
++			break;
++		case 0x202:
++			cpu_rev = "C6701/C6711/C6712";
++			cpu_voltage = "1.8";
++			break;
++		case 0x801:
++			cpu_rev = "C64x";
++			cpu_voltage = "1.5";
++			break;
++		default:
++			cpu_rev = "unknown";
++		}
++	} else {
++		cpu_rev = __cpu_rev;
++		snprintf(__cpu_rev, sizeof(__cpu_rev), "0x%x", cpu_id);
++	}
++
++	core_id = get_coreid();
++
++	printk(KERN_INFO "CPU%d: %s rev %s, %s volts, %uMHz\n",
++	       core_id, cpu_name, cpu_rev,
++	       cpu_voltage, c6x_core_freq / 1000000);
++#ifdef C6X_SOC_HAS_CORE_REV
++	soc_rev = arch_compute_silicon_rev(arch_get_silicon_rev());
++#else
++	soc_rev = "unknown";
++#endif
++}
++
++#ifdef CONFIG_TMS320C6X_CACHES_ON
++/*
++ * L1 and L2 caches configuration
++ */
++static void cache_init(void)
++{
++	/* Set L2 caches on the the whole L2 SRAM memory */
++	L2_cache_set_mode(L2MODE_SIZE);
++
++	/* Enable L1 */
++	L1_cache_on();
++}
++#endif /* CONFIG_TMS320C6X_CACHES_ON */
++
++static void cache_set(unsigned int start, unsigned int end)
++{
++#ifdef CONFIG_XIP_KERNEL
++	unsigned long _data_len = (unsigned long)__init_end -
++		(unsigned long)_sdata - 1;
++#endif
++
++	/* Set the whole external memory as non-cacheable */
++	disable_caching(RAM_MEMORY_START,
++			RAM_MEMORY_START + BOARD_RAM_SIZE - 1);
++	/*
++	 * Then set the external memory used by this Linux instance cacheable.
++	 * DMA coherent memory region will be set as non-cacheable later.
++	 */
++	enable_caching(CACHE_REGION_START(start),
++		       CACHE_REGION_START(end - 1));
++
++#ifdef CONFIG_XIP_KERNEL
++	/* Also for XIP, make kernel code cacheable if in RAM */
++	if (CONFIG_XIP_KERNEL_TEXT_ADDR >= RAM_MEMORY_START &&
++	    CONFIG_XIP_KERNEL_TEXT_ADDR < (RAM_MEMORY_START + BOARD_RAM_SIZE))
++		enable_caching(CACHE_REGION_START(CONFIG_XIP_KERNEL_TEXT_ADDR),
++			       CACHE_REGION_START((unsigned long)_data_lma +
++						  _data_len));
++#endif
++}
++
++#ifdef CONFIG_XIP_KERNEL
++void __init c6x_relocate_xip_data(void)
++{
++	memcpy(_sdata, _data_lma,
++	       (unsigned long)__init_end - (unsigned long)_sdata);
++}
++#endif
++
++/*
++ * Early parsing of the command line
++ */
++static int userdef __initdata;
++
++/* "mem=" parsing. */
++static int __init early_mem(char *p)
++{
++	u32 mem_size;
++
++	if (!p)
++		return -EINVAL;
++
++	mem_size = memparse(p, &p);
++	/* don't remove all of memory when handling "mem={invalid}" */
++	if (mem_size == 0)
++		return -EINVAL;
++
++	userdef = 1;
++	memory_end = PAGE_ALIGN(PAGE_OFFSET + mem_size);
++
++	return 0;
++}
++early_param("mem", early_mem);
++
++/* "memdma=" parsing. */
++static int __init early_memdma(char *p)
++{
++	if (!p)
++		return -EINVAL;
++
++	dma_memory_size = memparse(p, &p);
++	if (*p == '@')
++		dma_memory_start = memparse(p, &p);
++
++	return 0;
++}
++early_param("memdma", early_memdma);
++
++#ifdef CONFIG_BLK_DEV_INITRD
++/* "initrd=" parsing. */
++static int __init early_initrd(char *p)
++{
++	if (!p)
++		return -EINVAL;
++
++	initrd_start = memparse(p, &p);
++	if (*p == ',')
++		initrd_size = memparse(p + 1, &p);
++
++	return 0;
++}
++early_param("initrd", early_initrd);
++#endif /* CONFIG_BLK_DEV_INITRD */
++
++#if defined(CONFIG_MTD_PLATRAM) || defined(CONFIG_MTD_PLATRAM_MODULE)
++/* "platram=" parsing. */
++static int __init early_platram(char *p)
++{
++	if (!p)
++		return -EINVAL;
++
++	c6x_platram_start = memparse(p, &p);
++	if (*p == ',')
++		c6x_platram_size = memparse(p + 1, &p);
++
++	return 0;
++}
++early_param("platram", early_platram);
++#endif
++
++#ifdef CONFIG_MTD_UCLINUX
++static unsigned long get_romfs_size(void *addr)
++{
++#ifdef CONFIG_ROMFS_FS
++	if ((*((unsigned long *)addr) == ROMSB_WORD0) &&
++	    (*((unsigned long *)addr + 1) == ROMSB_WORD1))
++		return PAGE_ALIGN(be32_to_cpu(*((unsigned long *)addr + 2)));
++#endif
++
++#ifdef CONFIG_CRAMFS
++	if (*((unsigned long *)addr) == CRAMFS_MAGIC)
++		return PAGE_ALIGN(*((unsigned long *)addr + 1));
++#endif
++
++#if defined(CONFIG_EXT2_FS) || defined(CONFIG_EXT3_FS)
++	if (le16_to_cpu(*((unsigned short *)addr + 0x21c)) == EXT2_SUPER_MAGIC)
++		return PAGE_ALIGN(le32_to_cpu((*((unsigned long *)addr +
++						 0x101))) * 1024);
++#endif
++
++	return 0;
++}
++
++/*
++ * This is called just before .bss is cleared so that any MTD_UCLINUX
++ * filesystem located in bss can be moved out of the way first.
++ */
++void __init c6x_mtd_early_init(void)
++{
++	unsigned int romfs_size;
++
++	romfs_size = PAGE_ALIGN(get_romfs_size((unsigned *)&__bss_start));
++
++	/* Move ROMFS out of BSS */
++	if (romfs_size)
++		memmove(&_ebss, (int *)&__bss_start, romfs_size);
++}
++
++#endif /* CONFIG_MTD_UCLINUX */
++
++void __init setup_arch(char **cmdline_p)
++{
++	int bootmap_size;
++	struct tag_cmdline *tcmd;
++#if defined(CONFIG_MTD_UCLINUX)
++	unsigned long romfs_size;
++#endif
++
++	if (!c6x_tags_are_valid(c6x_tags_pointer))
++		c6x_tags_pointer = NULL;
++
++	/* interrupts must be masked */
++	local_irq_disable();
++
++	/*
++	 * Set the Interrupt Service Table (IST) to the beginning of the
++	 * vector table.
++	 */
++	set_ist(_vectors_start);
++
++#ifdef CONFIG_TMS320C6X_CACHES_ON
++	/* Perform caches initialization */
++	cache_init();
++#endif
++
++	/* Initialise C6x IRQs */
++	set_creg(IER, 2);
++
++	/* Set peripheral power-down */
++#ifdef CONFIG_PM
++	pwr_pdctl_set(PWR_PDCTL_ALL);
++#endif
++
++	/* Call SOC configuration function */
++	c6x_soc_setup_arch();
++
++	/* Call board configuration function */
++	c6x_board_setup_arch();
++
++	/* Get CPU info */
++	get_cpuinfo();
++
++	/* Memory management */
++	printk(KERN_INFO "Initializing kernel\n");
++
++#if defined(CONFIG_MTD_UCLINUX)
++	romfs_size = get_romfs_size(&_ebss);
++	memory_start = PAGE_ALIGN(((unsigned int) &_ebss) + romfs_size);
++
++	uclinux_ram_map.phys = (unsigned long)&_ebss;
++	uclinux_ram_map.size = romfs_size;
++#else
++	memory_start = PAGE_ALIGN((unsigned int) &_end);
++#endif
++
++	memory_end   = PAGE_ALIGN(RAM_MEMORY_START + BOARD_RAM_SIZE);
++
++	init_mm.start_code = (unsigned long) &_stext;
++	init_mm.end_code   = (unsigned long) &_etext;
++#if defined(CONFIG_MTD_UCLINUX)
++	init_mm.end_data   = (unsigned long) (((unsigned long) &_ebss) +
++					      romfs_size);
++	init_mm.brk        = (unsigned long) (((unsigned long) &_ebss) +
++					      romfs_size);
++#else
++	init_mm.end_data   = (unsigned long) &_edata;
++	init_mm.brk        = (unsigned long) &_end;
++#endif
++
++	/* Initialize command line */
++	strlcpy(c6x_command_line, default_command_line, COMMAND_LINE_SIZE);
++	*cmdline_p = c6x_command_line;
++
++	/* Let cmdline passed through tag array override CONFIG_CMDLINE */
++	tcmd = c6x_tag_find(c6x_tags_pointer, TAG_CMDLINE);
++	if (tcmd)
++		strlcpy(c6x_command_line, tcmd->cmdline, COMMAND_LINE_SIZE);
++
++	/* parse_early_param needs a boot_command_line */
++	strlcpy(boot_command_line, c6x_command_line, COMMAND_LINE_SIZE);
++
++	parse_early_param();
++
++	if (userdef)
++		printk(KERN_INFO "Physical RAM map changed by user\n");
++
++	/* Set caching of external RAM used by Linux */
++	cache_set(PAGE_OFFSET, memory_end);
++
++	/* Initialize the coherent memory */
++	coherent_mem_init();
++
++	/*
++	 * Give all the memory to the bootmap allocator,  tell it to put the
++	 * boot mem_map at the start of memory
++	 */
++	bootmap_size = init_bootmem_node(NODE_DATA(0),
++					 memory_start >> PAGE_SHIFT,
++					 PAGE_OFFSET >> PAGE_SHIFT,
++					 memory_end >> PAGE_SHIFT);
++
++	/*
++	 * Free the usable memory,  we have to make sure we do not free
++	 * the bootmem bitmap so we then reserve it after freeing it :-)
++	 */
++	free_bootmem(memory_start, memory_end - memory_start);
++	reserve_bootmem(memory_start, bootmap_size, BOOTMEM_DEFAULT);
++
++	max_low_pfn = PFN_DOWN(memory_end);
++	min_low_pfn = PFN_UP(memory_start);
++	max_mapnr = max_low_pfn - min_low_pfn;
++
++#if defined(CONFIG_MTD_PLATRAM) || defined(CONFIG_MTD_PLATRAM_MODULE)
++	if (c6x_platram_size) {
++		if (c6x_platram_start < (memory_start + bootmap_size) ||
++		    (c6x_platram_start + c6x_platram_size) > memory_end) {
++			printk(KERN_ERR "Invalid platram= argument. "
++			       "Out of range %p - %p!\n",
++			       (void *)memory_start, (void *)memory_end);
++			c6x_platram_size = 0;
++		} else
++			reserve_bootmem(c6x_platram_start, c6x_platram_size,
++					BOOTMEM_DEFAULT);
++	}
++#endif
++
++#ifdef CONFIG_BLK_DEV_INITRD
++	if (initrd_start) {
++		if (initrd_start >= memory_start &&
++		    (initrd_start + initrd_size) <= memory_end) {
++			reserve_bootmem(initrd_start, initrd_size,
++					BOOTMEM_DEFAULT);
++			initrd_end = initrd_start+initrd_size;
++		} else {
++			printk(KERN_ERR
++			       "initrd is not contained in normal memory\n"
++			       "initrd=(0x%08lx:0x%08lx) normal_mem=(%p:%p)\n"
++			       "disabling initrd\n",
++			       initrd_start, initrd_start + initrd_size,
++			       (void *)memory_start, (void *)memory_end);
++			initrd_start = 0;
++		}
++	} else
++		printk(KERN_INFO "no initrd specified\n");
++#endif
++
++	/* Get kmalloc into gear */
++	paging_init();
++
++#if defined(CONFIG_VT) && defined(CONFIG_DUMMY_CONSOLE)
++	conswitchp = &dummy_con;
++#endif
++}
++
++static int show_cpuinfo(struct seq_file *m, void *v)
++{
++	seq_printf(m,
++		   "CPU:\t\t%s\n"
++		   "Core revision:\t%s\n"
++		   "Core voltage:\t%s\n"
++		   "Core id:\t%d\n"
++		   "SoC cores:\t%d\n"
++		   "MMU:\t\t%s\n"
++		   "FPU:\t\t%s\n"
++		   "Silicon rev:\t%s\n"
++		   "Clocking:\t%uMHz\n"
++		   "BogoMips:\t%lu.%02lu\n"
++		   "Calibration:\t%lu loops\n",
++		   cpu_name, cpu_rev, cpu_voltage, core_id, CORE_NUM, mmu, fpu,
++		   soc_rev, (c6x_core_freq + 500000) / 1000000,
++		   (loops_per_jiffy/(500000/HZ)),
++		   (loops_per_jiffy/(5000/HZ))%100,
++		   loops_per_jiffy);
++
++	return 0;
++}
++
++static void *c_start(struct seq_file *m, loff_t *pos)
++{
++	return *pos < 1 ? (void *)1 : NULL;
++}
++static void *c_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return NULL;
++}
++static void c_stop(struct seq_file *m, void *v)
++{
++}
++
++const struct seq_operations cpuinfo_op = {
++	c_start,
++	c_stop,
++	c_next,
++	show_cpuinfo
++};
++
+diff --git a/arch/c6x/kernel/signal.c b/arch/c6x/kernel/signal.c
+new file mode 100644
+index 0000000..252c9ec
+--- /dev/null
++++ b/arch/c6x/kernel/signal.c
+@@ -0,0 +1,384 @@
++/*
++ *  linux/arch/c6x/kernel/signal.c
++ *
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/kernel.h>
++#include <linux/signal.h>
++#include <linux/errno.h>
++#include <linux/wait.h>
++#include <linux/ptrace.h>
++#include <linux/unistd.h>
++#include <linux/stddef.h>
++#include <linux/highuid.h>
++#include <linux/personality.h>
++#include <linux/tracehook.h>
++#include <linux/uaccess.h>
++#include <linux/syscalls.h>
++
++#include <asm/setup.h>
++#include <asm/segment.h>
++#include <asm/ucontext.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/traps.h>
++#include <asm/cacheflush.h>
++
++#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
++
++/*
++ * Do a signal return, undo the signal stack.
++ */
++
++#define RETCODE_SIZE (9 << 2)	/* 9 instructions = 36 bytes */
++
++struct rt_sigframe {
++	struct siginfo __user *pinfo;
++	void __user *puc;
++	struct siginfo info;
++	struct ucontext uc;
++	unsigned long retcode[RETCODE_SIZE >> 2];
++};
++
++static int restore_sigcontext(struct pt_regs *regs, struct sigcontext __user *sc)
++{
++	int err = 0;
++
++#define COPY(x)  (err |= __get_user(regs->x, &sc->sc_##x))
++
++	COPY(sp); COPY(a4); COPY(b4); COPY(a6); COPY(b6); COPY(a8); COPY(b8);
++	COPY(a0); COPY(a1); COPY(a2); COPY(a3); COPY(a5); COPY(a7); COPY(a9);
++	COPY(b0); COPY(b1); COPY(b2); COPY(b3); COPY(b5); COPY(b7); COPY(b9);
++
++	COPY(a16); COPY(a17); COPY(a18); COPY(a19);
++	COPY(a20); COPY(a21); COPY(a22); COPY(a23);
++	COPY(a24); COPY(a25); COPY(a26); COPY(a27);
++	COPY(a28); COPY(a29); COPY(a30); COPY(a31);
++	COPY(b16); COPY(b17); COPY(b18); COPY(b19);
++	COPY(b20); COPY(b21); COPY(b22); COPY(b23);
++	COPY(b24); COPY(b25); COPY(b26); COPY(b27);
++	COPY(b28); COPY(b29); COPY(b30); COPY(b31);
++
++	COPY(csr); COPY(pc);
++
++#undef COPY
++
++	return err;
++}
++
++asmlinkage int do_rt_sigreturn(struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++	sigset_t set;
++
++	/*
++	 * Since we stacked the signal on a dword boundary,
++	 * then 'sp' should be dword aligned here.  If it's
++	 * not, then the user is trying to mess with us.
++	 */
++	if (regs->sp & 7)
++		goto badframe;
++
++	frame = (struct rt_sigframe __user *) ((unsigned long) regs->sp + 8);
++
++	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
++		goto badframe;
++	if (__copy_from_user(&set, &frame->uc.uc_sigmask, sizeof(set)))
++		goto badframe;
++
++	sigdelsetmask(&set, ~_BLOCKABLE);
++	spin_lock_irq(&current->sighand->siglock);
++	current->blocked = set;
++	recalc_sigpending();
++	spin_unlock_irq(&current->sighand->siglock);
++
++	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
++		goto badframe;
++
++	return regs->a4;
++
++badframe:
++	force_sig(SIGSEGV, current);
++	return 0;
++}
++
++static int
++setup_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs,
++		 unsigned long mask)
++{
++	int err = 0;
++
++	err |= __put_user(mask, &sc->sc_mask);
++
++#define COPY(x) (err |= __put_user(regs->x, &sc->sc_##x))
++
++	COPY(sp); COPY(a4); COPY(b4); COPY(a6); COPY(b6); COPY(a8); COPY(b8);
++	COPY(a0); COPY(a1); COPY(a2); COPY(a3); COPY(a5); COPY(a7); COPY(a9);
++	COPY(b0); COPY(b1); COPY(b2); COPY(b3); COPY(b5); COPY(b7); COPY(b9);
++
++	COPY(a16); COPY(a17); COPY(a18); COPY(a19);
++	COPY(a20); COPY(a21); COPY(a22); COPY(a23);
++	COPY(a24); COPY(a25); COPY(a26); COPY(a27);
++	COPY(a28); COPY(a29); COPY(a30); COPY(a31);
++	COPY(b16); COPY(b17); COPY(b18); COPY(b19);
++	COPY(b20); COPY(b21); COPY(b22); COPY(b23);
++	COPY(b24); COPY(b25); COPY(b26); COPY(b27);
++	COPY(b28); COPY(b29); COPY(b30); COPY(b31);
++
++	COPY(csr); COPY(pc);
++
++#undef COPY
++
++	return err;
++}
++
++static inline void __user *get_sigframe(struct k_sigaction *ka,
++					struct pt_regs *regs,
++					unsigned long framesize)
++{
++	unsigned long sp = regs->sp;
++
++	/*
++	 * This is the X/Open sanctioned signal stack switching.
++	 */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && sas_ss_flags(sp) == 0)
++		sp = current->sas_ss_sp + current->sas_ss_size;
++
++	/*
++	 * No matter what happens, 'sp' must be dword
++	 * aligned otherwise nasty things will happen
++	 */
++	return (void __user *)((sp - framesize) & ~7);
++}
++
++static int setup_rt_frame(int signr, struct k_sigaction *ka, siginfo_t *info,
++			   sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++	unsigned long __user *retcode;
++	int err = 0;
++
++	frame = get_sigframe(ka, regs, sizeof(*frame));
++
++	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
++		goto segv_and_exit;
++
++	err |= __put_user(&frame->info, &frame->pinfo);
++	err |= __put_user(&frame->uc, &frame->puc);
++	err |= copy_siginfo_to_user(&frame->info, info);
++
++	/* Clear all the bits of the ucontext we don't use.  */
++	err |= __clear_user(&frame->uc, offsetof(struct ucontext, uc_mcontext));
++
++	err |= setup_sigcontext(&frame->uc.uc_mcontext,	regs, set->sig[0]);
++	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
++
++	/* Set up to return from userspace */
++	retcode = (unsigned long __user *) &frame->retcode;
++	err |= put_user(0x0000002AUL | (__NR_rt_sigreturn << 7), retcode++);
++						  /* MVK __NR_rt_sigreturn,B0 */
++	err |= put_user(0x10000000UL, retcode++); /* SWE */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++	err |= put_user(0x00006000UL, retcode++); /* NOP 4 */
++
++	if (err)
++		goto segv_and_exit;
++
++	flush_icache_range((unsigned long) &frame->retcode,
++			   (unsigned long) &frame->retcode + RETCODE_SIZE);
++
++	retcode = (unsigned long __user *) &frame->retcode;
++
++	/* Change user context to branch to signal handler */
++	regs->sp = (unsigned long) frame - 8;
++	regs->b3 = (unsigned long) retcode;
++	regs->pc = (unsigned long) ka->sa.sa_handler;
++
++	/* Give the signal number to the handler */
++	regs->a4 = signr;
++
++	/*
++	 * For realtime signals we must also set the second and third
++	 * arguments for the signal handler.
++	 *   -- Peter Maydell <pmaydell@chiark.greenend.org.uk> 2000-12-06
++	 */
++	regs->b4 = (unsigned long)&frame->info;
++	regs->a6 = (unsigned long)&frame->uc;
++
++	return 0;
++
++segv_and_exit:
++	force_sig(SIGSEGV, current);
++	return -EFAULT;
++}
++
++static inline void
++handle_restart(struct pt_regs *regs, struct k_sigaction *ka, int has_handler)
++{
++	switch (regs->a4) {
++	case -ERESTARTNOHAND:
++		if (!has_handler)
++			goto do_restart;
++		regs->a4 = -EINTR;
++		break;
++
++	case -ERESTARTSYS:
++		if (has_handler && !(ka->sa.sa_flags & SA_RESTART)) {
++			regs->a4 = -EINTR;
++			break;
++		}
++	/* fallthrough */
++	case -ERESTARTNOINTR:
++do_restart:
++		regs->a4 = regs->orig_a4;
++		regs->pc -= 4;
++		break;
++	}
++}
++
++/*
++ * handle the actual delivery of a signal to userspace
++ */
++static int handle_signal(int sig,
++			 siginfo_t *info, struct k_sigaction *ka,
++			 sigset_t *oldset, struct pt_regs *regs,
++			 int syscall)
++{
++	int ret;
++
++	/* Are we from a system call? */
++	if (syscall) {
++		/* If so, check system call restarting.. */
++		switch (regs->a4) {
++		case -ERESTART_RESTARTBLOCK:
++		case -ERESTARTNOHAND:
++			regs->a4 = -EINTR;
++			break;
++
++		case -ERESTARTSYS:
++			if (!(ka->sa.sa_flags & SA_RESTART)) {
++				regs->a4 = -EINTR;
++				break;
++			}
++
++			/* fallthrough */
++		case -ERESTARTNOINTR:
++			regs->a4 = regs->orig_a4;
++			regs->pc -= 4;
++		}
++	}
++
++	/* Set up the stack frame */
++	ret = setup_rt_frame(sig, ka, info, oldset, regs);
++	if (ret == 0) {
++		spin_lock_irq(&current->sighand->siglock);
++		sigorsets(&current->blocked, &current->blocked,
++			  &ka->sa.sa_mask);
++		if (!(ka->sa.sa_flags & SA_NODEFER))
++			sigaddset(&current->blocked, sig);
++		recalc_sigpending();
++		spin_unlock_irq(&current->sighand->siglock);
++	}
++
++	return ret;
++}
++
++/*
++ * handle a potential signal
++ */
++static void do_signal(struct pt_regs *regs, int syscall)
++{
++	struct k_sigaction ka;
++	siginfo_t info;
++	sigset_t *oldset;
++	int signr;
++
++	/* we want the common case to go fast, which is why we may in certain
++	 * cases get here from kernel mode */
++	if (!user_mode(regs))
++		return;
++
++	if (test_thread_flag(TIF_RESTORE_SIGMASK))
++		oldset = &current->saved_sigmask;
++	else
++		oldset = &current->blocked;
++
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	if (signr > 0) {
++		if (handle_signal(signr, &info, &ka, oldset,
++				  regs, syscall) == 0) {
++			/* a signal was successfully delivered; the saved
++			 * sigmask will have been stored in the signal frame,
++			 * and will be restored by sigreturn, so we can simply
++			 * clear the TIF_RESTORE_SIGMASK flag */
++			if (test_thread_flag(TIF_RESTORE_SIGMASK))
++				clear_thread_flag(TIF_RESTORE_SIGMASK);
++
++			tracehook_signal_handler(signr, &info, &ka, regs, 0);
++		}
++
++		return;
++	}
++
++	/* did we come from a system call? */
++	if (syscall) {
++		/* restart the system call - no handlers present */
++		switch (regs->a4) {
++		case -ERESTARTNOHAND:
++		case -ERESTARTSYS:
++		case -ERESTARTNOINTR:
++			regs->a4 = regs->orig_a4;
++			regs->pc -= 4;
++			break;
++
++		case -ERESTART_RESTARTBLOCK:
++			regs->a4 = regs->orig_a4;
++			regs->b0 = __NR_restart_syscall;
++			regs->pc -= 4;
++			break;
++		}
++	}
++
++	/* if there's no signal to deliver, we just put the saved sigmask
++	 * back */
++	if (test_thread_flag(TIF_RESTORE_SIGMASK)) {
++		clear_thread_flag(TIF_RESTORE_SIGMASK);
++		sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
++	}
++}
++
++/*
++ * notification of userspace execution resumption
++ * - triggered by current->work.notify_resume
++ */
++asmlinkage void do_notify_resume(struct pt_regs *regs, u32 thread_info_flags,
++				 int syscall)
++{
++	/* deal with pending signal delivery */
++	if (thread_info_flags & ((1 << TIF_SIGPENDING) |
++				 (1 << TIF_RESTORE_SIGMASK)))
++		do_signal(regs, syscall);
++
++	if (thread_info_flags & (1 << TIF_NOTIFY_RESUME)) {
++		clear_thread_flag(TIF_NOTIFY_RESUME);
++		tracehook_notify_resume(regs);
++		if (current->replacement_session_keyring)
++			key_replace_session_keyring();
++	}
++}
+diff --git a/arch/c6x/kernel/switch_to.S b/arch/c6x/kernel/switch_to.S
+new file mode 100644
+index 0000000..06a41bb
+--- /dev/null
++++ b/arch/c6x/kernel/switch_to.S
+@@ -0,0 +1,67 @@
++/*
++ *  Copyright (C) 2011 Texas Instruments Incorporated
++ *  Author: Mark Salter (msalter@redhat.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++
++#include <asm/asm-offsets.h>
++
++#define SP	B15
++
++	/*
++	 * void __switch_to(struct thread_info *prev,
++	 *      	    struct thread_info *next,
++	 *		    struct task_struct *tsk) ;
++	 */
++	.global __switch_to
++__switch_to:
++
++	LDDW	.D2T2	*+B4(THREAD_B15_14),B7:B6
++ ||	MV	.L2X	A4,B5	; prev
++ ||	MV	.L1X	B4,A5	; next
++ ||	MVC	.S2	RILC,B1
++
++	STW	.D2T2	B3,*+B5(THREAD_PC)
++ ||	STDW	.D1T1	A13:A12,*+A4(THREAD_A13_12)
++ ||	MVC	.S2	ILC,B0
++
++	LDW	.D2T2	*+B4(THREAD_PC),B3
++ ||	LDDW	.D1T1	*+A5(THREAD_A13_12),A13:A12
++
++	STDW	.D1T1	A11:A10,*+A4(THREAD_A11_10)
++ ||	STDW	.D2T2	B1:B0,*+B5(THREAD_RICL_ICL)
++ ||	MVKL	.S2	current_ksp,B1
++
++	STDW	.D2T2	B15:B14,*+B5(THREAD_B15_14)
++ ||	STDW	.D1T1	A15:A14,*+A4(THREAD_A15_14)
++ ||	MVKH	.S2	current_ksp,B1
++
++	;; Switch to next SP
++	MV	.S2	B7,SP
++ ||	STW	.D2T2	B7,*B1
++ ||	MV	.L2	B6,B14
++ ||	LDDW	.D1T1	*+A5(THREAD_RICL_ICL),A1:A0
++
++	STDW	.D2T2	B11:B10,*+B5(THREAD_B11_10)
++ ||	LDDW	.D1T1	*+A5(THREAD_A15_14),A15:A14
++
++	STDW	.D2T2	B13:B12,*+B5(THREAD_B13_12)
++ ||	LDDW	.D1T1	*+A5(THREAD_A11_10),A11:A10
++
++	B	.S2	B3		; return in next E1
++ ||	LDDW	.D2T2	*+B4(THREAD_B13_12),B13:B12
++
++	LDDW	.D2T2	*+B4(THREAD_B11_10),B11:B10
++	NOP
++
++	MV	.L2X	A0,B0
++ ||	MV	.S1	A6,A4
++
++	MVC	.S2	B0,ILC
++ ||	MV	.L2X	A1,B1
++
++	MVC	.S2	B1,RILC
++
+diff --git a/arch/c6x/kernel/sys_c6x.c b/arch/c6x/kernel/sys_c6x.c
+new file mode 100644
+index 0000000..5d0ee49
+--- /dev/null
++++ b/arch/c6x/kernel/sys_c6x.c
+@@ -0,0 +1,111 @@
++/*
++ *  linux/arch/c6x/kernel/sys_c6x.c
 + *
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
 + *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
-+ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
-+ *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
++ *
++ *  This file contains various random system calls that
++ *  have a non-standard calling sequence on the C6x platform.
 + */
-+#ifndef _ASM_C6X_PROCESSOR_H
-+#define _ASM_C6X_PROCESSOR_H
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/smp.h>
++#include <linux/sem.h>
++#include <linux/msg.h>
++#include <linux/shm.h>
++#include <linux/stat.h>
++#include <linux/slab.h>
++#include <linux/mman.h>
++#include <linux/file.h>
++#include <linux/utsname.h>
++#include <linux/module.h>
++#include <linux/syscalls.h>
++#include <linux/mtd/map.h>
++#include <linux/stringify.h>
++#include <linux/uaccess.h>
 +
-+#include <asm/ptrace.h>
++#include <asm/setup.h>
++#include <asm/segment.h>
++#include <asm/traps.h>
 +#include <asm/page.h>
-+#include <asm/current.h>
++#include <asm/syscalls.h>
 +
-+/*
-+ * Default implementation of macro that returns current
-+ * instruction pointer ("program counter").
-+ */
-+#define current_text_addr()			\
-+({						\
-+	void *__pc;				\
-+	asm("mvc .S2 pce1,%0\n" : "=b"(__pc));	\
-+	__pc;					\
-+})
-+
-+/*
-+ * User space process size. Meaningless for NOMMU.
-+ */
-+#define TASK_SIZE	0xFFFFFFFF
-+
-+/*
-+ * This decides where the kernel will search for a free chunk of vm
-+ * space during mmap's. We won't be using it
-+ */
-+#define TASK_UNMAPPED_BASE	0
-+
-+struct thread_struct {
-+	unsigned long long b15_14;
-+	unsigned long long a15_14;
-+	unsigned long long b13_12;
-+	unsigned long long a13_12;
-+	unsigned long long b11_10;
-+	unsigned long long a11_10;
-+	unsigned long long ricl_icl;
-+	unsigned long  usp;		/* user stack pointer */
-+	unsigned long  pc;		/* kernel pc */
-+	unsigned long  wchan;
-+};
-+
-+#define INIT_THREAD					\
-+{							\
-+	.usp = 0,					\
-+	.wchan = 0,					\
-+}
-+
-+#define INIT_MMAP { \
-+	&init_mm, 0, 0, NULL, PAGE_SHARED, VM_READ | VM_WRITE | VM_EXEC, 1, \
-+	NULL, NULL }
-+
-+#define task_pt_regs(task) \
-+	((struct pt_regs *)(THREAD_START_SP + task_stack_page(task)) - 1)
-+
-+#define alloc_kernel_stack()	__get_free_page(GFP_KERNEL)
-+#define free_kernel_stack(page) free_page((page))
-+
-+
-+/* Forward declaration, a strange C thing */
-+struct task_struct;
-+
-+extern void start_thread(struct pt_regs *regs, unsigned int pc,
-+			 unsigned long usp);
-+
-+/* Free all resources held by a thread. */
-+static inline void release_thread(struct task_struct *dead_task)
++#ifdef CONFIG_ACCESS_CHECK
++int _access_ok(unsigned long addr, unsigned long size)
 +{
++	if (!size)
++		return 1;
++
++	if (!addr || addr > (0xffffffffUL - (size - 1)))
++		goto _bad_access;
++
++	if (segment_eq(get_fs(), KERNEL_DS))
++		return 1;
++
++	if (memory_start <= addr && (addr + size - 1) < memory_end)
++		return 1;
++
++_bad_access:
++#if 0
++	printk(KERN_CRIT "**Bad access attempt: pid[%d] addr[%p] size[0x%x]\n",
++	       current->pid, addr, size);
++#endif
++	return 0;
++}
++EXPORT_SYMBOL(_access_ok);
++#endif
++
++/* sys_cache_sync -- sync caches over given range */
++asmlinkage int sys_cache_sync(unsigned long s, unsigned long e)
++{
++	/* FIXME. Add range checks */
++
++	L1D_cache_block_writeback_invalidate(s, e);
++	L1P_cache_block_invalidate(s, e);
++
++	return 0;
 +}
 +
-+/* Prepare to copy thread state - unlazy all lazy status */
-+#define prepare_to_copy(tsk)	do { } while (0)
++asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
++			 unsigned long prot, unsigned long flags,
++			 unsigned long fd, off_t offset)
++{
++	if (offset & ~PAGE_MASK)
++		return -EINVAL;
++	return sys_mmap_pgoff(addr, len, prot, flags, fd, offset >> PAGE_SHIFT);
++}
 +
-+extern int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
-+
-+#define copy_segments(tsk, mm)		do { } while (0)
-+#define release_segments(mm)		do { } while (0)
++/* Provide the actual syscall number to call mapping. */
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (call),
 +
 +/*
-+ * saved PC of a blocked thread.
++ * Use trampolines
 + */
-+#define thread_saved_pc(tsk) (task_pt_regs(tsk)->pc)
++#define sys_pread64		sys_pread_c6x
++#define sys_pwrite64		sys_pwrite_c6x
++#define sys_truncate64		sys_truncate64_c6x
++#define sys_ftruncate64		sys_ftruncate64_c6x
++#define sys_fadvise64		sys_fadvise64_c6x
++#define sys_fadvise64_64	sys_fadvise64_64_c6x
++#define sys_fallocate		sys_fallocate_c6x
++
++/* Use sys_mmap_pgoff directly */
++#define sys_mmap2 sys_mmap_pgoff
 +
 +/*
-+ * saved kernel SP of a blocked thread.
++ * Note that we can't include <linux/unistd.h> here since the header
++ * guard will defeat us; <asm/unistd.h> checks for __SYSCALL as well.
 + */
-+#ifdef _BIG_ENDIAN
-+#define thread_saved_ksp(tsk) \
-+	(*(unsigned long *)&(tsk)->thread.b15_14)
-+#else
-+#define thread_saved_ksp(tsk) \
-+	(*(((unsigned long *)&(tsk)->thread.b15_14) + 1))
-+#endif
-+
-+extern unsigned long get_wchan(struct task_struct *p);
-+
-+#define KSTK_EIP(tsk)	(task_pt_regs(task)->pc)
-+#define	KSTK_ESP(tsk)	(task_pt_regs(task)->sp)
-+
-+#define cpu_relax()		do { } while (0)
-+
-+extern const struct seq_operations cpuinfo_op;
-+
-+#endif /* ASM_C6X_PROCESSOR_H */
-diff --git a/arch/c6x/include/asm/procinfo.h b/arch/c6x/include/asm/procinfo.h
-new file mode 100644
-index 0000000..b9937ef
---- /dev/null
-+++ b/arch/c6x/include/asm/procinfo.h
-@@ -0,0 +1,30 @@
-+/*
-+ *  arch/c6x/include/asm/procinfo.h
-+ *
-+ *  Copyright (C) 2010 Texas Instruments Incorporated
-+ *  Author: Mark Salter (msalter@redhat.com)
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PROCINFO_H
-+#define _ASM_C6X_PROCINFO_H
-+
-+#ifdef __KERNEL__
-+
-+struct proc_info_list {
-+	unsigned int		cpu_val;
-+	unsigned int		cpu_mask;
-+	const char		*arch_name;
-+	const char		*elf_name;
-+	unsigned int		elf_hwcap;
++void *sys_call_table[__NR_syscalls] = {
++	[0 ... __NR_syscalls-1] = sys_ni_syscall,
++#include <asm/unistd.h>
 +};
 +
-+#else	/* __KERNEL__ */
-+#include <asm/elf.h>
-+#warning "Please include asm/elf.h instead"
-+#endif	/* __KERNEL__ */
-+
-+#endif	/* _ASM_C6X_PROCINFO_H */
-diff --git a/arch/c6x/include/asm/ptrace.h b/arch/c6x/include/asm/ptrace.h
+diff --git a/arch/c6x/kernel/tags.c b/arch/c6x/kernel/tags.c
 new file mode 100644
-index 0000000..7e94de8
+index 0000000..bb1064a
 --- /dev/null
-+++ b/arch/c6x/include/asm/ptrace.h
-@@ -0,0 +1,186 @@
++++ b/arch/c6x/kernel/tags.c
+@@ -0,0 +1,98 @@
 +/*
-+ *  linux/include/asm-c6x/ptrace.h
++ * tags.c
 + *
-+ *  Port on Texas Instruments TMS320C6x architecture
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
 + *
-+ *  Copyright (C) 2004, 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PTRACE_H
-+#define _ASM_C6X_PTRACE_H
-+
-+#include <linux/linkage.h>
-+
-+#if defined(__TMS320C6XPLUS__) || defined(_TMS320C6400_PLUS)
-+#define BKPT_OPCODE	   0x56454314	    /* illegal opcode */
-+#else
-+#define BKPT_OPCODE	   0x0000a122	    /* BNOP .S2 0,5 */
-+#endif
-+
-+#ifdef _BIG_ENDIAN
-+#define PT_LO(odd, even)  odd
-+#define PT_HI(odd, even)  even
-+#else
-+#define PT_LO(odd, even)  even
-+#define PT_HI(odd, even)  odd
-+#endif
-+
-+#define PT_A4_ORG  PT_LO(1, 0)
-+#define PT_TSR	   PT_HI(1, 0)
-+#define PT_ILC	   PT_LO(3, 2)
-+#define PT_RILC    PT_HI(3, 2)
-+#define PT_CSR	   PT_LO(5, 4)
-+#define PT_PC	   PT_HI(5, 4)
-+#define PT_B16	   PT_LO(7, 6)
-+#define PT_B17	   PT_HI(7, 6)
-+#define PT_B18	   PT_LO(9, 8)
-+#define PT_B19	   PT_HI(9, 8)
-+#define PT_B20	   PT_LO(11, 10)
-+#define PT_B21	   PT_HI(11, 10)
-+#define PT_B22	   PT_LO(13, 12)
-+#define PT_B23	   PT_HI(13, 12)
-+#define PT_B24	   PT_LO(15, 14)
-+#define PT_B25	   PT_HI(15, 14)
-+#define PT_B26	   PT_LO(17, 16)
-+#define PT_B27	   PT_HI(17, 16)
-+#define PT_B28	   PT_LO(19, 18)
-+#define PT_B29	   PT_HI(19, 18)
-+#define PT_B30	   PT_LO(21, 20)
-+#define PT_B31	   PT_HI(21, 20)
-+#define PT_B0	   PT_LO(23, 22)
-+#define PT_B1	   PT_HI(23, 22)
-+#define PT_B2	   PT_LO(25, 24)
-+#define PT_B3	   PT_HI(25, 24)
-+#define PT_B4	   PT_LO(27, 26)
-+#define PT_B5	   PT_HI(27, 26)
-+#define PT_B6	   PT_LO(29, 28)
-+#define PT_B7	   PT_HI(29, 28)
-+#define PT_B8	   PT_LO(31, 30)
-+#define PT_B9	   PT_HI(31, 30)
-+#define PT_B10	   PT_LO(33, 32)
-+#define PT_B11	   PT_HI(33, 32)
-+#define PT_B12	   PT_LO(35, 34)
-+#define PT_B13	   PT_HI(35, 34)
-+#define PT_A16	   PT_LO(37, 36)
-+#define PT_A17	   PT_HI(37, 36)
-+#define PT_A18	   PT_LO(39, 38)
-+#define PT_A19	   PT_HI(39, 38)
-+#define PT_A20	   PT_LO(41, 40)
-+#define PT_A21	   PT_HI(41, 40)
-+#define PT_A22	   PT_LO(43, 42)
-+#define PT_A23	   PT_HI(43, 42)
-+#define PT_A24	   PT_LO(45, 44)
-+#define PT_A25	   PT_HI(45, 44)
-+#define PT_A26	   PT_LO(47, 46)
-+#define PT_A27	   PT_HI(47, 46)
-+#define PT_A28	   PT_LO(49, 48)
-+#define PT_A29	   PT_HI(49, 48)
-+#define PT_A30	   PT_LO(51, 50)
-+#define PT_A31	   PT_HI(51, 50)
-+#define PT_A0	   PT_LO(53, 52)
-+#define PT_A1	   PT_HI(53, 52)
-+#define PT_A2	   PT_LO(55, 54)
-+#define PT_A3	   PT_HI(55, 54)
-+#define PT_A4	   PT_LO(57, 56)
-+#define PT_A5	   PT_HI(57, 56)
-+#define PT_A6	   PT_LO(59, 58)
-+#define PT_A7	   PT_HI(59, 58)
-+#define PT_A8	   PT_LO(61, 60)
-+#define PT_A9	   PT_HI(61, 60)
-+#define PT_A10	   PT_LO(63, 62)
-+#define PT_A11	   PT_HI(63, 62)
-+#define PT_A12	   PT_LO(65, 64)
-+#define PT_A13	   PT_HI(65, 64)
-+#define PT_A14	   PT_LO(67, 66)
-+#define PT_A15	   PT_HI(67, 66)
-+#define PT_B14	   PT_LO(69, 68)
-+#define PT_B15	   PT_HI(69, 68)
-+
-+#define PT_DP	   PT_B14  /* Data Segment Pointer (B14) */
-+#define PT_SP	   PT_B15  /* Stack Pointer (B15)  */
-+
-+#ifndef __ASSEMBLY__
-+
-+#ifdef _BIG_ENDIAN
-+#define REG_PAIR(odd, even) unsigned long odd; unsigned long even
-+#else
-+#define REG_PAIR(odd, even) unsigned long even; unsigned long odd
-+#endif
-+
-+/*
-+ * this struct defines the way the registers are stored on the
-+ * stack during a system call. fields defined with REG_PAIR
-+ * are saved and restored using double-word memory operations
-+ * which means the word ordering of the pair depends on endianess.
-+ */
-+struct pt_regs {
-+	REG_PAIR(tsr, orig_a4);
-+	REG_PAIR(rilc, ilc);
-+	REG_PAIR(pc, csr);
-+
-+	REG_PAIR(b17, b16);
-+	REG_PAIR(b19, b18);
-+	REG_PAIR(b21, b20);
-+	REG_PAIR(b23, b22);
-+	REG_PAIR(b25, b24);
-+	REG_PAIR(b27, b26);
-+	REG_PAIR(b29, b28);
-+	REG_PAIR(b31, b30);
-+
-+	REG_PAIR(b1, b0);
-+	REG_PAIR(b3, b2);
-+	REG_PAIR(b5, b4);
-+	REG_PAIR(b7, b6);
-+	REG_PAIR(b9, b8);
-+	REG_PAIR(b11, b10);
-+	REG_PAIR(b13, b12);
-+
-+	REG_PAIR(a17, a16);
-+	REG_PAIR(a19, a18);
-+	REG_PAIR(a21, a20);
-+	REG_PAIR(a23, a22);
-+	REG_PAIR(a25, a24);
-+	REG_PAIR(a27, a26);
-+	REG_PAIR(a29, a28);
-+	REG_PAIR(a31, a30);
-+
-+	REG_PAIR(a1, a0);
-+	REG_PAIR(a3, a2);
-+	REG_PAIR(a5, a4);
-+	REG_PAIR(a7, a6);
-+	REG_PAIR(a9, a8);
-+	REG_PAIR(a11, a10);
-+	REG_PAIR(a13, a12);
-+
-+	REG_PAIR(a15, a14);
-+	REG_PAIR(sp, dp);
-+};
-+
-+#define PTRACE_GETREGS		  12
-+#define PTRACE_SETREGS		  13
-+#define PTRACE_GETFPREGS	  14
-+#define PTRACE_SETFPREGS	  15
-+
-+#ifdef __KERNEL__
-+
-+#define DEFAULT_CSR		  0x0001	/* interrupt enable by default */
-+						/* used in /include/asm/processor.h*/
-+
-+#define user_mode(regs)		  ((((regs)->tsr) & 0x40) != 0)
-+
-+#define instruction_pointer(regs) ((regs)->pc)
-+#define profile_pc(regs) instruction_pointer(regs)
-+extern void show_regs(struct pt_regs *);
-+
-+extern asmlinkage unsigned long syscall_trace_entry(struct pt_regs *regs);
-+extern asmlinkage void syscall_trace_exit(struct pt_regs *regs);
-+
-+#endif /* __KERNEL__ */
-+#endif /* __ASSEMBLY__ */
-+#endif /* _ASM_C6X_PTRACE_H */
-diff --git a/arch/c6x/include/asm/resource.h b/arch/c6x/include/asm/resource.h
-new file mode 100644
-index 0000000..5c18fea
---- /dev/null
-+++ b/arch/c6x/include/asm/resource.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_RESOURCE_H
-+#define _ASM_C6X_RESOURCE_H
-+
-+#include <asm-generic/resource.h>
-+
-+#endif /* _ASM_C6X_RESOURCE_H */
-diff --git a/arch/c6x/include/asm/scatterlist.h b/arch/c6x/include/asm/scatterlist.h
-new file mode 100644
-index 0000000..f4a0622
---- /dev/null
-+++ b/arch/c6x/include/asm/scatterlist.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SCATTERLIST_H
-+#define _ASM_C6X_SCATTERLIST_H
-+
-+#include <asm-generic/scatterlist.h>
-+
-+#endif /* _ASM_C6X_SCATTERLIST_H */
-diff --git a/arch/c6x/include/asm/sections.h b/arch/c6x/include/asm/sections.h
-new file mode 100644
-index 0000000..d26cc45
---- /dev/null
-+++ b/arch/c6x/include/asm/sections.h
-@@ -0,0 +1,17 @@
-+#ifndef _ASM_C6X_SECTIONS_H
-+#define _ASM_C6X_SECTIONS_H
-+
-+#include <asm-generic/sections.h>
-+
-+extern char _vectors_start[];
-+extern char _vectors_end[];
-+
-+#ifdef CONFIG_MTD_UCLINUX
-+extern char _ebss[];
-+#endif
-+
-+#ifdef CONFIG_XIP_KERNEL
-+extern char _data_lma[];
-+#endif
-+
-+#endif /* _ASM_C6X_SECTIONS_H */
-diff --git a/arch/c6x/include/asm/segment.h b/arch/c6x/include/asm/segment.h
-new file mode 100644
-index 0000000..f1b81e5
---- /dev/null
-+++ b/arch/c6x/include/asm/segment.h
-@@ -0,0 +1 @@
-+#include <asm-generic/segment.h>
-diff --git a/arch/c6x/include/asm/sembuf.h b/arch/c6x/include/asm/sembuf.h
-new file mode 100644
-index 0000000..77a6b25
---- /dev/null
-+++ b/arch/c6x/include/asm/sembuf.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SEMBUF_H
-+#define _ASM_C6X_SEMBUF_H
-+
-+#include <asm-generic/sembuf.h>
-+
-+#endif /* _ASM_C6X_SEMBUF_H */
-diff --git a/arch/c6x/include/asm/serial.h b/arch/c6x/include/asm/serial.h
-new file mode 100644
-index 0000000..47bc618
---- /dev/null
-+++ b/arch/c6x/include/asm/serial.h
-@@ -0,0 +1,25 @@
-+/*
-+ *  linux/include/asm-c6x/serial.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_SERIAL_H
-+#define _ASM_C6X_SERIAL_H
-+
-+#include <mach/board.h>
-+
-+#ifndef BASE_BAUD
-+/*
-+ * This assumes you have a 1.8432 MHz clock for your UART.
-+ */
-+#define BASE_BAUD (1843200 / 16)
-+#endif
-+
-+#endif /* _ASM_C6X_SERIAL_H */
-diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
-new file mode 100644
-index 0000000..67c499f
---- /dev/null
-+++ b/arch/c6x/include/asm/setup.h
-@@ -0,0 +1,49 @@
-+/*
-+ *  linux/include/asm-c6x/setup.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_SETUP_H
-+#define _ASM_C6X_SETUP_H
-+
-+#include <asm/hardware.h>
-+
-+#define COMMAND_LINE_SIZE   1024
-+
-+#ifndef __ASSEMBLY__
-+
-+#ifdef CONFIG_MTD_UCLINUX
-+extern struct map_info uclinux_ram_map;
-+#endif
-+
-+#ifdef CONFIG_EARLY_PRINTK
-+extern void early_printk(const char *fmt, ...);
-+
-+#ifdef CONFIG_HVC_C6X
-+extern void hvc_c6x_early_puts(const char *buf, unsigned count);
-+#endif
-+
-+#endif /* CONFIG_EARLY_PRINTK */
-+
-+extern unsigned int c6x_platram_start;
-+extern unsigned int c6x_platram_size;
-+
-+struct tag_header;
-+
-+extern struct tag_header *c6x_tags_pointer;
-+
-+extern void c6x_mtd_early_init(void);
-+extern void c6x_soc_setup_arch(void);
-+extern void c6x_board_setup_arch(void);
-+extern char *arch_compute_silicon_rev(u32 silicon_rev);
-+extern unsigned int arch_get_silicon_rev(void);
-+
-+#endif /* !__ASSEMBLY__ */
-+#endif /* _ASM_C6X_SETUP_H */
-diff --git a/arch/c6x/include/asm/sgmii.h b/arch/c6x/include/asm/sgmii.h
-new file mode 100644
-index 0000000..b6342b3
---- /dev/null
-+++ b/arch/c6x/include/asm/sgmii.h
-@@ -0,0 +1,53 @@
-+/*
-+ *  linux/include/asm-c6x/sgmii.c
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2007, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@virtuallogix.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_SGMII_H
-+#define _ASM_C6X_SGMII_H
-+
-+struct sgmii_config_s {
-+	unsigned int loopback;
-+	unsigned int master;
-+	unsigned int autoneg;
-+	unsigned int txconfig;
-+	unsigned int rxconfig;
-+	unsigned int auxconfig;
-+};
-+
-+extern int sgmii_reset(void);
-+extern int sgmii_config(struct sgmii_config_s *);
-+
-+#ifdef __KERNEL__
-+#include <asm/hardware.h>
-+
-+#define SGMII_SRESET_RESET    0x1
-+#define SGMII_SRESET_RTRESET  0x2
-+#define SGMII_CTL_AUTONEG     0x01
-+#define SGMII_CTL_LOOPBACK    0x10
-+#define SGMII_CTL_MASTER      0x20
-+
-+#define sgmii_setbit_reg(reg, val) \
-+	(*((volatile u32 *) (reg)) |= (u32) (val))
-+
-+#define sgmii_clearbit_reg(reg, val) \
-+	(*((volatile u32 *) (reg)) &= ~((u32) (val)))
-+
-+#define sgmii_set_reg(reg, val) \
-+	(*((volatile u32 *) (reg)) = (u32) (val))
-+
-+#define sgmii_get_reg(reg) \
-+	(*((volatile u32 *) (reg)))
-+
-+#define sgmii_addr_reg(reg) \
-+	((volatile u32 *) (reg))
-+
-+#endif /* __KERNEL__ */
-+#endif /* _ASM_C6X_SGMII_H */
-diff --git a/arch/c6x/include/asm/shmbuf.h b/arch/c6x/include/asm/shmbuf.h
-new file mode 100644
-index 0000000..9e677aa
---- /dev/null
-+++ b/arch/c6x/include/asm/shmbuf.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SHMBUF_H
-+#define _ASM_C6X_SHMBUF_H
-+
-+#include <asm-generic/shmbuf.h>
-+
-+#endif /* _ASM_C6X_SHMBUF_H */
-diff --git a/arch/c6x/include/asm/shmparam.h b/arch/c6x/include/asm/shmparam.h
-new file mode 100644
-index 0000000..0e06c26
---- /dev/null
-+++ b/arch/c6x/include/asm/shmparam.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SHMPARAM_H
-+#define _ASM_C6X_SHMPARAM_H
-+
-+#include <asm-generic/shmparam.h>
-+
-+#endif /* _ASM_C6X_SHMPARAM_H */
-diff --git a/arch/c6x/include/asm/sigcontext.h b/arch/c6x/include/asm/sigcontext.h
-new file mode 100644
-index 0000000..bc171c4
---- /dev/null
-+++ b/arch/c6x/include/asm/sigcontext.h
-@@ -0,0 +1,83 @@
-+/*
-+ *  linux/include/asm-c6x/sigcontext.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_SIGCONTEXT_H
-+#define _ASM_C6X_SIGCONTEXT_H
-+
-+
-+struct sigcontext {
-+	unsigned long  sc_mask;		/* old sigmask */
-+	unsigned long  sc_sp;		/* old user stack pointer */
-+
-+	unsigned long  sc_a4;
-+	unsigned long  sc_b4;
-+	unsigned long  sc_a6;
-+	unsigned long  sc_b6;
-+	unsigned long  sc_a8;
-+	unsigned long  sc_b8;
-+
-+	unsigned long  sc_a0;
-+	unsigned long  sc_a1;
-+	unsigned long  sc_a2;
-+	unsigned long  sc_a3;
-+	unsigned long  sc_a5;
-+	unsigned long  sc_a7;
-+	unsigned long  sc_a9;
-+
-+	unsigned long  sc_b0;
-+	unsigned long  sc_b1;
-+	unsigned long  sc_b2;
-+	unsigned long  sc_b3;
-+	unsigned long  sc_b5;
-+	unsigned long  sc_b7;
-+	unsigned long  sc_b9;
-+
-+	unsigned long  sc_a16;
-+	unsigned long  sc_a17;
-+	unsigned long  sc_a18;
-+	unsigned long  sc_a19;
-+	unsigned long  sc_a20;
-+	unsigned long  sc_a21;
-+	unsigned long  sc_a22;
-+	unsigned long  sc_a23;
-+	unsigned long  sc_a24;
-+	unsigned long  sc_a25;
-+	unsigned long  sc_a26;
-+	unsigned long  sc_a27;
-+	unsigned long  sc_a28;
-+	unsigned long  sc_a29;
-+	unsigned long  sc_a30;
-+	unsigned long  sc_a31;
-+
-+	unsigned long  sc_b16;
-+	unsigned long  sc_b17;
-+	unsigned long  sc_b18;
-+	unsigned long  sc_b19;
-+	unsigned long  sc_b20;
-+	unsigned long  sc_b21;
-+	unsigned long  sc_b22;
-+	unsigned long  sc_b23;
-+	unsigned long  sc_b24;
-+	unsigned long  sc_b25;
-+	unsigned long  sc_b26;
-+	unsigned long  sc_b27;
-+	unsigned long  sc_b28;
-+	unsigned long  sc_b29;
-+	unsigned long  sc_b30;
-+	unsigned long  sc_b31;
-+
-+	unsigned long  sc_csr;
-+	unsigned long  sc_pc;
-+};
-+
-+#endif /* _ASM_C6X_SIGCONTEXT_H */
-+
-diff --git a/arch/c6x/include/asm/siginfo.h b/arch/c6x/include/asm/siginfo.h
-new file mode 100644
-index 0000000..01ce660
---- /dev/null
-+++ b/arch/c6x/include/asm/siginfo.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SIGINFO_H
-+#define _ASM_C6X_SIGINFO_H
-+
-+#include <asm-generic/siginfo.h>
-+
-+#endif /* _ASM_C6X_SIGINFO_H */
-diff --git a/arch/c6x/include/asm/signal.h b/arch/c6x/include/asm/signal.h
-new file mode 100644
-index 0000000..f1cd870
---- /dev/null
-+++ b/arch/c6x/include/asm/signal.h
-@@ -0,0 +1,17 @@
-+#ifndef _ASM_C6X_SIGNAL_H
-+#define _ASM_C6X_SIGNAL_H
-+
-+#include <asm-generic/signal.h>
-+
-+#ifndef __ASSEMBLY__
-+#include <linux/linkage.h>
-+
-+struct pt_regs;
-+
-+extern asmlinkage int do_rt_sigreturn(struct pt_regs *regs);
-+extern asmlinkage void do_notify_resume(struct pt_regs *regs,
-+					u32 thread_info_flags,
-+					int syscall);
-+#endif
-+
-+#endif /* _ASM_C6X_SIGNAL_H */
-diff --git a/arch/c6x/include/asm/socket.h b/arch/c6x/include/asm/socket.h
-new file mode 100644
-index 0000000..dc28af3
---- /dev/null
-+++ b/arch/c6x/include/asm/socket.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SOCKET_H
-+#define _ASM_C6X_SOCKET_H
-+
-+#include <asm-generic/socket.h>
-+
-+#endif /* _ASM_C6X_SOCKET_H */
-diff --git a/arch/c6x/include/asm/sockios.h b/arch/c6x/include/asm/sockios.h
-new file mode 100644
-index 0000000..fd7ebd9
---- /dev/null
-+++ b/arch/c6x/include/asm/sockios.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SOCKIOS_H
-+#define _ASM_C6X_SOCKIOS_H
-+
-+#include <asm-generic/sockios.h>
-+
-+#endif /* _ASM_C6X_SOCKIOS_H */
-diff --git a/arch/c6x/include/asm/stat.h b/arch/c6x/include/asm/stat.h
-new file mode 100644
-index 0000000..8aafa67
---- /dev/null
-+++ b/arch/c6x/include/asm/stat.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_STAT_H
-+#define _ASM_C6X_STAT_H
-+
-+#include <asm-generic/stat.h>
-+
-+#endif /* _ASM_C6X_STAT_H */
-diff --git a/arch/c6x/include/asm/statfs.h b/arch/c6x/include/asm/statfs.h
-new file mode 100644
-index 0000000..b111ba0
---- /dev/null
-+++ b/arch/c6x/include/asm/statfs.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_STATFS_H
-+#define _ASM_C6X_STATFS_H
-+
-+#include <asm-generic/statfs.h>
-+
-+#endif /* _ASM_C6X_STATFS_H */
-diff --git a/arch/c6x/include/asm/string.h b/arch/c6x/include/asm/string.h
-new file mode 100644
-index 0000000..bfdabde
---- /dev/null
-+++ b/arch/c6x/include/asm/string.h
-@@ -0,0 +1,29 @@
-+/*
-+ *  linux/include/asm-c6x/string.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_STRING_H
-+#define _ASM_C6X_STRING_H
-+
-+#include <asm/page.h>
-+#include <linux/linkage.h>
-+
-+asmlinkage extern void *memcpy(void *to, const void *from, size_t n);
-+extern void *memset(void *s, int c, size_t count);
-+extern int memcmp(const void *cs, const void *ct, size_t count);
-+extern void *memmove(void *s1, const void *s2, size_t n);
-+
-+#define __HAVE_ARCH_MEMCPY
-+#define __HAVE_ARCH_MEMMOVE
-+#define __HAVE_ARCH_MEMSET
-+#define __HAVE_ARCH_MEMCMP
-+
-+#endif /* _ASM_C6X_STRING_H */
-diff --git a/arch/c6x/include/asm/swab.h b/arch/c6x/include/asm/swab.h
-new file mode 100644
-index 0000000..909986f
---- /dev/null
-+++ b/arch/c6x/include/asm/swab.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_SWAB_H
-+#define _ASM_C6X_SWAB_H
-+
-+#include <asm-generic/swab.h>
-+
-+#endif /* _ASM_C6X_SWAB_H */
-diff --git a/arch/c6x/include/asm/syscalls.h b/arch/c6x/include/asm/syscalls.h
-new file mode 100644
-index 0000000..f1a1130
---- /dev/null
-+++ b/arch/c6x/include/asm/syscalls.h
-@@ -0,0 +1,58 @@
-+/*
-+ * syscalls.h - Linux syscall interfaces (C6X-specific)
-+ *
-+ * Copyright (C) 2011 Texas Instruments Incorporated
 + * Author: Mark Salter <msalter@redhat.com>
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation, version 2.
++ * GPLv2 LICENSE SUMMARY
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope that it will be useful, but
 + * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for
-+ * more details.
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
++ * USA
++ *
++ * BSD LICENSE
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *  * Neither the name Texas Instruments nor the names of its
++ *    contributors may be used to endorse or promote products derived
++ *    from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
 + */
-+
-+#ifndef __ASM_C6X_SYSCALLS_H
-+#define __ASM_C6X_SYSCALLS_H
-+
-+#include <linux/compiler.h>
-+#include <linux/linkage.h>
 +#include <linux/types.h>
 +
-+/* The array of function pointers for syscalls. */
-+extern void *sys_call_table[];
++#include "tags.h"
 +
-+/* The following are trampolines in entry.S to handle 64-bit arguments */
-+extern long sys_pread_c6x(unsigned int fd, char __user *buf,
-+			  size_t count, off_t pos_low, off_t pos_high);
-+extern long sys_pwrite_c6x(unsigned int fd, const char __user *buf,
-+			   size_t count, off_t pos_low, off_t pos_high);
-+extern long sys_truncate64_c6x(const char __user *path,
-+			       off_t length_low, off_t length_high);
-+extern long sys_ftruncate64_c6x(unsigned int fd,
-+			       off_t length_low, off_t length_high);
-+extern long sys_fadvise64_c6x(int fd, u32 offset_lo, u32 offset_hi,
-+			      u32 len, int advice);
-+extern long sys_fadvise64_64_c6x(int fd, u32 offset_lo, u32 offset_hi,
-+				u32 len_lo, u32 len_hi, int advice);
-+extern long sys_fallocate_c6x(int fd, int mode,
-+			      u32 offset_lo, u32 offset_hi,
-+			      u32 len_lo, u32 len_hi);
-+extern int sys_cache_sync(unsigned long s, unsigned long e);
++#define TAG_NEXT(p) \
++	((struct tag_header *)((char *)p + (((struct tag_header *)p)->size) \
++			       + sizeof(struct tag_header)))
 +
-+struct pt_regs;
-+
-+extern asmlinkage int c6x_vfork(struct pt_regs *regs);
-+extern asmlinkage int c6x_clone(struct pt_regs *regs);
-+extern asmlinkage long c6x_execve(const char __user *name,
-+				  const char __user *const __user *argv,
-+				  const char __user *const __user *envp,
-+				  struct pt_regs *regs);
-+
-+
-+#include <asm-generic/syscalls.h>
-+
-+#endif /* __ASM_C6X_SYSCALLS_H */
-diff --git a/arch/c6x/include/asm/system.h b/arch/c6x/include/asm/system.h
-new file mode 100644
-index 0000000..fe9ff5a
---- /dev/null
-+++ b/arch/c6x/include/asm/system.h
-@@ -0,0 +1,194 @@
-+/*
-+ *  linux/include/asm-c6x/system.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_SYSTEM_H
-+#define _ASM_C6X_SYSTEM_H
-+
-+#include <linux/linkage.h>
-+#include <linux/irqflags.h>
-+
-+#define prepare_to_switch()    do { } while (0)
-+
-+struct task_struct;
-+struct thread_struct;
-+asmlinkage void *__switch_to(struct thread_struct *prev,
-+			     struct thread_struct *next,
-+			     struct task_struct *tsk);
-+
-+#define switch_to(prev, next, last)				\
-+	do {							\
-+		current->thread.wchan = (u_long) __builtin_return_address(0); \
-+		(last) = __switch_to(&(prev)->thread,		\
-+				     &(next)->thread, (prev));	\
-+		mb();						\
-+		current->thread.wchan = 0;			\
-+	} while (0)
-+
-+/* Reset the board */
-+#define HARD_RESET_NOW()
-+
-+#define get_creg(reg) \
-+	({ unsigned int __x; asm volatile ("mvc .s2 " #reg ",%0\n" : "=b"(__x)); __x; })
-+
-+#define set_creg(reg, v) \
-+	do { unsigned int __x = (unsigned int)(v); \
-+		asm volatile ("mvc .s2 %0," #reg "\n" : : "b"(__x)); \
-+	} while (0)
-+
-+#define or_creg(reg, n) \
-+	do { unsigned __x, __n = (unsigned)(n);		  \
-+		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
-+			      "or  .l2 %1,%0,%0\n"	  \
-+			      "mvc .s2 %0," #reg "\n"	  \
-+			      "nop\n"			  \
-+			      : "=&b"(__x) : "b"(__n));	  \
-+	} while (0)
-+
-+#define and_creg(reg, n) \
-+	do { unsigned __x, __n = (unsigned)(n);		  \
-+		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
-+			      "and .l2 %1,%0,%0\n"	  \
-+			      "mvc .s2 %0," #reg "\n"	  \
-+			      "nop\n"    \
-+			      : "=&b"(__x) : "b"(__n));	  \
-+	} while (0)
-+
-+#define get_coreid() (get_creg(DNUM) & 0xff)
-+
-+/*
-+ * Interrupt management
-+ */
-+
-+/* Return from interrupt function */
-+#define iret()	  asm volatile("B   .S2 IRP\n" \
-+			       "NOP 5\n")
-+
-+/* Set/get IST */
-+#define set_ist(x)	set_creg(ISTP, x)
-+#define get_ist()       get_creg(ISTP)
-+
-+#ifdef __TMS320C6XPLUS__
-+#define __dint()                 asm volatile ("DINT\n")
-+#define __rint()                 asm volatile ("RINT\n")
-+#endif
-+
-+/*
-+ * Exception management
-+ */
-+
-+#ifdef __TMS320C6XPLUS__
-+asmlinkage void enable_exception(void);
-+#define disable_exception()
-+#define get_except_type()        get_creg(EFR)
-+#define ack_exception(type)      set_creg(ECR, 1 << (type))
-+#define get_iexcept()            get_creg(IERR)
-+#define set_iexcept(mask)        set_creg(IERR, (mask))
-+#else
-+#define enable_exception()
-+#define disable_exception()
-+#define get_except_type()
-+#define ack_exception(type)
-+#define get_iexcept()
-+#define set_iexcept(mask)
-+#endif
-+
-+/*
-+ * Misc. functions
-+ */
-+
-+/* Return from exception function */
-+#define eret()			 { asm("B   .S2 NRP\n"); \
-+				   asm("NOP  5\n"); }
-+
-+#define nop()                    asm("NOP\n");
-+#define mb()                     barrier()
-+#define rmb()                    barrier()
-+#define wmb()                    barrier()
-+#define set_mb(var, value)       do { var = value;  mb(); } while (0)
-+#define set_wmb(var, value)      do { var = value; wmb(); } while (0)
-+
-+#define smp_mb()	         barrier()
-+#define smp_rmb()	         barrier()
-+#define smp_wmb()	         barrier()
-+#define smp_read_barrier_depends()	do { } while (0)
-+
-+#define xchg(ptr, x) \
-+	((__typeof__(*(ptr)))__xchg((unsigned int)(x), (void *) (ptr), \
-+				    sizeof(*(ptr))))
-+#define tas(ptr)    xchg((ptr), 1)
-+
-+unsigned int _lmbd(unsigned int, unsigned int);
-+unsigned int _bitr(unsigned int);
-+
-+struct __xchg_dummy { unsigned int a[100]; };
-+#define __xg(x) ((volatile struct __xchg_dummy *)(x))
-+
-+static inline unsigned int __xchg(unsigned int x, volatile void *ptr, int size)
++struct tag_header *c6x_tag_next(struct tag_header *atag)
 +{
-+	unsigned int tmp;
-+	unsigned long flags;
++	if (atag->tag == TAG_EOL)
++		return NULL;
 +
-+	local_irq_save(flags);
++	atag = TAG_NEXT(atag);
++	if (atag->tag == TAG_EOL)
++		return NULL;
 +
-+	switch (size) {
-+	case 1:
-+		tmp = 0;
-+		tmp = *((unsigned char *) ptr);
-+		*((unsigned char *) ptr) = (unsigned char) x;
-+		break;
-+	case 2:
-+		tmp = 0;
-+		tmp = *((unsigned short *) ptr);
-+		*((unsigned short *) ptr) = x;
-+		break;
-+	case 4:
-+		tmp = 0;
-+		tmp = *((unsigned int *) ptr);
-+		*((unsigned int *) ptr) = x;
-+		break;
-+	}
-+	local_irq_restore(flags);
-+	return tmp;
++	return atag;
 +}
 +
-+#include <asm-generic/cmpxchg-local.h>
++void *c6x_tag_find(struct tag_header *atag, unsigned int tag)
++{
++	while (atag && atag->tag != TAG_EOL && atag->tag != tag)
++		atag = c6x_tag_next(atag);
++	if (atag && atag->tag == tag)
++		return (void *)((unsigned long)atag + sizeof(*atag));
++	return NULL;
++}
 +
++int c6x_tags_are_valid(struct tag_header *atag)
++{
++	if (!atag)
++		return 0;
++
++	if (atag->tag != TAG_SOL || atag->size)
++		return 0;
++
++	return 1;
++}
++
++
+diff --git a/arch/c6x/kernel/tags.h b/arch/c6x/kernel/tags.h
+new file mode 100644
+index 0000000..9c4496d
+--- /dev/null
++++ b/arch/c6x/kernel/tags.h
+@@ -0,0 +1,82 @@
 +/*
-+ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
-+ * them available.
++ * tags.h
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * Author: Mark Salter <msalter@redhat.com>
++ *
++ * GPLv2 LICENSE SUMMARY
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
++ * USA
++ *
++ * BSD LICENSE
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *  * Neither the name Texas Instruments nor the names of its
++ *    contributors may be used to endorse or promote products derived
++ *    from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
 + */
-+#define cmpxchg_local(ptr, o, n)					\
-+	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),		\
-+						     (unsigned long)(o), \
-+						     (unsigned long)(n), \
-+						     sizeof(*(ptr))))
-+#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
 +
-+#include <asm-generic/cmpxchg.h>
++#define TAGS_MAGIC	0x54694265
 +
-+#define _extu(x, s, e)							\
-+	({      unsigned int __x;					\
-+		asm volatile ("extu .S2 %3,%1,%2,%0\n" :		\
-+			      "=b"(__x) : "n"(s), "n"(e), "b"(x));	\
-+	       __x; })
++/* The list must start with an TAG_SOL */
++#define TAG_SOL		0x64000001
 +
++/* The list must end with an TAG_EOL */
++#define TAG_EOL		0x64000002
 +
-+extern unsigned int c6x_core_freq;
-+
-+struct pt_regs;
-+
-+extern void die(char *str, struct pt_regs *fp, int nr);
-+extern asmlinkage int process_exception(struct pt_regs *regs);
-+extern void time_init(void);
-+extern void free_initmem(void);
-+
-+#endif /* _ASM_C6X_SYSTEM_H */
-diff --git a/arch/c6x/include/asm/termbits.h b/arch/c6x/include/asm/termbits.h
-new file mode 100644
-index 0000000..146dfad
---- /dev/null
-+++ b/arch/c6x/include/asm/termbits.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_TERMBITS_H
-+#define _ASM_C6X_TERMBITS_H
-+
-+#include <asm-generic/termbits.h>
-+
-+#endif /* _ASM_C6X_TERMBITS_H */
-diff --git a/arch/c6x/include/asm/termios.h b/arch/c6x/include/asm/termios.h
-new file mode 100644
-index 0000000..77fd1da
---- /dev/null
-+++ b/arch/c6x/include/asm/termios.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_TERMIOS_H
-+#define _ASM_C6X_TERMIOS_H
-+
-+#include <asm-generic/termios.h>
-+
-+#endif /* _ASM_C6X_TERMIOS_H */
-diff --git a/arch/c6x/include/asm/thread_info.h b/arch/c6x/include/asm/thread_info.h
-new file mode 100644
-index 0000000..c1a3dd8
---- /dev/null
-+++ b/arch/c6x/include/asm/thread_info.h
-@@ -0,0 +1,123 @@
-+/*
-+ *  linux/include/asm-c6x/thread_info.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.3x: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_THREAD_INFO_H
-+#define _ASM_C6X_THREAD_INFO_H
-+
-+#ifdef __KERNEL__
-+
-+#include <asm/page.h>
-+
-+#ifdef CONFIG_4KSTACKS
-+#define THREAD_SIZE		4096
-+#define THREAD_SHIFT		12
-+#define THREAD_ORDER		0
-+#else
-+#define THREAD_SIZE		8192
-+#define THREAD_SHIFT		13
-+#define THREAD_ORDER		1
-+#endif
-+
-+#define THREAD_START_SP		(THREAD_SIZE - 8)
++#define TAG_CMDLINE	0x64000003
 +
 +#ifndef __ASSEMBLY__
-+
-+typedef struct {
-+	unsigned long seg;
-+} mm_segment_t;
-+
-+/*
-+ * low level task data.
-+ */
-+struct thread_info {
-+	struct task_struct	*task;		/* main task structure */
-+	struct exec_domain	*exec_domain;	/* execution domain */
-+	unsigned long		flags;		/* low level flags */
-+	int			cpu;		/* cpu we're on */
-+	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-+	mm_segment_t		addr_limit;	/* thread address space */
-+	struct restart_block	restart_block;
++struct tag_header {
++	unsigned int size;
++	unsigned int tag;
 +};
 +
-+/*
-+ * macros/functions for gaining access to the thread information structure
-+ *
-+ * preempt_count needs to be 1 initially, until the scheduler is functional.
-+ */
-+#define INIT_THREAD_INFO(tsk)			\
-+{						\
-+	.task		= &tsk,			\
-+	.exec_domain	= &default_exec_domain,	\
-+	.flags		= 0,			\
-+	.cpu		= 0,			\
-+	.preempt_count	= INIT_PREEMPT_COUNT,	\
-+	.addr_limit	= KERNEL_DS,		\
-+	.restart_block	= {			\
-+		.fn = do_no_restart_syscall,	\
-+	},					\
-+}
-+
-+#define init_thread_info	(init_thread_union.thread_info)
-+#define init_stack		(init_thread_union.stack)
-+
-+/* get the thread information struct of current task */
-+static inline __attribute__((const))
-+struct thread_info *current_thread_info(void)
-+{
-+	struct thread_info *ti;
-+	asm volatile (" clr   .s2 B15,0,%1,%0\n"
-+		      : "=b" (ti)
-+		      : "Iu5" (THREAD_SHIFT - 1));
-+	return ti;
-+}
-+
-+#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
-+
-+/* thread information allocation */
-+#ifdef CONFIG_DEBUG_STACK_USAGE
-+#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO)
-+#else
-+#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK)
-+#endif
-+
-+#define alloc_thread_info_node(tsk, node)	\
-+	((struct thread_info *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER))
-+
-+#define free_thread_info(ti)	free_pages((unsigned long) (ti), THREAD_ORDER)
-+#define get_thread_info(ti)	get_task_struct((ti)->task)
-+#define put_thread_info(ti)	put_task_struct((ti)->task)
-+#endif /* __ASSEMBLY__ */
-+
-+#define	PREEMPT_ACTIVE	0x10000000
-+
-+/*
-+ * thread information flag bit numbers
-+ * - pending work-to-be-done flags are in LSW
-+ * - other flags in MSW
-+ */
-+#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
-+#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
-+#define TIF_SIGPENDING		2	/* signal pending */
-+#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
-+#define TIF_RESTORE_SIGMASK	4	/* restore signal mask in do_signal() */
-+
-+#define TIF_POLLING_NRFLAG	16	/* true if poll_idle() is polling TIF_NEED_RESCHED */
-+#define TIF_MEMDIE		17	/* OOM killer killed process */
-+
-+#define TIF_WORK_MASK		0x00007FFE	/* work to do on interrupt/exception return */
-+#define TIF_ALLWORK_MASK	0x00007FFF	/* work to do on any return to u-space */
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* _ASM_C6X_THREAD_INFO_H */
-diff --git a/arch/c6x/include/asm/timer.h b/arch/c6x/include/asm/timer.h
-new file mode 100644
-index 0000000..8127a63
---- /dev/null
-+++ b/arch/c6x/include/asm/timer.h
-@@ -0,0 +1,31 @@
-+/*
-+ *  linux/include/asm-c6x/timer.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2005, 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_TIMER_H
-+#define _ASM_C6X_TIMER_H
-+
-+#include <linux/interrupt.h>
-+#include <mach/timer.h>
-+
-+#ifdef CONFIG_USE_RT_TIMER
-+extern void adjust_time(void);
-+#endif
-+
-+#define TIMER_REG(reg)	     (*((volatile unsigned int *) (reg)))
-+#define TIMER_REG64(reg)     (*((volatile unsigned long long *) (reg)))
-+
-+#ifndef __ASSEMBLY__
-+extern int c6x_arch_init_clocksource(void);
-+extern int c6x_arch_init_clockevents(void);
-+#endif	/* __ASSEMBLY__ */
-+
-+#endif /*_ASM_C6X_TIMER_H */
-diff --git a/arch/c6x/include/asm/timex.h b/arch/c6x/include/asm/timex.h
-new file mode 100644
-index 0000000..9570f58
---- /dev/null
-+++ b/arch/c6x/include/asm/timex.h
-@@ -0,0 +1,43 @@
-+/*
-+ *  linux/include/asm-c6x/timex.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Modified for 2.6.34: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_TIMEX_H
-+#define _ASM_C6X_TIMEX_H
-+
-+/*
-+ * This should be close enough...
-+ */
-+#define CLOCK_TICK_RATE ((1000 * 1000000UL) / 6)
-+
-+/* 64-bit timestamp */
-+typedef unsigned long long cycles_t;
-+
-+extern cycles_t cacheflush_time;
-+
-+static inline cycles_t get_cycles(void)
-+{
-+	unsigned l, h;
-+
-+	asm volatile (" dint\n"
-+		      " mvc .s2 TSCL,%0\n"
-+		      " mvc .s2 TSCH,%1\n"
-+		      " rint\n"
-+		      : "=b"(l), "=b"(h));
-+	return ((cycles_t)h << 32) | l;
-+}
-+
-+extern int init_tsc_clocksource(void);
-+extern int init_timer64_clocksource(void);
-+
-+#endif /* _ASM_C6X_TIMEX_H */
-diff --git a/arch/c6x/include/asm/tlb.h b/arch/c6x/include/asm/tlb.h
-new file mode 100644
-index 0000000..8709e5e
---- /dev/null
-+++ b/arch/c6x/include/asm/tlb.h
-@@ -0,0 +1,8 @@
-+#ifndef _ASM_C6X_TLB_H
-+#define _ASM_C6X_TLB_H
-+
-+#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
-+
-+#include <asm-generic/tlb.h>
-+
-+#endif /* _ASM_C6X_TLB_H */
-diff --git a/arch/c6x/include/asm/tlbflush.h b/arch/c6x/include/asm/tlbflush.h
-new file mode 100644
-index 0000000..e00f0b9
---- /dev/null
-+++ b/arch/c6x/include/asm/tlbflush.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_TLBFLUSH_H
-+#define _ASM_C6X_TLBFLUSH_H
-+
-+#include <asm-generic/tlbflush.h>
-+
-+#endif /* _ASM_C6X_TLBFLUSH_H */
-diff --git a/arch/c6x/include/asm/topology.h b/arch/c6x/include/asm/topology.h
-new file mode 100644
-index 0000000..30767fd
---- /dev/null
-+++ b/arch/c6x/include/asm/topology.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_TOPOLOGY_H
-+#define _ASM_C6X_TOPOLOGY_H
-+
-+#include <asm-generic/topology.h>
-+
-+#endif /* _ASM_C6X_TOPOLOGY_H */
-diff --git a/arch/c6x/include/asm/traps.h b/arch/c6x/include/asm/traps.h
-new file mode 100644
-index 0000000..d2ab603
---- /dev/null
-+++ b/arch/c6x/include/asm/traps.h
-@@ -0,0 +1,39 @@
-+/*
-+ *  linux/include/asm-c6x/traps.h
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_TRAPS_H
-+#define _ASM_C6X_TRAPS_H
-+
-+#ifdef CONFIG_TMS320C64XPLUS
-+
-+#define EXCEPT_TYPE_NXF   31	   /* NMI */
-+#define EXCEPT_TYPE_EXC   30	   /* external exception */
-+#define EXCEPT_TYPE_IXF   1	   /* internal exception */
-+#define EXCEPT_TYPE_SXF   0	   /* software exception */
-+
-+#define EXCEPT_CAUSE_LBX  (1 << 7) /* loop buffer exception */
-+#define EXCEPT_CAUSE_PRX  (1 << 6) /* privilege exception */
-+#define EXCEPT_CAUSE_RAX  (1 << 5) /* resource access exception */
-+#define EXCEPT_CAUSE_RCX  (1 << 4) /* resource conflict exception */
-+#define EXCEPT_CAUSE_OPX  (1 << 3) /* opcode exception */
-+#define EXCEPT_CAUSE_EPX  (1 << 2) /* execute packet exception */
-+#define EXCEPT_CAUSE_FPX  (1 << 1) /* fetch packet exception */
-+#define EXCEPT_CAUSE_IFX  (1 << 0) /* instruction fetch exception */
-+
-+struct exception_info {
-+	char *kernel_str;
-+	int  signo;
-+	int  code;
++struct tag_cmdline {
++	char	cmdline[0];
 +};
 +
-+#endif /* CONFIG_TMS320C64XPLUS */
-+#endif /* _ASM_C6X_TRAPS_H */
-diff --git a/arch/c6x/include/asm/types.h b/arch/c6x/include/asm/types.h
-new file mode 100644
-index 0000000..c2fe78b
---- /dev/null
-+++ b/arch/c6x/include/asm/types.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_TYPES_H
-+#define _ASM_C6X_TYPES_H
-+
-+#include <asm-generic/types.h>
-+
-+#endif /* _ASM_C6X_TYPES_H */
-diff --git a/arch/c6x/include/asm/uaccess.h b/arch/c6x/include/asm/uaccess.h
-new file mode 100644
-index 0000000..acb0405
---- /dev/null
-+++ b/arch/c6x/include/asm/uaccess.h
-@@ -0,0 +1,103 @@
-+/*
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_UACCESS_H
-+#define _ASM_C6X_UACCESS_H
-+
-+#include <linux/types.h>
-+#include <linux/compiler.h>
-+#include <linux/string.h>
-+
-+/*
-+ * __copy_from_user/copy_to_user are based on ones in asm-generic/uaccess.h
-+ *
-+ * C6X supports unaligned 32 and 64 bit loads and stores.
-+ */
-+static inline __must_check long __copy_from_user(void *to,
-+		const void __user *from, unsigned long n)
-+{
-+	u32 tmp32;
-+	u64 tmp64;
-+
-+	if (__builtin_constant_p(n)) {
-+		switch (n) {
-+		case 1:
-+			*(u8 *)to = *(u8 __force *)from;
-+			return 0;
-+		case 4:
-+			asm volatile ("ldnw .d1t1 *%2,%0\n"
-+				      "nop  4\n"
-+				      "stnw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp32)
-+				      : "A"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		case 8:
-+			asm volatile ("ldndw .d1t1 *%2,%0\n"
-+				      "nop   4\n"
-+				      "stndw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp64)
-+				      : "a"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		default:
-+			break;
-+		}
-+	}
-+
-+	memcpy(to, (const void __force *)from, n);
-+	return 0;
-+}
-+
-+static inline __must_check long __copy_to_user(void __user *to,
-+		const void *from, unsigned long n)
-+{
-+	u32 tmp32;
-+	u64 tmp64;
-+
-+	if (__builtin_constant_p(n)) {
-+		switch (n) {
-+		case 1:
-+			*(u8 __force *)to = *(u8 *)from;
-+			return 0;
-+		case 4:
-+			asm volatile ("ldnw .d1t1 *%2,%0\n"
-+				      "nop  4\n"
-+				      "stnw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp32)
-+				      : "a"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		case 8:
-+			asm volatile ("ldndw .d1t1 *%2,%0\n"
-+				      "nop   4\n"
-+				      "stndw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp64)
-+				      : "a"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		default:
-+			break;
-+		}
-+	}
-+
-+	memcpy((void __force *)to, from, n);
-+	return 0;
-+}
-+
-+#define __copy_to_user   __copy_to_user
-+#define __copy_from_user __copy_from_user
-+
-+extern int _access_ok(unsigned long addr, unsigned long size);
-+#ifdef CONFIG_ACCESS_CHECK
-+#define __access_ok _access_ok
++extern int c6x_tags_are_valid(struct tag_header *atag);
++extern struct tag_header *c6x_tag_next(struct tag_header *atag);
++extern void *c6x_tag_find(struct tag_header *atag, unsigned int tag);
 +#endif
-+
-+#include <asm-generic/uaccess.h>
-+
-+#endif /* _ASM_C6X_UACCESS_H */
-diff --git a/arch/c6x/include/asm/ucontext.h b/arch/c6x/include/asm/ucontext.h
+diff --git a/arch/c6x/kernel/time.c b/arch/c6x/kernel/time.c
 new file mode 100644
-index 0000000..026bc0a
+index 0000000..d969b48
 --- /dev/null
-+++ b/arch/c6x/include/asm/ucontext.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_UCONTEXT_H
-+#define _ASM_C6X_UCONTEXT_H
-+
-+#include <asm-generic/ucontext.h>
-+
-+#endif /* _ASM_C6X_UCONTEXT_H */
-diff --git a/arch/c6x/include/asm/unaligned.h b/arch/c6x/include/asm/unaligned.h
-new file mode 100644
-index 0000000..a9fa06c
---- /dev/null
-+++ b/arch/c6x/include/asm/unaligned.h
-@@ -0,0 +1,290 @@
++++ b/arch/c6x/kernel/time.c
+@@ -0,0 +1,55 @@
 +/*
-+ *  arch/c6x/include/asm/unaligned.h
++ *  linux/arch/c6x/kernel/time.c
 + *
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
 + *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *  Rewritten for 2.6.3x: Mark Salter <msalter@redhat.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_UNALIGNED_H
-+#define _ASM_C6X_UNALIGNED_H
++
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/param.h>
++#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++
++#include <asm/segment.h>
++#include <linux/io.h>
++#include <asm/irq.h>
++#include <asm/timer.h>
++
++#include <linux/timex.h>
++#include <linux/profile.h>
++
++static u32 sched_clock_multiplier;
++#define SCHED_CLOCK_SHIFT 16
 +
 +/*
-+ * The C64x+ can do unaligned word and dword accesses in hardware
-+ * using special load/store instructions.
++ * scheduler clock - returns current time in nanosec units.
 + */
-+
-+static inline u16 __get_unaligned_le16(const u8 *p)
++u64 sched_clock(void)
 +{
-+	return p[0] | p[1] << 8;
++	u64 tsc;
++
++	/* read the TSC value
++	 */
++	tsc = get_cycles();
++
++	return (tsc * sched_clock_multiplier) >> SCHED_CLOCK_SHIFT;
 +}
 +
-+static inline u16 __get_unaligned_be16(const u8 *p)
++void time_init(void)
 +{
-+	return p[0] << 8 | p[1];
++	sched_clock_multiplier = ((u64)NSEC_PER_SEC << SCHED_CLOCK_SHIFT) /
++		c6x_core_freq;
++
++	c6x_arch_init_clocksource();
++	c6x_arch_init_clockevents();
 +}
 +
-+static inline void __put_unaligned_le16(u16 val, u8 *p)
+diff --git a/arch/c6x/kernel/traps.c b/arch/c6x/kernel/traps.c
+new file mode 100644
+index 0000000..ddb78da
+--- /dev/null
++++ b/arch/c6x/kernel/traps.c
+@@ -0,0 +1,416 @@
++/*
++ *  linux/arch/c6x/kernel/traps.c
++ *
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  Sets up all exception vectors
++ */
++#include <linux/sched.h>
++#include <linux/signal.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/types.h>
++#include <linux/user.h>
++#include <linux/string.h>
++#include <linux/linkage.h>
++#include <linux/linkage.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kallsyms.h>
++#include <linux/ptrace.h>
++#include <linux/bug.h>
++
++#include <asm/setup.h>
++#include <asm/system.h>
++#include <asm/segment.h>
++#include <asm/traps.h>
++#include <asm/pgtable.h>
++#include <linux/bitops.h>
++#include <asm/irq.h>
++
++void __init trap_init(void)
 +{
-+	*p++ = val;
-+	*p++ = val >> 8;
++	ack_exception(EXCEPT_TYPE_NXF);
++	ack_exception(EXCEPT_TYPE_EXC);
++	ack_exception(EXCEPT_TYPE_IXF);
++	ack_exception(EXCEPT_TYPE_SXF);
++	enable_exception();
 +}
 +
-+static inline void __put_unaligned_be16(u16 val, u8 *p)
++void dump_stack(void)
 +{
-+	*p++ = val >> 8;
-+	*p++ = val;
++	unsigned long stack;
++
++	show_stack(current, &stack);
++}
++EXPORT_SYMBOL(dump_stack);
++
++
++void die(char *str, struct pt_regs *fp, int nr)
++{
++	console_verbose();
++	printk(KERN_ERR "%s: %08x\n", str, nr);
++	show_regs(fp);
++
++	if (*((unsigned long *) (PAGE_SIZE + (unsigned long) current))
++	    != STACK_MAGIC)
++		printk(KERN_ERR "Corrupted stack page\n");
++	printk(KERN_ERR "Process %s (pid: %d, stackpage=%08lx)\n",
++	       current->comm, current->pid, (PAGE_SIZE +
++					     (unsigned long) current));
++
++	dump_stack();
++	while (1)
++		;
 +}
 +
-+static inline u32 __get_unaligned32_swab(const u8 *p)
++static void die_if_kernel(char *str, struct pt_regs *fp, int nr)
 +{
-+	u32 val = (u32) p;
-+	asm volatile (" ldnw	.d1t1	*%0,%0\n"
-+		      " nop	4\n"
-+		      " swap2	.s1	%0,%0\n"
-+		      " swap4	.l1	%0,%0\n"
-+		      : "+a"(val));
-+	return val;
-+}
++	if (user_mode(fp))
++		return;
 +
-+static inline u32 __get_unaligned32(const u8 *p)
-+{
-+	u32 val = (u32) p;
-+	asm volatile (" ldnw	.d1t1	*%0,%0\n"
-+		      " nop     4\n"
-+		      : "+a"(val));
-+	return val;
-+}
-+
-+static inline void __put_unaligned32_swab(u32 val, u8 *p)
-+{
-+	asm volatile (" swap2	.s1	%0,%0\n"
-+		      " swap4	.l1	%0,%0\n"
-+		      " stnw	.d2t1	%0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
-+
-+static inline void __put_unaligned32(u32 val, u8 *p)
-+{
-+	asm volatile (" stnw	.d2t1	%0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
-+
-+static inline u64 __get_unaligned64_swab(const u8 *p)
-+{
-+	u64 val;
-+
-+	asm volatile ("    ldndw   .d2t1  *%1,%0\n"
-+		      "    nop	   4\n"
-+		      "    swap2   .s1	  %p0,%P0\n"
-+		      " || swap2   .l1    %P0,%p0\n"
-+		      "    swap4   .l1    %p0,%p0\n"
-+		      "    swap4   .l1    %P0,%P0\n"
-+		      : "=a"(val) : "b"(p));
-+	return val;
-+}
-+
-+static inline u64 __get_unaligned64(const u8 *p)
-+{
-+	u64 val;
-+	asm volatile (" ldndw	.d1t1	*%1,%0\n"
-+		      " nop     4\n"
-+		      : "=a"(val) : "a"(p));
-+	return val;
-+}
-+
-+static inline void __put_unaligned64_swab(u64 val, u8 *p)
-+{
-+	asm volatile ("    swap2  .s1     %p0,%P0\n"
-+		      " || swap2  .l1	  %P0,%p0\n"
-+		      "	   swap4  .l1	  %p0,%p0\n"
-+		      "	   swap4  .l1	  %P0,%P0\n"
-+		      "	   stndw  .d2t1	  %0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
-+
-+static inline void __put_unaligned64(u64 val, u8 *p)
-+{
-+	asm volatile (" stndw	.d2t1	%0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
-+
-+
-+static inline u16 get_unaligned_le16(const void *p)
-+{
-+	return __get_unaligned_le16((const u8 *)p);
-+}
-+
-+static inline u16 get_unaligned_be16(const void *p)
-+{
-+	return __get_unaligned_be16((const u8 *)p);
-+}
-+
-+static inline void put_unaligned_le16(u16 val, void *p)
-+{
-+	__put_unaligned_le16(val, p);
-+}
-+
-+static inline void put_unaligned_be16(u16 val, void *p)
-+{
-+	__put_unaligned_be16(val, p);
++	die(str, fp, nr);
 +}
 +
 +
-+static inline u32 get_unaligned_le32(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned32_swab((const u8 *)p);
-+#else
-+	return __get_unaligned32((const u8 *)p);
-+#endif
-+}
++/* Internal exceptions */
++static struct exception_info iexcept_table[10] = {
++	{ "Oops - instruction fetch", SIGBUS, BUS_ADRERR },
++	{ "Oops - fetch packet", SIGBUS, BUS_ADRERR },
++	{ "Oops - execute packet", SIGILL, ILL_ILLOPC },
++	{ "Oops - undefined instruction", SIGILL, ILL_ILLOPC },
++	{ "Oops - resource conflict", SIGILL, ILL_ILLOPC },
++	{ "Oops - resource access", SIGILL, ILL_PRVREG },
++	{ "Oops - privilege", SIGILL, ILL_PRVOPC },
++	{ "Oops - loops buffer", SIGILL, ILL_ILLOPC },
++	{ "Oops - software exception", SIGILL, ILL_ILLTRP },
++	{ "Oops - unknown exception", SIGILL, ILL_ILLOPC }
++};
 +
-+static inline u32 get_unaligned_be32(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned32((const u8 *)p);
-+#else
-+	return __get_unaligned32_swab((const u8 *)p);
-+#endif
-+}
++/* External exceptions */
++static struct exception_info eexcept_table[128] = {
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
 +
-+static inline void put_unaligned_le32(u32 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned32_swab(val, p);
-+#else
-+	__put_unaligned32(val, p);
-+#endif
-+}
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
 +
-+static inline void put_unaligned_be32(u32 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned32(val, p);
-+#else
-+	__put_unaligned32_swab(val, p);
-+#endif
-+}
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
 +
-+static inline u64 get_unaligned_le64(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned64_swab((const u8 *)p);
-+#else
-+	return __get_unaligned64((const u8 *)p);
-+#endif
-+}
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - external exception", SIGBUS, BUS_ADRERR },
++	{ "Oops - CPU memory protection fault", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - CPU memory protection fault in L1P", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - DMA memory protection fault in L1P", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - CPU memory protection fault in L1D", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - DMA memory protection fault in L1D", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - CPU memory protection fault in L2", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - DMA memory protection fault in L2", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - EMC CPU memory protection fault", SIGSEGV, SEGV_ACCERR },
++	{ "Oops - EMC bus error", SIGBUS, BUS_ADRERR }
++};
 +
-+static inline u64 get_unaligned_be64(const void *p)
++static void do_trap(struct exception_info *except_info, struct pt_regs *regs)
 +{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned64((const u8 *)p);
-+#else
-+	return __get_unaligned64_swab((const u8 *)p);
-+#endif
-+}
++	unsigned long addr = instruction_pointer(regs);
++	siginfo_t info;
 +
-+static inline void put_unaligned_le64(u64 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned64_swab(val, p);
-+#else
-+	__put_unaligned64(val, p);
-+#endif
-+}
++	if (except_info->code != TRAP_BRKPT)
++		printk(KERN_DEBUG "TRAP: %s PC[0x%lx] signo[%d] code[%d]\n",
++		       except_info->kernel_str, regs->pc,
++		       except_info->signo, except_info->code);
 +
-+static inline void put_unaligned_be64(u64 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned64(val, p);
-+#else
-+	__put_unaligned64_swab(val, p);
-+#endif
++	die_if_kernel(except_info->kernel_str, regs, addr);
++
++	info.si_signo = except_info->signo;
++	info.si_errno = 0;
++	info.si_code  = except_info->code;
++	info.si_addr  = (void __user *)addr;
++
++	force_sig_info(except_info->signo, &info, current);
 +}
 +
 +/*
-+ * Cause a link-time error if we try an unaligned access other than
-+ * 1,2,4 or 8 bytes long
++ * Process an internal exception (non maskable)
 + */
-+extern int __bad_unaligned_access_size(void);
++static int process_iexcept(struct pt_regs *regs)
++{
++	unsigned int iexcept_report = get_iexcept();
++	unsigned int iexcept_num;
 +
-+#define __get_unaligned_le(ptr) (typeof(*(ptr)))({			\
-+	sizeof(*(ptr)) == 1 ? *(ptr) :					\
-+	  (sizeof(*(ptr)) == 2 ? get_unaligned_le16((ptr)) :		\
-+	     (sizeof(*(ptr)) == 4 ? get_unaligned_le32((ptr)) :		\
-+		(sizeof(*(ptr)) == 8 ? get_unaligned_le64((ptr)) :	\
-+		   __bad_unaligned_access_size())));			\
-+	})
++	ack_exception(EXCEPT_TYPE_IXF);
 +
-+#define __get_unaligned_be(ptr) (__force typeof(*(ptr)))({	\
-+	sizeof(*(ptr)) == 1 ? *(ptr) :					\
-+	  (sizeof(*(ptr)) == 2 ? get_unaligned_be16((ptr)) :		\
-+	     (sizeof(*(ptr)) == 4 ? get_unaligned_be32((ptr)) :		\
-+		(sizeof(*(ptr)) == 8 ? get_unaligned_be64((ptr)) :	\
-+		   __bad_unaligned_access_size())));			\
-+	})
++	printk(KERN_ERR "IEXCEPT: PC[0x%lx]\n", regs->pc);
 +
-+#define __put_unaligned_le(val, ptr) ({					\
-+	void *__gu_p = (ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1:								\
-+		*(u8 *)__gu_p = (__force u8)(val);			\
-+		break;							\
-+	case 2:								\
-+		put_unaligned_le16((__force u16)(val), __gu_p);		\
-+		break;							\
-+	case 4:								\
-+		put_unaligned_le32((__force u32)(val), __gu_p);		\
-+		break;							\
-+	case 8:								\
-+		put_unaligned_le64((__force u64)(val), __gu_p);		\
-+		break;							\
-+	default:							\
-+		__bad_unaligned_access_size();				\
-+		break;							\
-+	}								\
-+	(void)0; })
++	while (iexcept_report) {
++		iexcept_num = __ffs(iexcept_report);
++		iexcept_report &= ~(1 << iexcept_num);
++		set_iexcept(iexcept_report);
++		if (*(unsigned int *)regs->pc == BKPT_OPCODE) {
++			/* This is a breakpoint */
++			struct exception_info bkpt_exception = {
++				"Oops - undefined instruction",
++				  SIGTRAP, TRAP_BRKPT
++			};
++			do_trap(&bkpt_exception, regs);
++			iexcept_report &= ~(0xFF);
++			set_iexcept(iexcept_report);
++			continue;
++		}
 +
-+#define __put_unaligned_be(val, ptr) ({					\
-+	void *__gu_p = (ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1:								\
-+		*(u8 *)__gu_p = (__force u8)(val);			\
-+		break;							\
-+	case 2:								\
-+		put_unaligned_be16((__force u16)(val), __gu_p);		\
-+		break;							\
-+	case 4:								\
-+		put_unaligned_be32((__force u32)(val), __gu_p);		\
-+		break;							\
-+	case 8:								\
-+		put_unaligned_be64((__force u64)(val), __gu_p);		\
-+		break;							\
-+	default:							\
-+		__bad_unaligned_access_size();				\
-+		break;							\
-+	}								\
-+	(void)0; })
++		do_trap(&iexcept_table[iexcept_num], regs);
++	}
++	return 0;
++}
 +
++/*
++ * Process an external exception (maskable)
++ */
++static void process_eexcept(struct pt_regs *regs)
++{
++	unsigned int eexcept_num;
++	unsigned int bank = 0;
++	int i;
 +
-+#ifdef _BIG_ENDIAN
-+#define get_unaligned	__get_unaligned_be
-+#define put_unaligned	__put_unaligned_be
-+#define get_unaligned16	get_unaligned_be16
-+#define get_unaligned32	get_unaligned_be32
-+#define get_unaligned64	get_unaligned_be64
++	printk(KERN_ERR "EEXCEPT: PC[0x%lx]\n", regs->pc);
++
++	for (i = 0; i <= 3; i++) {
++		while (IC_MEXPMASK[i]) {
++			__dint();
++			eexcept_num = __ffs(IC_MEXPMASK[i]);
++			IC_MEXPMASK[i] &= ~(1 << eexcept_num); /* ack the external exception */
++			__rint();
++			do_trap(&eexcept_table[eexcept_num +
++					       (bank << 5)], regs);
++		}
++		bank++;
++	}
++
++	ack_exception(EXCEPT_TYPE_EXC);
++}
++
++void (*mach_nmi_handler)(struct pt_regs *regs);
++
++/*
++ * Main exception processing
++ */
++asmlinkage int process_exception(struct pt_regs *regs)
++{
++	unsigned int type;
++	unsigned int type_num;
++	unsigned int ie_num = 9; /* default is unknown exception */
++
++	while ((type = get_except_type()) != 0) {
++		type_num = fls(type) - 1;
++
++		switch (type_num) {
++		case EXCEPT_TYPE_NXF:
++			ack_exception(EXCEPT_TYPE_NXF);
++			die("Oops - NMI detected", regs,
++			    instruction_pointer(regs));
++			break;
++
++		case EXCEPT_TYPE_IXF:
++			if (process_iexcept(regs))
++				return 1;
++			break;
++
++		case EXCEPT_TYPE_EXC:
++			process_eexcept(regs);
++			break;
++
++		case EXCEPT_TYPE_SXF:
++			ie_num = 8;
++		default:
++			ack_exception(type_num);
++			do_trap(&iexcept_table[ie_num], regs);
++			break;
++		}
++	}
++	return 0;
++}
++
++static int kstack_depth_to_print = 48;
++
++static void show_trace(unsigned long *stack, unsigned long *endstack)
++{
++	unsigned long addr;
++	int i;
++
++	printk(KERN_DEBUG "Call trace:");
++	i = 0;
++	while (stack + 1 <= endstack) {
++		addr = *stack++;
++		/*
++		 * If the address is either in the text segment of the
++		 * kernel, or in the region which contains vmalloc'ed
++		 * memory, it *may* be the address of a calling
++		 * routine; if so, print it so that someone tracing
++		 * down the cause of the crash will be able to figure
++		 * out the call path that was taken.
++		 */
++		if (__kernel_text_address(addr)) {
++#ifndef CONFIG_KALLSYMS
++			if (i % 5 == 0)
++				printk(KERN_DEBUG "\n	    ");
++#endif
++			printk(KERN_DEBUG " [<%08lx>]", addr);
++			print_symbol(" %s\n", addr);
++			i++;
++		}
++	}
++	printk(KERN_DEBUG "\n");
++}
++
++void show_stack(struct task_struct *task, unsigned long *stack)
++{
++	unsigned long *p, *endstack;
++	int i;
++
++	if (!stack) {
++		if (task && task != current)
++			/* We know this is a kernel stack,
++			   so this is the start/end */
++			stack = (unsigned long *)thread_saved_ksp(task);
++		else
++			stack = (unsigned long *)&stack;
++	}
++	endstack = (unsigned long *)(((unsigned long)stack + THREAD_SIZE - 1)
++				     & -THREAD_SIZE);
++
++	printk(KERN_DEBUG "Stack from %08lx:", (unsigned long)stack);
++	for (i = 0, p = stack; i < kstack_depth_to_print; i++) {
++		if (p + 1 > endstack)
++			break;
++		if (i % 8 == 0)
++			printk(KERN_CONT "\n	    ");
++		printk(KERN_CONT " %08lx", *p++);
++	}
++	printk(KERN_CONT "\n");
++	show_trace(stack, endstack);
++}
++
++int is_valid_bugaddr(unsigned long addr)
++{
++	return __kernel_text_address(addr);
++}
++
+diff --git a/arch/c6x/kernel/vectors.S b/arch/c6x/kernel/vectors.S
+new file mode 100644
+index 0000000..8e65550
+--- /dev/null
++++ b/arch/c6x/kernel/vectors.S
+@@ -0,0 +1,81 @@
++;
++;  linux/arch/c6x/kernel/vector.s
++;
++;  Port on Texas Instruments TMS320C6x architecture
++;
++;  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++;  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++;
++;  This program is free software; you can redistribute it and/or modify
++;  it under the terms of the GNU General Public License version 2 as
++;  published by the Free Software Foundation.
++;
++;  This section handles all the interrupt vector routines.
++;  At RESET the processor sets up the DRAM timing parameters and
++;  branches to the label _c_int00 which handles initialization for the C code.
++;
++
++#define ALIGNMENT 5
++
++#ifdef CONFIG_BIG_KERNEL
++	.macro IRQVEC name, handler
++	.align ALIGNMENT
++	.global \name
++\name:	STW	.D2T1	A0,*B15--[2]
++ ||	MVKL	.S1	\handler,A0
++	MVKH	.S1	\handler,A0
++	B	.S2X	A0
++	LDW	.D2T1	*++B15[2],A0
++	NOP	4
++	NOP
++	NOP
++	.endm
++#else /* CONFIG_BIG_KERNEL */
++	.macro IRQVEC name, handler
++	.align ALIGNMENT
++	.global \name
++\name:	B	.S2	\handler
++	NOP
++	NOP
++	NOP
++	NOP
++	NOP
++	NOP
++	NOP
++	.endm
++#endif /* CONFIG_BIG_KERNEL */
++
++	   .sect ".vectors","ax"
++	   .align ALIGNMENT
++#ifdef CONFIG_BIG_KERNEL
++RESET:	   MVKL	.S1	_c_int00,A0		; branch to _c_int00
++	   MVKH	.S1	_c_int00,A0
++	   B	.S2X	A0
 +#else
-+#define get_unaligned	__get_unaligned_le
-+#define put_unaligned	__put_unaligned_le
-+#define get_unaligned16	get_unaligned_le16
-+#define get_unaligned32	get_unaligned_le32
-+#define get_unaligned64	get_unaligned_le64
++RESET:	   B	.S2	_c_int00
++	   NOP
++	   NOP
++#endif
++	   NOP
++	   NOP
++	   NOP
++	   NOP
++	   NOP
++
++
++	   IRQVEC NMI,_nmi_handler		; NMI interrupt
++	   IRQVEC AINT,_bad_interrupt		; reserved
++	   IRQVEC MSGINT,_bad_interrupt		; reserved
++
++	   IRQVEC INT4,_int4_handler
++	   IRQVEC INT5,_int5_handler
++	   IRQVEC INT6,_int6_handler
++	   IRQVEC INT7,_int7_handler
++	   IRQVEC INT8,_int8_handler
++	   IRQVEC INT9,_int9_handler
++	   IRQVEC INT10,_int10_handler
++	   IRQVEC INT11,_int11_handler
++	   IRQVEC INT12,_int12_handler
++	   IRQVEC INT13,_int13_handler
++	   IRQVEC INT14,_int14_handler
++	   IRQVEC INT15,_int15_handler
+diff --git a/arch/c6x/kernel/vmlinux.lds.S b/arch/c6x/kernel/vmlinux.lds.S
+new file mode 100644
+index 0000000..10e6177
+--- /dev/null
++++ b/arch/c6x/kernel/vmlinux.lds.S
+@@ -0,0 +1,205 @@
++/*
++ * ld script for the c6x kernel
++ *
++ *  Copyright (C) 2010, 2011 Texas Instruments Incorporated
++ *  Mark Salter <msalter@redhat.com>
++ */
++#define __VMLINUX_LDS__
++#include <asm-generic/vmlinux.lds.h>
++#include <asm/thread_info.h>
++#include <asm/page.h>
++#include <mach/board.h>
++
++
++ENTRY(_c_int00)
++
++#ifdef CONFIG_CPU_BIG_ENDIAN
++jiffies = jiffies_64 + 4;
++#else
++jiffies = jiffies_64;
 +#endif
 +
-+#endif /* _ASM_C6X_UNALIGNED_H */
-diff --git a/arch/c6x/include/asm/unistd.h b/arch/c6x/include/asm/unistd.h
-new file mode 100644
-index 0000000..9064c6b
---- /dev/null
-+++ b/arch/c6x/include/asm/unistd.h
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright (C) 2011 Texas Instruments Incorporated
-+ *
-+ * Based on arch/tile version.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.	See the GNU General Public License for
-+ *   more details.
-+ */
-+#if !defined(_ASM_C6X_UNISTD_H) || defined(__SYSCALL)
-+#define _ASM_C6X_UNISTD_H
++SECTIONS
++{
++#ifdef CONFIG_XIP_KERNEL
++	. = CONFIG_XIP_KERNEL_TEXT_ADDR;
++#else
++	. = PAGE_OFFSET;
++#endif
 +
-+#define __ARCH_WANT_SYSCALL_DEPRECATED
-+#define __ARCH_WANT_SYSCALL_NO_AT
-+#define __ARCH_WANT_SYSCALL_NO_FLAGS
-+#define __ARCH_WANT_SYSCALL_OFF_T
-+#define __ARCH_WANT_IPC_PARSE_VERSION
++	.vectors :
++	{
++		VMLINUX_SYMBOL(_vectors_start) = .;
++		*(.vectors)
++		VMLINUX_SYMBOL(_vectors_end) = .;
++	}
 +
-+/* Use the standard ABI for syscalls. */
-+#include <asm-generic/unistd.h>
++#ifdef CONFIG_XIP_KERNEL
++	. = CONFIG_XIP_KERNEL_TEXT_ADDR + 0x400;
++#else
++	. = PAGE_OFFSET + 0x400;
++#endif
++	. = ALIGN(0x1000);
++	.cmdline : { *(.cmdline) }
 +
-+/* C6X-specific syscalls. */
-+#define __NR_cache_sync	(__NR_arch_specific_syscall + 0)
-+__SYSCALL(__NR_cache_sync, sys_cache_sync)
++	/* read-only */
++	.text :
++	{
++		VMLINUX_SYMBOL(_stext) = .;
++		VMLINUX_SYMBOL(_text) = .;
++		TEXT_TEXT
++		SCHED_TEXT
++		LOCK_TEXT
++		IRQENTRY_TEXT
++		KPROBES_TEXT
++#if defined(CONFIG_XIP_KERNEL) || !defined(CONFIG_BIG_KERNEL)
++		VMLINUX_SYMBOL(_sinittext) = .;
++		INIT_TEXT
++		VMLINUX_SYMBOL(_einittext) = .;
++		EXIT_TEXT
++#endif
++		*(.fixup)
++		*(.gnu.warning)
++	}
 +
-+#endif /* _ASM_C6X_UNISTD_H */
-diff --git a/arch/c6x/include/asm/user.h b/arch/c6x/include/asm/user.h
-new file mode 100644
-index 0000000..4792a60
---- /dev/null
-+++ b/arch/c6x/include/asm/user.h
-@@ -0,0 +1 @@
-+#include <asm-generic/user.h>
-diff --git a/arch/c6x/include/asm/vga.h b/arch/c6x/include/asm/vga.h
-new file mode 100644
-index 0000000..d924655
---- /dev/null
-+++ b/arch/c6x/include/asm/vga.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_VGA_H
-+#define _ASM_C6X_VGA_H
++	EXCEPTION_TABLE(16)
++	NOTES
 +
-+#include <asm-generic/vga.h>
++	RO_DATA_SECTION(32)
++	.rodata_c6x :
++	{
++		*(.const)
++		*(.switch)
++	}
++	. = ALIGN(8);
++	.dynamic :
++	{
++		*(.dynamic)
++	}
++	. = ALIGN(128);
++	VMLINUX_SYMBOL(_rodata_end) = .;
 +
-+#endif /* _ASM_C6X_VGA_H */
++	VMLINUX_SYMBOL(_etext) = .;
++
++#ifdef CONFIG_XIP_KERNEL
++	. = PAGE_OFFSET;
++	.bss : AT(VMLINUX_SYMBOL(_rodata_end))
++#else
++	.bss :
++#endif
++	{
++		VMLINUX_SYMBOL(__bss_start) = .;
++		*(.bss .bss.*)
++		*(COMMON)
++		*(.far)
++		. = ALIGN(128);
++		VMLINUX_SYMBOL(__bss_stop) = .;
++		VMLINUX_SYMBOL(__bss_stop) = .;
++	}
++
++#ifdef CONFIG_XIP_KERNEL
++	.data : AT(LOADADDR(.bss) + SIZEOF(.bss))
++#else
++	.data :
++#endif
++	{
++		VMLINUX_SYMBOL(_sdata) = .;
++		INIT_TASK_DATA(THREAD_SIZE)
++		NOSAVE_DATA
++		PAGE_ALIGNED_DATA(PAGE_SIZE)
++		CACHELINE_ALIGNED_DATA(128)
++		READ_MOSTLY_DATA(128)
++		DATA_DATA
++		CONSTRUCTORS
++		*(.data1)
++		*(.fardata .fardata.*)
++		. = ALIGN(8);
++	}
++#ifdef CONFIG_XIP_KERNEL
++	.neardata : AT(LOADADDR(.data) + SIZEOF(.data))
++#else
++	.neardata :
++#endif
++	{
++		*(.neardata .neardata.* .gnu.linkonce.s.*)
++#ifdef CONFIG_XIP_KERNEL
++		/* The init section should be last, so when we free it, it goes into
++		 * the general memory pool, and (hopefully) will decrease fragmentation
++		 * a tiny bit. The init section has a _requirement_ that it be
++		 * PAGE_SIZE aligned
++		 */
++		. = ALIGN(PAGE_SIZE);
++#endif
++	}
++
++	VMLINUX_SYMBOL(_edata) = .;
++	VMLINUX_SYMBOL(_data_lma) = LOADADDR(.data);
++
++	VMLINUX_SYMBOL(__init_begin) = .;
++
++#ifndef CONFIG_XIP_KERNEL
++#ifdef CONFIG_BIG_KERNEL
++	INIT_TEXT_SECTION(PAGE_SIZE)
++
++	/* We have to discard exit text and such at runtime, not link time, to
++	 * handle embedded cross-section references (alt instructions, bug
++	 * table, eh_frame, etc...).  We need all of our .text up front and
++	 * .data after it for PCREL call issues.
++	 */
++	.exit.text :
++	{
++		EXIT_TEXT
++	}
++	. = ALIGN(16);
++#endif
++	INIT_DATA_SECTION(16)
++	PERCPU(128,PAGE_SIZE)
++
++	.exit.data :
++	{
++		EXIT_DATA
++	}
++#else
++	.init.data : AT(LOADADDR(.neardata) + SIZEOF(.neardata))
++	{
++		VMLINUX_SYMBOL(_sinitdata) = .;
++		INIT_DATA
++		INIT_SETUP(16)
++		INIT_CALLS
++		CON_INITCALL
++		SECURITY_INITCALL
++		INIT_RAM_FS
++		. = ALIGN(8);
++		VMLINUX_SYMBOL(__per_cpu_load) = .;
++		VMLINUX_SYMBOL(__per_cpu_start) = .;
++		*(.data.percpu.first)
++		*(.data.percpu.page_aligned)
++		*(.data.percpu)
++		*(.data.percpu.shared_aligned)
++		VMLINUX_SYMBOL(__per_cpu_end) = .;
++
++		EXIT_DATA
++
++		. = ALIGN(8);
++	}
++#endif
++	. = ALIGN(PAGE_SIZE);
++
++	VMLINUX_SYMBOL(__init_end) = .;
++
++	/*
++	 * _ebss is used solely for CONFIG_MTD_UCLINUX support.
++	 * Traditionally, _ebss (end of .bss) would be the end of a kernel
++	 * image where a ROMFS could be appended. In this case, .bss is
++	 * elsewhere but we define _ebss at the end.
++	 */
++	VMLINUX_SYMBOL(_ebss) = .;
++
++	VMLINUX_SYMBOL(_end) = . ;
++
++	STABS_DEBUG
++
++	DWARF_DEBUG
++
++	DISCARDS
++}
 -- 
 1.6.2.5
 
