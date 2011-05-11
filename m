@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab1EKSzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 14:55:20 -0400
-Received: from nm4-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.138]:25241
-	"HELO nm4-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751179Ab1EKSzS (ORCPT
+	id S1754073Ab1EKSyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 14:54:51 -0400
+Received: from nm3.access.bullet.mail.sp2.yahoo.com ([98.139.44.130]:47615
+	"HELO nm3.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751179Ab1EKSyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 14:55:18 -0400
-X-Yahoo-Newman-Id: 720215.62143.bm@omp1004.access.mail.mud.yahoo.com
+	Wed, 11 May 2011 14:54:50 -0400
+X-Yahoo-Newman-Id: 640709.45367.bm@omp1028.access.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: LoKNPGIVM1kDXgUREAWIX7JmXRRTBVa1roM3NI5X0.lS55R
- ZZDCZvUnH2RI68RpZ.AmxhdHAB2FBo8zAnzPxji3pt_0xSZGuS5CvADwu3j8
- m.O47gE87bHRna_chLSo58StNeCyZYYTlit89oaiwgrq6YM0ZHkZtu0hTYfJ
- rhQ1vqwLaFYbb8J86amsMHJn5FaCPMffqU70FhCee84UqtoDoqAbe7Ms.oaw
- Fv38mpsKLCLNqu99YWTPEIVC.NviyC4cuFm1nnczccnM9F9ht9RtCoWiqPcc
- 6avwSH67rIL67F8Z.NkalgUNaJNz80uH0haa.xHVd9aPPcE0Y2SQqBxz60UX
- XO3EGu59ZTLUaxYqiFTjNKRavEQ--
+X-YMail-OSG: 8TGkm20VM1nhVFwRZmoDK8b4Hh8UIhUxvO3_AUUb6QijbRd
+ f7ij69vHDdxXKJ.Y.l2f8qdwx1lUl_NX4h_Y12147IMpb.1T3UBq8nrvyO04
+ 2KWTKg7ynj7DA3Kon85mbe3.Zi5xUSb31NSj7fhb9REmoFGOfNCEwVXKrDUh
+ CE6.R1EOWf.QBafTMNwbenNuOBswrTY3_tHhL0fob6fidonDOHVe5zdb2XQ3
+ BIQksxMDih9KPAlyfmmW8RL_sy_27mYKuj1adQOKZetku.CBBMj4vIMMrGjZ
+ iadKHmwxf1ER8lObnKJdY.v.s8DBzJjaiEajrDLoml90ExKblQNyi2TxHXRv
+ TdtknCagFH3E_cSbJ9ZmAXGy70GrN0OtoZxmWwIGwWaajoA--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ To: linux-kernel <linux-kernel@vger.kernel.org>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Christoph Hellwig <hch@lst.de>, Kiran Patil <kiran.patil@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 1/4] target: Fix multi task->task_sg[] chaining logic bug
-Date: Tue, 10 May 2011 21:35:32 -0700
-Message-Id: <1305088535-27486-2-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH-v2 2/4] target: Fix interrupt context bug with stats_lock and core_tmr_alloc_req
+Date: Tue, 10 May 2011 21:35:33 -0700
+Message-Id: <1305088535-27486-3-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1305088535-27486-1-git-send-email-nab@linux-iscsi.org>
 References: <1305088535-27486-1-git-send-email-nab@linux-iscsi.org>
@@ -36,94 +36,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch fixes a bug in transport_do_task_sg_chain() used by HW target
-mode modules with sg_chain() to provide a single sg_next() walkable memory
-layout for use with pci_map_sg() and friends.  This patch addresses an
-issue with mapping multiple small block max_sector tasks across multiple
-struct se_task->task_sg[] mappings for HW target mode operation.
+This patch fixes two bugs wrt to the interrupt context usage of target
+core with HW target mode drivers.  It first converts the usage of struct
+se_device->stats_lock in transport_get_lun_for_cmd() and core_tmr_lun_reset()
+to properly use spin_lock_irq() to address an BUG with CONFIG_LOCKDEP_SUPPORT=y
+enabled.
 
-This was causing OOPs with (cmd->t_task->t_tasks_no > 1) I/O traffic for
-HW target drivers using transport_do_task_sg_chain(), and has been tested
-so far with tcm_fc(openfcoe), tcm_qla2xxx, and ib_srpt fabrics with
-t_tasks_no > 1 IBLOCK backends using a smaller max_sectors to trigger the
-original issue.
+This patch also adds a 'in_interrupt()' check to allow GFP_ATOMIC usage from
+core_tmr_alloc_req() to fix a 'sleeping in interrupt context' BUG with HW
+target fabrics that require this logic to function.
 
-Reported-by: Kiran Patil <kiran.patil@intel.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_transport.c |   26 +++++++++++++++-----------
- 1 files changed, 15 insertions(+), 11 deletions(-)
+ drivers/target/target_core_device.c |    4 ++--
+ drivers/target/target_core_tmr.c    |    7 ++++---
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 9583b23..fefe10a 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4776,18 +4776,20 @@ void transport_do_task_sg_chain(struct se_cmd *cmd)
- 				sg_end_cur->page_link &= ~0x02;
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index d25e208..fc10ed4 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -150,13 +150,13 @@ out:
  
- 				sg_chain(sg_head, task_sg_num, sg_head_cur);
--				sg_count += (task->task_sg_num + 1);
--			} else
- 				sg_count += task->task_sg_num;
-+				task_sg_num = (task->task_sg_num + 1);
-+			} else {
-+				sg_chain(sg_head, task_sg_num, sg_head_cur);
-+				sg_count += task->task_sg_num;
-+				task_sg_num = task->task_sg_num;
-+			}
- 
- 			sg_head = sg_head_cur;
- 			sg_link = sg_link_cur;
--			task_sg_num = task->task_sg_num;
- 			continue;
- 		}
- 		sg_head = sg_first = &task->task_sg[0];
- 		sg_link = &task->task_sg[task->task_sg_num];
--		task_sg_num = task->task_sg_num;
- 		/*
- 		 * Check for single task..
- 		 */
-@@ -4798,9 +4800,12 @@ void transport_do_task_sg_chain(struct se_cmd *cmd)
- 			 */
- 			sg_end = &task->task_sg[task->task_sg_num - 1];
- 			sg_end->page_link &= ~0x02;
--			sg_count += (task->task_sg_num + 1);
--		} else
- 			sg_count += task->task_sg_num;
-+			task_sg_num = (task->task_sg_num + 1);
-+		} else {
-+			sg_count += task->task_sg_num;
-+			task_sg_num = task->task_sg_num;
-+		}
+ 	{
+ 	struct se_device *dev = se_lun->lun_se_dev;
+-	spin_lock(&dev->stats_lock);
++	spin_lock_irq(&dev->stats_lock);
+ 	dev->num_cmds++;
+ 	if (se_cmd->data_direction == DMA_TO_DEVICE)
+ 		dev->write_bytes += se_cmd->data_length;
+ 	else if (se_cmd->data_direction == DMA_FROM_DEVICE)
+ 		dev->read_bytes += se_cmd->data_length;
+-	spin_unlock(&dev->stats_lock);
++	spin_unlock_irq(&dev->stats_lock);
  	}
+ 
  	/*
- 	 * Setup the starting pointer and total t_tasks_sg_linked_no including
-@@ -4809,21 +4814,20 @@ void transport_do_task_sg_chain(struct se_cmd *cmd)
- 	T_TASK(cmd)->t_tasks_sg_chained = sg_first;
- 	T_TASK(cmd)->t_tasks_sg_chained_no = sg_count;
+diff --git a/drivers/target/target_core_tmr.c b/drivers/target/target_core_tmr.c
+index 4a10983..59b8b9c 100644
+--- a/drivers/target/target_core_tmr.c
++++ b/drivers/target/target_core_tmr.c
+@@ -55,7 +55,8 @@ struct se_tmr_req *core_tmr_alloc_req(
+ {
+ 	struct se_tmr_req *tmr;
  
--	DEBUG_CMD_M("Setup T_TASK(cmd)->t_tasks_sg_chained: %p and"
--		" t_tasks_sg_chained_no: %u\n", T_TASK(cmd)->t_tasks_sg_chained,
-+	DEBUG_CMD_M("Setup cmd: %p T_TASK(cmd)->t_tasks_sg_chained: %p and"
-+		" t_tasks_sg_chained_no: %u\n", cmd, T_TASK(cmd)->t_tasks_sg_chained,
- 		T_TASK(cmd)->t_tasks_sg_chained_no);
- 
- 	for_each_sg(T_TASK(cmd)->t_tasks_sg_chained, sg,
- 			T_TASK(cmd)->t_tasks_sg_chained_no, i) {
- 
--		DEBUG_CMD_M("SG: %p page: %p length: %d offset: %d\n",
--			sg, sg_page(sg), sg->length, sg->offset);
-+		DEBUG_CMD_M("SG[%d]: %p page: %p length: %d offset: %d, magic: 0x%08x\n",
-+			i, sg, sg_page(sg), sg->length, sg->offset, sg->sg_magic);
- 		if (sg_is_chain(sg))
- 			DEBUG_CMD_M("SG: %p sg_is_chain=1\n", sg);
- 		if (sg_is_last(sg))
- 			DEBUG_CMD_M("SG: %p sg_is_last=1\n", sg);
+-	tmr = kmem_cache_zalloc(se_tmr_req_cache, GFP_KERNEL);
++	tmr = kmem_cache_zalloc(se_tmr_req_cache, (in_interrupt()) ?
++					GFP_ATOMIC : GFP_KERNEL);
+ 	if (!(tmr)) {
+ 		printk(KERN_ERR "Unable to allocate struct se_tmr_req\n");
+ 		return ERR_PTR(-ENOMEM);
+@@ -398,9 +399,9 @@ int core_tmr_lun_reset(
+ 		printk(KERN_INFO "LUN_RESET: SCSI-2 Released reservation\n");
  	}
--
- }
- EXPORT_SYMBOL(transport_do_task_sg_chain);
  
+-	spin_lock(&dev->stats_lock);
++	spin_lock_irq(&dev->stats_lock);
+ 	dev->num_resets++;
+-	spin_unlock(&dev->stats_lock);
++	spin_unlock_irq(&dev->stats_lock);
+ 
+ 	DEBUG_LR("LUN_RESET: %s for [%s] Complete\n",
+ 			(preempt_and_abort_list) ? "Preempt" : "TMR",
 -- 
 1.7.5.1
 
