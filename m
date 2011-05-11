@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab1EKVIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:08:43 -0400
+	id S1756111Ab1EKVGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:06:46 -0400
 Received: from c-76-97-164-112.hsd1.ga.comcast.net ([76.97.164.112]:55110 "EHLO
 	deneb.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756119Ab1EKVGt (ORCPT
+	with ESMTP id S1756060Ab1EKVGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:06:49 -0400
+	Wed, 11 May 2011 17:06:44 -0400
 X-Greylist: delayed 3155 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 17:06:39 EDT
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 15/16] Add new elf binfmt support for DSBT
-Date: Wed, 11 May 2011 16:14:02 -0400
-Message-Id: <1305144843-5058-16-git-send-email-msalter@redhat.com>
+Subject: [PATCH 16/16] C6X: add support for DSBT binary format
+Date: Wed, 11 May 2011 16:14:03 -0400
+Message-Id: <1305144843-5058-17-git-send-email-msalter@redhat.com>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1305144843-5058-15-git-send-email-msalter@redhat.com>
+In-Reply-To: <1305144843-5058-16-git-send-email-msalter@redhat.com>
 References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
  <1305144843-5058-2-git-send-email-msalter@redhat.com>
  <1305144843-5058-3-git-send-email-msalter@redhat.com>
@@ -30,1203 +30,209 @@ References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
  <1305144843-5058-13-git-send-email-msalter@redhat.com>
  <1305144843-5058-14-git-send-email-msalter@redhat.com>
  <1305144843-5058-15-git-send-email-msalter@redhat.com>
+ <1305144843-5058-16-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for a new ELF-based binary format for systems without
-an MMU. DSBT stands for Data Segment Base Table and supports shared text
-segments while allowing for non-shared data. In this regard, it is similar to
-FDPIC, but differs in approach. FDPIC ties data segment references to function
-pointers and doubles the size of function pointers in doing so. DSBT handles
-function pointers in the normal way, but data accesses are performed relative
-to a dedicated register pointing to the correct data segment. FDPIC callers are
-responsible for setting up the correct data reference before calling a function
-in another DSO. With DSBT, the callee is responsible for setting up the correct
-data segment pointer.
-
-This format was developed by Texas Instruments for use by their C6X family of
-DSPs. However, this patch is not specific to TI DSPs and could be supported
-by other architectures.
+This patch adds the C6X-specifc bits to use the DSBT binary format.
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- fs/Kconfig.binfmt        |   10 +
- fs/Makefile              |    1 +
- fs/binfmt_elf_dsbt.c     | 1035 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/elf-dsbt.h |   88 ++++
- 4 files changed, 1134 insertions(+), 0 deletions(-)
- create mode 100644 fs/binfmt_elf_dsbt.c
- create mode 100644 include/linux/elf-dsbt.h
+ arch/c6x/configs/ti_dsk6455_defconfig       |    1 +
+ arch/c6x/configs/ti_evmc6457_defconfig      |    1 +
+ arch/c6x/configs/ti_evmc6472_defconfig      |    1 +
+ arch/c6x/configs/ti_evmc6474_defconfig      |    1 +
+ arch/c6x/configs/ti_evmc6474_lite_defconfig |    1 +
+ arch/c6x/include/asm/elf.h                  |   14 ++++++++++++++
+ arch/c6x/include/asm/mmu.h                  |    4 ++++
+ arch/c6x/include/asm/ptrace.h               |   12 ++++++++++++
+ arch/c6x/kernel/ptrace.c                    |   25 ++++++++++++++++++++++++-
+ 9 files changed, 59 insertions(+), 1 deletions(-)
 
-diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
-index 79e2ca7..8fc5337 100644
---- a/fs/Kconfig.binfmt
-+++ b/fs/Kconfig.binfmt
-@@ -40,6 +40,16 @@ config BINFMT_ELF_FDPIC
+diff --git a/arch/c6x/configs/ti_dsk6455_defconfig b/arch/c6x/configs/ti_dsk6455_defconfig
+index 3487af4..8112a70 100644
+--- a/arch/c6x/configs/ti_dsk6455_defconfig
++++ b/arch/c6x/configs/ti_dsk6455_defconfig
+@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
+ #
+ # Executable file formats
+ #
++CONFIG_BINFMT_ELF_DSBT=y
+ # CONFIG_BINFMT_FLAT is not set
+ # CONFIG_HAVE_AOUT is not set
+ # CONFIG_BINFMT_MISC is not set
+diff --git a/arch/c6x/configs/ti_evmc6457_defconfig b/arch/c6x/configs/ti_evmc6457_defconfig
+index e18b095..841f15a 100644
+--- a/arch/c6x/configs/ti_evmc6457_defconfig
++++ b/arch/c6x/configs/ti_evmc6457_defconfig
+@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
+ #
+ # Executable file formats
+ #
++CONFIG_BINFMT_ELF_DSBT=y
+ # CONFIG_BINFMT_FLAT is not set
+ # CONFIG_HAVE_AOUT is not set
+ # CONFIG_BINFMT_MISC is not set
+diff --git a/arch/c6x/configs/ti_evmc6472_defconfig b/arch/c6x/configs/ti_evmc6472_defconfig
+index 14ae81b..b18e9ee 100644
+--- a/arch/c6x/configs/ti_evmc6472_defconfig
++++ b/arch/c6x/configs/ti_evmc6472_defconfig
+@@ -231,6 +231,7 @@ CONFIG_HIGH_RES_TIMERS=y
+ #
+ # Executable file formats
+ #
++CONFIG_BINFMT_ELF_DSBT=y
+ # CONFIG_BINFMT_FLAT is not set
+ # CONFIG_HAVE_AOUT is not set
+ # CONFIG_BINFMT_MISC is not set
+diff --git a/arch/c6x/configs/ti_evmc6474_defconfig b/arch/c6x/configs/ti_evmc6474_defconfig
+index 472ad6b..12f1808 100644
+--- a/arch/c6x/configs/ti_evmc6474_defconfig
++++ b/arch/c6x/configs/ti_evmc6474_defconfig
+@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
+ #
+ # Executable file formats
+ #
++CONFIG_BINFMT_ELF_DSBT=y
+ # CONFIG_BINFMT_FLAT is not set
+ # CONFIG_HAVE_AOUT is not set
+ # CONFIG_BINFMT_MISC is not set
+diff --git a/arch/c6x/configs/ti_evmc6474_lite_defconfig b/arch/c6x/configs/ti_evmc6474_lite_defconfig
+index e25e8ac..044cf47 100644
+--- a/arch/c6x/configs/ti_evmc6474_lite_defconfig
++++ b/arch/c6x/configs/ti_evmc6474_lite_defconfig
+@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
+ #
+ # Executable file formats
+ #
++CONFIG_BINFMT_ELF_DSBT=y
+ # CONFIG_BINFMT_FLAT is not set
+ # CONFIG_HAVE_AOUT is not set
+ # CONFIG_BINFMT_MISC is not set
+diff --git a/arch/c6x/include/asm/elf.h b/arch/c6x/include/asm/elf.h
+index 272c3ae..d57bb17 100644
+--- a/arch/c6x/include/asm/elf.h
++++ b/arch/c6x/include/asm/elf.h
+@@ -32,6 +32,7 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
+  */
+ #define elf_check_arch(x) ((x)->e_machine == EM_TI_C6000)
  
- 	  It is also possible to run FDPIC ELF binaries on MMU linux also.
++#define elf_check_dsbt(x) (1)
+ #define elf_check_const_displacement(x) (1)
  
-+config BINFMT_ELF_DSBT
-+	bool "Kernel support for DSBT ELF binaries"
-+	default y
-+	depends on (TMS320C6X && !MMU)
-+	help
-+	  ELF DSBT binaries are based on ELF and are similar to FDPIC in that
-+	  individual load segments can be placed independently of each other.
-+	  Also like FDPIC, DSBT is designed to allow systems with no MMU to
-+	  share text segments while data segments are not.
-+
- config CORE_DUMP_DEFAULT_ELF_HEADERS
- 	bool "Write ELF core dumps with partial segments"
- 	default y
-diff --git a/fs/Makefile b/fs/Makefile
-index fb68c2b..95c500b 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -40,6 +40,7 @@ obj-y				+= binfmt_script.o
- obj-$(CONFIG_BINFMT_ELF)	+= binfmt_elf.o
- obj-$(CONFIG_COMPAT_BINFMT_ELF)	+= compat_binfmt_elf.o
- obj-$(CONFIG_BINFMT_ELF_FDPIC)	+= binfmt_elf_fdpic.o
-+obj-$(CONFIG_BINFMT_ELF_DSBT)	+= binfmt_elf_dsbt.o
- obj-$(CONFIG_BINFMT_SOM)	+= binfmt_som.o
- obj-$(CONFIG_BINFMT_FLAT)	+= binfmt_flat.o
+ /*
+@@ -67,6 +68,14 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
  
-diff --git a/fs/binfmt_elf_dsbt.c b/fs/binfmt_elf_dsbt.c
-new file mode 100644
-index 0000000..24c2b7b
---- /dev/null
-+++ b/fs/binfmt_elf_dsbt.c
-@@ -0,0 +1,1035 @@
-+/* binfmt_elf_dsbt.c: DSBT ELF binary format
-+ *
-+ * Copyright (C) 2010, 2011 Texas Instruments Incorporated
-+ * Written by Mark Salter (msalter@redhat.com)
-+ * Derived from binfmt_elf_fdpic.c
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
+ #define ELF_PLATFORM  (NULL)
+ 
++#define ELF_DSBT_PLAT_INIT(_regs, _exec_map, _interp_map, _dynamic_addr, _dsbt_table) \
++do {								\
++	_regs->b4	= (_exec_map);				\
++	_regs->a6	= (_interp_map);			\
++	_regs->b6	= (_dynamic_addr);			\
++	_regs->dp	= (_dsbt_table);			\
++} while (0)
 +
-+#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <linux/stat.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/mman.h>
-+#include <linux/errno.h>
-+#include <linux/signal.h>
-+#include <linux/binfmts.h>
-+#include <linux/string.h>
-+#include <linux/file.h>
-+#include <linux/fcntl.h>
-+#include <linux/slab.h>
-+#include <linux/pagemap.h>
-+#include <linux/security.h>
-+#include <linux/highmem.h>
-+#include <linux/highuid.h>
-+#include <linux/personality.h>
-+#include <linux/ptrace.h>
-+#include <linux/init.h>
-+#include <linux/elf.h>
-+#include <linux/elf-dsbt.h>
-+#include <linux/elfcore.h>
-+#include <linux/coredump.h>
-+#include <linux/uaccess.h>
-+#include <linux/param.h>
-+#include <asm/pgalloc.h>
+ #define SET_PERSONALITY(ex) set_personality(PER_LINUX)
+ 
+ /* C6X specific section types */
+@@ -112,4 +121,9 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
+ #define R_C6000_FPHEAD		254
+ #define R_C6000_NOCMP		255
+ 
++/* for binfmt_elf_dsbt */
++#define DT_ARCH_DSBT_BASE  DT_C6000_DSBT_BASE
++#define DT_ARCH_DSBT_SIZE  DT_C6000_DSBT_SIZE
++#define DT_ARCH_DSBT_INDEX DT_C6000_DSBT_INDEX
 +
-+typedef char *elf_caddr_t;
-+
-+#if 0
-+#define kdebug(fmt, ...) printk(KERN_DEBUG "DSBT: "fmt"\n" , ##__VA_ARGS__)
-+#else
-+#define kdebug(fmt, ...) do {} while (0)
+ #endif /*_ASM_C6X_ELF_H */
+diff --git a/arch/c6x/include/asm/mmu.h b/arch/c6x/include/asm/mmu.h
+index 8d376e9..1d9e9c1 100644
+--- a/arch/c6x/include/asm/mmu.h
++++ b/arch/c6x/include/asm/mmu.h
+@@ -15,6 +15,10 @@
+ 
+ typedef struct {
+ 	unsigned long		end_brk;
++#ifdef CONFIG_BINFMT_ELF_DSBT
++	unsigned long	exec_dsbt_loadmap;
++	unsigned long	interp_dsbt_loadmap;
 +#endif
-+
-+#if ELF_EXEC_PAGESIZE > PAGE_SIZE
-+#define ELF_MIN_ALIGN	ELF_EXEC_PAGESIZE
-+#else
-+#define ELF_MIN_ALIGN	PAGE_SIZE
-+#endif
-+
-+#if ELF_CLASS == ELFCLASS32
-+#define dt_tag_t Elf32_Sword
-+#define elf_off  Elf32_Off
-+#else
-+#define dt_tag_t Elf64_Sxword
-+#define elf_off  Elf64_Off
-+#endif
-+
-+
-+#define ELF_PAGESTART(_v) ((_v) & ~(unsigned long)(ELF_MIN_ALIGN-1))
-+#define ELF_PAGEOFFSET(_v) ((_v) & (ELF_MIN_ALIGN-1))
-+#define ELF_PAGEALIGN(_v) (((_v) + ELF_MIN_ALIGN - 1) & ~(ELF_MIN_ALIGN - 1))
-+
-+#define BAD_ADDR(x) ((unsigned long)(x) >= TASK_SIZE)
-+
-+static int load_elf_dsbt_binary(struct linux_binprm *, struct pt_regs *);
-+
-+static struct linux_binfmt elf_dsbt_format = {
-+	.module		= THIS_MODULE,
-+	.load_binary	= load_elf_dsbt_binary,
-+	.min_coredump	= ELF_EXEC_PAGESIZE,
-+};
-+
-+static int is_elf_dsbt(struct elfhdr *hdr, struct file *file)
-+{
-+	if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
-+		return 0;
-+	if (hdr->e_type != ET_EXEC && hdr->e_type != ET_DYN)
-+		return 0;
-+	if (!elf_check_arch(hdr) || !elf_check_dsbt(hdr))
-+		return 0;
-+	if (!file->f_op || !file->f_op->mmap)
-+		return 0;
-+	return 1;
-+}
-+
+ } mm_context_t;
+ 
+ #endif /* _ASM_C6X_MMU_H */
+diff --git a/arch/c6x/include/asm/ptrace.h b/arch/c6x/include/asm/ptrace.h
+index 7e94de8..437df6f 100644
+--- a/arch/c6x/include/asm/ptrace.h
++++ b/arch/c6x/include/asm/ptrace.h
+@@ -162,11 +162,23 @@ struct pt_regs {
+ 	REG_PAIR(sp, dp);
+ };
+ 
 +/*
-+ * read the program headers table into memory
++ * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
++ * process is located in memory.
 + */
-+static int elf_dsbt_fetch_phdrs(struct elf_dsbt_params *params,
-+				 struct file *file)
-+{
-+	struct elf32_phdr *phdr;
-+	unsigned long size;
-+	int retval, loop;
-+
-+	if (params->hdr.e_phentsize != sizeof(struct elf_phdr))
-+		return -ENOMEM;
-+	if (params->hdr.e_phnum > 65536U / sizeof(struct elf_phdr))
-+		return -ENOMEM;
-+
-+	size = params->hdr.e_phnum * sizeof(struct elf_phdr);
-+	params->phdrs = kmalloc(size, GFP_KERNEL);
-+	if (!params->phdrs)
-+		return -ENOMEM;
-+
-+	retval = kernel_read(file, params->hdr.e_phoff,
-+			     (char *) params->phdrs, size);
-+	if (unlikely(retval != size))
-+		return retval < 0 ? retval : -ENOEXEC;
-+
-+	/* determine stack size for this binary */
-+	phdr = params->phdrs;
-+	for (loop = 0; loop < params->hdr.e_phnum; loop++, phdr++) {
-+		if (phdr->p_type != PT_GNU_STACK)
-+			continue;
-+
-+		params->stack_size = phdr->p_memsz;
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * read the .dynamic section into memory
-+ */
-+static int elf_dsbt_fetch_dynamic(struct elf_dsbt_params *params,
-+				  struct file *file)
-+{
-+	struct elf_shdr *shdrs, *shdr;
-+	int i, retval;
-+	unsigned long size;
-+
-+	if (params->hdr.e_shentsize != sizeof(struct elf_shdr))
-+		return -EINVAL;
-+	if (params->hdr.e_shnum > 65536U / sizeof(struct elf_shdr))
-+		return -EINVAL;
-+
-+	size = params->hdr.e_shnum * sizeof(struct elf_shdr);
-+	shdrs = kmalloc(size, GFP_KERNEL);
-+	if (!shdrs)
-+		return -ENOMEM;
-+
-+	retval = kernel_read(file, params->hdr.e_shoff,
-+			     (char *) shdrs, size);
-+	if (unlikely(retval != size)) {
-+		kfree(shdrs);
-+		return (retval < 0) ? retval : -EIO;
-+	}
-+
-+	shdr = &shdrs[1];
-+	for (i = 1; i < params->hdr.e_shnum; i++, shdr++) {
-+		if (shdr->sh_type != SHT_DYNAMIC)
-+			continue;
-+
-+		params->dynamic = kmalloc(shdr->sh_size, GFP_KERNEL);
-+		if (!params->dynamic) {
-+			kfree(shdrs);
-+			return -ENOMEM;
-+		}
-+
-+		retval = kernel_read(file, shdr->sh_offset,
-+			     (char *) params->dynamic, shdr->sh_size);
-+
-+		if (unlikely(retval != shdr->sh_size)) {
-+			kfree(shdrs);
-+			return retval < 0 ? retval : -ENOEXEC;
-+		}
-+		break;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * search for dynamic section tag value
-+ */
-+static elf_dyn *find_dynamic_tag(struct elf_dsbt_params *params,
-+				 dt_tag_t tag)
-+{
-+	elf_dyn *d = params->dynamic;
-+
-+	while (d->d_tag) {
-+		if (d->d_tag == tag)
-+			return d;
-+		++d;
-+	}
-+	return NULL;
-+}
-+
-+#ifndef ELF_BASE_PLATFORM
-+/*
-+ * AT_BASE_PLATFORM indicates the "real" hardware/microarchitecture.
-+ * If the arch defines ELF_BASE_PLATFORM (in asm/elf.h), the value
-+ * will be copied to the user stack in the same manner as AT_PLATFORM.
-+ */
-+#define ELF_BASE_PLATFORM NULL
-+#endif
-+
-+/*
-+ * transfer the program arguments and environment from the holding pages onto
-+ * the stack
-+ */
-+static int elf_dsbt_transfer_args_to_stack(struct linux_binprm *bprm,
-+					    unsigned long *_sp)
-+{
-+	unsigned long index, stop, sp;
-+	char *src;
-+	int ret = 0;
-+
-+	stop = bprm->p >> PAGE_SHIFT;
-+	sp = *_sp;
-+
-+	for (index = MAX_ARG_PAGES - 1; index >= stop; index--) {
-+		src = kmap(bprm->page[index]);
-+		sp -= PAGE_SIZE;
-+		if (copy_to_user((void *) sp, src, PAGE_SIZE) != 0)
-+			ret = -EFAULT;
-+		kunmap(bprm->page[index]);
-+		if (ret < 0)
-+			goto out;
-+	}
-+
-+	*_sp = (*_sp - (MAX_ARG_PAGES * PAGE_SIZE - bprm->p)) & ~15;
-+
-+out:
-+	return ret;
-+}
-+
-+/*
-+ * present useful information to the program by shovelling it onto the new
-+ * process's stack
-+ */
-+static int create_elf_dsbt_tables(struct linux_binprm *bprm,
-+				   struct mm_struct *mm,
-+				   struct elf_dsbt_params *exec_params,
-+				   struct elf_dsbt_params *interp_params)
-+{
-+	const struct cred *cred = current_cred();
-+	unsigned long sp, csp, nitems;
-+	elf_caddr_t __user *argv, *envp;
-+	size_t platform_len = 0, len;
-+	char *k_platform, *k_base_platform;
-+	char __user *u_platform, *u_base_platform, *p;
-+	long hwcap;
-+	int loop;
-+	int nr;	/* reset for each csp adjustment */
-+
-+	sp = mm->start_stack;
-+
-+	/* stack the program arguments and environment */
-+	if (elf_dsbt_transfer_args_to_stack(bprm, &sp) < 0)
-+		return -EFAULT;
-+
-+	hwcap = ELF_HWCAP;
-+
-+	/*
-+	 * If this architecture has a platform capability string, copy it
-+	 * to userspace.  In some cases (Sparc), this info is impossible
-+	 * for userspace to get any other way, in others (i386) it is
-+	 * merely difficult.
-+	 */
-+	k_platform = ELF_PLATFORM;
-+	u_platform = NULL;
-+
-+	if (k_platform) {
-+		platform_len = strlen(k_platform) + 1;
-+		sp -= platform_len;
-+		u_platform = (char __user *) sp;
-+		if (__copy_to_user(u_platform, k_platform, platform_len) != 0)
-+			return -EFAULT;
-+	}
-+
-+	/*
-+	 * If this architecture has a "base" platform capability
-+	 * string, copy it to userspace.
-+	 */
-+	k_base_platform = ELF_BASE_PLATFORM;
-+	u_base_platform = NULL;
-+
-+	if (k_base_platform) {
-+		platform_len = strlen(k_base_platform) + 1;
-+		sp -= platform_len;
-+		u_base_platform = (char __user *) sp;
-+		if (__copy_to_user(u_base_platform, k_base_platform,
-+				   platform_len) != 0)
-+			return -EFAULT;
-+	}
-+
-+	sp &= ~7UL;
-+
-+	/* stack the load map(s) */
-+	len = sizeof(struct elf32_dsbt_loadmap);
-+	len += sizeof(struct elf32_dsbt_loadseg) * exec_params->loadmap->nsegs;
-+	sp = (sp - len) & ~7UL;
-+	exec_params->map_addr = sp;
-+	kdebug("exec_params->map_addr[%x]", sp);
-+
-+	if (copy_to_user((void __user *) sp, exec_params->loadmap, len) != 0)
-+		return -EFAULT;
-+
-+	current->mm->context.exec_dsbt_loadmap = (unsigned long) sp;
-+
-+	if (interp_params->loadmap) {
-+		len = sizeof(struct elf32_dsbt_loadmap);
-+		len += sizeof(struct elf32_dsbt_loadseg) *
-+			interp_params->loadmap->nsegs;
-+		sp = (sp - len) & ~7UL;
-+		interp_params->map_addr = sp;
-+		kdebug("interp_params->map_addr[%x]", sp);
-+		if (copy_to_user((void __user *) sp, interp_params->loadmap,
-+				 len) != 0)
-+			return -EFAULT;
-+
-+		current->mm->context.interp_dsbt_loadmap = (unsigned long) sp;
-+	}
-+
-+	/* force 16 byte _final_ alignment here for generality */
-+#define DLINFO_ITEMS 15
-+
-+	nitems = 1 + DLINFO_ITEMS + (k_platform ? 1 : 0) +
-+		(k_base_platform ? 1 : 0) + AT_VECTOR_SIZE_ARCH;
-+
-+	if (bprm->interp_flags & BINPRM_FLAGS_EXECFD)
-+		nitems++;
-+
-+	csp = sp;
-+	sp -= nitems * 2 * sizeof(unsigned long);
-+	sp -= (bprm->envc + 1) * sizeof(char *);	/* envv[] */
-+	sp -= (bprm->argc + 1) * sizeof(char *);	/* argv[] */
-+	sp -= 1 * sizeof(unsigned long);		/* argc */
-+
-+	csp -= sp & 15UL;
-+	sp -= sp & 15UL;
-+
-+	/* put the ELF interpreter info on the stack */
-+#define NEW_AUX_ENT(id, val)						\
-+	do {								\
-+		struct { unsigned long _id, _val; } __user *ent;	\
-+									\
-+		ent = (void __user *) csp;				\
-+		__put_user((id), &ent[nr]._id);				\
-+		__put_user((val), &ent[nr]._val);			\
-+		nr++;							\
-+	} while (0)
-+
-+	nr = 0;
-+	csp -= 2 * sizeof(unsigned long);
-+	NEW_AUX_ENT(AT_NULL, 0);
-+	if (k_platform) {
-+		nr = 0;
-+		csp -= 2 * sizeof(unsigned long);
-+		NEW_AUX_ENT(AT_PLATFORM,
-+			    (elf_addr_t) (unsigned long) u_platform);
-+	}
-+
-+	if (k_base_platform) {
-+		nr = 0;
-+		csp -= 2 * sizeof(unsigned long);
-+		NEW_AUX_ENT(AT_BASE_PLATFORM,
-+			    (elf_addr_t) (unsigned long) u_base_platform);
-+	}
-+
-+	if (bprm->interp_flags & BINPRM_FLAGS_EXECFD) {
-+		nr = 0;
-+		csp -= 2 * sizeof(unsigned long);
-+		NEW_AUX_ENT(AT_EXECFD, bprm->interp_data);
-+	}
-+
-+	nr = 0;
-+	csp -= DLINFO_ITEMS * 2 * sizeof(unsigned long);
-+	NEW_AUX_ENT(AT_HWCAP,	hwcap);
-+	NEW_AUX_ENT(AT_PAGESZ,	PAGE_SIZE);
-+	NEW_AUX_ENT(AT_CLKTCK,	CLOCKS_PER_SEC);
-+	NEW_AUX_ENT(AT_PHDR,	exec_params->ph_addr);
-+	NEW_AUX_ENT(AT_PHENT,	sizeof(struct elf_phdr));
-+	NEW_AUX_ENT(AT_PHNUM,	exec_params->hdr.e_phnum);
-+	NEW_AUX_ENT(AT_BASE,	interp_params->elfhdr_addr);
-+	NEW_AUX_ENT(AT_FLAGS,	0);
-+	NEW_AUX_ENT(AT_ENTRY,	exec_params->entry_addr);
-+	NEW_AUX_ENT(AT_UID,	(elf_addr_t) cred->uid);
-+	NEW_AUX_ENT(AT_EUID,	(elf_addr_t) cred->euid);
-+	NEW_AUX_ENT(AT_GID,	(elf_addr_t) cred->gid);
-+	NEW_AUX_ENT(AT_EGID,	(elf_addr_t) cred->egid);
-+	NEW_AUX_ENT(AT_SECURE,	security_bprm_secureexec(bprm));
-+	NEW_AUX_ENT(AT_EXECFN,	bprm->exec);
-+
-+	kdebug("AUX entry start: %x]", csp);
-+#ifdef ARCH_DLINFO
-+	nr = 0;
-+	csp -= AT_VECTOR_SIZE_ARCH * 2 * sizeof(unsigned long);
-+
-+	/* ARCH_DLINFO must come last so platform specific code can enforce
-+	 * special alignment requirements on the AUXV if necessary (eg. PPC).
-+	 */
-+	ARCH_DLINFO;
-+#endif
-+#undef NEW_AUX_ENT
-+
-+	/* allocate room for argv[] and envv[] */
-+	csp -= (bprm->envc + 1) * sizeof(elf_caddr_t);
-+	envp = (elf_caddr_t __user *) csp;
-+	csp -= (bprm->argc + 1) * sizeof(elf_caddr_t);
-+	argv = (elf_caddr_t __user *) csp;
-+
-+	kdebug("argv[%x] envp[%x]\n", argv, envp);
-+
-+	/* stack argc */
-+	csp -= sizeof(unsigned long);
-+	__put_user(bprm->argc, (unsigned long __user *) csp);
-+
-+	BUG_ON(csp != sp);
-+
-+	/* fill in the argv[] array */
-+	current->mm->arg_start = current->mm->start_stack -
-+		(MAX_ARG_PAGES * PAGE_SIZE - bprm->p);
-+
-+	p = (char __user *) current->mm->arg_start;
-+	for (loop = bprm->argc; loop > 0; loop--) {
-+		__put_user((elf_caddr_t) p, argv++);
-+		len = strnlen_user(p, MAX_ARG_STRLEN);
-+		if (!len || len > MAX_ARG_STRLEN)
-+			return -EINVAL;
-+		p += len;
-+	}
-+	__put_user(NULL, argv);
-+	current->mm->arg_end = (unsigned long) p;
-+
-+	/* fill in the envv[] array */
-+	current->mm->env_start = (unsigned long) p;
-+	for (loop = bprm->envc; loop > 0; loop--) {
-+		__put_user((elf_caddr_t)(unsigned long) p, envp++);
-+		len = strnlen_user(p, MAX_ARG_STRLEN);
-+		if (!len || len > MAX_ARG_STRLEN)
-+			return -EINVAL;
-+		p += len;
-+	}
-+	__put_user(NULL, envp);
-+	current->mm->env_end = (unsigned long) p;
-+
-+	mm->start_stack = (unsigned long) sp;
-+	return 0;
-+}
-+
-+/*
-+ * map a single segment
-+ */
-+static unsigned long elf_dsbt_map(struct file *filep, unsigned long addr,
-+		struct elf32_dsbt_seg *seg, int prot, int type)
-+{
-+	unsigned long map_addr;
-+	unsigned long size = seg->p_memsz + ELF_PAGEOFFSET(seg->p_vaddr);
-+	unsigned long off = seg->p_offset - ELF_PAGEOFFSET(seg->p_vaddr);
-+	addr = ELF_PAGESTART(addr);
-+	size = ELF_PAGEALIGN(size);
-+
-+	/* mmap() will return -EINVAL if given a zero size, but a
-+	 * segment with zero filesize is perfectly valid */
-+	if (!size)
-+		return addr;
-+
-+	down_write(&current->mm->mmap_sem);
-+	map_addr = do_mmap(filep, addr, size, prot, type, off);
-+	up_write(&current->mm->mmap_sem);
-+	return map_addr;
-+}
-+
-+/*
-+ * load the appropriate binary image (executable or interpreter) into memory
-+ * - we assume no MMU is available
-+ * - we assume that there is one LOADable segment with execute flags
-+ * - we assume that there is one LOADable segment without execute flags
-+ */
-+static int elf_dsbt_map_file(struct elf_dsbt_params *params,
-+			      struct file *file,
-+			      struct mm_struct *mm,
-+			      const char *what,
-+			      const char *interp_name)
-+{
-+	struct elf32_phdr *phdr, *code_phdr = NULL;
-+	struct elf32_phdr *data_phdr = NULL;
-+	struct elf32_phdr *dyn_phdr = NULL;
-+	struct elf32_dsbt_loadmap *loadmap;
-+	struct elf32_dsbt_loadseg *seg;
-+	elf_dyn *dyn;
-+	unsigned long mapped_addr, bss_len;
-+	int loop, ret, flags, ndseg, prot;
-+
-+	phdr = params->phdrs;
-+	ndseg = 0;
-+	for (loop = 0; loop < params->hdr.e_phnum; loop++, phdr++) {
-+		if (phdr->p_type == PT_DYNAMIC)
-+			dyn_phdr = phdr;
-+
-+		if (phdr->p_type != PT_LOAD)
-+			continue;
-+
-+		kdebug("elf_dsbt_map_file: [LOAD] va=%lx of=%lx "
-+		       "fs=%lx ms=%lx flags=%lx",
-+		       (unsigned long) phdr->p_vaddr,
-+		       (unsigned long) phdr->p_offset,
-+		       (unsigned long) phdr->p_filesz,
-+		       (unsigned long) phdr->p_memsz,
-+		       (unsigned long) phdr->p_flags);
-+
-+		if (ELF_PAGEOFFSET(phdr->p_offset) != ELF_PAGEOFFSET(phdr->p_vaddr)) {
-+			kdebug("Bad ELF file!");
-+			return -EINVAL;
-+		}
-+
-+		/*
-+		 * There should be only one executable segment and
-+		 * one RW segment.
-+		 */
-+		if (phdr->p_flags & PF_X) {
-+			if (code_phdr) {
-+				kdebug("more than one executable segment!");
-+				return -EINVAL;
-+			}
-+			code_phdr = phdr;
-+		} else {
-+			if (data_phdr) {
-+				kdebug("more than one RW segment!");
-+				return -EINVAL;
-+			}
-+			data_phdr = phdr;
-+		}
-+	}
-+	if (!code_phdr) {
-+		kdebug("no executable segment!");
-+		return -EINVAL;
-+	}
-+	if (!data_phdr) {
-+		kdebug("no RW segment!");
-+		return -EINVAL;
-+	}
-+
-+	params->code_seg.p_vaddr  = code_phdr->p_vaddr;
-+	params->code_seg.p_offset = code_phdr->p_offset;
-+	params->code_seg.p_memsz  = code_phdr->p_memsz;
-+	params->code_seg.p_filesz = code_phdr->p_filesz;
-+
-+	params->data_seg.p_vaddr  = data_phdr->p_vaddr;
-+	params->data_seg.p_offset = data_phdr->p_offset;
-+	params->data_seg.p_memsz  = data_phdr->p_memsz;
-+	params->data_seg.p_filesz = data_phdr->p_filesz;
-+
-+	/* map code segment */
-+	flags = MAP_PRIVATE | MAP_DENYWRITE;
-+	if (params->flags & ELF_DSBT_FLAG_EXECUTABLE)
-+		flags |= MAP_EXECUTABLE;
-+
-+	prot = PROT_READ | PROT_EXEC;
-+
-+	mapped_addr = elf_dsbt_map(file, params->code_seg.p_vaddr,
-+				   &params->code_seg, prot, flags);
-+	if (BAD_ADDR(mapped_addr))
-+		return (int) mapped_addr;
-+
-+	params->code_seg.addr = mapped_addr +
-+		ELF_PAGEOFFSET(params->code_seg.p_vaddr);
-+
-+	kdebug("mapped code seg from %08x to %08x",
-+	       params->code_seg.p_vaddr, params->code_seg.addr);
-+
-+	/* map data segment */
-+	mapped_addr = elf_dsbt_map(file, params->data_seg.p_vaddr,
-+				   &params->data_seg,
-+				   PROT_READ | PROT_WRITE, MAP_PRIVATE);
-+	if (BAD_ADDR(mapped_addr)) {
-+		do_munmap(current->mm, mapped_addr,
-+			  params->data_seg.p_memsz);
-+		return (int) mapped_addr;
-+	}
-+	params->data_seg.addr = mapped_addr +
-+		ELF_PAGEOFFSET(params->data_seg.p_vaddr);
-+
-+	kdebug("mapped data seg from %08x to %08x",
-+	       params->data_seg.p_vaddr, params->data_seg.addr);
-+
-+	/* clear any bss area */
-+	bss_len = params->data_seg.p_memsz - params->data_seg.p_filesz;
-+	if (bss_len) {
-+		unsigned long bss_start;
-+
-+		bss_start = params->data_seg.addr + params->data_seg.p_filesz;
-+
-+		kdebug("clearing %d bytes of bss at %08x", bss_len, bss_start);
-+		ret = clear_user((void *)bss_start, bss_len);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	/* fetch dsbt info from dynamic section */
-+	dyn = find_dynamic_tag(params, DT_ARCH_DSBT_BASE);
-+	if (!dyn) {
-+		kdebug("DSBT BASE not found");
-+		return -EINVAL;
-+	}
-+	/* relocate it */
-+	params->dsbt_base = (dyn->d_un.d_ptr - params->data_seg.p_vaddr) +
-+		params->data_seg.addr;
-+
-+	dyn = find_dynamic_tag(params, DT_ARCH_DSBT_SIZE);
-+	if (!dyn) {
-+		kdebug("DSBT SIZE not found");
-+		return -EINVAL;
-+	}
-+	params->dsbt_size = dyn->d_un.d_ptr;
-+
-+	dyn = find_dynamic_tag(params, DT_ARCH_DSBT_INDEX);
-+	if (!dyn) {
-+		kdebug("DSBT INDEX not found");
-+		return -EINVAL;
-+	}
-+	params->dsbt_index = dyn->d_un.d_ptr;
-+
-+	/* determine where the elf header has wound up if mapped */
-+	if (params->code_seg.p_offset == 0)
-+		params->elfhdr_addr = params->code_seg.addr;
-+	else if (params->data_seg.p_offset == 0)
-+		params->elfhdr_addr = params->data_seg.addr;
-+	else {
-+		/* elf header has not been mapped */
-+		kdebug("elf header not mapped!");
-+		return -EINVAL;
-+	}
-+
-+	/* determine where the program header table has wound up if mapped */
-+	if (params->hdr.e_phoff >= params->code_seg.p_offset &&
-+	    params->hdr.e_phoff < params->code_seg.p_offset + params->code_seg.p_memsz)
-+		params->ph_addr = params->code_seg.addr +
-+			(params->hdr.e_phoff - params->code_seg.p_offset);
-+	else if (params->hdr.e_phoff >= params->data_seg.p_offset &&
-+		 params->hdr.e_phoff < params->data_seg.p_offset + params->data_seg.p_memsz)
-+		params->ph_addr = params->data_seg.addr +
-+			(params->hdr.e_phoff - params->data_seg.p_offset);
-+	else {
-+		/* program header has not been mapped */
-+		kdebug("program header not mapped!");
-+		return -EINVAL;
-+	}
-+
-+	/* determine where the dynamic section has wound up if there is one */
-+	if (dyn_phdr) {
-+		if (dyn_phdr->p_offset >= params->code_seg.p_offset &&
-+		    dyn_phdr->p_offset < params->code_seg.p_offset + params->code_seg.p_memsz)
-+			params->dynamic_addr = params->code_seg.addr +
-+				(dyn_phdr->p_offset - params->code_seg.p_offset);
-+		else if (dyn_phdr->p_offset >= params->data_seg.p_offset &&
-+			 dyn_phdr->p_offset < params->data_seg.p_offset + params->data_seg.p_memsz)
-+			params->dynamic_addr = params->data_seg.addr +
-+				(dyn_phdr->p_offset - params->data_seg.p_offset);
-+		else {
-+			/* dynamic section has not been mapped */
-+			kdebug("dynamic section not mapped!");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	loadmap = kmalloc(sizeof(*loadmap) +
-+			  (2 * sizeof(struct elf32_dsbt_loadseg)), GFP_KERNEL);
-+	if (!loadmap)
-+		return -ENOMEM;
-+
-+	params->loadmap = loadmap;
-+
-+	loadmap->version = ELF_DSBT_LOADMAP_VERSION;
-+	loadmap->dsbt_table = (unsigned *)params->dsbt_base;
-+	loadmap->dsbt_size = params->dsbt_size;
-+	loadmap->dsbt_index = params->dsbt_index;
-+	loadmap->nsegs = 2;
-+
-+	seg = loadmap->segs;
-+
-+	seg->addr = params->code_seg.addr;
-+	seg->p_vaddr = params->code_seg.p_vaddr;
-+	seg->p_memsz = params->code_seg.p_memsz;
-+	++seg;
-+	seg->addr = params->data_seg.addr;
-+	seg->p_vaddr = params->data_seg.p_vaddr;
-+	seg->p_memsz = params->data_seg.p_memsz;
-+	++seg;
-+
-+	/* map the entry point */
-+	if (params->hdr.e_entry)
-+		params->entry_addr = params->code_seg.addr +
-+			(params->hdr.e_entry - params->code_seg.p_vaddr);
-+
-+	if (mm) {
-+		if (!mm->start_code) {
-+			mm->start_code = params->code_seg.addr;
-+			mm->end_code = params->code_seg.addr +
-+				params->code_seg.p_memsz;
-+		}
-+
-+		if (!mm->start_data) {
-+			mm->start_data = params->data_seg.addr;
-+			mm->end_data = params->data_seg.addr +
-+				params->data_seg.p_memsz;
-+		}
-+	}
-+
-+	kdebug("Mapped Object [%s]:", what);
-+	kdebug("- elfhdr   : %lx", params->elfhdr_addr);
-+	kdebug("- PHDR[]   : %lx", params->ph_addr);
-+	kdebug("- entry    : %lx", params->entry_addr);
-+	kdebug("- DYNAMIC[]: %lx", params->dynamic_addr);
-+	kdebug("- CODE     : %lx", params->code_seg.addr);
-+	kdebug("- DATA     : %lx", params->data_seg.addr);
-+	kdebug("- DSBT TBL : %lx", loadmap->dsbt_table);
-+	kdebug("- DSBT SZ  : %d", loadmap->dsbt_size);
-+	kdebug("- DSBT IDX : %d", loadmap->dsbt_index);
-+
-+	return 0;
-+}
-+
-+/*
-+ * load a DSBT binary into various bits of memory
-+ */
-+static int load_elf_dsbt_binary(struct linux_binprm *bprm,
-+				struct pt_regs *regs)
-+{
-+	struct elf_dsbt_params exec_params, interp_params;
-+	struct elf_phdr *phdr;
-+	unsigned long stack_size, entryaddr;
-+#ifdef ELF_DSBT_PLAT_INIT
-+	unsigned long dynaddr, dsbt_table;
-+#endif
-+	unsigned long stack_prot;
-+	struct file *interpreter = NULL; /* to shut gcc up */
-+	char *interpreter_name = NULL;
-+	int executable_stack;
-+	int retval, i;
-+
-+	kdebug("____ LOAD  pid[%d] ____", current->pid);
-+
-+	memset(&exec_params, 0, sizeof(exec_params));
-+	memset(&interp_params, 0, sizeof(interp_params));
-+
-+	exec_params.hdr = *(struct elfhdr *) bprm->buf;
-+	exec_params.flags = ELF_DSBT_FLAG_EXECUTABLE | ELF_DSBT_FLAG_PRESENT;
-+
-+	/* check that this is a binary we know how to deal with */
-+	retval = -ENOEXEC;
-+	if (!is_elf_dsbt(&exec_params.hdr, bprm->file)) {
-+		kdebug("not DSBT binary!");
-+		goto error;
-+	}
-+
-+	/* read the program header table */
-+	retval = elf_dsbt_fetch_phdrs(&exec_params, bprm->file);
-+	if (retval < 0) {
-+		kdebug("can't get phdrs!");
-+		goto error;
-+	}
-+
-+	/* read the dynamic section */
-+	retval = elf_dsbt_fetch_dynamic(&exec_params, bprm->file);
-+	if (retval < 0) {
-+		kdebug("can't get dynamic section!");
-+		goto error;
-+	}
-+
-+	/* scan for a program header that specifies an interpreter */
-+	phdr = exec_params.phdrs;
-+
-+	for (i = 0; i < exec_params.hdr.e_phnum; i++, phdr++) {
-+		switch (phdr->p_type) {
-+		case PT_INTERP:
-+			kdebug("found PT_INTERP");
-+			retval = -ENOMEM;
-+			if (phdr->p_filesz > PATH_MAX)
-+				goto error;
-+			retval = -ENOENT;
-+			if (phdr->p_filesz < 2)
-+				goto error;
-+
-+			/* read the name of the interpreter into memory */
-+			interpreter_name = kmalloc(phdr->p_filesz, GFP_KERNEL);
-+			if (!interpreter_name)
-+				goto error;
-+
-+			retval = kernel_read(bprm->file,
-+					     phdr->p_offset,
-+					     interpreter_name,
-+					     phdr->p_filesz);
-+			if (unlikely(retval != phdr->p_filesz)) {
-+				if (retval >= 0)
-+					retval = -ENOEXEC;
-+				goto error;
-+			}
-+
-+			retval = -ENOENT;
-+			if (interpreter_name[phdr->p_filesz - 1] != '\0')
-+				goto error;
-+
-+			kdebug("Using ELF interpreter %s", interpreter_name);
-+
-+			/* replace the program with the interpreter */
-+			interpreter = open_exec(interpreter_name);
-+			retval = PTR_ERR(interpreter);
-+			if (IS_ERR(interpreter)) {
-+				interpreter = NULL;
-+				goto error;
-+			}
-+
-+			/*
-+			 * If the binary is not readable then enforce
-+			 * mm->dumpable = 0 regardless of the interpreter's
-+			 * permissions.
-+			 */
-+			if (file_permission(interpreter, MAY_READ) < 0)
-+				bprm->interp_flags |= BINPRM_FLAGS_ENFORCE_NONDUMP;
-+
-+			retval = kernel_read(interpreter, 0, bprm->buf,
-+					     BINPRM_BUF_SIZE);
-+			if (unlikely(retval != BINPRM_BUF_SIZE)) {
-+				if (retval >= 0)
-+					retval = -ENOEXEC;
-+				goto error;
-+			}
-+
-+			interp_params.hdr = *((struct elfhdr *) bprm->buf);
++#define PT_TEXT_ADDR		  0x10000
++#define PT_DATA_ADDR		  0x10004
++#define PT_TEXT_END_ADDR	  0x10008
++
+ #define PTRACE_GETREGS		  12
+ #define PTRACE_SETREGS		  13
+ #define PTRACE_GETFPREGS	  14
+ #define PTRACE_SETFPREGS	  15
+ 
++#define PTRACE_GETDSBT		 31	/* get the ELF DSBT loadmap address */
++#define PTRACE_GETDSBT_EXEC	  0	/* [addr] request the executable loadmap */
++#define PTRACE_GETDSBT_INTERP	  1	/* [addr] request the interpreter loadmap */
++
+ #ifdef __KERNEL__
+ 
+ #define DEFAULT_CSR		  0x0001	/* interrupt enable by default */
+diff --git a/arch/c6x/kernel/ptrace.c b/arch/c6x/kernel/ptrace.c
+index fd38463..aa853e4 100644
+--- a/arch/c6x/kernel/ptrace.c
++++ b/arch/c6x/kernel/ptrace.c
+@@ -167,7 +167,13 @@ static int ptrace_read_user(struct task_struct *tsk, unsigned long off,
+ 
+ 
+ 	tmp = 0;
+-	if (off < PT_REG_SIZE)
++	if (index == PT_TEXT_ADDR)
++		tmp = tsk->mm->start_code;
++	else if (index == PT_DATA_ADDR)
++		tmp = tsk->mm->start_data;
++	else if (index == PT_TEXT_END_ADDR)
++		tmp = tsk->mm->end_code;
++	else if (off < PT_REG_SIZE)
+ 		tmp = get_reg(tsk, index);
+ 	else
+ 		return -EIO;
+@@ -250,6 +256,23 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		}
+ 		break;
+ 
++	case PTRACE_GETDSBT: {
++		tmp = 0;
++		switch (addr) {
++		case PTRACE_GETDSBT_EXEC:
++			tmp = child->mm->context.exec_dsbt_loadmap;
 +			break;
-+
-+		case PT_LOAD:
-+			kdebug("found PT_LOAD");
++		case PTRACE_GETDSBT_INTERP:
++			tmp = child->mm->context.interp_dsbt_loadmap;
++			break;
++		default:
 +			break;
 +		}
 +
-+	}
-+	/* perform insanity checks on the interpreter */
-+	if (interpreter_name) {
-+		retval = -ELIBBAD;
-+		if (!is_elf_dsbt(&interp_params.hdr, interpreter))
-+			goto error;
-+
-+		interp_params.flags = ELF_DSBT_FLAG_PRESENT;
-+
-+		/* read the interpreter's program header table */
-+		retval = elf_dsbt_fetch_phdrs(&interp_params, interpreter);
-+		if (retval < 0)
-+			goto error;
-+
-+		/* read the interpreter's dynamic section */
-+		retval = elf_dsbt_fetch_dynamic(&interp_params, interpreter);
-+		if (retval < 0) {
-+			kdebug("can't get dynamic section!");
-+			goto error;
-+		}
++		ret = put_user(tmp, (unsigned long __user *)data);
++		break;
 +	}
 +
-+	executable_stack = EXSTACK_DEFAULT;
-+
-+	stack_size = interp_params.stack_size;
-+
-+	retval = -ENOEXEC;
-+	if (stack_size == 0) {
-+#if 0
-+		kdebug("zero stack size");
-+		goto error;
-+#else
-+		stack_size = 0x8000;
-+#endif
-+	}
-+
-+	/* flush all traces of the currently running executable */
-+	retval = flush_old_exec(bprm);
-+	if (retval) {
-+		kdebug("flush_old_exec returned: %d", retval);
-+		goto error;
-+	}
-+
-+	/* there's now no turning back... the old userspace image is dead,
-+	 * defunct, deceased, etc. after this point we have to exit via
-+	 * error_kill */
-+	set_personality(PER_LINUX);
-+	if (elf_read_implies_exec(&exec_params.hdr, executable_stack))
-+		current->personality |= READ_IMPLIES_EXEC;
-+
-+	setup_new_exec(bprm);
-+
-+	set_binfmt(&elf_dsbt_format);
-+
-+	current->mm->start_code = 0;
-+	current->mm->end_code = 0;
-+	current->mm->start_stack = 0;
-+	current->mm->start_data = 0;
-+	current->mm->end_data = 0;
-+
-+	current->flags &= ~PF_FORKNOEXEC;
-+
-+	/* load the executable and interpreter into memory */
-+	retval = elf_dsbt_map_file(&exec_params, bprm->file, current->mm,
-+				   "executable", interpreter_name);
-+	if (retval < 0) {
-+		kdebug("elf_dsbt_map_file: returned %d", retval);
-+		goto error_kill;
-+	}
-+
-+	if (interpreter_name) {
-+		retval = elf_dsbt_map_file(&interp_params, interpreter,
-+					   current->mm, "interpreter", NULL);
-+		if (retval < 0) {
-+			printk(KERN_ERR "Unable to load interpreter");
-+			goto error_kill;
-+		}
-+
-+		allow_write_access(interpreter);
-+		fput(interpreter);
-+		interpreter = NULL;
-+	}
-+
-+	/* create a stack and brk area big enough for everyone
-+	 * - the brk heap starts at the bottom and works up
-+	 * - the stack starts at the top and works down
-+	 */
-+	stack_size = (stack_size + PAGE_SIZE - 1) & PAGE_MASK;
-+	if (stack_size < PAGE_SIZE * 2)
-+		stack_size = PAGE_SIZE * 2;
-+
-+	stack_prot = PROT_READ | PROT_WRITE;
-+	if (executable_stack == EXSTACK_ENABLE_X ||
-+	    (executable_stack == EXSTACK_DEFAULT && VM_STACK_FLAGS & VM_EXEC))
-+		stack_prot |= PROT_EXEC;
-+
-+	down_write(&current->mm->mmap_sem);
-+	current->mm->start_brk = do_mmap(NULL, 0, stack_size, stack_prot,
-+					 MAP_PRIVATE | MAP_ANONYMOUS |
-+					 MAP_UNINITIALIZED | MAP_GROWSDOWN,
-+					 0);
-+
-+	if (IS_ERR_VALUE(current->mm->start_brk)) {
-+		up_write(&current->mm->mmap_sem);
-+		retval = current->mm->start_brk;
-+		current->mm->start_brk = 0;
-+		kdebug("do_mmap failed");
-+		goto error_kill;
-+	}
-+
-+	up_write(&current->mm->mmap_sem);
-+
-+	current->mm->brk = current->mm->start_brk;
-+	current->mm->context.end_brk = current->mm->start_brk;
-+	current->mm->context.end_brk +=
-+		(stack_size > PAGE_SIZE) ? (stack_size - PAGE_SIZE) : 0;
-+	current->mm->start_stack = current->mm->start_brk + stack_size;
-+
-+	install_exec_creds(bprm);
-+	current->flags &= ~PF_FORKNOEXEC;
-+	if (create_elf_dsbt_tables(bprm, current->mm,
-+				   &exec_params, &interp_params) < 0) {
-+		kdebug("create_eld_dsbt_tables failed");
-+		goto error_kill;
-+	}
-+
-+	kdebug("- start_code  %lx", current->mm->start_code);
-+	kdebug("- end_code    %lx", current->mm->end_code);
-+	kdebug("- start_data  %lx", current->mm->start_data);
-+	kdebug("- end_data    %lx", current->mm->end_data);
-+	kdebug("- start_brk   %lx", current->mm->start_brk);
-+	kdebug("- brk         %lx", current->mm->brk);
-+	kdebug("- start_stack %lx", current->mm->start_stack);
-+
-+#ifdef ELF_DSBT_PLAT_INIT
-+	/*
-+	 * The ABI may specify that certain registers be set up in special
-+	 * ways. This macro performs whatever initialization to the regs
-+	 * structure is required.
-+	 */
-+	if (interp_params.dynamic_addr) {
-+		dynaddr = interp_params.dynamic_addr;
-+		dsbt_table = (unsigned long)interp_params.loadmap->dsbt_table;
-+	} else {
-+		dynaddr = exec_params.dynamic_addr;
-+		dsbt_table = (unsigned long)exec_params.loadmap->dsbt_table;
-+	}
-+
-+	kdebug("exec_params.map_addr[%x]", exec_params.map_addr);
-+	kdebug("interp_params.map_addr[%x]", interp_params.map_addr);
-+	ELF_DSBT_PLAT_INIT(regs,
-+			   exec_params.map_addr,
-+			   interp_params.map_addr,
-+			   dynaddr, dsbt_table);
-+#endif
-+
-+	/* everything is now ready... get the userspace context ready to roll */
-+	if (interp_params.entry_addr)
-+		entryaddr = interp_params.entry_addr;
-+	else
-+		entryaddr = exec_params.entry_addr;
-+
-+	start_thread(regs, entryaddr, current->mm->start_stack);
-+
-+	retval = 0;
-+error:
-+	kdebug("load returning: %d", retval);
-+	if (interpreter) {
-+		allow_write_access(interpreter);
-+		fput(interpreter);
-+	}
-+	kfree(interpreter_name);
-+	kfree(exec_params.phdrs);
-+	kfree(interp_params.phdrs);
-+	kfree(exec_params.dynamic);
-+	kfree(interp_params.dynamic);
-+	kfree(exec_params.loadmap);
-+	kfree(interp_params.loadmap);
-+	return retval;
-+
-+	/* unrecoverable error - kill the process */
-+error_kill:
-+	send_sig(SIGSEGV, current, 0);
-+	goto error;
-+
-+}
-+
-+static int __init init_elf_dsbt_binfmt(void)
-+{
-+	return register_binfmt(&elf_dsbt_format);
-+}
-+
-+static void __exit exit_elf_dsbt_binfmt(void)
-+{
-+	unregister_binfmt(&elf_dsbt_format);
-+}
-+
-+core_initcall(init_elf_dsbt_binfmt);
-+module_exit(exit_elf_dsbt_binfmt);
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/elf-dsbt.h b/include/linux/elf-dsbt.h
-new file mode 100644
-index 0000000..dadc400
---- /dev/null
-+++ b/include/linux/elf-dsbt.h
-@@ -0,0 +1,88 @@
-+/* elf-dsbt.h: DSBT ELF load map
-+ *
-+ * Copyright (C) 2010, 2011 Texas Instruments Incorporated
-+ * Written by Mark Salter <msalter@redhat.com>
-+ * Based on elf-fdpic.h
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _LINUX_ELF_DSBT_H
-+#define _LINUX_ELF_DSBT_H
-+
-+#include <linux/elf.h>
-+
-+#if ELF_CLASS == ELFCLASS32
-+#define elf_dyn Elf32_Dyn
-+#else
-+#define elf_dyn Elf64_Dyn
-+#endif
-+
-+#define ELF_DSBT_LOADMAP_VERSION	0x0000
-+
-+/* This data structure represents a PT_LOAD segment.  */
-+struct elf32_dsbt_loadseg {
-+	/* Core address to which the segment is mapped.  */
-+	Elf32_Addr addr;
-+	/* VMA recorded in the program header.  */
-+	Elf32_Addr p_vaddr;
-+	/* Size of this segment in memory.  */
-+	Elf32_Word p_memsz;
-+};
-+
-+struct elf32_dsbt_loadmap {
-+	/* Protocol version number, must be zero.  */
-+	Elf32_Word version;
-+
-+	/* Pointer to DSBT */
-+	unsigned   *dsbt_table;
-+	unsigned   dsbt_size;
-+	unsigned   dsbt_index;
-+
-+	/* number of segments */
-+	Elf32_Word nsegs;
-+
-+	/* The actual memory map.  */
-+	struct elf32_dsbt_loadseg segs[0];
-+};
-+
-+/* internal segment mappings for ELF DSBT loader */
-+struct elf32_dsbt_seg {
-+	Elf32_Addr	addr;		/* core address to which mapped */
-+	Elf32_Addr	p_vaddr;	/* VMA recorded in file */
-+	Elf32_Off	p_offset;	/* file offset */
-+	Elf32_Word	p_filesz;	/* initialized data in file */
-+	Elf32_Word	p_memsz;	/* allocation size recorded in file */
-+};
-+
-+/*
-+ * binfmt binary parameters structure
-+ */
-+struct elf_dsbt_params {
-+	struct elfhdr			hdr;		/* ref copy of ELF header */
-+	struct elf_phdr			*phdrs;		/* ref copy of PT_PHDR table */
-+	elf_dyn				*dynamic;	/* ref copy of .dynamic section */
-+	struct elf32_dsbt_seg           code_seg;       /* mapping for code segment */
-+	struct elf32_dsbt_seg           data_seg;       /* mapping for data segment */
-+	struct elf32_dsbt_seg           *extra_segs;    /* mapping for extra segments */
-+	struct elf32_dsbt_loadmap       *loadmap;       /* loadmap to be passed to userspace */
-+	int				num_new;
-+	unsigned long			elfhdr_addr;	/* mapped ELF header user address */
-+	unsigned long			ph_addr;	/* mapped PT_PHDR user address */
-+	unsigned long			map_addr;	/* mapped loadmap user address */
-+	unsigned long			entry_addr;	/* mapped entry user address */
-+	unsigned long			stack_size;	/* stack size requested (PT_GNU_STACK) */
-+	unsigned long			dynamic_addr;	/* mapped PT_DYNAMIC user address */
-+	unsigned long			flags;
-+	unsigned long			dsbt_base;
-+	unsigned int			dsbt_size;
-+	unsigned int			dsbt_index;
-+
-+#define ELF_DSBT_FLAG_PRESENT		0x00000001	/* T if this object is present */
-+#define ELF_DSBT_FLAG_EXECUTABLE	0x00000002	/* T if this object is the executable */
-+};
-+
-+#endif /* _LINUX_ELF_DSBT_H */
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
+ 		break;
 -- 
 1.6.2.5
 
