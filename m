@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab1EKTna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:43:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59567 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab1EKTn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:43:29 -0400
-Date: Wed, 11 May 2011 12:43:18 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Kilau, Scott" <Scott.Kilau@digi.com>
-Cc: "'mreed10@us.ibm.com'" <mreed10@us.ibm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'Alan Cox'" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] 8250_pci: Add support for the Digi/IBM PCIe 2-port
- Adapter
-Message-ID: <20110511194318.GA26704@suse.de>
-References: <A961E3870077E34C8FEF355D71BFDEAAC77C11492C@mtk-sms-exch01.digi.com>
- <A961E3870077E34C8FEF355D71BFDEAAC77C26CE30@mtk-sms-exch01.digi.com>
+	id S1755218Ab1EKTqE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:46:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61777 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189Ab1EKTqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 15:46:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xSz5XPYSKS3KggmoqFY4nbNT5NScjP7lhCZVTLpMkitd5yDEFqQnaApOZc8IKmgxVi
+         6cq4xaHd2S39XlO5Svbhz9xxdfd9xK61qC8OouuPmyupGBNQEj/oUlqRFDq/JAcQVCSL
+         78N5znJhJ2uRkN6TbtHljC3GDR2fkf5CWo774=
+Date: Wed, 11 May 2011 21:45:51 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
+ ptrace_check_attach()
+Message-ID: <20110511194551.GD24245@mtj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-11-git-send-email-tj@kernel.org>
+ <20110511164947.GA26383@redhat.com>
+ <20110511170058.GB26383@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A961E3870077E34C8FEF355D71BFDEAAC77C26CE30@mtk-sms-exch01.digi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110511170058.GB26383@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 02:28:07PM -0500, Kilau, Scott wrote:
-> --- linux-2.6.38.6-vanilla/include/linux/pci_ids.h	2011-04-21 16:34:46.000000000 -0500
-> +++ linux-2.6.38.6/include/linux/pci_ids.h	2011-04-27 14:56:30.000000000 -0500
-> @@ -1476,6 +1476,7 @@
->  #define PCI_DEVICE_ID_NEO_2RJ45         0x00CA
->  #define PCI_DEVICE_ID_NEO_2RJ45PRI      0x00CB
->  #define PCIE_DEVICE_ID_NEO_4_IBM        0x00F4
-> +#define PCIE_DEVICE_ID_NEO_2_OX_IBM     0x00F6
+Hello,
 
-Please see the top of this file for why you shouldn't be adding new
-device ids into it.
+On Wed, May 11, 2011 at 07:00:58PM +0200, Oleg Nesterov wrote:
+> On 05/11, Oleg Nesterov wrote:
+> >
+> > You know, I'd wish I could find the serious bugs in this patch. The
+> > code becomes really hairy. -EAGAIN in do_wait() doesn't make it more
+> > simple ;)
+> 
+> Mwahaha! I seem to see the bug ;)
 
-Third time's a charm?
+:-)
 
-thanks,
+> When the caller is do_wait(), we can't assume we are the tracer when
+> we drop tasklist. Original tracer can detach, then another unrelated
+> process can attach again and provoke JOBCTL_TRAPPING. wait_event()
+> can hang forever.
+> 
+> Unfortunately, this is easy to fix :/
 
-greg k-h
+Yeah, it's basically the same problem raised in other two patches.
+Making wait interruptible and clearing pending stop/traps on
+detach/kill/cont/whatever should do the trick.  I'll reply the
+previous message for the suggested change.
+
+Thanks.
+
+-- 
+tejun
