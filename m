@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab1EKQc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:32:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57665 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab1EKQcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:32:23 -0400
-Message-ID: <4DCA9CE2.1080307@zytor.com>
-Date: Wed, 11 May 2011 07:27:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1756504Ab1EKQXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:23:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757332Ab1EKQRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:17:05 -0400
+Date: Wed, 11 May 2011 10:28:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk-throttle: fix typos on struct throtl_grp init code
+Message-ID: <20110511142853.GE31633@redhat.com>
+References: <20110511130732.GB31633@redhat.com>
+ <1305120045-5111-1-git-send-email-namhyung@gmail.com>
+ <20110511133033.GD31633@redhat.com>
+ <1305123242.1561.20.camel@leonhard>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
-CC: Greg KH <greg@kroah.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "mikew@google.com" <mikew@google.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH] pstore: EFI Support
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>	<20110510161137.GA14522@kroah.com> <BANLkTimV8=o1zOeVJs9EA64kc+1=RZCJeA@mail.gmail.com>
-In-Reply-To: <BANLkTimV8=o1zOeVJs9EA64kc+1=RZCJeA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1305123242.1561.20.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2011 06:09 AM, Américo Wang wrote:
-> On Wed, May 11, 2011 at 12:11 AM, Greg KH<greg@kroah.com>  wrote:
->> On Tue, May 10, 2011 at 11:00:44AM -0400, Seiji Aguchi wrote:
->>> Description of boot paremeters is following.
->>>
->>>   - efi_pstore_enable
->>>     enable EFI support of pstore.
->>>
->>>   - efi_pstore_len
->>>     Sets the buffer size of EFI variable space used by pstore.
->>
->> Please don't add new boot parameters if at all possible.  Distros will
->> not know to enable them, and users don't know how to either.
->>
->> Use sane defaults, and provide ways to override them if needed, but
->> don't rely on them for new functionality if at all possible.
->
-> I agree. It seems that we should enable this by default when APEI and
-> EFI are both enabled, this could be done by Kconfig.
->
+On Wed, May 11, 2011 at 11:14:02PM +0900, Namhyung Kim wrote:
+> 2011-05-11 (수), 09:30 -0400, Vivek Goyal:
+> > On Wed, May 11, 2011 at 10:20:45PM +0900, Namhyung Kim wrote:
+> > > s/td/tg/
+> > 
+> > I think jens would like to have little more changelog than that.
+> > 
+> 
+> OK, let me clarify this first: My first patch was trivial but second one
+> seems not. AFAICS it could affect when the bps/iops bandwidth change
+> applies - maybe delayed to next @tg->disptime? - if there are concurrent
+> cgroup init and limit change tasks, right? Or do you have something need
+> to be included in the changelog?
 
-No, it can't.  That would be a compile-time option, but the selection 
-needs to be at runtime.
+Just say that when a new group is initialized, set tg->limits_changed =
+false instead of setting td->limits_changed to false.
 
-However, it is still unclear that this is actually a win at all...
+We do memset 0 on all newly allocated objects to this might not be
+required at all. 
 
-	-hpa
+So how about just getting rid of td->limits_changed assignments and
+not do explicit tg->limits_changed as that is implicit in zeroing of
+newly allocated object.
+
+Thanks
+Vivek
+
+
+> 
+> 
+> > Otherwise looks good to me.
+> > 
+> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> > 
+> > Vivek
+> 
+> Thank you for the review and the comment.
+> 
+> 
+> -- 
+> Regards,
+> Namhyung Kim
+> 
