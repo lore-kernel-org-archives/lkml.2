@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1EKAXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 20:23:21 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41787 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab1EKAXN (ORCPT
+	id S1752253Ab1EKAXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 20:23:45 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46494 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1EKAXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 20:23:13 -0400
+	Tue, 10 May 2011 20:23:12 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
@@ -14,9 +14,9 @@ Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
         David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-Date: Tue, 10 May 2011 17:23:05 -0700
-Message-Id: <1305073386-4810-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/3] comm: ext4: Protect task->comm access by using %ptc
+Date: Tue, 10 May 2011 17:23:06 -0700
+Message-Id: <1305073386-4810-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1305073386-4810-1-git-send-email-john.stultz@linaro.org>
 References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org>
@@ -24,18 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acessing task->comm requires proper locking. However in the past
-access to current->comm could be done without locking. This
-is no longer the case, so all comm access needs to be done
-while holding the comm_lock.
-
-In my attempt to clean up unprotected comm access, I've noticed
-most comm access is done for printk output. To simpify correct
-locking in these cases, I've introduced a new %ptc format,
-which will safely print the corresponding task's comm.
-
-Example use:
-printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
+Converts ext4 comm access to use the safe printk %ptc accessor.
 
 CC: Ted Ts'o <tytso@mit.edu>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -45,61 +34,59 @@ CC: Andrew Morton <akpm@linux-foundation.org>
 CC: linux-mm@kvack.org
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- lib/vsprintf.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+ fs/ext4/file.c  |    4 ++--
+ fs/ext4/super.c |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index bc0ac6b..b9c97b8 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -797,6 +797,26 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
- 	return string(buf, end, uuid, spec);
- }
- 
-+static noinline_for_stack
-+char *task_comm_string(char *buf, char *end, u8 *addr,
-+			 struct printf_spec spec, const char *fmt)
-+{
-+	struct task_struct *tsk = (struct task_struct *) addr;
-+	char *ret;
-+	unsigned long seq;
-+
-+	do {
-+		seq = read_seqbegin(&tsk->comm_lock);
-+
-+		ret = string(buf, end, tsk->comm, spec);
-+
-+	} while (read_seqretry(&tsk->comm_lock, seq));
-+
-+	return ret;
-+}
-+
-+
-+
- int kptr_restrict = 1;
- 
- /*
-@@ -864,6 +884,12 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 7b80d54..31438a0 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -126,9 +126,9 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 		/* Warn about this once per day */
+ 		if (printk_timed_ratelimit(&unaligned_warn_time, 60*60*24*HZ))
+ 			ext4_msg(inode->i_sb, KERN_WARNING,
+-				 "Unaligned AIO/DIO on inode %ld by %s; "
++				 "Unaligned AIO/DIO on inode %ld by %ptc; "
+ 				 "performance will be poor.",
+-				 inode->i_ino, current->comm);
++				 inode->i_ino, current);
+ 		mutex_lock(ext4_aio_mutex(inode));
+ 		ext4_aiodio_wait(inode);
  	}
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 8553dfb..d4ab4c0 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -413,8 +413,8 @@ void __ext4_error(struct super_block *sb, const char *function,
+ 	va_start(args, fmt);
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
+-	       sb->s_id, function, line, current->comm, &vaf);
++	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %ptc: %pV\n",
++	       sb->s_id, function, line, current, &vaf);
+ 	va_end(args);
  
- 	switch (*fmt) {
-+	case 't':
-+		switch (fmt[1]) {
-+		case 'c':
-+			return task_comm_string(buf, end, ptr, spec, fmt);
-+		}
-+		break;
- 	case 'F':
- 	case 'f':
- 		ptr = dereference_function_descriptor(ptr);
-@@ -1151,6 +1177,7 @@ qualifier:
-  *   http://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-00
-  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
-  *   case.
-+ * %ptc outputs the task's comm name
-  * %n is ignored
-  *
-  * The return value is the number of characters which would
+ 	ext4_handle_error(sb);
+@@ -438,7 +438,7 @@ void ext4_error_inode(struct inode *inode, const char *function,
+ 	       inode->i_sb->s_id, function, line, inode->i_ino);
+ 	if (block)
+ 		printk(KERN_CONT "block %llu: ", block);
+-	printk(KERN_CONT "comm %s: %pV\n", current->comm, &vaf);
++	printk(KERN_CONT "comm %ptc: %pV\n", current, &vaf);
+ 	va_end(args);
+ 
+ 	ext4_handle_error(inode->i_sb);
+@@ -468,7 +468,7 @@ void ext4_error_file(struct file *file, const char *function,
+ 	va_start(args, fmt);
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_CONT "comm %s: path %s: %pV\n", current->comm, path, &vaf);
++	printk(KERN_CONT "comm %ptc: path %s: %pV\n", current, path, &vaf);
+ 	va_end(args);
+ 
+ 	ext4_handle_error(inode->i_sb);
 -- 
 1.7.3.2.146.gca209
 
