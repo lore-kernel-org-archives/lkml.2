@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab1EKTqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:46:04 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61777 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab1EKTqC (ORCPT
+	id S1755252Ab1EKTqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:46:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36654 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412Ab1EKTqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:46:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xSz5XPYSKS3KggmoqFY4nbNT5NScjP7lhCZVTLpMkitd5yDEFqQnaApOZc8IKmgxVi
-         6cq4xaHd2S39XlO5Svbhz9xxdfd9xK61qC8OouuPmyupGBNQEj/oUlqRFDq/JAcQVCSL
-         78N5znJhJ2uRkN6TbtHljC3GDR2fkf5CWo774=
-Date: Wed, 11 May 2011 21:45:51 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
- ptrace_check_attach()
-Message-ID: <20110511194551.GD24245@mtj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-11-git-send-email-tj@kernel.org>
- <20110511164947.GA26383@redhat.com>
- <20110511170058.GB26383@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110511170058.GB26383@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 11 May 2011 15:46:52 -0400
+Subject: Re: [PATCH] sched: fix/optimise calculation of weight-inverse
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephan =?ISO-8859-1?Q?B=E4rwolf?= 
+	<stephan.baerwolf@tu-ilmenau.de>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nikhil Rao <ncrao@google.com>, Mike Galbraith <efault@gmx.de>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4DCAC8FC.5060505@tu-ilmenau.de>
+References: <4DCAB351.4010204@tu-ilmenau.de> <20110511162030.GA2638@elte.hu>
+	 <1305132185.2914.251.camel@laptop>  <4DCAC8FC.5060505@tu-ilmenau.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 21:49:53 +0200
+Message-ID: <1305143393.2914.255.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2011-05-11 at 19:35 +0200, Stephan Bärwolf wrote:
+> Thus the "err" of the old way can become very large (up to about  2^31 ).
+> And of course the new error increases with increasing weight, it is
+> still alway
+> smaller than the oldway err (because oldway inv converts to newway inv)...
 
-On Wed, May 11, 2011 at 07:00:58PM +0200, Oleg Nesterov wrote:
-> On 05/11, Oleg Nesterov wrote:
-> >
-> > You know, I'd wish I could find the serious bugs in this patch. The
-> > code becomes really hairy. -EAGAIN in do_wait() doesn't make it more
-> > simple ;)
-> 
-> Mwahaha! I seem to see the bug ;)
+Your table got white-space mungled, but I'll take your word for it. I'll
+give the patch a spin tomorrow (without the weight==0 bits), since by
+brain officially gave up for today ;-)
 
-:-)
-
-> When the caller is do_wait(), we can't assume we are the tracer when
-> we drop tasklist. Original tracer can detach, then another unrelated
-> process can attach again and provoke JOBCTL_TRAPPING. wait_event()
-> can hang forever.
-> 
-> Unfortunately, this is easy to fix :/
-
-Yeah, it's basically the same problem raised in other two patches.
-Making wait interruptible and clearing pending stop/traps on
-detach/kill/cont/whatever should do the trick.  I'll reply the
-previous message for the suggested change.
-
-Thanks.
-
--- 
-tejun
