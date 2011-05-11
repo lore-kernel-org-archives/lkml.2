@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab1EKDDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 23:03:55 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:47548 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab1EKDDx (ORCPT
+	id S1753993Ab1EKDE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 23:04:27 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:43804 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914Ab1EKDEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 23:03:53 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8; format=flowed
-X-AuditID: cbfee61a-b7c84ae000006ee6-c3-4dc9fc915714
-Date: Wed, 11 May 2011 12:03:43 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH] touchscreen: check kzalloc memory for data first
-In-reply-to: <BANLkTi=yWrPiz9Wp0H46at4NVfMSJ8n1uw@mail.gmail.com>
-To: Steven Liu <lingjiujianke@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        dmitry.torokhov@gmail.com, liuqi@thunderst.com
-Message-id: <4DC9FC8F.7020305@samsung.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13)
- Gecko/20101207 Thunderbird/3.1.7
-References: <BANLkTi=yWrPiz9Wp0H46at4NVfMSJ8n1uw@mail.gmail.com>
-X-OriginalArrivalTime: 11 May 2011 03:03:45.0754 (UTC)
- FILETIME=[0AC4CBA0:01CC0F88]
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 10 May 2011 23:04:25 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: Please include the namespace file-descriptors tree in linux-next
+References: <m1sjsmp44c.fsf@fess.ebiederm.org>
+	<20110511102736.7a9dc881.sfr@canb.auug.org.au>
+Date: Tue, 10 May 2011 20:04:17 -0700
+In-Reply-To: <20110511102736.7a9dc881.sfr@canb.auug.org.au> (Stephen
+	Rothwell's message of "Wed, 11 May 2011 10:27:36 +1000")
+Message-ID: <m1sjsmdjke.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/4LzgqUqhlsgCZDS8zsnel+2dZNE5yFqI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Steven.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-On 2011-05-11 오전 11:23, Steven Liu wrote:
-> Hi Joonyoung Shim ,
+> Hi Eric,
 >
->              Can this patch be fixed in?
+> On Tue, 10 May 2011 15:44:51 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
+>>
+>> These changes have just been through review and I expect
+>> to send Linus a pull request when the merge window opens.
+>> 
+>> This tree holds changes that significantly simply the userspace
+>> interface to working with namespaces.
+>> 
+>> I had to pull some of net-next and the parisc tress to be able to
+>> avoid conflicts with system call numbers.  Hopefully that is not
+>> a problem.
 >
->
-> if kzalloc memroy for data was faild, it will multi free data
-> memory space. so check the data memory first, is it kzalloc faild
-> for data, it should goto end and do nothing.
->
+> That should be fine as Dave's tree never rebases and the parisc tree
+> looks pretty stable.  Just keep an eye on those trees, just in case.
 
-Hmm, I don't think this patch needs. If you see the codes, there is no
-multi free data memory, just free data and input_dev. This both free
-are no problem because when the pointer is NULL, no operation is
-perfomed in the free function.
+Good point.  I have talked to James and Dave so they know I pulled their
+trees.  My lazy side says I expect you will get a merge conflict with my
+tree in linux-next if someone rebases.  But I will definitely keep my
+eyes out and at the very least double check that all is well before I
+send Linus a pull request.  
 
-Thanks.
+Eric
