@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab1EKWkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:40:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43701 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274Ab1EKWkL (ORCPT
+	id S932607Ab1EKWka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:40:30 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56957 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932587Ab1EKWkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:40:11 -0400
-Message-ID: <4DCB1044.6030505@landley.net>
-Date: Wed, 11 May 2011 17:40:04 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Wed, 11 May 2011 18:40:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XBwPYGBDEIcgjv4ZO8tBb5P7IiE64TIAmMfKb3Y+0hyXFcjnqsRzqOlkDy12jrYyRU
+         HPhqCNigzKH3pLUQJnUjAsByCRc7wo+taDtxGKB87/wWxDqUjT6puLeVOns2xSZW913T
+         /yJLCbFvOdwQMr5SlogjEZmTxtsSZativvg2c=
+Date: Wed, 11 May 2011 15:40:18 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: riyer@nvidia.com
+Cc: rydberg@euromail.se, amartin@nvidia.com, olof@lixom.net,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [v2] Input: tegra-kbc - modify keypress wakeup logic.
+Message-ID: <20110511224018.GE11178@core.coreip.homeip.net>
+References: <1304968957-10288-1-git-send-email-riyer@nvidia.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Don't understand comment in arch/x86/boot/compressed/misc.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304968957-10288-1-git-send-email-riyer@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It talks about when decompression in place is safe to do:
+On Mon, May 09, 2011 at 12:22:37PM -0700, riyer@nvidia.com wrote:
+> From: Rakesh Iyer <riyer@nvidia.com>
+> 
+> Modify wakeup logic so either all keypresses wake the system or none do.
+> 
 
- * Getting to provable safe in place decompression is hard.
- * Worst case behaviours need to be analyzed.
-...
- * The buffer for decompression in place is the length of the
- * uncompressed data, plus a small amount extra to keep the algorithm safe.
- * The compressed data is placed at the end of the buffer.  The output
- * pointer is placed at the start of the buffer and the input pointer
- * is placed where the compressed data starts.  Problems will occur
- * when the output pointer overruns the input pointer.
- *
- * The output pointer can only overrun the input pointer if the input
- * pointer is moving faster than the output pointer.  A condition only
- * triggered by data whose compressed form is larger than the uncompressed
- * form.
+Applied, thanks Rakesh.
 
-You have an output pointer at a lower address catching up to an input
-pointer at a higher address.  If the input pointer is moving FASTER
-than the output pointer, wouldn't the gap between them grow rather
-than shrink?
-
-The concern seems to be about COMPRESSING in place, rather than
-decompressing...?
-
-Rob
+-- 
+Dmitry
