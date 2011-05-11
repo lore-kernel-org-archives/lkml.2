@@ -1,88 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab1ELCBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 22:01:21 -0400
-Received: from nm16-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.19]:41722
-	"HELO nm16-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755023Ab1ELCBU (ORCPT
+	id S1755814Ab1EKPuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:50:51 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48342 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755769Ab1EKPut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 22:01:20 -0400
-X-Greylist: delayed 25696 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 22:01:20 EDT
-X-Yahoo-Newman-Id: 30012.51373.bm@omp1019.access.mail.mud.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 7uqcBF4VM1ky5YPXKHDWdB.JM3inJtL6Wu9XLtPx07.xdue
- Uj2DEXipBkjyp84dz7PJs5dPOcicUzKu8SD_yGmvCNHmbll0RBvkhFgJcEa8
- YFn72pO.kIwg4Qmp1k_tQuyjeJD0OWm5nN640fmi4Ps5w3Dnzsgko5YC0c.1
- hdwvf6fELkqfXJt.5FrPgZ88BoTgRIXoTVjox_FwLT2SBqrPYRwS.g5GeXIw
- _NY2gwdsBnsR2veNr5iFNfnVIdKbFPKkx5qNLPPnX.dmtohokbyQrK90gE9G
- FWSW1PV1UkSj1gUDCDWjWrQ8yeceZQuG55n3H9O0osYoRLPGJI5DdRC7gtuM
- 33pb1rsqauhy7ihcJbMFdPXcqAqS06DEaxpPDvQkRPguTykM-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Kiran Patil <kiran.patil@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 4/4] target: Fix task->task_execute_queue=1 clear bug + LUN_RESET OOPs
-Date: Tue, 10 May 2011 21:35:35 -0700
-Message-Id: <1305088535-27486-5-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1305088535-27486-1-git-send-email-nab@linux-iscsi.org>
-References: <1305088535-27486-1-git-send-email-nab@linux-iscsi.org>
+	Wed, 11 May 2011 11:50:49 -0400
+Date: Wed, 11 May 2011 10:14:49 +0530
+From: Prem Karat <prem.karat@linux.vnet.ibm.com>
+To: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V9fs-developer] [PATCH] fs/9p: Fix invalid mount options/args
+Message-ID: <20110511044449.GA3353@d6fc318.ibm.com>
+References: <20110506125417.GD6759@d6fc318.ibm.com>
+ <4DC6D816.9060507@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DC6D816.9060507@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Hi JV,
 
-This patch fixes a bug where task->task_execute_queue=1 was not being
-cleared once se_task had been removed from se_device->execute_task_list,
-resulting in an OOPs in core_tmr_lun_reset() for the task->task_active=0
-case where transport_remove_task_from_execute_queue() was incorrectly
-being called.
+Apologies for the delay in response & Thanks for reviewing it. 
 
-This patch fixes two cases in transport_get_task_from_execute_queue()
-and transport_remove_task_from_execute_queue() to properly clear
-task->task_execute_queue=0 once list_del(&task->t_execute_list) has
-been called.
+On 05/08/11 10:51am, Venkateswararao Jujjuri wrote:
+> On 05/06/2011 05:54 AM, Prem Karat wrote:
+> >fs/9p: Fix invalid mount options/args
+> >
+> >Without this fix, if any invalid mount options/args are passed while mouting the 9p fs,
+> >no error (-EINVAL) is returned and default arg value is assigned.
+> >
+> >This fix returns -EINVAL when an invalid arguement is found while parsing mount options.
+> Prem, Thanks for the patch.
+> Quick question..any reason why you have a new function for cache,
+> and in-line here?
+No specific reason. Just wanted the code to be in consistent with net/9p/client.c (get_protocol_version()).
+> 
+> Thanks,
+> JV 
+> >Signed-off-by: Prem Karat<prem.karat@linux.vnet.ibm.com>
+> >---
+> >  fs/9p/v9fs.c |   43 ++++++++++++++++++++++++++++++++++---------
+> >  1 files changed, 34 insertions(+), 9 deletions(-)
+> >
+> >diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
+> >index c82b017..033c23e 100644
+> >--- a/fs/9p/v9fs.c
+> >+++ b/fs/9p/v9fs.c
+> >@@ -78,6 +78,25 @@ static const match_table_t tokens = {
+> >  	{Opt_err, NULL}
+> >  };
+> >
+> >+/* Interpret mount options for cache mode */
+> >+static int get_cache_mode(char *s)
+> >+{
+> >+	int version = -EINVAL;
+> >+
+> >+	if (!strcmp(s, "loose")) {
+> >+		version = CACHE_LOOSE;
+> >+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: loose\n");
+> >+	} else if (!strcmp(s, "fscache")) {
+> >+		version = CACHE_FSCACHE;
+> >+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: fscache\n");
+> >+	} else if (!strcmp(s, "none")) {
+> >+		version = CACHE_NONE;
+> >+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: none\n");
+> >+	} else
+> >+		printk(KERN_INFO "9p: Unknown Cache mode %s.\n", s);
+> >+	return version;
+> >+}
+> >+
+> >  /**
+> >   * v9fs_parse_options - parse mount options into session structure
+> >   * @v9ses: existing v9fs session information
+> >@@ -97,7 +116,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+> >  	/* setup defaults */
+> >  	v9ses->afid = ~0;
+> >  	v9ses->debug = 0;
+> >-	v9ses->cache = 0;
+> >+	v9ses->cache = CACHE_NONE;
+> >  #ifdef CONFIG_9P_FSCACHE
+> >  	v9ses->cachetag = NULL;
+> >  #endif
+> >@@ -171,13 +190,13 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+> >  				  "problem allocating copy of cache arg\n");
+> >  				goto free_and_return;
+> >  			}
+> >+			ret = get_cache_mode(s);
+> >+			if (ret == -EINVAL) {
+> >+				kfree(s);
+> >+				goto free_and_return;
+> >+			}
+> >
+> >-			if (strcmp(s, "loose") == 0)
+> >-				v9ses->cache = CACHE_LOOSE;
+> >-			else if (strcmp(s, "fscache") == 0)
+> >-				v9ses->cache = CACHE_FSCACHE;
+> >-			else
+> >-				v9ses->cache = CACHE_NONE;
+> >+			v9ses->cache = ret;
+> >  			kfree(s);
+> >  			break;
+> >
+> >@@ -200,9 +219,15 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+> >  			} else {
+> >  				v9ses->flags |= V9FS_ACCESS_SINGLE;
+> >  				v9ses->uid = simple_strtoul(s,&e, 10);
+> >-				if (*e != '\0')
+> >-					v9ses->uid = ~0;
+> >+				if (*e != '\0') {
+> >+					ret = -EINVAL;
+> >+					printk(KERN_INFO "9p: Unknown access "
+> >+							"argument %s.\n", s);
+> >+					kfree(s);
+> >+					goto free_and_return;
+> 
+> 
+> >+				}
+> >  			}
+> >+
+> >  			kfree(s);
+> >  			break;
+> >
+> 
 
-It also adds an explict check in transport_remove_task_from_execute_queue()
-to dump_stack + return if called with task->task_execute_queue=0.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_transport.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 3eeb3e2..beaf8fa 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1194,6 +1194,7 @@ transport_get_task_from_execute_queue(struct se_device *dev)
- 		break;
- 
- 	list_del(&task->t_execute_list);
-+	atomic_set(&task->task_execute_queue, 0);
- 	atomic_dec(&dev->execute_tasks);
- 
- 	return task;
-@@ -1209,8 +1210,14 @@ void transport_remove_task_from_execute_queue(
- {
- 	unsigned long flags;
- 
-+	if (atomic_read(&task->task_execute_queue) == 0) {
-+		dump_stack();
-+		return;
-+	}
-+
- 	spin_lock_irqsave(&dev->execute_task_lock, flags);
- 	list_del(&task->t_execute_list);
-+	atomic_set(&task->task_execute_queue, 0);
- 	atomic_dec(&dev->execute_tasks);
- 	spin_unlock_irqrestore(&dev->execute_task_lock, flags);
- }
 -- 
-1.7.5.1
-
+Cheers,
+Prem
+Linux Technology Center,
+IBM Systems & Technology Labs
+DID: 41776362
