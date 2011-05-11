@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1EKPov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:44:51 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57856 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754695Ab1EKPos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:44:48 -0400
-Date: Wed, 11 May 2011 15:49:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: Re: [PATCH 2/2] perf: Carve out callchain functionality
-Message-ID: <20110511134916.GC25827@aftab>
-References: <1305119816-26280-1-git-send-email-bp@amd64.org>
- <1305119816-26280-3-git-send-email-bp@amd64.org>
- <20110511133009.GA1846@nowhere>
+	id S932477Ab1EKQTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:19:15 -0400
+Received: from kroah.org ([198.145.64.141]:35357 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757483Ab1EKQTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:19:02 -0400
+Date: Wed, 11 May 2011 06:51:14 -0700
+From: Greg KH <greg@kroah.com>
+To: Jason Stubbs <jasonbstubbs@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] platform: fix samsung brightness min/max calculations
+Message-ID: <20110511135114.GD12717@kroah.com>
+References: <201104201358.50443.jasonbstubbs@gmail.com>
+ <201104281855.50572.jasonbstubbs@gmail.com>
+ <20110510223908.GA16989@kroah.com>
+ <201105111447.49816.jasonbstubbs@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110511133009.GA1846@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201105111447.49816.jasonbstubbs@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 09:30:12AM -0400, Frederic Weisbecker wrote:
-> > +extern int get_recursion_context(int *recursion);
-> > +extern inline void put_recursion_context(int *recursion, int rctx);
-> > +extern void put_callchain_buffers(void);
-> > +extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
-> > +extern int get_callchain_buffers(void);
+On Wed, May 11, 2011 at 02:47:49PM +1000, Jason Stubbs wrote:
+> On Wed, 11 May 2011 08:39:08 Greg KH wrote:
+> > On Thu, Apr 28, 2011 at 06:55:50PM +1000, Jason Stubbs wrote:
+> > > Not sure of the "bump" process, so I'll just go over each part of the
+> > > patch.
+> > > 
+> > > Note that all the changes only affect the sabi_config where
+> > > min_brightness is 1 so you might not see in difference on your hardware.
+> > 
+> > This isn't needed anymore due to your other patch superseeding it,
+> > right?
 > 
-> I think it would be better to have these in a private kernel/events/events.h
-> 
-> Other than that, looks good, thanks.
+> Actually, this one is irrelevant to the nc210/nc110 support as that laptop 
+> uses the "SwSmi@" sabi. It was just something I noticed while learning the 
+> code. The miscalculations will only affect any laptops that use the "SECLINUX" 
+> sabi but I tested it by setting min_brightness to 2 for my laptop.
 
-Yeah, I suggested a new header originally too but Ingo wanted to keep
-perf_event.h as is, for now.
+That's wierd, as that is the type of laptop I have here and it seems to
+work just fine for me as-is.
 
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> The patch doesn't apply cleanly on top of the nc210/nc110 patch though as they 
+> both modify set_brightness(). It might apply with a higher fuzz factor as the 
+> changes don't actually clash. Should I redo the patch?
 
-Thanks.
+Please do.
 
--- 
-Regards/Gruss,
-Boris.
+thanks,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+greg k-h
