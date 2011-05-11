@@ -1,396 +1,1155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab1EKQYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:24:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55003 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab1EKQY1 (ORCPT
+	id S1755549Ab1EKPtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:49:51 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51711 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab1EKPts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:24:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=JAJwxQLs+2e94v6SpKENNJyLl1BlPRWuboXkADdExZZjBiC4rNKAkl5+SgXyfgt1ho
-         5EKidFdvJ0N6iK/AHUk5MurFBh+4AK+HUoaQGz4RYzi4xHR0Z0HxuHZHfDAJXmR3WSxe
-         053NIfghNoZ/ei1/B6XQ2heyxFVHUBa0BPAnY=
+	Wed, 11 May 2011 11:49:48 -0400
+Date: Wed, 11 May 2011 14:11:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] perf: Carve out cgroup-related code
+Message-ID: <20110511121135.GA25865@aftab>
 MIME-Version: 1.0
-Date: Wed, 11 May 2011 14:10:56 +0200
-Message-ID: <BANLkTikhoX4hESUzCYjjh6V7_YkwLX7sVQ@mail.gmail.com>
-Subject: mvsas issues - 2.6.38 - local I/O seems fine, NFS makes it have
- serious issues
-From: Pasti Klarino <pklarino@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Hi guys,
 
-for a while I've been following the issues with the mvsas controllers,
-especially in combination with SATA drives. Since version 2.6.36 I
-thought it was quite stable, the local processes at least didn't throw
-off the 8 disk raid-6 array we have and I didn't really see any errors
-at all.
+here's a first prototype carving out cgroup perf code. It builds fine
+with both CONFIG_CGROUP_PERF enabled and disabled. Please take a look
+while I do the same with the callchain stuff and let me know whether I
+should do something differently.
 
-Even on the 2.6.38 we run now (ubuntu 11.04 64 bit server) it was
-stable. Emphasis on the was... all was fine until I started exporting
-the volume through samba and above all, nfs. There's some vmdk's on
-the volume now, which get put there by a backup application over
-samba. This works reasonably (could go faster... :)), but then vmware
-esx will attach to it over NFS and that's when the real misery starts.
-It's completely unusable over NFS, errors aren't more than a couple of
-minutes apart when ESX generates traffic and due to bus resets etc.
-this means there is hardly any data coming from it whatsoever.
+Thanks.
+---
 
-The errors we see are below. This box doesn't really run production
-yet (well not with the disks on the marvell controller anyways), but
-it will have to in a couple of weeks. In the mean time however I can
-test/gather whatever anyone might need.
+Move cgroup perf support into a different compilation module -
+kernel/events/cgroup.c - thus slimming perf_event.c some more.
 
-Kind regards,
+While at it,
 
-================ mdadm details on /dev/md4 ========================
+* push some oneliners into perf_event.h now that they're used in
+multiple .c files.
 
-Other RAID sets not posted as they're attached to local SATA
-controllers. The data they house must be stable so we moved them off
-the marvell(ous misery) controller
+* drop is_cgroup_event() check for perf_cgroup_defer_enabled() at its
+callsite in __perf_event_enable since the latter does the check anyway.
 
-root@datavault:/var/log# mdadm --detail /dev/md4
-/dev/md4:
-        Version : 0.90
-  Creation Time : Wed Dec  1 13:43:11 2010
-     Raid Level : raid6
-     Array Size : 11721086976 (11178.10 GiB 12002.39 GB)
-  Used Dev Size : 1953514496 (1863.02 GiB 2000.40 GB)
-   Raid Devices : 8
-  Total Devices : 8
-Preferred Minor : 4
-    Persistence : Superblock is persistent
+No functional change.
 
-    Update Time : Wed May 11 11:22:25 2011
-          State : active
- Active Devices : 8
-Working Devices : 8
- Failed Devices : 0
-  Spare Devices : 0
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ include/linux/perf_event.h |  138 ++++++++++++-
+ kernel/events/Makefile     |    1 +
+ kernel/events/cgroup.c     |  324 +++++++++++++++++++++++++++++
+ kernel/events/core.c       |  496 +-------------------------------------------
+ 4 files changed, 473 insertions(+), 486 deletions(-)
+ create mode 100644 kernel/events/cgroup.c
 
-         Layout : left-symmetric
-     Chunk Size : 64K
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3412684..ef65f34 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -954,8 +954,15 @@ struct perf_output_handle {
+ 	int				sample;
+ };
+ 
++enum event_type_t {
++	EVENT_FLEXIBLE = 0x1,
++	EVENT_PINNED = 0x2,
++	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
++};
++
+ #ifdef CONFIG_PERF_EVENTS
+ 
++extern struct list_head pmus;
+ extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
+ extern void perf_pmu_unregister(struct pmu *pmu);
+ 
+@@ -1153,6 +1160,47 @@ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
+ extern void perf_event_task_tick(void);
++
++static inline struct perf_cpu_context *
++__get_cpu_context(struct perf_event_context *ctx)
++{
++	return this_cpu_ptr(ctx->pmu->pmu_cpu_context);
++}
++
++static inline u64 perf_clock(void)
++{
++	return local_clock();
++}
++
++extern void ctx_sched_out(struct perf_event_context *ctx,
++			  struct perf_cpu_context *cpuctx,
++			  enum event_type_t event_type);
++/*
++ * Called with IRQs disabled
++ */
++static inline void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
++				     enum event_type_t event_type)
++{
++	ctx_sched_out(&cpuctx->ctx, cpuctx, event_type);
++}
++
++extern void ctx_sched_in(struct perf_event_context *ctx,
++			 struct perf_cpu_context *cpuctx,
++			 enum event_type_t event_type,
++			 struct task_struct *task);
++
++static inline void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
++				    enum event_type_t event_type,
++				    struct task_struct *task)
++{
++	struct perf_event_context *ctx = &cpuctx->ctx;
++
++	ctx_sched_in(ctx, cpuctx, event_type, task);
++}
++
++extern int
++task_function_call(struct task_struct *p, int (*func) (void *info), void *info);
++extern u64 perf_event_time(struct perf_event *event);
+ #else
+ static inline void
+ perf_event_task_sched_in(struct task_struct *task)			{ }
+@@ -1187,7 +1235,95 @@ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
+ static inline void perf_event_enable(struct perf_event *event)		{ }
+ static inline void perf_event_disable(struct perf_event *event)		{ }
+ static inline void perf_event_task_tick(void)				{ }
+-#endif
++static inline void ctx_sched_out(struct perf_event_context *ctx,
++				 struct perf_cpu_context *cpuctx,
++				 enum event_type_t event_type)		{ }
++
++static void ctx_sched_in(struct perf_event_context *ctx,
++			 struct perf_cpu_context *cpuctx,
++			 enum event_type_t event_type,
++			 struct task_struct *task)			{ }
++static inline int
++task_function_call(struct task_struct *p,
++		   int (*func) (void *info), void *info)		{ return -EINVAL; }
++static inline u64 perf_event_time(struct perf_event *event)		{ return 0; }
++#endif /* CONFIG_PERF_EVENTS */
++
++#ifdef CONFIG_CGROUP_PERF
++extern struct perf_cgroup *
++perf_cgroup_from_task(struct task_struct *task);
++extern bool perf_cgroup_match(struct perf_event *event);
++extern int
++perf_cgroup_connect(pid_t pid, struct perf_event *event,
++		    struct perf_event_attr *attr,
++		    struct perf_event *group_leader);
++extern void perf_detach_cgroup(struct perf_event *event);
++
++static inline int is_cgroup_event(struct perf_event *event)
++{
++	return event->cgrp != NULL;
++}
++
++extern u64 perf_cgroup_event_time(struct perf_event *event);
++extern void update_cgrp_time_from_event(struct perf_event *event);
++extern void
++update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx);
++extern void
++perf_cgroup_set_timestamp(struct task_struct *task,
++			  struct perf_event_context *ctx);
++
++extern void perf_cgroup_sched_out(struct task_struct *task);
++extern void perf_cgroup_sched_in(struct task_struct *task);
++
++static inline void
++perf_cgroup_set_shadow_time(struct perf_event *event, u64 now)
++{
++	struct perf_cgroup_info *t;
++	t = per_cpu_ptr(event->cgrp->info, event->cpu);
++	event->shadow_ctx_time = now - t->timestamp;
++}
++
++static inline void
++perf_cgroup_defer_enabled(struct perf_event *event)
++{
++	/*
++	 * when the current task's perf cgroup does not match
++	 * the event's, we need to remember to call the
++	 * perf_mark_enable() function the first time a task with
++	 * a matching perf cgroup is scheduled in.
++	 */
++	if (is_cgroup_event(event) && !perf_cgroup_match(event))
++		event->cgrp_defer_enabled = 1;
++}
++extern inline void
++perf_cgroup_mark_enabled(struct perf_event *event,
++			 struct perf_event_context *ctx);
++#else
++static inline struct perf_cgroup *
++perf_cgroup_from_task(struct task_struct *task)				{ return NULL; }
++static inline bool perf_cgroup_match(struct perf_event *event)		{ return true; }
++static inline int
++perf_cgroup_connect(pid_t pid, struct perf_event *event,
++		    struct perf_event_attr *attr,
++		    struct perf_event *group_leader)			{ return -EINVAL; }
++static inline void perf_detach_cgroup(struct perf_event *event)		{ }
++static inline int is_cgroup_event(struct perf_event *event)		{ return 0; }
++static inline u64 perf_cgroup_event_time(struct perf_event *event)	{ return 0; }
++static inline void update_cgrp_time_from_event(struct perf_event *e)	{ }
++static inline void
++update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)		{ }
++static inline void
++perf_cgroup_set_timestamp(struct task_struct *task,
++			  struct perf_event_context *ctx)		{ }
++static inline void perf_cgroup_sched_out(struct task_struct *task)	{ }
++static inline void perf_cgroup_sched_in(struct task_struct *task)	{ }
++static inline void
++perf_cgroup_set_shadow_time(struct perf_event *event, u64 now)		{ }
++static inline void perf_cgroup_defer_enabled(struct perf_event *event)	{ }
++static inline void
++perf_cgroup_mark_enabled(struct perf_event *event,
++			 struct perf_event_context *ctx)		{ }
++#endif /* CONFIG_CGROUP_PERF */
+ 
+ #define perf_output_put(handle, x) perf_output_copy((handle), &(x), sizeof(x))
+ 
+diff --git a/kernel/events/Makefile b/kernel/events/Makefile
+index 1ce23d3..21b7da7 100644
+--- a/kernel/events/Makefile
++++ b/kernel/events/Makefile
+@@ -4,3 +4,4 @@ endif
+ 
+ obj-y := core.o
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
++obj-$(CONFIG_CGROUP_PERF)	 += cgroup.o
+diff --git a/kernel/events/cgroup.c b/kernel/events/cgroup.c
+new file mode 100644
+index 0000000..5516928
+--- /dev/null
++++ b/kernel/events/cgroup.c
+@@ -0,0 +1,324 @@
++#include <linux/file.h>
++#include <linux/slab.h>
++#include <linux/perf_event.h>
++
++/*
++ * Must ensure cgroup is pinned (css_get) before calling
++ * this function. In other words, we cannot call this function
++ * if there is no cgroup event for the current CPU context.
++ */
++inline struct perf_cgroup *perf_cgroup_from_task(struct task_struct *task)
++{
++	return container_of(task_subsys_state(task, perf_subsys_id),
++			    struct perf_cgroup, css);
++}
++
++inline bool perf_cgroup_match(struct perf_event *event)
++{
++	struct perf_event_context *ctx = event->ctx;
++	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
++
++	return !event->cgrp || event->cgrp == cpuctx->cgrp;
++}
++
++static inline void perf_get_cgroup(struct perf_event *event)
++{
++	css_get(&event->cgrp->css);
++}
++
++inline int perf_cgroup_connect(int fd, struct perf_event *event,
++			       struct perf_event_attr *attr,
++			       struct perf_event *group_leader)
++{
++	struct perf_cgroup *cgrp;
++	struct cgroup_subsys_state *css;
++	struct file *file;
++	int ret = 0, fput_needed;
++
++	file = fget_light(fd, &fput_needed);
++	if (!file)
++		return -EBADF;
++
++	css = cgroup_css_from_dir(file, perf_subsys_id);
++	if (IS_ERR(css)) {
++		ret = PTR_ERR(css);
++		goto out;
++	}
++
++	cgrp = container_of(css, struct perf_cgroup, css);
++	event->cgrp = cgrp;
++
++	/* must be done before we fput() the file */
++	perf_get_cgroup(event);
++
++	/*
++	 * all events in a group must monitor
++	 * the same cgroup because a task belongs
++	 * to only one perf cgroup at a time
++	 */
++	if (group_leader && group_leader->cgrp != cgrp) {
++		perf_detach_cgroup(event);
++		ret = -EINVAL;
++	}
++out:
++	fput_light(file, fput_needed);
++	return ret;
++}
++
++static inline void perf_put_cgroup(struct perf_event *event)
++{
++	css_put(&event->cgrp->css);
++}
++
++inline void perf_detach_cgroup(struct perf_event *event)
++{
++	perf_put_cgroup(event);
++	event->cgrp = NULL;
++}
++
++inline u64 perf_cgroup_event_time(struct perf_event *event)
++{
++	struct perf_cgroup_info *t;
++
++	t = per_cpu_ptr(event->cgrp->info, event->cpu);
++	return t->time;
++}
++
++inline void
++perf_cgroup_mark_enabled(struct perf_event *event,
++			 struct perf_event_context *ctx)
++{
++	struct perf_event *sub;
++	u64 tstamp = perf_event_time(event);
++
++	if (!event->cgrp_defer_enabled)
++		return;
++
++	event->cgrp_defer_enabled = 0;
++
++	event->tstamp_enabled = tstamp - event->total_time_enabled;
++	list_for_each_entry(sub, &event->sibling_list, group_entry) {
++		if (sub->state >= PERF_EVENT_STATE_INACTIVE) {
++			sub->tstamp_enabled = tstamp - sub->total_time_enabled;
++			sub->cgrp_defer_enabled = 0;
++		}
++	}
++}
++
++static inline void __update_cgrp_time(struct perf_cgroup *cgrp)
++{
++	struct perf_cgroup_info *info;
++	u64 now;
++
++	now = perf_clock();
++
++	info = this_cpu_ptr(cgrp->info);
++
++	info->time += now - info->timestamp;
++	info->timestamp = now;
++}
++
++inline void update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)
++{
++	struct perf_cgroup *cgrp_out = cpuctx->cgrp;
++	if (cgrp_out)
++		__update_cgrp_time(cgrp_out);
++}
++
++inline void update_cgrp_time_from_event(struct perf_event *event)
++{
++	struct perf_cgroup *cgrp;
++
++	/*
++	 * ensure we access cgroup data only when needed and
++	 * when we know the cgroup is pinned (css_get)
++	 */
++	if (!is_cgroup_event(event))
++		return;
++
++	cgrp = perf_cgroup_from_task(current);
++	/*
++	 * Do not update time when cgroup is not active
++	 */
++	if (cgrp == event->cgrp)
++		__update_cgrp_time(event->cgrp);
++}
++
++inline void perf_cgroup_set_timestamp(struct task_struct *task,
++				      struct perf_event_context *ctx)
++{
++	struct perf_cgroup *cgrp;
++	struct perf_cgroup_info *info;
++
++	/*
++	 * ctx->lock held by caller
++	 * ensure we do not access cgroup data
++	 * unless we have the cgroup pinned (css_get)
++	 */
++	if (!task || !ctx->nr_cgroups)
++		return;
++
++	cgrp = perf_cgroup_from_task(task);
++	info = this_cpu_ptr(cgrp->info);
++	info->timestamp = ctx->timestamp;
++}
++
++#define PERF_CGROUP_SWOUT	0x1 /* cgroup switch out every event */
++#define PERF_CGROUP_SWIN	0x2 /* cgroup switch in events based on task */
++
++/*
++ * reschedule events based on the cgroup constraint of task.
++ *
++ * mode SWOUT : schedule out everything
++ * mode SWIN : schedule in based on cgroup for next
++ */
++void perf_cgroup_switch(struct task_struct *task, int mode)
++{
++	struct perf_cpu_context *cpuctx;
++	struct pmu *pmu;
++	unsigned long flags;
++
++	/*
++	 * disable interrupts to avoid geting nr_cgroup
++	 * changes via __perf_event_disable(). Also
++	 * avoids preemption.
++	 */
++	local_irq_save(flags);
++
++	/*
++	 * we reschedule only in the presence of cgroup
++	 * constrained events.
++	 */
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++
++		perf_pmu_disable(cpuctx->ctx.pmu);
++
++		/*
++		 * perf_cgroup_events says at least one
++		 * context on this CPU has cgroup events.
++		 *
++		 * ctx->nr_cgroups reports the number of cgroup
++		 * events for a context.
++		 */
++		if (cpuctx->ctx.nr_cgroups > 0) {
++
++			if (mode & PERF_CGROUP_SWOUT) {
++				cpu_ctx_sched_out(cpuctx, EVENT_ALL);
++				/*
++				 * must not be done before ctxswout due
++				 * to event_filter_match() in event_sched_out()
++				 */
++				cpuctx->cgrp = NULL;
++			}
++
++			if (mode & PERF_CGROUP_SWIN) {
++				WARN_ON_ONCE(cpuctx->cgrp);
++				/* set cgrp before ctxsw in to
++				 * allow event_filter_match() to not
++				 * have to pass task around
++				 */
++				cpuctx->cgrp = perf_cgroup_from_task(task);
++				cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
++			}
++		}
++
++		perf_pmu_enable(cpuctx->ctx.pmu);
++	}
++
++	rcu_read_unlock();
++
++	local_irq_restore(flags);
++}
++
++inline void perf_cgroup_sched_out(struct task_struct *task)
++{
++	perf_cgroup_switch(task, PERF_CGROUP_SWOUT);
++}
++
++inline void perf_cgroup_sched_in(struct task_struct *task)
++{
++	perf_cgroup_switch(task, PERF_CGROUP_SWIN);
++}
++
++static int __perf_cgroup_move(void *info)
++{
++	struct task_struct *task = info;
++	perf_cgroup_switch(task, PERF_CGROUP_SWOUT | PERF_CGROUP_SWIN);
++	return 0;
++}
++
++static void perf_cgroup_move(struct task_struct *task)
++{
++	task_function_call(task, __perf_cgroup_move, task);
++}
++
++static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++		struct cgroup *old_cgrp, struct task_struct *task,
++		bool threadgroup)
++{
++	perf_cgroup_move(task);
++	if (threadgroup) {
++		struct task_struct *c;
++		rcu_read_lock();
++		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
++			perf_cgroup_move(c);
++		}
++		rcu_read_unlock();
++	}
++}
++
++static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
++		struct cgroup *old_cgrp, struct task_struct *task)
++{
++	/*
++	 * cgroup_exit() is called in the copy_process() failure path.
++	 * Ignore this case since the task hasn't ran yet, this avoids
++	 * trying to poke a half freed task state from generic code.
++	 */
++	if (!(task->flags & PF_EXITING))
++		return;
++
++	perf_cgroup_move(task);
++}
++
++static struct cgroup_subsys_state *perf_cgroup_create(struct cgroup_subsys *ss,
++						      struct cgroup *cont)
++{
++	struct perf_cgroup *jc;
++
++	jc = kzalloc(sizeof(*jc), GFP_KERNEL);
++	if (!jc)
++		return ERR_PTR(-ENOMEM);
++
++	jc->info = alloc_percpu(struct perf_cgroup_info);
++	if (!jc->info) {
++		kfree(jc);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	return &jc->css;
++}
++
++static void perf_cgroup_destroy(struct cgroup_subsys *ss,
++				struct cgroup *cont)
++{
++	struct perf_cgroup *jc;
++	jc = container_of(cgroup_subsys_state(cont, perf_subsys_id),
++			  struct perf_cgroup, css);
++	free_percpu(jc->info);
++	kfree(jc);
++}
++
++struct cgroup_subsys perf_subsys = {
++	.name		= "perf_event",
++	.subsys_id	= perf_subsys_id,
++	.create		= perf_cgroup_create,
++	.destroy	= perf_cgroup_destroy,
++	.exit		= perf_cgroup_exit,
++	.attach		= perf_cgroup_attach,
++};
++
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 0fc34a3..b65905f 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -72,7 +72,7 @@ static void remote_function(void *data)
+  *	    -ESRCH  - when the process isn't running
+  *	    -EAGAIN - when the process moved away
+  */
+-static int
++int
+ task_function_call(struct task_struct *p, int (*func) (void *info), void *info)
+ {
+ 	struct remote_function_call data = {
+@@ -115,12 +115,6 @@ static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
+ 		       PERF_FLAG_FD_OUTPUT  |\
+ 		       PERF_FLAG_PID_CGROUP)
+ 
+-enum event_type_t {
+-	EVENT_FLEXIBLE = 0x1,
+-	EVENT_PINNED = 0x2,
+-	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
+-};
+-
+ /*
+  * perf_sched_events : >0 events exist
+  * perf_cgroup_events: >0 per-cpu cgroup events exist on this cpu
+@@ -132,7 +126,7 @@ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+ static atomic_t nr_task_events __read_mostly;
+ 
+-static LIST_HEAD(pmus);
++LIST_HEAD(pmus);
+ static DEFINE_MUTEX(pmus_lock);
+ static struct srcu_struct pmus_srcu;
+ 
+@@ -172,15 +166,7 @@ int perf_proc_update_handler(struct ctl_table *table, int write,
+ 
+ static atomic64_t perf_event_id;
+ 
+-static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
+-			      enum event_type_t event_type);
+-
+-static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
+-			     enum event_type_t event_type,
+-			     struct task_struct *task);
+-
+ static void update_context_time(struct perf_event_context *ctx);
+-static u64 perf_event_time(struct perf_event *event);
+ 
+ void __weak perf_event_print_debug(void)	{ }
+ 
+@@ -189,366 +175,6 @@ extern __weak const char *perf_pmu_name(void)
+ 	return "pmu";
+ }
+ 
+-static inline u64 perf_clock(void)
+-{
+-	return local_clock();
+-}
+-
+-static inline struct perf_cpu_context *
+-__get_cpu_context(struct perf_event_context *ctx)
+-{
+-	return this_cpu_ptr(ctx->pmu->pmu_cpu_context);
+-}
+-
+-#ifdef CONFIG_CGROUP_PERF
+-
+-/*
+- * Must ensure cgroup is pinned (css_get) before calling
+- * this function. In other words, we cannot call this function
+- * if there is no cgroup event for the current CPU context.
+- */
+-static inline struct perf_cgroup *
+-perf_cgroup_from_task(struct task_struct *task)
+-{
+-	return container_of(task_subsys_state(task, perf_subsys_id),
+-			struct perf_cgroup, css);
+-}
+-
+-static inline bool
+-perf_cgroup_match(struct perf_event *event)
+-{
+-	struct perf_event_context *ctx = event->ctx;
+-	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+-
+-	return !event->cgrp || event->cgrp == cpuctx->cgrp;
+-}
+-
+-static inline void perf_get_cgroup(struct perf_event *event)
+-{
+-	css_get(&event->cgrp->css);
+-}
+-
+-static inline void perf_put_cgroup(struct perf_event *event)
+-{
+-	css_put(&event->cgrp->css);
+-}
+-
+-static inline void perf_detach_cgroup(struct perf_event *event)
+-{
+-	perf_put_cgroup(event);
+-	event->cgrp = NULL;
+-}
+-
+-static inline int is_cgroup_event(struct perf_event *event)
+-{
+-	return event->cgrp != NULL;
+-}
+-
+-static inline u64 perf_cgroup_event_time(struct perf_event *event)
+-{
+-	struct perf_cgroup_info *t;
+-
+-	t = per_cpu_ptr(event->cgrp->info, event->cpu);
+-	return t->time;
+-}
+-
+-static inline void __update_cgrp_time(struct perf_cgroup *cgrp)
+-{
+-	struct perf_cgroup_info *info;
+-	u64 now;
+-
+-	now = perf_clock();
+-
+-	info = this_cpu_ptr(cgrp->info);
+-
+-	info->time += now - info->timestamp;
+-	info->timestamp = now;
+-}
+-
+-static inline void update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)
+-{
+-	struct perf_cgroup *cgrp_out = cpuctx->cgrp;
+-	if (cgrp_out)
+-		__update_cgrp_time(cgrp_out);
+-}
+-
+-static inline void update_cgrp_time_from_event(struct perf_event *event)
+-{
+-	struct perf_cgroup *cgrp;
+-
+-	/*
+-	 * ensure we access cgroup data only when needed and
+-	 * when we know the cgroup is pinned (css_get)
+-	 */
+-	if (!is_cgroup_event(event))
+-		return;
+-
+-	cgrp = perf_cgroup_from_task(current);
+-	/*
+-	 * Do not update time when cgroup is not active
+-	 */
+-	if (cgrp == event->cgrp)
+-		__update_cgrp_time(event->cgrp);
+-}
+-
+-static inline void
+-perf_cgroup_set_timestamp(struct task_struct *task,
+-			  struct perf_event_context *ctx)
+-{
+-	struct perf_cgroup *cgrp;
+-	struct perf_cgroup_info *info;
+-
+-	/*
+-	 * ctx->lock held by caller
+-	 * ensure we do not access cgroup data
+-	 * unless we have the cgroup pinned (css_get)
+-	 */
+-	if (!task || !ctx->nr_cgroups)
+-		return;
+-
+-	cgrp = perf_cgroup_from_task(task);
+-	info = this_cpu_ptr(cgrp->info);
+-	info->timestamp = ctx->timestamp;
+-}
+-
+-#define PERF_CGROUP_SWOUT	0x1 /* cgroup switch out every event */
+-#define PERF_CGROUP_SWIN	0x2 /* cgroup switch in events based on task */
+-
+-/*
+- * reschedule events based on the cgroup constraint of task.
+- *
+- * mode SWOUT : schedule out everything
+- * mode SWIN : schedule in based on cgroup for next
+- */
+-void perf_cgroup_switch(struct task_struct *task, int mode)
+-{
+-	struct perf_cpu_context *cpuctx;
+-	struct pmu *pmu;
+-	unsigned long flags;
+-
+-	/*
+-	 * disable interrupts to avoid geting nr_cgroup
+-	 * changes via __perf_event_disable(). Also
+-	 * avoids preemption.
+-	 */
+-	local_irq_save(flags);
+-
+-	/*
+-	 * we reschedule only in the presence of cgroup
+-	 * constrained events.
+-	 */
+-	rcu_read_lock();
+-
+-	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-
+-		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+-
+-		perf_pmu_disable(cpuctx->ctx.pmu);
+-
+-		/*
+-		 * perf_cgroup_events says at least one
+-		 * context on this CPU has cgroup events.
+-		 *
+-		 * ctx->nr_cgroups reports the number of cgroup
+-		 * events for a context.
+-		 */
+-		if (cpuctx->ctx.nr_cgroups > 0) {
+-
+-			if (mode & PERF_CGROUP_SWOUT) {
+-				cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+-				/*
+-				 * must not be done before ctxswout due
+-				 * to event_filter_match() in event_sched_out()
+-				 */
+-				cpuctx->cgrp = NULL;
+-			}
+-
+-			if (mode & PERF_CGROUP_SWIN) {
+-				WARN_ON_ONCE(cpuctx->cgrp);
+-				/* set cgrp before ctxsw in to
+-				 * allow event_filter_match() to not
+-				 * have to pass task around
+-				 */
+-				cpuctx->cgrp = perf_cgroup_from_task(task);
+-				cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
+-			}
+-		}
+-
+-		perf_pmu_enable(cpuctx->ctx.pmu);
+-	}
+-
+-	rcu_read_unlock();
+-
+-	local_irq_restore(flags);
+-}
+-
+-static inline void perf_cgroup_sched_out(struct task_struct *task)
+-{
+-	perf_cgroup_switch(task, PERF_CGROUP_SWOUT);
+-}
+-
+-static inline void perf_cgroup_sched_in(struct task_struct *task)
+-{
+-	perf_cgroup_switch(task, PERF_CGROUP_SWIN);
+-}
+-
+-static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+-				      struct perf_event_attr *attr,
+-				      struct perf_event *group_leader)
+-{
+-	struct perf_cgroup *cgrp;
+-	struct cgroup_subsys_state *css;
+-	struct file *file;
+-	int ret = 0, fput_needed;
+-
+-	file = fget_light(fd, &fput_needed);
+-	if (!file)
+-		return -EBADF;
+-
+-	css = cgroup_css_from_dir(file, perf_subsys_id);
+-	if (IS_ERR(css)) {
+-		ret = PTR_ERR(css);
+-		goto out;
+-	}
+-
+-	cgrp = container_of(css, struct perf_cgroup, css);
+-	event->cgrp = cgrp;
+-
+-	/* must be done before we fput() the file */
+-	perf_get_cgroup(event);
+-
+-	/*
+-	 * all events in a group must monitor
+-	 * the same cgroup because a task belongs
+-	 * to only one perf cgroup at a time
+-	 */
+-	if (group_leader && group_leader->cgrp != cgrp) {
+-		perf_detach_cgroup(event);
+-		ret = -EINVAL;
+-	}
+-out:
+-	fput_light(file, fput_needed);
+-	return ret;
+-}
+-
+-static inline void
+-perf_cgroup_set_shadow_time(struct perf_event *event, u64 now)
+-{
+-	struct perf_cgroup_info *t;
+-	t = per_cpu_ptr(event->cgrp->info, event->cpu);
+-	event->shadow_ctx_time = now - t->timestamp;
+-}
+-
+-static inline void
+-perf_cgroup_defer_enabled(struct perf_event *event)
+-{
+-	/*
+-	 * when the current task's perf cgroup does not match
+-	 * the event's, we need to remember to call the
+-	 * perf_mark_enable() function the first time a task with
+-	 * a matching perf cgroup is scheduled in.
+-	 */
+-	if (is_cgroup_event(event) && !perf_cgroup_match(event))
+-		event->cgrp_defer_enabled = 1;
+-}
+-
+-static inline void
+-perf_cgroup_mark_enabled(struct perf_event *event,
+-			 struct perf_event_context *ctx)
+-{
+-	struct perf_event *sub;
+-	u64 tstamp = perf_event_time(event);
+-
+-	if (!event->cgrp_defer_enabled)
+-		return;
+-
+-	event->cgrp_defer_enabled = 0;
+-
+-	event->tstamp_enabled = tstamp - event->total_time_enabled;
+-	list_for_each_entry(sub, &event->sibling_list, group_entry) {
+-		if (sub->state >= PERF_EVENT_STATE_INACTIVE) {
+-			sub->tstamp_enabled = tstamp - sub->total_time_enabled;
+-			sub->cgrp_defer_enabled = 0;
+-		}
+-	}
+-}
+-#else /* !CONFIG_CGROUP_PERF */
+-
+-static inline bool
+-perf_cgroup_match(struct perf_event *event)
+-{
+-	return true;
+-}
+-
+-static inline void perf_detach_cgroup(struct perf_event *event)
+-{}
+-
+-static inline int is_cgroup_event(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+-static inline u64 perf_cgroup_event_cgrp_time(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+-static inline void update_cgrp_time_from_event(struct perf_event *event)
+-{
+-}
+-
+-static inline void update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)
+-{
+-}
+-
+-static inline void perf_cgroup_sched_out(struct task_struct *task)
+-{
+-}
+-
+-static inline void perf_cgroup_sched_in(struct task_struct *task)
+-{
+-}
+-
+-static inline int perf_cgroup_connect(pid_t pid, struct perf_event *event,
+-				      struct perf_event_attr *attr,
+-				      struct perf_event *group_leader)
+-{
+-	return -EINVAL;
+-}
+-
+-static inline void
+-perf_cgroup_set_timestamp(struct task_struct *task,
+-			  struct perf_event_context *ctx)
+-{
+-}
+-
+-void
+-perf_cgroup_switch(struct task_struct *task, struct task_struct *next)
+-{
+-}
+-
+-static inline void
+-perf_cgroup_set_shadow_time(struct perf_event *event, u64 now)
+-{
+-}
+-
+-static inline u64 perf_cgroup_event_time(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+-static inline void
+-perf_cgroup_defer_enabled(struct perf_event *event)
+-{
+-}
+-
+-static inline void
+-perf_cgroup_mark_enabled(struct perf_event *event,
+-			 struct perf_event_context *ctx)
+-{
+-}
+-#endif
+-
+ void perf_pmu_disable(struct pmu *pmu)
+ {
+ 	int *count = this_cpu_ptr(pmu->pmu_disable_count);
+@@ -727,7 +353,7 @@ static void update_context_time(struct perf_event_context *ctx)
+ 	ctx->timestamp = now;
+ }
+ 
+-static u64 perf_event_time(struct perf_event *event)
++u64 perf_event_time(struct perf_event *event)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+ 
+@@ -1641,8 +1267,7 @@ static int __perf_event_enable(void *info)
+ 	__perf_event_mark_enabled(event, ctx);
+ 
+ 	if (!event_filter_match(event)) {
+-		if (is_cgroup_event(event))
+-			perf_cgroup_defer_enabled(event);
++		perf_cgroup_defer_enabled(event);
+ 		goto unlock;
+ 	}
+ 
+@@ -1761,9 +1386,9 @@ static int perf_event_refresh(struct perf_event *event, int refresh)
+ 	return 0;
+ }
+ 
+-static void ctx_sched_out(struct perf_event_context *ctx,
+-			  struct perf_cpu_context *cpuctx,
+-			  enum event_type_t event_type)
++void ctx_sched_out(struct perf_event_context *ctx,
++		   struct perf_cpu_context *cpuctx,
++		   enum event_type_t event_type)
+ {
+ 	struct perf_event *event;
+ 
+@@ -1988,15 +1613,6 @@ static void task_ctx_sched_out(struct perf_event_context *ctx,
+ 	cpuctx->task_ctx = NULL;
+ }
+ 
+-/*
+- * Called with IRQs disabled
+- */
+-static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
+-			      enum event_type_t event_type)
+-{
+-	ctx_sched_out(&cpuctx->ctx, cpuctx, event_type);
+-}
+-
+ static void
+ ctx_pinned_sched_in(struct perf_event_context *ctx,
+ 		    struct perf_cpu_context *cpuctx)
+@@ -2056,11 +1672,10 @@ ctx_flexible_sched_in(struct perf_event_context *ctx,
+ 	}
+ }
+ 
+-static void
+-ctx_sched_in(struct perf_event_context *ctx,
+-	     struct perf_cpu_context *cpuctx,
+-	     enum event_type_t event_type,
+-	     struct task_struct *task)
++void ctx_sched_in(struct perf_event_context *ctx,
++		  struct perf_cpu_context *cpuctx,
++		  enum event_type_t event_type,
++		  struct task_struct *task)
+ {
+ 	u64 now;
+ 
+@@ -2087,15 +1702,6 @@ out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+ 
+-static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
+-			     enum event_type_t event_type,
+-			     struct task_struct *task)
+-{
+-	struct perf_event_context *ctx = &cpuctx->ctx;
+-
+-	ctx_sched_in(ctx, cpuctx, event_type, task);
+-}
+-
+ static void task_ctx_sched_in(struct perf_event_context *ctx,
+ 			      enum event_type_t event_type)
+ {
+@@ -7373,83 +6979,3 @@ unlock:
+ 	return ret;
+ }
+ device_initcall(perf_event_sysfs_init);
+-
+-#ifdef CONFIG_CGROUP_PERF
+-static struct cgroup_subsys_state *perf_cgroup_create(
+-	struct cgroup_subsys *ss, struct cgroup *cont)
+-{
+-	struct perf_cgroup *jc;
+-
+-	jc = kzalloc(sizeof(*jc), GFP_KERNEL);
+-	if (!jc)
+-		return ERR_PTR(-ENOMEM);
+-
+-	jc->info = alloc_percpu(struct perf_cgroup_info);
+-	if (!jc->info) {
+-		kfree(jc);
+-		return ERR_PTR(-ENOMEM);
+-	}
+-
+-	return &jc->css;
+-}
+-
+-static void perf_cgroup_destroy(struct cgroup_subsys *ss,
+-				struct cgroup *cont)
+-{
+-	struct perf_cgroup *jc;
+-	jc = container_of(cgroup_subsys_state(cont, perf_subsys_id),
+-			  struct perf_cgroup, css);
+-	free_percpu(jc->info);
+-	kfree(jc);
+-}
+-
+-static int __perf_cgroup_move(void *info)
+-{
+-	struct task_struct *task = info;
+-	perf_cgroup_switch(task, PERF_CGROUP_SWOUT | PERF_CGROUP_SWIN);
+-	return 0;
+-}
+-
+-static void perf_cgroup_move(struct task_struct *task)
+-{
+-	task_function_call(task, __perf_cgroup_move, task);
+-}
+-
+-static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+-		struct cgroup *old_cgrp, struct task_struct *task,
+-		bool threadgroup)
+-{
+-	perf_cgroup_move(task);
+-	if (threadgroup) {
+-		struct task_struct *c;
+-		rcu_read_lock();
+-		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
+-			perf_cgroup_move(c);
+-		}
+-		rcu_read_unlock();
+-	}
+-}
+-
+-static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
+-		struct cgroup *old_cgrp, struct task_struct *task)
+-{
+-	/*
+-	 * cgroup_exit() is called in the copy_process() failure path.
+-	 * Ignore this case since the task hasn't ran yet, this avoids
+-	 * trying to poke a half freed task state from generic code.
+-	 */
+-	if (!(task->flags & PF_EXITING))
+-		return;
+-
+-	perf_cgroup_move(task);
+-}
+-
+-struct cgroup_subsys perf_subsys = {
+-	.name		= "perf_event",
+-	.subsys_id	= perf_subsys_id,
+-	.create		= perf_cgroup_create,
+-	.destroy	= perf_cgroup_destroy,
+-	.exit		= perf_cgroup_exit,
+-	.attach		= perf_cgroup_attach,
+-};
+-#endif /* CONFIG_CGROUP_PERF */
+-- 
+1.7.4.rc2
 
-           UUID : 2cdc8fe9:e24fb941:c4e8ec2d:2a80eff0 (local to host datavault)
-         Events : 0.45
 
-    Number   Major   Minor   RaidDevice State
-       0       8       96        0      active sync   /dev/sdg
-       1       8      160        1      active sync   /dev/sdk
-       2       8      128        2      active sync   /dev/sdi
-       3       8      176        3      active sync   /dev/sdl
-       4       8      112        4      active sync   /dev/sdh
-       5       8      144        5      active sync   /dev/sdj
-       6       8       80        6      active sync   /dev/sdf
-       7       8       64        7      active sync   /dev/sde
+-- 
+Regards/Gruss,
+Boris.
 
-
-================= lspci =================
-root@datavault:/var/log# lspci
-00:00.0 Host bridge: Intel Corporation Core Processor DRAM Controller (rev 12)
-00:01.0 PCI bridge: Intel Corporation Core Processor PCI Express x16
-Root Port (rev 12)
-00:06.0 PCI bridge: Intel Corporation Core Processor Secondary PCI
-Express Root Port (rev 12)
-00:1a.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
-USB2 Enhanced Host Controller (rev 05)
-00:1c.0 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-Express Root Port 1 (rev 05)
-00:1c.4 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-Express Root Port 5 (rev 05)
-00:1c.5 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-Express Root Port 6 (rev 05)
-00:1d.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
-USB2 Enhanced Host Controller (rev 05)
-00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev a5)
-00:1f.0 ISA bridge: Intel Corporation 3400 Series Chipset LPC
-Interface Controller (rev 05)
-00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series
-Chipset 6 port SATA AHCI Controller (rev 05)
-00:1f.3 SMBus: Intel Corporation 5 Series/3400 Series Chipset SMBus
-Controller (rev 05)
-01:00.0 SCSI storage controller: Marvell Technology Group Ltd.
-MV64460/64461/64462 System Controller, Revision B (rev 01)
-02:00.0 SCSI storage controller: Marvell Technology Group Ltd.
-MV64460/64461/64462 System Controller, Revision B (rev 01)
-04:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-06:03.0 VGA compatible controller: Matrox Graphics, Inc. MGA G200eW
-WPCM450 (rev 0a)
-
-
-================ uname -a ===================
-root@datavault:/var/log# uname -a
-Linux datavault 2.6.38-8-server #42-Ubuntu SMP Mon Apr 11 03:49:04 UTC
-2011 x86_64 x86_64 x86_64 GNU/Linux
-
-
-================ piece of log from /var/log/syslog ==========================
-
-May 11 10:57:19 datavault kernel: [1107478.903123]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1703:<7>mv_abort_task() mvi=ffff880132dc0000 task=ffff88008af32d80
-slot=ffff880132de4538 slot_idx=x1
-May 11 10:57:19 datavault kernel: [1107478.903136]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1632:mvs_query_task:rc= 5
-May 11 10:57:19 datavault kernel: [1107478.903207]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 7
-ctrl sts=0x89800.
-May 11 10:57:19 datavault kernel: [1107478.903212]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq
-sts = 0x1001
-May 11 10:57:19 datavault kernel: [1107478.903220]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2111:phy7
-Unplug Notice
-May 11 10:57:19 datavault kernel: [1107478.913277]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 7
-ctrl sts=0x199800.
-May 11 10:57:19 datavault kernel: [1107478.913279]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq
-sts = 0x1081
-May 11 10:57:19 datavault kernel: [1107478.917506]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 7
-ctrl sts=0x199800.
-May 11 10:57:19 datavault kernel: [1107478.917511]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq
-sts = 0x10000
-May 11 10:57:19 datavault kernel: [1107478.917516]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2138:notify
-plug in on phy[7]
-May 11 10:57:19 datavault kernel: [1107479.027492]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1224:port 7
-attach dev info is 1
-May 11 10:57:19 datavault kernel: [1107479.027495]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1226:port 7
-attach sas addr is 7
-May 11 10:57:19 datavault kernel: [1107479.027500]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte
-dmaded.
-May 11 10:57:21 datavault kernel: [1107481.122546]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1586:mvs_I_T_nexus_reset for device[3]:rc= 0
-May 11 10:57:21 datavault kernel: [1107481.122564] ata14: translated
-ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-May 11 10:57:21 datavault kernel: [1107481.207659] ata14: status=0x01 { Error }
-May 11 10:57:21 datavault kernel: [1107481.207664] ata14: error=0x04 {
-DriveStatusError }
-May 11 10:59:47 datavault kernel: [1107626.944438]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1703:<7>mv_abort_task() mvi=ffff88012f100000 task=ffff880097f95c00
-slot=ffff88012f124590 slot_idx=x2
-May 11 10:59:47 datavault kernel: [1107626.944450]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1632:mvs_query_task:rc= 5
-May 11 10:59:47 datavault kernel: [1107626.944483]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 0
-ctrl sts=0x89800.
-May 11 10:59:47 datavault kernel: [1107626.944486]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq
-sts = 0x1001
-May 11 10:59:47 datavault kernel: [1107626.944494]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2111:phy0
-Unplug Notice
-May 11 10:59:47 datavault kernel: [1107626.954513]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 0
-ctrl sts=0x199800.
-May 11 10:59:47 datavault kernel: [1107626.954516]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq
-sts = 0x1081
-May 11 10:59:47 datavault kernel: [1107626.958066]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 0
-ctrl sts=0x199800.
-May 11 10:59:47 datavault kernel: [1107626.958070]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq
-sts = 0x10000
-May 11 10:59:47 datavault kernel: [1107626.958074]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2138:notify
-plug in on phy[0]
-May 11 10:59:47 datavault kernel: [1107627.068075]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1224:port 0
-attach dev info is 0
-May 11 10:59:47 datavault kernel: [1107627.068080]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1226:port 0
-attach sas addr is 0
-May 11 10:59:47 datavault kernel: [1107627.068093]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte
-dmaded.
-May 11 10:59:49 datavault kernel: [1107629.163848]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1586:mvs_I_T_nexus_reset for device[0]:rc= 0
-May 11 10:59:49 datavault kernel: [1107629.163858] ata7: translated
-ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-May 11 10:59:49 datavault kernel: [1107629.163860] ata7.00: device
-reported invalid CHS sector 0
-May 11 10:59:49 datavault kernel: [1107629.163861] ata7: status=0x01 { Error }
-May 11 10:59:49 datavault kernel: [1107629.163863] ata7: error=0x04 {
-DriveStatusError }
-May 11 11:02:39 datavault kernel: [1107798.819642]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1703:<7>mv_abort_task() mvi=ffff880132dc0000 task=ffff88000c2c8540
-slot=ffff880132de4590 slot_idx=x2
-May 11 11:02:39 datavault kernel: [1107798.819652]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1632:mvs_query_task:rc= 5
-May 11 11:02:39 datavault kernel: [1107798.819674]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 7
-ctrl sts=0x89800.
-May 11 11:02:39 datavault kernel: [1107798.819678]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq
-sts = 0x1001
-May 11 11:02:39 datavault kernel: [1107798.819684]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2111:phy7
-Unplug Notice
-May 11 11:02:39 datavault kernel: [1107798.829759]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 7
-ctrl sts=0x199800.
-May 11 11:02:39 datavault kernel: [1107798.829765]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq
-sts = 0x1081
-May 11 11:02:39 datavault kernel: [1107798.834168]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 7
-ctrl sts=0x199800.
-May 11 11:02:39 datavault kernel: [1107798.834172]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq
-sts = 0x10000
-May 11 11:02:39 datavault kernel: [1107798.834177]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2138:notify
-plug in on phy[7]
-May 11 11:02:39 datavault kernel: [1107798.944173]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1224:port 7
-attach dev info is 1
-May 11 11:02:39 datavault kernel: [1107798.944176]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1226:port 7
-attach sas addr is 7
-May 11 11:02:39 datavault kernel: [1107798.944181]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte
-dmaded.
-May 11 11:02:41 datavault kernel: [1107801.039070]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1586:mvs_I_T_nexus_reset for device[3]:rc= 0
-May 11 11:02:41 datavault kernel: [1107801.039083] ata14: translated
-ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-May 11 11:02:41 datavault kernel: [1107801.123629] ata14.00: device
-reported invalid CHS sector 0
-May 11 11:02:41 datavault kernel: [1107801.123632] ata14: status=0x01 { Error }
-May 11 11:02:41 datavault kernel: [1107801.123636] ata14: error=0x04 {
-DriveStatusError }
-May 11 11:05:07 datavault kernel: [1107946.780999]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1703:<7>mv_abort_task() mvi=ffff88012f100000 task=ffff88012299a4c0
-slot=ffff88012f124538 slot_idx=x1
-May 11 11:05:07 datavault kernel: [1107946.781014]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1632:mvs_query_task:rc= 5
-May 11 11:05:07 datavault kernel: [1107946.781067]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 3
-ctrl sts=0x89800.
-May 11 11:05:07 datavault kernel: [1107946.781073]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq
-sts = 0x1001
-May 11 11:05:07 datavault kernel: [1107946.781082]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2111:phy3
-Unplug Notice
-May 11 11:05:07 datavault kernel: [1107946.791102]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 3
-ctrl sts=0x199800.
-May 11 11:05:07 datavault kernel: [1107946.791108]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq
-sts = 0x1081
-May 11 11:05:07 datavault kernel: [1107946.794890]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2083:port 3
-ctrl sts=0x199800.
-May 11 11:05:07 datavault kernel: [1107946.794895]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq
-sts = 0x10000
-May 11 11:05:07 datavault kernel: [1107946.794899]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 2138:notify
-plug in on phy[3]
-May 11 11:05:07 datavault kernel: [1107946.904897]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1224:port 3
-attach dev info is 8000000
-May 11 11:05:07 datavault kernel: [1107946.904902]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 1226:port 3
-attach sas addr is 3
-May 11 11:05:07 datavault kernel: [1107946.904911]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte
-dmaded.
-May 11 11:05:09 datavault kernel: [1107949.000397]
-/build/buildd/linux-2.6.38/drivers/scsi/mvsas/mv_sas.c
-1586:mvs_I_T_nexus_reset for device[3]:rc= 0
-May 11 11:05:09 datavault kernel: [1107949.000410] ata10: translated
-ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
-May 11 11:05:09 datavault kernel: [1107949.081915] ata10.00: device
-reported invalid CHS sector 0
-May 11 11:05:09 datavault kernel: [1107949.081919] ata10: status=0x01 { Error }
-May 11 11:05:09 datavault kernel: [1107949.081922] ata10: error=0x04 {
-DriveStatusError }
-
-
-============= misc of possible interest ==========
-
-root@datavault:/var/log# cat /etc/exports
-# /etc/exports: the access control list for filesystems which may be exported
-#		to NFS clients.  See exports(5).
-#
-# Example for NFSv2 and NFSv3:
-# /srv/homes       hostname1(rw,sync,no_subtree_check)
-hostname2(ro,sync,no_subtree_check)
-#
-# Example for NFSv4:
-# /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
-# /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
-#
-/mnt/export		*(anonuid=65534,anongid=65534,sync,no_root_squash,rw)
-
-
-
-root@datavault:/var/log# mount
-/dev/md1 on / type ext4 (rw,errors=remount-ro)
-proc on /proc type proc (rw,noexec,nosuid,nodev)
-none on /sys type sysfs (rw,noexec,nosuid,nodev)
-fusectl on /sys/fs/fuse/connections type fusectl (rw)
-none on /sys/kernel/debug type debugfs (rw)
-none on /sys/kernel/security type securityfs (rw)
-none on /dev type devtmpfs (rw,mode=0755)
-none on /dev/pts type devpts (rw,noexec,nosuid,gid=5,mode=0620)
-none on /dev/shm type tmpfs (rw,nosuid,nodev)
-none on /var/run type tmpfs (rw,nosuid,mode=0755)
-none on /var/lock type tmpfs (rw,noexec,nosuid,nodev)
-/dev/md0 on /boot type ext2 (rw)
-/dev/md3 on /mnt/bhome2 type ext4 (rw)
-/dev/md2 on /mnt/bhome1 type ext4 (rw)
-/dev/md4 on /mnt/export type ext4 (rw)
-nfsd on /proc/fs/nfsd type nfsd (rw)
-
-
-
-root@datavault:/var/log# nfsstat
-Server rpc stats:
-calls      badcalls   badauth    badclnt    xdrcall
-8845295    0          0          0          0
-
-Server nfs v2:
-null         getattr      setattr      root         lookup       readlink
-14      100% 0         0% 0         0% 0         0% 0         0% 0         0%
-read         wrcache      write        create       remove       rename
-0         0% 0         0% 0         0% 0         0% 0         0% 0         0%
-link         symlink      mkdir        rmdir        readdir      fsstat
-0         0% 0         0% 0         0% 0         0% 0         0% 0         0%
-
-Server nfs v3:
-null         getattr      setattr      lookup       access       readlink
-4         0% 11650     0% 536       0% 472178    5% 37691     0% 0         0%
-read         write        create       mkdir        symlink      mknod
-2603621  29% 5713221  64% 147       0% 1         0% 0         0% 0         0%
-remove       rmdir        rename       link         readdir      readdirplus
-123       0% 2         0% 32        0% 0         0% 13        0% 2346      0%
-fsstat       fsinfo       pathconf     commit
-2718      0% 2         0% 1         0% 1028      0%
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
