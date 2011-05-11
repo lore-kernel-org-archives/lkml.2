@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1EKPpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:45:52 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:48438 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab1EKPpu (ORCPT
+	id S932378Ab1EKQQC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:16:02 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58110 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab1EKQP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:45:50 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-To: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Message-Id: <37c48c3ec27da0d3378e652278a4700808ce913d.1305092637.git.miltonm@bga.com>
-In-Reply-To: <cover.1305092637.git.miltonm@bga.com>
-References: <cover.1305092637.git.miltonm@bga.com>
-From: Milton Miller <miltonm@bga.com>
-Date: Wed, 11 May 2011 00:29:13 -0500
-Subject: [PATCH 12/37] linux/smp.h: remove unused MSG_ flags
-X-Originating-IP: 71.22.127.106
+	Wed, 11 May 2011 12:15:56 -0400
+Date: Wed, 11 May 2011 01:55:09 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110511055509.GA4886@infradead.org>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <87tyd31fkc.fsf@devron.myhome.or.jp>
+ <20110510133603.GA5823@infradead.org>
+ <874o524q9h.fsf@devron.myhome.or.jp>
+ <20110510144939.GI4402@quack.suse.cz>
+ <87aaeur31x.fsf@devron.myhome.or.jp>
+ <20110510170339.GA27538@infradead.org>
+ <87liyep9fk.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87liyep9fk.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that powerpc has removed its use of MSG_ALL_BUT_SELF and MSG_ALL
-all these MSG_ flags are unused.
+On Wed, May 11, 2011 at 05:50:07AM +0900, OGAWA Hirofumi wrote:
+> Sounds good. So... Are you suggesting this series should use better
+> approach than just blocking?
 
-Signed-off-by: Milton Miller <miltonm@bga.com>
----
-To be merged by powerpc with the series posted to linuxppc-dev
-
-After the previous 2 patches, grep shows the following false hits (from
-partial symbol matches):
-
-find . -name .git -prune -o -name .pc -prune -o -name patches -prune -o -type f|
- xargs grep -E 'MSG_(ALL|RESCHEDULE|CALL_FUNCTION|INVALIDATE_TLB|STOP_CPU)'
-
-	XFRM_MSG_ALLOCSPI (include/linux/xfrm.h, net/xfrm/xfrm_user.c)
-	CHANNELMSG_ALLOFFERS_DELIVERED (drivers/staging/hv/)
-	PPC_MSG_CALL_FUNCTION, PPC_MSG_RESCHEDULE (arch/powerpc/)
-	SMP_MSG_RESCHEDULE (arch/sh/)
----
- include/linux/smp.h |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 74243c8..7ad824d 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -98,16 +98,6 @@ void ipi_call_unlock_irq(void);
-  */
- int on_each_cpu(smp_call_func_t func, void *info, int wait);
- 
--#define MSG_ALL_BUT_SELF	0x8000	/* Assume <32768 CPU's */
--#define MSG_ALL			0x8001
--
--#define MSG_INVALIDATE_TLB	0x0001	/* Remote processor TLB invalidate */
--#define MSG_STOP_CPU		0x0002	/* Sent to shut down slave CPU's
--					 * when rebooting
--					 */
--#define MSG_RESCHEDULE		0x0003	/* Reschedule request from master CPU*/
--#define MSG_CALL_FUNCTION       0x0004  /* Call function on all other CPUs */
--
- /*
-  * Mark the boot cpu "online" so that it can call console drivers in
-  * printk() and can access its per-cpu storage.
--- 
-1.7.0.4
+No, block reuse is a problem independent of stable pages.
 
