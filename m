@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab1EKRsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:48:43 -0400
-Received: from lo.gmane.org ([80.91.229.12]:39631 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab1EKRsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:48:42 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Ulrich Keller <uhkeller@googlemail.com>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
-Date: Wed, 11 May 2011 10:53:18 +0000 (UTC)
-Message-ID: <loom.20110511T124036-180@post.gmane.org>
-References: <4DAF6C0B.3070009@gmx.de>
-Mime-Version: 1.0
+	id S1754378Ab1EKPkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:40:14 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58788 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab1EKPkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:40:12 -0400
+Date: Wed, 11 May 2011 11:54:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 20/19] ARM: LPAE: Invalidate the TLB before freeing the
+	PMD
+Message-ID: <20110511105419.GD5315@n2100.arm.linux.org.uk>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com> <1305109399-13156-1-git-send-email-catalin.marinas@arm.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 88.68.212.204 (Mozilla/5.0 (X11; Linux i686; rv:2.0.1) Gecko/20110429 Firefox/4.0.1)
+Content-Disposition: inline
+In-Reply-To: <1305109399-13156-1-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am seeing exactly the same symptoms on my Lenovo T60 Core2 duo, 3GB RAM,
-running Arch Linux i686 with Kernel 2.6.38.6. When I've heavily used Firefox for
-a while, or used R with high memory usage (>1 GB), individual applications
-become unresponsive, new processes fail to start and after a while the whole
-system freezes. When it happens, iotop shows khugepaged and sometimes firefox at
-99.99%.
+On Wed, May 11, 2011 at 11:23:19AM +0100, Catalin Marinas wrote:
+> +static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
+> +				  unsigned long addr)
+> +{
+> +#ifdef CONFIG_ARM_LPAE
+> +	tlb_add_flush(tlb, addr);
+> +	tlb_flush(tlb);
+> +	pmd_free((tlb)->mm, pmdp);
+> +#endif
+> +}
 
-I'd be happy to post information here when the problem occurs again. Anything
-other than "cat /proc/zoneinfo"?
+You're:
 
+1. tlb_add_flush() - Adding the address which covers the PMD to the range
+   of virtual addresses which need flushing - ok.
+2. tlb_flush() - You're then forcing a flush.
+3. pmd_free() - You're now freeing the page.
 
+One of the points about the shootdown interface is that it batches things
+up.  So what's wrong with:
 
+static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
+	unsigned long addr)
+{
+#ifdef CONFIG_ARM_LPAE
+	tlb_add_flush(tlb, addr);
+	tlb_remove_page(tlb, virt_to_page(pmdp));
+#endif
+}
 
+and leave the tlb invalidate and actual page freeing to the batching code
+to deal with?
