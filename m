@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab1EKQsh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:48:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:56374 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab1EKQsf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:48:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=nrvrRXhexHKPj0MocKfXHmrXTemrTagdHgUFLRRygkt99T2eAXmqgClwKpyN3PEfLF
-         VKaZHS0RoIva5FWvo3MQ==
+	id S1755445Ab1EKPtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:49:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60650 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755423Ab1EKPs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:48:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,351,1301900400"; 
+   d="scan'208";a="190151"
+Date: Wed, 11 May 2011 10:23:29 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 16/19] mfd: Use mfd cell platform_data for tps6105x
+ cells platform bits
+Message-ID: <20110511082328.GA2637@sortiz-mobl>
+References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
+ <1304901131-7104-17-git-send-email-sameo@linux.intel.com>
+ <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4DCA40E8.3090805@jp.fujitsu.com>
-References: <20110503092846.022272244@google.com> <20110503092904.541414484@google.com>
- <4DC8E5C2.9090701@jp.fujitsu.com> <1305016326.14565.2.camel@marge.simson.net> <4DCA40E8.3090805@jp.fujitsu.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 11 May 2011 01:13:18 -0700
-Message-ID: <BANLkTimr31i9hA375__Kw+i0GBFq5fPfvw@mail.gmail.com>
-Subject: Re: [patch 01/15] sched: (fixlet) dont update shares twice on on_rq parent
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 12:55 AM, Hidetoshi Seto
-<seto.hidetoshi@jp.fujitsu.com> wrote:
-> (2011/05/10 17:32), Mike Galbraith wrote:
->> On Tue, 2011-05-10 at 16:14 +0900, Hidetoshi Seto wrote:
->>> This small fixlet can stand alone.
->>> Peter, how about getting this into git tree first?
->>
->> tip 2f36825b176f67e5c5228aa33d828bc39718811f contains the below.
->>
->>                 /* Don't dequeue parent if it has other entities besides us */
->> -               if (cfs_rq->load.weight)
->> +               if (cfs_rq->load.weight) {
->> +                       /*
->> +                        * Bias pick_next to pick a task from this cfs_rq, as
->> +                        * p is sleeping when it is within its sched_slice.
->> +                        */
->> +                       if (task_sleep && parent_entity(se))
->> +                               set_next_buddy(parent_entity(se));
->>                         break;
->> +               }
->>                 flags |= DEQUEUE_SLEEP;
->>         }
->
-> Oh, thanks Mike!
-> It seems that this change in tip is better one.
->
-> Paul, don't you mind rebasing your patches onto tip/sched/core next time?
-> (...or is there better branch for rebase?)
->
+Hi Linus,
 
-I thought I had but apparently I missed this.
+On Mon, May 09, 2011 at 09:05:19AM +0200, Linus Walleij wrote:
+> 2011/5/9 Samuel Ortiz <sameo@linux.intel.com>:
+> 
+> > With the addition of a platform device mfd_cell pointer, MFD drivers
+> > can go back to passing platform data back to their sub drivers.
+> > This allows for an mfd_cell->mfd_data removal and thus keep the
+> > sub drivers MFD agnostic. This is mostly needed for non MFD aware
+> > sub drivers.
+> >
+> > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+> 
+> I have some question marks on this one...
+> 
+> > --- a/drivers/mfd/tps6105x.c
+> > +++ b/drivers/mfd/tps6105x.c
+> > @@ -183,7 +183,8 @@ static int __devinit tps6105x_probe(struct i2c_client *client,
+> >        /* Set up and register the platform devices. */
+> >        for (i = 0; i < ARRAY_SIZE(tps6105x_cells); i++) {
+> >                /* One state holder for all drivers, this is simple */
+> > -               tps6105x_cells[i].mfd_data = tps6105x;
+> > +               tps6105x_cells[i].platform_data = tps6105x;
+> > +               tps6105x_cells[i].pdata_size = sizeof(*tps6105x);
+> 
+> ACK
+> 
+> > --- a/drivers/regulator/tps6105x-regulator.c
+> > +++ b/drivers/regulator/tps6105x-regulator.c
+> > @@ -137,7 +137,7 @@ static struct regulator_desc tps6105x_regulator_desc = {
+> >  */
+> >  static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
+> >  {
+> > -       struct tps6105x *tps6105x = mfd_get_data(pdev);
+> > +       struct tps6105x *tps6105x = pdev->dev.platform_data;
+> 
+> Can you use platform_get_drvdata(pdev); instead?
+I suppose you mean dev_get_platdata() ?
 
-We still need to set se = parent_entity(se) to avoid the pointless
-double update below.
 
-Will definitely rebase.
+> >        struct tps6105x_platform_data *pdata = tps6105x->pdata;
+> >        int ret;
+> >
+> > @@ -164,7 +164,7 @@ static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
+> >
+> >  static int __devexit tps6105x_regulator_remove(struct platform_device *pdev)
+> >  {
+> > -       struct tps6105x *tps6105x = platform_get_drvdata(pdev);
+> > +       struct tps6105x *tps6105x = pdev->dev.platform_data;
+> 
+> And this is a NO-OP, actually a bug in the present code, just leave it
+> as it is and the other changes removing the mfd->mfd_data fixes the bug...
+I agree it's a bug in the current code. But I need to fetch the platform_data
+pointer, so here again I would have to call dev_get_platdata().
 
-Thanks!
+Cheers,
+Samuel.
 
->
-> Thanks,
-> H.Seto
->
->
+
+> Yours,
+> Linus Walleij
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
