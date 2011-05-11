@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab1EKPiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:38:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab1EKPiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:38:14 -0400
-Date: Wed, 11 May 2011 09:07:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-throttle: fix a typo in blk_throtl_init()
-Message-ID: <20110511130732.GB31633@redhat.com>
-References: <1305118862-4861-1-git-send-email-namhyung@gmail.com>
+	id S1756281Ab1EKP5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:57:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36367 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab1EKP5d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:57:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jm2q65llkPH9W3XLpqbH8wzQ54tJYvVkQwBM/vETucZ4rV8B4JjXhyEiLgiYmAISV+
+         3yZdDtYwCB0nvzjG4JCmVgZ3/J+kfs7aJbncFPtHS6AgaSZY0Ih6orpaus2KQbzvznHJ
+         RTBdKEj7rdF1/eGJnTqVl7prdYY+LtNMPxR1I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305118862-4861-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110510161137.GA14522@kroah.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
+	<20110510161137.GA14522@kroah.com>
+Date: Wed, 11 May 2011 21:09:26 +0800
+Message-ID: <BANLkTimV8=o1zOeVJs9EA64kc+1=RZCJeA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] pstore: EFI Support
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mikew@google.com" <mikew@google.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 10:01:02PM +0900, Namhyung Kim wrote:
-> s/td/tg/
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/blk-throttle.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 0475a22a420d..e7986b8a0085 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -1072,7 +1072,7 @@ int blk_throtl_init(struct request_queue *q)
->  	/* Practically unlimited BW */
->  	tg->bps[0] = tg->bps[1] = -1;
->  	tg->iops[0] = tg->iops[1] = -1;
-> -	td->limits_changed = false;
-> +	tg->limits_changed = false;
->  
+On Wed, May 11, 2011 at 12:11 AM, Greg KH <greg@kroah.com> wrote:
+> On Tue, May 10, 2011 at 11:00:44AM -0400, Seiji Aguchi wrote:
+>> Description of boot paremeters is following.
+>>
+>>  - efi_pstore_enable
+>>    enable EFI support of pstore.
+>>
+>>  - efi_pstore_len
+>>    Sets the buffer size of EFI variable space used by pstore.
+>
+> Please don't add new boot parameters if at all possible.  Distros will
+> not know to enable them, and users don't know how to either.
+>
+> Use sane defaults, and provide ways to override them if needed, but
+> don't rely on them for new functionality if at all possible.
 
-Thanks Namhyung. I noticed it recently too. There is one more such typo
-in throtl_find_alloc_tg(). Can you fix that too and repost the patch.
+I agree. It seems that we should enable this by default when APEI and
+EFI are both enabled, this could be done by Kconfig.
 
-Thanks
-Vivek
+Thanks.
