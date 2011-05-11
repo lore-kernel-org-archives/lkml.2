@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab1EKQLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:11:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34313 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab1EKQJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:09:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=V3TI8GIgARNB6Vr1KrDaYtPlLXQMhVybeuAFcBxv+ya2qEgpGpo4hQ5QZIUXAjFeHL
-         c+CdQCgcSrt/yRm5N7XXq69D/3ksrcr6ThMHbJxT8NYUl/Wp+JnOZQx8kv0z3U4cVJ/V
-         Sd6a3IlErFetMRONq4A/tM5z+oadMNrmew+9M=
-Date: Wed, 11 May 2011 15:30:12 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 2/2] perf: Carve out callchain functionality
-Message-ID: <20110511133009.GA1846@nowhere>
-References: <1305119816-26280-1-git-send-email-bp@amd64.org>
- <1305119816-26280-3-git-send-email-bp@amd64.org>
+	id S1757360Ab1EKQRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:17:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756164Ab1EKQRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:17:06 -0400
+Date: Wed, 11 May 2011 09:30:33 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk-throttle: fix typos on struct throtl_grp init code
+Message-ID: <20110511133033.GD31633@redhat.com>
+References: <20110511130732.GB31633@redhat.com>
+ <1305120045-5111-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305119816-26280-3-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305120045-5111-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 03:16:56PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, May 11, 2011 at 10:20:45PM +0900, Namhyung Kim wrote:
+> s/td/tg/
+
+I think jens would like to have little more changelog than that.
+
+Otherwise looks good to me.
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
 > 
-> Move callchain-related code into its own module:
-> kernel/events/callchain.c
-> 
-> No functionality change.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
 > ---
->  include/linux/perf_event.h |    7 +-
->  kernel/events/Makefile     |    2 +-
->  kernel/events/callchain.c  |  182 +++++++++++++++++++++++++++++++++
->  kernel/events/core.c       |  237 +++++--------------------------------------
->  4 files changed, 217 insertions(+), 211 deletions(-)
->  create mode 100644 kernel/events/callchain.c
+>  block/blk-throttle.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 687f852..7978850 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -961,7 +961,6 @@ enum event_type_t {
->  };
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 0475a22a420d..d1e317e0fc34 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -201,7 +201,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+>  	RB_CLEAR_NODE(&tg->rb_node);
+>  	bio_list_init(&tg->bio_lists[0]);
+>  	bio_list_init(&tg->bio_lists[1]);
+> -	td->limits_changed = false;
+> +	tg->limits_changed = false;
 >  
->  #ifdef CONFIG_PERF_EVENTS
-> -
->  extern struct list_head pmus;
->  extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
->  extern void perf_pmu_unregister(struct pmu *pmu);
-> @@ -1201,6 +1200,12 @@ static inline void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
->  extern int
->  task_function_call(struct task_struct *p, int (*func) (void *info), void *info);
->  extern u64 perf_event_time(struct perf_event *event);
-> +
-> +extern int get_recursion_context(int *recursion);
-> +extern inline void put_recursion_context(int *recursion, int rctx);
-> +extern void put_callchain_buffers(void);
-> +extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
-> +extern int get_callchain_buffers(void);
-
-I think it would be better to have these in a private kernel/events/events.h
-
-Other than that, looks good, thanks.
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+>  	/*
+>  	 * Take the initial reference that will be released on destroy
+> @@ -1072,7 +1072,7 @@ int blk_throtl_init(struct request_queue *q)
+>  	/* Practically unlimited BW */
+>  	tg->bps[0] = tg->bps[1] = -1;
+>  	tg->iops[0] = tg->iops[1] = -1;
+> -	td->limits_changed = false;
+> +	tg->limits_changed = false;
+>  
+>  	/*
+>  	 * Set root group reference to 2. One reference will be dropped when
+> -- 
+> 1.7.5
