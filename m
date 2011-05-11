@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab1EKQfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:35:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:60028 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757257Ab1EKQOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:14:48 -0400
-Date: Wed, 11 May 2011 15:48:17 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf: Carve out cgroup-related code
-Message-ID: <20110511134817.GB25827@aftab>
-References: <1305119816-26280-1-git-send-email-bp@amd64.org>
- <1305119816-26280-2-git-send-email-bp@amd64.org>
- <20110511133340.GB1846@nowhere>
+	id S932450Ab1EKQTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:19:13 -0400
+Received: from kroah.org ([198.145.64.141]:35355 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757478Ab1EKQTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:19:02 -0400
+Date: Wed, 11 May 2011 06:48:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: Re: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
+Message-ID: <20110511134859.GB12717@kroah.com>
+References: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <20110510200801.GA8125@kroah.com>
+ <AFCDDB4A3EA003429EEF1E7B211FDBBA3395A1A289@EXDCVYMBSTM005.EQ1STM.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110511133340.GB1846@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AFCDDB4A3EA003429EEF1E7B211FDBBA3395A1A289@EXDCVYMBSTM005.EQ1STM.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 09:33:43AM -0400, Frederic Weisbecker wrote:
-> BTW, before you do it yourself, I have a patch pending that splits the buffer
-> part from the core.
+On Wed, May 11, 2011 at 10:34:47AM +0200, Par-Gunnar HJALMDAHL wrote:
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: den 10 maj 2011 22:08
+> > 
+> > {sigh}
+> > 
+> > This breaks the build again, the error messages are below :(
+> > 
+> > I'm about to give up here, so the next time you send this patch in, I
+> > want some kind of proof that the code will at least build properly.
+> > 
+> > How you provide this is up to you.
+> > 
+> > Oh, and if the next one breaks stuff again, you will owe me a lot of
+> > beer, although I think you owe me already...
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
+> >   CC [M]  drivers/staging/cg2900/mfd/cg2900_chip.o
+> > drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: unknown field
+> > ‘platform_data’ specified in initializer
+> > drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: warning:
+> > initialization makes integer from pointer without a cast
+> > drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: initializer
+> > element is not computable at load time
+> > drivers/staging/cg2900/mfd/cg2900_chip.c:2940:3: error: (near
+> > initialization for ‘cg2900_devs[0].id’)
+> 
+> Hi Greg,
+> 
+> What linux-next tag did you base the patch on?
 
-Cool. But no, callchain.c and cgroup.c were the low hanging fruits I saw
-so I have no plans for the buffer part. Go ahead and send it too.
+My staging git tree.  I can't apply to linux-next, only my tree,
+linux-next then picks it up.
 
-> Just to avoid effort duplicates... :)
+> I used next-20110510 and in that tag the file include/Linux/mfd/core.h
+> The struct mfd_cell has a parameter called platform_data, while in your
+> build it seems it doesn't.
+> This was changed very recently in the core.h file (on April 6).
+> So for core.h the last commit ID I have in the tag I built upon is
+> 558aa9c0d620b91a896d5e39ce8a570bed65589b.
 
-Yep.
+So do I need that patch on the staging-next tree also?
 
--- 
-Regards/Gruss,
-Boris.
+Or is it an issue of building this on x86-64...
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+thanks,
+
+greg k-h
