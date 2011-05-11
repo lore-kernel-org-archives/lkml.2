@@ -1,113 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1EKQdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:33:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45474 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab1EKQdK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:33:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=pqtHx4hjeoXrtbMtTvifTDc319jolrBVVRyTovWX5sNzAiL9FjOWGV4EOQabKzzUSr
-         vWmkEr4TFo2K3C0aoPQ+ozNPEYm3TATXKwkWHwNgmRKwjcuwm/rtCtbLwnsmlpNBD66m
-         Jfu1xCFxecMVs83aVljibJhcvp/SjbgZD7Efc=
+	id S1754061Ab1EKSho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 14:37:44 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40319 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab1EKShn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 14:37:43 -0400
+Message-ID: <4DCA3C0C.3080901@linux.vnet.ibm.com>
+Date: Wed, 11 May 2011 15:34:36 +0800
+From: Cheng Xu <chengxu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105101656310.15037@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg>
-	<alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com>
-	<1304026464.2598.36.camel@mulgrave.site>
-	<alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com>
-	<1304521355.2810.21.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105041203250.22426@chino.kir.corp.google.com>
-	<1304979845.4865.58.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105101656310.15037@chino.kir.corp.google.com>
-Date: Wed, 11 May 2011 09:27:14 +0200
-X-Google-Sender-Auth: 5sIoaECN875UKHCwlY6hTs7x0tU
-Message-ID: <BANLkTikf9Qtp1nq8E9sDjEgoYUO-25vsWQ@mail.gmail.com>
-Subject: Re: [patch] slub: Revert "[PARISC] slub: fix panic with DISCONTIGMEM"
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Rientjes <rientjes@google.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, stable@kernel.org,
-        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Paul Mckenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: rt_rq runtime leakage bug fix
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 02:08, David Rientjes <rientjes@google.com> wrote:
-> On Mon, 9 May 2011, James Bottomley wrote:
->> > Great, and if that works out successfully this time around I think we'll
->> > either need to fix each individual arch Kconfig that we know doesn't work
->> > well (at least parisc because of the scheduling issue) so that it at least
->> > enables CONFIG_NUMA implicitly for discontigmem unless CONFIG_BROKEN is
->> > set.
->>
->> OK, I confirm that the N_NORMAL_MEMORY patch on its own fixes slub for
->> us.  We can revert the mark slub BROKEN in DISCONTIGMEM && !NUMA patch.
->>
->
-> Ok, so we need to revert 4a5fa3590f09 ([PARISC] slub: fix panic with
-> DISCONTIGMEM) that did not allow CONFIG_SLUB to be set for architectures
-> that use DISCONTIGMEM without NUMA support unless they have CONFIG_BROKEN
-> set from Linus' tree _and_ from the stable trees.
->
->
->
-> slub: Revert "[PARISC] slub: fix panic with DISCONTIGMEM"
->
-> 4a5fa3590f09 ([PARISC] slub: fix panic with DISCONTIGMEM) did not allow
-> SLUB to be used on architectures that use DISCONTIGMEM without compiling
-> NUMA support without CONFIG_BROKEN also set.
->
-> The slub panic that it was intended to prevent is addressed by
-> d9b41e0b54fd ([PARISC] set memory ranges in N_NORMAL_MEMORY when onlined)
-> on parisc so there is no further slub issues with such a configuration.
+This patch is to fix bug report https://lkml.org/lkml/2011/4/26/13
 
-Please also refer to the N_NORMAL_MEMORY fixes for the other arches,
-esp. for stable.
+Function __disable_runtime() reports leakage of rt_rq runtime. The root cause is __disable_runtime() assumes it iterates through all the existing rt_rq's while walking rq->leaf_rt_rq_list, which actually contains only runnable rt_rq's. This problem also applies to __enable_runtime() and print_rt_stats().
 
-> This reverts the former commit so that SLUB may now be used on such
-> architectures since there haven't been any reports of additional errors.
->
-> Cc: James Bottomley <James.Bottomley@suse.de>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+The patch is based on above analysis, appears to fix the problem, but is only lightly tested.
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: stable@kernel.org
 
-> ---
->  init/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/init/Kconfig b/init/Kconfig
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1226,7 +1226,6 @@ config SLAB
->          per cpu and per node queues.
->
->  config SLUB
-> -       depends on BROKEN || NUMA || !DISCONTIGMEM
->        bool "SLUB (Unqueued Allocator)"
->        help
->           SLUB is a slab allocator that minimizes cache line usage
+Signed-off-by: Cheng Xu <chengxu@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Gr{oetje,eeting}s,
+---
+ kernel/sched_rt.c |   31 ++++++++++++++++++++++++-------
+ 1 files changed, 24 insertions(+), 7 deletions(-)
 
-                        Geert
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index e7cebdc..7f478ff 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -183,6 +183,13 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+ 	return ktime_to_ns(rt_rq->tg->rt_bandwidth.rt_period);
+ }
+ 
++#define rt_rq_of_rq_decls(name) struct task_group *name
++
++#define list_for_rt_rq_of_rq(iterator, rq) \
++	list_for_each_entry_rcu(iterator, &task_groups, list)
++
++#define rt_rq_of_rq_deref(iterator, rq) (iterator->rt_rq[cpu_of(rq)])
++
+ static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+ {
+ 	list_add_rcu(&rt_rq->leaf_rt_rq_list,
+@@ -288,6 +295,13 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+ 	return ktime_to_ns(def_rt_bandwidth.rt_period);
+ }
+ 
++#define rt_rq_of_rq_decls(name) struct rt_rq *name
++
++#define list_for_rt_rq_of_rq(iterator, rq) \
++	for (iterator = &rq->rt; iterator; iterator = NULL)
++
++#define rt_rq_of_rq_deref(iterator, rq) (iterator)
++
+ static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+ {
+ }
+@@ -402,12 +416,13 @@ next:
+ static void __disable_runtime(struct rq *rq)
+ {
+ 	struct root_domain *rd = rq->rd;
+-	struct rt_rq *rt_rq;
++	rt_rq_of_rq_decls(iterator);
+ 
+ 	if (unlikely(!scheduler_running))
+ 		return;
+ 
+-	for_each_leaf_rt_rq(rt_rq, rq) {
++	list_for_rt_rq_of_rq(iterator, rq) {
++		struct rt_rq *rt_rq = rt_rq_of_rq_deref(iterator, rq);
+ 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+ 		s64 want;
+ 		int i;
+@@ -487,7 +502,7 @@ static void disable_runtime(struct rq *rq)
+ 
+ static void __enable_runtime(struct rq *rq)
+ {
+-	struct rt_rq *rt_rq;
++	rt_rq_of_rq_decls(iterator);
+ 
+ 	if (unlikely(!scheduler_running))
+ 		return;
+@@ -495,7 +510,8 @@ static void __enable_runtime(struct rq *rq)
+ 	/*
+ 	 * Reset each runqueue's bandwidth settings
+ 	 */
+-	for_each_leaf_rt_rq(rt_rq, rq) {
++	list_for_rt_rq_of_rq(iterator, rq) {
++		struct rt_rq *rt_rq = rt_rq_of_rq_deref(iterator, rq);
+ 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+ 
+ 		raw_spin_lock(&rt_b->rt_runtime_lock);
+@@ -1796,11 +1812,12 @@ extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
+ 
+ static void print_rt_stats(struct seq_file *m, int cpu)
+ {
+-	struct rt_rq *rt_rq;
++	rt_rq_of_rq_decls(iterator);
++	struct rq *rq = cpu_rq(cpu);
+ 
+ 	rcu_read_lock();
+-	for_each_leaf_rt_rq(rt_rq, cpu_rq(cpu))
+-		print_rt_rq(m, cpu, rt_rq);
++	list_for_rt_rq_of_rq(iterator, rq)
++		print_rt_rq(m, cpu, rt_rq_of_rq_deref(iterator, rq));
+ 	rcu_read_unlock();
+ }
+ #endif /* CONFIG_SCHED_DEBUG */
+-- 
+1.7.1
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
