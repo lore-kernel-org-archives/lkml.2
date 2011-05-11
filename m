@@ -1,174 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab1EKQRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:17:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313Ab1EKQRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:17:06 -0400
-Date: Wed, 11 May 2011 09:12:31 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH] blk-throttle: Use task_subsys_state() to determine a
- task's blkio_cgroup
-Message-ID: <20110511131231.GC31633@redhat.com>
-References: <20110509134915.GC5975@redhat.com>
+	id S1756758Ab1EKQDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:03:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56724 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756174Ab1EKQC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:02:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=hTcE4xH828SIMDX1UJVgYja+h+U2PH2wq/uHXXOEmfnS7ZIPLloOusIHn9GlmntlmZ
+         SOtTSZI1exqGfboxpTnZ0TC7GDT7/52pkfl5eVtJ7b1Y17NPtxPjJFGsO8X7KfOnhcKF
+         QPose2SxyrPxS9L444ikGc5rzJb/m9Bdqs7+w=
+Date: Wed, 11 May 2011 15:13:14 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 11/11] ptrace: implement group stop notification for
+ ptracer
+Message-ID: <20110511131314.GF1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-12-git-send-email-tj@kernel.org>
+ <201105110037.34051.vda.linux@googlemail.com>
+ <20110511090551.GC1661@htj.dyndns.org>
+ <BANLkTi=qOnVjj9RjHhUdtMJn_4iy6US74A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110509134915.GC5975@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=qOnVjj9RjHhUdtMJn_4iy6US74A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 09:49:15AM -0400, Vivek Goyal wrote:
-> Currentlly we first map the task to cgroup and then cgroup to
-> blkio_cgroup. There is a more direct way to get to blkio_cgroup
-> from task using task_subsys_state(). Use that.
-> 
-> The real reason for the fix is that it also avoids a race in generic
-> cgroup code. During remount/umount rebind_subsystems() is called and
-> it can do following with and rcu protection.
-> 
-> cgrp->subsys[i] = NULL;
-> 
-> That means if somebody got hold of cgroup under rcu and then it tried
-> to do cgroup->subsys[] to get to blkio_cgroup, it would get NULL which
-> is wrong. I was running into this race condition with ltp running on a
-> upstream derived kernel and that lead to crash.
-> 
-> So ideally we should also fix cgroup generic code to wait for rcu
-> grace period before setting pointer to NULL. Li Zefan is not very keen
-> on introducing synchronize_wait() as he thinks it will slow
-> down moun/remount/umount operations.
-> 
-> So for the time being atleast fix the kernel crash by taking a more
-> direct route to blkio_cgroup.
-> 
-> One tester had reported a crash while running LTP on a derived kernel
-> and with this fix crash is no more seen while the test has been
-> running for over 6 days.
+Hey,
 
-Hi Jens,
-
-Do you have any concerns with this patch. It fixes one corner case race
-condition and hence a reproducible crash. Can you please apply it.
-
-Thanks
-Vivek
-
+On Wed, May 11, 2011 at 02:01:16PM +0200, Denys Vlasenko wrote:
+> On Wed, May 11, 2011 at 11:05 AM, Tejun Heo <tj@kernel.org> wrote:
+> > Debugger may continue tracee and put it in a different trap.  In such
+> > cases, group stop may be initiated and lifted multiple times while a
+> > tracee is trapped.  It's much nicer to have symmetric notifications in
+> > those cases.
 > 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/blk-cgroup.c   |    7 +++++++
->  block/blk-cgroup.h   |    3 +++
->  block/blk-throttle.c |    9 ++++-----
->  block/cfq-iosched.c  |   11 +++++------
->  4 files changed, 19 insertions(+), 11 deletions(-)
+> I don't understand what exactly you mean by this.
+> You mean that it's better to have one INTERRUPT trap per each
+> stop/cont transition? Such as:
 > 
-> Index: linux-2.6/block/blk-throttle.c
-> ===================================================================
-> --- linux-2.6.orig/block/blk-throttle.c	2011-05-09 09:31:38.102679040 -0400
-> +++ linux-2.6/block/blk-throttle.c	2011-05-09 09:34:01.780846934 -0400
-> @@ -160,9 +160,8 @@ static void throtl_put_tg(struct throtl_
->  }
->  
->  static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
-> -			struct cgroup *cgroup)
-> +			struct blkio_cgroup *blkcg)
->  {
-> -	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
->  	struct throtl_grp *tg = NULL;
->  	void *key = td;
->  	struct backing_dev_info *bdi = &td->queue->backing_dev_info;
-> @@ -229,12 +228,12 @@ done:
->  
->  static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
->  {
-> -	struct cgroup *cgroup;
->  	struct throtl_grp *tg = NULL;
-> +	struct blkio_cgroup *blkcg;
->  
->  	rcu_read_lock();
-> -	cgroup = task_cgroup(current, blkio_subsys_id);
-> -	tg = throtl_find_alloc_tg(td, cgroup);
-> +	blkcg = task_blkio_cgroup(current);
-> +	tg = throtl_find_alloc_tg(td, blkcg);
->  	if (!tg)
->  		tg = &td->root_tg;
->  	rcu_read_unlock();
-> Index: linux-2.6/block/blk-cgroup.c
-> ===================================================================
-> --- linux-2.6.orig/block/blk-cgroup.c	2011-05-09 09:31:38.103679082 -0400
-> +++ linux-2.6/block/blk-cgroup.c	2011-05-09 09:34:01.517835362 -0400
-> @@ -114,6 +114,13 @@ struct blkio_cgroup *cgroup_to_blkio_cgr
->  }
->  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
->  
-> +struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk)
-> +{
-> +	return container_of(task_subsys_state(tsk, blkio_subsys_id),
-> +			    struct blkio_cgroup, css);
-> +}
-> +EXPORT_SYMBOL_GPL(task_blkio_cgroup);
-> +
->  static inline void
->  blkio_update_group_weight(struct blkio_group *blkg, unsigned int weight)
->  {
-> Index: linux-2.6/block/blk-cgroup.h
-> ===================================================================
-> --- linux-2.6.orig/block/blk-cgroup.h	2011-05-09 09:31:38.103679082 -0400
-> +++ linux-2.6/block/blk-cgroup.h	2011-05-09 09:34:01.517835362 -0400
-> @@ -291,6 +291,7 @@ static inline void blkiocg_set_start_emp
->  #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
->  extern struct blkio_cgroup blkio_root_cgroup;
->  extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
-> +extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
->  extern void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->  	struct blkio_group *blkg, void *key, dev_t dev,
->  	enum blkio_policy_id plid);
-> @@ -314,6 +315,8 @@ void blkiocg_update_io_remove_stats(stru
->  struct cgroup;
->  static inline struct blkio_cgroup *
->  cgroup_to_blkio_cgroup(struct cgroup *cgroup) { return NULL; }
-> +static inline struct blkio_cgroup *
-> +task_blkio_cgroup(struct task_struct *tsk) { return NULL; }
->  
->  static inline void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->  		struct blkio_group *blkg, void *key, dev_t dev,
-> Index: linux-2.6/block/cfq-iosched.c
-> ===================================================================
-> --- linux-2.6.orig/block/cfq-iosched.c	2011-05-09 09:31:38.103679082 -0400
-> +++ linux-2.6/block/cfq-iosched.c	2011-05-09 09:34:01.518835406 -0400
-> @@ -1014,10 +1014,9 @@ void cfq_update_blkio_group_weight(void 
->  	cfqg->needs_update = true;
->  }
->  
-> -static struct cfq_group *
-> -cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
-> +static struct cfq_group * cfq_find_alloc_cfqg(struct cfq_data *cfqd,
-> +		struct blkio_cgroup *blkcg, int create)
->  {
-> -	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
->  	struct cfq_group *cfqg = NULL;
->  	void *key = cfqd;
->  	int i, j;
-> @@ -1079,12 +1078,12 @@ done:
->   */
->  static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
->  {
-> -	struct cgroup *cgroup;
-> +	struct blkio_cgroup *blkcg;
->  	struct cfq_group *cfqg = NULL;
->  
->  	rcu_read_lock();
-> -	cgroup = task_cgroup(current, blkio_subsys_id);
-> -	cfqg = cfq_find_alloc_cfqg(cfqd, cgroup, create);
-> +	blkcg = task_blkio_cgroup(current);
-> +	cfqg = cfq_find_alloc_cfqg(cfqd, blkcg, create);
->  	if (!cfqg && create)
->  		cfqg = &cfqd->root_group;
->  	rcu_read_unlock();
+> tracer                  tracee                  3rd process
+> waitpid <---------------some ptrace stop
+> <tracer is doing something,
+>  not yet ptrace(CONT)ing>
+>                         <-----------------------kill -STOP
+>                         <-----------------------kill -CONT
+>                         <-----------------------kill -STOP
+>                         <-----------------------kill -CONT
+> ptrace(CONT)----------->
+> waitpid <---------------INTERRUPT
+> ptrace(GETSIGINFO)<-----"it's a group stop"
+> waitpid <---------------INTERRUPT
+> ptrace(GETSIGINFO)<-----"it's a cont"
+> ptrace(CONT)----------->
+> waitpid <---------------INTERRUPT
+> ptrace(GETSIGINFO)<-----"it's a group stop"
+> waitpid <---------------INTERRUPT
+> ptrace(GETSIGINFO)<-----"it's a cont"
+> ptrace(CONT)----------->
+> ............................................................
+> 
+> I agree that it's not a bad thing to deliver ALL notifications.
+
+No, not at all.
+
+> But from what I understood, with your patch it won't do this either:
+> you don't remember every stop and cont in a queue, you have just one bit?
+
+What I want to guarantee is that after one or more events, at least
+one notification is always delivered in finite userland time.
+
+> And second, I don't think we really need this. We only need this:
+> if tracer did see group stop, it MUST see cont (or kill) - cont
+> should never be missed. But it's ok to miss whole pairs of stop+cont
+> which were done in quick succession (and similarly for cont+stop
+> pairs on a stopped tracee, as in example above).
+
+Yeah, sure.  There's no event queueing and I'm not gonna add one.
+
+> > Also, we might end up adding more status flags to si_pt_flags and it's
+> > much better to be able to say "INTERRUPT becomes and stays pending
+> > until the next GETSIGINFO if any of these flags may have chagned" than
+> > "if XXX change from x to y, or YYY changes to x to y or y to x,
+> > ... blah blah".
+> 
+> Why do you want this data to be sticky at all?
+> Do you think tracer will "forget" to retrieve it?
+> That'd be a bug in the tracer if it doesn't retrieve the data
+> and therefore mishandles stop and/or cont.
+
+Please read on.
+
+> >> Can we just add a "group cont" notification which looks like
+> >> a waitpid result with WIFCONTINUED(waitpid_status) == 1 to the tracer?
+> >
+> > Consider the following scenario.
+> >
+> > 1. A syscall traced tracee enters group stop while returning from a
+> >   syscall.  Tracer is notified.
+> >
+> > 2. SIGCONT generated.  Tracee is woken up and wait state is generated.
+> >
+> > 3. Tracee traps for syscall completion before tracer has chance to
+> >   wait(2).
+> 
+> The order in (3) seems wrong:
+> Tracee doesn't enter group stop while it is in syscall.
+> It exits syscall first, and then it enters group stop.
+> Therefore in step (3) above it can't "trap for syscall completion".
+> It can trap for syscall entry at worst; however:
+
+Okay, whatever other trap then.
+
+> > 4. Oops, continued wait state lost.
+> 
+> Why is it lost? Why kernel signals syscall entry instead of CONT
+> in your scenario?
+
+SIGCONT doesn't have to be delivered by the specific task being traced
+and the userland can continue executing without any specific time
+limit breaking the 'in finite userland time' part of the guarantee.
+
+> The rest isn't interesting (typical buggy handling of stop
+> notification in current strace/kernel):
+
+The whole thing is uninteresting.  The trap type doesn't matter at
+all.  The only thing matter is that PTRACE_CONT may race with end of
+group stop and control may return to userland and event can be lost.
+
+> Can you describe your scenario in more details. I don't understand it.
+
+Stop thinking about strace(1).  It's the most trivial case.  A tracee
+can be in any trap regardless of group stop state and tracer can issue
+PTRACE_CONT anytime which can race with SIGCONT generation.  You want
+to deliver the notification to the tracer in finite userland time.
+Think about SIGCONT and PTRACE_CONT racing each other and SIGCONT
+being delivered to another task.
+
+> Why tracer needs to schedule anything? As you see above,
+> at this point tracer is in waitpid anyway. It is ALREADY prepared
+> to get cont notification. It doesn't need to generate any extra
+> ptrace stops for that.
+
+The debugger doesn't want the debuggee to be running.  It wants tracee
+to be in basically the same state as in group stop after the temporary
+inspection.  It doesn't want to leave it running while group stop is
+in effect but still wants to be notified of end of group stop.
+
+Thanks.
+
+-- 
+tejun
