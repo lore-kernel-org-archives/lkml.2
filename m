@@ -1,140 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab1EKUd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 16:33:57 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:41383 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab1EKUdz (ORCPT
+	id S1755388Ab1EKUeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 16:34:11 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:6937 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab1EKUeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 16:33:55 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Nathan Lynch <ntl@pobox.com>
-Cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 2/7] ns: Introduce the setns syscall
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
-	<1304735101-1824-1-git-send-email-ebiederm@xmission.com>
-	<1304735101-1824-2-git-send-email-ebiederm@xmission.com>
-	<1305141681.1236.48.camel@orca.stoopid.dyndns.org>
-Date: Wed, 11 May 2011 13:33:48 -0700
-In-Reply-To: <1305141681.1236.48.camel@orca.stoopid.dyndns.org> (Nathan
-	Lynch's message of "Wed, 11 May 2011 14:21:14 -0500")
-Message-ID: <m1fwolnfir.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 11 May 2011 16:34:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=UurQ8UNuX1dzr0HmIrPBTCO8OQFP3I3ogHc5ZSNukHWx45JTPG4u53Xu2D/t+Ij2yM
+         ZIrKFu5azbXV17yHQcmQ==
+Date: Wed, 11 May 2011 13:34:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: CAI Qian <caiqian@redhat.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: OOM Killer don't works at all if the system have >gigabytes
+ memory (was Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable())
+In-Reply-To: <1889981320.330808.1305081044822.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Message-ID: <alpine.DEB.2.00.1105111331480.9346@chino.kir.corp.google.com>
+References: <1889981320.330808.1305081044822.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19OSyqaieVIHv5jqfBzPFU71TnPT/g6PHo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nathan Lynch <ntl@pobox.com> writes:
+On Tue, 10 May 2011, CAI Qian wrote:
 
-> Hi Eric,
->
-> On Fri, 2011-05-06 at 19:24 -0700, Eric W. Biederman wrote:
->> With the networking stack today there is demand to handle
->> multiple network stacks at a time.  Not in the context
->> of containers but in the context of people doing interesting
->> things with routing.
->> 
->> There is also demand in the context of containers to have
->> an efficient way to execute some code in the container itself.
->> If nothing else it is very useful ad a debugging technique.
->> 
->> Both problems can be solved by starting some form of login
->> daemon in the namespaces people want access to, or you
->> can play games by ptracing a process and getting the
->> traced process to do things you want it to do. However
->> it turns out that a login daemon or a ptrace puppet
->> controller are more code, they are more prone to
->> failure, and generally they are less efficient than
->> simply changing the namespace of a process to a
->> specified one.
->> 
->> Pieces of this puzzle can also be solved by instead of
->> coming up with a general purpose system call coming up
->> with targed system calls perhaps socketat that solve
->> a subset of the larger problem.  Overall that appears
->> to be more work for less reward.
->> 
->> int setns(int fd, int nstype);
->> 
->> The fd argument is a file descriptor referring to a proc
->> file of the namespace you want to switch the process to.
->> 
->> In the setns system call the nstype is 0 or specifies
->> an clone flag of the namespace you intend to change
->> to prevent changing a namespace unintentionally.
->
-> I don't understand exactly what the nstype argument buys us - why would
-> correct code ever need to specify a value other than 0?  And reusing the
-> CLONE_NEW* values in this interface is kind of ugly when setns is
-> precisely _not_ creating new namespaces.
+> Sure, I saw there were some discussion going on between you and David
+> about your patches. Does it make more sense for me to test those after
+> you have settled down technical arguments?
+> 
 
-No but it is setting a new namespace.  I do agree it is a bit ugly.  But
-the worst case at this point is I introduce a new set of beautiful
-defines with the same values.
+Something like the following (untested) patch should fix the issue by 
+simply increasing the range of a task's badness from 0-1000 to 0-10000.
 
-> Is there some fundamental reason it couldn't be
->
-> int setns(int fd);
->
-> or is there a use case I'm missing?
-
-When someone else opens the file descriptor and passes it to us
-and we don't completely trust them.  Or equally when someone
-else does the bind mount into the filesystem namespace and we
-don't completely trust them.
-
-Plus having a flags field is useful in general.
-
->> +SYSCALL_DEFINE2(setns, int, fd, int, nstype)
->> +{
->> +	const struct proc_ns_operations *ops;
->> +	struct task_struct *tsk = current;
->> +	struct nsproxy *new_nsproxy;
->> +	struct proc_inode *ei;
->> +	struct file *file;
->> +	int err;
->> +
->> +	if (!capable(CAP_SYS_ADMIN))
->> +		return -EPERM;
->> +
->> +	file = proc_ns_fget(fd);
->> +	if (IS_ERR(file))
->> +		return PTR_ERR(file);
->> +
->> +	err = -EINVAL;
->> +	ei = PROC_I(file->f_dentry->d_inode);
->> +	ops = ei->ns_ops;
->> +	if (nstype && (ops->type != nstype))
->> +		goto out;
->> +
->> +	new_nsproxy = create_new_namespaces(0, tsk, tsk->fs);
->
-> create_new_namespaces() can fail; shouldn't this be checked?
-
-Yes.  This was pointed out a little earlier and has been fixed
-in my tree.
+There are other things to fix like the tasklist dump output and 
+documentation, but this shows how easy it is to increase the resolution of 
+the scoring.  (This patch also includes a change to only give root 
+processes a 1% bonus for every 30% of memory they use as proposed 
+earlier.)
 
 
->> +	err = ops->install(new_nsproxy, ei->ns);
->> +	if (err) {
->> +		free_nsproxy(new_nsproxy);
->> +		goto out;
->> +	}
->> +	switch_task_namespaces(tsk, new_nsproxy);
->> +out:
->> +	fput(file);
->> +	return err;
->> +}
->> +
-
-Eric
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -160,7 +160,7 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	 */
+ 	if (p->flags & PF_OOM_ORIGIN) {
+ 		task_unlock(p);
+-		return 1000;
++		return 10000;
+ 	}
+ 
+ 	/*
+@@ -177,32 +177,32 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
+ 	points += get_mm_counter(p->mm, MM_SWAPENTS);
+ 
+-	points *= 1000;
++	points *= 10000;
+ 	points /= totalpages;
+ 	task_unlock(p);
+ 
+ 	/*
+-	 * Root processes get 3% bonus, just like the __vm_enough_memory()
+-	 * implementation used by LSMs.
++	 * Root processes get 1% bonus per 30% memory used for a total of 3%
++	 * possible just like LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		points -= 30;
++		points -= 100 * (points / 3000);
+ 
+ 	/*
+ 	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+ 	 * either completely disable oom killing or always prefer a certain
+ 	 * task.
+ 	 */
+-	points += p->signal->oom_score_adj;
++	points += p->signal->oom_score_adj * 10;
+ 
+ 	/*
+ 	 * Never return 0 for an eligible task that may be killed since it's
+-	 * possible that no single user task uses more than 0.1% of memory and
++	 * possible that no single user task uses more than 0.01% of memory and
+ 	 * no single admin tasks uses more than 3.0%.
+ 	 */
+ 	if (points <= 0)
+ 		return 1;
+-	return (points < 1000) ? points : 1000;
++	return (points < 10000) ? points : 10000;
+ }
+ 
+ /*
+@@ -314,7 +314,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			 */
+ 			if (p == current) {
+ 				chosen = p;
+-				*ppoints = 1000;
++				*ppoints = 10000;
+ 			} else {
+ 				/*
+ 				 * If this task is not being ptraced on exit,
