@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab1EKQQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:16:49 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:52929 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab1EKQQr (ORCPT
+	id S1752267Ab1EKSYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 14:24:52 -0400
+Received: from mx01.bfk.de ([193.227.124.2]:34809 "EHLO mx01.bfk.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750818Ab1EKSYv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:16:47 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DCA5A97.90704@cam.ac.uk>
-Date: Wed, 11 May 2011 10:44:55 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Wed, 11 May 2011 14:24:51 -0400
+X-Greylist: delayed 9300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 14:24:51 EDT
+From: Florian Weimer <fweimer@bfk.de>
+To: David Decotigny <decot@google.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] net/dl2k: Don't reconfigure link @100Mbps when disabling autoneg @1Gbps
+References: <1304986748-15809-1-git-send-email-decot@google.com>
+	<1304986748-15809-3-git-send-email-decot@google.com>
+Date: Wed, 11 May 2011 09:47:16 +0000
+In-Reply-To: <1304986748-15809-3-git-send-email-decot@google.com> (David
+	Decotigny's message of "Mon, 9 May 2011 17:19:08 -0700")
+Message-ID: <82y62dk1qz.fsf@mid.bfk.de>
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH] irq: export handle_simple_irq, irq_modify_status, irq_to_desc,
- irq_alloc_descs and irq_free_descs
-References: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas/All,
+* David Decotigny:
 
-Any feedback on this patch?  We have a lot of code dependent on this and
-with the merge window approaching would like to know if this will be going
-in or not.
+> Tested: module compiling, NOT tested on real hardware.
 
-Thanks and sorry for pestering!
+To my knowledge, dl2k is broken.  Some sort of synchronization
+primitives are missing.  Under load, the NIC's notion of ring buffer
+status diverges from the host's view. 8-(
 
-Jonathan
-
-On 05/04/11 17:18, Jonathan Cameron wrote:
-> V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
-> 
-> This is to allow their use in IIO. We have complete control of
-> both the irq_chip creation and requesting of irqs so would like
-> to be able to build as a module. That requires these exports.
-> 
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  kernel/irq/chip.c    |    2 ++
->  kernel/irq/irqdesc.c |    3 +++
->  2 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index 4af1e2b..ad409d3 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
->  out_unlock:
->  	raw_spin_unlock(&desc->lock);
->  }
-> +EXPORT_SYMBOL_GPL(handle_simple_irq);
->  
->  /**
->   *	handle_level_irq - Level type irq handler
-> @@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
->  
->  	irq_put_desc_unlock(desc, flags);
->  }
-> +EXPORT_SYMBOL_GPL(irq_modify_status);
->  
->  /**
->   *	irq_cpu_online - Invoke all irq_cpu_online functions.
-> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-> index 2c039c9..5ac14e2 100644
-> --- a/kernel/irq/irqdesc.c
-> +++ b/kernel/irq/irqdesc.c
-> @@ -110,6 +110,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
->  {
->  	return radix_tree_lookup(&irq_desc_tree, irq);
->  }
-> +EXPORT_SYMBOL_GPL(irq_to_desc);
->  
->  static void delete_irq_desc(unsigned int irq)
->  {
-> @@ -311,6 +312,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
->  	bitmap_clear(allocated_irqs, from, cnt);
->  	mutex_unlock(&sparse_irq_lock);
->  }
-> +EXPORT_SYMBOL_GPL(irq_free_descs);
->  
->  /**
->   * irq_alloc_descs - allocate and initialize a range of irq descriptors
-> @@ -351,6 +353,7 @@ err:
->  	mutex_unlock(&sparse_irq_lock);
->  	return ret;
->  }
-> +EXPORT_SYMBOL_GPL(irq_alloc_descs);
->  
->  /**
->   * irq_reserve_irqs - mark irqs allocated
-
+-- 
+Florian Weimer                <fweimer@bfk.de>
+BFK edv-consulting GmbH       http://www.bfk.de/
+Kriegsstraﬂe 100              tel: +49-721-96201-1
+D-76133 Karlsruhe             fax: +49-721-96201-99
