@@ -1,87 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab1EKWwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:52:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55655 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab1EKWwA convert rfc822-to-8bit (ORCPT
+	id S932664Ab1EKWwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:52:44 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:52848 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932566Ab1EKWwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:52:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nveCOGGFrq3MJHjG5lXS/xR0KBkTBAL2BplSU1j882ovTgD1RC9+/mO5Qle4waO+Aq
-         8nkcjdD5KS2Nuuv+2sDf7i9I+L8H7kneM4tCsAfusn9fxl/CtX79zTF+lKAXuml99SIB
-         IyCf+I1sLO/dgoYHwAA6fmfPxiNw1Ha0JuEy4=
+	Wed, 11 May 2011 18:52:41 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Nathan Lynch <ntl@pobox.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linux Containers <containers@lists.osdl.org>,
+        Renato Westphal <renatowestphal@gmail.com>
+Subject: Re: [PATCH 1/7] ns: proc files for namespace naming policy.
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+	<1304735101-1824-1-git-send-email-ebiederm@xmission.com>
+	<1305141667.1236.47.camel@orca.stoopid.dyndns.org>
+Date: Wed, 11 May 2011 15:52:35 -0700
+In-Reply-To: <1305141667.1236.47.camel@orca.stoopid.dyndns.org> (Nathan
+	Lynch's message of "Wed, 11 May 2011 14:20:48 -0500")
+Message-ID: <m1oc38luj0.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110511210639.GA4679@kroah.com>
-References: <cover.1305103212.git.mfm@muteddisk.com>
-	<0c3a71ba4811a3ab470d307650067e9c2b52379b.1305103212.git.mfm@muteddisk.com>
-	<20110511210639.GA4679@kroah.com>
-Date: Wed, 11 May 2011 15:51:58 -0700
-Message-ID: <BANLkTimBxkF4KbXfm7Ma8cmpDF9EPjfMWQ@mail.gmail.com>
-Subject: Re: [PATCH 04/12] staging: usbip: replace usbip_u{dbg,err,info} and
- printk with pr_ equivalent
-From: matt mooney <mfmooney@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+DawsZrS2TkupbfrpAJPW1ABnlMxIES1I=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 2:06 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, May 11, 2011 at 01:54:16AM -0700, matt mooney wrote:
->> This switches all of the non dev_<level> print statements to use the
->> pr_<level> macros. And a few debug statements are removed.
+Nathan Lynch <ntl@pobox.com> writes:
+
+> Hi Eric,
 >
-> Can't most of these be moved to use the dev_* calls instead?
-
-I believe so and had planned to do this is in a second pass.
-
->>
->> Signed-off-by: matt mooney <mfm@muteddisk.com>
->> ---
->>  drivers/staging/usbip/stub_dev.c     |   22 ++--
->>  drivers/staging/usbip/stub_main.c    |   19 ++--
->>  drivers/staging/usbip/stub_rx.c      |   24 ++--
->>  drivers/staging/usbip/stub_tx.c      |   16 ++--
->>  drivers/staging/usbip/usbip_common.c |  228 +++++++++++++++------------------
->>  drivers/staging/usbip/usbip_common.h |   46 +------
->>  drivers/staging/usbip/usbip_event.c  |    3 +-
->>  drivers/staging/usbip/vhci_hcd.c     |   87 +++++--------
->>  drivers/staging/usbip/vhci_rx.c      |   33 +++---
->>  drivers/staging/usbip/vhci_sysfs.c   |   14 +-
->>  drivers/staging/usbip/vhci_tx.c      |    8 +-
->>  11 files changed, 209 insertions(+), 291 deletions(-)
->>
->> diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
->> index c71d0a3..0c0d838 100644
->> --- a/drivers/staging/usbip/stub_dev.c
->> +++ b/drivers/staging/usbip/stub_dev.c
->> @@ -196,7 +196,7 @@ static void stub_shutdown_connection(struct usbip_device *ud)
->>        * step 1?
->>        */
->>       if (ud->tcp_socket) {
->> -             usbip_udbg("shutdown tcp_socket %p\n", ud->tcp_socket);
->> +             pr_debug("shutdown tcp_socket %p\n", ud->tcp_socket);
+> A few comments on your patch set.
 >
-> Like here, we have a valid struct device pointer from what I can tell,
-> so we should use dev_dbg() instead of pr_debug().
 >
-> I think a lot of these conversions could use those calls here, right?
+> On Fri, 2011-05-06 at 19:24 -0700, Eric W. Biederman wrote:
+>> diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+>> index d15aa1b..74b48cf 100644
+>> --- a/fs/proc/inode.c
+>> +++ b/fs/proc/inode.c
+>> @@ -28,6 +28,7 @@ static void proc_evict_inode(struct inode *inode)
+>>  {
+>>  	struct proc_dir_entry *de;
+>>  	struct ctl_table_header *head;
+>> +	const struct proc_ns_operations *ns_ops;
+>>  
+>>  	truncate_inode_pages(&inode->i_data, 0);
+>>  	end_writeback(inode);
+>> @@ -44,6 +45,10 @@ static void proc_evict_inode(struct inode *inode)
+>>  		rcu_assign_pointer(PROC_I(inode)->sysctl, NULL);
+>>  		sysctl_head_put(head);
+>>  	}
+>> +	/* Release any associated namespace */
+>> +	ns_ops = PROC_I(inode)->ns_ops;
+>> +	if (ns_ops && ns_ops->put)
+>> +		ns_ops->put(PROC_I(inode)->ns);
 >
-> So care to split this into 2 patches, one that converts to valid usages
-> of the dev_* calls, and the other a patch that converts the rest to pr_*
-> calls?
+> Is it ever valid for ns_ops->put to be null?  If not, I suggest removing
+> the check.
+>
+>
+>> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+>> new file mode 100644
+>> index 0000000..6ae9f07
+>> --- /dev/null
+>> +++ b/fs/proc/namespaces.c
+>
+> ...
+>
+>> +static struct dentry *proc_ns_dir_lookup(struct inode *dir,
+>> +				struct dentry *dentry, struct nameidata *nd)
+>> +{
+>> +	struct dentry *error;
+>> +	struct task_struct *task = get_proc_task(dir);
+>> +	const struct proc_ns_operations **entry, **last;
+>> +	unsigned int len = dentry->d_name.len;
+>> +
+>> +	error = ERR_PTR(-ENOENT);
+>> +
+>> +	if (!task)
+>> +		goto out_no_task;
+>> +
+>> +	error = ERR_PTR(-EPERM);
+>> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+>> +		goto out;
+>> +
+>> +	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
+>> +	for (entry = ns_entries; entry <= last; entry++) {
+>> +		if (strlen((*entry)->name) != len)
+>> +			continue;
+>> +		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
+>> +			break;
+>> +	}
+>> +	if (entry > last)
+>> +		goto out;
+>
+> This returns EPERM when it should return ENOENT?
 
-Do you mind just taking this as is for now? That way I can do the
-dev_dbg() conversion on a case by case basis as I become more familiar
-with the code, which was kind of my original plan. This patch still
-provides a fair amount of cleanup ;)
+Good catch.
 
+And fixed now.
 
--- 
-GPG-Key: 9AFE00EA
+>>  union proc_op {
+>>  	int (*proc_get_link)(struct inode *, struct path *);
+>>  	int (*proc_read)(struct task_struct *task, char *page);
+>> @@ -268,6 +284,8 @@ struct proc_inode {
+>>  	struct proc_dir_entry *pde;
+>>  	struct ctl_table_header *sysctl;
+>>  	struct ctl_table *sysctl_entry;
+>> +	void *ns;
+>> +	const struct proc_ns_operations *ns_ops;
+>>  	struct inode vfs_inode;
+>>  };
+>
+> Not that I have any better ideas, but it seems a bit undesirable to
+> increase the size of proc_inode for this one purpose.
+
+Of the options I could think of this was the cleanest, and proc_inode
+is just a caching data structure which means that the effect should be
+comparatively minimal.
+
+That said I won't oppose a change at some point to reduce the
+proc_inode, there are a lot of fields that are not used for most proc
+entries.
+
+Eric
+
