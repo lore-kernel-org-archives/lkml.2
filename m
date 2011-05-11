@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab1EKQpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:45:16 -0400
-Received: from void.printf.net ([89.145.121.20]:52754 "EHLO void.printf.net"
+	id S1756225Ab1EKQGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:06:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35906 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab1EKQpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:45:12 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Subject: Re: [PATCH v4] sdio: optimized SDIO IRQ handling for single irq
-References: <1305100416-5395-1-git-send-email-per.forlin@linaro.org>
-Date: Wed, 11 May 2011 10:40:13 -0400
-In-Reply-To: <1305100416-5395-1-git-send-email-per.forlin@linaro.org> (Per
-	Forlin's message of "Wed, 11 May 2011 09:53:35 +0200")
-Message-ID: <m3d3jp2tde.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
+	id S1755997Ab1EKQFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:05:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,353,1301900400"; 
+   d="scan'208";a="906292"
+Date: Wed, 11 May 2011 16:41:20 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] Ux500 PRCMU into MFD and update deps
+Message-ID: <20110511144119.GC23897@sortiz-mobl>
+References: <1304687090-23401-1-git-send-email-linus.walleij@stericsson.com>
+ <BANLkTikHwd-Nsoq9eVwf1jTfSAUiA59R5g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikHwd-Nsoq9eVwf1jTfSAUiA59R5g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Per,
+Hi Linus,
 
-On Wed, May 11 2011, Per Forlin wrote:
-> Optimize performance for single irq
->
-> Changes since v2.
->  * Rebase on mmc-next, change of line numbers no code changes.
->
-> Stefan Nilsson XK (1):
->   sdio: optimized SDIO IRQ handling for single irq
->
->  drivers/mmc/core/sdio_irq.c |   33 ++++++++++++++++++++++++++++++++-
->  include/linux/mmc/card.h    |    1 +
->  2 files changed, 33 insertions(+), 1 deletions(-)
+On Wed, May 11, 2011 at 02:39:03PM +0200, Linus Walleij wrote:
+> 2011/5/6 Linus Walleij <linus.walleij@stericsson.com>:
+> 
+> > I will attempt to slim this down a bit, mainly the set is a
+> > review point for the MFD maintainer to check out if the PRCMU
+> > driver fits within MFD.
+> 
+> Sam will you be able to provide some feedback on this so I know
+> whether I shall plan to polish it up for the 2.6.40 merge window or
+> not? 
+I quickly looked at this patchset, and I hope to be able to review it better
+next week. But overall I think this fits into the MFD mapped registers model.
+So please go ahead and prepare this stuff for the .40 merge window (I'd
+appreciate to see the "slimming this down a bit" part, while I expect to come
+back to you with some more comments by next week.
 
-Odd, still doesn't apply here:
+Cheers,
+Samuel.
 
-error: patch failed: drivers/mmc/core/sdio_irq.c:42
-error: drivers/mmc/core/sdio_irq.c: patch does not apply
-
-patch -p1 says:
-Hunk #2 succeeded at 53 with fuzz 1.
-
-So this still isn't rebased onto mmc-next properly.  There haven't been
-any changes to drivers/mmc/core/sdio_irq.c since 2008, though, so now
-I'm wondering where you got the fuzz from..
-
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Intel Open Source Technology Centre
+http://oss.intel.com/
