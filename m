@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab1EKPsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:48:52 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:60486 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755341Ab1EKPsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:48:51 -0400
-Date: Wed, 11 May 2011 06:52:07 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Nat Gurumoorthy <natg@google.com>, Wim Van Sebroeck <wim@iguana.be>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>
-Subject: Re: [PATCH v10 2/2] Use "request_muxed_region" in it87 hwmon
- drivers
-Message-ID: <20110511135207.GA5928@ericsson.com>
-References: <1304966644-19798-1-git-send-email-natg@google.com>
- <1304966731-19896-1-git-send-email-natg@google.com>
- <20110511025338.GB4051@ericsson.com>
- <20110511090044.0b723654@endymion.delvare>
+	id S1754952Ab1EKPqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:46:08 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56006 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab1EKPqE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:46:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=KhV1+N8gH8Az5wRLjCoKEESqy3pJ70olFXR6+zYF3Ryp+2gMSzoeJLMZMw3lw182ae
+         Ps/U+BeaIO2Z95nGPNawdMgj58Mn2JyJT60UxuCv1xqnP6Sc+OaVsGRsx2ySHsj4UAa9
+         sOrt/MiP0QvhBuRSMZegYlw/VDycvuL5t/lzg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110511090044.0b723654@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305121541.2914.213.camel@laptop>
+References: <tip-99ee5315dac6211e972fa3f23bcc9a0343ff58c4@git.kernel.org>
+ <1305109433.2914.208.camel@laptop> <BANLkTi=j6eSyyEdGgUeZhQLJVa+meK_W6A@mail.gmail.com>
+ <1305121541.2914.213.camel@laptop>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 11 May 2011 15:52:14 +0200
+Message-ID: <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
+Subject: Re: [tip:timers/core] timerfd: Allow timers to be cancelled when
+ clock was set
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        johnstul@us.ibm.com, davidel@xmailserver.org, virtuoso@slind.org,
+        tglx@linutronix.de, chris.friesen@genband.com, kirill@shutemov.name,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 03:00:44AM -0400, Jean Delvare wrote:
-> On Tue, 10 May 2011 19:53:38 -0700, Guenter Roeck wrote:
-> > On Mon, May 09, 2011 at 02:45:31PM -0400, Nat Gurumoorthy wrote:
-> > > 02 - Chages to hwmon it87 driver to use "request_muxed_region"
-> > > Serialize access to the hardware by using "request_muxed_region" macro defined
-> > > by Alan Cox. Call to this macro will hold off the requestor if the resource is
-> > > currently busy. "superio_enter" will return an error if call to 
-> > > "request_muxed_region" fails. Rest of the code change is to ripple an error
-> > > return from superio_enter to the top level.
-> > > 
-> > > Signed-off-by: Nat Gurumoorthy <natg@google.com>
-> > 
-> > Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> 
-> What's the merge plan for this patch set? I am under the impression
-> that, given the current implementation, both patches can be committed
-> separately, so each would go upstream through its own tree?
-> 
-> If this is the case, then I guess Guenter expects me to pick the it87
-> part in my hwmon tree? If you prefer to take it in yours, I don't mind,
-> I don't have any pending change to the it87 driver.
-> 
-Frankly, I have not thought about it. But you are right, we can pick it up
-separately from the other patch. No preference either way, so please go ahead
-and pick it up.
+On Wed, May 11, 2011 at 15:45, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-05-11 at 13:58 +0200, Kay Sievers wrote:
+>> On Wed, May 11, 2011 at 12:23, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Mon, 2011-05-02 at 19:44 +0000, tip-bot for Thomas Gleixner wrote:
+>> >> Commit-ID:  99ee5315dac6211e972fa3f23bcc9a0343ff58c4
+>> >> Gitweb:     http://git.kernel.org/tip/99ee5315dac6211e972fa3f23bcc9a0343ff58c4
+>> >> Author:     Thomas Gleixner <tglx@linutronix.de>
+>> >> AuthorDate: Wed, 27 Apr 2011 14:16:42 +0200
+>> >> Committer:  Thomas Gleixner <tglx@linutronix.de>
+>> >> CommitDate: Mon, 2 May 2011 21:39:15 +0200
+>> >>
+>> >> timerfd: Allow timers to be cancelled when clock was set
+>> >>
+>> >> Some applications must be aware of clock realtime being set
+>> >> backward. A simple example is a clock applet which arms a timer for
+>> >> the next minute display. If clock realtime is set backward then the
+>> >> applet displays a stale time for the amount of time which the clock
+>> >> was set backwards. Due to that applications poll the time because we
+>> >> don't have an interface.
+>> >
+>> > Shouldn't that clock applet use CLOCK_MONOTONIC for the timer anyway?
+>>
+>> Like: Hey let's meet at the bar 5 hours after bootup? :)
+>
+> Uhm, the example was a timer to update the displayed time, so a timer
+> like: wake me next minute, suffices.
 
-Thanks,
-Guenter
+No, fixed time spans have never been a problem, and are not the
+example here. It's about the normal wall clock, that wakes up every
+minute and updates the numbers on the screen.
+
+Kay
