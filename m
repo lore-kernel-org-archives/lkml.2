@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab1EKQ0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:26:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43777 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757342Ab1EKQ0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:26:15 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: TPS65910 depends on I2C and must be built in
-Date: Wed, 11 May 2011 10:47:47 +0200
-Message-Id: <1305103667-17454-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <20110511122738.93d239cb.sfr@canb.auug.org.au>
-References: <20110511122738.93d239cb.sfr@canb.auug.org.au>
+	id S1755902Ab1EKPxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:53:21 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:44850 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755315Ab1EKPxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:53:18 -0400
+Date: Wed, 11 May 2011 10:51:34 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Linux PCMCIA team <linux-pcmcia@lists.infradead.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [TRIVIAL PATCH 0/3] pcmcia: Make struct pcmcia_device_id const
+Message-ID: <20110511085134.GA27606@comet.dominikbrodowski.net>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	Jiri Kosina <trivial@kernel.org>,
+	Linux PCMCIA team <linux-pcmcia@lists.infradead.org>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <cover.1304475547.git.joe@perches.com>
+ <20110506061527.GA26026@comet.dominikbrodowski.net>
+ <1304705095.11874.21.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304705095.11874.21.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, May 06, 2011 at 11:04:55AM -0700, Joe Perches wrote:
+> On Fri, 2011-05-06 at 08:15 +0200, Dominik Brodowski wrote:
+> > On Tue, May 03, 2011 at 07:28:59PM -0700, Joe Perches wrote:
+> > > Reduces data use.
+> > > Staging could be applied now, but additional harmless warnings do result.
+> > > Joe Perches (3):
+> > >   pcmcia: Make declaration and uses of struct pcmcia_device_id const
+> > >   pcmcia: Convert pcmcia_device_id declarations to const
+> > >   staging: pcmcia: Convert pcmcia_device_id declarations to const
+> > Thanks, applied all three patches to the pcmcia git tree.
+> 
+> Hi Dominik, just so you're aware...
+> 
+> By the time your tree gets pushed, there'll likely
+> be conflicts with staging changes.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index c78865e..0131d49 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -673,7 +673,7 @@ config MFD_OMAP_USB_HOST
- 
- config MFD_TPS65910
- 	bool "TPS65910 Power Management chip"
--	depends on I2C && GPIOLIB
-+	depends on I2C=y && GPIOLIB
- 	select MFD_CORE
- 	help
- 	  if you say yes here you get support for the TPS65910 series of
--- 
-1.7.5.1
+Well, -next doesn't show any issues so far. *knock on wood*
 
+> There are also a couple of uses of pcmcia_device_id
+> in sound/ that could be modified.
+> 
+> $ grep -rPwn --include=*.[ch] pcmcia_device_id sound
+> sound/pcmcia/vx/vxpocket.c:353:static struct pcmcia_device_id vxp_ids[] = {
+> sound/pcmcia/pdaudiocf/pdaudiocf.c:281:static struct pcmcia_device_id snd_pdacf_ids[] = {
+> 
+> Here's a patch for those as well
+
+Thanks, applied.
+
+Best,
+	Dominik
