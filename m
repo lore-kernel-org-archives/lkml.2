@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab1EKQXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:23:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757332Ab1EKQRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:17:05 -0400
-Date: Wed, 11 May 2011 10:28:53 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-throttle: fix typos on struct throtl_grp init code
-Message-ID: <20110511142853.GE31633@redhat.com>
-References: <20110511130732.GB31633@redhat.com>
- <1305120045-5111-1-git-send-email-namhyung@gmail.com>
- <20110511133033.GD31633@redhat.com>
- <1305123242.1561.20.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305123242.1561.20.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757402Ab1EKQTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:19:03 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58835 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab1EKQTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:19:00 -0400
+Subject: Re: [tip:timers/core] timerfd: Allow timers to be cancelled when
+ clock was set
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        johnstul@us.ibm.com, davidel@xmailserver.org, virtuoso@slind.org,
+        tglx@linutronix.de, chris.friesen@genband.com, kirill@shutemov.name,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <BANLkTim5WzcrzSiqhwXrhDDwcxF=JTpZew@mail.gmail.com>
+References: <tip-99ee5315dac6211e972fa3f23bcc9a0343ff58c4@git.kernel.org>
+	 <1305109433.2914.208.camel@laptop>
+	 <BANLkTi=j6eSyyEdGgUeZhQLJVa+meK_W6A@mail.gmail.com>
+	 <1305121541.2914.213.camel@laptop>
+	 <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
+	 <1305122518.2914.224.camel@laptop>
+	 <BANLkTim5WzcrzSiqhwXrhDDwcxF=JTpZew@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 16:30:50 +0200
+Message-ID: <1305124250.2914.225.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 11:14:02PM +0900, Namhyung Kim wrote:
-> 2011-05-11 (수), 09:30 -0400, Vivek Goyal:
-> > On Wed, May 11, 2011 at 10:20:45PM +0900, Namhyung Kim wrote:
-> > > s/td/tg/
-> > 
-> > I think jens would like to have little more changelog than that.
-> > 
+On Wed, 2011-05-11 at 16:22 +0200, Kay Sievers wrote:
+> On Wed, May 11, 2011 at 16:01, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2011-05-11 at 15:52 +0200, Kay Sievers wrote:
+> >>
+> >> No, fixed time spans have never been a problem, and are not the
+> >> example here. It's about the normal wall clock, that wakes up every
+> >> minute and updates the numbers on the screen.
+> >
+> > 'wakes up every minute' sounds like a fixed time interval to me.
 > 
-> OK, let me clarify this first: My first patch was trivial but second one
-> seems not. AFAICS it could affect when the bps/iops bandwidth change
-> applies - maybe delayed to next @tg->disptime? - if there are concurrent
-> cgroup init and limit change tasks, right? Or do you have something need
-> to be included in the changelog?
+> Right, but if the wall clock changes, it must not wait for the full
+> minute to update the numbers, they need to update immediately with the
+> new wall clock time. Stuff woke up every second in the past to do
+> that, but that's not what we want today.
 
-Just say that when a new group is initialized, set tg->limits_changed =
-false instead of setting td->limits_changed to false.
+Again, nothing that couldn't be solved with a notifier of sorts.
 
-We do memset 0 on all newly allocated objects to this might not be
-required at all. 
-
-So how about just getting rid of td->limits_changed assignments and
-not do explicit tg->limits_changed as that is implicit in zeroing of
-newly allocated object.
-
-Thanks
-Vivek
-
-
-> 
-> 
-> > Otherwise looks good to me.
-> > 
-> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> > 
-> > Vivek
-> 
-> Thank you for the review and the comment.
-> 
-> 
-> -- 
-> Regards,
-> Namhyung Kim
-> 
