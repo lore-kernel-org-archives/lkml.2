@@ -1,101 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab1EKC1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 22:27:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44488 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab1EKC1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 22:27:48 -0400
-Date: Wed, 11 May 2011 12:27:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: linux-next: build failure after merge of the voltage tree
-Message-Id: <20110511122738.93d239cb.sfr@canb.auug.org.au>
-In-Reply-To: <6B0D58A8-B278-49D6-835F-C38E7517FCD5@slimlogic.co.uk>
-References: <20110510124434.b30a7631.sfr@canb.auug.org.au>
-	<1305016712.3206.2.camel@odin>
-	<6B0D58A8-B278-49D6-835F-C38E7517FCD5@slimlogic.co.uk>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_May_2011_12_27_38_+1000_sSqZUiikFuRIm8n="
+	id S1753722Ab1EKCby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 22:31:54 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:35520 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab1EKCbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 22:31:52 -0400
+Date: Tue, 10 May 2011 22:30:44 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: avagin@gmail.com, Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Message-ID: <1889981320.330808.1305081044822.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20110510171335.16A7.A69D9226@jp.fujitsu.com>
+Subject: Re: OOM Killer don't works at all if the system have >gigabytes
+ memory (was Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable())
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_May_2011_12_27_38_+1000_sSqZUiikFuRIm8n=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Jorge,
 
-On Tue, 10 May 2011 12:30:36 -0500 Jorge Eduardo Candelaria <jedu@slimlogic=
-.co.uk> wrote:
->
-> On May 10, 2011, at 3:38 AM, Liam Girdwood wrote:
->=20
-> > On Tue, 2011-05-10 at 12:44 +1000, Stephen Rothwell wrote:
-> >> Hi Liam,
-> >>=20
-> >> After merging the voltage tree, today's linux-next build (x86_64
-> >> allmodconfig) failed like this:
-> >>=20
-> >> ERROR: "tps65910_gpio_init" [drivers/mfd/tps65910.ko] undefined!
-> >> ERROR: "tps65910_irq_init" [drivers/mfd/tps65910.ko] undefined!
-> >> ERROR: "irq_modify_status" [drivers/mfd/tps65910-irq.ko] undefined!
-> >> ERROR: "irq_set_chip_and_handler_name" [drivers/mfd/tps65910-irq.ko] u=
-ndefined!
-> >> ERROR: "handle_edge_irq" [drivers/mfd/tps65910-irq.ko] undefined!
-> >>=20
-> >> I have used the voltage tree from next-20110509 for today.
-> >=20
-> > Jorge, could you send a fix for this today.
->=20
-> The following patch should solve this:
->=20
-> From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-> MFD: Fix TPS65910 build
->=20
-> Support for tps65910 as a module is not available. The driver can
-> only be compiled as built-in. OTOH, the regulator driver can still
-> be built as module without breaking the compilation.
->=20
-> Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-
-Today (even with the above patch included) I got these errors from the
-x86_64 allmodconfig build:
-
-tps65910.c:(.text+0xf4140): undefined reference to `i2c_master_send'
-drivers/built-in.o: In function `tps65910_i2c_read':
-tps65910.c:(.text+0xf41d2): undefined reference to `i2c_transfer'
-drivers/built-in.o: In function `tps65910_i2c_init':
-tps65910.c:(.init.text+0xcb83): undefined reference to `i2c_register_driver'
-drivers/built-in.o: In function `tps65910_i2c_exit':
-tps65910.c:(.exit.text+0x6e0): undefined reference to `i2c_del_driver'
-
-I have used the voltage tree from next-20110509 again today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__11_May_2011_12_27_38_+1000_sSqZUiikFuRIm8n=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNyfQaAAoJEDMEi1NhKgbs3UYH/1f8QV+OL2HUxCgRp4vHuQHi
-pY3xLe7nfEr1Jd2aGr+9laEo56dbl88Cvm3yEyc5gsWrR5QCE5iS1SZZ/4DQkoNk
-4z0QCbXxQo7LxPE21S2ueFeKRxvP9Pj//4jryxZCbE/jW2reujuteTkO382T7u6G
-eP/uwR3w/zd7TXZf96X2suvgHeSg+FzdDXYcL9APmfFo/FRotNxYGjgCtRA+IBiT
-emG7qvCrsReU2rpNyfGvdo2vF1UKEsW8Ajgrp7sSI+EQPPlY6mnzKsLnPEJ70vue
-u0M6+yXpB/R8dxrlMSvj7z3+ePTBUPyVtVdrs0Keu6n+zW2fZDS4SdNjxDuU7Ks=
-=k1Ex
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_May_2011_12_27_38_+1000_sSqZUiikFuRIm8n=--
+----- Original Message -----
+> (cc to oom interested people)
+> 
+> > > > > I have tested this for the latest mainline kernel using the
+> > > > > reproducer
+> > > > > attached, the system just hung or deadlock after oom. The
+> > > > > whole oom
+> > > > > trace is here.
+> > > > > http://people.redhat.com/qcai/oom.log
+> > > > >
+> > > > > Did I miss anything?
+> > > >
+> > > > Can you please try commit
+> > > > 929bea7c714220fc76ce3f75bef9056477c28e74?
+> > > As I have mentioned that I have tested the latest mainline which
+> > > have
+> > > already included that fix. Also, does this problem only for x86?
+> > > The
+> > > testing was done using x86_64. Not sure if that would be a
+> > > problem.
+> >
+> > No. I'm also using x86_64 and my machine completely works on current
+> > latest linus tree. I confirmed it today.
+> 
+> > 4194288 pages RAM
+> 
+> You have 16GB RAM.
+> 
+> > Out of memory: Kill process 1175 (dhclient) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1247 (rsyslogd) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1284 (irqbalance) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1303 (rpcbind) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1321 (rpc.statd) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1333 (mdadm) score 1 or sacrifice child
+> > Out of memory: Kill process 1365 (rpc.idmapd) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1403 (dbus-daemon) score 1 or sacrifice
+> > child
+> > Out of memory: Kill process 1438 (acpid) score 1 or sacrifice child
+> > Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
+> > Out of memory: Kill process 1447 (hald) score 1 or sacrifice child
+> > Out of memory: Kill process 1487 (hald-addon-inpu) score 1 or
+> > sacrifice child
+> > Out of memory: Kill process 1488 (hald-addon-acpi) score 1 or
+> > sacrifice child
+> > Out of memory: Kill process 1507 (automount) score 1 or sacrifice
+> > child
+> 
+> Oops.
+> 
+> OK. That's known issue. Current OOM logic doesn't works if you have
+> gigabytes RAM. because _all_ process have the exactly same score (=1).
+> then oom killer just fallback to random process killer. It was made
+> commit a63d83f427 (oom: badness heuristic rewrite). I pointed out
+> it at least three times. You have to blame Google folks. :-/
+> 
+> 
+> The problems are three.
+> 
+> 1) if two processes have the same oom score, we should kill younger
+> process.
+> but current logic kill older. Oldest processes are typicall system
+> daemons.
+> 2) Current logic use 'unsigned int' for internal score calculation.
+> (exactly says,
+> it only use 0-1000 value). its very low precision calculation makes a
+> lot of
+> same oom score and kill an ineligible process.
+> 3) Current logic give 3% of SystemRAM to root processes. It obviously
+> too big
+> if you have plenty memory. Now, your fork-bomb processes have 500MB
+> OOM immune
+> bonus. then your fork-bomb never ever be killed.
+> 
+> 
+> CAI-san: I've made fixing patches. Can you please try them?
+Sure, I saw there were some discussion going on between you and David
+about your patches. Does it make more sense for me to test those after
+you have settled down technical arguments?
