@@ -1,147 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab1EKQpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:45:14 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32219 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755208Ab1EKQpL convert rfc822-to-8bit (ORCPT
+	id S932435Ab1EKQQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:16:49 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:52929 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932409Ab1EKQQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:45:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hiJ0CXyGMK3LCYVn3k8sepH1s5yKuNb4GtztHOEYS2ZpCZgDSrRl/gzZXgo30v2bWX
-         jsv1LDJVO+F59V9Rn6bw==
+	Wed, 11 May 2011 12:16:47 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DCA5A97.90704@cam.ac.uk>
+Date: Wed, 11 May 2011 10:44:55 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DC8E748.90505@jp.fujitsu.com>
-References: <20110503092846.022272244@google.com> <20110503092904.806273470@google.com>
- <4DC8E748.90505@jp.fujitsu.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 11 May 2011 02:37:38 -0700
-Message-ID: <BANLkTimPX7Jq03HwNdP+GBCzqmYnUVLmBA@mail.gmail.com>
-Subject: Re: [patch 04/15] sched: validate CFS quota hierarchies
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH] irq: export handle_simple_irq, irq_modify_status, irq_to_desc,
+ irq_alloc_descs and irq_free_descs
+References: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 12:20 AM, Hidetoshi Seto
-<seto.hidetoshi@jp.fujitsu.com> wrote:
-> Description typos + one bug.
->
-> (2011/05/03 18:28), Paul Turner wrote:
->> Add constraints validation for CFS bandwidth hierachies.
->
->                                               hierarchies
->
->>
->> Validate that:
->>    sum(child bandwidth) <= parent_bandwidth
->>
->> In a quota limited hierarchy, an unconstrainted entity
->
->                                   unconstrained
->
->> (e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
->>
->> Since bandwidth periods may be non-uniform we normalize to the maximum allowed
->> period, 1 second.
->>
->> This behavior may be disabled (allowing child bandwidth to exceed parent) via
->> kernel.sched_cfs_bandwidth_consistent=0
->>
->> Signed-off-by: Paul Turner <pjt@google.com>
->>
->> ---
-> (snip)
->> +/*
->> + * normalize group quota/period to be quota/max_period
->> + * note: units are usecs
->> + */
->> +static u64 normalize_cfs_quota(struct task_group *tg,
->> +                            struct cfs_schedulable_data *d)
->> +{
->> +     u64 quota, period;
->> +
->> +     if (tg == d->tg) {
->> +             period = d->period;
->> +             quota = d->quota;
->> +     } else {
->> +             period = tg_get_cfs_period(tg);
->> +             quota = tg_get_cfs_quota(tg);
->> +     }
->> +
->> +     if (quota == RUNTIME_INF)
->> +             return RUNTIME_INF;
->> +
->> +     return to_ratio(period, quota);
->> +}
->
-> Since tg_get_cfs_quota() doesn't return RUNTIME_INF but -1,
-> this function needs a fix like following.
->
-> For fixed version, feel free to add:
->
-> Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
->
-> Thanks,
-> H.Seto
->
+Hi Thomas/All,
+
+Any feedback on this patch?  We have a lot of code dependent on this and
+with the merge window approaching would like to know if this will be going
+in or not.
+
+Thanks and sorry for pestering!
+
+Jonathan
+
+On 05/04/11 17:18, Jonathan Cameron wrote:
+> V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
+> 
+> This is to allow their use in IIO. We have complete control of
+> both the irq_chip creation and requesting of irqs so would like
+> to be able to build as a module. That requires these exports.
+> 
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 > ---
->  kernel/sched.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index d2562aa..f171ba5 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -9465,16 +9465,17 @@ static u64 normalize_cfs_quota(struct task_group *tg,
->        u64 quota, period;
->
->        if (tg == d->tg) {
-> +               if (d->quota == RUNTIME_INF)
-> +                       return RUNTIME_INF;
->                period = d->period;
->                quota = d->quota;
->        } else {
-> +               if (tg_cfs_bandwidth(tg)->quota == RUNTIME_INF)
-> +                       return RUNTIME_INF;
->                period = tg_get_cfs_period(tg);
->                quota = tg_get_cfs_quota(tg);
->        }
->
+>  kernel/irq/chip.c    |    2 ++
+>  kernel/irq/irqdesc.c |    3 +++
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index 4af1e2b..ad409d3 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
+>  out_unlock:
+>  	raw_spin_unlock(&desc->lock);
+>  }
+> +EXPORT_SYMBOL_GPL(handle_simple_irq);
+>  
+>  /**
+>   *	handle_level_irq - Level type irq handler
+> @@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+>  
+>  	irq_put_desc_unlock(desc, flags);
+>  }
+> +EXPORT_SYMBOL_GPL(irq_modify_status);
+>  
+>  /**
+>   *	irq_cpu_online - Invoke all irq_cpu_online functions.
+> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+> index 2c039c9..5ac14e2 100644
+> --- a/kernel/irq/irqdesc.c
+> +++ b/kernel/irq/irqdesc.c
+> @@ -110,6 +110,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
+>  {
+>  	return radix_tree_lookup(&irq_desc_tree, irq);
+>  }
+> +EXPORT_SYMBOL_GPL(irq_to_desc);
+>  
+>  static void delete_irq_desc(unsigned int irq)
+>  {
+> @@ -311,6 +312,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+>  	bitmap_clear(allocated_irqs, from, cnt);
+>  	mutex_unlock(&sparse_irq_lock);
+>  }
+> +EXPORT_SYMBOL_GPL(irq_free_descs);
+>  
+>  /**
+>   * irq_alloc_descs - allocate and initialize a range of irq descriptors
+> @@ -351,6 +353,7 @@ err:
+>  	mutex_unlock(&sparse_irq_lock);
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_alloc_descs);
+>  
+>  /**
+>   * irq_reserve_irqs - mark irqs allocated
 
-Good catch!
-
-Just modifying:
-+if (quota == RUNTIME_INF || quota == -1)
-+                       return RUNTIME_INF;
-
-Seems simpler.
-
-Although really there's no reason for tg_get_cfs_runtime (and
-sched_group_rt_runtime from which it's cloned) not to be returning
-RUNTIME_INF and then doing the conversion within the cgroupfs handler.
-
-Fixing both is probably a better clean-up.
-
-> -       if (quota == RUNTIME_INF)
-> -               return RUNTIME_INF;
-> -
->        return to_ratio(period, quota);
->  }
->
->
->
