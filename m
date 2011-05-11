@@ -1,107 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1EKPtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:49:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47764 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab1EKPtA (ORCPT
+	id S1757247Ab1EKQOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:14:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54031 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab1EKQOO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:49:00 -0400
+	Wed, 11 May 2011 12:14:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eTodDqanCoa2Ot6TVlzNAT+k3jV+EDG+HzARZxLtpie1rP+D4AXdfMExfnHLfVNiXA
-         4Aqee7cxJYI135ATGzWCMuYsRpVgN12Q0v5Zia5yWthSblRNYnqMIo67ag7V9xJSMK1j
-         AgndmfXeKWotogNPqoSnvLCjY34JUvkm2I2dI=
-Date: Wed, 11 May 2011 11:05:51 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 11/11] ptrace: implement group stop notification for
- ptracer
-Message-ID: <20110511090551.GC1661@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
- <201105110037.34051.vda.linux@googlemail.com>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=umC5nnRtTSA3BQGWOnS1NMInlgQOR3youdTbZMS7wSGI0C7J9i1lftNILkBvWvru7Y
+         UNAL/VgcBanYoIIWCNLw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105110037.34051.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DCA4132.5080502@jp.fujitsu.com>
+References: <20110503092846.022272244@google.com> <20110503092905.606935177@google.com>
+ <4DCA4132.5080502@jp.fujitsu.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 11 May 2011 02:09:05 -0700
+Message-ID: <BANLkTimYbTMSSXa0uM8PCOoay6d9pguExA@mail.gmail.com>
+Subject: Re: [patch 13/15] sched: add exports tracking cfs bandwidth control statistics
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Nikhil Rao <ncrao@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Denys.
+On Wed, May 11, 2011 at 12:56 AM, Hidetoshi Seto
+<seto.hidetoshi@jp.fujitsu.com> wrote:
+> Oops, I found an issue here.
+>
+> (2011/05/03 18:28), Paul Turner wrote:
+>> @@ -1628,6 +1631,12 @@ retry:
+>>               raw_spin_unlock(&cfs_b->lock);
+>>               goto retry;
+>>       }
+>> +
+>> +     /* update throttled stats */
+>> +     cfs_b->nr_periods += overrun;
+>> +     if (throttled)
+>> +             cfs_b->nr_throttled += overrun;
+>> +
+>>       cfs_b->runtime = runtime;
+>>       cfs_b->idle = idle;
+>>  out_unlock:
+>
+> Quoting from patch 09/15:
+>
+> +       if (!throttled || quota == RUNTIME_INF)
+> +               goto out;
+> +       idle = 0;
+> +
+> +retry:
+> +       runtime = distribute_cfs_runtime(cfs_b, runtime, runtime_expires);
+> +
+> +       raw_spin_lock(&cfs_b->lock);
+> +       /* new new bandwidth may have been set */
+> +       if (unlikely(runtime_expires != cfs_b->runtime_expires))
+> +               goto out_unlock;
+> +       /*
+> +        * make sure no-one was throttled while we were handing out the new
+> +        * runtime.
+> +        */
+> +       if (runtime > 0 && !list_empty(&cfs_b->throttled_cfs_rq)) {
+> +               raw_spin_unlock(&cfs_b->lock);
+> +               goto retry;
+> +       }
+> +       cfs_b->runtime = runtime;
+> +       cfs_b->idle = idle;
+> +out_unlock:
+> +       raw_spin_unlock(&cfs_b->lock);
+> +out:
+>
+> Since we skip distributing runtime (by "goto out") when !throttled,
+> the new block inserted by this patch is passed only when throttled.
+> So I see that nr_periods and nr_throttled look the same.
+>
+> Maybe we should move this block up like followings.
+>
 
-On Wed, May 11, 2011 at 12:37:34AM +0200, Denys Vlasenko wrote:
-> > When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
-> > is set, which triggers INTERRUPT trap but is sticky until the next
-> > PTRACE_GETSIGINFO.
-> 
-> Why INTERRUPT trap? For group stops, we already have perfectly working
-> way to detect such a stop.
+Yes, makes sense, incorporated -- thanks!
 
-Debugger may continue tracee and put it in a different trap.  In such
-cases, group stop may be initiated and lifted multiple times while a
-tracee is trapped.  It's much nicer to have symmetric notifications in
-those cases.
-
-Also, we might end up adding more status flags to si_pt_flags and it's
-much better to be able to say "INTERRUPT becomes and stays pending
-until the next GETSIGINFO if any of these flags may have chagned" than
-"if XXX change from x to y, or YYY changes to x to y or y to x,
-... blah blah".
-
-> Can we just add a "group cont" notification which looks like
-> a waitpid result with WIFCONTINUED(waitpid_status) == 1 to the tracer?
-
-Consider the following scenario.
-
-1. A syscall traced tracee enters group stop while returning from a
-   syscall.  Tracer is notified.
-
-2. SIGCONT generated.  Tracee is woken up and wait state is generated.
-
-3. Tracee traps for syscall completion before tracer has chance to
-   wait(2).
-
-4. Oops, continued wait state lost.
-
-Note that generation of another trap can't be used to determine end of
-group stop.  It might already have been PTRACE_CONT'd.
-
-This happens because wait states don't queue and shows why edge (or
-instance) notifications are usually worse than level ones.  Think
-about RT signals which are jokes.
-
-> > Re-trapping is used only for group stop and INTERRUPT traps.  If
-> > tracer wants to get notified about group stop, it either leaves tracee
-> > in the initial group stop trap or puts it into INTERRUPT trap.  When
-> > INTERRUPT trap is scheduled while tracee is already in a trap,
-> 
-> Sane tracer has no need to do PTRACE_INTERRUPT on a tracee
-> which is already stopped (for whatever reason): it already knows
-> it's stopped, and why. PTRACE_INTERRUPT is useful to cleanly stop
-> _running_ tracees.
-
-1. User wants to continue stopped task to investigate.
-
-2. Investigation done, now the user wants to wait for the end of group
-   stop which will happen externally.
-
-3. Regardless of the current trap tracee is in, debugger can schedule
-   INTERRUPT and be sure that tracee will trap into INTERRUPT without
-   returning to userland and that it will be notified of group stop
-   state changes.
-
-According to you, the above use case is insane, which might be true
-but I don't really care.  I still want to have gdb which knows how to
-do the above.
-
-Thanks.
-
--- 
-tejun
+> Thanks,
+> H.Seto
+>
+> ---
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1620,6 +1620,12 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+>                idle = cfs_b->idle;
+>                cfs_b->idle = 1;
+>        }
+> +
+> +       /* update throttled stats */
+> +       cfs_b->nr_periods += overrun;
+> +       if (throttled)
+> +               cfs_b->nr_throttled += overrun;
+> +
+>        raw_spin_unlock(&cfs_b->lock);
+>
+>        if (!throttled || quota == RUNTIME_INF)
+> @@ -1642,11 +1648,6 @@ retry:
+>                goto retry;
+>        }
+>
+> -       /* update throttled stats */
+> -       cfs_b->nr_periods += overrun;
+> -       if (throttled)
+> -               cfs_b->nr_throttled += overrun;
+> -
+>        cfs_b->runtime = runtime;
+>        cfs_b->idle = idle;
+>  out_unlock:
+>
+>
+>
