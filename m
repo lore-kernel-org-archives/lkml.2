@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1EKTao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:30:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5862 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658Ab1EKTaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:30:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
-   d="scan'208";a="468449"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Bruce Schlobohm" <bruce.schlobohm@intel.com>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 3/3] x86, cpu: Enable/disable SMEP
-Date: Wed, 11 May 2011 12:18:00 -0700
-Message-Id: <1305141480-843-4-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1305141480-843-1-git-send-email-fenghua.yu@intel.com>
-References: <1305141480-843-1-git-send-email-fenghua.yu@intel.com>
+	id S1754446Ab1EKTTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:19:22 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45923 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754343Ab1EKTTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 15:19:21 -0400
+Subject: Re: apparent regression (crash) - 2.6.38.6
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Michael Tokarev <mjt@tls.msk.ru>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>, stable@kernel.org
+In-Reply-To: <4DCA2D14.3040500@suse.cz>
+References: <4DC9983B.4070006@msgid.tls.msk.ru>  <4DCA2D14.3040500@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 14:19:17 -0500
+Message-ID: <1305141557.2606.33.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On Wed, 2011-05-11 at 08:30 +0200, Jiri Slaby wrote:
+> On 05/10/2011 09:55 PM, Michael Tokarev wrote:
+> > Hello.
+> > 
+> > I just tried 2.6.38.6 (which has been released today), and
+> > discovered that it crashes during bootup on my machine.
+> > 2.6.38.5 with exactly the same config works.
+> 
+> Is it reproducible?
+> 
+> > Unfortunately I don't have time _right now_ to debug the
+> > issue, but will try tomorrow.
+> > 
+> > For now, here's a part of dmesg with an oops, captured
+> > using netconsole.  If someone have a clue, please speak
+> > up ;)
+> > 
+> > What I also noticed is that for some reason, udev now loads
+> > option driver (option: v0.7.2:USB Driver for GSM modems),
+> > even if I don't have any modems connected to the system.
+> > This is obviously not related to the issue at hand.
+> ...
+> > [  106.761932] input: Logitech USB-PS/2 Optical Mouse as /devices/pci0000:00/0000:00:12.1/usb2/2-2/2-2:1.0/input/input6
+> > [  106.762170] generic-usb 0003:046D:C044.0004: input,hidraw0: USB HID v1.10 Mouse [Logitech USB-PS/2 Optical Mouse] on usb-0000:00:12.1-2/input0
+> > [  106.994177] scsi 10:0:0:0: Direct-Access     Kingston DT HyperX        HMAP PQ: 0 ANSI: 0 CCS
+> > [  106.994458] sd 10:0:0:0: Attached scsi generic sg3 type 0
+> > [  106.994628] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+> > [  106.994755] IP: [<ffffffff811bec1b>] elv_queue_empty+0x1b/0x30
 
-Enable/disable newly documented SMEP (Supervisor Mode Execution Protection) CPU
-feature in kernel. CR4.SMEP (bit 20) is 0 at power-on. If the feature is
-supported by CPU (X86_FEATURE_SMEP), enable SMEP by setting CR4.SMEP. New kernel
-option nosmep disables the feature even if the feature is supported by CPU.
+Hmm, it's another missing elevator guard, like this patch:
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/kernel/cpu/common.c        |   21 +++++++++++++++++++++
- 2 files changed, 25 insertions(+), 0 deletions(-)
+http://marc.info/?l=linux-scsi&m=130348673628282
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index cc85a92..56fb8c1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1664,6 +1664,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			noexec=on: enable non-executable mappings (default)
- 			noexec=off: disable non-executable mappings
- 
-+	nosmep		[X86]
-+			Disable SMEP (Supervisor Mode Execution Protection)
-+			even if it is supported by processor.
-+
- 	noexec32	[X86-64]
- 			This affects only 32-bit executables.
- 			noexec32=on: enable non-executable mappings (default)
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index e2ced00..f06b2d5 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -254,6 +254,25 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
- }
- #endif
- 
-+static int disable_smep;
-+static __init int setup_disable_smep(char *arg)
-+{
-+	disable_smep = 1;
-+	return 1;
-+}
-+__setup("nosmep", setup_disable_smep);
-+
-+static __init void setup_smep(struct cpuinfo_x86 *c)
-+{
-+	if (cpu_has(c, X86_FEATURE_SMEP)) {
-+		if (unlikely(disable_smep)) {
-+			setup_clear_cpu_cap(X86_FEATURE_SMEP);
-+			clear_in_cr4(X86_CR4_SMEP);
-+		} else
-+			set_in_cr4(X86_CR4_SMEP);
-+	}
-+}
-+
- /*
-  * Some CPU features depend on higher CPUID levels, which may not always
-  * be available due to CPUID level capping or broken virtualization
-@@ -867,6 +886,8 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
- 	/* Init Machine Check Exception if available. */
- 	mcheck_cpu_init(c);
- 
-+	setup_smep(c);
-+
- 	select_idle_routine(c);
- 
- #ifdef CONFIG_NUMA
--- 
-1.7.2
+I think the bug here is that q->elevator is null, so dereferencing
+elevator->ops gives the bug.
+
+James
+
 
