@@ -1,110 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab1EKVfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:35:09 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:52636 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750Ab1EKVfE convert rfc822-to-8bit (ORCPT
+	id S1756802Ab1EKVjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:39:25 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45702 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756028Ab1EKVjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:35:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WnzSmRojNT3F0BQWvbaX5+OHGNgfz9vvBmW5mSndePE6qXu4zd8grxgvP9/v8xGxQ6
-         yVhOTsgP9sFNfjjezmaTTVmbdwbsED/GtSBjc42Yn68Jd29V3HvIT4cWWouif85nt9pb
-         oH75oy59nh6Gaav+YsnJo2wDFPiTVLkUxGvb4=
-MIME-Version: 1.0
-In-Reply-To: <1305148125.21868.2.camel@lade.trondhjem.org>
-References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
-	<1305148125.21868.2.camel@lade.trondhjem.org>
-Date: Wed, 11 May 2011 17:35:03 -0400
-Message-ID: <BANLkTimWE8FYGh9b7n9QF452dR0tRff50A@mail.gmail.com>
-Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
-From: Peng Huang <shawn.p.huang@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 May 2011 17:39:23 -0400
+Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using
+ high-order allocations
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 16:39:20 -0500
+Message-ID: <1305149960.2606.53.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 5:08 PM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
->> lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
->> indirectly, that causes the kernel crash.
->>
->> RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
->> nfs_lookup_revalidate+0x21/0x4a0 [nfs]
->> RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
->>
->> Call Trace:
->>  [<ffffffff81164a17>] do_revalidate+0x17/0x60
->>  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
->>  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
->>  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
->>  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
->>  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
->>  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
->>  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
->>  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
->>  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
->>  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
->>  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
->>  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
->>  [<ffffffff811692f7>] user_path_at+0x57/0xa0
->>  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
->>  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
->>  [<ffffffff8116b990>] ? filldir+0x0/0xe0
->>  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
->>  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
->>  [<ffffffff8159c995>] ? page_fault+0x25/0x30
->>  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
->>
->> Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
->> ---
->>  fs/nfs/dir.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
->> index 2c3eb33..9452aa5 100644
->> --- a/fs/nfs/dir.c
->> +++ b/fs/nfs/dir.c
->> @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
->>       struct nfs_fattr *fattr = NULL;
->>       int error;
->>
->> -     if (nd->flags & LOOKUP_RCU)
->> +     if (nd != NULL && nd->flags & LOOKUP_RCU)
->>               return -ECHILD;
->>
->>       parent = dget_parent(dentry);
->
-> That's exactly what Tyler Hicks proposed last week and which was NACKed.
-> We simply won't support layered filesystems that don't do intents.
->
-> IOW: Feel free to change the above to.
->
-> if (nd == NULL)
->     return -EIO;
->
+On Wed, 2011-05-11 at 16:29 +0100, Mel Gorman wrote:
+> Debian (and probably Ubuntu) have recently have changed to the default
+> option of SLUB. There are a few reports of people experiencing hangs
+> when copying large amounts of data with kswapd using a large amount of
+> CPU. It appears this is down to SLUB using high orders by default and
+> the page allocator and reclaim struggling to keep up. The following
+> three patches reduce the cost of using those high orders.
+> 
+> Patch 1 prevents kswapd waking up in response to SLUBs speculative
+> 	use of high orders. This eliminates the hangs and while the
+> 	system can still stall for long periods, it recovers.
+> 
+> Patch 2 further reduces the cost by prevent SLUB entering direct
+> 	compaction or reclaim paths on the grounds that falling
+> 	back to order-0 should be cheaper.
+> 
+> Patch 3 defaults SLUB to using order-0 on the grounds that the
+> 	systems that heavily benefit from using high-order are also
+> 	sized to fit in physical memory. On such systems, they should
+> 	manually tune slub_max_order=3.
+> 
+> My own data on this is not great. I haven't really been able to
+> reproduce the same problem locally but a significant failing is
+> that the tests weren't stressing X but I couldn't make meaningful
+> comparisons by just randomly clicking on things (working on fixing
+> this problem).
+> 
+> The test case is simple. "download tar" wgets a large tar file and
+> stores it locally. "unpack" is expanding it (15 times physical RAM
+> in this case) and "delete source dirs" is the tarfile being deleted
+> again. I also experimented with having the tar copied numerous times
+> and into deeper directories to increase the size but the results were
+> not particularly interesting so I left it as one tar.
+> 
+> Test server, 4 CPU threads (AMD Phenom), x86_64, 2G of RAM, no X running
+>                              -       nowake    
+>              largecopy-vanilla       kswapd-v1r1  noexstep-v1r1     default0-v1r1
+> download tar           94 ( 0.00%)   94 ( 0.00%)   94 ( 0.00%)   93 ( 1.08%)
+> unpack tar            521 ( 0.00%)  551 (-5.44%)  482 ( 8.09%)  488 ( 6.76%)
+> delete source dirs    208 ( 0.00%)  218 (-4.59%)  194 ( 7.22%)  194 ( 7.22%)
+> MMTests Statistics: duration
+> User/Sys Time Running Test (seconds)        740.82    777.73    739.98    747.47
+> Total Elapsed Time (seconds)               1046.66   1273.91    962.47    936.17
+> 
+> Disabling kswapd alone hurts performance slightly even though testers
+> report it fixes hangs. I would guess it's because SLUB callers are
+> calling direct reclaim more frequently (I belatedly noticed that
+> compaction was disabled so it's not a factor) but haven't confirmed
+> it. However, preventing kswapd waking or entering direct reclaim and
+> having SLUB falling back to order-0 performed noticeably faster. Just
+> using order-0 in the first place was fastest of all.
+> 
+> I tried running the same test on a test laptop but unfortunately
+> due to a misconfiguration the results were lost. It would take a few
+> hours to rerun so am posting without them.
+> 
+> If the testers verify this series help and we agree the patches are
+> appropriate, they should be considered a stable candidate for 2.6.38.
 
-I tested returning -EIO when nd is NULL. Kernel does not crash, but
-ecryptfs can not work on nfs anymore.
+OK, I confirm that I can't seem to break this one.  No hangs visible,
+even when loading up the system with firefox, evolution, the usual
+massive untar, X and even a distribution upgrade.
 
-Peng Huang
+You can add my tested-by
 
->
->
->
-> --
-> Trond Myklebust
-> Linux NFS client maintainer
->
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->
->
+James
+
+
