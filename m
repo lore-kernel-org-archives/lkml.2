@@ -1,98 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab1EKVIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:08:52 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:18577 "EHLO mx2.netapp.com"
+	id S932101Ab1EKVJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:09:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33403 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756239Ab1EKVIr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:08:47 -0400
-X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
-   d="scan'208";a="547278257"
-Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Peng Huang <shawn.p.huang@gmail.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
-References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 11 May 2011 17:08:45 -0400
-Message-ID: <1305148125.21868.2.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 11 May 2011 21:08:46.0282 (UTC) FILETIME=[9DB50AA0:01CC101F]
+	id S1756501Ab1EKVJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 17:09:15 -0400
+Date: Wed, 11 May 2011 22:09:07 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110511210907.GA17898@suse.de>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+ <1305127773-10570-4-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
-> lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
-> indirectly, that causes the kernel crash.
+On Wed, May 11, 2011 at 01:38:47PM -0700, David Rientjes wrote:
+> On Wed, 11 May 2011, Mel Gorman wrote:
 > 
-> RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
-> nfs_lookup_revalidate+0x21/0x4a0 [nfs]
-> RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+> > To avoid locking and per-cpu overhead, SLUB optimisically uses
+> > high-order allocations up to order-3 by default and falls back to
+> > lower allocations if they fail. While care is taken that the caller
+> > and kswapd take no unusual steps in response to this, there are
+> > further consequences like shrinkers who have to free more objects to
+> > release any memory. There is anecdotal evidence that significant time
+> > is being spent looping in shrinkers with insufficient progress being
+> > made (https://lkml.org/lkml/2011/4/28/361) and keeping kswapd awake.
+> > 
+> > SLUB is now the default allocator and some bug reports have been
+> > pinned down to SLUB using high orders during operations like
+> > copying large amounts of data. SLUBs use of high-orders benefits
+> > applications that are sized to memory appropriately but this does not
+> > necessarily apply to large file servers or desktops.  This patch
+> > causes SLUB to use order-0 pages like SLAB does by default.
+> > There is further evidence that this keeps kswapd's usage lower
+> > (https://lkml.org/lkml/2011/5/10/383).
+> > 
 > 
-> Call Trace:
->  [<ffffffff81164a17>] do_revalidate+0x17/0x60
->  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
->  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
->  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
->  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
->  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
->  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
->  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
->  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
->  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
->  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
->  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
->  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
->  [<ffffffff811692f7>] user_path_at+0x57/0xa0
->  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
->  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
->  [<ffffffff8116b990>] ? filldir+0x0/0xe0
->  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
->  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
->  [<ffffffff8159c995>] ? page_fault+0x25/0x30
->  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+> This is going to severely impact slub's performance for applications on 
+> machines with plenty of memory available where fragmentation isn't a 
+> concern when allocating from caches with large object sizes (even 
+> changing the min order of kamlloc-256 from 1 to 0!) by default for users 
+> who don't use slub_max_order=3 on the command line.  SLUB relies heavily 
+> on allocating from the cpu slab and freeing to the cpu slab to avoid the 
+> slowpaths, so higher order slabs are important for its performance.
 > 
-> Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
-> ---
->  fs/nfs/dir.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+
+I agree with you that there are situations where plenty of memory
+means that that it'll perform much better. However, indications are
+that it breaks down with high CPU usage when memory is low.  Worse,
+once fragmentation becomes a problem, large amounts of UNMOVABLE and
+RECLAIMABLE will make it progressively more expensive to find the
+necessary pages. Perhaps with patches 1 and 2, this is not as much
+of a problem but figures in the leader indicated that for a simple
+workload with large amounts of files and data exceeding physical
+memory that it was better off not to use high orders at all which
+is a situation I'd expect to be encountered by more users than
+performance-sensitive applications.
+
+In other words, we're taking one hit or the other.
+
+> I can get numbers for a simple netperf TCP_RR benchmark with this change 
+> applied to show the degradation on a server with >32GB of RAM with this 
+> patch applied.
 > 
-> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-> index 2c3eb33..9452aa5 100644
-> --- a/fs/nfs/dir.c
-> +++ b/fs/nfs/dir.c
-> @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
->  	struct nfs_fattr *fattr = NULL;
->  	int error;
->  
-> -	if (nd->flags & LOOKUP_RCU)
-> +	if (nd != NULL && nd->flags & LOOKUP_RCU)
->  		return -ECHILD;
->  
->  	parent = dget_parent(dentry);
 
-That's exactly what Tyler Hicks proposed last week and which was NACKed.
-We simply won't support layered filesystems that don't do intents.
+Agreed, I'd expect netperf TCP_RR or TCP_STREAM to take a hit,
+particularly on a local machine where the recycling of pages will
+impact it heavily.
 
-IOW: Feel free to change the above to.
+> It would be ideal if this default could be adjusted based on the amount of 
+> memory available in the smallest node to determine whether we're concerned 
+> about making higher order allocations. 
 
-if (nd == NULL)
-     return -EIO;
+It's not a function of memory size, working set size is what
+is important or at least how many new pages have been allocated
+recently. Fit your workload in physical memory - high orders are
+great. Go larger than that and you hit problems. James' testing
+indicated that kswapd CPU usage dropped to far lower levels with this
+patch applied his test of untarring a large file for example.
 
+> (Using the smallest node as a 
+> metric so that mempolicies and cpusets don't get unfairly biased against.)  
+> With the previous changes in this patchset, specifically avoiding waking 
+> kswapd and doing compaction for the higher order allocs before falling 
+> back to the min order, it shouldn't be devastating to try an order-3 alloc 
+> that will fail quickly.
+> 
 
+Which is more reasonable? That an ordinary user gets a default that
+is fairly safe even if benchmarks that demand the highest performance
+from SLUB take a hit or that administrators running such workloads
+set slub_max_order=3?
 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  Documentation/vm/slub.txt |    2 +-
+> >  mm/slub.c                 |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/vm/slub.txt b/Documentation/vm/slub.txt
+> > index 07375e7..778e9fa 100644
+> > --- a/Documentation/vm/slub.txt
+> > +++ b/Documentation/vm/slub.txt
+> > @@ -117,7 +117,7 @@ can be influenced by kernel parameters:
+> >  
+> >  slub_min_objects=x		(default 4)
+> >  slub_min_order=x		(default 0)
+> > -slub_max_order=x		(default 1)
+> > +slub_max_order=x		(default 0)
+> 
+> Hmm, that was wrong to begin with, it should have been 3.
+> 
+
+True, but I didn't see the point fixing it in a separate patch. If this
+patch gets rejected, I'll submit a documentation fix.
+
+> >  
+> >  slub_min_objects allows to specify how many objects must at least fit
+> >  into one slab in order for the allocation order to be acceptable.
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 1071723..23a4789 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -2198,7 +2198,7 @@ EXPORT_SYMBOL(kmem_cache_free);
+> >   * take the list_lock.
+> >   */
+> >  static int slub_min_order;
+> > -static int slub_max_order = PAGE_ALLOC_COSTLY_ORDER;
+> > +static int slub_max_order;
+> >  static int slub_min_objects;
+> >  
+> >  /*
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Mel Gorman
+SUSE Labs
