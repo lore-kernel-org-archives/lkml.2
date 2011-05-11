@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab1EKSKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 14:10:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47966 "EHLO mga14.intel.com"
+	id S1752294Ab1EKSTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 14:19:08 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:34909 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751430Ab1EKSKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 14:10:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
-   d="scan'208";a="434450253"
-Date: Wed, 11 May 2011 18:55:53 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Skip bogus LVDS VBT mode and check for LVDS
- before adding backlight
-Message-ID: <20110511185553.5260805f@bob.linux.org.uk>
-In-Reply-To: <20110511172053.GA3557@patrik-macbook>
-References: <20110511172053.GA3557@patrik-macbook>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751331Ab1EKSTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 14:19:05 -0400
+Date: Wed, 11 May 2011 11:19:01 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+	writeback for various fses
+Message-ID: <20110511181901.GK20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com> <20110510125124.GD4402@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110510125124.GD4402@quack.suse.cz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011 19:20:53 +0200
-Patrik Jakobsson <patrik.r.jakobsson@gmail.com> wrote:
+On Tue, May 10, 2011 at 02:51:24PM +0200, Jan Kara wrote:
+> On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
+> > I am still chasing down what exactly is broken in ext3.  data=writeback mode
+> > passes with no failures.  data=ordered, however, does not pass; my current
+> > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
+> > page_mkclean to kick the userspace programs off the page before writing it.
+>   Yes, ext3 in data=ordered mode writes pages from
+> journal_commit_transaction() via submit_bh() without clearing page dirty
+> bits thus page_mkclean() is not called for these pages. Frankly, do you
+> really want to bother with adding support for ext2 and ext3? People can use
+> ext4 as a fs driver when they want to start using blk-integrity support.
+> Especially ext2 patch looks really painful and just from a quick look I can
+> see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
 
-> On the Fit-PC2 the VBT reports an invalid fixed panel mode for LVDS,
-> this gets in the way for SDVO. This patch makes VBT parsing skip the
-> invalid mode. When there is no LVDS output the backlight support
-> crashes so the patch also checks for this before enabling it.
+Yeah, I agree that ext2 is ugly and ext3/jbd might be more painful.  Are there
+any other code that wants stable pages that's already running with ext3?  In
+this months-long discussion I've heard that encryption and raid also like
+stable pages during writes.  Have those users been broken this whole time, or
+have they been stabilizing pages themselves?
 
-Looks good for now. The backlight is a bit more complicated I think
-(users can turn on the LVDS at runtime in theory) but we can handle
-that later so long as we tag it with a /* FIXME: Handle turning on LVDS
-at runtime */
+I suppose we can cross the "ext3 fails horribly on DIF" bridge when someone
+complains about it.  Possibly we could try to steer them to btrfs.
 
-Alan
+--D
