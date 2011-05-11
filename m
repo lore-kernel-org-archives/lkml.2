@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab1EKQH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:07:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52555 "EHLO mx1.suse.de"
+	id S1753283Ab1EKPiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:38:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16163 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756841Ab1EKQHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:07:21 -0400
-Date: Wed, 11 May 2011 16:56:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-        tytso@mit.edu
-Subject: Re: [PATCH] Documentation: Remove the obsolete parameters in 2
- jbd2 functions.
-Message-ID: <20110511145604.GF5057@quack.suse.cz>
-References: <1305123521-2896-1-git-send-email-tm@tao.ma>
+	id S1752988Ab1EKPiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:38:12 -0400
+Date: Wed, 11 May 2011 10:56:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk-throttle: get rid of wrong initialization of
+ 'limits_changed'
+Message-ID: <20110511145608.GF31633@redhat.com>
+References: <1305125443-5683-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305123521-2896-1-git-send-email-tm@tao.ma>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305125443-5683-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-05-11 22:18:41, Tao Ma wrote:
-> From: Tao Ma <boyu.mt@taobao.com>
+On Wed, May 11, 2011 at 11:50:43PM +0900, Namhyung Kim wrote:
+> When a new group is initialized, we should set @tg->limits_changed
+> to false instead of setting @td->limits_changed. But @td and @tg
+> are initialized to zero via kzalloc_node(), there is no need to set
+> it explicitly. Just get rid of them.
 > 
-> credits isn't a parameter for jbd2_journal_get_write_access and
-> jbd2_journal_get_undo_access. So remove the corresponding comments.
-> 
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-  For JBD2 changes please CC also Ted Ts'o <tytso@mit.edu> since he is
-merging JBD2 patches. The patch is fine. Thanks.
 
-								Honza
+Thanks. Looks good.
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
 > ---
->  fs/jbd2/transaction.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+>  block/blk-throttle.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
 > 
-> diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-> index 05fa77a..0a82612 100644
-> --- a/fs/jbd2/transaction.c
-> +++ b/fs/jbd2/transaction.c
-> @@ -813,7 +813,6 @@ out:
->   * int jbd2_journal_get_write_access() - notify intent to modify a buffer for metadata (not data) update.
->   * @handle: transaction to add buffer modifications to
->   * @bh:     bh to be used for metadata writes
-> - * @credits: variable that will receive credits for the buffer
->   *
->   * Returns an error code or 0 on success.
->   *
-> @@ -931,7 +930,6 @@ out:
->   *     non-rewindable consequences
->   * @handle: transaction
->   * @bh: buffer to undo
-> - * @credits: store the number of taken credits here (if not NULL)
->   *
->   * Sometimes there is a need to distinguish between metadata which has
->   * been committed to disk and that which has not.  The ext3fs code uses
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 0475a22a420d..5e241ce2695b 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -201,7 +201,6 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+>  	RB_CLEAR_NODE(&tg->rb_node);
+>  	bio_list_init(&tg->bio_lists[0]);
+>  	bio_list_init(&tg->bio_lists[1]);
+> -	td->limits_changed = false;
+>  
+>  	/*
+>  	 * Take the initial reference that will be released on destroy
+> @@ -1060,7 +1059,6 @@ int blk_throtl_init(struct request_queue *q)
+>  
+>  	INIT_HLIST_HEAD(&td->tg_list);
+>  	td->tg_service_tree = THROTL_RB_ROOT;
+> -	td->limits_changed = false;
+>  
+>  	/* Init root group */
+>  	tg = &td->root_tg;
+> @@ -1072,7 +1070,6 @@ int blk_throtl_init(struct request_queue *q)
+>  	/* Practically unlimited BW */
+>  	tg->bps[0] = tg->bps[1] = -1;
+>  	tg->iops[0] = tg->iops[1] = -1;
+> -	td->limits_changed = false;
+>  
+>  	/*
+>  	 * Set root group reference to 2. One reference will be dropped when
 > -- 
-> 1.7.1
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 1.7.5
