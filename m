@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab1EKUQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 16:16:06 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:39759 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab1EKUQE (ORCPT
+	id S1750955Ab1ELEBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 00:01:50 -0400
+Received: from mail.innova-red.net ([200.10.202.10]:43008 "EHLO
+	mail.innova-red.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab1ELEBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 16:16:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=owpgZQKvp2s7RIZ9+mDxCDVF6p6pbk7Cr+TmhZL2qzqc6dZuUFoBdYNKwwsZ+vNCxi
-         +S7rPuxw1ym+HJFJr+LNiupT1c/WcEWVSSnCn7RTLxQNl65c9Y1631uevZCYSJqDEMiR
-         0XaeycAphnppSFpYSYJI6RXn9HBEcJVdjF/uQ=
-Subject: PM / Wakeup: remove useless synchronize_rcu() call
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 22:15:59 +0200
-Message-ID: <1305144959.3232.5.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 May 2011 00:01:49 -0400
+X-Greylist: delayed 19727 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 May 2011 00:01:48 EDT
+Cc: recipient list not shown:;
+Message-ID: <45d0e1f5c59cbce26608003d462de2f4.squirrel@webmail.innova-red.net>
+Date: Wed, 11 May 2011 17:16:19 -0300
+Subject: 
+From: "Western Union Malaysia" <igna@uark.edu>
+Reply-To: western.transfer1@mspil.edu.cn
+User-Agent: SquirrelMail/1.4.20-RC2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wakeup_source_add() adds an item into wakeup_sources list.
-
-There is no need to call synchronize_rcu() at this point.
-
-Its only needed in wakeup_source_remove()
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: David Miller <davem@davemloft.net>,
-CC: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/base/power/wakeup.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-index abbbd33..84f7c7d 100644
---- a/drivers/base/power/wakeup.c
-+++ b/drivers/base/power/wakeup.c
-@@ -110,7 +110,6 @@ void wakeup_source_add(struct wakeup_source *ws)
- 	spin_lock_irq(&events_lock);
- 	list_add_rcu(&ws->entry, &wakeup_sources);
- 	spin_unlock_irq(&events_lock);
--	synchronize_rcu();
- }
- EXPORT_SYMBOL_GPL(wakeup_source_add);
- 
 
 
+
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by the Malaysian
+Government and Mr. David Cameron the United Kingdom
+prime minister after the last G20 meeting that was
+held in Malaysia, making you one of the beneficiaries.
+Here is the information below.
+
+MTCN Numbers: 6096147516
+Sender Name Is = Patrick Lee Chun
+
+  I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+  A certificate will be made to change the Receivers Name
+to your name as stated by the Malaysian Government, send
+your Full Names and address via Email to: Mr Garry Moore
+to proceed.
+
+                         Note:
+
+  You cannot pickup the money until the certificate is
+obtained by you.
+
+Regards
+Mr. Garry Moore.
+Tel: +(60) 136910048.
+
+For more info: www.g20.org
