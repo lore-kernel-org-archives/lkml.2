@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab1EKWgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:36:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15461 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754280Ab1EKWgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:36:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
-   d="scan'208";a="641471759"
-From: Andi Kleen <andi@firstfloor.org>
-To: "Fenghua Yu" <fenghua.yu@intel.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] x86, cpu: Enable/disable SMEP
-References: <1305141480-843-1-git-send-email-fenghua.yu@intel.com>
-	<1305141480-843-4-git-send-email-fenghua.yu@intel.com>
-Date: Wed, 11 May 2011 15:36:30 -0700
-In-Reply-To: <1305141480-843-4-git-send-email-fenghua.yu@intel.com> (Fenghua
-	Yu's message of "Wed, 11 May 2011 12:18:00 -0700")
-Message-ID: <m2k4dwj24x.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S932542Ab1EKWhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:37:31 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:58727 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab1EKWh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 18:37:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=H3KGk404hvvGDccGuglsmiULG8gOcwD4LvPNBokpSxkmB+H6rUdmPgDvrprj7KQKkf
+         ysZwrUwEGmBvNT4K4OroGhwlMYK+1vk0jzRJhVp/6kDdb50izAtAZdmjrNDA0A4kpN95
+         LLi5MWOaYfbvsAmWkI7rZ+mUX/WUE2eQ7Ft+Q=
+Date: Thu, 12 May 2011 00:37:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        oprofile-list@lists.sf.net, oleg@redhat.com, akpm@linux-foundation.org,
+        ying.huang@intel.com, ssp@redhat.com, namhyung@gmail.com,
+        x86@kernel.org, hpa@zytor.com, tglx@linutronix.de,
+        robert.richter@amd.com, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] [RFC] remove warning and warning_symbol from struct
+ stacktrace_ops
+Message-ID: <20110511223719.GC1846@nowhere>
+References: <1304709791-4232-1-git-send-email-richard@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304709791-4232-1-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Fenghua Yu" <fenghua.yu@intel.com> writes:
-  
-> +static int disable_smep;
+On Fri, May 06, 2011 at 09:23:11PM +0200, Richard Weinberger wrote:
+> Both warning and warning_symbol are nowhere used.
+> Let's get rid of them.
 
-If you add a __initdata here the whole thing will completely disappear
-after boot.
+I have no clue what it was used for. But fine let's assume
+it's a leftover of some previous removal.
 
-> @@ -867,6 +886,8 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
->  	/* Init Machine Check Exception if available. */
->  	mcheck_cpu_init(c);
->  
-> +	setup_smep(c);
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/sh/include/asm/stacktrace.h  |    3 ---
+>  arch/sh/kernel/dumpstack.c        |   15 ---------------
+>  arch/sh/kernel/perf_callchain.c   |   12 ------------
+>  arch/sh/kernel/stacktrace.c       |   13 -------------
+>  arch/sh/oprofile/backtrace.c      |   13 -------------
 
-My feeling is you're setting this too late. In theory there could be
-early overflows. Better use a early_param and set it as early
-as possible, directly after the cpuid flags are set up in early
-initialization.
+Can you please split your patch in two parts: one for sh and
+another for x86?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks.
+
+>  arch/x86/include/asm/stacktrace.h |    3 ---
+>  arch/x86/kernel/cpu/perf_event.c  |   13 -------------
+>  arch/x86/kernel/dumpstack.c       |   16 ----------------
+>  arch/x86/kernel/stacktrace.c      |   13 -------------
+>  arch/x86/oprofile/backtrace.c     |   13 -------------
+>  10 files changed, 0 insertions(+), 114 deletions(-)
