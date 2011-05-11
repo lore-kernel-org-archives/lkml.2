@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab1EKT2v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:28:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45136 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab1EKT2u (ORCPT
+	id S1754845Ab1EKT3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:29:10 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47361 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab1EKT3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:28:50 -0400
+	Wed, 11 May 2011 15:29:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FFjQcFTzoaUrW5yNmHsDAbPn4cLLtOuoewCqW42KAKgGRdsinmHLzdK74RGYnEBwKj
-         OePwj0zLFugPXgPxNRBEyCGZnQeRgDakMrKOcoFxrrh2rsJLjZQEIN2oxGjklTjL/rSf
-         xbSyzmMzi4o5oJaf639Q6CqHeN6wD+5AGq66I=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=r3AElS+px40Vov6eQcLlDX4ot9aQLwrPP+XByxECrFo5kVSYfSZ6zhTxr0YcmK+PGT
+         mhpHElBw0rnP4hVaxQJEeszMJOkTN6RvIE/5yk6x17QlAVJaYQ65LwL+MPB8aIfY1NGC
+         ik2tN4bn0d0icDsG0pdK4BPz5C8kg+cw797Co=
+Date: Wed, 11 May 2011 21:29:02 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 09/11] job control: reorganize wait_task_stopped()
+Message-ID: <20110511192902.GC24245@mtj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-10-git-send-email-tj@kernel.org>
+ <20110511154854.GB23688@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <30230.1305133219@redhat.com>
-References: <30230.1305133219@redhat.com>
-Date: Wed, 11 May 2011 12:28:49 -0700
-Message-ID: <BANLkTinr18+f12kyMZdiYAu+hNqH+5XyXQ@mail.gmail.com>
-Subject: Re: Unionmount fallthru directory entries
-From: Valerie Aurora <valerie.aurora@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110511154854.GB23688@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 10:00 AM, David Howells <dhowells@redhat.com> wrote:
->
-> What are unionmount fallthru directory entries for and why are they needed?
+Hello,
 
-The long version of this answer is in:
+On Wed, May 11, 2011 at 05:48:54PM +0200, Oleg Nesterov wrote:
+> >   It seems that WNOHANG wait correctness has never been guaranteed and
+> >   everybody has been happy with it for very long time.
+> 
+> Yes, the window is tiny. May be it was never noticed or never
+> reported because this is hard to diagnose/reproduced.
 
-http://lwn.net/Articles/325369/
+Yeah, most likely.
 
-The short version is that fallthrus allow you to generate and use a
-32-bit d_off in readdir() using the topmost file system's native
-readdir() implementation.  It lets you process duplicates and
-whiteouts only once per directory, instead of every time you open it,
-and does not require pinning O(size of all unioned dirs) memory while
-the directory is open, and does not require a d_off generating hack
-when readdir() runs off the end of the first dir (which no one has
-made fs-agnostic so far).  The problems with previous approaches are
-summarized in that article.
+> > As such,
+> >   although this reorganization improves the situation a bit, I don't
+> >   consider this to be a bug fix.
+> 
+> But it is?
+> 
+> Can't we push this patch ahead of these changes? I can merge it into
+> ptrace branch.
 
-> I'm guess that what they do is indicate that the dirent in question must be
-> looked up in the corresponding directory on the underlying fs.
+It doesn't really fix the problem tho.  The whole thing is full of
+holes and I think it would be better to just declare "WNOHANG might
+fail even when it's not supposed to, retry later" than making the
+locking heavier there, which could easily be much more relevant
+regression.  Of course, if we can fix it without adding extra locking
+or too much complexity, it would be nice.
 
-Yes, if you are doing something that isn't just readdir().
+Anyways, yeah, sure.  I'll resend it as a separate patch.
 
-> As to why they are needed, am I right in thinking that unionmount caches a
-> copy of all the lower directory's entries in the upper directory with fallthru
-> markers set on the first call to readdir?
+Thanks.
 
-Yes, but actually on the first lookup, not first readdir(), if I
-recall correctly.  The duplicate and whiteout processing are done
-exactly once, on first lookup of the directory, and then the directory
-is marked opaque.
-
-It's the best solution I've seen so far, but that doesn't mean it
-can't be improved.
-
--VAL
+-- 
+tejun
