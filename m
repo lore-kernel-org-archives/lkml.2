@@ -1,139 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab1EKQEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:04:45 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:54594 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755114Ab1EKQEn convert rfc822-to-8bit (ORCPT
+	id S1756729Ab1EKQAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:00:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54148 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab1EKP6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:04:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110510205320.GE8726@opensource.wolfsonmicro.com>
-References: <BANLkTimXbG5TkzV-MthUtkQ8k26AOPsqHw@mail.gmail.com>
-	<20110510205320.GE8726@opensource.wolfsonmicro.com>
-Date: Wed, 11 May 2011 10:09:20 -0500
-Message-ID: <BANLkTinHZrQiq=E8W1YFpG=Mvre_0DXEoA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] tps65912: add regulator driver
-From: Margarita Olaya <magi@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 May 2011 11:58:47 -0400
+Subject: Re: [tip:timers/core] timerfd: Allow timers to be cancelled when
+ clock was set
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        johnstul@us.ibm.com, davidel@xmailserver.org, virtuoso@slind.org,
+        tglx@linutronix.de, chris.friesen@genband.com, kirill@shutemov.name,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <BANLkTi=aOsRs4iS_j41=NNESC2rgmwtpbg@mail.gmail.com>
+References: <tip-99ee5315dac6211e972fa3f23bcc9a0343ff58c4@git.kernel.org>
+	 <1305109433.2914.208.camel@laptop>
+	 <BANLkTi=j6eSyyEdGgUeZhQLJVa+meK_W6A@mail.gmail.com>
+	 <1305121541.2914.213.camel@laptop>
+	 <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
+	 <1305122518.2914.224.camel@laptop>
+	 <BANLkTim5WzcrzSiqhwXrhDDwcxF=JTpZew@mail.gmail.com>
+	 <1305124250.2914.225.camel@laptop>
+	 <BANLkTimvqAY9hwHujUVoQhN2eZQz-MVhgg@mail.gmail.com>
+	 <1305125333.2914.229.camel@laptop>
+	 <BANLkTi=aOsRs4iS_j41=NNESC2rgmwtpbg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 17:11:20 +0200
+Message-ID: <1305126680.2914.238.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Wed, 2011-05-11 at 16:53 +0200, Kay Sievers wrote:
+> 
+> > Dunno, an eventfd that triggers every time someone calls adjtime() and
+> > related?
+> 
+> I think, we are exactly not interested in adjtime() calls, but only in
+> jumps in wall clock time. 
 
-On Tue, May 10, 2011 at 3:53 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, May 10, 2011 at 03:25:59PM -0500, Margarita Olaya wrote:
->
-> A lot of this driver looks awfully similar to a bunch of the other TI
-> PMIC drivers posted recently - is it possible to reuse some of driver
-> code here?
->
+adjtime(), adjtimex() and settimeofday() are afaik the only ways to make
+walltime jump. Anyway what are you arguing about, don't you want the
+notification or do you insist on making the kernel slower for the 3
+people who care about this daftness?
 
-911/10 and 912 are separate IC families, and there will be future
-patches that differentiate the code much further.
-
-Regards,
-Margarita
-
->> +/* Supported voltage values for regulators */
->> +static const u16 VDCDCx_VSEL0_table[] = {
->> +     5000, 5125, 5250, 5375, 5500,
->> +     5625, 5750, 5875, 6000, 6125,
->
-> All these tables look like they're nice regular voltage steps and could
-> be replaced with simple calculations in the code.  That's better as it
-> means we don't have to iterate through the table every time we want to
-> do anything.
->
->> +static inline int tps65912_read(struct tps65912_reg *pmic, u8 reg)
->> +{
->> +     u8 val;
->> +     int err;
->> +
->> +     err = pmic->mfd->read(pmic->mfd, reg, 1, &val);
->> +     if (err < 0)
->> +             return err;
->> +
->> +     return val;
->> +}
->
-> Shouldn't the MFD driver just export this function?  Both the IRQ and
-> GPIO drivers also need it.  Similarly for write() and the reg_ versions
-> of them.
->
->> +             reg1_val |= DCDCCTRL_DCDC_MODE_MASK;
->> +             tps65912_reg_write(pmic, reg1, reg1_val);
->> +             reg2_val &= ~DCDC_AVS_ECO_MASK;
->> +             tps65912_reg_write(pmic, reg2, reg2_val);
->
-> There's set_bits() and clear_bits() ops in the core...
->
->> +     switch (range) {
->> +     case 0:
->> +             /* 0.5 - 1.2875V in 12.5mV steps */
->> +             voltage = tps65912_vsel_to_uv_range0(vsel);
->> +             break;
->
-> Just implement get_voltage_sel() and let the core do the lookup.
->
->> +static int tps65912_set_voltage_dcdc(struct regulator_dev *dev,
->> +                                             unsigned selector)
->> +{
->> +     struct tps65912_reg *pmic = rdev_get_drvdata(dev);
->> +     int id = rdev_get_id(dev);
->> +     int value;
->> +     const u16 *table;
->> +     u8 table_len, reg;
->> +
->> +     table = pmic->info[id]->table;
->> +     table_len = pmic->info[id]->table_len;
->> +
->> +     reg = tps65912_get_dcdc_sel_register(pmic, id);
->> +     value = tps65912_reg_read(pmic, reg);
->> +     value &= 0xC0;
->> +     return tps65912_reg_write(pmic, reg, selector | value);
->
-> You're not actually doing anything with table here...
->
->> +static int tps65912_get_voltage_ldo(struct regulator_dev *dev)
->> +{
->> +     struct tps65912_reg *pmic = rdev_get_drvdata(dev);
->> +     int id = rdev_get_id(dev), voltage = 0;
->> +     int vsel = 0;
->> +     u8 reg;
->> +
->> +     reg = tps65912_get_ldo_sel_register(pmic, id);
->> +     vsel = tps65912_reg_read(pmic, reg);
->> +     vsel &= 0x3F;
->> +
->> +     /* 0.5 - 1.2875V in 12.5mV steps */
->> +     voltage = LDO_VSEL_table[vsel];
->> +
->> +     return voltage * 100;
->
-> Just make this into a get_voltage_sel().
->
->> +static int tps65912_list_voltage_dcdc(struct regulator_dev *dev,
->> +                                     unsigned selector)
->> +{
->> +     struct tps65912_reg *pmic = rdev_get_drvdata(dev);
->> +     int id = rdev_get_id(dev);
->> +     const u16 *table;
->> +     u8 table_len;
->> +
->> +     table = pmic->info[id]->table;
->> +     table_len = pmic->info[id]->table_len;
->> +     if (selector >= table_len)
->> +             return -EINVAL;
->> +     else
->> +             return table[selector] * 100;
->> +}
->
-> There were a bunch of vsel_to_uV functions further up the driver which
-> do the same thing - one of the two implementations should go.
->
