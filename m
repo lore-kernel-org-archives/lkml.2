@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab1EKQm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:42:29 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57380 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab1EKQm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:42:26 -0400
-Date: Wed, 11 May 2011 00:44:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
-Message-ID: <20110511074403.GW2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <6921.1304989476@localhost>
- <20110510082029.GF2258@linux.vnet.ibm.com>
- <20110510085746.GG27426@elte.hu>
- <20110510162158.GK2258@linux.vnet.ibm.com>
- <20110510204443.GF21903@elte.hu>
+	id S1756093Ab1EKQ5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:57:51 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65322 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757844Ab1EKQ5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:57:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bBUlM1hYgpLnL/i1+wrHJAwGou9A4yFGBd3hIIMpRLFGBkzJRc3ZMefQcd2X8416FM
+         NAHwd5SR73U9Gld7NpBjNTSEyeMPZmpU7pIwgfxePD3SzxKvqQUGbBxMqQCRLc1woE5o
+         K9zHX26Rd7ZGjHAHKCMCkb0dGm+bRib3SGVaM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110510204443.GF21903@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110510234526.GC18929@game.jcrosoft.org>
+References: <4DC53134.8070706@gmail.com>
+	<20110510234526.GC18929@game.jcrosoft.org>
+Date: Wed, 11 May 2011 09:44:52 +0200
+Message-ID: <BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
+Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
+From: Andrew Victor <avictor.za@gmail.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Maxim Osipov <maxim.osipov@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 10:44:43PM +0200, Ingo Molnar wrote:
-> 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Tue, May 10, 2011 at 10:57:46AM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > -	raw_spin_lock_irqsave(&rnp->lock, flags);
-> > > > -	rnp->wakemask |= rdp->grpmask;
-> > > > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > > > +	do {
-> > > > +		old = rnp->wakemask;
-> > > > +		new = old | rdp->grpmask;
-> > > > +	} while (cmpxchg(&rnp->wakemask, old, new) != old);
-> > > 
-> > > Hm, isnt this an inferior version of atomic_or_long() in essence?
-> > > 
-> > > Note that atomic_or_long() is x86 only, so a generic one would have to be 
-> > > offered too i suspect, atomic_cmpxchg() driven or so - which would look like 
-> > > the above loop.
-> > > 
-> > > Most architectures could offer atomic_or_long() i suspect.
-> > 
-> > Is the following what you had in mind?  This (untested) patch provides only 
-> > the generic function: if this is what you had in mind, I can put together 
-> > optimized versions for a couple of the architectures.
-> 
-> Yeah, something like this, except:
-> 
-> > +#ifndef CONFIG_ARCH_HAS_ATOMIC_OR_LONG
-> > +static inline void atomic_or_long(unsigned long *v1, unsigned long v2)
-> > +{
-> > +	unsigned long old;
-> > +	unsigned long new;
-> > +
-> > +	do {
-> > +		old = ACCESS_ONCE(*v1);
-> > +		new = old | v2;
-> > +	} while (cmpxchg(v1, old, new) != old);
-> > +}
-> > +#endif /* #ifndef CONFIG_ARCH_HAS_ATOMIC_OR_LONG */
-> 
-> Shouldnt that method work on atomic_t (or atomic64_t)?
+hi,
 
-Works for me -- and in this case it is quite easy to change existing uses.
+>> This patch enables external RTC support on AT91 Flexibity board.
 
-							Thanx, Paul
+Acked-by: Andrew Victor <linux@maxim.org.za>
+
+Maxim: You can submit it to Russell's patch system.
+
+
+> looks fine just one comment please add your board to the new at91sam9260_defconfig
+
+That file does not exist in any mainline kernel.
+
+
+Regards,
+  Andrew Victor
