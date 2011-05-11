@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab1EKUxR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 16:53:17 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59356 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755635Ab1EKUxQ (ORCPT
+	id S1755815Ab1EKUyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 16:54:24 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:41311 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755664Ab1EKUyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 16:53:16 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 15:53:11 -0500
-Message-ID: <1305147191.2606.51.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 May 2011 16:54:22 -0400
+Date: Wed, 11 May 2011 23:54:09 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: balbi@ti.com, greg@kroah.com, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
+        "'Maya Erez'" <merez@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 5/7] usb: Add streams support to the gadget framework
+Message-ID: <20110511205404.GZ2505@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1304853414-10234-1-git-send-email-tlinder@codeaurora.org>
+ <1304853414-10234-6-git-send-email-tlinder@codeaurora.org>
+ <20110509092555.GF1254@legolas.emea.dhcp.ti.com>
+ <000a01cc0fdf$7fa623e0$7ef26ba0$@org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000a01cc0fdf$7fa623e0$7ef26ba0$@org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 13:38 -0700, David Rientjes wrote:
-> On Wed, 11 May 2011, Mel Gorman wrote:
+Hi,
+
+On Wed, May 11, 2011 at 04:29:44PM +0300, Tanya Brokhman wrote:
+> Hi Felipe
 > 
-> > To avoid locking and per-cpu overhead, SLUB optimisically uses
-> > high-order allocations up to order-3 by default and falls back to
-> > lower allocations if they fail. While care is taken that the caller
-> > and kswapd take no unusual steps in response to this, there are
-> > further consequences like shrinkers who have to free more objects to
-> > release any memory. There is anecdotal evidence that significant time
-> > is being spent looping in shrinkers with insufficient progress being
-> > made (https://lkml.org/lkml/2011/4/28/361) and keeping kswapd awake.
+> > > @@ -129,6 +132,22 @@ ep_matches (
+> > >  	}
+> > >
+> > >  	/*
+> > > +	 * Get the number of required streams from the EP companion
+> > > +	 * descriptor and see if the EP matches it
+> > > +	 */
+> > > +	if (usb_endpoint_xfer_bulk(desc)) {
+> > > +		if (ep_comp) {
+> > > +			num_req_streams = ep_comp->bmAttributes & 0x1f;
+> > > +			if (num_req_streams > ep->max_streams)
+> > > +				return 0;
 > > 
-> > SLUB is now the default allocator and some bug reports have been
-> > pinned down to SLUB using high orders during operations like
-> > copying large amounts of data. SLUBs use of high-orders benefits
-> > applications that are sized to memory appropriately but this does not
-> > necessarily apply to large file servers or desktops.  This patch
-> > causes SLUB to use order-0 pages like SLAB does by default.
-> > There is further evidence that this keeps kswapd's usage lower
-> > (https://lkml.org/lkml/2011/5/10/383).
+> > We would like the gadget drivers to all with all controllers, this
+> > would
+> > likely be better to ask from controller driver for N streams but work
+> > if
+> > we get less ? Something like:
+> > 
+> > struct usb_gadget_ops {
+> > 	...
+> > 	request_stream(struct usb_gadget *g, int max_streams);
+> > };
+> > 
+> > if (usb_endpoint_xfer_bulk(desc)) {
+> > 	if (ep_comp) {
+> > 		num_req_streams = usb_gadget_request_streams(gadget,
+> > 			ep_comp->bmAttributes & 0x1f);
+> > 
+> > 		/* now patch ep_comp descriptor */
+> > 		ep_comp->bmAttributes = num_req_streams;
+> > 	}
+> > }
+> > 
+> > this way, different function drivers can request for a different number
+> > of streams and controller driver is required to keep track of total
+> > number of streams, and number of "busy" streams.
 > > 
 > 
-> This is going to severely impact slub's performance for applications on 
-> machines with plenty of memory available where fragmentation isn't a 
-> concern when allocating from caches with large object sizes (even 
-> changing the min order of kamlloc-256 from 1 to 0!) by default for users 
-> who don't use slub_max_order=3 on the command line.  SLUB relies heavily 
-> on allocating from the cpu slab and freeing to the cpu slab to avoid the 
-> slowpaths, so higher order slabs are important for its performance.
+> I'm not sure I understand what you meant by the above..
+> When choosing this approach we thought of the following design:
+> Each controller knows how many streams it supports for each endpoint and
+> inits the ep->max_streams filed accordingly. Each gadget driver declares the
+> number of streams it wishes to operate with using the comp_desc and if the
+> endpoint can support the requested number of streams - it's allocated for
+> that gadget driver. If no matching endpoint is found - it's up to the gadget
+> driver to decide what to do next. One approach could be to try and configure
+> the endpoint with less streams. For example in UAS if configuring the
+> endpoint with streams>0 fails, we fall  back to HS mode where no streams are
+> required.
 > 
-> I can get numbers for a simple netperf TCP_RR benchmark with this change 
-> applied to show the degradation on a server with >32GB of RAM with this 
-> patch applied.
+> Does this address your concerns? Perhaps this is what you meant...
+
+Ok, I understand what you meant now.
+
+> > Another approach would be to require function drivers to request the
+> > streams during bind by themselves and only give this layer correct
+> > descriptors, which allow you to make those arguments const.
 > 
-> It would be ideal if this default could be adjusted based on the amount of 
-> memory available in the smallest node to determine whether we're concerned 
-> about making higher order allocations.  (Using the smallest node as a 
-> metric so that mempolicies and cpusets don't get unfairly biased against.)  
-> With the previous changes in this patchset, specifically avoiding waking 
-> kswapd and doing compaction for the higher order allocs before falling 
-> back to the min order, it shouldn't be devastating to try an order-3 alloc 
-> that will fail quickly.
+> Actually, during bind we still don't know the connection speed so the number
+> of streams can't be determined at that point. For example: when UAS gadget
+> driver operates in HS mode the number of streams is 0, when in SS > 0. I
+> think this is the right place for streams configuration.
 
-So my testing has shown that simply booting the kernel with
-slub_max_order=0 makes the hang I'm seeing go away.  This definitely
-implicates the higher order allocations in the kswapd problem.  I think
-it would be wise not to make it the default until we can sort out the
-root cause.
+true, didn't think it that way ;-)
 
-James
-
-
-
-
+-- 
+balbi
