@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab1EKAX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 20:23:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43543 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab1EKAX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 20:23:58 -0400
-Date: Wed, 11 May 2011 10:06:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-Subject: Re: ptrace pull request for linux-next
-Message-Id: <20110511100626.e5babe19.sfr@canb.auug.org.au>
-In-Reply-To: <20110510122431.GA12461@redhat.com>
-References: <20110329090248.GJ6736@htj.dyndns.org>
-	<20110330101204.7a5459c3.sfr@canb.auug.org.au>
-	<20110510122431.GA12461@redhat.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_May_2011_10_06_26_+1000_zrUAnqpTUNz7HOCp"
+	id S1753539Ab1EKAHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 20:07:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:65281 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab1EKAHe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 May 2011 20:07:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gkPvZpk4hk+gsNvfjbt09mlz+2IBR31dAfMuEUuE9siyG9SXBR+yAnDstfrVKJTgZI
+         flmrlixf2bFvoes8850iGdrLh73hhGbLRsfxt/KmUMdI0TDXiMRQfmBLk7y7n8fUQCzx
+         QcMelRasuX8iQ9S5NTMmv528a617U+UMIYStk=
+MIME-Version: 1.0
+In-Reply-To: <20110510200801.GA8125@kroah.com>
+References: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	<20110510200801.GA8125@kroah.com>
+Date: Wed, 11 May 2011 02:07:33 +0200
+Message-ID: <BANLkTimimx-pW9mOtb_9yM5XcQ5nOeGYug@mail.gmail.com>
+Subject: Re: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Greg KH <greg@kroah.com>,
+        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_May_2011_10_06_26_+1000_zrUAnqpTUNz7HOCp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2011/5/10 Greg KH <greg@kroah.com>:
 
-Hi Oleg,
-
-On Tue, 10 May 2011 14:24:31 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+> On Tue, May 10, 2011 at 05:10:32PM +0200, Par-Gunnar Hjalmdahl wrote:
+>> This patch adds support for the ST-Ericsson CG2900
+>> Connectivity Combo controller (Bluetooth, FM, GPS).
+>>
+>> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> Could you please switch from Tejun's tree to
->=20
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
+> {sigh}
+>
+> This breaks the build again, the error messages are below :(
 
-Done.
+I suspect the problem is that Per-Gunnar does not know how to reproduce
+your build errors. Are you building for some x86 combination, allyes, etc
+for example? This is likely currently only tested and applicable for ux500
+so a simple  "depends on ARCH_U8500" under config CG2900 may solve
+stuff.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__11_May_2011_10_06_26_+1000_zrUAnqpTUNz7HOCp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNydMCAAoJEDMEi1NhKgbsG/8H/0tIK2iwSE+pUM/D4Rp3rkpW
-EQc9g3h7bicbo2t8JKvRwLwKDcYc/DIRK0c6D6Wpph3AcP+I2eGWENnz4SnZHcEJ
-b27zB1HsBOwax2Jypc+IOctW7NJJttZbRJkf6b0GL0dZc7nYvHnk0UkrN9F3UagF
-UdbR4h+Dwr/6BU0ozPxSieSdp/NjiElWsLUQSWIPvW0H8Ug5x14Lx+W2SQ7qJZ+T
-YSNjsI4nWmU/DCfZUUNc8Sq0DQpfUfT6HaOouPVLFR/U5BqTYkgHwxuxybSfqRHR
-PLynbK8Xn00TZ/4RS6vtvXeRprgXV5Df55PcLAx5XoaP5fBLJCpTjvSKzWJ7YHI=
-=yvxK
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_May_2011_10_06_26_+1000_zrUAnqpTUNz7HOCp--
+Yours,
+Linus Walleij
