@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab1EKPv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:51:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42741 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab1EKPvY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:51:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=H45PJJjYxFfoOU7ZE46QpEK1QSKzvWXA95MKEX2id8BVQWhf3fxEOj6C6vDXPavVYp
-         uWh7Om8kxgKBoxvR8h1aM9gFpH/y1pKRePuGJPgAO5L4CkIYI6CXcjS3YQsjlvyw5Y8O
-         SkFkzu0KzaMD+s9N74etxBcWRvDvc6EQfiDWA=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=JXq+V783amiJB-qLX=7PaeH-83w@mail.gmail.com>
-References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
-	<BANLkTi=y60Jt3-OMzbxQJzGkvzCzNJfJtA@mail.gmail.com>
-	<BANLkTimfFEv+vZ8dYvhG0oj2Q4g+KnG4aA@mail.gmail.com>
-	<BANLkTinDiGCaKPtS+ZpKf2swJpParJ4eew@mail.gmail.com>
-	<BANLkTi=JXq+V783amiJB-qLX=7PaeH-83w@mail.gmail.com>
-Date: Wed, 11 May 2011 17:25:40 +0200
-X-Google-Sender-Auth: vMXVu3VgxI0NV4aSWjlTdkLdrPY
-Message-ID: <BANLkTi=OXuR4iJFqUEa4pA=yO0aXaqEzyA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Speed up the symbols' resolution process V4
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932142Ab1EKQOC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:14:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51684 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755157Ab1EKPsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:48:21 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 0/3] Reduce impact to overall system of SLUB using high-order allocations
+Date: Wed, 11 May 2011 16:29:30 +0100
+Message-Id: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Frysinger,
+Debian (and probably Ubuntu) have recently have changed to the default
+option of SLUB. There are a few reports of people experiencing hangs
+when copying large amounts of data with kswapd using a large amount of
+CPU. It appears this is down to SLUB using high orders by default and
+the page allocator and reclaim struggling to keep up. The following
+three patches reduce the cost of using those high orders.
 
-2011/5/11 Mike Frysinger <vapier.adi@gmail.com>:
-[...]
->> Sorry I don't think that is a good choice from a long term point of
->> view. What do you think to add MODULE_SYMBOL_PREFIX to section names
->> instead? In this way symbol and section names should always be
->> different also on symbol prefixed archs (which are blackfin and
->> h8300).
->
-> that doesnt work.  it simply delays the problem to another set of
-> underscores.  so with that change, local_bh_enable/_local_bh_enable
-> work, but now send_remote_softirq/__send_remote_softirq fail:
+Patch 1 prevents kswapd waking up in response to SLUBs speculative
+	use of high orders. This eliminates the hangs and while the
+	system can still stall for long periods, it recovers.
 
-In my opinion it should work. if I use SYMBOL_PREFIX + two underscore
-for section name I should always obtain different names.
-So if SYMBOL_PREFIX is "_" section name will be "___", if
-SYMBOL_PREFIX is "__" section name will be "____" and so on.
+Patch 2 further reduces the cost by prevent SLUB entering direct
+	compaction or reclaim paths on the grounds that falling
+	back to order-0 should be cheaper.
 
->  CC      kernel/softirq.o
-> nano /tmp/cconhYy1.s: Assembler messages:
-> /tmp/cconhYy1.s:3664: Error: symbol `___ksymtab___send_remote_softirq'
-> is already defined
-> make[1]: *** [kernel/softirq.o] Error 1
+Patch 3 defaults SLUB to using order-0 on the grounds that the
+	systems that heavily benefit from using high-order are also
+	sized to fit in physical memory. On such systems, they should
+	manually tune slub_max_order=3.
 
-I'm a bit confused. I can build a kernel here:
-$ make ARCH=blackfin CROSS_COMPILE="bfin-uclinux-" defconfig
-*** Default configuration is based on 'BF537-STAMP_defconfig'
-[...]
-$ make ARCH=blackfin CROSS_COMPILE="bfin-uclinux-"
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-[...]
-  OBJCOPY arch/blackfin/boot/vmlinux.bin
-  GZIP    arch/blackfin/boot/vmlinux.bin.gz
-  UIMAGE  arch/blackfin/boot/vmImage.gz
-Image Name:   bf537-0.2-2.6.39-rc3-00004-gf26a
-Created:      Wed May 11 17:06:45 2011
-Image Type:   Blackfin Linux Kernel Image (gzip compressed)
-Data Size:    986471 Bytes = 963.35 kB = 0.94 MB
-Load Address: 00001000
-Entry Point:  001a8518
-  Building modules, stage 2.
-  MODPOST 69 modules
+My own data on this is not great. I haven't really been able to
+reproduce the same problem locally but a significant failing is
+that the tests weren't stressing X but I couldn't make meaningful
+comparisons by just randomly clicking on things (working on fixing
+this problem).
 
-Unfortunately I can't make skyeye emulator works to test the obtained
-kernel image.
+The test case is simple. "download tar" wgets a large tar file and
+stores it locally. "unpack" is expanding it (15 times physical RAM
+in this case) and "delete source dirs" is the tarfile being deleted
+again. I also experimented with having the tar copied numerous times
+and into deeper directories to increase the size but the results were
+not particularly interesting so I left it as one tar.
 
-Ciao,
-Alessio
+Test server, 4 CPU threads (AMD Phenom), x86_64, 2G of RAM, no X running
+                             -       nowake    
+             largecopy-vanilla       kswapd-v1r1  noexstep-v1r1     default0-v1r1
+download tar           94 ( 0.00%)   94 ( 0.00%)   94 ( 0.00%)   93 ( 1.08%)
+unpack tar            521 ( 0.00%)  551 (-5.44%)  482 ( 8.09%)  488 ( 6.76%)
+delete source dirs    208 ( 0.00%)  218 (-4.59%)  194 ( 7.22%)  194 ( 7.22%)
+MMTests Statistics: duration
+User/Sys Time Running Test (seconds)        740.82    777.73    739.98    747.47
+Total Elapsed Time (seconds)               1046.66   1273.91    962.47    936.17
+
+Disabling kswapd alone hurts performance slightly even though testers
+report it fixes hangs. I would guess it's because SLUB callers are
+calling direct reclaim more frequently (I belatedly noticed that
+compaction was disabled so it's not a factor) but haven't confirmed
+it. However, preventing kswapd waking or entering direct reclaim and
+having SLUB falling back to order-0 performed noticeably faster. Just
+using order-0 in the first place was fastest of all.
+
+I tried running the same test on a test laptop but unfortunately
+due to a misconfiguration the results were lost. It would take a few
+hours to rerun so am posting without them.
+
+If the testers verify this series help and we agree the patches are
+appropriate, they should be considered a stable candidate for 2.6.38.
+
+ Documentation/vm/slub.txt |    2 +-
+ mm/page_alloc.c           |    3 ++-
+ mm/slub.c                 |    5 +++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+-- 
+1.7.3.4
+
