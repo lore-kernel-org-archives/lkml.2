@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab1EKQD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:03:29 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63797 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756493Ab1EKQDJ convert rfc822-to-8bit (ORCPT
+	id S1757394Ab1EKQYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:24:00 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:44545 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab1EKQX5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:03:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=x+sqsBoz0sk6WAU1V0g2PFYKfk0822yRfNm3H5Qb85maPpDjTyWSlWDSNG/2tTEToQ
-         mYTGEr19GwPTh6Qg4kUK0rl+9cCFb2LjX7ieuMClB+2pftfv01Xtw6XrfgHZ/IR/wLUI
-         gpmTgpBG97KoJ3xrM8o7PjC2endqTN5mSUo4k=
-MIME-Version: 1.0
-In-Reply-To: <20110511141509.GB19053@elte.hu>
-References: <BANLkTi=qPWxRAa6+dT3ohEP6Z=0v+e4EXA@mail.gmail.com>
-	<1305016329.2914.22.camel@laptop>
-	<BANLkTin5iNMt2autv3TJpCvTQUoKsSzhTA@mail.gmail.com>
-	<1305122055.2914.220.camel@laptop>
-	<BANLkTikShtNvCcz5hfm5kgUwBwS1LqF9xg@mail.gmail.com>
-	<20110511141509.GB19053@elte.hu>
-Date: Wed, 11 May 2011 22:23:37 +0800
-Message-ID: <BANLkTimGXAAdeKNvncghT6PF+Vko9SWVnA@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix constructing the span cpu mask of sched domain
-From: Hillf Danton <dhillf@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
+	Wed, 11 May 2011 12:23:57 -0400
+Date: Wed, 11 May 2011 16:27:43 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-fbdev@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org,
+        Andy Whitcroft <andy.whitcroft@canonical.com>
+Subject: Re: [PATCH V3] fbcon -- fix race between open and removal of
+ framebuffers
+Message-ID: <20110511162743.6b363f1f@pluto.restena.lu>
+In-Reply-To: <4DCA9899.6070403@canonical.com>
+References: <1304617307-7389-1-git-send-email-tim.gardner@canonical.com>
+	<4DC94314.8050701@canonical.com>
+	<20110510234424.5a5b7a08@neptune.home>
+	<4DCA9899.6070403@canonical.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 10:15 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Here's how you fetch the scheduler tree:
->
->  http://people.redhat.com/mingo/tip.git/README
->
-> and here's the Kernel Hacker's Guide to Git:
->
->  http://linux.yyz.us/git-howto.html
->
+On Wed, 11 May 2011 16:09:29 Tim Gardner wrote:
+> On 05/10/2011 11:44 PM, Bruno Prémont wrote:
+> > On Tue, 10 May 2011 Tim Gardner<tim.gardner@canonical.com>  wrote:
+> > This only partially protects the list and count as two concurrent
+> > framebuffer registrations do still race against each other.
+> > For the issue addressed by this patch I don't think it makes sense to
+> > have this spinlock at all as it's only used in get_framebuffer_info()
+> > and in put_framebuffer_info() and put_framebuffer_info() doesn't even
+> > look at registered_fb or num_registered_fb.
+> > Such a spinlock makes sense in a separate patch that really protects
+> > all access to registered_fb or num_registered_fb, be it during framebuffer
+> > (un)registration or during access from fbcon.
+> >
+> 
+> Our goal was merely to stop the user space open/close races. I agree 
+> that the framebuffer registration list needs more orthogonal protection, 
+> but that is going to be a much larger patch.
 
-Thank you, Ingo, very much for guiding git and scheduler tree.
+I know that such a protection needs a much larger patch. (that would be
+for 2.6.40 or 2.6.41, I have preparing patches for that cooking)
 
-I will try git clone the scheduler tree this weekend.
+My main issue for tis patch is that the comment reads as if spinlock was
+protecting registered_fb[] and num_registered_fb. So changing the
+comment would be a good thing (say it protects fb_info->ref_count).
+Later patch can then protect registered_fb against concurrent
+framebuffer registrations.
 
-Thanks,
-            Hillf
+Bruno
