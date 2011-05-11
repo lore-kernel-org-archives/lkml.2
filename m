@@ -1,146 +1,374 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab1EKQOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:14:44 -0400
-Received: from eriks.xs4all.nl ([83.160.41.216]:43012 "EHLO eriks.xs4all.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757081Ab1EKQOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:14:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=slagter.name; h=message-id
-	:date:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type; q=dns; s=2007072601; b=a92H0qTw8R7bZDPhXD3+HGWfcc
-	37zebmbzchk5TcwpZobFjhjjJI7kieFi/aHjF97qXhOmx0XvkTsImwUFV1gnw0J4
-	G6p5AMuppW5lh3YYUOOOJjIq49+uvkOjoQJ1rQaSVIHGaDmP4aOrJM0ByBGZgoSU
-	bq0GacsKdSPUQoyEc=
-Message-ID: <4DCAA46E.5010405@slagter.name>
-Date: Wed, 11 May 2011 16:59:58 +0200
-From: Erik Slagter <erik@slagter.name>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Mnenhy/0.8.3 Thunderbird/3.1.10 ThunderBrowse/3.3.5
+	id S1754151Ab1EKPiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:38:54 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38351 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab1EKPis (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:38:48 -0400
+X-IronPort-AV: E=Sophos;i="4.64,353,1301875200"; 
+   d="scan'208";a="5704808"
+Subject: Re: [PATCH] xen block backend driver.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "pasik@iki.fi" <pasik@iki.fi>
+In-Reply-To: <1304619093-22354-2-git-send-email-konrad.wilk@oracle.com>
+References: <1304619093-22354-1-git-send-email-konrad.wilk@oracle.com>
+	 <1304619093-22354-2-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 11 May 2011 16:02:12 +0100
+Message-ID: <1305126132.26692.420.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Maxin B John <maxin.john@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001]: USB: cdc_acm: Fix oops when Droids MuIn LCD
- is connected
-References: <20110510074421.GA2755@maxin> <4DC97BD0.6040403@slagter.name> <BANLkTi=OQ=ahXW2n=ww4ZZ8vK4=mv6Kc7A@mail.gmail.com> <4DCA5FBF.1050009@slagter.name> <20110511134730.GA12717@kroah.com> <BANLkTi=ty_LMx4mvRXt5v=6-TxUyZir4oA@mail.gmail.com> <20110511145634.GB18317@kroah.com>
-In-Reply-To: <20110511145634.GB18317@kroah.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms040603010003010108070304"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Thu, 2011-05-05 at 19:11 +0100, Konrad Rzeszutek Wilk wrote:
+> This is the host side counterpart to the frontend driver
+> in drivers/block/xen-blkfront.c. The PV protocol is also implemented by
+> frontend drivers in other OSes too, such as the BSDs and even Windows.
+> 
+> The patch is based on the driver from the xen.git pvops kernel tree but
+> has been put through the checkpatch.pl wringer plus several manual
+> cleanup passes. It has also been moved from drivers/xen/blkback to
+> drivers/block/xen-blback.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
---------------ms040603010003010108070304
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+Reviewed-by: Ian Campbell <ian.campbell@citrix.com>
 
-> No, that's fine, I was not aware that both of you agreed to this.  I'll=
+Not much to say below, mostly minor nits really.
 
-> add it to my "to-apply" queue and you will get an automated email when
-> it is applied to the tree.
+> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+> index 83c32cb..9abb646 100644
+> --- a/drivers/block/Kconfig
+> +++ b/drivers/block/Kconfig
+> @@ -470,6 +470,14 @@ config XEN_BLKDEV_FRONTEND
+>           block device driver.  It communicates with a back-end driver
+>           in another domain which drives the actual block device.
+> 
+> +config XEN_BLKDEV_BACKEND
+> +       tristate "Block-device backend driver"
+> +       depends on XEN_BACKEND
+> +       help
+> +         The block-device backend driver allows the kernel to export its
+> +         block devices to other guests via a high-performance shared-memory
+> +         interface.
+> +
 
-Great, thanks!
+checkpatch.pl seems to think this is too short. Netback's entry has some
+general pointers to the frontend and stuff along those lines:
+
+                       These devices can be accessed by any operating
+          system that implements a compatible front end.
+
+          The corresponding Linux frontend driver is enabled by the
+          CONFIG_XEN_NETDEV_FRONTEND configuration option.
+
+          [...]
+
+          If you are compiling a kernel to run in a Xen network driver
+          domain (often this is domain 0) you should say Y here. To
+          compile this driver as a module, chose M here: the module
+          will be called xen-netback.
+
+Could be worth adding the equivalent here?
 
 
---------------ms040603010003010108070304
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+> [...]
+> +
+> +/*
+> + * Each outstanding request that we've passed to the lower device layers has a
+> + * 'pending_req' allocated to it. Each buffer_head that completes decrements
+> + * the pendcnt towards zero. When it hits zero, the specified domain has a
+> + * response queued for it, with the saved 'id' passed back.
+> + */
+> +struct pending_req {
+> +       struct blkif_st       *blkif;
+> +       u64            id;
+> +       int            nr_pages;
+> +       atomic_t       pendcnt;
+> +       unsigned short operation;
+> +       int            status;
+> +       struct list_head free_list;
+> +};
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPWDCC
-BIowggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UE
-BhMCU0UxFDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5h
-bCBUVFAgTmV0d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0w
-NTA2MDcwODA5MTBaFw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMC
-VVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5l
-dHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVRO
-LVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmFpPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVN
-NRm5pELlzkniii8efNIxB8dOtINknS4p1aJkxIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQy
-lbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2qL+usobNqqrcuZzWLeeEeaYji5kbNoKXq
-vgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAsvIKKjqQOpdeJQ/wWWq8dcdcRWdq6
-hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMeoYV+9Udly/hNVyh00jT/MLbu
-9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3+sQmVO8DveAky1QaMB0G
-A1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/
-BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2NhLmNvbS9BZGRU
-cnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8ubmV0L0Fk
-ZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyispgCi
-54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
-g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHd
-WTBK322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftz
-Mizpm4QkLdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsy
-XEFs/vVdoOr/0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFYTCCBEmgAwIBAgIRAIg14yiGxBLB
-Nd3nEhie2VcwDQYJKoZIhvcNAQEFBQAwga4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJVVDEX
-MBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRoZSBVU0VSVFJVU1QgTmV0d29y
-azEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29tMTYwNAYDVQQDEy1VVE4tVVNF
-UkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1haWwwHhcNMTAxMDE5MDAwMDAw
-WhcNMTExMDE5MjM1OTU5WjBGMQswCQYDVQQGEwJOTDEVMBMGA1UEAxMMRXJpayBTbGFndGVy
-MSAwHgYJKoZIhvcNAQkBFhFlcmlrQHNsYWd0ZXIubmFtZTCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBANbriwH0w2kwn4b2BwVAtiZ0OkHIiwcscx1XIOzD/bp+Sv4tVdjc2bBF
-tXTyEpDzP5cLs5V3g1hTxI5V40lgmsiKrDMp8XR6fDwqv0cdoS3ABS/gvlxhwvbJaeR7tjkM
-Ni4ofKgEfSWi7hzFyijuwM/SrwJVlpTO7Xah+FKDLVh8FWUHRVxtnFuLaHcZR+4y0c0Zi2AE
-gp3CLZQzXCsu/Nsi+0fclP4lbhg+XgAgTKDI2WIm7JuQgMSgoevQ6HFggreTj03tUoKjD4l4
-JIoDb5tc/IutLhwXZTZsrdmW2SE29xhRWauNGs9DnJAcmpUJkXHGGL8cgmqWb1Mlh9JBaN8C
-AwEAAaOCAd8wggHbMB8GA1UdIwQYMBaAFImCZ33EnSZwAEu0UEh83j2uBG59MB0GA1UdDgQW
-BBTK4wFgfa4mmdF0XOGvj3dgyG8ePzAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAd
-BgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIB
-AwUwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwgaUGA1Ud
-HwSBnTCBmjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5jb20vVVROLVVTRVJGaXJzdC1D
-bGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDBKoEigRoZEaHR0cDovL2NybC5jb21v
-ZG8ubmV0L1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRFbWFpbC5jcmww
-bAYIKwYBBQUHAQEEYDBeMDYGCCsGAQUFBzAChipodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9V
-VE5BQUFDbGllbnRDQS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNv
-bTANBgkqhkiG9w0BAQUFAAOCAQEAALQg8UqA2KoLGSmq8SsJTddYzpglJrW3mcd55qDBKLBM
-J5klHPPWoqdV2dA9X0yV4WlaS/eQHfgmQCjvJ42HDNJW6YBw1MrPFPxXFJsbpY0OlIeLY5oh
-VZjuQeI3YfwOB1ZceU4QTkdF636Ljyz3D++PmSw6ww6mm8R8LX18JIYe6vhWZs93sSMQct3R
-2s9kGB94lCKbapyq9lBhT/swM51wWTmnrIxrmFzm0+fFnNu9QwoazTn7hwg7G0Tiv2Zqz+Ba
-x318aG+gZm1OnQQRPn1hiK5C6GiKrWu9/jTV3UaGePBGslkpopMdLrwQ43P/eHmJJGyXHBLx
-87J7yN8HMzCCBWEwggRJoAMCAQICEQCINeMohsQSwTXd5xIYntlXMA0GCSqGSIb3DQEBBQUA
-MIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNhbHQgTGFrZSBDaXR5
-MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0dHA6Ly93d3cu
-dXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIEVtYWlsMB4XDTEwMTAxOTAwMDAwMFoXDTExMTAxOTIzNTk1OVowRjELMAkG
-A1UEBhMCTkwxFTATBgNVBAMTDEVyaWsgU2xhZ3RlcjEgMB4GCSqGSIb3DQEJARYRZXJpa0Bz
-bGFndGVyLm5hbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDW64sB9MNpMJ+G
-9gcFQLYmdDpByIsHLHMdVyDsw/26fkr+LVXY3NmwRbV08hKQ8z+XC7OVd4NYU8SOVeNJYJrI
-iqwzKfF0enw8Kr9HHaEtwAUv4L5cYcL2yWnke7Y5DDYuKHyoBH0lou4cxcoo7sDP0q8CVZaU
-zu12ofhSgy1YfBVlB0VcbZxbi2h3GUfuMtHNGYtgBIKdwi2UM1wrLvzbIvtH3JT+JW4YPl4A
-IEygyNliJuybkIDEoKHr0OhxYIK3k49N7VKCow+JeCSKA2+bXPyLrS4cF2U2bK3ZltkhNvcY
-UVmrjRrPQ5yQHJqVCZFxxhi/HIJqlm9TJYfSQWjfAgMBAAGjggHfMIIB2zAfBgNVHSMEGDAW
-gBSJgmd9xJ0mcABLtFBIfN49rgRufTAdBgNVHQ4EFgQUyuMBYH2uJpnRdFzhr493YMhvHj8w
-DgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsG
-AQUFBwMCMEYGA1UdIAQ/MD0wOwYMKwYBBAGyMQECAQMFMCswKQYIKwYBBQUHAgEWHWh0dHBz
-Oi8vc2VjdXJlLmNvbW9kby5uZXQvQ1BTMIGlBgNVHR8EgZ0wgZowTKBKoEiGRmh0dHA6Ly9j
-cmwuY29tb2RvY2EuY29tL1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRF
-bWFpbC5jcmwwSqBIoEaGRGh0dHA6Ly9jcmwuY29tb2RvLm5ldC9VVE4tVVNFUkZpcnN0LUNs
-aWVudEF1dGhlbnRpY2F0aW9uYW5kRW1haWwuY3JsMGwGCCsGAQUFBwEBBGAwXjA2BggrBgEF
-BQcwAoYqaHR0cDovL2NydC5jb21vZG9jYS5jb20vVVROQUFBQ2xpZW50Q0EuY3J0MCQGCCsG
-AQUFBzABhhhodHRwOi8vb2NzcC5jb21vZG9jYS5jb20wDQYJKoZIhvcNAQEFBQADggEBAAC0
-IPFKgNiqCxkpqvErCU3XWM6YJSa1t5nHeeagwSiwTCeZJRzz1qKnVdnQPV9MleFpWkv3kB34
-JkAo7yeNhwzSVumAcNTKzxT8VxSbG6WNDpSHi2OaIVWY7kHiN2H8DgdWXHlOEE5HRet+i48s
-9w/vj5ksOsMOppvEfC19fCSGHur4VmbPd7EjEHLd0drPZBgfeJQim2qcqvZQYU/7MDOdcFk5
-p6yMa5hc5tPnxZzbvUMKGs05+4cIOxtE4r9mas/gWsd9fGhvoGZtTp0EET59YYiuQuhoiq1r
-vf401d1GhnjwRrJZKaKTHS68EONz/3h5iSRslxwS8fOye8jfBzMxggRgMIIEXAIBATCBxDCB
-rjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEe
-MBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVz
-ZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0
-aW9uIGFuZCBFbWFpbAIRAIg14yiGxBLBNd3nEhie2VcwCQYFKw4DAhoFAKCCAnAwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTEwNTExMTQ1OTU4WjAjBgkq
-hkiG9w0BCQQxFgQU2og1F854sYuB0kfsR0J6qqaUnTEwXwYJKoZIhvcNAQkPMVIwUDALBglg
-hkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcG
-BSsOAwIHMA0GCCqGSIb3DQMCAgEoMIHVBgkrBgEEAYI3EAQxgccwgcQwga4xCzAJBgNVBAYT
-AlVTMQswCQYDVQQIEwJVVDEXMBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoTFVRo
-ZSBVU0VSVFJVU1QgTmV0d29yazEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3QuY29t
-MTYwNAYDVQQDEy1VVE4tVVNFUkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgRW1h
-aWwCEQCINeMohsQSwTXd5xIYntlXMIHXBgsqhkiG9w0BCRACCzGBx6CBxDCBrjELMAkGA1UE
-BhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMV
-VGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5j
-b20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBF
-bWFpbAIRAIg14yiGxBLBNd3nEhie2VcwDQYJKoZIhvcNAQEBBQAEggEAfbZGePqWYRHd9bV9
-fXYOzGTsfb8UI5N5DrefebmfXb+UJsiEL/rux9XhL2sXetMO8Ve8iw2FS7QN+RWM4mFTi5Tx
-oMsSg1biNnkCXLa9z79afsqHcBt8YEQOivuJ2JmaOkw0vVohOOcETyLEy2LwR9tP06OlSedy
-JuOZr2UPIshYgZVTBUdwHVcC2d7D0XuNEfKQHflaUYSzyYPb+i4vsSlWlKbctsYDLFIDhC7c
-3R/mfDk29n/FN8r34LEz2Iuf/zHAC9+aZVnWWB1oaGmdOXdyBXJqAIN35vU1l5r8iVIlf1nF
-BAQX4GR0iyRjOEnFb3dZEydMOu9boopB+WQ/WwAAAAAAAA==
---------------ms040603010003010108070304--
+There's a lot of whitespace problems here (and elsewhere) but the git
+copy is OK so I guess someones MUA has nobbled it and won't worry about
+it or comment further...
+
+[...]
+> +                       virt_to_page(unmap[i].host_addr), false);
+> +               if (ret) {
+> +                       printk(KERN_ALERT "Failed to remove M2P override for " \
+> +                               "%lx\n", (unsigned long)unmap[i].host_addr);
+
+I generally dislike the practice of splitting string literals like this,
+checkpatch is (or used to be) rather overzealous about it. Doesn't
+really hurt the grepability in this particular case but also doesn't
+particularly help readability either...
+
+> +                       continue;
+> +               }
+> +       }
+> +}
+
+Blank line missing here.
+
+[...]
+> +       ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map, nseg);
+> +       BUG_ON(ret);
+> +
+> +       /* Now swizzel the MFN in our domain with the MFN from the other domain
+
+                 swizzle
+
+> +        * so that when we access vaddr(pending_req,i) it has the contents of
+> +        * the page from the other domain.
+> +        */
+> +       for (i = 0; i < nseg; i++) {
+> +               if (unlikely(map[i].status != 0)) {
+> +                       DPRINTK("invalid buffer -- could not remap it\n");
+
+[DI]PRINTK should be replaced with pr_dbg/info (or dev_dbg etc if you
+have the necessary parameters to hand) through. There are some bare
+printks around which could stand to be changed too.
+
+I noticed earlier that the driver maintains its own debug_lvl thing, are
+all those messages still useful or do they date back to when the driver
+was in development? Same question for the stats logging stuff,
+especially since it comes out via sysfs too now. Is there a generic blk
+subsystem stats mechanism?
+
+[...]
+> +/*
+> + * Function to copy the from the ring buffer the 'struct blkif_request'
+
+Is the blkif namespace fair game? (I was asked to change netif is all)
+
+> [...]
+> +/*
+> + * Transumation of the 'struct blkif_request' to a proper 'struct bio'
+
+      Transmutation ?
+
+> + * and call the 'submit_bio' to pass it to the underlaying storage.
+
+                                                  underlying ?
+> + */
+> +static int dispatch_rw_block_io(struct blkif_st *blkif,
+> +                                struct blkif_request *req,
+> +                                struct pending_req *pending_req)
+> +{
+> +       struct phys_req preq;
+> +       struct seg_buf seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> +       unsigned int nseg;
+> +       struct bio *bio = NULL;
+> +       struct bio *biolist[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> +       int i, nbio = 0;
+> +       int operation;
+> +       struct blk_plug plug;
+> +
+> +       switch (req->operation) {
+> +       case BLKIF_OP_READ:
+> +               blkif->st_rd_req++;
+> +               operation = READ;
+> +               break;
+> +       case BLKIF_OP_WRITE:
+> +               blkif->st_wr_req++;
+> +               operation = WRITE_ODIRECT;
+> +               break;
+> +       case BLKIF_OP_FLUSH_DISKCACHE:
+> +               blkif->st_f_req++;
+> +               operation = WRITE_FLUSH;
+> +               /* The frontend likes to set this to -1, which vbd_translate
+> +                * is alergic too. */
+> +               req->u.rw.sector_number = 0;
+> +               break;
+> +       case BLKIF_OP_WRITE_BARRIER:
+> +       default:
+> +               operation = 0; /* make gcc happy */
+> +               goto fail_response;
+> +               break;
+> +       }
+> +
+> +       /* Check that the number of segments is sane. */
+> +       nseg = req->nr_segments;
+> +       if (unlikely(nseg == 0 && operation != WRITE_FLUSH) ||
+> +           unlikely(nseg > BLKIF_MAX_SEGMENTS_PER_REQUEST)) {
+> +               DPRINTK("Bad number of segments in request (%d)\n", nseg);
+> +               /* Haven't submitted any bio's yet. */
+> +               goto fail_response;
+> +       }
+> +
+> +       preq.dev           = req->handle;
+> +       preq.sector_number = req->u.rw.sector_number;
+> +       preq.nr_sects      = 0;
+> +
+> +       pending_req->blkif     = blkif;
+> +       pending_req->id        = req->id;
+> +       pending_req->operation = req->operation;
+> +       pending_req->status    = BLKIF_RSP_OKAY;
+> +       pending_req->nr_pages  = nseg;
+> +
+> +       for (i = 0; i < nseg; i++) {
+> +               seg[i].nsec = req->u.rw.seg[i].last_sect -
+> +                       req->u.rw.seg[i].first_sect + 1;
+> +               if ((req->u.rw.seg[i].last_sect >= (PAGE_SIZE >> 9)) ||
+> +                   (req->u.rw.seg[i].last_sect < req->u.rw.seg[i].first_sect))
+> +                       goto fail_response;
+> +               preq.nr_sects += seg[i].nsec;
+> +
+> +       }
+> +
+> +       if (vbd_translate(&preq, blkif, operation) != 0) {
+> +               DPRINTK("access denied: %s of [%llu,%llu] on dev=%04x\n",
+> +                       operation == READ ? "read" : "write",
+> +                       preq.sector_number,
+> +                       preq.sector_number + preq.nr_sects, preq.dev);
+> +               goto fail_response;
+> +       }
+> +       /* This check _MUST_ be done after vbd_translate as the preq.bdev
+> +        * is set there. */
+
+People seem to prefer a blank line for the first /* and last */ in a
+multiline comment e.g.:
+
+	/*
+	 * This check _MUST_ be done after vbd_translate as the 
+	 * preq.bdev is set there.
+         */
+
+I don't know if that is CodingStyle approved/mandated or not though.
+
+> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+> new file mode 100644
+> index 0000000..9adcf80
+> --- /dev/null
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> +static int vbd_create(struct blkif_st *blkif, blkif_vdev_t handle,
+> +                     unsigned major, unsigned minor, int readonly,
+> +                     int cdrom)
+> +{
+> +       struct vbd *vbd;
+> +       struct block_device *bdev;
+> +       struct request_queue *q;
+> +
+> +       vbd = &blkif->vbd;
+> +       vbd->handle   = handle;
+> +       vbd->readonly = readonly;
+> +       vbd->type     = 0;
+> +
+> +       vbd->pdevice  = MKDEV(major, minor);
+> +
+> +       bdev = blkdev_get_by_dev(vbd->pdevice, vbd->readonly ?
+> +                                FMODE_READ : FMODE_WRITE, NULL);
+> +
+> +       if (IS_ERR(bdev)) {
+> +               DPRINTK("vbd_creat: device %08x could not be opened.\n",
+
+                               create
+
+> +                       vbd->pdevice);
+> +               return -ENOENT;
+> +       }
+> +
+> +       vbd->bdev = bdev;
+> +       vbd->size = vbd_sz(vbd);
+> +
+> +       if (vbd->bdev->bd_disk == NULL) {
+> +               DPRINTK("vbd_creat: device %08x doesn't exist.\n",
+
+                               create
+> +
+> +/**
+
+This isn't really kerneldoc documentation.
+
+> + * Entry point to this code when a new device is created.  Allocate the basic
+> + * structures, and watch the store waiting for the hotplug scripts to tell us
+> + * the device's physical major and minor numbers.  Switch to InitWait.
+> + */
+> [...]
+
+> +
+> +/**
+
+Neither is this... (there are more of these).
+
+> + * Callback received when the hotplug scripts have placed the physical-device
+> + * node.  Read it and the mode node, and create a vbd.  If the frontend is
+> + * ready, connect.
+> + */
+> +static void backend_changed(struct xenbus_watch *watch,
+> +                           const char **vec, unsigned int len)
+> +{
+> +       int err;
+> +       unsigned major;
+> +       unsigned minor;
+> +       struct backend_info *be
+> +               = container_of(watch, struct backend_info, backend_watch);
+> +       struct xenbus_device *dev = be->dev;
+> +       int cdrom = 0;
+> +       char *device_type;
+> +
+> +       DPRINTK("");
+> +
+> +       err = xenbus_scanf(XBT_NIL, dev->nodename, "physical-device", "%x:%x",
+> +                          &major, &minor);
+> +       if (XENBUS_EXIST_ERR(err)) {
+> +               /* Since this watch will fire once immediately after it is
+> +                  registered, we expect this.  Ignore it, and wait for the
+> +                  hotplug scripts. */
+> +               return;
+> +       }
+> +       if (err != 2) {
+> +               xenbus_dev_fatal(dev, err, "reading physical-device");
+> +               return;
+> +       }
+> +
+> +       if ((be->major || be->minor) &&
+> +           ((be->major != major) || (be->minor != minor))) {
+> +               printk(KERN_WARNING
+> +                      "blkback: changing physical device (from %x:%x to "
+> +                      "%x:%x) not supported.\n", be->major, be->minor,
+
+I think this is one of those cases where splitting the literal in order
+to be <80 chars does more harmful than good...
+
+> diff --git a/include/xen/blkif.h b/include/xen/blkif.h
+> new file mode 100644
+> index 0000000..ab79426
+> --- /dev/null
+> +++ b/include/xen/blkif.h
+> @@ -0,0 +1,122 @@
+[...]
+> +static void inline blkif_get_x86_32_req(struct blkif_request *dst, struct blkif_x86_32_request *src)
+> +{
+[...]
+> +}
+> +
+> +static void inline blkif_get_x86_64_req(struct blkif_request *dst, struct blkif_x86_64_request *src)
+> +{
+> +[...]
+> +}
+
+I think these two can be static to drivers/block/xen-blkback/blkback.c.
+In fact, could this whole header go there or is it shared with the
+frontend?
+
+(sharing doesn't seem to make sense since the backend adjusts to the
+frontend, not vice versa).
+
+Ian.
+
+
