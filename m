@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1EKQQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:16:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38331 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757299Ab1EKQQY (ORCPT
+	id S1756801Ab1EKQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:05:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36510 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab1EKQFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:16:24 -0400
+	Wed, 11 May 2011 12:05:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=hy44ty+SyCUM2Q0YNoa9y69Mlp03BWdyYBgooCC21yIwl3P4MroZ/4JIt3zempt/MZ
-         0gbLzri2uBRidMBFj5KhznppIM9IXUHAr4muafKAgXrNG6UoGzehkwTUrDUXRL6kfSLy
-         n2d/LB4THe3GpVZ1keu/0CSsFTAuUp9v58jao=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] blk-throttle: fix typos on struct throtl_grp init code
-Date: Wed, 11 May 2011 22:20:45 +0900
-Message-Id: <1305120045-5111-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.5
-In-Reply-To: <20110511130732.GB31633@redhat.com>
-References: <20110511130732.GB31633@redhat.com>
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SMTYkmwFG/uWNVcJbg+vrSPFTReSjGx/I1on4JDhj9/dTfjIQc5jkR53/g95P64z3A
+         NBrrVGlNqCrhXF1ftYPTb0d8Ub6NF3mDyIfjV+O8MZlvSJXC5vQjHsVYePWfj8S2LHKC
+         EZr4xhLz7uYd34stCBE4lVVukL7++GYCcsZ4Q=
+Date: Wed, 11 May 2011 15:22:18 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
+Message-ID: <20110511132218.GG1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <20110510095022.GR1661@htj.dyndns.org>
+ <20110510140620.GB21834@redhat.com>
+ <201105102359.58900.vda.linux@googlemail.com>
+ <20110511091955.GD1661@htj.dyndns.org>
+ <BANLkTikQm1PVCW3164g0bfgU9fs4MMTfNA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikQm1PVCW3164g0bfgU9fs4MMTfNA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/td/tg/
+Hey,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-throttle.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Wed, May 11, 2011 at 02:23:44PM +0200, Denys Vlasenko wrote:
+> I understand this. I am trying to understand what feature are you trying
+> to provide to userland, or what problematic race scenario you are trying
+> to make resolve-able *in userland* by making "stop" and "cont"
+> notifications sticky wrt GETSIGINFO. I just don't see this scenario.
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 0475a22a420d..d1e317e0fc34 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -201,7 +201,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
- 	RB_CLEAR_NODE(&tg->rb_node);
- 	bio_list_init(&tg->bio_lists[0]);
- 	bio_list_init(&tg->bio_lists[1]);
--	td->limits_changed = false;
-+	tg->limits_changed = false;
- 
- 	/*
- 	 * Take the initial reference that will be released on destroy
-@@ -1072,7 +1072,7 @@ int blk_throtl_init(struct request_queue *q)
- 	/* Practically unlimited BW */
- 	tg->bps[0] = tg->bps[1] = -1;
- 	tg->iops[0] = tg->iops[1] = -1;
--	td->limits_changed = false;
-+	tg->limits_changed = false;
- 
- 	/*
- 	 * Set root group reference to 2. One reference will be dropped when
+If you still don't see how events can get lost, I'm afraid I can't
+explain any better.  You're repeating that exit_code can record the
+event until it's fetched but it doesn't queue and any trap will
+overwrite it and debuggers don't have to call GETSIGINFO after each
+trap - it only has to do so for signal delivery, group stop and
+INTERRUPT trap.  So, it can just look at the exit_code (which doesn't
+indicate continuation) and let tracee return to userland.
+
+Maybe I'm horribly confused.  Oleg, am I?
+
+Thanks.
+
 -- 
-1.7.5
-
+tejun
