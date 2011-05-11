@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab1EKPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:49:25 -0400
-Received: from perninha.conectiva.com.br ([187.115.55.249]:58243 "EHLO
-	perninha.conectiva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab1EKPtV (ORCPT
+	id S1757419Ab1EKQSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:18:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58544 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab1EKQSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:49:21 -0400
-Subject: DRM/I915 wrong monitor resolution
-From: Alexandre Felipe Muller de Souza <alexandrefm@mandriva.com.br>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <1304531944.6868.17.camel@localhost.localdomain>
-References: <1304531944.6868.17.camel@localhost.localdomain>
+	Wed, 11 May 2011 12:18:11 -0400
+Subject: Re: [tip:timers/core] timerfd: Allow timers to be cancelled when
+ clock was set
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        johnstul@us.ibm.com, davidel@xmailserver.org, virtuoso@slind.org,
+        tglx@linutronix.de, chris.friesen@genband.com, kirill@shutemov.name,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <BANLkTimvqAY9hwHujUVoQhN2eZQz-MVhgg@mail.gmail.com>
+References: <tip-99ee5315dac6211e972fa3f23bcc9a0343ff58c4@git.kernel.org>
+	 <1305109433.2914.208.camel@laptop>
+	 <BANLkTi=j6eSyyEdGgUeZhQLJVa+meK_W6A@mail.gmail.com>
+	 <1305121541.2914.213.camel@laptop>
+	 <BANLkTik5szBkinZEWySVjBKA5GF+6dn8Yg@mail.gmail.com>
+	 <1305122518.2914.224.camel@laptop>
+	 <BANLkTim5WzcrzSiqhwXrhDDwcxF=JTpZew@mail.gmail.com>
+	 <1305124250.2914.225.camel@laptop>
+	 <BANLkTimvqAY9hwHujUVoQhN2eZQz-MVhgg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Conectiva
-Date: Wed, 11 May 2011 11:47:37 -0300
-Message-ID: <1305125257.26111.13.camel@localhost.localdomain>
+Date: Wed, 11 May 2011 16:48:53 +0200
+Message-ID: <1305125333.2914.229.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3-1.1mdv2010.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-We encountered a lot of X problems with current Kernel in this specific
-hardware:
+On Wed, 2011-05-11 at 16:32 +0200, Kay Sievers wrote:
+> On Wed, May 11, 2011 at 16:30, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2011-05-11 at 16:22 +0200, Kay Sievers wrote:
+> >> On Wed, May 11, 2011 at 16:01, Peter Zijlstra <peterz@infradead.org> wrote:
+> >> > On Wed, 2011-05-11 at 15:52 +0200, Kay Sievers wrote:
+> >> >>
+> >> >> No, fixed time spans have never been a problem, and are not the
+> >> >> example here. It's about the normal wall clock, that wakes up every
+> >> >> minute and updates the numbers on the screen.
+> >> >
+> >> > 'wakes up every minute' sounds like a fixed time interval to me.
+> >>
+> >> Right, but if the wall clock changes, it must not wait for the full
+> >> minute to update the numbers, they need to update immediately with the
+> >> new wall clock time. Stuff woke up every second in the past to do
+> >> that, but that's not what we want today.
+> >
+> > Again, nothing that couldn't be solved with a notifier of sorts.
+> 
+> Right. What we have with that patch, and what's visible to the
+> outside, is nothing but such a notifier. What kind of interface you
+> have in mind instead?
 
-00:02.0 VGA compatible controller: Intel Corporation Pineview Integrated
-Graphics Controller (rev 02) (prog-if 00 [VGA controller])
-        Subsystem: Elitegroup Computer Systems Device 2267
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0
-        Interrupt: pin A routed to IRQ 43
-        Region 0: Memory at feb00000 (32-bit, non-prefetchable)
-[size=512K]
-        Region 1: I/O ports at dc00 [size=8]
-        Region 2: Memory at d0000000 (32-bit, prefetchable) [size=256M]
-        Region 3: Memory at fea00000 (32-bit, non-prefetchable)
-[size=1M]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: <access denied>
-        Kernel driver in use: i915
-        Kernel modules: i915
+Dunno, an eventfd that triggers every time someone calls adjtime() and
+related?
 
-The xrandr shows 2 monitors, when only exists 1 (the device even doesn't
-have HDMI or TV). The X also can use only bad resolutions for the main
-monitor.
-
-I tested <= 2.6.36 kernel and it was ok, and kernel >= 2.6.37 was not
-ok.
-
-So, I made a git bisect to discover exactly what commit broked the
-driver and I made a fix reverting the commit:
-44834a67c0082e2cf74b16be91e4910
-Description:
-drm/i915: Use the VBT from OpRegion when available (v3)
-
-I think it will be bad to maintain the patch in our kernel, and rediff
-it every time we made a kernel update. So I decided to report it, to
-know if someone knows how to maintain the commit and fix the problem.
-
-Or it could be a bad (with bugs) hardware?
-
-
-Thanks a lot
-Alexandre
+Anything as long as it doesn't increase HRTIMER_MAX_CLOCK_BASES really.
 
