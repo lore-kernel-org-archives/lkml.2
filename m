@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab1EKQRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:17:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756164Ab1EKQRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:17:06 -0400
-Date: Wed, 11 May 2011 09:30:33 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-throttle: fix typos on struct throtl_grp init code
-Message-ID: <20110511133033.GD31633@redhat.com>
-References: <20110511130732.GB31633@redhat.com>
- <1305120045-5111-1-git-send-email-namhyung@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305120045-5111-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751442Ab1EKRLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:11:36 -0400
+Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:37354 "EHLO
+	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1EKRLe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 13:11:34 -0400
+X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 13:11:34 EDT
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Allen Kay <allen.m.kay@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1103161610110.3382@kaball-desktop>
+References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
+	 <20110304104251.45b257c4@jbarnes-desktop>
+	 <1299595858.17339.512.camel@zakaz.uk.xensource.com>
+	 <1299601032.17339.525.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
+	 <20110316083205.405910ac@jbarnes-desktop>
+	 <alpine.DEB.2.00.1103161610110.3382@kaball-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 14:33:38 +0100
+Message-ID: <1305120818.26692.394.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
+ register_slot
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 10:20:45PM +0900, Namhyung Kim wrote:
-> s/td/tg/
+Hi Jesse,
 
-I think jens would like to have little more changelog than that.
-
-Otherwise looks good to me.
-
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Vivek
-
+On Wed, 2011-03-16 at 16:13 +0000, Stefano Stabellini wrote:
+> On Wed, 16 Mar 2011, Jesse Barnes wrote:
+> > On Wed, 16 Mar 2011 12:34:10 +0000
+> > Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > 
+> > > Jesse,
+> > > do you have any comments on the following patch?
+> > > Also, are you OK with taking "set current_state to D0 in register_slot"
+> > > in your tree? Otherwise should I send a pull request to Linus with the
+> > > patch and your ack?
+> > 
+> > Yeah, I think the patch is ok, I can send it to Linus either as part of
+> > my 2.6.39 pull req (though it's probably too late for that) or in my
+> > next -fixes pull.
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/blk-throttle.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> Great, thanks!
 > 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 0475a22a420d..d1e317e0fc34 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -201,7 +201,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
->  	RB_CLEAR_NODE(&tg->rb_node);
->  	bio_list_init(&tg->bio_lists[0]);
->  	bio_list_init(&tg->bio_lists[1]);
-> -	td->limits_changed = false;
-> +	tg->limits_changed = false;
->  
->  	/*
->  	 * Take the initial reference that will be released on destroy
-> @@ -1072,7 +1072,7 @@ int blk_throtl_init(struct request_queue *q)
->  	/* Practically unlimited BW */
->  	tg->bps[0] = tg->bps[1] = -1;
->  	tg->iops[0] = tg->iops[1] = -1;
-> -	td->limits_changed = false;
-> +	tg->limits_changed = false;
->  
->  	/*
->  	 * Set root group reference to 2. One reference will be dropped when
-> -- 
-> 1.7.5
+> Just to be clear there are two different patches, the first one is "set
+> current_state to D0 in register_slot":
+> 
+> https://lkml.org/lkml/2011/2/28/296
+> 
+> the second one by Ian Campbell is "acpiphp: assume device is in state D0
+> after powering on a slot.":
+> 
+> https://lkml.org/lkml/2011/3/8/212
+
+Looks like the first of these is in your tree but not the second. Do you
+want me to resend and/or rework it?
+
+Ian.
+
+-- 
+Ian Campbell
+Current Noise: Anathema - Dreaming Light
+
+I never met a woman I couldn't drink pretty.
+
