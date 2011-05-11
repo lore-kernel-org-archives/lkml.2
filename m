@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab1EKWpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:45:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48715 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932265Ab1EKWo7 (ORCPT
+	id S932629Ab1EKWsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:48:05 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2533 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932569Ab1EKWsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:44:59 -0400
-Date: Wed, 11 May 2011 15:44:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rtc-linux@googlegroups.com
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] [PATCH] tile: add an RTC driver for the Tilera
- hypervisor
-Message-Id: <20110511154407.ed3c0480.akpm@linux-foundation.org>
-In-Reply-To: <201105042004.p44K4hh5011720@farm-0032.internal.tilera.com>
-References: <201105042004.p44K4hh5011720@farm-0032.internal.tilera.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 May 2011 18:48:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=bqljyBe/yOpy5EnsbDfyyiYwg8V9FggaLOpUwDXH59CQ/RS0ZXQg/EFd0VVXe3qPcP
+         OYI+c9q8b/b4lrCoTLAA==
+Date: Wed, 11 May 2011 15:47:49 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Daniel Kiper <dkiper@net-space.pl>
+cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] mm: Remove dependency on CONFIG_FLATMEM from
+ online_page()
+In-Reply-To: <20110502211915.GB4623@router-fw-old.local.net-space.pl>
+Message-ID: <alpine.DEB.2.00.1105111547160.24003@chino.kir.corp.google.com>
+References: <20110502211915.GB4623@router-fw-old.local.net-space.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 May 2011 15:52:21 -0400
-Chris Metcalf <cmetcalf@tilera.com> wrote:
+On Mon, 2 May 2011, Daniel Kiper wrote:
 
-> This is a simple RTC driver that lets Tilera hardware boot up and
-> set the clock correctly.
+> Memory hotplug code strictly depends on CONFIG_SPARSEMEM.
+> It means that code depending on CONFIG_FLATMEM in online_page()
+> is never compiled. Remove it because it is not needed anymore.
 > 
->
-> ...
->
-> +static int __init tile_rtc_driver_init(void)
-> +{
-> +	int err;
-> +
-> +	err = platform_driver_register(&tile_rtc_platform_driver);
-> +	if (err)
-> +		return err;
-> +
-> +	tile_rtc_platform_device = platform_device_alloc("rtc-tile", 0);
-> +	if (tile_rtc_platform_device == NULL) {
-> +		platform_driver_unregister(&tile_rtc_platform_driver);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	err = platform_device_add(tile_rtc_platform_device);
-> +	if (err) {
-> +		platform_device_put(tile_rtc_platform_device);
+> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
 
-should we have a platform_driver_unregister() here?
+The code you're patching depends on CONFIG_MEMORY_HOTPLUG_SPARSE, so this 
+is valid.  The changelog should be updated to reflect that, however.
 
-> +		return err;
-> +	}
-> +
-> +	return 0;
-> +}
->
-> ...
->
+Acked-by: David Rientjes <rientjes@google.com>
