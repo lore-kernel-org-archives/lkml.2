@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab1EKREf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:04:35 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:34997 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab1EKREd (ORCPT
+	id S1754024Ab1EKQbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:31:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35029 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab1EKQbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:04:33 -0400
-Date: Wed, 11 May 2011 08:21:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [git pull] (AMD mostly) IOMMU updates for 2.6.40
-Message-ID: <20110511062124.GA22551@elte.hu>
-References: <20110510163623.GI30996@amd.com>
+	Wed, 11 May 2011 12:31:45 -0400
+Date: Wed, 11 May 2011 08:22:57 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] [wip] ARM: imx: register "leds-gpio" device using new
+ helper function
+Message-ID: <20110511062257.GH29089@pengutronix.de>
+References: <20110510073152.GF29089@pengutronix.de>
+ <1305017456-10910-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <1305017456-10910-2-git-send-email-u.kleine-koenig@pengutronix.de>
+ <0D753D10438DA54287A00B027084269764D2C3CCBE@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110510163623.GI30996@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0D753D10438DA54287A00B027084269764D2C3CCBE@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Hartley,
 
-* Joerg Roedel <joerg.roedel@amd.com> wrote:
+On Tue, May 10, 2011 at 05:26:18PM -0500, H Hartley Sweeten wrote:
+> On Tuesday, May 10, 2011 1:51 AM, Uwe Kleine-König wrote:
+> > diff --git a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> > index fa5288018..3479f66 100644
+> > --- a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> > +++ b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> > @@ -113,7 +113,7 @@ eukrea_mbimx27_keymap_data __initconst = {
+> >  	.keymap_size    = ARRAY_SIZE(eukrea_mbimx27_keymap),
+> >  };
+> >  
+> > -static struct gpio_led gpio_leds[] = {
+> > +static const struct gpio_led gpio_leds[] __initconst = {
+> >  	{
+> >  		.name			= "led1",
+> >  		.default_trigger	= "heartbeat",
+> > @@ -128,19 +128,11 @@ static struct gpio_led gpio_leds[] = {
+> >  	},
+> >  };
+> >  
+> > -static struct gpio_led_platform_data gpio_led_info = {
+> > +static const struct gpio_led_platform_data gpio_led_info __initconst = {
+> >  	.leds		= gpio_leds,
+> >  	.num_leds	= ARRAY_SIZE(gpio_leds),
+> >  };
+> 
+> Just a note that the 'const' you added to struct gpio_led above will be
+> discarded in struct gpio_led_platform_data.  You will get something like:
+> 
+> arch/arm/mach-imx/eukrea_mbimx27-baseboard.c:132: warning: initialization discards qualifiers from pointer target type
+It seems you don't have
 
-> Hi Ingo,
-> 
-> The following changes since commit 693d92a1bbc9e42681c42ed190bd42b636ca876f:
-> 
->   Linux 2.6.39-rc7 (2011-05-09 19:33:54 -0700)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-iommu.git iommu/2.6.40
-> 
-> Joe Perches (1):
->       arch/x86/kernel/pci-iommu_table.c: Convert sprintf_symbol to %pS
-> 
-> Joerg Roedel (18):
->       x86/amd-iommu: Move compl-wait command building to own function
->       x86/amd-iommu: Move inv-dte command building to own function
->       x86/amd-iommu: Cleanup inv_pages command handling
->       x86/amd-iommu: Cleanup completion-wait handling
->       x86/amd-iommu: Remove command buffer resetting logic
->       x86/amd-iommu: Rename iommu_flush* to domain_flush*
->       x86/amd-iommu: Improve handling of full command buffer
->       x86/amd-iommu: Rename iommu_flush_device
->       x86/amd-iommu: Flush all internal TLBs when IOMMUs are enabled
->       PCI: Move ATS declarations in seperate header file
->       x86/amd-iommu: Select PCI_IOV with AMD IOMMU driver
->       x86/amd-iommu: Flush device IOTLB if ATS is enabled
->       x86/amd-iommu: Add flag to indicate IOTLB support
->       x86/amd-iommu: Add ATS enable/disable code
->       x86/amd-iommu: Add extended feature detection
->       x86/amd-iommu: Add support for invalidate_all command
->       Merge branches 'dma-debug/next', 'amd-iommu/command-cleanups', 'amd-iommu/ats' and 'amd-iommu/extended-features' into iommu/2.6.40
->       x86/amd-iommu: Use threaded interupt handler
-> 
-> Stanislaw Gruszka (1):
->       dma-debug: print information about leaked entry
-> 
->  arch/x86/Kconfig                       |    1 +
->  arch/x86/include/asm/amd_iommu_proto.h |   13 +-
->  arch/x86/include/asm/amd_iommu_types.h |   28 ++-
->  arch/x86/kernel/amd_iommu.c            |  526 +++++++++++++++++++-------------
->  arch/x86/kernel/amd_iommu_init.c       |   48 +++-
->  arch/x86/kernel/pci-iommu_table.c      |   18 +-
->  drivers/pci/intel-iommu.c              |    1 +
->  drivers/pci/iov.c                      |    1 +
->  drivers/pci/pci.h                      |   37 ---
->  include/linux/pci-ats.h                |   52 ++++
->  lib/dma-debug.c                        |   18 +-
->  11 files changed, 454 insertions(+), 289 deletions(-)
->  create mode 100644 include/linux/pci-ats.h
+	9517f92 (leds: make *struct gpio_led_platform_data.leds const)
 
-Pulled, thanks a lot Joerg!
+(contained in .39-rc1) in your tree :-)
 
-Thanks,
+Best regards
+Uwe
 
-	Ingo
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
