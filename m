@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab1EKSho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 14:37:44 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:40319 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab1EKShn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 14:37:43 -0400
-Message-ID: <4DCA3C0C.3080901@linux.vnet.ibm.com>
-Date: Wed, 11 May 2011 15:34:36 +0800
-From: Cheng Xu <chengxu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1756774Ab1EKQjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:39:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56076 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab1EKQi4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:38:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=rvWBvlTpt7Hjg+GdlgAPMud/ZCok5aZESsKNhfKK7oSL8sGOyi0TKMyf42Vi60lNIl
+         C+k4i6fIiMEoONUPC2HI2yVGot6M/kpie5DJlFIBcDVDwCcjXCV93qCxyou6xzvuaN7m
+         lDYHnIPnCdlNaJeGMjfbLugMIqIeF0vofynx0=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Paul Mckenney <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: rt_rq runtime leakage bug fix
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <m1liydeuqs.fsf@fess.ebiederm.org>
+References: <20110511140225.2c7e300f.sfr@canb.auug.org.au>
+	<m1liydeuqs.fsf@fess.ebiederm.org>
+Date: Wed, 11 May 2011 09:36:31 +0200
+X-Google-Sender-Auth: XImlPg0IfurNoGhXftgQ71E6LUc
+Message-ID: <BANLkTi=JRiafXn8SjxM9eKup3hvNHyB3rw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the namespace tree with the m68k tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to fix bug report https://lkml.org/lkml/2011/4/26/13
+On Wed, May 11, 2011 at 06:17, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Stephen Rothwell <sfr@canb.auug.org.au> writes:
+>> Today's linux-next merge of the namespace tree got a conflict in
+>> arch/m68k/kernel/entry_mm.S between commit 55e1af1ab184 ("m68k: Merge mmu
+>> and non-mmu versions of sys_call_table") from the m68k tree and commit
+>> e975ee91dcc1 ("ns: Wire up the setns system call") from the namespace
+>> tree.
+>>
+>> I just used the m68k version of that file and that should be all that is
+>> necessary.
+>
+> Sounds good.  Gert asked me to check in that conflict (probably so
+> bisects will continue to work), and if the commit id is right it looks
+> like the m68k tree is seeing active development on that change right now.
 
-Function __disable_runtime() reports leakage of rt_rq runtime. The root cause is __disable_runtime() assumes it iterates through all the existing rt_rq's while walking rq->leaf_rt_rq_list, which actually contains only runnable rt_rq's. This problem also applies to __enable_runtime() and print_rt_stats().
+I can add the syscall as soon as sys_setns() hits mainline.
+That's what we usually do with new syscalls.
 
-The patch is based on above analysis, appears to fix the problem, but is only lightly tested.
+Gr{oetje,eeting}s,
 
+                        Geert
 
-Signed-off-by: Cheng Xu <chengxu@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
----
- kernel/sched_rt.c |   31 ++++++++++++++++++++++++-------
- 1 files changed, 24 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index e7cebdc..7f478ff 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -183,6 +183,13 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
- 	return ktime_to_ns(rt_rq->tg->rt_bandwidth.rt_period);
- }
- 
-+#define rt_rq_of_rq_decls(name) struct task_group *name
-+
-+#define list_for_rt_rq_of_rq(iterator, rq) \
-+	list_for_each_entry_rcu(iterator, &task_groups, list)
-+
-+#define rt_rq_of_rq_deref(iterator, rq) (iterator->rt_rq[cpu_of(rq)])
-+
- static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
- {
- 	list_add_rcu(&rt_rq->leaf_rt_rq_list,
-@@ -288,6 +295,13 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
- 	return ktime_to_ns(def_rt_bandwidth.rt_period);
- }
- 
-+#define rt_rq_of_rq_decls(name) struct rt_rq *name
-+
-+#define list_for_rt_rq_of_rq(iterator, rq) \
-+	for (iterator = &rq->rt; iterator; iterator = NULL)
-+
-+#define rt_rq_of_rq_deref(iterator, rq) (iterator)
-+
- static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
- {
- }
-@@ -402,12 +416,13 @@ next:
- static void __disable_runtime(struct rq *rq)
- {
- 	struct root_domain *rd = rq->rd;
--	struct rt_rq *rt_rq;
-+	rt_rq_of_rq_decls(iterator);
- 
- 	if (unlikely(!scheduler_running))
- 		return;
- 
--	for_each_leaf_rt_rq(rt_rq, rq) {
-+	list_for_rt_rq_of_rq(iterator, rq) {
-+		struct rt_rq *rt_rq = rt_rq_of_rq_deref(iterator, rq);
- 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
- 		s64 want;
- 		int i;
-@@ -487,7 +502,7 @@ static void disable_runtime(struct rq *rq)
- 
- static void __enable_runtime(struct rq *rq)
- {
--	struct rt_rq *rt_rq;
-+	rt_rq_of_rq_decls(iterator);
- 
- 	if (unlikely(!scheduler_running))
- 		return;
-@@ -495,7 +510,8 @@ static void __enable_runtime(struct rq *rq)
- 	/*
- 	 * Reset each runqueue's bandwidth settings
- 	 */
--	for_each_leaf_rt_rq(rt_rq, rq) {
-+	list_for_rt_rq_of_rq(iterator, rq) {
-+		struct rt_rq *rt_rq = rt_rq_of_rq_deref(iterator, rq);
- 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
- 
- 		raw_spin_lock(&rt_b->rt_runtime_lock);
-@@ -1796,11 +1812,12 @@ extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
- 
- static void print_rt_stats(struct seq_file *m, int cpu)
- {
--	struct rt_rq *rt_rq;
-+	rt_rq_of_rq_decls(iterator);
-+	struct rq *rq = cpu_rq(cpu);
- 
- 	rcu_read_lock();
--	for_each_leaf_rt_rq(rt_rq, cpu_rq(cpu))
--		print_rt_rq(m, cpu, rt_rq);
-+	list_for_rt_rq_of_rq(iterator, rq)
-+		print_rt_rq(m, cpu, rt_rq_of_rq_deref(iterator, rq));
- 	rcu_read_unlock();
- }
- #endif /* CONFIG_SCHED_DEBUG */
--- 
-1.7.1
-
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
