@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1EKPgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:36:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29827 "EHLO mx1.redhat.com"
+	id S1755058Ab1EKP54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:57:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5751 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451Ab1EKPgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:36:44 -0400
-Message-ID: <4DCA76D7.2010608@redhat.com>
-Date: Wed, 11 May 2011 14:45:27 +0300
+	id S1754697Ab1EKP5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:57:53 -0400
+Message-ID: <4DCA7881.7040207@redhat.com>
+Date: Wed, 11 May 2011 14:52:33 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf, core: Introduce attrs to count in either host
- or guest mode
-References: <1305038132-5080-1-git-send-email-joerg.roedel@amd.com> <1305038132-5080-2-git-send-email-joerg.roedel@amd.com> <4DCA76A5.7030000@redhat.com>
-In-Reply-To: <4DCA76A5.7030000@redhat.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: Fix kvm mmu_notifier initialization order
+References: <87fwomozbn.fsf@devron.myhome.or.jp>
+In-Reply-To: <87fwomozbn.fsf@devron.myhome.or.jp>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2011 02:44 PM, Avi Kivity wrote:
-> On 05/10/2011 05:35 PM, Joerg Roedel wrote:
->> The two new attributes exclude_guest and exclude_host can
->> bes used by user-space to tell the kernel to setup
->> performance counter to either only count while the CPU is in
->> guest or in host mode.
->> An additional check is also introduced to make sure
->> user-space does not try to exclude guest and host mode from
->> counting.
->>
->> @@ -217,7 +217,10 @@ struct perf_event_attr {
->>                   mmap_data      :  1, /* non-exec mmap data    */
->>                   sample_id_all  :  1, /* sample_type all events */
->>
->> -                __reserved_1   : 45;
->> +                exclude_host   :  1, /* don't count in host   */
->> +                exclude_guest  :  1, /* don't count in guest  */
->> +
->> +                __reserved_1   : 43;
->>
+On 05/11/2011 03:28 AM, OGAWA Hirofumi wrote:
+> Like the following, mmu_notifier can be called after registering
+> immediately. So, kvm have to initialize kvm->mmu_lock before it.
 >
-> We have exclude_hv a few lines up, so only exclude_guest is needed.
+> BUG: spinlock bad magic on CPU#0, kswapd0/342
+>   lock: ffff8800af8c4000, .magic: 00000000, .owner:<none>/-1, .owner_cpu: 0
+> Pid: 342, comm: kswapd0 Not tainted 2.6.39-rc5+ #1
+> Call Trace:
+>   [<ffffffff8118ce61>] spin_bug+0x9c/0xa3
+>   [<ffffffff8118ce91>] do_raw_spin_lock+0x29/0x13c
+>   [<ffffffff81024923>] ? flush_tlb_others_ipi+0xaf/0xfd
+>   [<ffffffff812e22f3>] _raw_spin_lock+0x9/0xb
+>   [<ffffffffa0582325>] kvm_mmu_notifier_clear_flush_young+0x2c/0x66 [kvm]
+>   [<ffffffff810d3ff3>] __mmu_notifier_clear_flush_young+0x2b/0x57
+>   [<ffffffff810c8761>] page_referenced_one+0x88/0xea
+>   [<ffffffff810c89bf>] page_referenced+0x1fc/0x256
+>   [<ffffffff810b2771>] shrink_page_list+0x187/0x53a
+>   [<ffffffff810b2ed7>] shrink_inactive_list+0x1e0/0x33d
+>   [<ffffffff810acf95>] ? determine_dirtyable_memory+0x15/0x27
+>   [<ffffffff812e90ee>] ? call_function_single_interrupt+0xe/0x20
+>   [<ffffffff810b3356>] shrink_zone+0x322/0x3de
+>   [<ffffffff810a9587>] ? zone_watermark_ok_safe+0xe2/0xf1
+>   [<ffffffff810b3928>] kswapd+0x516/0x818
+>   [<ffffffff810b3412>] ? shrink_zone+0x3de/0x3de
+>   [<ffffffff81053d17>] kthread+0x7d/0x85
+>   [<ffffffff812e9394>] kernel_thread_helper+0x4/0x10
+>   [<ffffffff81053c9a>] ? __init_kthread_worker+0x37/0x37
+>   [<ffffffff812e9390>] ? gs_change+0xb/0xb
 >
 
-Well, actually, that depends on the meaning of exclude_hv.
+Applied, thanks.
 
 -- 
 error compiling committee.c: too many arguments to function
