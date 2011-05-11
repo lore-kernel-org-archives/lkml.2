@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab1EKRl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:41:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52688 "EHLO mx1.redhat.com"
+	id S1753176Ab1EKR0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:26:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16778 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752172Ab1EKRl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:41:58 -0400
-Date: Wed, 11 May 2011 18:49:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
-	ptrace_check_attach()
-Message-ID: <20110511164947.GA26383@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-11-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304869745-1073-11-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752174Ab1EKRZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 13:25:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,353,1301900400"; 
+   d="scan'208";a="434422792"
+Subject: Re: [PATCH] dmaengine: at_hdmac: pause: no need to wait for FIFO
+ empty
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4DC929EC.6040706@atmel.com>
+References: <be7d19459501aaa604aebe91daa9e9e59bb41c86.1304704588.git.nicolas.ferre@atmel.com>
+	 <1304957497-22814-1-git-send-email-nicolas.ferre@atmel.com>
+	 <4DC927DF.1060808@ru.mvista.com>  <4DC929EC.6040706@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 22:23:20 +0530
+Message-ID: <1305132800.28926.53.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08, Tejun Heo wrote:
->
-> TRAPPING will also be used to implement end of group stop retrapping,
-> which can be initiated by tasks other than tracer.  To allow this,
-
-I didn't read the next patch yet, so I can't undestand/comment the
-motivation.
-
-But,
-
-> this patch moves TRAPPING wait from attach completion path to
-> operations which are actually affected by the transition - wait(2) and
-> following ptrace(2) requests.
-
-You know, I'd wish I could find the serious bugs in this patch. The
-code becomes really hairy. -EAGAIN in do_wait() doesn't make it more
-simple ;)
-
-> Both wait and ptrace paths are updated to retry the operation after
-> TRAPPING wait.  Note that wait_task_stopped() now always grabs siglock
-> for ptrace waits.  This can be avoided with "task_stopped_code() ->
-> rmb() -> TRAPPING -> rmb() -> task_stopped_code()" sequence
-
-And so far I think this would be better, because it seems we can avoid
-the retry logic.
+On Tue, 2011-05-10 at 14:05 +0200, Nicolas Ferre wrote:
+> Le 10/05/2011 13:56, Sergei Shtylyov :
+> > Hello.
+> > 
+> > On 09-05-2011 20:11, Nicolas Ferre wrote:
+> > 
+> >> The addition of the pause feature to atc_control an active wait was
+> >> introduced
+> >> to check the FIFO empty event.
+> > 
+> >    Couldn't parse this -- did you forget "with"at the start of the
+> > statement?
+> 
+> Absolutely. A comma can also improve things... is it better like this?
+> 
+> "
+> With the addition of the "pause" feature, an active wait loop was
+> introduced to check the "FIFO empty" event.
+> "
+> 
+> Vinod, tell me if you want me to send a new patch.
+Its okay, I can fix the commit
 
 
-First of all, this patch returns one of the user-visible and undesirable
-changes. The tracer know that the task is stopped, attaches, and then it
-can see the TASK_RUNNING tracee after ptrace(PTRACE_ATTACH) returns.
-
-I agree, this looks minor. But if we can tolerate this, probably we can
-tolerate another oddity: wait_task_stopped() can succeed and eat the
-stop code before the tracee actually stopps, no?
-
-IOW, ignoring mb's and read-ordering, suppose that we simply change
-task_stopped_code:
-
-		if (ptrace) {
-	-		if (task_is_stopped_or_traced(p))
-	+		if (task_is_traced(p) || JOBCTL_TRAPPING)
-				return &p->exit_code;
-		} else {
-
-As for ptrace_check_attach(), it can simply do wait_event(), we
-only need to verify the caller is the tracer. No need to play with
-lock/unlock/retry.
-
-What do you think?
-
-Oleg.
+-- 
+~Vinod
 
