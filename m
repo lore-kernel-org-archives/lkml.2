@@ -1,172 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab1EKR2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:28:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24824 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab1EKR2i (ORCPT
+	id S1753775Ab1EKR3f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:29:35 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:52596 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab1EKR3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:28:38 -0400
-X-AuditID: cbfee61b-b7bb4ae000002c54-a5-4dca1c22065e
-Date: Wed, 11 May 2011 14:18:24 +0900
+	Wed, 11 May 2011 13:29:34 -0400
+X-AuditID: cbfee61a-b7c84ae000006ee6-bd-4dca1c222ad3
+Date: Wed, 11 May 2011 14:18:25 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [RFC PATCH v3 1/2] PM / Core: suspend_again callback for suspend_ops.
+Subject: [RFC PATCH v3 2/2] PM / Core: partial resume/suspend API for
+ suspend_again users.
+In-reply-to: <1305091105-27173-1-git-send-email-myungjoo.ham@samsung.com>
 To: linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
         kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
         Len Brown <len.brown@intel.com>
-Message-id: <1305091105-27173-1-git-send-email-myungjoo.ham@samsung.com>
+Message-id: <1305091105-27173-2-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 11 May 2011 05:18:25.0817 (UTC)
- FILETIME=[DADC9090:01CC0F9A]
+References: <1305091105-27173-1-git-send-email-myungjoo.ham@samsung.com>
+X-OriginalArrivalTime: 11 May 2011 05:18:26.0036 (UTC)
+ FILETIME=[DAFDFB40:01CC0F9A]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A system or a device may need to control suspend/wakeup events. It may
-want to wakeup the system after a predefined amount of time or at a
-predefined event decided while entering suspend for polling or delayed
-work. Then, it may want to enter suspend again if its predefined wakeup
-condition is the only wakeup reason and there is no outstanding events;
-thus, it does not wakeup the userspace unnecessary or unnecessary
-devices and keeps suspended as long as possible (saving the power).
+The API, suspend_again, is supposed to be used by platforms when the
+platforms want to execute some code while suspended (wakeup by an alarm
+or periodic ticks, run code, suspend again). Because suspend_again is
+not called when every device is resumed, but is called right after
+suspend_enter() is called, the suspend_again callback should include
+device resume and suspend features.
 
-Enabling a system to wakeup after a specified time can be easily
-achieved by using RTC. However, to enter suspend again immediately
-without invoking userland and unrelated devices, we need additional
-features in the suspend framework.
+This patch provides two APIs: dpm_partial_resume and
+dpm_partial_suspend. They are supposed to be used in suspend_again to
+actiavte required devices.
 
-Such need comes from:
+A usage example is:
 
-1. Monitoring a critical device status without interrupts that can
-wakeup the system. (in-suspend polling)
- An example is ambient temperature monitoring that needs to shut down
-the system or a specific device function if it is too hot or cold. The
-temperature of a specific device may be needed to be monitored as well;
-e.g., a charger monitors battery temperature in order to stop charging
-if overheated.
+/* Devices required to run "monitor_something()". */
+static device *devs[] = {
+	&console_serial,
+	&device_x,
+	&device_y,
+	...
+};
 
-2. Execute critical "delayed work" at suspend.
- A driver or a system/board may have a delayed work (or any similar
-things) that it wants to execute at the requested time.
- For example, some chargers want to check the battery voltage some
-time (e.g., 30 seconds) after the battery is fully charged and the
-charger has stopped. Then, the charger restarts charging if the voltage
-has dropped more than a threshold, which is smaller than "restart-charger"
-voltage, which is a threshold to restart charging regardless of the
-time passed.
+bool example_suspend_again(void)
+{
+	int error, monitor_result;
 
-This patch allows to add "suspend_again" callback at struct
-platform_suspend_ops and let the "suspend_again" callback return true if
-the system is required to enter suspend again after the current instance
-of wakeup. Device-wise suspend_again implemented at dev_pm_ops or
-syscore is not done because: a) suspend_again feature is usually under
-platform-wise decision and controls the behavior of the whole platform
-and b) There are very limited devices related to the usage cases of
-suspend_again; chargers and temperature sensors are mentioned so far.
+	if (!wakeup_reason_is_polling())
+		return false;
 
-With suspend_again callback registered at struct platform_suspend_ops
-suspend_ops in kernel/power/suspend.c with suspend_set_ops by the
-platform, the suspend framework tries to enter suspend again by
-looping suspend_enter() if suspend_again has returned true and there has
-been no errors in the suspending sequence or pending wakeups (by
-pm_wakeup_pending).
+	dpm_partial_resume(PMSG_RESUME, devs, ARRAY_SIZE(devs));
+	resume_console();
+
+	monitor_result = monitor_something();
+
+	suspend_console();
+	error = dpm_partial_suspend(PMSG_SUSPEND, devs, ARRAY_SIZE(devs));
+
+	if (error || monitor_result == ERROR)
+		return false;
+
+	return true;
+}
 
 Tested at Exynos4-NURI.
 
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-
---
-Changed from v2:
-	- moved (again) from dev_pm_ops to suspend_ops
-	- settled suspend_again point at around suspend_enter().
-Changes from v1:
-	- moved from syscore to dev_pm_ops
-	- added generic ops for subsystems.
-	- cleaned up suspend_again code at kernel/power/suspend.
 ---
- include/linux/suspend.h |    8 ++++++++
- kernel/power/suspend.c  |   13 ++++++++++---
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ drivers/base/power/main.c |  154 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pm.h        |    4 +
+ 2 files changed, 158 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 5a89e36..caf5e97 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -92,6 +92,13 @@ typedef int __bitwise suspend_state_t;
-  *	@enter() and @wake(), even if any of them fails.  It is executed after
-  *	a failing @prepare.
-  *
-+ * @suspend_again: Returns whether the system should suspend again (true) or
-+ *	not (false). If the platform wants to poll sensors or execute some
-+ *	code during suspended without invoking userspace and most of devices,
-+ *	suspend_again callback is the place assuming that periodic-wakeup or
-+ *	alarm-wakeup is already setup. This allows to execute some codes while
-+ *	being kept suspended in the view of userland and devices.
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 052dc53..71dc693 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -1082,3 +1082,157 @@ int device_pm_wait_for_dev(struct device *subordinate, struct device *dev)
+ 	return async_error;
+ }
+ EXPORT_SYMBOL_GPL(device_pm_wait_for_dev);
++
++/**
++ * __dpm_partial_resume - Execute "resume" callbacks for the listed devices.
++ * @state: PM transition being carried out.
++ * @devs: Array of pointers for the devices being resumed
++ * @size: The size of devs array.
++ */
++static void __dpm_partial_resume(pm_message_t state, struct device **devs,
++				 int size)
++{
++	int i;
++	struct device *dev;
++
++	for (i = 0; i < size; i++) {
++		int error;
++
++		dev = devs[i];
++		get_device(dev);
++
++		error = device_resume(dev, state, false);
++		if (error)
++			pm_dev_err(dev, state, "", error);
++
++		put_device(dev);
++	}
++}
++
++/**
++ * __dpm_partial_complete - Complete a PM transition for the listed devices.
++ * @state: PM transition being carried out.
++ * @devs: Array of pointers for the devices being resumed
++ * @size: The size of devs array.
++ */
++static void __dpm_partial_complete(pm_message_t state, struct device **devs,
++				   int size)
++{
++	int i;
++	struct device *dev;
++
++	for (i = 0; i < size; i++) {
++		dev = devs[i];
++
++		get_device(dev);
++		dev->power.in_suspend = false;
++
++		device_complete(dev, state);
++
++		put_device(dev);
++	}
++}
++
++/**
++ * dpm_partial_resume - Execute "resume" callbacks and complete system
++ *			transaction for the chosen devices only.
++ * @state: PM transition being carried out.
++ * @devs: Array of pointers for the devices being resumed
++ * @size: The size of devs array.
 + *
-  * @end: Called by the PM core right after resuming devices, to indicate to
-  *	the platform that the system has returned to the working state or
-  *	the transition to the sleep state has been aborted.
-@@ -113,6 +120,7 @@ struct platform_suspend_ops {
- 	int (*enter)(suspend_state_t state);
- 	void (*wake)(void);
- 	void (*finish)(void);
-+	bool (*suspend_again)(void);
- 	void (*end)(void);
- 	void (*recover)(void);
- };
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 08515b4..e655f43 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -128,10 +128,12 @@ void __attribute__ ((weak)) arch_suspend_enable_irqs(void)
- /**
-  *	suspend_enter - enter the desired system sleep state.
-  *	@state:		state to enter
-+ *	@pm_wkup_pending:	indicates that the power transition in progress
-+ *				should be aborted.
-  *
-  *	This function should be called after devices have been suspended.
-  */
--static int suspend_enter(suspend_state_t state)
-+static int suspend_enter(suspend_state_t state, bool *pm_wkup_pending)
- {
- 	int error;
++ * Execute "resume" callbacks for the listed devices and complete the PM
++ * transition of them.
++ *
++ * Because the only a part of devices will be resumed, asynchronous resume
++ * is dropped.
++ */
++void dpm_partial_resume(pm_message_t state, struct device **devs, int size)
++{
++	/* Partial dpm_resume */
++	__dpm_partial_resume(state, devs, size);
++
++	/* Partial dpm_complete */
++	__dpm_partial_complete(state, devs, size);
++}
++EXPORT_SYMBOL_GPL(dpm_partial_resume);
++
++/**
++ * dpm_partial_suspend - Prepare the given devices for PM transition and
++ *			suspend them.
++ * @state: PM transition being carried out.
++ * @devs: Array of pointers for the devices being suspended
++ * @size: The size of devs array.
++ *
++ * Prepare the given devices for system PM transition and execute "suspend"
++ * callbacks for them.
++ *
++ * The devs array is iterated in the reversed order to use the same devs
++ * array with dpm_partial_resume().
++ */
++int dpm_partial_suspend(pm_message_t state, struct device **devs, int size)
++{
++	int error = 0, i;
++	struct device *dev;
++
++	/* Partial dpm_prepare */
++	for (i = size - 1; i >= 0; i--) {
++		dev = devs[i];
++
++		get_device(dev);
++
++		pm_runtime_get_noresume(dev);
++		if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
++			pm_wakeup_event(dev, 0);
++
++		pm_runtime_put_sync(dev);
++		error = pm_wakeup_pending() ?
++				-EBUSY : device_prepare(dev, state);
++
++		if (error) {
++			if (error == -EAGAIN) {
++				put_device(dev);
++				error = 0;
++				i++; /* Try Again */
++				continue;
++			}
++			printk(KERN_INFO "PM: Device %s not prepared "
++				"for power transition: code %d\n",
++				dev_name(dev), error);
++			put_device(dev);
++			break;
++		}
++		dev->power.in_suspend = true;
++		put_device(dev);
++	}
++
++	if (error)
++		goto err_prepare;
++
++	/* Partial dpm_suspend */
++	for (i = size - 1; i >= 0; i--) {
++		dev = devs[i];
++
++		get_device(dev);
++
++		/* Synchronous suspend. The list shouldn't be long */
++		error = __device_suspend(dev, pm_transition, false);
++
++		if (error) {
++			pm_dev_err(dev, state, "", error);
++			put_device(dev);
++			break;
++		}
++		put_device(dev);
++	}
++
++	if (!error)
++		return 0;
++
++	__dpm_partial_resume(PMSG_RESUME, devs + i + 1, size - i - 1);
++	i = -1;
++err_prepare:
++	__dpm_partial_complete(PMSG_RESUME, devs + i + 1, size - i - 1);
++
++	return error;
++}
++EXPORT_SYMBOL_GPL(dpm_partial_suspend);
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 512e091..b407762 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -540,10 +540,14 @@ static inline int sysdev_resume(void) { return 0; }
+ extern void device_pm_lock(void);
+ extern void dpm_resume_noirq(pm_message_t state);
+ extern void dpm_resume_end(pm_message_t state);
++extern void dpm_partial_resume(pm_message_t state, struct device **devs,
++			       int size);
  
-@@ -167,7 +169,8 @@ static int suspend_enter(suspend_state_t state)
- 	if (!error)
- 		error = syscore_suspend();
- 	if (!error) {
--		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
-+		*pm_wkup_pending = pm_wakeup_pending();
-+		if (!(suspend_test(TEST_CORE) || *pm_wkup_pending)) {
- 			error = suspend_ops->enter(state);
- 			events_check_enabled = false;
- 		}
-@@ -202,6 +205,7 @@ static int suspend_enter(suspend_state_t state)
- int suspend_devices_and_enter(suspend_state_t state)
- {
- 	int error;
-+	bool pm_wkup_pending = false;
+ extern void device_pm_unlock(void);
+ extern int dpm_suspend_noirq(pm_message_t state);
+ extern int dpm_suspend_start(pm_message_t state);
++extern int dpm_partial_suspend(pm_message_t state, struct device **devs,
++			       int size);
  
- 	if (!suspend_ops)
- 		return -ENOSYS;
-@@ -224,7 +228,10 @@ int suspend_devices_and_enter(suspend_state_t state)
- 	if (suspend_test(TEST_DEVICES))
- 		goto Recover_platform;
+ extern void __suspend_report_result(const char *function, void *fn, int ret);
  
--	error = suspend_enter(state);
-+	do {
-+		error = suspend_enter(state, &pm_wkup_pending);
-+	} while (suspend_ops->suspend_again && suspend_ops->suspend_again() &&
-+		 !error && !pm_wkup_pending);
- 
-  Resume_devices:
- 	suspend_test_start();
 -- 
 1.7.4.1
 
