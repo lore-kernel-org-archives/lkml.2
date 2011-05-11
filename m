@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1EKVET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:04:19 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46165 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab1EKVES (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:04:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=dw/dNcd/0JiUafkfukKHgXMY6Ojwng8f6lA/AriUimHgDkU/+20BxNPgBD680L6HrN
-         ckLPzHeWBRxdop+jKSSit/OdJS/bWE+c2cQBUhv8QWl7+QP9R5Zoi6614PDZgdaQ2i+g
-         sjrM4tFlatuU1tG8XQoytAwNzg25rLQ0X1N2A=
-From: Peng Huang <shawn.p.huang@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Peng Huang <shawn.p.huang@gmail.com>
-Subject: [PATCH] nfs: check a crash in nfs_lookup_revalidate
-Date: Wed, 11 May 2011 17:03:25 -0400
-Message-Id: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755972Ab1EKVEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:04:51 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46230 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755608Ab1EKVEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 17:04:50 -0400
+Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
+From: John Stultz <john.stultz@linaro.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+In-Reply-To: <m2sjsli1ft.fsf@firstfloor.org>
+References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org>
+	 <1305073386-4810-3-git-send-email-john.stultz@linaro.org>
+	 <m2sjsli1ft.fsf@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 14:04:27 -0700
+Message-ID: <1305147867.2883.2.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
-indirectly, that causes the kernel crash.
+On Wed, 2011-05-11 at 10:36 -0700, Andi Kleen wrote:
+> John Stultz <john.stultz@linaro.org> writes:
+> 
+> > Acessing task->comm requires proper locking. However in the past
+> > access to current->comm could be done without locking. This
+> > is no longer the case, so all comm access needs to be done
+> > while holding the comm_lock.
+> >
+> > In my attempt to clean up unprotected comm access, I've noticed
+> > most comm access is done for printk output. To simpify correct
+> > locking in these cases, I've introduced a new %ptc format,
+> > which will safely print the corresponding task's comm.
+> >
+> > Example use:
+> > printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
+> 
+> Neat. But you probably want a checkpatch rule for this too
+> to catch new offenders.
 
-RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
-nfs_lookup_revalidate+0x21/0x4a0 [nfs]
-RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+Yea. That's on my queue.
 
-Call Trace:
- [<ffffffff81164a17>] do_revalidate+0x17/0x60
- [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
- [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
- [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
- [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
- [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
- [<ffffffff811669b2>] do_lookup+0x192/0x2d0
- [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
- [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
- [<ffffffff81167d67>] link_path_walk+0x597/0xae0
- [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
- [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
- [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
- [<ffffffff811692f7>] user_path_at+0x57/0xa0
- [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
- [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
- [<ffffffff8116b990>] ? filldir+0x0/0xe0
- [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
- [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
- [<ffffffff8159c995>] ? page_fault+0x25/0x30
- [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+thanks
+-john
 
-Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
----
- fs/nfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 2c3eb33..9452aa5 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	struct nfs_fattr *fattr = NULL;
- 	int error;
- 
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd != NULL && nd->flags & LOOKUP_RCU)
- 		return -ECHILD;
- 
- 	parent = dget_parent(dentry);
--- 
-1.7.1
 
