@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1EKRbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:31:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16323 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab1EKRbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:31:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,351,1301900400"; 
-   d="scan'208";a="434168244"
-Date: Wed, 11 May 2011 11:05:08 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [PATCH v1 16/19] mfd: Use mfd cell platform_data for tps6105x
- cells platform bits
-Message-ID: <20110511090507.GC2637@sortiz-mobl>
-References: <1304901131-7104-1-git-send-email-sameo@linux.intel.com>
- <1304901131-7104-17-git-send-email-sameo@linux.intel.com>
- <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
+	id S1755476Ab1EKPtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:49:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47764 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755426Ab1EKPtA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 11:49:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eTodDqanCoa2Ot6TVlzNAT+k3jV+EDG+HzARZxLtpie1rP+D4AXdfMExfnHLfVNiXA
+         4Aqee7cxJYI135ATGzWCMuYsRpVgN12Q0v5Zia5yWthSblRNYnqMIo67ag7V9xJSMK1j
+         AgndmfXeKWotogNPqoSnvLCjY34JUvkm2I2dI=
+Date: Wed, 11 May 2011 11:05:51 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 11/11] ptrace: implement group stop notification for
+ ptracer
+Message-ID: <20110511090551.GC1661@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-12-git-send-email-tj@kernel.org>
+ <201105110037.34051.vda.linux@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTinHyGv11px+cO_ORL0-83T4c-mbsQ@mail.gmail.com>
+In-Reply-To: <201105110037.34051.vda.linux@googlemail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the addition of a platform device mfd_cell pointer, MFD drivers
-can go back to passing platform data back to their sub drivers.
-This allows for an mfd_cell->mfd_data removal and thus keep the
-sub drivers MFD agnostic. This is mostly needed for non MFD aware
-sub drivers.
+Hello, Denys.
 
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
----
+On Wed, May 11, 2011 at 12:37:34AM +0200, Denys Vlasenko wrote:
+> > When group stop state of a seized tracee changes, JOBCTL_TRAP_NOTIFY
+> > is set, which triggers INTERRUPT trap but is sticky until the next
+> > PTRACE_GETSIGINFO.
+> 
+> Why INTERRUPT trap? For group stops, we already have perfectly working
+> way to detect such a stop.
 
-v0 -> v1: Use dev_get_platdata instead of accessing the platform_data pointer
-directly.
+Debugger may continue tracee and put it in a different trap.  In such
+cases, group stop may be initiated and lifted multiple times while a
+tracee is trapped.  It's much nicer to have symmetric notifications in
+those cases.
 
----
- drivers/mfd/tps6105x.c                 |    3 ++-
- drivers/regulator/tps6105x-regulator.c |    4 ++--
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Also, we might end up adding more status flags to si_pt_flags and it's
+much better to be able to say "INTERRUPT becomes and stays pending
+until the next GETSIGINFO if any of these flags may have chagned" than
+"if XXX change from x to y, or YYY changes to x to y or y to x,
+... blah blah".
 
-diff --git a/drivers/mfd/tps6105x.c b/drivers/mfd/tps6105x.c
-index 46d8205..a293b97 100644
---- a/drivers/mfd/tps6105x.c
-+++ b/drivers/mfd/tps6105x.c
-@@ -183,7 +183,8 @@ static int __devinit tps6105x_probe(struct i2c_client *client,
- 	/* Set up and register the platform devices. */
- 	for (i = 0; i < ARRAY_SIZE(tps6105x_cells); i++) {
- 		/* One state holder for all drivers, this is simple */
--		tps6105x_cells[i].mfd_data = tps6105x;
-+		tps6105x_cells[i].platform_data = tps6105x;
-+		tps6105x_cells[i].pdata_size = sizeof(*tps6105x);
- 	}
- 
- 	ret = mfd_add_devices(&client->dev, 0, tps6105x_cells,
-diff --git a/drivers/regulator/tps6105x-regulator.c b/drivers/regulator/tps6105x-regulator.c
-index 1661499..a4d7f45 100644
---- a/drivers/regulator/tps6105x-regulator.c
-+++ b/drivers/regulator/tps6105x-regulator.c
-@@ -137,7 +137,7 @@ static struct regulator_desc tps6105x_regulator_desc = {
-  */
- static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
- {
--	struct tps6105x *tps6105x = mfd_get_data(pdev);
-+	struct tps6105x *tps6105x = dev_get_platdata(&pdev->dev);
- 	struct tps6105x_platform_data *pdata = tps6105x->pdata;
- 	int ret;
- 
-@@ -164,7 +164,7 @@ static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
- 
- static int __devexit tps6105x_regulator_remove(struct platform_device *pdev)
- {
--	struct tps6105x *tps6105x = platform_get_drvdata(pdev);
-+	struct tps6105x *tps6105x = dev_get_platdata(&pdev->dev);
- 	regulator_unregister(tps6105x->regulator);
- 	return 0;
- }
+> Can we just add a "group cont" notification which looks like
+> a waitpid result with WIFCONTINUED(waitpid_status) == 1 to the tracer?
+
+Consider the following scenario.
+
+1. A syscall traced tracee enters group stop while returning from a
+   syscall.  Tracer is notified.
+
+2. SIGCONT generated.  Tracee is woken up and wait state is generated.
+
+3. Tracee traps for syscall completion before tracer has chance to
+   wait(2).
+
+4. Oops, continued wait state lost.
+
+Note that generation of another trap can't be used to determine end of
+group stop.  It might already have been PTRACE_CONT'd.
+
+This happens because wait states don't queue and shows why edge (or
+instance) notifications are usually worse than level ones.  Think
+about RT signals which are jokes.
+
+> > Re-trapping is used only for group stop and INTERRUPT traps.  If
+> > tracer wants to get notified about group stop, it either leaves tracee
+> > in the initial group stop trap or puts it into INTERRUPT trap.  When
+> > INTERRUPT trap is scheduled while tracee is already in a trap,
+> 
+> Sane tracer has no need to do PTRACE_INTERRUPT on a tracee
+> which is already stopped (for whatever reason): it already knows
+> it's stopped, and why. PTRACE_INTERRUPT is useful to cleanly stop
+> _running_ tracees.
+
+1. User wants to continue stopped task to investigate.
+
+2. Investigation done, now the user wants to wait for the end of group
+   stop which will happen externally.
+
+3. Regardless of the current trap tracee is in, debugger can schedule
+   INTERRUPT and be sure that tracee will trap into INTERRUPT without
+   returning to userland and that it will be notified of group stop
+   state changes.
+
+According to you, the above use case is insane, which might be true
+but I don't really care.  I still want to have gdb which knows how to
+do the above.
+
+Thanks.
+
 -- 
-1.7.2.3
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+tejun
