@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab1EKAHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 May 2011 20:07:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65281 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab1EKAHe (ORCPT
+	id S1753819Ab1EKAJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 May 2011 20:09:04 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:9821 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab1EKAJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 May 2011 20:07:34 -0400
+	Tue, 10 May 2011 20:09:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=gkPvZpk4hk+gsNvfjbt09mlz+2IBR31dAfMuEUuE9siyG9SXBR+yAnDstfrVKJTgZI
-         flmrlixf2bFvoes8850iGdrLh73hhGbLRsfxt/KmUMdI0TDXiMRQfmBLk7y7n8fUQCzx
-         QcMelRasuX8iQ9S5NTMmv528a617U+UMIYStk=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=sZtjKgOJwbJUNxXYSKaX4jJ2TAyl/xkEfUnpv2VbNKt/1EHrSBRXDIVuvqmbStuasj
+         8VaVGnHbu4V9b9FiyTwA==
+Date: Tue, 10 May 2011 17:08:54 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: James Bottomley <James.Bottomley@suse.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, stable@kernel.org,
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] slub: Revert "[PARISC] slub: fix panic with DISCONTIGMEM"
+In-Reply-To: <1304979845.4865.58.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.00.1105101656310.15037@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1104282000200.1563@ayla.of.borg> <alpine.DEB.2.00.1104281420140.21665@chino.kir.corp.google.com> <1304026464.2598.36.camel@mulgrave.site> <alpine.DEB.2.00.1104281437010.21665@chino.kir.corp.google.com> <1304521355.2810.21.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105041203250.22426@chino.kir.corp.google.com> <1304979845.4865.58.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110510200801.GA8125@kroah.com>
-References: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-	<20110510200801.GA8125@kroah.com>
-Date: Wed, 11 May 2011 02:07:33 +0200
-Message-ID: <BANLkTimimx-pW9mOtb_9yM5XcQ5nOeGYug@mail.gmail.com>
-Subject: Re: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Greg KH <greg@kroah.com>,
-        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/10 Greg KH <greg@kroah.com>:
+On Mon, 9 May 2011, James Bottomley wrote:
 
-> On Tue, May 10, 2011 at 05:10:32PM +0200, Par-Gunnar Hjalmdahl wrote:
->> This patch adds support for the ST-Ericsson CG2900
->> Connectivity Combo controller (Bluetooth, FM, GPS).
->>
->> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> {sigh}
->
-> This breaks the build again, the error messages are below :(
+> > Great, and if that works out successfully this time around I think we'll 
+> > either need to fix each individual arch Kconfig that we know doesn't work 
+> > well (at least parisc because of the scheduling issue) so that it at least 
+> > enables CONFIG_NUMA implicitly for discontigmem unless CONFIG_BROKEN is 
+> > set.
+> 
+> OK, I confirm that the N_NORMAL_MEMORY patch on its own fixes slub for
+> us.  We can revert the mark slub BROKEN in DISCONTIGMEM && !NUMA patch.
+> 
 
-I suspect the problem is that Per-Gunnar does not know how to reproduce
-your build errors. Are you building for some x86 combination, allyes, etc
-for example? This is likely currently only tested and applicable for ux500
-so a simple  "depends on ARCH_U8500" under config CG2900 may solve
-stuff.
+Ok, so we need to revert 4a5fa3590f09 ([PARISC] slub: fix panic with 
+DISCONTIGMEM) that did not allow CONFIG_SLUB to be set for architectures 
+that use DISCONTIGMEM without NUMA support unless they have CONFIG_BROKEN 
+set from Linus' tree _and_ from the stable trees.
 
-Yours,
-Linus Walleij
+
+
+slub: Revert "[PARISC] slub: fix panic with DISCONTIGMEM"
+
+4a5fa3590f09 ([PARISC] slub: fix panic with DISCONTIGMEM) did not allow 
+SLUB to be used on architectures that use DISCONTIGMEM without compiling 
+NUMA support without CONFIG_BROKEN also set.
+
+The slub panic that it was intended to prevent is addressed by 
+d9b41e0b54fd ([PARISC] set memory ranges in N_NORMAL_MEMORY when onlined) 
+on parisc so there is no further slub issues with such a configuration.
+
+This reverts the former commit so that SLUB may now be used on such 
+architectures since there haven't been any reports of additional errors.
+
+Cc: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ init/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1226,7 +1226,6 @@ config SLAB
+ 	  per cpu and per node queues.
+ 
+ config SLUB
+-	depends on BROKEN || NUMA || !DISCONTIGMEM
+ 	bool "SLUB (Unqueued Allocator)"
+ 	help
+ 	   SLUB is a slab allocator that minimizes cache line usage
