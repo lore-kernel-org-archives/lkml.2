@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab1EKVer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:34:47 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45659 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753719Ab1EKVeo (ORCPT
+	id S1756787Ab1EKVfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:35:09 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:52636 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756750Ab1EKVfE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:34:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=OcR+gsvCfoCzLFU3pzmqzdPQcl6mKUyTPIAIUL7tg7XtBJW5KDaz4OEi4ILgGJrARDeOzyMY6Yn4jG4bGEIKdnrNU5/jl5LVP46TosJwHoZBEfcDMun0wxVmVqoX05C2;
-Date: Wed, 11 May 2011 14:34:42 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/c6x: new architecture port for linux
-Message-Id: <20110511143442.7c163a74.rdunlap@xenotime.net>
-In-Reply-To: <1305144843-5058-1-git-send-email-msalter@redhat.com>
-References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 11 May 2011 17:35:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WnzSmRojNT3F0BQWvbaX5+OHGNgfz9vvBmW5mSndePE6qXu4zd8grxgvP9/v8xGxQ6
+         yVhOTsgP9sFNfjjezmaTTVmbdwbsED/GtSBjc42Yn68Jd29V3HvIT4cWWouif85nt9pb
+         oH75oy59nh6Gaav+YsnJo2wDFPiTVLkUxGvb4=
+MIME-Version: 1.0
+In-Reply-To: <1305148125.21868.2.camel@lade.trondhjem.org>
+References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+	<1305148125.21868.2.camel@lade.trondhjem.org>
+Date: Wed, 11 May 2011 17:35:03 -0400
+Message-ID: <BANLkTimWE8FYGh9b7n9QF452dR0tRff50A@mail.gmail.com>
+Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
+From: Peng Huang <shawn.p.huang@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011 16:13:47 -0400 Mark Salter wrote:
+On Wed, May 11, 2011 at 5:08 PM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+> On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
+>> lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
+>> indirectly, that causes the kernel crash.
+>>
+>> RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
+>> nfs_lookup_revalidate+0x21/0x4a0 [nfs]
+>> RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+>>
+>> Call Trace:
+>>  [<ffffffff81164a17>] do_revalidate+0x17/0x60
+>>  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
+>>  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
+>>  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
+>>  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
+>>  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
+>>  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
+>>  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
+>>  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
+>>  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
+>>  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
+>>  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
+>>  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
+>>  [<ffffffff811692f7>] user_path_at+0x57/0xa0
+>>  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
+>>  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff8116b990>] ? filldir+0x0/0xe0
+>>  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
+>>  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
+>>  [<ffffffff8159c995>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+>>
+>> Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
+>> ---
+>>  fs/nfs/dir.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+>> index 2c3eb33..9452aa5 100644
+>> --- a/fs/nfs/dir.c
+>> +++ b/fs/nfs/dir.c
+>> @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+>>       struct nfs_fattr *fattr = NULL;
+>>       int error;
+>>
+>> -     if (nd->flags & LOOKUP_RCU)
+>> +     if (nd != NULL && nd->flags & LOOKUP_RCU)
+>>               return -ECHILD;
+>>
+>>       parent = dget_parent(dentry);
+>
+> That's exactly what Tyler Hicks proposed last week and which was NACKed.
+> We simply won't support layered filesystems that don't do intents.
+>
+> IOW: Feel free to change the above to.
+>
+> if (nd == NULL)
+>     return -EIO;
+>
 
-> The project wiki for linux-c6x is at:
-> 
->   http://www.linux-c6x.org
-> 
-> and the GIT tree holding the attached patches is at:
-> 
->   git@linux-c6x.org:/git/projects/linux-c6x-upstreaming.git
-> 
-> TIA for any feedback and/or guidance on this port.
+I tested returning -EIO when nd is NULL. Kernel does not crash, but
+ecryptfs can not work on nfs anymore.
 
-Hi,
+Peng Huang
 
-Please run the patches thru checkpatch.pl.  You don't have to fix everything
-that it whines about, just use good judgment.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+>
+>
+> --
+> Trond Myklebust
+> Linux NFS client maintainer
+>
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
+>
+>
