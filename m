@@ -1,238 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab1EKVGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:06:46 -0400
-Received: from c-76-97-164-112.hsd1.ga.comcast.net ([76.97.164.112]:55110 "EHLO
-	deneb.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756060Ab1EKVGo (ORCPT
+	id S1754436Ab1EKUOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 16:14:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52706 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939Ab1EKUOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:06:44 -0400
-X-Greylist: delayed 3155 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 17:06:39 EDT
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 16/16] C6X: add support for DSBT binary format
-Date: Wed, 11 May 2011 16:14:03 -0400
-Message-Id: <1305144843-5058-17-git-send-email-msalter@redhat.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1305144843-5058-16-git-send-email-msalter@redhat.com>
-References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
- <1305144843-5058-2-git-send-email-msalter@redhat.com>
- <1305144843-5058-3-git-send-email-msalter@redhat.com>
- <1305144843-5058-4-git-send-email-msalter@redhat.com>
- <1305144843-5058-5-git-send-email-msalter@redhat.com>
- <1305144843-5058-6-git-send-email-msalter@redhat.com>
- <1305144843-5058-7-git-send-email-msalter@redhat.com>
- <1305144843-5058-8-git-send-email-msalter@redhat.com>
- <1305144843-5058-9-git-send-email-msalter@redhat.com>
- <1305144843-5058-10-git-send-email-msalter@redhat.com>
- <1305144843-5058-11-git-send-email-msalter@redhat.com>
- <1305144843-5058-12-git-send-email-msalter@redhat.com>
- <1305144843-5058-13-git-send-email-msalter@redhat.com>
- <1305144843-5058-14-git-send-email-msalter@redhat.com>
- <1305144843-5058-15-git-send-email-msalter@redhat.com>
- <1305144843-5058-16-git-send-email-msalter@redhat.com>
+	Wed, 11 May 2011 16:14:12 -0400
+Subject: [PATCH v6 2/5] arm/dt: Allow CONFIG_OF on ARM
+To: linaro-dev@lists.linaro.org, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 11 May 2011 22:14:07 +0200
+Message-ID: <20110511201407.21615.38296.stgit@localhost6.localdomain6>
+In-Reply-To: <20110511201401.21615.38893.stgit@localhost6.localdomain6>
+References: <20110511201401.21615.38893.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the C6X-specifc bits to use the DSBT binary format.
+Add some basic empty infrastructure for DT support on ARM.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
+v5: - Fix off-by-one error in size calculation of initrd
+    - Stop mucking with cmd_line, and load command line from dt into
+      boot_command_line instead which matches the behaviour of ATAGS booting
+v3: - moved cmd_line export and initrd setup to this patch to make the
+      series bisectable.
+    - switched to alloc_bootmem_align() for allocation when
+      unflattening the device tree.  memblock_alloc() was not the
+      right interface.
+
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/c6x/configs/ti_dsk6455_defconfig       |    1 +
- arch/c6x/configs/ti_evmc6457_defconfig      |    1 +
- arch/c6x/configs/ti_evmc6472_defconfig      |    1 +
- arch/c6x/configs/ti_evmc6474_defconfig      |    1 +
- arch/c6x/configs/ti_evmc6474_lite_defconfig |    1 +
- arch/c6x/include/asm/elf.h                  |   14 ++++++++++++++
- arch/c6x/include/asm/mmu.h                  |    4 ++++
- arch/c6x/include/asm/ptrace.h               |   12 ++++++++++++
- arch/c6x/kernel/ptrace.c                    |   25 ++++++++++++++++++++++++-
- 9 files changed, 59 insertions(+), 1 deletions(-)
+ arch/arm/Kconfig             |    7 ++++++
+ arch/arm/include/asm/prom.h  |   25 ++++++++++++++++++++++
+ arch/arm/include/asm/setup.h |    2 ++
+ arch/arm/kernel/Makefile     |    1 +
+ arch/arm/kernel/devtree.c    |   47 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/setup.c      |    2 +-
+ arch/arm/mm/init.c           |    9 ++++++++
+ 7 files changed, 92 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/include/asm/prom.h
+ create mode 100644 arch/arm/kernel/devtree.c
 
-diff --git a/arch/c6x/configs/ti_dsk6455_defconfig b/arch/c6x/configs/ti_dsk6455_defconfig
-index 3487af4..8112a70 100644
---- a/arch/c6x/configs/ti_dsk6455_defconfig
-+++ b/arch/c6x/configs/ti_dsk6455_defconfig
-@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
- #
- # Executable file formats
- #
-+CONFIG_BINFMT_ELF_DSBT=y
- # CONFIG_BINFMT_FLAT is not set
- # CONFIG_HAVE_AOUT is not set
- # CONFIG_BINFMT_MISC is not set
-diff --git a/arch/c6x/configs/ti_evmc6457_defconfig b/arch/c6x/configs/ti_evmc6457_defconfig
-index e18b095..841f15a 100644
---- a/arch/c6x/configs/ti_evmc6457_defconfig
-+++ b/arch/c6x/configs/ti_evmc6457_defconfig
-@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
- #
- # Executable file formats
- #
-+CONFIG_BINFMT_ELF_DSBT=y
- # CONFIG_BINFMT_FLAT is not set
- # CONFIG_HAVE_AOUT is not set
- # CONFIG_BINFMT_MISC is not set
-diff --git a/arch/c6x/configs/ti_evmc6472_defconfig b/arch/c6x/configs/ti_evmc6472_defconfig
-index 14ae81b..b18e9ee 100644
---- a/arch/c6x/configs/ti_evmc6472_defconfig
-+++ b/arch/c6x/configs/ti_evmc6472_defconfig
-@@ -231,6 +231,7 @@ CONFIG_HIGH_RES_TIMERS=y
- #
- # Executable file formats
- #
-+CONFIG_BINFMT_ELF_DSBT=y
- # CONFIG_BINFMT_FLAT is not set
- # CONFIG_HAVE_AOUT is not set
- # CONFIG_BINFMT_MISC is not set
-diff --git a/arch/c6x/configs/ti_evmc6474_defconfig b/arch/c6x/configs/ti_evmc6474_defconfig
-index 472ad6b..12f1808 100644
---- a/arch/c6x/configs/ti_evmc6474_defconfig
-+++ b/arch/c6x/configs/ti_evmc6474_defconfig
-@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
- #
- # Executable file formats
- #
-+CONFIG_BINFMT_ELF_DSBT=y
- # CONFIG_BINFMT_FLAT is not set
- # CONFIG_HAVE_AOUT is not set
- # CONFIG_BINFMT_MISC is not set
-diff --git a/arch/c6x/configs/ti_evmc6474_lite_defconfig b/arch/c6x/configs/ti_evmc6474_lite_defconfig
-index e25e8ac..044cf47 100644
---- a/arch/c6x/configs/ti_evmc6474_lite_defconfig
-+++ b/arch/c6x/configs/ti_evmc6474_lite_defconfig
-@@ -229,6 +229,7 @@ CONFIG_HIGH_RES_TIMERS=y
- #
- # Executable file formats
- #
-+CONFIG_BINFMT_ELF_DSBT=y
- # CONFIG_BINFMT_FLAT is not set
- # CONFIG_HAVE_AOUT is not set
- # CONFIG_BINFMT_MISC is not set
-diff --git a/arch/c6x/include/asm/elf.h b/arch/c6x/include/asm/elf.h
-index 272c3ae..d57bb17 100644
---- a/arch/c6x/include/asm/elf.h
-+++ b/arch/c6x/include/asm/elf.h
-@@ -32,6 +32,7 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
-  */
- #define elf_check_arch(x) ((x)->e_machine == EM_TI_C6000)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 377a7a5..efc7f3c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1687,6 +1687,13 @@ endmenu
  
-+#define elf_check_dsbt(x) (1)
- #define elf_check_const_displacement(x) (1)
+ menu "Boot options"
  
- /*
-@@ -67,6 +68,14 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
- 
- #define ELF_PLATFORM  (NULL)
- 
-+#define ELF_DSBT_PLAT_INIT(_regs, _exec_map, _interp_map, _dynamic_addr, _dsbt_table) \
-+do {								\
-+	_regs->b4	= (_exec_map);				\
-+	_regs->a6	= (_interp_map);			\
-+	_regs->b6	= (_dynamic_addr);			\
-+	_regs->dp	= (_dsbt_table);			\
-+} while (0)
++config USE_OF
++	bool "Flattened Device Tree support"
++	select OF
++	select OF_EARLY_FLATTREE
++	help
++	  Include support for flattened device tree machine descriptions.
 +
- #define SET_PERSONALITY(ex) set_personality(PER_LINUX)
- 
- /* C6X specific section types */
-@@ -112,4 +121,9 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
- #define R_C6000_FPHEAD		254
- #define R_C6000_NOCMP		255
- 
-+/* for binfmt_elf_dsbt */
-+#define DT_ARCH_DSBT_BASE  DT_C6000_DSBT_BASE
-+#define DT_ARCH_DSBT_SIZE  DT_C6000_DSBT_SIZE
-+#define DT_ARCH_DSBT_INDEX DT_C6000_DSBT_INDEX
-+
- #endif /*_ASM_C6X_ELF_H */
-diff --git a/arch/c6x/include/asm/mmu.h b/arch/c6x/include/asm/mmu.h
-index 8d376e9..1d9e9c1 100644
---- a/arch/c6x/include/asm/mmu.h
-+++ b/arch/c6x/include/asm/mmu.h
-@@ -15,6 +15,10 @@
- 
- typedef struct {
- 	unsigned long		end_brk;
-+#ifdef CONFIG_BINFMT_ELF_DSBT
-+	unsigned long	exec_dsbt_loadmap;
-+	unsigned long	interp_dsbt_loadmap;
-+#endif
- } mm_context_t;
- 
- #endif /* _ASM_C6X_MMU_H */
-diff --git a/arch/c6x/include/asm/ptrace.h b/arch/c6x/include/asm/ptrace.h
-index 7e94de8..437df6f 100644
---- a/arch/c6x/include/asm/ptrace.h
-+++ b/arch/c6x/include/asm/ptrace.h
-@@ -162,11 +162,23 @@ struct pt_regs {
- 	REG_PAIR(sp, dp);
- };
- 
+ # Compressed boot loader in ROM.  Yes, we really want to ask about
+ # TEXT and BSS so we preserve their values in the config files.
+ config ZBOOT_ROM_TEXT
+diff --git a/arch/arm/include/asm/prom.h b/arch/arm/include/asm/prom.h
+new file mode 100644
+index 0000000..8f1037f
+--- /dev/null
++++ b/arch/arm/include/asm/prom.h
+@@ -0,0 +1,25 @@
 +/*
-+ * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
-+ * process is located in memory.
++ *  arch/arm/include/asm/prom.h
++ *
++ *  Copyright (C) 2009 Canonical Ltd. <jeremy.kerr@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
 + */
-+#define PT_TEXT_ADDR		  0x10000
-+#define PT_DATA_ADDR		  0x10004
-+#define PT_TEXT_END_ADDR	  0x10008
++#ifndef __ASMARM_PROM_H
++#define __ASMARM_PROM_H
 +
- #define PTRACE_GETREGS		  12
- #define PTRACE_SETREGS		  13
- #define PTRACE_GETFPREGS	  14
- #define PTRACE_SETFPREGS	  15
- 
-+#define PTRACE_GETDSBT		 31	/* get the ELF DSBT loadmap address */
-+#define PTRACE_GETDSBT_EXEC	  0	/* [addr] request the executable loadmap */
-+#define PTRACE_GETDSBT_INTERP	  1	/* [addr] request the interpreter loadmap */
++#ifdef CONFIG_OF
 +
- #ifdef __KERNEL__
- 
- #define DEFAULT_CSR		  0x0001	/* interrupt enable by default */
-diff --git a/arch/c6x/kernel/ptrace.c b/arch/c6x/kernel/ptrace.c
-index fd38463..aa853e4 100644
---- a/arch/c6x/kernel/ptrace.c
-+++ b/arch/c6x/kernel/ptrace.c
-@@ -167,7 +167,13 @@ static int ptrace_read_user(struct task_struct *tsk, unsigned long off,
- 
- 
- 	tmp = 0;
--	if (off < PT_REG_SIZE)
-+	if (index == PT_TEXT_ADDR)
-+		tmp = tsk->mm->start_code;
-+	else if (index == PT_DATA_ADDR)
-+		tmp = tsk->mm->start_data;
-+	else if (index == PT_TEXT_END_ADDR)
-+		tmp = tsk->mm->end_code;
-+	else if (off < PT_REG_SIZE)
- 		tmp = get_reg(tsk, index);
- 	else
- 		return -EIO;
-@@ -250,6 +256,23 @@ long arch_ptrace(struct task_struct *child, long request,
- 		}
- 		break;
- 
-+	case PTRACE_GETDSBT: {
-+		tmp = 0;
-+		switch (addr) {
-+		case PTRACE_GETDSBT_EXEC:
-+			tmp = child->mm->context.exec_dsbt_loadmap;
-+			break;
-+		case PTRACE_GETDSBT_INTERP:
-+			tmp = child->mm->context.interp_dsbt_loadmap;
-+			break;
-+		default:
-+			break;
-+		}
++#include <asm/setup.h>
++#include <asm/irq.h>
 +
-+		ret = put_user(tmp, (unsigned long __user *)data);
-+		break;
-+	}
++static inline void irq_dispose_mapping(unsigned int virq)
++{
++	return;
++}
 +
- 	default:
- 		ret = ptrace_request(child, request, addr, data);
- 		break;
--- 
-1.6.2.5
++#endif /* CONFIG_OF */
++#endif /* ASMARM_PROM_H */
+diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
+index 95176af..93b4702 100644
+--- a/arch/arm/include/asm/setup.h
++++ b/arch/arm/include/asm/setup.h
+@@ -217,6 +217,8 @@ extern struct meminfo meminfo;
+ #define bank_phys_end(bank)	((bank)->start + (bank)->size)
+ #define bank_phys_size(bank)	(bank)->size
+ 
++extern int arm_add_memory(phys_addr_t start, unsigned long size);
++
+ #endif  /*  __KERNEL__  */
+ 
+ #endif
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 8d95446..908c78c 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -44,6 +44,7 @@ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
++obj-$(CONFIG_OF)		+= devtree.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump.o
+ obj-$(CONFIG_SWP_EMULATE)	+= swp_emulate.o
+ CFLAGS_swp_emulate.o		:= -Wa,-march=armv7-a
+diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+new file mode 100644
+index 0000000..75e3df8
+--- /dev/null
++++ b/arch/arm/kernel/devtree.c
+@@ -0,0 +1,47 @@
++/*
++ *  linux/arch/arm/kernel/devtree.c
++ *
++ *  Copyright (C) 2009 Canonical Ltd. <jeremy.kerr@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/types.h>
++#include <linux/bootmem.h>
++#include <linux/memblock.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++
++#include <asm/setup.h>
++#include <asm/page.h>
++
++void __init early_init_dt_add_memory_arch(u64 base, u64 size)
++{
++	arm_add_memory(base, size);
++}
++
++void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
++{
++	return alloc_bootmem_align(size, align);
++}
++
++/**
++ * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
++ *
++ * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
++ * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
++ * supported.
++ */
++unsigned int irq_create_of_mapping(struct device_node *controller,
++				   const u32 *intspec, unsigned int intsize)
++{
++	return intspec[0];
++}
++EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 006c1e8..109997e 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -466,7 +466,7 @@ static struct machine_desc * __init setup_machine(unsigned int nr)
+ 		/* can't use cpu_relax() here as it may require MMU setup */;
+ }
+ 
+-static int __init arm_add_memory(phys_addr_t start, unsigned long size)
++int __init arm_add_memory(phys_addr_t start, unsigned long size)
+ {
+ 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
+ 
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index e5f6fc4..26c4054 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -15,6 +15,7 @@
+ #include <linux/mman.h>
+ #include <linux/nodemask.h>
+ #include <linux/initrd.h>
++#include <linux/of_fdt.h>
+ #include <linux/highmem.h>
+ #include <linux/gfp.h>
+ #include <linux/memblock.h>
+@@ -71,6 +72,14 @@ static int __init parse_tag_initrd2(const struct tag *tag)
+ 
+ __tagtable(ATAG_INITRD2, parse_tag_initrd2);
+ 
++#ifdef CONFIG_OF_FLATTREE
++void __init early_init_dt_setup_initrd_arch(unsigned long start, unsigned long end)
++{
++	phys_initrd_start = start;
++	phys_initrd_size = end - start;
++}
++#endif /* CONFIG_OF_FLATTREE */
++
+ /*
+  * This keeps memory configuration data used by a couple memory
+  * initialization functions, as well as show_mem() for the skipping
 
