@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab1EKUpM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 16:45:12 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35383 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab1EKUpK (ORCPT
+	id S1755534Ab1EKUqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 16:46:15 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44299 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab1EKUqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 16:45:10 -0400
+	Wed, 11 May 2011 16:46:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=BVgRy/qmSkzFdqbu/dY0f4co/1n/O3JcLoGFYpdoFjqfZLl31aCuybKKPzWR8kfMiU
+         yxOrvMUeL/0vIIAR4mmXuOVsQBRaJvy/NVgdNjJyZkYp0BtS/FTm7/oTjDsHbu1Z57ZG
+         AjSjda6U9rSQWaGRrktU2H7Z6VCPDTETzJnLg=
+Date: Wed, 11 May 2011 22:46:09 +0200
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: alan@linux.intel.com
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] gma500: Skip bogus LVDS VBT mode and check for LVDS before
+ adding backlight (try 2)
+Message-ID: <20110511204609.GA6059@patrik-macbook>
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 11 May 2011 22:44:49 +0200
-X-Google-Sender-Auth: p95kQESAEmeXu_ztzeUXGk9CIfI
-Message-ID: <BANLkTi=yCmxgv1fQKRJSZK3FkkRwjS2r=Q@mail.gmail.com>
-Subject: [PATCH v6 0/5] Basic ARM devicetree support
-To: linaro-dev@lists.linaro.org, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On the Fit-PC2 the VBT reports an invalid fixed panel mode for LVDS, this gets
+in the way for SDVO. This patch makes VBT parsing skip the invalid mode. When
+there is no LVDS output the backlight support crashes so the patch also checks
+for this before enabling it.
 
-Here's the current state of the device tree patches for basic
-infrastructure support.  It's pretty much the same as the last series
-I sent to you, except I've dropped the patches that add .dts files and
-board support simply because the final location for storing .dtb files
-is still up in the air.
-
-After hearing from multiple people this week at UDS, and specifically
-having a long conversation about it with tglx, I'd really think it's
-time to start getting some wider testing in linux-next since it has
-seemed to be quite stable for a while now.  In fact, I want to put it
-in right now so that there is the /option/ of getting it into 2.6.40
-with a separate pull request near the end of the merge window (I'm not
-asking you to commit to merging it, but it isn't even an option if it
-isn't in linux-next).
-
-Right now it merges cleanly with linux-next and the resulting tree
-builds and boots at least on qemu.  Unless you really object, I'm
-going to ask Stephen to add the following branch to the /end/ of the
-list of trees for linux-next so it can easily be dropped it if it
-causes any problems.
-
-git://git.secretlab.ca/git/linux-2.6 devicetree/arm-next
-
-g.
-
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 ---
 
-Grant Likely (5):
-      arm/dt: Make __vet_atags also accept a dtb image
-      arm/dt: Allow CONFIG_OF on ARM
-      arm/dt: consolidate atags setup into setup_machine_atags
-      arm/dt: probe for platforms via the device tree
-      dt: add documentation of ARM dt boot interface
-
-
- Documentation/arm/Booting                       |   33 +++++
- Documentation/devicetree/booting-without-of.txt |   48 +++++++-
- arch/arm/Kconfig                                |    7 +
- arch/arm/include/asm/mach/arch.h                |    9 +
- arch/arm/include/asm/prom.h                     |   37 ++++++
- arch/arm/include/asm/setup.h                    |    4 +
- arch/arm/kernel/Makefile                        |    1-
- arch/arm/kernel/devtree.c                       |  145 +++++++++++++++++++++++
- arch/arm/kernel/head-common.S                   |   24 +++-
- arch/arm/kernel/head.S                          |    8 +
- arch/arm/kernel/setup.c                         |   90 +++++++++-----
- arch/arm/mm/init.c                              |   11 ++
- 12 files changed, 367 insertions(+), 50 deletions(-)
- create mode 100644 arch/arm/include/asm/prom.h
- create mode 100644 arch/arm/kernel/devtree.c
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index 46ab028..dbc6e4f 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -542,6 +542,8 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	unsigned long irqflags;
+ 	int ret = -ENOMEM;
+ 	uint32_t tt_pages;
++	struct drm_connector *connector;
++	struct psb_intel_output *psb_intel_output;
+ 
+ 	dev_priv = kzalloc(sizeof(*dev_priv), GFP_KERNEL);
+ 	if (dev_priv == NULL)
+@@ -663,7 +665,21 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 		drm_kms_helper_poll_init(dev);
+ 	}
+ 
+-	ret = psb_backlight_init(dev);
++	/* Only add backlight support if we have LVDS output
++	 *
++	 * FIXME: Handle turning on LVDS at runtime
++	 */
++	list_for_each_entry(connector, &dev->mode_config.connector_list,
++			    head) {
++		psb_intel_output = to_psb_intel_output(connector);
++
++		switch (psb_intel_output->type) {
++		case INTEL_OUTPUT_LVDS:
++			ret = psb_backlight_init(dev);
++			break;
++		}
++	}
++
+ 	if (ret)
+ 		return ret;
+ #if 0
+diff --git a/drivers/staging/gma500/psb_intel_bios.c b/drivers/staging/gma500/psb_intel_bios.c
+index 48ac8ba..417965d 100644
+--- a/drivers/staging/gma500/psb_intel_bios.c
++++ b/drivers/staging/gma500/psb_intel_bios.c
+@@ -154,10 +154,15 @@ static void parse_lfp_panel_data(struct drm_psb_private *dev_priv,
+ 
+ 	fill_detail_timing_data(panel_fixed_mode, dvo_timing);
+ 
+-	dev_priv->lfp_lvds_vbt_mode = panel_fixed_mode;
+-
+-	DRM_DEBUG("Found panel mode in BIOS VBT tables:\n");
+-	drm_mode_debug_printmodeline(panel_fixed_mode);
++	if (panel_fixed_mode->htotal > 0 && panel_fixed_mode->vtotal > 0) {
++		dev_priv->lfp_lvds_vbt_mode = panel_fixed_mode;
++		DRM_DEBUG("Found panel mode in BIOS VBT tables:\n");
++		drm_mode_debug_printmodeline(panel_fixed_mode);
++	} else {
++		DRM_DEBUG("Ignoring bogus LVDS VBT mode.\n");
++		dev_priv->lvds_vbt = 0;
++		kfree(panel_fixed_mode);
++	}
+ 
+ 	return;
+ }
