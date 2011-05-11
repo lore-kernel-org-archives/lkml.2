@@ -1,91 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab1EKQYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:24:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54372 "EHLO hera.kernel.org"
+	id S932458Ab1EKQRM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:17:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35488 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410Ab1EKQQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:16:48 -0400
-Date: Wed, 11 May 2011 13:10:01 GMT
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-9bbeacf52f66d165739a4bbe9c018d17493a74b5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu,
-        jolsa@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, jolsa@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <20110511110613.GB2390@jolsa.brq.redhat.com>
-References: <20110511110613.GB2390@jolsa.brq.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] kprobes, x86: Disable irqs during optimized callback
-Git-Commit-ID: 9bbeacf52f66d165739a4bbe9c018d17493a74b5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757313Ab1EKQRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:17:06 -0400
+Date: Wed, 11 May 2011 09:12:31 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH] blk-throttle: Use task_subsys_state() to determine a
+ task's blkio_cgroup
+Message-ID: <20110511131231.GC31633@redhat.com>
+References: <20110509134915.GC5975@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 May 2011 13:10:02 +0000 (UTC)
+In-Reply-To: <20110509134915.GC5975@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9bbeacf52f66d165739a4bbe9c018d17493a74b5
-Gitweb:     http://git.kernel.org/tip/9bbeacf52f66d165739a4bbe9c018d17493a74b5
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 11 May 2011 13:06:13 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 11 May 2011 13:21:23 +0200
+On Mon, May 09, 2011 at 09:49:15AM -0400, Vivek Goyal wrote:
+> Currentlly we first map the task to cgroup and then cgroup to
+> blkio_cgroup. There is a more direct way to get to blkio_cgroup
+> from task using task_subsys_state(). Use that.
+> 
+> The real reason for the fix is that it also avoids a race in generic
+> cgroup code. During remount/umount rebind_subsystems() is called and
+> it can do following with and rcu protection.
+> 
+> cgrp->subsys[i] = NULL;
+> 
+> That means if somebody got hold of cgroup under rcu and then it tried
+> to do cgroup->subsys[] to get to blkio_cgroup, it would get NULL which
+> is wrong. I was running into this race condition with ltp running on a
+> upstream derived kernel and that lead to crash.
+> 
+> So ideally we should also fix cgroup generic code to wait for rcu
+> grace period before setting pointer to NULL. Li Zefan is not very keen
+> on introducing synchronize_wait() as he thinks it will slow
+> down moun/remount/umount operations.
+> 
+> So for the time being atleast fix the kernel crash by taking a more
+> direct route to blkio_cgroup.
+> 
+> One tester had reported a crash while running LTP on a derived kernel
+> and with this fix crash is no more seen while the test has been
+> running for over 6 days.
 
-kprobes, x86: Disable irqs during optimized callback
+Hi Jens,
 
-Disable irqs during optimized callback, so we dont miss any in-irq kprobes.
+Do you have any concerns with this patch. It fixes one corner case race
+condition and hence a reproducible crash. Can you please apply it.
 
-The following commands:
+Thanks
+Vivek
 
- # cd /debug/tracing/
- # echo "p mutex_unlock" >> kprobe_events
- # echo "p _raw_spin_lock" >> kprobe_events
- # echo "p smp_apic_timer_interrupt" >> ./kprobe_events
- # echo 1 > events/enable
-
-Cause the optimized kprobes to be missed. None is missed
-with the fix applied.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/20110511110613.GB2390@jolsa.brq.redhat.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/kprobes.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index c969fd9..f1a6244 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1183,12 +1183,13 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
- 					 struct pt_regs *regs)
- {
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+	unsigned long flags;
- 
- 	/* This is possible if op is under delayed unoptimizing */
- 	if (kprobe_disabled(&op->kp))
- 		return;
- 
--	preempt_disable();
-+	local_irq_save(flags);
- 	if (kprobe_running()) {
- 		kprobes_inc_nmissed_count(&op->kp);
- 	} else {
-@@ -1207,7 +1208,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op,
- 		opt_pre_handler(&op->kp, regs);
- 		__this_cpu_write(current_kprobe, NULL);
- 	}
--	preempt_enable_no_resched();
-+	local_irq_restore(flags);
- }
- 
- static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/blk-cgroup.c   |    7 +++++++
+>  block/blk-cgroup.h   |    3 +++
+>  block/blk-throttle.c |    9 ++++-----
+>  block/cfq-iosched.c  |   11 +++++------
+>  4 files changed, 19 insertions(+), 11 deletions(-)
+> 
+> Index: linux-2.6/block/blk-throttle.c
+> ===================================================================
+> --- linux-2.6.orig/block/blk-throttle.c	2011-05-09 09:31:38.102679040 -0400
+> +++ linux-2.6/block/blk-throttle.c	2011-05-09 09:34:01.780846934 -0400
+> @@ -160,9 +160,8 @@ static void throtl_put_tg(struct throtl_
+>  }
+>  
+>  static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+> -			struct cgroup *cgroup)
+> +			struct blkio_cgroup *blkcg)
+>  {
+> -	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+>  	struct throtl_grp *tg = NULL;
+>  	void *key = td;
+>  	struct backing_dev_info *bdi = &td->queue->backing_dev_info;
+> @@ -229,12 +228,12 @@ done:
+>  
+>  static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+>  {
+> -	struct cgroup *cgroup;
+>  	struct throtl_grp *tg = NULL;
+> +	struct blkio_cgroup *blkcg;
+>  
+>  	rcu_read_lock();
+> -	cgroup = task_cgroup(current, blkio_subsys_id);
+> -	tg = throtl_find_alloc_tg(td, cgroup);
+> +	blkcg = task_blkio_cgroup(current);
+> +	tg = throtl_find_alloc_tg(td, blkcg);
+>  	if (!tg)
+>  		tg = &td->root_tg;
+>  	rcu_read_unlock();
+> Index: linux-2.6/block/blk-cgroup.c
+> ===================================================================
+> --- linux-2.6.orig/block/blk-cgroup.c	2011-05-09 09:31:38.103679082 -0400
+> +++ linux-2.6/block/blk-cgroup.c	2011-05-09 09:34:01.517835362 -0400
+> @@ -114,6 +114,13 @@ struct blkio_cgroup *cgroup_to_blkio_cgr
+>  }
+>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>  
+> +struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk)
+> +{
+> +	return container_of(task_subsys_state(tsk, blkio_subsys_id),
+> +			    struct blkio_cgroup, css);
+> +}
+> +EXPORT_SYMBOL_GPL(task_blkio_cgroup);
+> +
+>  static inline void
+>  blkio_update_group_weight(struct blkio_group *blkg, unsigned int weight)
+>  {
+> Index: linux-2.6/block/blk-cgroup.h
+> ===================================================================
+> --- linux-2.6.orig/block/blk-cgroup.h	2011-05-09 09:31:38.103679082 -0400
+> +++ linux-2.6/block/blk-cgroup.h	2011-05-09 09:34:01.517835362 -0400
+> @@ -291,6 +291,7 @@ static inline void blkiocg_set_start_emp
+>  #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+>  extern struct blkio_cgroup blkio_root_cgroup;
+>  extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+> +extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
+>  extern void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>  	struct blkio_group *blkg, void *key, dev_t dev,
+>  	enum blkio_policy_id plid);
+> @@ -314,6 +315,8 @@ void blkiocg_update_io_remove_stats(stru
+>  struct cgroup;
+>  static inline struct blkio_cgroup *
+>  cgroup_to_blkio_cgroup(struct cgroup *cgroup) { return NULL; }
+> +static inline struct blkio_cgroup *
+> +task_blkio_cgroup(struct task_struct *tsk) { return NULL; }
+>  
+>  static inline void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>  		struct blkio_group *blkg, void *key, dev_t dev,
+> Index: linux-2.6/block/cfq-iosched.c
+> ===================================================================
+> --- linux-2.6.orig/block/cfq-iosched.c	2011-05-09 09:31:38.103679082 -0400
+> +++ linux-2.6/block/cfq-iosched.c	2011-05-09 09:34:01.518835406 -0400
+> @@ -1014,10 +1014,9 @@ void cfq_update_blkio_group_weight(void 
+>  	cfqg->needs_update = true;
+>  }
+>  
+> -static struct cfq_group *
+> -cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+> +static struct cfq_group * cfq_find_alloc_cfqg(struct cfq_data *cfqd,
+> +		struct blkio_cgroup *blkcg, int create)
+>  {
+> -	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+>  	struct cfq_group *cfqg = NULL;
+>  	void *key = cfqd;
+>  	int i, j;
+> @@ -1079,12 +1078,12 @@ done:
+>   */
+>  static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
+>  {
+> -	struct cgroup *cgroup;
+> +	struct blkio_cgroup *blkcg;
+>  	struct cfq_group *cfqg = NULL;
+>  
+>  	rcu_read_lock();
+> -	cgroup = task_cgroup(current, blkio_subsys_id);
+> -	cfqg = cfq_find_alloc_cfqg(cfqd, cgroup, create);
+> +	blkcg = task_blkio_cgroup(current);
+> +	cfqg = cfq_find_alloc_cfqg(cfqd, blkcg, create);
+>  	if (!cfqg && create)
+>  		cfqg = &cfqd->root_group;
+>  	rcu_read_unlock();
