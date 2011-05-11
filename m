@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab1EKWZP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:25:15 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:60168 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932245Ab1EKWZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:25:10 -0400
+	id S932422Ab1EKW0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:26:30 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54165 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289Ab1EKWZN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 18:25:13 -0400
 From: Nishanth Aravamudan <nacc@us.ibm.com>
 To: Milton Miller <miltonm@bga.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -14,9 +15,9 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Will Schmidt <will_schmidt@vnet.ibm.com>,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 3/8] pseries/iommu: find windows after kexec during boot
-Date: Wed, 11 May 2011 15:24:59 -0700
-Message-Id: <1305152704-4864-4-git-send-email-nacc@us.ibm.com>
+Subject: [PATCH 4/8] pseries/iommu: cleanup ddw naming
+Date: Wed, 11 May 2011 15:25:00 -0700
+Message-Id: <1305152704-4864-5-git-send-email-nacc@us.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
 References: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
@@ -26,110 +27,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Milton Miller <miltonm@bga.com>
 
-Move the discovery of windows previously setup from when the pci driver
-calls set_dma_mask to an arch_initcall.
+When using a property refering to the availibily of dynamic dma windows
+call it ddw_avail not ddr_avail.
 
-When kexecing into a kernel with dynamic dma windows allocated, we need
-to find the windows early so that memory hot remove will be able to
-delete the tces mapping the to be removed memory and memory hotplug add
-will map the new memory into the window.  We should not wait for the
-driver to be loaded and the device to be probed.  The iommu init hooks
-are before kmalloc is setup, so defer to arch_initcall.
+dupe_ddw_if_already_created does not dupilcate anything, it only finds
+and reuses the windows we already created, so rename it to
+find_existing_ddw.  Also, it does not need the pci device node, so
+remove that argument.
 
 Signed-off-by: Milton Miller <miltonm@bga.com>
 Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/iommu.c |   52 ++++++++++++++-----------------
- 1 files changed, 24 insertions(+), 28 deletions(-)
+ arch/powerpc/platforms/pseries/iommu.c |   42 ++++++++++++++-----------------
+ 1 files changed, 19 insertions(+), 23 deletions(-)
 
 diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-index a0421ac..a48f126 100644
+index a48f126..01faab9 100644
 --- a/arch/powerpc/platforms/pseries/iommu.c
 +++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -695,9 +695,9 @@ static void remove_ddw(struct device_node *np)
- 			np->full_name, ret, ddr_avail[2], liobn);
+@@ -659,16 +659,16 @@ static void remove_ddw(struct device_node *np)
+ {
+ 	struct dynamic_dma_window_prop *dwp;
+ 	struct property *win64;
+-	const u32 *ddr_avail;
++	const u32 *ddw_avail;
+ 	u64 liobn;
+ 	int len, ret;
+ 
+-	ddr_avail = of_get_property(np, "ibm,ddw-applicable", &len);
++	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
+ 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
+ 	if (!win64)
+ 		return;
+ 
+-	if (!ddr_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
++	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
+ 		goto delprop;
+ 
+ 	dwp = win64->value;
+@@ -684,15 +684,15 @@ static void remove_ddw(struct device_node *np)
+ 		pr_debug("%s successfully cleared tces in window.\n",
+ 			 np->full_name);
+ 
+-	ret = rtas_call(ddr_avail[2], 1, 1, NULL, liobn);
++	ret = rtas_call(ddw_avail[2], 1, 1, NULL, liobn);
+ 	if (ret)
+ 		pr_warning("%s: failed to remove direct window: rtas returned "
+ 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
+-			np->full_name, ret, ddr_avail[2], liobn);
++			np->full_name, ret, ddw_avail[2], liobn);
+ 	else
+ 		pr_debug("%s: successfully removed direct window: rtas returned "
+ 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
+-			np->full_name, ret, ddr_avail[2], liobn);
++			np->full_name, ret, ddw_avail[2], liobn);
  
  delprop:
--	ret = of_remove_property(np, win64);
-+	ret = prom_remove_property(np, win64);
- 	if (ret)
--		pr_warning("%s: failed to remove direct window property: %d\n"
-+		pr_warning("%s: failed to remove direct window property: %d\n",
+ 	ret = prom_remove_property(np, win64);
+@@ -701,16 +701,12 @@ delprop:
  			np->full_name, ret);
  }
  
-@@ -725,38 +725,38 @@ static u64 dupe_ddw_if_already_created(struct pci_dev *dev, struct device_node *
- 	return dma_addr;
- }
- 
--static u64 dupe_ddw_if_kexec(struct pci_dev *dev, struct device_node *pdn)
-+static int find_existing_ddw_windows(void)
+-static u64 dupe_ddw_if_already_created(struct pci_dev *dev, struct device_node *pdn)
++static u64 find_existing_ddw(struct device_node *pdn)
  {
 -	struct device_node *dn;
 -	struct pci_dn *pcidn;
- 	int len;
-+	struct device_node *pdn;
  	struct direct_window *window;
  	const struct dynamic_dma_window_prop *direct64;
--	u64 dma_addr = 0;
+ 	u64 dma_addr = 0;
  
 -	dn = pci_device_to_OF_node(dev);
 -	pcidn = PCI_DN(dn);
--	direct64 = of_get_property(pdn, DIRECT64_PROPNAME, &len);
--	if (direct64) {
--		if (len < sizeof(struct dynamic_dma_window_prop)) {
-+	if (!firmware_has_feature(FW_FEATURE_LPAR))
-+		return 0;
-+
-+	for_each_node_with_property(pdn, DIRECT64_PROPNAME) {
-+		direct64 = of_get_property(pdn, DIRECT64_PROPNAME, &len);
-+		if (!direct64)
-+			continue;
-+
-+		window = kzalloc(sizeof(*window), GFP_KERNEL);
-+		if (!window || len < sizeof(struct dynamic_dma_window_prop)) {
-+			kfree(window);
- 			remove_ddw(pdn);
--		} else {
--			window = kzalloc(sizeof(*window), GFP_KERNEL);
--			if (!window) {
--				remove_ddw(pdn);
--			} else {
--				window->device = pdn;
--				window->prop = direct64;
--				spin_lock(&direct_window_list_lock);
--				list_add(&window->list, &direct_window_list);
--				spin_unlock(&direct_window_list_lock);
--				dma_addr = direct64->dma_base;
--			}
-+			continue;
- 		}
-+
-+		window->device = pdn;
-+		window->prop = direct64;
-+		spin_lock(&direct_window_list_lock);
-+		list_add(&window->list, &direct_window_list);
-+		spin_unlock(&direct_window_list_lock);
- 	}
- 
--	return dma_addr;
-+	return 0;
+ 	spin_lock(&direct_window_list_lock);
+ 	/* check if we already created a window and dupe that config if so */
+ 	list_for_each_entry(window, &direct_window_list, list) {
+@@ -758,7 +754,7 @@ static int find_existing_ddw_windows(void)
  }
-+machine_arch_initcall(pseries, find_existing_ddw_windows);
+ machine_arch_initcall(pseries, find_existing_ddw_windows);
  
- static int query_ddw(struct pci_dev *dev, const u32 *ddr_avail,
+-static int query_ddw(struct pci_dev *dev, const u32 *ddr_avail,
++static int query_ddw(struct pci_dev *dev, const u32 *ddw_avail,
  			struct ddw_query_response *query)
-@@ -854,10 +854,6 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ {
+ 	struct device_node *dn;
+@@ -779,15 +775,15 @@ static int query_ddw(struct pci_dev *dev, const u32 *ddr_avail,
+ 	if (pcidn->eeh_pe_config_addr)
+ 		cfg_addr = pcidn->eeh_pe_config_addr;
+ 	buid = pcidn->phb->buid;
+-	ret = rtas_call(ddr_avail[0], 3, 5, (u32 *)query,
++	ret = rtas_call(ddw_avail[0], 3, 5, (u32 *)query,
+ 		  cfg_addr, BUID_HI(buid), BUID_LO(buid));
+ 	dev_info(&dev->dev, "ibm,query-pe-dma-windows(%x) %x %x %x"
+-		" returned %d\n", ddr_avail[0], cfg_addr, BUID_HI(buid),
++		" returned %d\n", ddw_avail[0], cfg_addr, BUID_HI(buid),
+ 		BUID_LO(buid), ret);
+ 	return ret;
+ }
+ 
+-static int create_ddw(struct pci_dev *dev, const u32 *ddr_avail,
++static int create_ddw(struct pci_dev *dev, const u32 *ddw_avail,
+ 			struct ddw_create_response *create, int page_shift,
+ 			int window_shift)
+ {
+@@ -812,12 +808,12 @@ static int create_ddw(struct pci_dev *dev, const u32 *ddr_avail,
+ 
+ 	do {
+ 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
+-		ret = rtas_call(ddr_avail[1], 5, 4, (u32 *)create, cfg_addr,
++		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
+ 				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
+ 	} while (rtas_busy_delay(ret));
+ 	dev_info(&dev->dev,
+ 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
+-		"(liobn = 0x%x starting addr = %x %x)\n", ddr_avail[1],
++		"(liobn = 0x%x starting addr = %x %x)\n", ddw_avail[1],
+ 		 cfg_addr, BUID_HI(buid), BUID_LO(buid), page_shift,
+ 		 window_shift, ret, create->liobn, create->addr_hi, create->addr_lo);
+ 
+@@ -843,14 +839,14 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	int page_shift;
+ 	u64 dma_addr, max_addr;
+ 	struct device_node *dn;
+-	const u32 *uninitialized_var(ddr_avail);
++	const u32 *uninitialized_var(ddw_avail);
+ 	struct direct_window *window;
+ 	struct property *win64;
+ 	struct dynamic_dma_window_prop *ddwprop;
+ 
+ 	mutex_lock(&direct_window_init_mutex);
+ 
+-	dma_addr = dupe_ddw_if_already_created(dev, pdn);
++	dma_addr = find_existing_ddw(pdn);
  	if (dma_addr != 0)
  		goto out_unlock;
  
--	dma_addr = dupe_ddw_if_kexec(dev, pdn);
--	if (dma_addr != 0)
--		goto out_unlock;
--
- 	/*
- 	 * the ibm,ddw-applicable property holds the tokens for:
- 	 * ibm,query-pe-dma-window
+@@ -862,8 +858,8 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	 * for the given node in that order.
+ 	 * the property is actually in the parent, not the PE
+ 	 */
+-	ddr_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
+-	if (!ddr_avail || len < 3 * sizeof(u32))
++	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
++	if (!ddw_avail || len < 3 * sizeof(u32))
+ 		goto out_unlock;
+ 
+        /*
+@@ -873,7 +869,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	 * of page sizes: supported and supported for migrate-dma.
+ 	 */
+ 	dn = pci_device_to_OF_node(dev);
+-	ret = query_ddw(dev, ddr_avail, &query);
++	ret = query_ddw(dev, ddw_avail, &query);
+ 	if (ret != 0)
+ 		goto out_unlock;
+ 
+@@ -922,7 +918,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 		goto out_free_prop;
+ 	}
+ 
+-	ret = create_ddw(dev, ddr_avail, &create, page_shift, len);
++	ret = create_ddw(dev, ddw_avail, &create, page_shift, len);
+ 	if (ret != 0)
+ 		goto out_free_prop;
+ 
 -- 
 1.7.4.1
 
