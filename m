@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab1EKP6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:58:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5751 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756416Ab1EKP6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:58:01 -0400
-Message-ID: <4DCA4C05.4030803@redhat.com>
-Date: Wed, 11 May 2011 10:42:45 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110402 Thunderbird/3.1.7
+	id S1757428Ab1EKQSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:18:21 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:34006 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757413Ab1EKQSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:18:17 -0400
+Message-ID: <4DCA4C29.20403@st.com>
+Date: Wed, 11 May 2011 14:13:21 +0530
+From: Amit Virdi <amit.virdi@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Alasdair G Kergon <agk@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
-References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz> <BANLkTikEpaRZK3X4YReeQAwgcv3HAGUwSw@mail.gmail.com> <alpine.DEB.2.00.1105091246550.32299@artax.karlin.mff.cuni.cz> <4DC7D37F.9040308@redhat.com> <20110509224511.GC15227@parisc-linux.org> <BANLkTikz-sGiy2NdzQMPzCWF64cVF-DZ7w@mail.gmail.com> <20110510225659.GE9253@agk-dp.fab.redhat.com>
-In-Reply-To: <20110510225659.GE9253@agk-dp.fab.redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@linux.intel.com>
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "samuel@sortiz.org" <samuel@sortiz.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Viresh KUMAR <viresh.kumar@st.com>
+Subject: Re: sleeping function called from invalid context
+References: <4DC8CF50.4040003@st.com> <20110510103256.58d61861@bob.linux.org.uk>
+In-Reply-To: <20110510103256.58d61861@bob.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2011 12:57 AM, Alasdair G Kergon wrote:
-> (What other software packages make use of mlockall() and under what
-> circumstances?)
+Hey Alan,
 
-Another one is cryptsetup for commands which manipulate with keys
-in memory.
-(Users of libcryptetup library are not forced to lock memory, it is optional
-call. But cryptsetup itself as libcryptsetup library user always locks memory.)
+On 5/10/2011 3:02 PM, Alan Cox wrote:
+>> On analysis, I found that this is due to the change introduced in
+>> tty_ioctl.c where the termios mutex is taken to protect against
+>> parallel throttle/unthrottle. Probably IrCOMM stack code wasn't
+>> tested before merging this patch.
+>>
+>> Please suggest what should be done with the IrCOMM protocol stack
+>> code to resolve this problem?
+>
+> It looks like the comments are wrong
+>
+>          /*
+>           * Just give it over to the line discipline. There is no need to
+>           * involve the flip buffers, since we are not running in an
+>          interrupt
+>           * handler
+>           */
+>
+>
+> appears to be completely untrue
+>
+> I suspect it just needs to use the tty_flip_buffer functions properly
+> instead of trying to do clever shortcuts
+>
+>
+> 	tty_insert_flip_string(self->tty, skb->data, skb->len);
+> 	tty_flip_buffer_push(self->tty);
+>
+> .
+>
 
-And I am not happy with mlockall() as well but the lvm2 workaround
-is quite complicated.
+I incorporated the change suggested by you and tested the stack again. 
+It is working perfectly fine - no stack trace is printed now. I'll be 
+sending the patch soon.
 
-Basically it wants to lock memory with explicitly allocated keys
-(this can be rewritten to use specific locked page though) but it
-also need to lock various libdevmapper buffers when issuing dmcrypt
-cfg ioctl (mapping table and messages contains key). So that's why
-mlockall(MCL_CURRENT|MCL_FUTURE) was the simplest way (and no problems
-reported yet).
-(No that it is perfect but better than nothing... Of course
-more important is to wipe memory with keys after use.)
-
-Milan
+Thanks n Regards
+Amit Virdi
