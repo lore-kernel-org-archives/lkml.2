@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab1EKWec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:34:32 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58255 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932227Ab1EKWeb (ORCPT
+	id S932487Ab1EKWfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:35:07 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53394 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932224Ab1EKWfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:34:31 -0400
-Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using
- high-order allocations
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1105111527490.24003@chino.kir.corp.google.com>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305149960.2606.53.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105111527490.24003@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 May 2011 17:34:27 -0500
-Message-ID: <1305153267.2606.57.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 May 2011 18:35:05 -0400
+MIME-Version: 1.0
+Date: Wed, 11 May 2011 18:35:05 -0400
+Message-ID: <BANLkTi=XNyR8GD43GGnMag+=JmhUd_5HtA@mail.gmail.com>
+Subject: [PATCH] scsi/sd: fix suspend with USB-connected Android phone (one line)
+From: Charles Hannum <root@ihack.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=485b397b93f122dc0d04a307af2a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 15:28 -0700, David Rientjes wrote:
-> On Wed, 11 May 2011, James Bottomley wrote:
-> 
-> > OK, I confirm that I can't seem to break this one.  No hangs visible,
-> > even when loading up the system with firefox, evolution, the usual
-> > massive untar, X and even a distribution upgrade.
-> > 
-> > You can add my tested-by
-> > 
-> 
-> Your system still hangs with patches 1 and 2 only?
+--485b397b93f122dc0d04a307af2a
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Yes, but only once in all the testing.  With patches 1 and 2 the hang is
-much harder to reproduce, but it still seems to be present if I hit it
-hard enough.
+Short version: My laptop doesn't suspend when my Android phone is
+connected and has been =93ejected=94.
 
-James
+Long version:
 
+Android phones connect as USB mass storage devices. =A0After the =93Turn
+on USB storage=94 button has been clicked, there are a few different
+ways to detach the =93disk=94:
 
+1) pull the cable
+2) click =93Turn off USB storage=94
+3) =93eject=94 the device
+
+In cases 2 & 3, the USB device is still attached to the system, but
+will now return MEDIUM NOT PRESENT for many commands, including
+SYNCHRONIZE CACHE=97basically it acts like any device with removable
+media. =A0However, the act of the =93media=94 being removed does not
+invalidate sdkp->WCE; therefore sd_shutdown() and sd_suspend() still
+call sd_sync_cache(), which *fails* because it gets a MEDIUM NOT
+PRESENT sense code. =A0In the sd_suspend() case, this causes the entire
+suspend to fail, and the laptop rewakes immediately.
+
+There are a few different ways to fix this; e.g. one could
+specifically test media_not_present() if a sense code is returned in
+sd_sync_cache(). =A0However, the following patch seems simpler, and
+avoids calling sd_sync_cache() at all in this case. =A0sdkp->WCE will be
+reset when new medium is recognized and sd_read_cache_type() is
+called. =A0Note this code always gets called=97it's in the same path as
+sd_read_capacity(), which has to be called for the device to be usable
+again; thus the patch is inherently safe.
+
+Kernel tested: 2.6.38 (Ubuntu Natty)
+
+--485b397b93f122dc0d04a307af2a
+Content-Type: text/x-patch; charset=US-ASCII; name="sd-suspend.diff"
+Content-Disposition: attachment; filename="sd-suspend.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gnkukf650
+
+LS0tIGxpbnV4LTIuNi4zOC9kcml2ZXJzL3Njc2kvc2QuYy5vcmlnCTIwMTEtMDUtMTEgMTg6MDg6
+NDQuOTY5NDk3OTc2IC0wNDAwCisrKyBsaW51eC0yLjYuMzgvZHJpdmVycy9zY3NpL3NkLmMJMjAx
+MS0wNS0xMSAxNToyNjoxNS40Mzk2MTA3NjAgLTA0MDAKQEAgLTk5Niw2ICs5OTYsNyBAQAogCWlm
+IChzZGtwLT5kZXZpY2UtPnJlbW92YWJsZSkgewogCQlzZGtwLT5tZWRpYV9wcmVzZW50ID0gMDsK
+IAkJc2RrcC0+Y2FwYWNpdHkgPSAwOworCQlzZGtwLT5XQ0UgPSAwOwogCX0KIH0KIAo=
+--485b397b93f122dc0d04a307af2a--
