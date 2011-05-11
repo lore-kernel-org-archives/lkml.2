@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab1EKVm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 17:42:56 -0400
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:40902 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab1EKVmy (ORCPT
+	id S1756823Ab1EKVox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 17:44:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51055 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab1EKVov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 17:42:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
-	:cc:date:in-reply-to:references:content-type
-	:content-transfer-encoding:message-id:mime-version; q=dns; s=
-	sasl; b=PjgYuLaZHUFFpxvIYVClZ14HXdjmRTiISoCtgRlhFCdF9j3xJRsntedJ
-	r5wGeOqEkCY+Y4uHDT6nVB4eTLsqWhA2kqjeQf7yXsi5Owq7ti3ZlZ/BsJvbw6il
-	MiPBL8eYbZliedXiUjNAxo2kVwISZdLtgMu6QwC1yd6vJ31r5HA=
-Subject: Re: [PATCH 3/7] ns proc: Add support for the network namespace.
-From: Nathan Lynch <ntl@pobox.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linux Containers <containers@lists.osdl.org>,
-        Renato Westphal <renatowestphal@gmail.com>
-Date: Wed, 11 May 2011 16:42:33 -0500
-In-Reply-To: <m139kkncpe.fsf@fess.ebiederm.org>
-References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
- <1304735101-1824-1-git-send-email-ebiederm@xmission.com>
- <1304735101-1824-3-git-send-email-ebiederm@xmission.com>
- <1305141705.1236.49.camel@orca.stoopid.dyndns.org>
- <m139kkncpe.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+	Wed, 11 May 2011 17:44:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+Date: Wed, 11 May 2011 23:44:43 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "Wolfgang Grandegger" <wg@grandegger.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>, sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com, Netdev@vger.kernel.org,
+        nsekhar@ti.com, "open list" <linux-kernel@vger.kernel.org>,
+        "CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        m-watkins@ti.com
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <2BFFDAA0A0DE4820876E5549867938EC@subhasishg> <201105112331.47954.arnd@arndb.de>
+In-Reply-To: <201105112331.47954.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1305150164.1236.51.camel@orca.stoopid.dyndns.org>
-Mime-Version: 1.0
-X-Pobox-Relay-ID: E5A3E4EE-7C17-11E0-9391-BBB7F5B2FB1A-04752483!a-pb-sasl-sd.pobox.com
+Message-Id: <201105112344.44171.arnd@arndb.de>
+X-Provags-ID: V02:K0:PDVjE9FpOO9jh+zrWcbGf5EMcWIgoBgmyJ8fMTmnZfF
+ n30tyR5L2JVOSUbgkVF8CFm692s49EKI3dh3qo+L6dhypB4hbP
+ 0Tw5QtDuMJQfz1LTBb/InyCGHXRimXlDdEUikFuXs9aPJBapGa
+ 1TA3QVS9h0bBiTQW/lJkqJOvzuVfwCxok8AsdlF5DjxgOA47El
+ SCkTKsYEF76aDfOlWgE6g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 14:34 -0700, Eric W. Biederman wrote:
-> Nathan Lynch <ntl@pobox.com> writes:
-> 
-> > On Fri, 2011-05-06 at 19:24 -0700, Eric W. Biederman wrote:
-> >> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-> >> index 3f86026..bf7707e 100644
-> >> --- a/net/core/net_namespace.c
-> >> +++ b/net/core/net_namespace.c
-> >> @@ -573,3 +573,34 @@ void unregister_pernet_device(struct pernet_operations *ops)
-> >>  	mutex_unlock(&net_mutex);
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(unregister_pernet_device);
-> >> +
-> >> +#ifdef CONFIG_NET_NS
-> >> +static void *netns_get(struct task_struct *task)
-> >> +{
-> >> +	struct net *net;
-> >> +	rcu_read_lock();
-> >> +	net = get_net(task->nsproxy->net_ns);
-> >
-> > This should use task_nsproxy() and check the result before grabbing the
-> > net_ns, but I think you fix that in a later patch.
-> >
-> > Regardless, it looks as if all the proc_ns_ops->get() implementations
-> > really just want the nsproxy, so maybe the get() methods should take
-> > that instead of the task_struct, and proc_ns_instantiate() should do
-> > something like:
-> >
-> > struct nsproxy *nsproxy;
-> > ...
-> >
-> > ei->ns_ops = ns_ops;
-> > error = -ESRCH;
-> > rcu_read_lock();
-> > nsproxy = task_nsproxy(task);
-> > rcu_read_unlock();
-> > if (!nsproxy)
-> > 	got out;
-> > ei->ns = ns_ops->get(nsproxy);
-> >
-> >
-> > So then the zombie check is consolidated in one place instead of having
-> > to do it in every get() method.
-> 
-> For the pid namespace at least I want the task not the nsproxy,
-> so I can use task_active_pid_namespace().
-> 
-> I admit that is a little asymmetrical with the install, but at
-> least until the details of getting the pid namespace working in
-> this context are worked out I don't want to reconsider the
-> current design.
-> 
-> There is also the user namespace that does not even exist in
-> nsproxy to consider.  I will worry about that namespace when
-> it happens.
-> 
-> Ultimately nsproxy is an space/time optimization that not all
-> namespaces use so forcing it in the design is probably not
-> what we want.
+On Wednesday 11 May 2011, Arnd Bergmann wrote:
+> If that interpretation is right, I would seriously recommend rethinking
+> the design of the CAN firmware for pruss, so you can start doing something
+> useful with the offload engine that fits into the Socket CAN API, or that
+> would be a useful extension to Socket CAN that is also implementable in
+> the kernel for all other drivers in a meaningful way.
 
-Okay.
+I've looked some more into the CAN socket implementation, and I suppose that
+the idea of the pruss driver was really to help do the work from the
+can_rcv_filter function in hardware.
 
+Doing this right would really mean supporting both a mode where any new
+filter that gets added to socket can ends up being added to the hardware
+as long as it fits, similar to how we can add additional unicast mac
+addresses to an ethernet NIC. However, when the filters from all user
+sockets combined can not be represented in the hardware driver, the hardware
+needs to be put into a less efficient mode where all packets are returned
+to the kernel and processed in software.
 
-> >> +	rcu_read_unlock();
-> >> +	return net;
-> >> +}
-> >> +
-> >> +static void netns_put(void *ns)
-> >> +{
-> >> +	put_net(ns);
-> >> +}
-> >> +
-> >> +static int netns_install(struct nsproxy *nsproxy, void *ns)
-> >> +{
-> >> +	put_net(nsproxy->net_ns);
-> >> +	nsproxy->net_ns = get_net(ns);
-> >> +	return 0;
-> >> +}
-> >
-> > This introduces a window where, potentially, nsproxy->net_ns is stale
-> > before it is updated with the namespace which is being attached, no? 
-> > (Same concern applies to other install methods in the patch set).  It
-> > seems possible to oops the kernel in this window by looking up
-> > /proc/$PID/ns/net while $PID is in the midst of setns().
-> 
-> Except the nsproxy being referred to is a brand new nsproxy, with an
-> extra reference count on every namespace.  current->nsproxy still
-> contains the reference counts of the current process.
-
-Ahh, yeah.  Got it.  Thanks.
-
-
-
+	Arnd
