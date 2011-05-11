@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1EKWFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:05:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48150 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab1EKWFD (ORCPT
+	id S1756850Ab1EKWIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:08:53 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:23724 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756490Ab1EKWIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:05:03 -0400
-Date: Wed, 11 May 2011 15:04:34 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, David Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH -next] drm: fix nouveau_acpi build
-Message-Id: <20110511150434.b7f5c2f6.randy.dunlap@oracle.com>
-In-Reply-To: <20110511152508.0d5d5aa6.sfr@canb.auug.org.au>
-References: <20110511152508.0d5d5aa6.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 11 May 2011 18:08:51 -0400
+X-IronPort-AV: E=Sophos;i="4.64,354,1301900400"; 
+   d="scan'208";a="547291952"
+Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Peng Huang <shawn.p.huang@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTimWE8FYGh9b7n9QF452dR0tRff50A@mail.gmail.com>
+References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+	 <1305148125.21868.2.camel@lade.trondhjem.org>
+	 <BANLkTimWE8FYGh9b7n9QF452dR0tRff50A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 11 May 2011 18:08:43 -0400
+Message-ID: <1305151723.26971.1.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4DCB07FD.00D1:SCFSTAT5015188,ss=1,fgs=0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 11 May 2011 22:08:44.0698 (UTC) FILETIME=[FE87BFA0:01CC1027]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 2011-05-11 at 17:35 -0400, Peng Huang wrote:
+> On Wed, May 11, 2011 at 5:08 PM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> > On Wed, 2011-05-11 at 17:03 -0400, Peng Huang wrote:
+> >> lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
+> >> indirectly, that causes the kernel crash.
+> >>
+> >> RIP: 0010:[<ffffffffa0ba3b41>]  [<ffffffffa0ba3b41>]
+> >> nfs_lookup_revalidate+0x21/0x4a0 [nfs]
+> >> RSP: 0018:ffff88018f00fae8  EFLAGS: 00010286
+> >>
+> >> Call Trace:
+> >>  [<ffffffff81164a17>] do_revalidate+0x17/0x60
+> >>  [<ffffffff81164e9b>] __lookup_hash+0xcb/0x140
+> >>  [<ffffffff811653c4>] lookup_one_len+0x94/0xe0
+> >>  [<ffffffff81241ef1>] ecryptfs_lookup+0x91/0x1d0
+> >>  [<ffffffff81164d85>] d_alloc_and_lookup+0x45/0x90
+> >>  [<ffffffff8116f7b5>] ? d_lookup+0x35/0x60
+> >>  [<ffffffff811669b2>] do_lookup+0x192/0x2d0
+> >>  [<ffffffff811763be>] ? vfsmount_lock_local_unlock+0x1e/0x30
+> >>  [<ffffffff8126d09c>] ? security_inode_permission+0x1c/0x30
+> >>  [<ffffffff81167d67>] link_path_walk+0x597/0xae0
+> >>  [<ffffffff8117638e>] ? vfsmount_lock_local_lock+0x1e/0x30
+> >>  [<ffffffff81165905>] ? path_init_rcu+0xa5/0x210
+> >>  [<ffffffff8116858b>] do_path_lookup+0x5b/0x140
+> >>  [<ffffffff811692f7>] user_path_at+0x57/0xa0
+> >>  [<ffffffff8159fd08>] ? do_page_fault+0x1e8/0x4e0
+> >>  [<ffffffff8115eb86>] vfs_fstatat+0x46/0x80
+> >>  [<ffffffff8116b990>] ? filldir+0x0/0xe0
+> >>  [<ffffffff8115ec2e>] vfs_lstat+0x1e/0x20
+> >>  [<ffffffff8115ec54>] sys_newlstat+0x24/0x50
+> >>  [<ffffffff8159c995>] ? page_fault+0x25/0x30
+> >>  [<ffffffff8100bfc2>] system_call_fastpath+0x16/0x1b
+> >>
+> >> Signed-off-by: Peng Huang <shawn.p.huang@gmail.com>
+> >> ---
+> >>  fs/nfs/dir.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> >> index 2c3eb33..9452aa5 100644
+> >> --- a/fs/nfs/dir.c
+> >> +++ b/fs/nfs/dir.c
+> >> @@ -1028,7 +1028,7 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+> >>       struct nfs_fattr *fattr = NULL;
+> >>       int error;
+> >>
+> >> -     if (nd->flags & LOOKUP_RCU)
+> >> +     if (nd != NULL && nd->flags & LOOKUP_RCU)
+> >>               return -ECHILD;
+> >>
+> >>       parent = dget_parent(dentry);
+> >
+> > That's exactly what Tyler Hicks proposed last week and which was NACKed.
+> > We simply won't support layered filesystems that don't do intents.
+> >
+> > IOW: Feel free to change the above to.
+> >
+> > if (nd == NULL)
+> >     return -EIO;
+> >
+> 
+> I tested returning -EIO when nd is NULL. Kernel does not crash, but
+> ecryptfs can not work on nfs anymore.
 
-Fix build errors when CONFIG_ACPI is enabled but MXM_WMI is not enabled
-by selecting both MXM_WMI and ACPI_WMI (the latter just for kconfig
-dependencies):
+It isn't going to work until ecryptfs gets fixed. Only blind luck made
+it 'work' previously.
 
-nouveau_acpi.c:(.text+0x2400c8): undefined reference to `mxm_wmi_call_mxmx'
-nouveau_acpi.c:(.text+0x2400cf): undefined reference to `mxm_wmi_call_mxds'
-nouveau_acpi.c:(.text+0x2400fe): undefined reference to `mxm_wmi_call_mxmx'
-nouveau_acpi.c:(.text+0x2402ba): undefined reference to `mxm_wmi_supported
+The above will at least ensure that if someone tries to use it over NFS,
+then we won't Oops, and they will get a valid error message.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/gpu/drm/nouveau/Kconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
---- linux-next-20110511.orig/drivers/gpu/drm/nouveau/Kconfig
-+++ linux-next-20110511/drivers/gpu/drm/nouveau/Kconfig
-@@ -11,7 +11,8 @@ config DRM_NOUVEAU
- 	select FRAMEBUFFER_CONSOLE if !EXPERT
- 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
- 	select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
--	select MXM_WMI if ACPI && ACPI_WMI
-+	select ACPI_WMI if ACPI
-+	select MXM_WMI if ACPI
- 	help
- 	  Choose this option for open-source nVidia support.
- 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
