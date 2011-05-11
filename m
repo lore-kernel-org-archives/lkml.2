@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab1EKQ0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:26:16 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:47753 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab1EKQ0N (ORCPT
+	id S1754703Ab1EKPoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 11:44:23 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60919 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab1EKPoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:26:13 -0400
+	Wed, 11 May 2011 11:44:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=fepw6JsLUkYeC9kuUlePzJIVMBMkZ7RH+c7WmZXFA/lY1urBfSvGiQGuGO9ylSzco3
-         99kXrws5fnuj+KQoxzR7kbr+Y3pusMBTAR98n3qDU4hsb33Hwtx/QLxSYwIpCZjjN0z8
-         wjgdo1mWWwcfKUGog4QH+1a+ldmN7q15yRLZc=
+        b=wBUTT403zx77QPNxB1qUbllUGK6uxYuVrspRz2yFiB0pLtJiR8oxLJNzgxP+tZE/9s
+         CSh5605w1Jz52ncr2jHODrNclTk/9jXDWe+TOTBQUlSqiQz7AMThBPYSjCSMY+XLThxk
+         B8cwzGZqTAHhE7j88P4iqgKMJ+wQNiQG2go70=
 From: matt mooney <mfmooney@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 07/12] staging: usbip: stub_main.c: change __init/__exit prefix and use KMEM_CACHE
-Date: Wed, 11 May 2011 01:54:19 -0700
-Message-Id: <3410de2c85cd3aa2396b790c9072b6f22fa97257.1305103212.git.mfm@muteddisk.com>
+Subject: [PATCH 08/12] staging: usbip: usbip_common.c: fix misspelled function name
+Date: Wed, 11 May 2011 01:54:20 -0700
+Message-Id: <5c68db87d889a920e13ea1d97c5d0f5d46bb1824.1305103212.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1305103212.git.mfm@muteddisk.com>
 References: <cover.1305103212.git.mfm@muteddisk.com>
@@ -26,54 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change prefix to usbip and use the KMEM_CACHE macro for cache creation.
+Change pakcet to packet in usbip_iso_packet_correct_endian().
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/staging/usbip/stub_main.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ drivers/staging/usbip/usbip_common.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
-index d918c49..f2ce939 100644
---- a/drivers/staging/usbip/stub_main.c
-+++ b/drivers/staging/usbip/stub_main.c
-@@ -246,13 +246,12 @@ void stub_device_cleanup_urbs(struct stub_device *sdev)
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index fbf549c..d2fb1ae 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -627,7 +627,7 @@ void usbip_header_correct_endian(struct usbip_header *pdu, int send)
+ }
+ EXPORT_SYMBOL_GPL(usbip_header_correct_endian);
+ 
+-static void usbip_iso_pakcet_correct_endian(
++static void usbip_iso_packet_correct_endian(
+ 		struct usbip_iso_packet_descriptor *iso, int send)
+ {
+ 	/* does not need all members. but copy all simply. */
+@@ -677,7 +677,7 @@ void *usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen)
+ 		iso = buff + (i * sizeof(*iso));
+ 
+ 		usbip_pack_iso(iso, &urb->iso_frame_desc[i], 1);
+-		usbip_iso_pakcet_correct_endian(iso, 1);
++		usbip_iso_packet_correct_endian(iso, 1);
  	}
- }
  
--static int __init usb_stub_init(void)
-+static int __init usbip_stub_init(void)
- {
- 	int ret = 0;
+ 	*bufflen = size;
+@@ -728,7 +728,7 @@ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb)
+ 	for (i = 0; i < np; i++) {
+ 		iso = buff + (i * sizeof(*iso));
  
--	stub_priv_cache = kmem_cache_create("stub_priv",
--					    sizeof(struct stub_priv), 0,
--					    SLAB_HWCACHE_ALIGN, NULL);
-+	stub_priv_cache = KMEM_CACHE(stub_priv, SLAB_HWCACHE_ALIGN);
-+
- 	if (!stub_priv_cache) {
- 		pr_err("kmem_cache_create failed\n");
- 		return -ENOMEM;
-@@ -283,7 +282,7 @@ out:
- 	return ret;
- }
- 
--static void __exit usb_stub_exit(void)
-+static void __exit usbip_stub_exit(void)
- {
- 	driver_remove_file(&stub_driver.drvwrap.driver,
- 			   &driver_attr_match_busid);
-@@ -297,8 +296,8 @@ static void __exit usb_stub_exit(void)
- 	kmem_cache_destroy(stub_priv_cache);
- }
- 
--module_init(usb_stub_init);
--module_exit(usb_stub_exit);
-+module_init(usbip_stub_init);
-+module_exit(usbip_stub_exit);
- 
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_DESCRIPTION(DRIVER_DESC);
+-		usbip_iso_pakcet_correct_endian(iso, 0);
++		usbip_iso_packet_correct_endian(iso, 0);
+ 		usbip_pack_iso(iso, &urb->iso_frame_desc[i], 0);
+ 		total_length += urb->iso_frame_desc[i].actual_length;
+ 	}
 -- 
 1.7.5.1
 
