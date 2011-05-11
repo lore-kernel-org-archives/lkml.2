@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab1EKW10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 18:27:26 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:56920 "EHLO
+	id S932298Ab1EKW27 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 18:28:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27352 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab1EKW1V (ORCPT
+	with ESMTP id S932200Ab1EKW2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 18:27:21 -0400
+	Wed, 11 May 2011 18:28:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=FhHW2509a6Ho9/skEojs56ilxZF28ZEZGnsAIBTULgPDgZcVsXkWC84Uj0+7xMYXSx
-         7VmSJwAMawCafuY6/5gA==
-Date: Wed, 11 May 2011 15:27:11 -0700 (PDT)
+        b=wZFoRDj+enM7BSb7aDTiLvdTLhZC2KOLcmQPAD78jeCrUvCHkaYTNWxmwnlbiAuFAf
+         zgphEHpBmtlUgv3G6X3g==
+Date: Wed, 11 May 2011 15:28:49 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
         Colin King <colin.king@canonical.com>,
         Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
         Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
@@ -28,10 +27,11 @@ cc: Andrew Morton <akpm@linux-foundation.org>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-In-Reply-To: <20110511210907.GA17898@suse.de>
-Message-ID: <alpine.DEB.2.00.1105111456220.24003@chino.kir.corp.google.com>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de> <1305127773-10570-4-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com> <20110511210907.GA17898@suse.de>
+Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using
+ high-order allocations
+In-Reply-To: <1305149960.2606.53.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.00.1105111527490.24003@chino.kir.corp.google.com>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de> <1305149960.2606.53.camel@mulgrave.site>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -40,95 +40,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011, Mel Gorman wrote:
+On Wed, 11 May 2011, James Bottomley wrote:
 
-> I agree with you that there are situations where plenty of memory
-> means that that it'll perform much better. However, indications are
-> that it breaks down with high CPU usage when memory is low.  Worse,
-> once fragmentation becomes a problem, large amounts of UNMOVABLE and
-> RECLAIMABLE will make it progressively more expensive to find the
-> necessary pages. Perhaps with patches 1 and 2, this is not as much
-> of a problem but figures in the leader indicated that for a simple
-> workload with large amounts of files and data exceeding physical
-> memory that it was better off not to use high orders at all which
-> is a situation I'd expect to be encountered by more users than
-> performance-sensitive applications.
+> OK, I confirm that I can't seem to break this one.  No hangs visible,
+> even when loading up the system with firefox, evolution, the usual
+> massive untar, X and even a distribution upgrade.
 > 
-> In other words, we're taking one hit or the other.
+> You can add my tested-by
 > 
 
-Seems like the ideal solution would then be to find how to best set the 
-default, and that can probably only be done with the size of the smallest 
-node since it has a higher liklihood of encountering a large amount of 
-unreclaimable slab when memory is low.
-
-> > I can get numbers for a simple netperf TCP_RR benchmark with this change 
-> > applied to show the degradation on a server with >32GB of RAM with this 
-> > patch applied.
-> > 
-> 
-> Agreed, I'd expect netperf TCP_RR or TCP_STREAM to take a hit,
-> particularly on a local machine where the recycling of pages will
-> impact it heavily.
-> 
-
-Ignoring the local machine for a second, TCP_RR probably shouldn't be 
-taking any more of a hit with slub than it already is.  When I benchmarked 
-slab vs. slub a couple months ago with two machines, each four quad-core 
-Opterons with 64GB of memory, with this benchmark it showed slub was 
-already 10-15% slower.  That's why slub has always been unusable for us, 
-and I'm surprised that it's now becoming the favorite of distros 
-everywhere (and, yes, Ubuntu now defaults to it as well).
-
-> > It would be ideal if this default could be adjusted based on the amount of 
-> > memory available in the smallest node to determine whether we're concerned 
-> > about making higher order allocations. 
-> 
-> It's not a function of memory size, working set size is what
-> is important or at least how many new pages have been allocated
-> recently. Fit your workload in physical memory - high orders are
-> great. Go larger than that and you hit problems. James' testing
-> indicated that kswapd CPU usage dropped to far lower levels with this
-> patch applied his test of untarring a large file for example.
-> 
-
-My point is that it would probably be better to tune the default based on 
-how much memory is available at boot since it implies the probability of 
-having an abundance of memory while populating the caches' partial lists 
-up to min_partial rather than change it for everyone where it is known 
-that it will cause performance degradations if memory is never low.  We 
-probably don't want to be doing order-3 allocations for half the slab 
-caches when we have 1G of memory available, but that's acceptable with 
-64GB.
-
-> > (Using the smallest node as a 
-> > metric so that mempolicies and cpusets don't get unfairly biased against.)  
-> > With the previous changes in this patchset, specifically avoiding waking 
-> > kswapd and doing compaction for the higher order allocs before falling 
-> > back to the min order, it shouldn't be devastating to try an order-3 alloc 
-> > that will fail quickly.
-> > 
-> 
-> Which is more reasonable? That an ordinary user gets a default that
-> is fairly safe even if benchmarks that demand the highest performance
-> from SLUB take a hit or that administrators running such workloads
-> set slub_max_order=3?
-> 
-
-Not sure what is more reasonable since it depends on what the workload is, 
-but what probably is unreasonable is changing a slub default that is known 
-to directly impact performance by presenting a single benchmark under 
-consideration without some due diligence in testing others like netperf.
-
-We all know that slub has some disavantages compared to slab that are only 
-now being realized because it has become the debian default, but it does 
-excel at some workloads -- it was initially presented to beat slab in 
-kernbench, hackbench, sysbench, and aim9 when it was merged.  Those 
-advantages may never be fully realized on laptops or desktop machines, but 
-with machines with plenty of memory available, slub ofter does perform 
-better than slab.
-
-That's why I suggested tuning the min order default based on total memory, 
-it would probably be easier to justify than changing it for everyone and 
-demanding users who are completely happy with using slub, the kernel.org 
-default for years, now use command line options.
+Your system still hangs with patches 1 and 2 only?
