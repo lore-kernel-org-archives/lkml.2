@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab1EKRhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 13:37:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63787 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab1EKRhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 13:37:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,353,1301900400"; 
-   d="scan'208";a="974459"
-From: Andi Kleen <andi@firstfloor.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org>
-	<1305073386-4810-3-git-send-email-john.stultz@linaro.org>
-Date: Wed, 11 May 2011 10:36:54 -0700
-In-Reply-To: <1305073386-4810-3-git-send-email-john.stultz@linaro.org> (John
-	Stultz's message of "Tue, 10 May 2011 17:23:05 -0700")
-Message-ID: <m2sjsli1ft.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753463Ab1EKRhd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 13:37:33 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19945 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1EKRhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 13:37:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 11 May 2011 10:37:26 -0700
+Date: Wed, 11 May 2011 10:37:26 -0700
+From: Robert Morell <rmorell@nvidia.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: mmap vs. ctime bug?
+Message-ID: <20110511173726.GA7030@morell.nvidia.com>
+References: <20110510012348.GJ3848@morell.nvidia.com>
+ <20110511104358.GD5057@quack.suse.cz>
+ <20110511162441.GC22847@morell.nvidia.com>
+ <20110511170130.GL5057@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110511170130.GL5057@quack.suse.cz>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Stultz <john.stultz@linaro.org> writes:
+On Wed, May 11, 2011 at 10:01:30AM -0700, Jan Kara wrote:
 
-> Acessing task->comm requires proper locking. However in the past
-> access to current->comm could be done without locking. This
-> is no longer the case, so all comm access needs to be done
-> while holding the comm_lock.
->
-> In my attempt to clean up unprotected comm access, I've noticed
-> most comm access is done for printk output. To simpify correct
-> locking in these cases, I've introduced a new %ptc format,
-> which will safely print the corresponding task's comm.
->
-> Example use:
-> printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
+[...]
 
-Neat. But you probably want a checkpatch rule for this too
-to catch new offenders.
+>   I agree with the transparency as far as data is concerned. But it simply
+> cannot work for metadata - we don't know some things (like the number of
+> used blocks) in advance until the file is written. 
+> 
+> > If we want to quote specifications, see:
+> > http://pubs.opengroup.org/onlinepubs/9699919799/
+> > 
+> > "Section 4.8 "File Times Update"
+> > [...]
+> > An implementation may update timestamps that are marked for update
+> > immediately, or it may update such timestamps periodically. At the point
+> > in time when an update occurs, any marked timestamps shall be set to the
+> > current time and the update marks shall be cleared. All timestamps that
+> > are marked for update shall be updated when the file ceases to be open
+> > by any process or before a fstat(), fstatat(), fsync(), futimens(),
+> > lstat(), stat(), utime(), utimensat(), or utimes() is successfully
+> > performed on the file."
+>   But the allocation of a disk block (and thus a change to the inode) happens
+> after the file is closed. So the timestamp is marked for update after the
+> file is closed and we are consistent with the above paragraph. In fact we
+> should not avoid updating the time stamp because then applications would
+> miss that the metadata information in inode has actually changed.
 
--Andi
+Practically speaking, does anything that monitors ctimes actually care
+about st_blocks changes?  Certainly tar and other similar backup or
+archive-type programs shouldn't care; they only care about data that can
+be restored on a new filesystem.  Maybe an acceptable change would be to
+simply not trigger ctime updates based solely on disk block allocations?
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+I realize that this is not spec-compliant since "file status" has
+changed, but this behavior could be tweaked with filesystem mount
+options to turn on struct ctime behavior, similar to strictatime.
+
+> > > So although I can see why the combination of this behavior and your
+> > > libelf+tar usecase causes problems the kernel behaves according to the spec
+> > > and I don't think changing the kernel is the right solution. I'd rather
+> > > think that you should be able to disable the ctime check in tar.
+> > 
+> > This really breaks basic assumptions about process lifetime and I/O.  In
+> > the basic shell flow:
+> > $ ./a && ./b
+> > When b is invoked, it is assumed that a has been terminated and any
+> > I/O it has performed will be reflected if b tries to read it.  (I assume
+> > the shell achieves this with wait(pid)?()).  Again, it is not guaranteed
+> > that the output be flushed to disk, but the cache should be transparent
+> > to software.
+>   Again, cache is transparent for data, not for metadata. So if b is
+> dependent on metadata changed by a, things get complicated. There are some
+> basic things defined by POSIX but apart from that all bets are off. Basically
+> the only way to get some guarantees is to use fsync/sync which is dumb but
+> that's how it is. Sorry. If you wanted that perfectly metadata consistent
+> behavior, kernel would have to basically fsync the file behind the scenes
+> and people certainly would not like that.
+
+fsync/sync are much heavier-weight than should be necessary, though.
+None of the data has to actually hit the disk; filesystem blocks are at
+the end of the day just software state; requiring disk latency here is
+rather unfortunate.  An alternative fstatsync() or so that tar could
+call on its files would be sufficient as well.
+
+Thanks,
+Robert
