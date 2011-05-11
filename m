@@ -1,30 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab1EKTeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 15:34:23 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:36727 "EHLO duck.linux-mips.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753476Ab1EKTeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 15:34:22 -0400
-Date: Wed, 11 May 2011 20:34:33 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Robert Millan <rmh@gnu.org>, David Daney <ddaney@caviumnetworks.com>,
-        wu zhangjin <wuzhangjin@gmail.com>,
-        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] MIPS: Introduce set_elf_platform() helper function
-Message-ID: <20110511193433.GA17315@linux-mips.org>
-References: <12309140238d597edc0b48cbc07df218@localhost>
+	id S1755189Ab1EKTfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 15:35:52 -0400
+Received: from kroah.org ([198.145.64.141]:50976 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754591Ab1EKTfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 15:35:51 -0400
+Date: Wed, 11 May 2011 12:34:51 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, stable@kernel.org,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: Re: [stable] apparent regression (crash) - 2.6.38.6
+Message-ID: <20110511193451.GC26010@kroah.com>
+References: <4DC9983B.4070006@msgid.tls.msk.ru>
+ <4DCA2D14.3040500@suse.cz>
+ <1305141557.2606.33.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <12309140238d597edc0b48cbc07df218@localhost>
+In-Reply-To: <1305141557.2606.33.camel@mulgrave.site>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, queued for 2.6.40.
+On Wed, May 11, 2011 at 02:19:17PM -0500, James Bottomley wrote:
+> On Wed, 2011-05-11 at 08:30 +0200, Jiri Slaby wrote:
+> > On 05/10/2011 09:55 PM, Michael Tokarev wrote:
+> > > Hello.
+> > > 
+> > > I just tried 2.6.38.6 (which has been released today), and
+> > > discovered that it crashes during bootup on my machine.
+> > > 2.6.38.5 with exactly the same config works.
+> > 
+> > Is it reproducible?
+> > 
+> > > Unfortunately I don't have time _right now_ to debug the
+> > > issue, but will try tomorrow.
+> > > 
+> > > For now, here's a part of dmesg with an oops, captured
+> > > using netconsole.  If someone have a clue, please speak
+> > > up ;)
+> > > 
+> > > What I also noticed is that for some reason, udev now loads
+> > > option driver (option: v0.7.2:USB Driver for GSM modems),
+> > > even if I don't have any modems connected to the system.
+> > > This is obviously not related to the issue at hand.
+> > ...
+> > > [  106.761932] input: Logitech USB-PS/2 Optical Mouse as /devices/pci0000:00/0000:00:12.1/usb2/2-2/2-2:1.0/input/input6
+> > > [  106.762170] generic-usb 0003:046D:C044.0004: input,hidraw0: USB HID v1.10 Mouse [Logitech USB-PS/2 Optical Mouse] on usb-0000:00:12.1-2/input0
+> > > [  106.994177] scsi 10:0:0:0: Direct-Access     Kingston DT HyperX        HMAP PQ: 0 ANSI: 0 CCS
+> > > [  106.994458] sd 10:0:0:0: Attached scsi generic sg3 type 0
+> > > [  106.994628] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+> > > [  106.994755] IP: [<ffffffff811bec1b>] elv_queue_empty+0x1b/0x30
+> 
+> Hmm, it's another missing elevator guard, like this patch:
+> 
+> http://marc.info/?l=linux-scsi&m=130348673628282
+> 
+> I think the bug here is that q->elevator is null, so dereferencing
+> elevator->ops gives the bug.
 
-  Ralf
+Is this patch going to Linus anytime soon?
+
+thanks,
+
+greg k-h
