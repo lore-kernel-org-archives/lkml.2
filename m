@@ -1,170 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757090Ab1EKQJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:09:58 -0400
-Received: from wega.rz.tu-ilmenau.de ([141.24.4.159]:59677 "EHLO
-	wega.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab1EKQJz (ORCPT
+	id S1756726Ab1EKQCc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:02:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54276 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab1EKQCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:09:55 -0400
-X-Greylist: delayed 1112 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 May 2011 12:09:55 EDT
-Message-ID: <4DCAB351.4010204@tu-ilmenau.de>
-Date: Wed, 11 May 2011 18:03:29 +0200
-From: =?ISO-8859-1?Q?Stephan_B=E4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Nikhil Rao <ncrao@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sched: fix/optimise calculation of weight-inverse
-Content-Type: multipart/mixed;
- boundary="------------070502010901000108070606"
+	Wed, 11 May 2011 12:02:30 -0400
+Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
+ update tsk->rt.nr_cpus_allowed
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+In-Reply-To: <20110502195657.2D68.A69D9226@jp.fujitsu.com>
+References: <20110428161149.GA15658@redhat.com>
+	 <20110502194416.2D61.A69D9226@jp.fujitsu.com>
+	 <20110502195657.2D68.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 May 2011 18:05:29 +0200
+Message-ID: <1305129929.2914.247.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070502010901000108070606
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+On Mon, 2011-05-02 at 19:55 +0900, KOSAKI Motohiro wrote:
+> The rule is, we have to update tsk->rt.nr_cpus_allowed too if we change
+> tsk->cpus_allowed. Otherwise RT scheduler may confuse.
+> 
+> This patch fixes it.
+> 
+> btw, system_state checking is very important. current boot sequence is (1) smp_init
+> (ie secondary cpus up and created cpu bound kthreads). (2) sched_init_smp().
+> Then following bad scenario can be happen,
+> 
+> (1) cpuup call notifier(CPU_UP_PREPARE)
+> (2) A cpu notifier consumer create FIFO kthread
+> (3) It call kthread_bind()
+>    ... but, now secondary cpu haven't ONLINE
 
-If the inverse loadweight should be zero, function "calc_delta_mine"
-calculates the inverse of "lw->weight" (in 32bit integer ops).
+isn't
 
-This calculation is actually a little bit impure (because it is
-inverting something around "lw-weight"+1), especially when
-"lw->weight" becomes smaller. (This could explain some aritmetical
-issues for small shares...)
+> (3) schedule() makes fallback and cpuset_cpus_allowed_fallback
+>     change task->cpus_allowed
 
-The correct inverse would be 1/lw->weight multiplied by
-"WMULT_CONST" for fixcomma-scaling it into integers.
-(So WMULT_CONST/lw->weight ...)
+I'm failing to see how this is happening, surely that kthread isn't
+actually running that early?
 
-For safety it is also important to check if division by zero
-could happen...
+> (4) find_lowest_rq() touch local_cpu_mask if task->rt.nr_cpus_allowed != 1,
+>     but it haven't been initialized.
+> 
+> RCU folks plan to introduce such FIFO kthread and our testing hitted the
+> above issue. Then this patch also protect it.
 
-The old, impure algorithm took two divisions for inverting lw->weight,
-the new, more exact one only takes one and an additional unlikely-if.
+I'm fairly sure it doesn't, normal cpu-hotplug doesn't poke at
+system_state.
 
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
----
- kernel/sched.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> ---
+>  include/linux/cpuset.h |    1 +
+>  kernel/cpuset.c        |    1 +
+>  kernel/sched.c         |    4 ++++
+>  3 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+> index f20eb8f..42dcbdc 100644
+> --- a/include/linux/cpuset.h
+> +++ b/include/linux/cpuset.h
+> @@ -147,6 +147,7 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
+>  static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
+>  {
+>  	cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
+> +	p->rt.nr_cpus_allowed = cpumask_weight(&p->cpus_allowed);
+>  	return cpumask_any(cpu_active_mask);
+>  }
+>  
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 1ceeb04..6e5bbe8 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -2220,6 +2220,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+>  		cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
+>  		cpu = cpumask_any(cpu_active_mask);
+>  	}
+> +	tsk->rt.nr_cpus_allowed = cpumask_weight(&tsk->cpus_allowed);
+>  
+>  	return cpu;
+>  }
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 312f8b9..bb55996 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1307,15 +1307,21 @@ calc_delta_mine(unsigned long delta_exec,
-unsigned long weight,
- {
-     u64 tmp;
- 
-+    tmp = (u64)delta_exec * weight;
-+
-+    // actually we would have to trap - division by zero - but we stay
-and pretend the limit of the operation...
-+    if (unlikely(lw->weight == 0)) {
-+        if (unlikely(tmp == ((u64)0))) return (unsigned long)0;
-+        else return (unsigned long)LONG_MAX;
-+    }
-+
-     if (!lw->inv_weight) {
-         if (BITS_PER_LONG > 32 && unlikely(lw->weight >= WMULT_CONST))
-             lw->inv_weight = 1;
-         else
--            lw->inv_weight = 1 + (WMULT_CONST-lw->weight/2)
--                / (lw->weight+1);
-+            lw->inv_weight = WMULT_CONST / lw->weight;
-     }
- 
--    tmp = (u64)delta_exec * weight;
-     /*
-      * Check whether we'd overflow the 64-bit multiplication:
-      */
--- 
-1.7.3.4
+I don't really see the point of doing this separately from your second
+patch, please fold them.
 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index fd4625f..bfcd219 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2352,6 +2352,10 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+>  	if (dest_cpu < nr_cpu_ids)
+>  		return dest_cpu;
+>  
+> +	/* Don't worry. It's temporary mismatch. */
+> +	if (system_state < SYSTEM_RUNNING)
+> +		return cpu;
+> +
+>  	/* No more Mr. Nice Guy. */
+>  	dest_cpu = cpuset_cpus_allowed_fallback(p);
+>  	/*
 
+Like explained, I don't believe this actually fixes your problem (its
+also disgusting).
 
---
-Dipl.-Inf. Stephan Bärwolf
-Ilmenau University of Technology, Integrated Communication Systems Group
-Phone: +49 (0)3677 69 2821,  FAX: +49 (0)3677 69 1614
-Email: stephan.baerwolf@tu-ilmenau.de,
-Web: http://www.tu-ilmenau.de/iks
-
-
-
---------------070502010901000108070606
-Content-Type: text/plain;
- name="0001-sched-fix-optimise-calculation-of-weight-inverse.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-sched-fix-optimise-calculation-of-weight-inverse.patch"
-
->From 46d3b89632aee75643b2ef9ea9ccd3085c631211 Mon Sep 17 00:00:00 2001
-From: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Date: Wed, 11 May 2011 17:36:26 +0200
-Subject: [PATCH] sched: fix/optimise calculation of weight-inverse
-
-If the inverse loadweight should be zero, function "calc_delta_mine"
-calculates the inverse of "lw->weight" (in 32bit integer ops).
-
-This calculation is actually a little bit impure (because it is
-inverting something around "lw-weight"+1), especially when
-"lw->weight" becomes smaller. (This could explain some aritmetical
-issues for small shares...)
-
-The correct inverse would be 1/lw->weight multiplied by
-"WMULT_CONST" for fixcomma-scaling it into integers.
-(So WMULT_CONST/lw->weight ...)
-
-For safety it is also important to check if division by zero
-could happen...
-
-The old, impure algorithm took two divisions for inverting lw->weight,
-the new, more exact one only takes one and an additional unlikely-if.
-
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
----
- kernel/sched.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 312f8b9..bb55996 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1307,15 +1307,21 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
- {
- 	u64 tmp;
- 
-+	tmp = (u64)delta_exec * weight;
-+
-+	// actually we would have to trap - division by zero - but we stay and pretend the limit of the operation...
-+	if (unlikely(lw->weight == 0)) {
-+		if (unlikely(tmp == ((u64)0))) return (unsigned long)0;
-+		else return (unsigned long)LONG_MAX;
-+	}
-+
- 	if (!lw->inv_weight) {
- 		if (BITS_PER_LONG > 32 && unlikely(lw->weight >= WMULT_CONST))
- 			lw->inv_weight = 1;
- 		else
--			lw->inv_weight = 1 + (WMULT_CONST-lw->weight/2)
--				/ (lw->weight+1);
-+			lw->inv_weight = WMULT_CONST / lw->weight;
- 	}
- 
--	tmp = (u64)delta_exec * weight;
- 	/*
- 	 * Check whether we'd overflow the 64-bit multiplication:
- 	 */
--- 
-1.7.3.4
-
-
---------------070502010901000108070606--
