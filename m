@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab1ELSd2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:33:28 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:18840 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab1ELSd1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:33:27 -0400
-Message-ID: <4DCC27F2.5030206@tilera.com>
-Date: Thu, 12 May 2011 14:33:22 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1758491Ab1ELSew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:34:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54172 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752624Ab1ELSeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 14:34:50 -0400
+Date: Thu, 12 May 2011 20:33:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 09/11] job control: reorganize wait_task_stopped()
+Message-ID: <20110512183326.GA26042@redhat.com>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-10-git-send-email-tj@kernel.org> <20110511154854.GB23688@redhat.com> <20110511192902.GC24245@mtj.dyndns.org> <20110512154247.GC18599@redhat.com> <20110512160253.GK1030@htj.dyndns.org> <20110512172506.GA23033@redhat.com> <20110512173228.GO1030@htj.dyndns.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] [PATCH] tile: add an RTC driver for the Tilera hypervisor
-References: <201105042004.p44K4hh5011720@farm-0032.internal.tilera.com> <20110511154407.ed3c0480.akpm@linux-foundation.org>
-In-Reply-To: <20110511154407.ed3c0480.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512173228.GO1030@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/11/2011 6:44 PM, Andrew Morton wrote:
-> On Wed, 4 May 2011 15:52:21 -0400
-> Chris Metcalf <cmetcalf@tilera.com> wrote:
->> This is a simple RTC driver that lets Tilera hardware boot up and
->> set the clock correctly.
->>
->> ...
->>
->> +static int __init tile_rtc_driver_init(void)
->> +{
->> +	int err;
->> +
->> +	err = platform_driver_register(&tile_rtc_platform_driver);
->> +	if (err)
->> +		return err;
->> +
->> +	tile_rtc_platform_device = platform_device_alloc("rtc-tile", 0);
->> +	if (tile_rtc_platform_device == NULL) {
->> +		platform_driver_unregister(&tile_rtc_platform_driver);
->> +		return -ENOMEM;
->> +	}
->> +
->> +	err = platform_device_add(tile_rtc_platform_device);
->> +	if (err) {
->> +		platform_device_put(tile_rtc_platform_device);
-> should we have a platform_driver_unregister() here?
+On 05/12, Tejun Heo wrote:
+>
+>   int main(int argc, char **argv)
+>   {
+> 	  pid_t child, control;
+>
+> 	  child = fork();
+> 	  if (!child)
+> 		  while (1)
+> 			  pause();
+>
+> 	  kill(child, SIGSTOP);
+> 	  waitid(P_PID, child, NULL, WSTOPPED | WNOWAIT);
+>
+> 	  control = fork();
+> 	  if (!control) {
+> 		  while (1) {
+> 			  kill(child, SIGCONT);
+> 			  nanosleep(&ts1ms, NULL);
+> 			  kill(child, SIGSTOP);
+> 			  nanosleep(&ts1ms, NULL);
 
-Thanks, good catch.  I restructured this to look more like the rtc-test.c
-initializer:
+Damn, you are right, I think.
 
-static int __init tile_rtc_driver_init(void)
-{
-	int err;
+At first glance, do_wait() does
 
-	err = platform_driver_register(&tile_rtc_platform_driver);
-	if (err)
-		return err;
+	wait_task_stopped();
+	wait_task_continued();
 
-	tile_rtc_platform_device = platform_device_alloc("rtc-tile", 0);
-	if (tile_rtc_platform_device == NULL) {
-		err = -ENOMEM;
-		goto exit_driver_unregister;
-	}
+and the state can be changed CONTINIUED -> STOPPED in between, right?
+Or something else?
 
-	err = platform_device_add(tile_rtc_platform_device);
-	if (err)
-		goto exit_device_put;
+Thanks, for the explanation.
 
-	return 0;
-
-exit_device_put:
-	platform_device_put(tile_rtc_platform_device);
-
-exit_driver_unregister:
-	platform_driver_unregister(&tile_rtc_platform_driver);
-	return err;
-}
-
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Oleg.
 
