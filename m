@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab1ELSRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:17:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17499 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab1ELSRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:17:35 -0400
-Date: Thu, 12 May 2011 14:16:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        yinghai@kernel.org
-Cc: mingo@elte.hu, jeremy@goop.org, stefano.stabellini@eu.citrix.com,
-        hpa@linux.intel.com
-Subject: [GIT PULL] (xen) stable/bug-fixes-for-rc7 for 2.6.39-rc7
-Message-ID: <20110512181658.GA24799@dumpdata.com>
+	id S932597Ab1ELSSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:18:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932361Ab1ELSSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 14:18:48 -0400
+Date: Thu, 12 May 2011 20:18:31 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110512181831.GQ11579@random.random>
+References: <1305213359.2575.46.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121024350.26013@router.home>
+ <1305214993.2575.50.camel@mulgrave.site>
+ <20110512154649.GB4559@redhat.com>
+ <1305216023.2575.54.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121121120.26013@router.home>
+ <1305217843.2575.57.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121144320.27324@router.home>
+ <20110512174641.GL11579@random.random>
+ <alpine.DEB.2.00.1105121255060.28493@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090207.4DCC2429.007F:SCFSTAT5015188,ss=1,fgs=0
+In-Reply-To: <alpine.DEB.2.00.1105121255060.28493@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On Thu, May 12, 2011 at 01:00:10PM -0500, Christoph Lameter wrote:
+> On Thu, 12 May 2011, Andrea Arcangeli wrote:
+> 
+> > order 1 should work better, because it's less likely we end up here
+> > (which leaves RECLAIM_MODE_LUMPYRECLAIM on and then see what happens
+> > at the top of page_check_references())
+> >
+> >    else if (sc->order && priority < DEF_PRIORITY - 2)
+> 
+> Why is this DEF_PRIORITY - 2? Shouldnt it be DEF_PRIORITY? An accomodation
+> for SLAB order 1 allocs?
 
-Please git pull:
+That's to allow a few loops of the shrinker (i.e. not take down
+everything in the way regardless of any aging information in pte/page
+if there's no memory pressure). This "- 2" is independent of the
+allocation order. If it was < DEF_PRIORITY it'd trigger lumpy already
+at the second loop (in do_try_to_free_pages). So it'd make things
+worse. Like it'd make things worse decreasing the
+PAGE_ALLOC_COSTLY_ORDER define to 2 and keeping slub at 3.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-for-rc7
+> May I assume that the case of order 2 and 3 allocs in that case was not
+> very well tested after the changes to introduce compaction since people
+> were focusing on RHEL testing?
 
-which has patches since git commit 0ee5623f9a6e52df90a78bd21179f8ab370e102e:
+Not really, I had to eliminate lumpy before compaction was
+developed. RHEL6 has zero lumpy code (not even at compile time) and
+compaction enabled by default, so even if we enabled SLUB=y it should
+work ok (not sure why James still crashes with patch 2 applied that
+clears __GFP_WAIT, that crash likely has nothing to do with compaction
+or lumpy as both are off with __GFP_WAIT not set).
 
-Linus Torvalds (1):
-
-    Linux 2.6.39-rc6
-
-It has the patches that we discussed in "Re: Linux 2.6.39-rc7" email thread
-and I've put: "H. Peter Anvin <hpa@zytor.com>" on the ones touching the generic code.
-
-Details and explanation are in the mentioned email thread
-(http://marc.info/?i=4DC9CD60.6010200@zytor.com). As Peter mentioned I've promised to
-drive the work to remove this workaround to get a better fix - so this workaround will
-be removed.
-
-Konrad Rzeszutek Wilk (1):
-      Revert "xen/mmu: Add workaround "x86-64, mm: Put early page table high""
-
-Sedat Dilek (1):
-      x86/mm: Fix section mismatch derived from native_pagetable_reserve()
-
-Stefano Stabellini (1):
-      x86,xen: introduce x86_init.mapping.pagetable_reserve
-
- include/asm/pgtable_types.h |    1 
- include/asm/x86_init.h      |   12 +++
- kernel/x86_init.c           |    4 +
- mm/init.c                   |   24 +++++++
- xen/mmu.c                   |  138 ++++----------------------------------------
- 5 files changed, 54 insertions(+), 125 deletions(-)
+Lumpy is also eliminated upstream now (but only at runtime when
+COMPACTION=y), unless __GFP_REPEAT is set, in which case I think lumpy
+will still work upstream too but few unfrequent things like increasing
+nr_hugepages uses that.
