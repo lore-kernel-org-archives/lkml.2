@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab1ELTVR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:21:17 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50924 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753692Ab1ELTVQ (ORCPT
+	id S1757503Ab1ELT0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:26:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33663 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742Ab1ELT0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:21:16 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1105121345450.29359@router.home>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
-	 <1305225467.2575.66.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121345450.29359@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 14:21:12 -0500
-Message-ID: <1305228072.2575.67.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 May 2011 15:26:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=B8OZq8tpHZoAzDWDNOTfPZ92OWwejaJn0hfZtqFcDFwY/zJFm1px9daG+Kd7PbtbDs
+         H2XKtGtiyf9WVeXegOog==
+Date: Thu, 12 May 2011 12:26:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Daniel Kiper <dkiper@net-space.pl>
+cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] mm: Remove dependency on CONFIG_FLATMEM from
+ online_page()
+In-Reply-To: <20110512102515.GA27851@router-fw-old.local.net-space.pl>
+Message-ID: <alpine.DEB.2.00.1105121223500.2407@chino.kir.corp.google.com>
+References: <20110502211915.GB4623@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105111547160.24003@chino.kir.corp.google.com> <20110512102515.GA27851@router-fw-old.local.net-space.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 13:46 -0500, Christoph Lameter wrote:
-> On Thu, 12 May 2011, James Bottomley wrote:
-> 
-> > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
-> > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
-> > > > However, since you admit even you see problems, let's concentrate on
-> > > > fixing them rather than recriminations?
+On Thu, 12 May 2011, Daniel Kiper wrote:
+
+> > > Memory hotplug code strictly depends on CONFIG_SPARSEMEM.
+> > > It means that code depending on CONFIG_FLATMEM in online_page()
+> > > is never compiled. Remove it because it is not needed anymore.
 > > >
-> > > Yes, please. So does dropping max_order to 1 help?
-> > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
+> > > Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
 > >
-> > Just booting with max_slab_order=1 (and none of the other patches
-> > applied) I can still get the machine to go into kswapd at 99%, so it
-> > doesn't seem to make much of a difference.
+> > The code you're patching depends on CONFIG_MEMORY_HOTPLUG_SPARSE, so this
+> > is valid.  The changelog should be updated to reflect that, however.
+> >
+> > Acked-by: David Rientjes <rientjes@google.com>
 > 
-> slub_max_order=1 right? Not max_slab_order.
+> No problem, however, this bundle of patches was added to the -mm tree.
+> In this situation should I repost whole bundle with relevant changes
+> or post only those two patches requested by you ??? For which tree
+> should I prepare new version of patches ???
+> 
 
-Yes.
+No, I would just reply to the email notification you received when the 
+patch went into -mm saying that the changelog should be adjusted to read 
+something like
 
-James
+	online_pages() is only compiled for CONFIG_MEMORY_HOTPLUG_SPARSE,
+	so there is no need to support CONFIG_FLATMEM code within it.
 
-
+	This patch removes code that is never used.
