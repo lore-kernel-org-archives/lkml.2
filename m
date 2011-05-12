@@ -1,122 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab1ELOiz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:38:55 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:35100 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757822Ab1ELOix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:38:53 -0400
-Date: Thu, 12 May 2011 07:38:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
-        Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 2/4] oom: kill younger process first
-Message-ID: <20110512143844.GQ2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110509182110.167F.A69D9226@jp.fujitsu.com>
- <20110510171335.16A7.A69D9226@jp.fujitsu.com>
- <20110510171641.16AF.A69D9226@jp.fujitsu.com>
- <20110512095243.c57e3e83.kamezawa.hiroyu@jp.fujitsu.com>
- <BANLkTi=ya1rAqC+nMPHkBaMsoXpsCeHH=w@mail.gmail.com>
- <20110512105351.a57970d7.kamezawa.hiroyu@jp.fujitsu.com>
- <BANLkTimWOtKKj+Jq1vqHfOfQ2UvP7Xxa3g@mail.gmail.com>
- <20110512123942.4b641e2d.kamezawa.hiroyu@jp.fujitsu.com>
- <BANLkTi=dvb5tXxzLwY+vgG8o4eYq5f_X8Q@mail.gmail.com>
+	id S1757858Ab1ELOmP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:42:15 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:31861 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757805Ab1ELOmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:42:14 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5k/CuK6W1EA=
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DCBF1B6.6000104@hartkopp.net>
+Date: Thu, 12 May 2011 16:41:58 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=dvb5tXxzLwY+vgG8o4eYq5f_X8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>, Arnd Bergmann <arnd@arndb.de>,
+        sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>,
+        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, Netdev@vger.kernel.org,
+        m-watkins@ti.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<2BFFDAA0A0DE4820876E5549867938EC@subhasishg>	<201105112331.47954.arnd@arndb.de>	<201105112344.44171.arnd@arndb.de> <4DCB88A4.2010901@grandegger.com>
+In-Reply-To: <4DCB88A4.2010901@grandegger.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 01:17:13PM +0900, Minchan Kim wrote:
-> On Thu, May 12, 2011 at 12:39 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Thu, 12 May 2011 11:23:38 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> On Thu, May 12, 2011 at 10:53 AM, KAMEZAWA Hiroyuki
-> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >> > On Thu, 12 May 2011 10:30:45 +0900
-> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> > As above implies, (B)->prev pointer is invalid pointer after list_del().
-> >> > So, there will be race with list modification and for_each_list_reverse under
-> >> > rcu_read__lock()
-> >> >
-> >> > So, when you need to take atomic lock (as tasklist lock is) is...
-> >> >
-> >> >  1) You can't check 'entry' is valid or not...
-> >> >    In above for_each_list_rcu(), you may visit an object which is under removing.
-> >> >    You need some flag or check to see the object is valid or not.
-> >> >
-> >> >  2) you want to use list_for_each_safe().
-> >> >    You can't do list_del() an object which is under removing...
-> >> >
-> >> >  3) You want to walk the list in reverse.
-> >> >
-> >> >  3) Some other reasons. For example, you'll access an object pointed by the
-> >> >    'entry' and the object is not rcu safe.
-> >> >
-> >> > make sense ?
-> >>
-> >> Yes. Thanks, Kame.
-> >> It seems It is caused by prev poisoning of list_del_rcu.
-> >> If we remove it, isn't it possible to traverse reverse without atomic lock?
-> >>
-> >
-> > IIUC, it's possible (Fix me if I'm wrong) but I don't like that because of 2 reasons.
-> >
-> > 1. LIST_POISON is very important information at debug.
+On 12.05.2011 09:13, Wolfgang Grandegger wrote:
+> On 05/11/2011 11:44 PM, Arnd Bergmann wrote:
+>> On Wednesday 11 May 2011, Arnd Bergmann wrote:
+>>> If that interpretation is right, I would seriously recommend rethinking
+>>> the design of the CAN firmware for pruss, so you can start doing something
+>>> useful with the offload engine that fits into the Socket CAN API, or that
+>>> would be a useful extension to Socket CAN that is also implementable in
+>>> the kernel for all other drivers in a meaningful way.
+>>
+>> I've looked some more into the CAN socket implementation, and I suppose that
+>> the idea of the pruss driver was really to help do the work from the
+>> can_rcv_filter function in hardware.
 > 
-> Indeed.
-> But if we can get a better something although we lost debug facility,
-> I think it would be okay.
-> 
-> >
-> > 2. If we don't clear prev pointer, ok, we'll allow 2 directional walk of list
-> >   under RCU.
-> >   But, in following case
-> >   1. you are now at (C). you'll visit (C)->next...(D)
-> >   2. you are now at (D). you want to go back to (C) via (D)->prev.
-> >   3. But (D)->prev points to (B)
-> >
-> >  It's not a 2 directional list, something other or broken one.
-> 
-> Yes. but it shouldn't be a problem in RCU semantics.
-> If you need such consistency, you should use lock.
-> 
-> I recall old thread about it.
-> In http://lwn.net/Articles/262464/, mmutz and Paul already discussed
-> about it. :)
-> 
-> >  Then, the rculist is 1 directional list in nature, I think.
-> 
-> Yes. But Why RCU become 1 directional list is we can't find a useful usecases.
-> 
-> >
-> > So, without very very big reason, we should keep POISON.
-> 
-> Agree.
-> I don't insist on it as it's not a useful usecase for persuading Paul.
-> That's because it's not a hot path.
-> 
-> It's started from just out of curiosity.
-> Thanks for very much clarifying that, Kame!
+> That software filter is per socket while the hardware filter will be per
+> device.
 
-Indeed, we would need a large performance/scalability/simplicity advantage
-to put up with such a loss of debugging information.  If it turns out
-that you really need this, please let me know, but please also provide
-data supporting your need.
+Hi all,
 
-							Thanx, Paul
+i took some while to get behind all the arguments for me :-)
+
+Wolfgangs suggestion
+
+>  A simple interface using:
+> 
+>   ip link set can0 type can filter <id>:<mask> [<id>:<mask> ...]
+> 
+
+indeed would just be fine - but IMHO it doesn't help for the pruss CAN driver.
+
+The problem is, that you plan to filter on a CAN-identifier base. This is not
+only very application dependent (as Kurt already pointed out) - it also does
+not bring any safety that your system does not explode on heavy CAN load.
+
+E.g. assume you need the CAN-IDs 0x100, 0x200 and 0x300 in your application
+and for that reason you configure these IDs in the pruss CAN driver.
+
+What if someone generates a 100% CAN busload exactly on CAN-ID 0x100 then?
+
+Worst case (1MBit/s, DLC=0) you would need to handle about 21.000 irqs/s for
+the correctly received CAN frames with the filtered CAN-ID 0x100 ...
+
+At the beginnig of the SocketCAN development, we had a PowerPC (E603) @ 133MHz
+that was able to handle 4 (dumb) SJA1000 CAN controllers without problems.
+
+Maybe i should tell a bit more about what's happening at CAN frame receive time:
+
+1. IRQ happens
+2. Read CAN frame from CAN controller registers
+3. Allocate a socketbuffer (skb) and queue it into the netdevice rx queue
+4. Softirq handles the new skb
+5. Check the (specialized/optimized) CAN-ID filters for this CAN device
+6. Enqueue the data to the sockets recv buffer(s) and/or drop the skb.
+
+This all depends heavily on Linux networking (skb handling, caching, etc) and
+is pretty fast and optimized!! That was also the reason why it ran on the old
+PowerPC that smoothly. The mostly seen effect if anything drops is when the
+application (holding the socket) was not fast enough to handle the incoming
+data. NB: For that reason we implemented a CAN content filter (CAN_BCM) that
+is able to do content filtering and timeout monitoring in Kernelspace - all
+performed in the SoftIRQ.
+
+Having 'Mailboxes' bound to CAN-IDs is something that's useful for 8/16 bit
+CPUs where an application is tightly bound to the embedded ECUs functionality.
+
+IMO you should try to implement an 'open' pruss CAN driver without filtering
+as it doesn't really help (see above). The networking stack can cope with the
+load. In all cases (with/without filters) the reduction the irqload could be a
+way to investigate (e.g. think about dropping CAN frames based on the irqload).
+
+But you should try the 'open' way first. And i think with your current driver
+you could just filter for one CAN-ID (e.g. 0x100) and then produce the heavy
+CAN busload with this CAN-ID 0x100 and a second CAN node, right?
+
+Regards,
+Oliver
