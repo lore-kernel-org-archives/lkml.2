@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab1ELVnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:43:43 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39273 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932900Ab1ELVnj (ORCPT
+	id S932937Ab1ELVnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:43:49 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63117 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932900Ab1ELVnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:43:39 -0400
-Subject: Re: [PATCH] scsi/sd: fix suspend with USB-connected Android phone
- (one line)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Charles Hannum <root@ihack.net>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-scsi <linux-scsi@vger.kernel.org>, linux-usb@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1105121711100.1917-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1105121711100.1917-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 16:43:36 -0500
-Message-ID: <1305236616.2575.95.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 May 2011 17:43:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=j3wpP8FfwMh/exksR1tmvpld8pTsefH5YGdk9b6rg3B4ezumtxjLteExLL/7H9sXVE
+         aOWxNeIRs2HxOV5+1YmXZ5XVJKRlqlYYyOTb1Yi3HpI+zgjZTZW1YcI0m1isiQoDsVsz
+         EW0Ft/ZTg2LJkJCjQpPkGh+ywjB6MpmoSrhHw=
+Date: Thu, 12 May 2011 23:43:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely
+ callable from scheduler
+Message-ID: <20110512214336.GE7410@nowhere>
+References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
+ <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
+ <20110512212810.GA17596@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512212810.GA17596@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 17:32 -0400, Alan Stern wrote:
-> On Thu, 12 May 2011, James Bottomley wrote:
+On Thu, May 12, 2011 at 11:28:10PM +0200, Ingo Molnar wrote:
 > 
-> > > I need someone from USB/SCSI camp to see if this approach makes sense.
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > Avoid potential scheduler recursion and deadlock from the
+> > stacktrace code by avoiding rescheduling when we re-enable
+> > preemption.
 > > 
-> > I don't really think so, because it's pretending the device cache has
-> > flipped to write through.  It's certainly possible to envisage removable
-> > media where the cache is in the housing and we still need to preserve
-> > the idea of it being write back.
+> > This robustifies some scheduler trace events like sched switch
+> > when they are used to produce callchains in perf or ftrace.
 > 
-> I don't follow your argument here.  What difference does it make what 
-> kind of cache the drive has, if the media is gone?
-
-It depends what the drive is caching and what's removable.  If it's some
-type of hybrid, and the cache isn't mapped to the media for instance.
-
-The point really is that if the cache is in the housing, setting it to
-write through when it's not is not a correct reflection of reality.
-
-> > Instinct tells me the correct set of fixes is to add a sync cache from
-> > release (so we automatically sync on last close, which is usually when
-> > an ordered remove happens),
+> > -	put_cpu();
+> > +
+> > +	/* We want stacktrace to be computable anywhere, even in the scheduler */
+> > +	preempt_enable_no_resched();
 > 
-> That certainly makes sense.  Is there any reason why this isn't done 
-> already?
-
-None I can think of.  When the caching logic was first done, I don't
-think removable media were even considered, so it was all about shutdown
-behaviour.
-
-> >  keep the one on shutdown, just in case the
-> > system goes down with stuff still mounted and print a nasty message on
-> > suspend for a write back device that's been removed.
+> So what happens if a callchain profiling happens to be interrupted by a hardirq 
+> and the interrupt reschedules the current task? We'll miss the reschedule, 
+> right?
 > 
-> There's no need for a nasty message unless the cache is still dirty.  
-> Your suggested patch doesn't check for that -- in fact, I don't think
-> the driver even knows whether the cache is dirty.  (Not that this 
-> matters, seeing as how your patch doesn't print any nasty messages.)
-
-right: We don't currently track dirty state.  We could, I suppose, but I
-don't think it's worth it.
-
-> > I also think we shouldn't abort the suspend if the disk doesn't respond
-> > correctly to start/stop ... the power is going to be disconnected
-> > anyway, so it's no issue if the disk spins for a second or so longer.
+> preempt_enable_no_resched() is not a magic 'solve scheduler recursions' bullet 
+> - it's to be used only if something else will guarantee the preemption check! 
+> But nothing guarantees it here AFAICS.
 > 
-> That's a good idea.  On several occasions Linus has mentioned that 
-> almost nothing should stop a system suspend.  It's even questionable 
-> whether a SYNC failure should stop a suspend ... but that's a separate 
-> matter.
+> A better fix would be to use local_irq_save()/restore().
 
-Heh, if you want to open that old can of worms again, be my guest ...
+Good point, but then lockdep itself might trigger a stacktrace from local_irq_save,
+leading to a stacktrace recursion.
 
-> What happens if the medium was recently removed, meaning that 
-> sdkp->media_present hasn't yet had a chance to become 0?  The patch 
-> needs to handle that case as well, perhaps by adding another check 
-> after sd_sync_cache() returns.
-
-or actually, just checking the value when it looks at the return code.
-
-> > The problem this is going to cause is double sync on shutdown (once when
-> > final unmount closes the device and once on shutdown) ... do people
-> > agree that's a price worth paying?
-> 
-> I don't think the price will be high.  The second sync will have
-> nothing to do, because the first sync will have cleaned out the cache.
-
-Heh, I've got a long inbox full of complaints about the two capacity
-messages we used to print on boot ...
-
-James
-
-
+I can use raw_local_irq_disable(), or may be have a stacktrace recursion protection.
+I fear the second solution could lead us to potentially lose useful information
+if a stacktrace interrupts another one. Ok these are extreme cases...
