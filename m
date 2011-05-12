@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1ELHrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 03:47:25 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:36887 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab1ELHrY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 03:47:24 -0400
-Date: Thu, 12 May 2011 09:47:20 +0200 (CEST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 0/5] Basic ARM devicetree support
-In-Reply-To: <20110511211438.GM5315@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1105120940490.28229@xanadu.home>
-References: <BANLkTi=yCmxgv1fQKRJSZK3FkkRwjS2r=Q@mail.gmail.com> <20110511211438.GM5315@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753882Ab1ELHyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 03:54:32 -0400
+Received: from co202.xi-lite.net ([149.6.83.202]:37563 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab1ELHyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 03:54:31 -0400
+X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 May 2011 03:54:31 EDT
+Message-ID: <4DCB908C.80505@parrot.com>
+Date: Thu, 12 May 2011 09:47:24 +0200
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nitin Garg <nitingarg98@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in MTD NAND ONFI chipsize detection
+References: <BANLkTi=e1mUTX4X7ui+HVCGh=sZ=HLoNCw@mail.gmail.com>	<20110511183322.da0739c9.akpm@linux-foundation.org>	<BANLkTikrqzpU8qZ5FUgG4HaBgZAvmbOHrQ@mail.gmail.com>	<BANLkTinGFDHj4s6nAXMiq8dYW_UO6W+YXg@mail.gmail.com> <BANLkTin5X7d+_b5+7N5g941bz12jc+zMZA@mail.gmail.com>
+In-Reply-To: <BANLkTin5X7d+_b5+7N5g941bz12jc+zMZA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011, Russell King - ARM Linux wrote:
+Hi,
 
-> On Wed, May 11, 2011 at 10:44:49PM +0200, Grant Likely wrote:
-> > Right now it merges cleanly with linux-next and the resulting tree
-> > builds and boots at least on qemu.  Unless you really object, I'm
-> > going to ask Stephen to add the following branch to the /end/ of the
-> > list of trees for linux-next so it can easily be dropped it if it
-> > causes any problems.
+
+What's the difference between one lun and multiple lun for mtd ?
+
+Aren't any command to select the current lun ?
+
+Matthieu
+
+
+Nitin Garg a écrit :
+> Why isn't my patch going through? re-sending again,
 > 
-> As far as the set of five patches looks fine to me, I don't have any
-> objections against them.  So I think we can merge them for .40.
+> Signed-off-by: Nitin Garg <nitingarg98@xxxxxxxx>
+> ---
+>  drivers/mtd/nand/nand_base.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> What I've always worried about is the platform stuff, and that's
-> something I'm going to continue worrying about because I don't think
-> we have sufficient review capacity to ensure that we don't end up
-> with lots of stupidities.
-
-DT is certainly not a silver bullet.  Good judgement will be needed as 
-to what is put in DT and how it is represented.  I don't think that it 
-would make things worse than they are now though.
-
-I also do have some concerns about some aspects of DT which I've 
-expressed several times in the past.  However I don't think holding back 
-those patches any longer is a solution though.
-
-So consider this as a ACK from my part to merge those patches now.  This 
-will get the ball rolling.
-
-
-Nicolas
+> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+> index c54a4cb..cdf6015 100644
+> --- a/drivers/mtd/nand/nand_base.c
+> +++ b/drivers/mtd/nand/nand_base.c
+> @@ -2892,7 +2892,7 @@ static int nand_flash_detect_onfi(struct
+> mtd_info *mtd, struct nand_chip *chip,
+>  	mtd->writesize = le32_to_cpu(p->byte_per_page);
+>  	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
+>  	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+> -	chip->chipsize = (uint64_t)le32_to_cpu(p->blocks_per_lun) * mtd->erasesize;
+> +	chip->chipsize = (uint64_t)le32_to_cpu(p->blocks_per_lun) *
+> le32_to_cpu(p->lun_count) * mtd->erasesize;
+>  	busw = 0;
+>  	if (le16_to_cpu(p->features) & 1)
+>  		busw = NAND_BUSWIDTH_16;
