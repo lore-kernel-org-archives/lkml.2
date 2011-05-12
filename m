@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab1ELKpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 06:45:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38142 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab1ELKpG convert rfc822-to-8bit (ORCPT
+	id S1757272Ab1ELKqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 06:46:39 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48548 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757233Ab1ELKqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 06:45:06 -0400
+	Thu, 12 May 2011 06:46:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZqwL+IFtsF7UOyppOtFDGHzukFqQKT5/SkexSnFgTa78/BGm+T1hncTjXLIGFbx6S/
-         TmyQo8jAeFM1eAQrsoBdmoS10pyT8fvMfiFoJicoyneIxgGnCsuSM1TGj++NnAdsqYNG
-         EmxYuPF1I7bf8jBThk6Wv1Dpu32ZQh7Pmgd1Q=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikxcfGYAmKf5QEAwJjDLdo6_k6zaw@mail.gmail.com>
-References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org>
-	<1305073386-4810-3-git-send-email-john.stultz@linaro.org>
-	<BANLkTikXyqddLbQKyDYFrAwq9DamDj--AQ@mail.gmail.com>
-	<1305147776.2883.1.camel@work-vm>
-	<BANLkTikxcfGYAmKf5QEAwJjDLdo6_k6zaw@mail.gmail.com>
-Date: Thu, 12 May 2011 18:45:05 +0800
-Message-ID: <BANLkTin077kj7jYp1-qaYijvfmm7ArByOA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=hWlgKU3MctJEa0HH0f9gERhpA8UqEA+MeNX2Z9Rn9u4aUeGQdkaKP18BTLtPCqb16H
+         N/uA9OYLTmmgm3rBRbXaFMbxKYvNYLubh32EnItON21a1fmJLPODpgHktFl9aZZ6fUo+
+         Es97XoZeCGafi2YPtuc1HwXdPK1NSNAFSgy7Y=
+Subject: [PATCH] leds: leds-lm3530: Add MODULE_DEVICE_TABLE
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 18:46:31 +0800
+Message-ID: <1305197191.2570.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 6:43 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Thu, May 12, 2011 at 5:02 AM, John Stultz <john.stultz@linaro.org> wrote:
->> On Wed, 2011-05-11 at 17:33 +0800, Américo Wang wrote:
->>> On Wed, May 11, 2011 at 8:23 AM, John Stultz <john.stultz@linaro.org> wrote:
->>> > Acessing task->comm requires proper locking. However in the past
->>> > access to current->comm could be done without locking. This
->>> > is no longer the case, so all comm access needs to be done
->>> > while holding the comm_lock.
->>> >
->>> > In my attempt to clean up unprotected comm access, I've noticed
->>> > most comm access is done for printk output. To simpify correct
->>> > locking in these cases, I've introduced a new %ptc format,
->>> > which will safely print the corresponding task's comm.
->>> >
->>> > Example use:
->>> > printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
->>> >
->>>
->>> Why do you hide current->comm behide printk?
->>> How is this better than printk("%s: ....", task_comm(current)) ?
->>
->> So to properly access current->comm, you need to hold the task-lock (or
->> with my new patch set, the comm_lock). Rather then adding locking to all
->> the call sites that printk("%s ...", current->comm), I'm suggesting we
->> add a new %ptc method which will handle the locking for you.
->>
->
-> Sorry, I meant why not adding the locking into a wrapper function,
-> probably get_task_comm() and let the users to call it directly?
->
+Adding the necessary MODULE_DEVICE_TABLE() information allows the
+driver to be automatically loaded by udev.
 
-Ahhh, never mind, I see the points now... Then it is fine. :)
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/leds-lm3530.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index e7089a1..b37e618 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -349,6 +349,7 @@ static const struct i2c_device_id lm3530_id[] = {
+ 	{LM3530_NAME, 0},
+ 	{}
+ };
++MODULE_DEVICE_TABLE(i2c, lm3530_id);
+ 
+ static struct i2c_driver lm3530_i2c_driver = {
+ 	.probe = lm3530_probe,
+-- 
+1.7.1
+
+
+
