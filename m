@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1ELJdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:33:12 -0400
-Received: from 8bytes.org ([88.198.83.132]:39225 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab1ELJdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:33:10 -0400
-Date: Thu, 12 May 2011 11:33:09 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
-Message-ID: <20110512093309.GD8707@8bytes.org>
-References: <1305129333-7456-1-git-send-email-avi@redhat.com>
+	id S1755506Ab1ELJeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:34:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56022 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab1ELJem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:34:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Ln2/nXS/q+gBq7ZJMG8oP7vA9G/PsSx6I2ShV9peoTKBTIo0W4m1AHTjI77+dPuxud
+         wOX/3MTUeG7q9NWXRiQ8sc0HDywLJpfjNdx1SW9255meyTIPz0vMqPJmHTkjrWQHOm1s
+         q9xvuLa5ARok3sxx6neZ4kyrMUaS/QSbvNW+k=
+Message-ID: <4DCBA9A5.9040306@gmail.com>
+Date: Thu, 12 May 2011 11:34:29 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305129333-7456-1-git-send-email-avi@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: jlbec@evilplan.org
+CC: Jiri Slaby <jslaby@suse.cz>, npiggin@kernel.dk,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: OOPS in configfs when doing d_delete
+References: <4D623C62.8030509@suse.cz> <20110221104359.GA18538@noexit> <4D6242AD.2090600@suse.cz> <20110222091415.GD30966@noexit>
+In-Reply-To: <20110222091415.GD30966@noexit>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 11:55:28AM -0400, Avi Kivity wrote:
-> This not-for-merging patchset exposes an emulated version 1 architectural
-> performance monitoring unit to KVM guests.  The PMU is emulated using
-> perf_events, so the host kernel can multiplex host-wide, host-user, and the
-> guest on available resources.
+On 02/22/2011 10:14 AM, Joel Becker wrote:
+> On Mon, Feb 21, 2011 at 11:47:09AM +0100, Jiri Slaby wrote:
+>>> 	I think you're right about the superfluous test, but I need more
+>>> investigation to see what's going on.  Thanks for the report.
+>>> 	What was causing attach_group() to fail?  Do you know?
+>>
+>> Dunno, I just modprobe'd the configfs example from Doc dir
+>> (configfs_example_macros).
 > 
-> Caveats:
-> - counters that have PMI (interrupt) enabled stop counting after the
->   interrupt is signalled.  This is because we need one-shot samples
->   that keep counting, which perf doesn't support yet
-> - some combinations of INV and CMASK are not supported
-> - counters keep on counting in the host as well as the guest
-> - the RDPMC instruction and CR4.PCE bit are not yet emulated
-> - there is likely a bug in the implementation; running 'perf top' in
->   a guest that spends 80% of its time in userspace shows perf itself
->   as consuming almost all cpu
+> 	I'm going to revisit the failed example (which shouldn't fail, I
+> would think).  Can you try the following patch to safely handle the
+> failure rather than crashing the kernel?
 > 
-> perf maintainers: please consider the first three patches for merging (the
-> first two make sense even without the rest).  If you're familiar with the Intel
-> PMU, please review patch 5 as well - it effectively undoes all your work
-> of abstracting the PMU into perf_events by unabstracting perf_events into what
-> is hoped is a very similar PMU.
+> Joel
 
-Gaah, I was just about to submit a talk about PMU virtualization for KVM
-Forum :)
+Hi, what's the status of this? (It's verified to work some time ago.)
 
-Anyway, I thought about a paravirt-approach instead of implementing a
-real PMU... But there are certainly good reasons for both.
+> From 68bbb327c48fdcdc48b71435d19b9e899745adf0 Mon Sep 17 00:00:00 2001
+> From: Joel Becker <jlbec@evilplan.org>
+> Date: Tue, 22 Feb 2011 01:09:49 -0800
+> Subject: [PATCH] configfs: Don't try to d_delete() negative dentries.
+> 
+> When configfs is faking mkdir() on its subsystem or default group
+> objects, it starts by adding a negative dentry.  It then tries to
+> instantiate the group.  If that should fail, it must clean up after
+> itself.
+> 
+> I was using d_delete() here, but configfs_attach_group() promises to
+> return an empty dentry on error.  d_delete() explodes with the entry
+> dentry.  Let's try d_drop() instead.  The unhashing is what we want for
+> our dentry.
+> 
+> Signed-off-by: Joel Becker <jlbec@evilplan.org>
+> ---
+>  fs/configfs/dir.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
+> index 90ff3cb..2af26b8 100644
+> --- a/fs/configfs/dir.c
+> +++ b/fs/configfs/dir.c
+> @@ -689,7 +689,8 @@ static int create_default_group(struct config_group *parent_group,
+>  			sd = child->d_fsdata;
+>  			sd->s_type |= CONFIGFS_USET_DEFAULT;
+>  		} else {
+> -			d_delete(child);
+> +			BUG_ON(child->d_inode);
+> +			d_drop(child);
+>  			dput(child);
+>  		}
+>  	}
+> @@ -1683,7 +1684,8 @@ int configfs_register_subsystem(struct configfs_subsystem *subsys)
+>  		err = configfs_attach_group(sd->s_element, &group->cg_item,
+>  					    dentry);
+>  		if (err) {
+> -			d_delete(dentry);
+> +			BUG_ON(dentry->d_inode);
+> +			d_drop(dentry);
+>  			dput(dentry);
+>  		} else {
+>  			spin_lock(&configfs_dirent_lock);
 
-	Joerg
 
+-- 
+js
