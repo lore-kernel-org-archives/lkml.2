@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab1ELSgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:36:22 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44718 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752293Ab1ELSgU (ORCPT
+	id S1751505Ab1ELShk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:37:40 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:55721 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750738Ab1ELShi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:36:20 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
+	Thu, 12 May 2011 14:37:38 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=RcvS5CBJ/VwIbGfvxDjZYNLbIziPQAS+XDuGFVFVpsxpkPP80udTuT2tDg9kGo8QmEYPVNvwARuUMRI62FeFciFpVdj/rjC7gxWXNtIiYeWiCxv/wv6PKS/VjHT607eA;
+Date: Thu, 12 May 2011 11:37:26 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <20110512154649.GB4559@redhat.com>
-	 <1305216023.2575.54.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121121120.26013@router.home>
-	 <1305217843.2575.57.camel@mulgrave.site>
-	 <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
-	 <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 13:36:15 -0500
-Message-ID: <1305225375.2575.65.camel@mulgrave.site>
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH -v2] pci: Check bridge resources after resource
+ allocation.
+Message-ID: <20110512113726.123fd85b@jbarnes-desktop>
+In-Reply-To: <20110512182229.GQ8195@ram-laptop>
+References: <20110506081243.GF16782@ram-laptop>
+	<4DC4586C.6020308@kernel.org>
+	<20110507015240.GN16782@ram-laptop>
+	<4DC4B059.3030502@kernel.org>
+	<4DC64C58.70203@kernel.org>
+	<20110509142014.617e3100@jbarnes-desktop>
+	<BANLkTi=U0LSj45y+5+n+7R=Cj4uRqk-LQw@mail.gmail.com>
+	<4DC9E415.5010402@kernel.org>
+	<20110512180638.GA5012@ram-laptop>
+	<BANLkTikGG6F22+JEtueF8c5xjX9bBPp+0A@mail.gmail.com>
+	<20110512182229.GQ8195@ram-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 20:11 +0300, Pekka Enberg wrote:
-> On Thu, May 12, 2011 at 8:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> > On Thu, May 12, 2011 at 7:30 PM, James Bottomley
-> > <James.Bottomley@hansenpartnership.com> wrote:
-> >> So suggest an alternative root cause and a test to expose it.
-> >
-> > Is your .config available somewhere, btw?
-> 
-> If it's this:
-> 
-> http://pkgs.fedoraproject.org/gitweb/?p=kernel.git;a=blob_plain;f=config-x86_64-generic;hb=HEAD
-> 
-> I'd love to see what happens if you disable
-> 
-> CONFIG_TRANSPARENT_HUGEPAGE=y
-> 
-> because that's going to reduce high order allocations as well, no?
+On Thu, 12 May 2011 11:22:29 -0700
+Ram Pai <linuxram@us.ibm.com> wrote:
 
-So yes, it's a default FC15 config.
+> On Thu, May 12, 2011 at 11:14:07AM -0700, Linus Torvalds wrote:
+> > On Thu, May 12, 2011 at 11:06 AM, Ram Pai <linuxram@us.ibm.com> wrote:
+> > >
+> > > I like this approach than the earlier approach because it
+> > > closes the subtle bug _introduced_ by my earlier patch,
+> > >        commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+> > >
+> > > However i think the implementation can be made cleaner. Comments below..
+> > 
+> > Ack on all of that. Do we have confirmation that the patch works, though?
+> 
+> In theory it should work. But I have not tested it yet. I will work with Yinghai and
+> have a cleaned-up/working/tested patch your way soon.
 
-Disabling THP was initially tried a long time ago and didn't make a
-difference (it was originally suggested by Chris Mason).
+Linus, I don't have anything else queued up, so you may as well take
+this one directly if you want it in 2.6.39.  It's a regression fix, but
+resource changes always make me nervous.  Alternately, I could put it
+into 2.6.40 instead, the backport to 2.6.39.x if it survives until
+2.6.40-rc2 or so...
 
-James
-
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
