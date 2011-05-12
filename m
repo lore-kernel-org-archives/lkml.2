@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab1ELGHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 02:07:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36582 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754866Ab1ELGHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 02:07:09 -0400
-Message-ID: <4DCB78ED.9040409@zytor.com>
-Date: Wed, 11 May 2011 23:06:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1755644Ab1ELGRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 02:17:50 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:35320 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755002Ab1ELGRt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 02:17:49 -0400
+Date: Thu, 12 May 2011 06:17:43 +0000
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] PM / Wakeup: Fix build warning related to the "wakeup"
+	sysfs file
+Message-ID: <20110512061742.GA2460@localhost.ucw.cz>
+References: <201105070050.55235.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] x86, cpu: Enable/disable SMEP
-References: <1305141480-843-1-git-send-email-fenghua.yu@intel.com>	<1305141480-843-4-git-send-email-fenghua.yu@intel.com> <m2k4dwj24x.fsf@firstfloor.org>
-In-Reply-To: <m2k4dwj24x.fsf@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105070050.55235.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2011 03:36 PM, Andi Kleen wrote:
-> "Fenghua Yu"<fenghua.yu@intel.com>  writes:
->
->> +static int disable_smep;
->
-> If you add a __initdata here the whole thing will completely disappear
-> after boot.
->
->> @@ -867,6 +886,8 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
->>   	/* Init Machine Check Exception if available. */
->>   	mcheck_cpu_init(c);
->>
->> +	setup_smep(c);
->
-> My feeling is you're setting this too late. In theory there could be
-> early overflows. Better use a early_param and set it as early
-> as possible, directly after the cpuid flags are set up in early
-> initialization.
->
-> -Andi
+On Sat 2011-05-07 00:50:55, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> The "wakeup" device sysfs file is only created if CONFIG_PM_SLEEP
+> is set, so put it under CONFIG_PM_SLEEP and make a build warning
+> related to it go away.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-SMEP only matters if we can into userspace code, so I *think* the above 
-should be okay.  However, the most logical place would be to enable it 
-in the same place(s) where we enable NX.
-
-	-hpa
+ack.
+ 
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
