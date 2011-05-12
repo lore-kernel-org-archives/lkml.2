@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab1ELXDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 19:03:00 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55967 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757359Ab1ELXC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 19:02:58 -0400
+	id S1757700Ab1ELXDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:03:05 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:34152 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757629Ab1ELXDD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 19:03:03 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
@@ -13,9 +14,9 @@ Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
         David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-Date: Thu, 12 May 2011 16:02:50 -0700
-Message-Id: <1305241371-25276-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/3] checkpatch.pl: Add check for current->comm references
+Date: Thu, 12 May 2011 16:02:51 -0700
+Message-Id: <1305241371-25276-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
 References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
@@ -23,18 +24,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Accessing task->comm requires proper locking. However in the past
-access to current->comm could be done without locking. This
-is no longer the case, so all comm access needs to be done
-while holding the comm_lock.
+Now that accessing current->comm needs to be protected,
+avoid new current->comm usage by adding a warning to
+checkpatch.pl.
 
-In my attempt to clean up unprotected comm access, I've noticed
-most comm access is done for printk output. To simplify correct
-locking in these cases, I've introduced a new %ptc format,
-which will print the corresponding task's comm.
+Fair warning: I know zero perl, so this was written in the
+style of "monkey see, monkey do". It does appear to work
+in my testing though.
 
-Example use:
-printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
+Close review and feedback would be appreciated.
 
 CC: Ted Ts'o <tytso@mit.edu>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -44,61 +42,24 @@ CC: Andrew Morton <akpm@linux-foundation.org>
 CC: linux-mm@kvack.org
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- lib/vsprintf.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+ scripts/checkpatch.pl |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index bc0ac6b..5abbe94 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -797,6 +797,26 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
- 	return string(buf, end, uuid, spec);
- }
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d867081..9d2eab5 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2868,6 +2868,10 @@ sub process {
+ 			WARN("usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
+ 		}
  
-+static noinline_for_stack
-+char *task_comm_string(char *buf, char *end, void *addr,
-+			 struct printf_spec spec, const char *fmt)
-+{
-+	struct task_struct *tsk = addr;
-+	char *ret;
-+	unsigned long seq;
-+
-+	do {
-+		seq = read_seqbegin(&tsk->comm_lock);
-+
-+		ret = string(buf, end, tsk->comm, spec);
-+
-+	} while (read_seqretry(&tsk->comm_lock, seq));
-+
-+	return ret;
-+}
-+
-+
-+
- int kptr_restrict = 1;
- 
- /*
-@@ -864,6 +884,12 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 	}
- 
- 	switch (*fmt) {
-+	case 't':
-+		switch (fmt[1]) {
-+		case 'c':
-+			return task_comm_string(buf, end, ptr, spec, fmt);
++# check for current->comm usage
++		if ($line =~ /current->comm/) {
++			WARN("comm access needs to be protected. Use get_task_comm, or printk's \%ptc formatting.\n" . $herecurr);
 +		}
-+		break;
- 	case 'F':
- 	case 'f':
- 		ptr = dereference_function_descriptor(ptr);
-@@ -1151,6 +1177,7 @@ qualifier:
-  *   http://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-00
-  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
-  *   case.
-+ * %ptc outputs the task's comm name
-  * %n is ignored
-  *
-  * The return value is the number of characters which would
+ # check for %L{u,d,i} in strings
+ 		my $string;
+ 		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
 -- 
 1.7.3.2.146.gca209
 
