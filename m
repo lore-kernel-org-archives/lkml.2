@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab1ELUEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:04:20 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46090 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757573Ab1ELUET (ORCPT
+	id S1758586Ab1ELUSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:18:10 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:60874 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757573Ab1ELUSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:04:19 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1305229447.2575.71.camel@mulgrave.site>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
-	 <1305225467.2575.66.camel@mulgrave.site>
-	 <1305229447.2575.71.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 15:04:12 -0500
-Message-ID: <1305230652.2575.72.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Thu, 12 May 2011 16:18:08 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: alsa-devel@alsa-project.org
+Subject: [PATCH 1/3] tea575x: remove freq_fixup from struct
+Date: Thu, 12 May 2011 22:17:56 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-media@vger.kernel.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201105122217.58872.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 14:44 -0500, James Bottomley wrote:
-> On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
-> > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
-> > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
-> > > > However, since you admit even you see problems, let's concentrate on
-> > > > fixing them rather than recriminations?
-> > > 
-> > > Yes, please. So does dropping max_order to 1 help?
-> > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
-> > 
-> > Just booting with max_slab_order=1 (and none of the other patches
-> > applied) I can still get the machine to go into kswapd at 99%, so it
-> > doesn't seem to make much of a difference.
-> > 
-> > Do you want me to try with the other two patches and max_slab_order=1?
-> 
-> OK, so patches 1 + 2 plus setting slub_max_order=1 still manages to
-> trigger the problem (kswapd spinning at 99%).  This is still with
-> PREEMPT; it's possible that non-PREEMPT might be better, so I'll try
-> patches 1+2+3 with PREEMPT just to see if the perturbation is caused by
-> it.
+freq_fixup is a constant, no need to hold it in struct snd_tea575x and set in
+each driver.
 
-Confirmed, I'm afraid ... I can trigger the problem with all three
-patches under PREEMPT.  It's not a hang this time, it's just kswapd
-taking 100% system time on 1 CPU and it won't calm down after I unload
-the system.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-James
+--- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-10 22:31:40.000000000 +0200
++++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-12 21:00:50.000000000 +0200
+@@ -26,6 +26,8 @@
+ #include <media/v4l2-dev.h>
+ #include <media/v4l2-ioctl.h>
+ 
++#define TEA575X_FMIF	10700
++
+ #define TEA575X_DATA	(1 << 0)
+ #define TEA575X_CLK	(1 << 1)
+ #define TEA575X_WREN	(1 << 2)
+@@ -46,7 +48,6 @@ struct snd_tea575x {
+ 	bool mute;			/* Device is muted? */
+ 	bool stereo;			/* receiving stereo */
+ 	bool tuned;			/* tuned to a station */
+-	unsigned int freq_fixup;	/* crystal onboard */
+ 	unsigned int val;		/* hw value */
+ 	unsigned long freq;		/* frequency */
+ 	unsigned long in_use;		/* set if the device is in use */
+--- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-10 22:31:40.000000000 +0200
++++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-12 21:00:37.000000000 +0200
+@@ -141,9 +141,9 @@ static void snd_tea575x_get_freq(struct
+ 	freq /= 10;
+ 	/* crystal fixup */
+ 	if (tea->tea5759)
+-		freq += tea->freq_fixup;
++		freq += TEA575X_FMIF;
+ 	else
+-		freq -= tea->freq_fixup;
++		freq -= TEA575X_FMIF;
+ 
+ 	tea->freq = freq * 16;		/* from kHz */
+ }
+@@ -156,9 +156,9 @@ static void snd_tea575x_set_freq(struct
+ 	freq /= 16;		/* to kHz */
+ 	/* crystal fixup */
+ 	if (tea->tea5759)
+-		freq -= tea->freq_fixup;
++		freq -= TEA575X_FMIF;
+ 	else
+-		freq += tea->freq_fixup;
++		freq += TEA575X_FMIF;
+ 	/* freq /= 12.5 */
+ 	freq *= 10;
+ 	freq /= 125;
+--- linux-2.6.39-rc2-/sound/pci/es1968.c	2011-05-10 22:31:43.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/es1968.c	2011-05-10 23:47:32.000000000 +0200
+@@ -2794,7 +2794,6 @@ static int __devinit snd_es1968_create(s
+ 
+ #ifdef CONFIG_SND_ES1968_RADIO
+ 	chip->tea.card = card;
+-	chip->tea.freq_fixup = 10700;
+ 	chip->tea.private_data = chip;
+ 	chip->tea.ops = &snd_es1968_tea_ops;
+ 	if (!snd_tea575x_init(&chip->tea))
+--- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-10 23:24:39.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-10 23:47:43.000000000 +0200
+@@ -1231,7 +1231,6 @@ static int __devinit snd_fm801_create(st
+ 
+ #ifdef TEA575X_RADIO
+ 	chip->tea.card = card;
+-	chip->tea.freq_fixup = 10700;
+ 	chip->tea.private_data = chip;
+ 	chip->tea.ops = &snd_fm801_tea_ops;
+ 	if ((tea575x_tuner & TUNER_TYPE_MASK) > 0 &&
 
 
+-- 
+Ondrej Zary
