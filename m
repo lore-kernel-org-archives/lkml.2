@@ -1,71 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab1ELJnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:43:03 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51304 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754476Ab1ELJnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:43:00 -0400
-Date: Thu, 12 May 2011 11:42:55 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
- writeback for various fses
-Message-ID: <20110512094255.GA4690@quack.suse.cz>
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
- <20110510125124.GD4402@quack.suse.cz>
- <20110511181901.GK20579@tux1.beaverton.ibm.com>
+	id S1756670Ab1ELJoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:44:25 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49240 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab1ELJoY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:44:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eU7+4gOi1pRR5UGUk95bY4Lt3zelsZeZxDhPyA0aDSTa/DmeOK3b0kM1sgLl5drsVf
+         nva7GGjt05xpwGcDuprxvfBz+Z4MG0LPfPTu95KV+W3PsoDodILrLW5meC81DzOdSM+K
+         UMH4DtGe1r56AfrMZS7SWuGJdXmztwpMCovgY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110511181901.GK20579@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
+References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
+	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
+Date: Thu, 12 May 2011 10:44:23 +0100
+Message-ID: <BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
+Subject: Re: problem with kmemleak
+From: Maxin B John <maxin.john@gmail.com>
+To: ttlxzz ccc <boyzccc@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-05-11 11:19:01, Darrick J. Wong wrote:
-> On Tue, May 10, 2011 at 02:51:24PM +0200, Jan Kara wrote:
-> > On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
-> > > I am still chasing down what exactly is broken in ext3.  data=writeback mode
-> > > passes with no failures.  data=ordered, however, does not pass; my current
-> > > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
-> > > page_mkclean to kick the userspace programs off the page before writing it.
-> >   Yes, ext3 in data=ordered mode writes pages from
-> > journal_commit_transaction() via submit_bh() without clearing page dirty
-> > bits thus page_mkclean() is not called for these pages. Frankly, do you
-> > really want to bother with adding support for ext2 and ext3? People can use
-> > ext4 as a fs driver when they want to start using blk-integrity support.
-> > Especially ext2 patch looks really painful and just from a quick look I can
-> > see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
-> 
-> Yeah, I agree that ext2 is ugly and ext3/jbd might be more painful.  Are there
-> any other code that wants stable pages that's already running with ext3?  In
-> this months-long discussion I've heard that encryption and raid also like
-> stable pages during writes.  Have those users been broken this whole time, or
-> have they been stabilizing pages themselves?
-  I believe part of them has been broken (e.g. raid) and part of them do
-copy-out so they were OK.
+Hi,
 
-> I suppose we can cross the "ext3 fails horribly on DIF" bridge when someone
-> complains about it.  Possibly we could try to steer them to btrfs.
-  Well, btrfs might be a bit too advantageous for production servers but
-ext4 would be definitely viable for them.
+Could you please share some more information about your setup ?
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Regards,
+Maxin
+
+On Thu, May 12, 2011 at 4:13 AM, ttlxzz ccc <boyzccc@gmail.com> wrote:
+> help~~~：） please ！thx！！
+>
+> On Thu, May 12, 2011 at 10:06 AM, ttlxzz ccc <boyzccc@gmail.com> wrote:
+>> Hi, all:
+>>
+>>
+>>
+>> I just want to use kmemleak, so I make the CONFIG_DEBUG_KMEMLEAK and
+>> CONFIG_DEBUG_FS on, mount the debugfs.
+>>
+>> But when I insmod mm/kmemleak-test.ko, echo scan >
+>> /sys/kernel/debug/kmemleak and cat /sys/kernel/debug/kmemleak. I just
+>> see this:
+>>
+>> unreferenced object 0xffffc90012d21000 (size 64):
+>>
+>>  comm "insmod", pid 13092, jiffies 4298369684
+>>
+>>  hex dump (first 32 bytes):
+>>
+>>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>
+>>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>
+>>  backtrace:
+>>
+>>    [<ffffffffffffffff>] 0xffffffffffffffff
+>>
+>> unreferenced object 0xffffc90012d24000 (size 64):
+>>
+>>  comm "insmod", pid 13092, jiffies 4298369684
+>>
+>>  hex dump (first 32 bytes):
+>>
+>>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>
+>>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>
+>>  backtrace:
+>>
+>>    [<ffffffffffffffff>] 0xffffffffffffffff
+>>
+>> unreferenced object 0xffffc90012d27000 (size 64):
+>>
+>>  comm "insmod", pid 13092, jiffies 4298369684
+>>
+>>  hex dump (first 32 bytes):
+>>
+>>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>
+>>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>
+>>  backtrace:
+>>
+>>    [<ffffffffffffffff>] 0xffffffffffffffff
+>>
+>> There is no other backtrace except [<ffffffffffffffff>]
+>> 0xffffffffffffffff. Then I read the mm/kmemleak.c. In
+>> kmemleak_seq_show(), I find that the object->trace_len is 1.
+>>
+>>
+>>
+>> How can I get the full backtrace?
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
