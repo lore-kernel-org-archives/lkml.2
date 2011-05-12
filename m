@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab1ELUZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:25:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53292 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122Ab1ELUZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:25:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rpYoMSODrb5B7ETmX4GFew8Szlp/Mvf80FqBeZ3AoQIVSiBZOVA4K+HEsHbI3dzwxh
-         bbrQ9VFqWhyNCElUYuCzgYoosT2e2z6HajW6DxH8TlhWReYpVsYwsfqMIEAbF0LmUBgV
-         Frbudn0gezOhKS86IOrvH2bIo72k0CZiRyoLs=
-Date: Thu, 12 May 2011 23:24:21 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: davej@redhat.com, eranian@google.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110512202421.GA4623@p183>
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
- <20110512.140630.1779004012724490077.davem@davemloft.net>
- <20110512183741.GA22269@redhat.com>
- <20110512.150132.1679483014638599288.davem@davemloft.net>
+	id S932709Ab1ELUaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:30:09 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:43487 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932580Ab1ELUaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 16:30:04 -0400
+Date: Thu, 12 May 2011 22:29:17 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110512202917.GK16531@cmpxchg.org>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+ <1305127773-10570-4-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1105120942050.24560@router.home>
+ <1305213359.2575.46.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121024350.26013@router.home>
+ <1305214993.2575.50.camel@mulgrave.site>
+ <1305215742.27848.40.camel@jaguar>
+ <1305225467.2575.66.camel@mulgrave.site>
+ <1305229447.2575.71.camel@mulgrave.site>
+ <1305230652.2575.72.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110512.150132.1679483014638599288.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1305230652.2575.72.camel@mulgrave.site>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 03:01:32PM -0400, David Miller wrote:
-> From: Dave Jones <davej@redhat.com>
-> Date: Thu, 12 May 2011 14:37:41 -0400
-> 
-> > On Thu, May 12, 2011 at 02:06:30PM -0400, David Miller wrote:
-> >  > I hate this too, and I think it's absolutely rediculous.
-> >  > 
-> >  > Also, like you, I lost an entire afternoon trying to figure out why
-> >  > this started happening.
-> >  > 
-> >  > I wish we could revert this change.
+On Thu, May 12, 2011 at 03:04:12PM -0500, James Bottomley wrote:
+> On Thu, 2011-05-12 at 14:44 -0500, James Bottomley wrote:
+> > On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
+> > > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
+> > > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
+> > > > > However, since you admit even you see problems, let's concentrate on
+> > > > > fixing them rather than recriminations?
+> > > > 
+> > > > Yes, please. So does dropping max_order to 1 help?
+> > > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
+> > > 
+> > > Just booting with max_slab_order=1 (and none of the other patches
+> > > applied) I can still get the machine to go into kswapd at 99%, so it
+> > > doesn't seem to make much of a difference.
+> > > 
+> > > Do you want me to try with the other two patches and max_slab_order=1?
 > > 
-> > At least it can be permanently disabled..
-> > 
-> > echo kernel.kptr_restrict = 0 >> /etc/sysctl.conf
+> > OK, so patches 1 + 2 plus setting slub_max_order=1 still manages to
+> > trigger the problem (kswapd spinning at 99%).  This is still with
+> > PREEMPT; it's possible that non-PREEMPT might be better, so I'll try
+> > patches 1+2+3 with PREEMPT just to see if the perturbation is caused by
+> > it.
 > 
-> Regardless, what to do about all of the "perf is broken" reports?
+> Confirmed, I'm afraid ... I can trigger the problem with all three
+> patches under PREEMPT.  It's not a hang this time, it's just kswapd
+> taking 100% system time on 1 CPU and it won't calm down after I unload
+> the system.
 
-The problem is that they turned it on by default.
+That is kind of expected, though.  If one CPU is busy with a streaming
+IO load generating new pages, kswapd is busy reclaiming the old ones
+so that the generator does not have to do the reclaim itself.
 
-	int kptr_restrict = 1;
+By unload, do you mean stopping the generator?  And if so, how quickly
+after you stop the generator does kswapd go back to sleep?
