@@ -1,122 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1EKQdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 12:33:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57680 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab1EKQdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 12:33:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,353,1301900400"; 
-   d="scan'208";a="894339"
-Date: Wed, 11 May 2011 22:19:45 -0400
-From: Youquan Song <youquan.song@linux.intel.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-        tglx@linutronix.de, hpa@zytor.com, hpa@linux.intel.com,
-        suresh.b.siddha@intel.com, yong.y.wang@linux.intel.com,
-        joe@perches.com, jbaron@redhat.com, trenn@suse.de, kent.liu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH v4 1/2] apic: Fix error interrupt report at all APs
-Message-ID: <20110512021945.GB19070@linux-youquan.bj.intel.com>
-References: <1303402963-17738-1-git-send-email-youquan.song@intel.com>
+	id S1753148Ab1ELCXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 22:23:42 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40856 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab1ELCXl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 22:23:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=l9GtwLl6fFIhdW0CF3bXKlnjd8TyqdprDfW1rwDa7dPdWjvxWcfVTrjqT8IrNJWfzx
+         ZlCsvBaeEVQ69x4sQ+pWwQNNPM6jC0ommAmDUUw6koA2/AY2VZeCilyYI5ZT1DS50cSh
+         OcbcAEt75dt+5U/5CU5v0d2trdt98aMi1M1WE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303402963-17738-1-git-send-email-youquan.song@intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20110512105351.a57970d7.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110509182110.167F.A69D9226@jp.fujitsu.com>
+	<20110510171335.16A7.A69D9226@jp.fujitsu.com>
+	<20110510171641.16AF.A69D9226@jp.fujitsu.com>
+	<20110512095243.c57e3e83.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTi=ya1rAqC+nMPHkBaMsoXpsCeHH=w@mail.gmail.com>
+	<20110512105351.a57970d7.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 12 May 2011 11:23:38 +0900
+Message-ID: <BANLkTimWOtKKj+Jq1vqHfOfQ2UvP7Xxa3g@mail.gmail.com>
+Subject: Re: [PATCH 2/4] oom: kill younger process first
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Thu, May 12, 2011 at 10:53 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Thu, 12 May 2011 10:30:45 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> Hi Kame,
+>>
+>> On Thu, May 12, 2011 at 9:52 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Tue, 10 May 2011 17:15:01 +0900 (JST)
+>> > KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> >
+>> >> This patch introduces do_each_thread_reverse() and
+>> >> select_bad_process() uses it. The benefits are two,
+>> >> 1) oom-killer can kill younger process than older if
+>> >> they have a same oom score. Usually younger process
+>> >> is less important. 2) younger task often have PF_EXITING
+>> >> because shell script makes a lot of short lived processes.
+>> >> Reverse order search can detect it faster.
+>> >>
+>> >> Reported-by: CAI Qian <caiqian@redhat.com>
+>> >> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> >
+>> > IIUC, for_each_thread() can be called under rcu_read_lock() but
+>> > for_each_thread_reverse() must be under tasklist_lock.
+>>
+>> Just out of curiosity.
+>> You mentioned it when I sent forkbomb killer patch. :)
+>> From at that time, I can't understand why we need holding
+>> tasklist_lock not rcu_read_lock. Sorry for the dumb question.
+>>
+>> At present, it seems that someone uses tasklist_lock and others uses
+>> rcu_read_lock. But I can't find any rule for that.
+>>
+>
+> for_each_list_rcu() makes use of RCU list's characteristics and allows
+> walk a list under rcu_read_lock() without taking any atomic locks.
+>
+> list_del() of RCU list works as folllowing.
+>
+> ==
+>  1) assume  A, B, C, are linked in the list.
+>        (head)<->(A) <-> (B)  <-> (C)
+>
+>  2) remove B.
+>        (head)<->(A) <-> (C)
+>                        /
+>                     (B)
+>
+>  Because (B)'s next points to (C) even after (B) is removed, (B)->next
+>  points to the alive object. Even if (C) is removed at the same time,
+>  (C) is not freed until rcu glace period and (C)'s next points to (head)
+>
+> Then, for_each_list_rcu() can work well under rcu_read_lock(), it will visit
+> only alive objects (but may not be valid.)
+>
+> ==
+>
+> please see include/linux/rculist.h and check list_add_rcu() ;)
+>
+> As above implies, (B)->prev pointer is invalid pointer after list_del().
+> So, there will be race with list modification and for_each_list_reverse under
+> rcu_read__lock()
+>
+> So, when you need to take atomic lock (as tasklist lock is) is...
+>
+>  1) You can't check 'entry' is valid or not...
+>    In above for_each_list_rcu(), you may visit an object which is under removing.
+>    You need some flag or check to see the object is valid or not.
+>
+>  2) you want to use list_for_each_safe().
+>    You can't do list_del() an object which is under removing...
+>
+>  3) You want to walk the list in reverse.
+>
+>  3) Some other reasons. For example, you'll access an object pointed by the
+>    'entry' and the object is not rcu safe.
+>
+> make sense ?
 
-Below is the updated description. If it looks good, please take it 
-since the first patch "x86, apic: Print verbose error interrupt reason on
- apic=debug" in the patchset already accepted in -tip.
+Yes. Thanks, Kame.
+It seems It is caused by prev poisoning of list_del_rcu.
+If we remove it, isn't it possible to traverse reverse without atomic lock?
 
-Thanks
--Youquan
 
-On Fri, Apr 22, 2011 at 12:22:43AM +0800, Youquan Song wrote:
-> This patch fixes a bug reported from customer, who found many unreasonable error
->  interrupts reported on all APs during the system boot stage.
-> 
-> According to Chapter 10 of Intel Software Developer Manual Volume 3A, Local APIC
->  may signal an illegal vector error when an LVT entry is set as an illegal
-> vector value (0~15) under FIXED delivery mode (bits 8-11 is 0), regardless of
-> whether the mask bit is set or an interrupt actually happen. These errors are
-> seen as error interrupts.
-> 
-> The initial value of thermal LVT entries on all APs always reads 0x10000 because
->  APs are woken up by BSP issuing INIT-SIPI-SIPI sequence to them and LVT
-> registers are reset to 0s except for the mask bits which are set to 1s when APs
-> receive INIT IPI.  When BIOS take over the thermal throttling interrupt, LVT
-> thermal deliver mode should be SMI and it is required to restore AP's LVT
-> thermal monitor register.
-> 
-> This issue happens when BIOS do not take over thermal throttling interrupt,
-> AP's LVT thermal monitor register will be restored to 0x10000 which means vector
->  0 and fixed deliver mode, so all APs will signal illegal vector error
-> interrupt.  This patch check if interrupt delivery mode is not fixed mode before
->  restore AP's LVT thermal monitor register.
-> 
-> Signed-off-by: Youquan Song <youquan.song@intel.com>
-> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> Acked-by: Yong Wang <yong.y.wang@intel.com>
-> ---
->  arch/x86/include/asm/apicdef.h           |    1 +
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
->  2 files changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
-> index d87988b..34595d5 100644
-> --- a/arch/x86/include/asm/apicdef.h
-> +++ b/arch/x86/include/asm/apicdef.h
-> @@ -78,6 +78,7 @@
->  #define		APIC_DEST_LOGICAL	0x00800
->  #define		APIC_DEST_PHYSICAL	0x00000
->  #define		APIC_DM_FIXED		0x00000
-> +#define		APIC_DM_FIXED_MASK	0x00700
->  #define		APIC_DM_LOWEST		0x00100
->  #define		APIC_DM_SMI		0x00200
->  #define		APIC_DM_REMRD		0x00300
-> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> index 6f8c5e9..22c212a 100644
-> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> @@ -446,18 +446,20 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
->  	 */
->  	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
->  
-> +	h = lvtthmr_init;
->  	/*
->  	 * The initial value of thermal LVT entries on all APs always reads
->  	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
->  	 * sequence to them and LVT registers are reset to 0s except for
->  	 * the mask bits which are set to 1s when APs receive INIT IPI.
-> -	 * Always restore the value that BIOS has programmed on AP based on
-> -	 * BSP's info we saved since BIOS is always setting the same value
-> -	 * for all threads/cores
-> +	 * If BIOS take over the thermal interrupt and set its interrupt
-> +	 * delivery mode to SMI not fixed, it restore the value that BIOS has
-> +	 * programmed on AP based on BSP's info we saved since BIOS is always
-> +	 * setting the same value for all threads/cores.
->  	 */
-> -	apic_write(APIC_LVTTHMR, lvtthmr_init);
-> +	if ((h & APIC_DM_FIXED_MASK) != APIC_DM_FIXED)
-> +		apic_write(APIC_LVTTHMR, lvtthmr_init);
->  
-> -	h = lvtthmr_init;
->  
->  	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
->  		printk(KERN_DEBUG
-> -- 
-> 1.6.4.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+
+>
+> Thanks,
+> -Kame
+>
+>
+>> Could you elaborate it, please?
+>> Doesn't it need document about it?
+>>
+>> --
+>> Kind regards,
+>> Minchan Kim
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
