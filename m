@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758807Ab1ELVuf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:50:35 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60993 "EHLO mx2.mail.elte.hu"
+	id S1758042Ab1ELVy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:54:59 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49449 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758734Ab1ELVue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:50:34 -0400
-Date: Thu, 12 May 2011 23:50:23 +0200
+	id S1757916Ab1ELVy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:54:58 -0400
+Date: Thu, 12 May 2011 23:54:52 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Stephane Eranian <eranian@google.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110512215023.GA20939@elte.hu>
+Message-ID: <20110512215452.GB20939@elte.hu>
 References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
  <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
  <BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
- <BANLkTimjHiaZ+b03FLb1LX=ycv=cAVyJZw@mail.gmail.com>
- <20110512213542.GB17596@elte.hu>
- <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
+ <20110512213657.GC17596@elte.hu>
+ <BANLkTi=O-59PS5cXevufqm741wwH5kuxXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=O-59PS5cXevufqm741wwH5kuxXg@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,31 +39,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Stephane Eranian <eranian@google.com> wrote:
 
-> On Thu, May 12, 2011 at 11:35 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >> [...] So much for having perf in the kernel source tree to keep things in 
+> >> sync...
 > >
-> > * Stephane Eranian <eranian@google.com> wrote:
-> >
-> >> The other contradiction, I see, is that you have perf_event paranoia level
-> >> and this new kptr masquerading feature which conflict with each
-> >> other.
-> >>
-> >> You can be allowed to monitor at the kernel level (paranoid=1, default)
-> >> but you cannot correlate symbols:
-> >>
-> >> $ perf record -e cycles:k foo
-> >>
-> >> I suspect if you have this kptr thing turned on, then you need to disallow
-> >> monitoring at the kernel level too.
-> >
-> > The better (and consistent) solution would be to turn the kptr_restrict thing
-> > off - see the patch i sent.
+> > What do you mean?
 >
-> I saw that. But I think that when someone turns it back on, then you need to 
-> increase the perf_events paranoia level to disallow kernel monitoring to 
-> regular users such that you maintain consistency across the board.
+> I meant that when this kptr feature was added, people should have scanned the 
+> entire tree (include tools/perf) to look for potential impact on programs 
+> relying on /proc/kallsyms. Having perf in the tree should have made this 
+> easier to catch. That's all.
 
-Dunno, i would not couple them necessarily - certain users might still have 
-access to kernel symbols via some other channel - for example the System.map.
+It was noticed in another case when there was kallsyms twiddling going on so it 
+depends. What wasnt noticed here was how the present but zero value symbols:
+
+ 0000000000000000 D irq_stack_union
+ 0000000000000000 D __per_cpu_start
+ 0000000000000000 D gdt_page
+ 0000000000000000 d exception_stacks
+ 0000000000000000 d tlb_vector_offset
+ 0000000000000000 d shared_msrs
+ 0000000000000000 d cpu_tsc_khz
+
+caused the symbol code of perf consider them non-existing.
+
+Perf being in-tree wont magically avoid all bugs, so you should not expect that 
+magical effect from tool integration into the kernel tree.
 
 Thanks,
 
