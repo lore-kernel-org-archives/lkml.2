@@ -1,346 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab1ELEru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 00:47:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38261 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630Ab1ELErt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 00:47:49 -0400
-Date: Thu, 12 May 2011 14:23:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for May 12
-Message-Id: <20110512142303.8117a0b6.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__12_May_2011_14_23_03_+1000_KSCp9eB8290c/bWd"
+	id S1752268Ab1ELE2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 00:28:07 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:65014 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab1ELE2E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 00:28:04 -0400
+X-AuditID: cbfee61b-b7bb4ae000002c54-17-4dcb61d1a437
+Date: Thu, 12 May 2011 13:28:09 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [PATCH v3 00/12] mmc: use nonblock mmc requests to minimize latency
+In-reply-to: <5D6BC6C8-D3C6-4987-B8AF-523A500D8309@marvell.com>
+To: Philip Rakity <prakity@marvell.com>
+Cc: Per Forlin <per.forlin@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Message-id: <4DCB61D9.5050508@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+References: <1304795706-27308-1-git-send-email-per.forlin@linaro.org>
+ <0F831E97-0168-4CD5-985C-4965BFF816A0@marvell.com>
+ <BANLkTikid1yHh6AdgOeqy7NqS8D=W0SWTw@mail.gmail.com>
+ <5D6BC6C8-D3C6-4987-B8AF-523A500D8309@marvell.com>
+X-OriginalArrivalTime: 12 May 2011 04:28:01.0645 (UTC)
+ FILETIME=[FABA49D0:01CC105C]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_May_2011_14_23_03_+1000_KSCp9eB8290c/bWd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Philip..
 
-Hi all,
+I have something question..did you test SDMA and ADMA?
 
-Changes since 20110511:
+Actually i didn't test [patch v3] but i tested patch v2 before Per sent.
+I got that SDMA is faster than ADMA. (using bounce buffer and sdhci)
 
-New tree: arm-dt
+How do you think about that? I want to know your thought.
+And if you can share the results, i want to know them.
 
-Undropped tree: namespace
+Regards,
+Jaehoon Chung
 
-Dropped trees: xen
 
-The nfs tree gained a build failure so I used the version from
-next-20110511.
+Philip Rakity wrote:
+> On May 9, 2011, at 5:34 AM, Per Forlin wrote:
+> 
+>> On 9 May 2011 04:05, Philip Rakity <prakity@marvell.com> wrote:
+>>> Hi Per,
+>>>
+>>> We noticed on some of our systems if we ADMA or SDMA and a bounce buffer it is significantly faster then SDMA.
+>>>
+>> I have not done work with ADMA or SDMA. Where should I look to read
+>> more about it?
+>> Are these the right places. DMA iop-dma.c and imx-sdma.c, MMC: sdhci.c.
+> 
+> sdhci.c for ADMA and SDMA
+> 
+> spec is at
+> http://www.sdcard.org/developers/tech/sdcard/pls/simplified_specs/
+> 
+> version 3 discusses ADMA
+> 
+>>> I believe ADMA will do large transfers.  Another data point.
+>>>
+>>> Philip
+>> Thanks,
+>> Per
+>>
+>>> On May 7, 2011, at 12:14 PM, Per Forlin wrote:
+>>>
+>>>> How significant is the cache maintenance over head?
+>>>> It depends, the eMMC are much faster now
+>>>> compared to a few years ago and cache maintenance cost more due to
+>>>> multiple cache levels and speculative cache pre-fetch. In relation the
+>>>> cost for handling the caches have increased and is now a bottle neck
+>>>> dealing with fast eMMC together with DMA.
+>>>>
+>>>> The intention for introducing none blocking mmc requests is to minimize the
+>>>> time between a mmc request ends and another mmc request starts. In the
+>>>> current implementation the MMC controller is idle when dma_map_sg and
+>>>> dma_unmap_sg is processing. Introducing none blocking mmc request makes it
+>>>> possible to prepare the caches for next job parallel with an active
+>>>> mmc request.
+>>>>
+>>>> This is done by making the issue_rw_rq() none blocking.
+>>>> The increase in throughput is proportional to the time it takes to
+>>>> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+>>>> a request and how fast the memory is. The faster the MMC/SD is
+>>>> the more significant the prepare request time becomes. Measurements on U5500
+>>>> and Panda on eMMC and SD shows significant performance gain for for large
+>>>> reads when running DMA mode. In the PIO case the performance is unchanged.
+>>>>
+>>>> There are two optional hooks pre_req() and post_req() that the host driver
+>>>> may implement in order to move work to before and after the actual mmc_request
+>>>> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+>>>> the dma descriptor and post_req runs the dma_unmap_sg.
+>>>>
+>>>> Details on measurements from IOZone and mmc_test:
+>>>> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+>>>>
+>>>> Under consideration:
+>>>> * Make pre_req and post_req private to core.c.
+>>>> * Generalize implementation and make it available for SDIO.
+>>>>
+>>>> Changes since v2:
+>>>> * Fix compile warnings in core.c and block.c
+>>>> * Simplify max transfer size in mmc_test
+>>>> * set TASK_RUNNING in queue.c before issue_req()
+>>>>
+>>>> Per Forlin (12):
+>>>>  mmc: add none blocking mmc request function
+>>>>  mmc: mmc_test: add debugfs file to list all tests
+>>>>  mmc: mmc_test: add test for none blocking transfers
+>>>>  mmc: add member in mmc queue struct to hold request data
+>>>>  mmc: add a block request prepare function
+>>>>  mmc: move error code in mmc_block_issue_rw_rq to a separate function.
+>>>>  mmc: add a second mmc queue request member
+>>>>  mmc: add handling for two parallel block requests in issue_rw_rq
+>>>>  mmc: test: add random fault injection in core.c
+>>>>  omap_hsmmc: use original sg_len for dma_unmap_sg
+>>>>  omap_hsmmc: add support for pre_req and post_req
+>>>>  mmci: implement pre_req() and post_req()
+>>>>
+>>>> drivers/mmc/card/block.c      |  493 +++++++++++++++++++++++++++--------------
+>>>> drivers/mmc/card/mmc_test.c   |  340 +++++++++++++++++++++++++++-
+>>>> drivers/mmc/card/queue.c      |  180 ++++++++++------
+>>>> drivers/mmc/card/queue.h      |   31 ++-
+>>>> drivers/mmc/core/core.c       |  132 ++++++++++-
+>>>> drivers/mmc/core/debugfs.c    |    5 +
+>>>> drivers/mmc/host/mmci.c       |  146 +++++++++++-
+>>>> drivers/mmc/host/mmci.h       |    8 +
+>>>> drivers/mmc/host/omap_hsmmc.c |   90 +++++++-
+>>>> include/linux/mmc/core.h      |    9 +-
+>>>> include/linux/mmc/host.h      |   13 +-
+>>>> lib/Kconfig.debug             |   11 +
+>>>> 12 files changed, 1174 insertions(+), 284 deletions(-)
+>>>>
+>>>> --
+>>>> 1.7.4.1
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-The bjdooks-i2c tree lost its conflicts.
-
-The net tree lost its conflict.
-
-The wireless tree gained a conflict against Linus' tree and a build
-failure for which I applied a patch.
-
-The voltage tree lost its build failure.
-
-The suspend tree lost teo of its conflicts.
-
-The namepsace tree lost its conflict and build failure but gained another
-build failure for which I apllied a patch.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 191 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-CONFLICT (content): Merge conflict in drivers/net/Kconfig
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-$ git reset --hard HEAD^
-Merging refs/next/20110511/nfs
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-CONFLICT (content): Merge conflict in include/linux/pci_ids.h
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
-tx.c
-CONFLICT (content): Merge conflict in net/mac80211/sta_info.h
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging cpufreq-move/move-drivers
-CONFLICT (content): Merge conflict in drivers/cpufreq/cpufreq_stats.c
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-CONFLICT (content): Merge conflict in mm/slub.c
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.c
-CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dss_features.h
-Merging voltage/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/Kconfig
-CONFLICT (content): Merge conflict in drivers/mfd/Makefile
-Merging security-testing/next
-Merging selinux/master
-CONFLICT (content): Merge conflict in lib/flex_array.c
-CONFLICT (content): Merge conflict in security/selinux/avc.c
-CONFLICT (content): Merge conflict in security/selinux/hooks.c
-CONFLICT (content): Merge conflict in security/smack/smack_lsm.c
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-CONFLICT (content): Merge conflict in arch/x86/Kconfig
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/percpu.h
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-CONFLICT (content): Merge conflict in drivers/platform/x86/Kconfig
-CONFLICT (content): Merge conflict in drivers/platform/x86/Makefile
-CONFLICT (content): Merge conflict in drivers/platform/x86/eeepc-laptop.c
-CONFLICT (content): Merge conflict in drivers/platform/x86/sony-laptop.c
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-CONFLICT (content): Merge conflict in arch/m68k/kernel/entry_mm.S
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-CONFLICT (content): Merge conflict in drivers/bluetooth/hci_ldisc.c
-CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-nuri.c
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/intel_sst/intelmid.c
-CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_pci.c dele=
-ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
-taging/rt2860/common/cmm_data_pci.c left in tree.
-CONFLICT (delete/modify): drivers/staging/rt2860/common/cmm_data_usb.c dele=
-ted in staging/staging-next and modified in HEAD. Version HEAD of drivers/s=
-taging/rt2860/common/cmm_data_usb.c left in tree.
-$ git rm -f drivers/staging/rt2860/common/cmm_data_pci.c drivers/staging/rt=
-2860/common/cmm_data_usb.c
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-Applying: net: fix get_net_ns_by_fd for !CONFIG_NET_NS
-Applying: nl80211: fix for reference to sta_info -> plink_state
-
---Signature=_Thu__12_May_2011_14_23_03_+1000_KSCp9eB8290c/bWd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNy2CnAAoJEDMEi1NhKgbskjAH/2STLTRK7rHqihzweCKOtCZt
-AXCXTR7I94IsLaQX/nDBqNmYS1/iMbrqoZOpkBIhPD0CBTD3X5zOminf4LPJLogl
-GqkvnXShdvAAe2OVr6s5gmrMHihyQJZ64Jb32pWEgGIFu/xIct7NlxImFr7HWGXM
-T7ESeCTDn8YnAsWSffTU3Z/IunlbFpWC9GVAYKmXeKzUWD73vvQXkiOXUAJr+y2e
-gLixOenR7K2jdUAW5NkiGQ48jNwP925rv4PHfuj2rh7pbmhcPMRI01M7JTucFkcx
-wp6l/goD+YodIY/cvlRtPJrIqBwJYVLjTUPQ+J8pqrTUajx9SCqjJemHsw+JeiM=
-=Zkri
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_May_2011_14_23_03_+1000_KSCp9eB8290c/bWd--
