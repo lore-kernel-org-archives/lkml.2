@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab1ELOED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:04:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64193 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755437Ab1ELOEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:04:01 -0400
-Date: Thu, 12 May 2011 16:03:52 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ulrich Keller <uhkeller@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Sattler <tsattler@gmx.de>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
-Message-ID: <20110512140352.GG11579@random.random>
-References: <4DAF6C0B.3070009@gmx.de>
- <loom.20110511T124036-180@post.gmane.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <loom.20110511T124036-180@post.gmane.org>
+	id S932186Ab1ELOFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:05:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46503 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932110Ab1ELOE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:04:59 -0400
+Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using
+ high-order allocations
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <4DCBC0E8.5020609@cs.helsinki.fi>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305149960.2606.53.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105111527490.24003@chino.kir.corp.google.com>
+	 <1305153267.2606.57.camel@mulgrave.site>  <4DCBC0E8.5020609@cs.helsinki.fi>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 09:04:56 -0500
+Message-ID: <1305209096.2575.14.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulrich,
-
-On Wed, May 11, 2011 at 10:53:18AM +0000, Ulrich Keller wrote:
-> I am seeing exactly the same symptoms on my Lenovo T60 Core2 duo, 3GB RAM,
-> running Arch Linux i686 with Kernel 2.6.38.6. When I've heavily used Firefox for
-> a while, or used R with high memory usage (>1 GB), individual applications
-> become unresponsive, new processes fail to start and after a while the whole
-> system freezes. When it happens, iotop shows khugepaged and sometimes firefox at
-> 99.99%.
+On Thu, 2011-05-12 at 14:13 +0300, Pekka Enberg wrote:
+> On 5/12/11 1:34 AM, James Bottomley wrote:
+> > On Wed, 2011-05-11 at 15:28 -0700, David Rientjes wrote:
+> >> On Wed, 11 May 2011, James Bottomley wrote:
+> >>
+> >>> OK, I confirm that I can't seem to break this one.  No hangs visible,
+> >>> even when loading up the system with firefox, evolution, the usual
+> >>> massive untar, X and even a distribution upgrade.
+> >>>
+> >>> You can add my tested-by
+> >>>
+> >> Your system still hangs with patches 1 and 2 only?
+> > Yes, but only once in all the testing.  With patches 1 and 2 the hang is
+> > much harder to reproduce, but it still seems to be present if I hit it
+> > hard enough.
 > 
-> I'd be happy to post information here when the problem occurs again. Anything
-> other than "cat /proc/zoneinfo"?
+> Patches 1-2 look reasonable to me. I'm not completely convinced of patch 
+> 3, though. Why are we seeing these problems now? This has been in 
+> mainline for a long time already. Shouldn't we fix kswapd?
 
-SYSRQ+T run multiple times during the hang and /proc/zoneinfo as well
-run multiple times during the hang is the best info we can have for
-now, /proc/zoneinfo is the most interesting as it will show us the
-values that the too_many_isolated loop is checking to decide if to
-continue looping. Even better would be a crash dump, but you may not
-have the setup for that.
+So I'm open to this.  The hang occurs when kswapd races around in
+shrink_slab and never exits.  It looks like there's a massive number of
+wakeups triggering this, but we haven't been able to diagnose it
+further.  turning on PREEMPT gets rid of the hang, so I could try to
+reproduce with PREEMPT and turn on tracing.  The problem so far has been
+that the number of events is so huge that the trace buffer only captures
+a few microseconds of output.
 
-The patch I posted likely fixes it, but it may not be the right fix. I
-don't really like that logic anyway but if that logic is not the
-problem and the stat accounting is not correct, clearly we can defer
-changing too_many_isolated and focus on the real problem first.
+James
 
-It may not be something new, it may have been exposed by the
-__GFP_NO_KSWAPD flag, kswapd is always immune from the
-too_many_isolated loop, so it keeps the VM rolling and would normally
-hide such problem if it ever happened before.  It might also be be
-something wrong with the THP altered statistics (counting 512 pages
-for each THP), in that case it would be THP specific, but I wonder why
-it's not easy to reproduce.
 
-So you've 2 cores, and probably a SMP kernel right? Is it a preempt
-kernel (just in case it makes any difference.. I doubt)? i386 means
-it's a 32bit kernel? Or you meant i386 to say x86? The previous report
-is also on a 32bit kernel. 32bit didn't get nearly the same amount of
-testing of 64bit, but it's hard to see how 32bit could matter here!
-
-Could you both send your .config (the UP one from Thomas, and the one
-from your core2duo laptop).
-
-You also have CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT
-CONFIG_TASK_XACCT, TASK_IO_ACCOUNTING all =y right?  Not everyone is
-running iotop you both are (before this bugreport I had TASKSTAT=n and
-I still have on most systems), so maybe it's something related to
-TASKSTATS corrupting memory or screwing the accounting when iotop
-runs? That's just an idea not to exclude even if almost certainly not
-realistic. Did it ever happen on a system with TASKSTAT=n or not
-running iotop to rule it out? (likely even if it's buggy, it won't be
-noticeable unless iotop runs)
-
-Being reproduced on UP probably means the per-cpu vmstat.c is not to
-blame (especially if it happens both UP and SMP builds, and if preempt
-is confirmed disabled).
-
-We've to restrict the scope of the bug a bit and try to find commons in
-the .config too.
-
-Here I've no sign of hang from too_many_isolated from 39rc6 and I'm
-sure it never occurred to me in the past.
-
-Thanks a lot,
-Andrea
