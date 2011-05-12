@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1ELNFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 09:05:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57834 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab1ELNFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 09:05:05 -0400
-Message-ID: <4DCBDAF2.7040101@pengutronix.de>
-Date: Thu, 12 May 2011 15:04:50 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1756006Ab1ELNGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 09:06:46 -0400
+Received: from 8bytes.org ([88.198.83.132]:57086 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751702Ab1ELNGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 09:06:45 -0400
+Date: Thu, 12 May 2011 15:06:44 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+Message-ID: <20110512130644.GF8707@8bytes.org>
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBAD8F.8030006@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Netdev@vger.kernel.org,
-        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
-References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com> <201105112344.44171.arnd@arndb.de> <4DCB88A4.2010901@grandegger.com> <201105121454.47781.arnd@arndb.de>
-In-Reply-To: <201105121454.47781.arnd@arndb.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigCC74D13D42DE58C1FAC67592"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DCBAD8F.8030006@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCC74D13D42DE58C1FAC67592
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 12, 2011 at 12:51:11PM +0300, Avi Kivity wrote:
+> On 05/12/2011 12:33 PM, Joerg Roedel wrote:
 
-On 05/12/2011 02:54 PM, Arnd Bergmann wrote:
-> On Thursday 12 May 2011, Wolfgang Grandegger wrote:
->> Well, that seems sophisticated resulting in a complex implementation
->> (may code line) also because hardware filters are very hardware
->> dependent. Usually just one global filter can be defined. I think that=
-'s
->> overkill. A simple interface using:
->>
->>   ip link set can0 type can filter <id>:<mask> [<id>:<mask> ...]
->>
->> would just be fine.
->=20
-> Ok, fair enough. Still I would suggest you first come up with
-> a reasonable user interface (the one you posted may be just right,
-> I don't know), and then let someone do the implementation in the
-> pruss firmware that is the best match for the user interface, rather
-> than the other way around.
+>> Gaah, I was just about to submit a talk about PMU virtualization for KVM
+>> Forum :)
+>
+> Speed matters.
 
-I suggested some time ago to implement the more-or-less standard
-<id>:<mask> filter instead of just a single <id> (per filter entry). The
-cost is probably quite low, it's just a single AND operation per filter
-entry more expensive.
-
-regards, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+I'll take that as an argument for paravirt pmu, because that one is
+certainly faster than anything we can emulate on-top of perf_events ;-)
 
 
---------------enigCC74D13D42DE58C1FAC67592
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> Note, at this time the architectural PMU is only recognized on an Intel  
+> host.
+>
+> Is the statement "if an AMD processor returns non-zero information in  
+> cpuid leaf 0xa, then that processor will be compatible with other  
+> vendors' processors reporting the same information" correct?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+AMD processors don't implement that cpuid leaf.
 
-iEYEARECAAYFAk3L2vIACgkQjTAFq1RaXHMrMQCfZRW8hn78Ku7PfDt63fmtOqlF
-OjUAniY/vJwIb7SjKLLFF63Y1ZKqS3H1
-=xc0D
------END PGP SIGNATURE-----
+> If so, we can move the detection of the architectural pmu outside the  
+> cpu vendor checks, and this code will work on both AMD and Intel  
+> processors (even if the host cpu doesn't have an architectural PMU).
 
---------------enigCC74D13D42DE58C1FAC67592--
+Thats already some kind of paravirtualization. Don't get me wrong, I see
+the point of emulating a real pmu in the guest. But on the other side I
+think a interface that works across cpu models fits better into the KVM
+design, because KVM (oposed to other hypervisors) trys to hide details
+of the host cpu as much as necessary to get migration working between
+different cpus.
+And since pmu are, as you said, very model-specific, some abstraction is
+needed. In the end probably both ways can be implemented in parallel:
+
+	* re-implementing the host-pmu using perf_events for -cpu host
+	  guests
+	* a paravirt pmu for everybody that wants migration and more
+	  accurate results
+
+Regards,
+
+	Joerg
+
