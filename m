@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab1ELBYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 21:24:35 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:54288 "EHLO
+	id S1753924Ab1ELBYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 21:24:37 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:54291 "EHLO
 	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab1ELBYc (ORCPT
+	with ESMTP id S1751446Ab1ELBYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 May 2011 21:24:32 -0400
 From: Sage Weil <sage@newdream.net>
 To: viro@ZenIV.linux.org.uk, hch@lst.de
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>
-Subject: [PATCH 1/3] vfs: add d_prune dentry operation
-Date: Wed, 11 May 2011 18:43:34 -0700
-Message-Id: <1305164616-26597-2-git-send-email-sage@newdream.net>
+Subject: [PATCH 2/3] ceph: clear parent D_COMPLETE flag when on dentry prune
+Date: Wed, 11 May 2011 18:43:35 -0700
+Message-Id: <1305164616-26597-3-git-send-email-sage@newdream.net>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1305164616-26597-1-git-send-email-sage@newdream.net>
 References: <1305164616-26597-1-git-send-email-sage@newdream.net>
@@ -21,92 +21,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a d_prune dentry operation that is called by the VFS prior to
-pruning (i.e. unhashing and killing) a hashed dentry from the dcache.  This
-will be used by Ceph to maintain a flag indicating whether the complete
-contents of a directory are contained in the dcache, allowing it to satisfy
-lookups and readdir without addition server communication.
+When the VFS prunes a dentry from the cache, clear the D_COMPLETE flag
+on the parent dentry.  Do this for the live and snapshotted namespaces. Do
+not bother for the .snap dir contents, since we do not cache that.
 
 Signed-off-by: Sage Weil <sage@newdream.net>
 ---
- Documentation/filesystems/Locking |    1 +
- fs/dcache.c                       |    8 ++++++++
- include/linux/dcache.h            |    3 +++
- 3 files changed, 12 insertions(+), 0 deletions(-)
+ fs/ceph/dir.c   |   28 ++++++++++++++++++++++++++++
+ fs/ceph/super.h |   13 +++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 4471a41..30de5ef 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -29,6 +29,7 @@ d_hash		no		no		no		maybe
- d_compare:	yes		no		no		maybe
- d_delete:	no		yes		no		no
- d_release:	no		no		yes		no
-+d_prune:        no              yes             no              no
- d_iput:		no		no		yes		no
- d_dname:	no		no		no		no
- d_automount:	no		no		yes		no
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 611ffe9..c54b85e 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -690,6 +690,8 @@ static void try_prune_one_dentry(struct dentry *dentry)
- 			spin_unlock(&dentry->d_lock);
- 			return;
- 		}
-+		if (dentry->d_flags & DCACHE_OP_PRUNE)
-+			dentry->d_op->d_prune(dentry);
- 		dentry = dentry_kill(dentry, 1);
- 	}
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index 1a867a3..e2005fa 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -1053,7 +1053,33 @@ static int ceph_snapdir_d_revalidate(struct dentry *dentry,
+ 	return 1;
  }
-@@ -896,6 +898,8 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
  
- 	/* detach this root from the system */
- 	spin_lock(&dentry->d_lock);
-+	if (dentry->d_flags & DCACHE_OP_PRUNE)
-+		dentry->d_op->d_prune(dentry);
- 	dentry_lru_del(dentry);
- 	__d_drop(dentry);
- 	spin_unlock(&dentry->d_lock);
-@@ -912,6 +916,8 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
- 					    d_u.d_child) {
- 				spin_lock_nested(&loop->d_lock,
- 						DENTRY_D_LOCK_NESTED);
-+				if (dentry->d_flags & DCACHE_OP_PRUNE)
-+					dentry->d_op->d_prune(dentry);
- 				dentry_lru_del(loop);
- 				__d_drop(loop);
- 				spin_unlock(&loop->d_lock);
-@@ -1375,6 +1381,8 @@ void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
- 		dentry->d_flags |= DCACHE_OP_REVALIDATE;
- 	if (op->d_delete)
- 		dentry->d_flags |= DCACHE_OP_DELETE;
-+	if (op->d_prune)
-+		dentry->d_flags |= DCACHE_OP_PRUNE;
- 
- }
- EXPORT_SYMBOL(d_set_d_op);
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index f958c19..1e83bd8 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -165,6 +165,7 @@ struct dentry_operations {
- 			unsigned int, const char *, const struct qstr *);
- 	int (*d_delete)(const struct dentry *);
- 	void (*d_release)(struct dentry *);
-+	void (*d_prune)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
- 	char *(*d_dname)(struct dentry *, char *, int);
- 	struct vfsmount *(*d_automount)(struct path *);
-@@ -219,6 +220,8 @@ struct dentry_operations {
- #define DCACHE_MANAGED_DENTRY \
- 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
- 
-+#define DCACHE_OP_PRUNE         0x80000
++/*
++ * When the VFS prunes a dentry from the cache, we need to clear the
++ * complete flag on the parent directory.
++ *
++ * Called under dentry->d_lock.
++ */
++static void ceph_d_prune(struct dentry *dentry)
++{
++	struct ceph_dentry_info *di;
 +
- extern seqlock_t rename_lock;
++	dout("d_release %p\n", dentry);
++
++	/* do we have a valid parent? */
++	if (!dentry->d_parent || IS_ROOT(dentry))
++		return;
++
++	/* if we are not hashed, we don't affect D_COMPLETE */
++	if (d_unhashed(dentry))
++		return;
  
- static inline int dname_external(struct dentry *dentry)
++	/*
++	 * we hold d_lock, so d_parent is stable, and d_fsdata is never
++	 * cleared until d_release
++	 */
++	di = ceph_dentry(dentry->d_parent);
++	clear_bit(CEPH_D_COMPLETE, &di->flags);
++}
+ 
+ /*
+  * read() on a dir.  This weird interface hack only works if mounted
+@@ -1259,6 +1285,7 @@ const struct inode_operations ceph_dir_iops = {
+ const struct dentry_operations ceph_dentry_ops = {
+ 	.d_revalidate = ceph_d_revalidate,
+ 	.d_release = ceph_d_release,
++	.d_prune = ceph_d_prune,
+ };
+ 
+ const struct dentry_operations ceph_snapdir_dentry_ops = {
+@@ -1268,4 +1295,5 @@ const struct dentry_operations ceph_snapdir_dentry_ops = {
+ 
+ const struct dentry_operations ceph_snap_dentry_ops = {
+ 	.d_release = ceph_d_release,
++	.d_prune = ceph_d_prune,
+ };
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index 619fe71..b6bf098 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -201,6 +201,7 @@ struct ceph_inode_xattr {
+  * Ceph dentry state
+  */
+ struct ceph_dentry_info {
++	unsigned long flags;
+ 	struct ceph_mds_session *lease_session;
+ 	u32 lease_gen, lease_shared_gen;
+ 	u32 lease_seq;
+@@ -211,6 +212,18 @@ struct ceph_dentry_info {
+ 	u64 offset;
+ };
+ 
++/*
++ * dentry flags
++ *
++ * The locking for D_COMPLETE is a bit odd:
++ *  - we can clear it at almost any time (see ceph_d_prune)
++ *  - it is only meaningful if:
++ *    - we hold dir inode i_lock
++ *    - we hold dir FILE_SHARED caps
++ *    - the dentry D_COMPLETE is set
++ */
++#define CEPH_D_COMPLETE 1  /* if set, d_u.d_subdirs is complete directory */
++
+ struct ceph_inode_xattrs_info {
+ 	/*
+ 	 * (still encoded) xattr blob. we avoid the overhead of parsing
 -- 
 1.7.0
 
