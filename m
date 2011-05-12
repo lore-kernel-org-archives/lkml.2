@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab1ELNUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 09:20:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38807 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755219Ab1ELNUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 09:20:06 -0400
-Date: Thu, 12 May 2011 14:19:59 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using
- high-order allocations
-Message-ID: <20110512131924.GB8477@suse.de>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
- <1305149960.2606.53.camel@mulgrave.site>
- <alpine.DEB.2.00.1105111527490.24003@chino.kir.corp.google.com>
- <1305153267.2606.57.camel@mulgrave.site>
- <4DCBC0E8.5020609@cs.helsinki.fi>
+	id S1756832Ab1ELNYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 09:24:07 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:21905 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab1ELNYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 09:24:05 -0400
+Message-ID: <4DCBDF5B.6000101@siemens.com>
+Date: Thu, 12 May 2011 15:23:39 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4DCBC0E8.5020609@cs.helsinki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com> <20110512131130.GG8707@8bytes.org>
+In-Reply-To: <20110512131130.GG8707@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 02:13:44PM +0300, Pekka Enberg wrote:
-> On 5/12/11 1:34 AM, James Bottomley wrote:
-> >On Wed, 2011-05-11 at 15:28 -0700, David Rientjes wrote:
-> >>On Wed, 11 May 2011, James Bottomley wrote:
-> >>
-> >>>OK, I confirm that I can't seem to break this one.  No hangs visible,
-> >>>even when loading up the system with firefox, evolution, the usual
-> >>>massive untar, X and even a distribution upgrade.
-> >>>
-> >>>You can add my tested-by
-> >>>
-> >>Your system still hangs with patches 1 and 2 only?
-> >Yes, but only once in all the testing.  With patches 1 and 2 the hang is
-> >much harder to reproduce, but it still seems to be present if I hit it
-> >hard enough.
+On 2011-05-12 15:11, Joerg Roedel wrote:
+> On Thu, May 12, 2011 at 11:47:51AM +0200, Jan Kiszka wrote:
+>> On 2011-05-12 11:33, Joerg Roedel wrote:
 > 
-> Patches 1-2 look reasonable to me. I'm not completely convinced of
-> patch 3, though. Why are we seeing these problems now?
+>>> Anyway, I thought about a paravirt-approach instead of implementing a
+>>> real PMU... But there are certainly good reasons for both.
+>>
+>> Paravirt is taking away the pressure from CPU vendors to do their virt
+>> extensions properly - and doesn't help with unmodifiable OSes.
+> 
+> Seriously, I think such decisions should be technical only and not
+> political like that. The losers of such political decisions are always
+> the users because they don't get useful features that are technical
+> possible.
 
-I'm not certain and testing so far as only being able to point to changing
-from SLAB to SLUB between 2.6.37 and 2.6.38. This probably boils down to
-distributions changing their allocator from slab to slub as recommended by
-Kconfig and SLUB being tested heavily on desktop workloads in a variety of
-settings for the first time. It's worth noting that only a few users have
-been able to reproduce this. I don't see the severe hangs for example during
-tests meaning it might also be down to newer hardware. What may be required
-to reproduce this is many CPUs (4 on the test machines) with relatively
-low memory for a 4-CPU machine (2G) and a slower disk than people might
-have tested with up until now.
+Paravirt remains a workaround, useful until hardware provides a solution
+for all guests, and that often in an even more efficient way (like for
+MMU virtualization).
 
-There are other new considerations as well that weren't much of a factor
-when SLUB came along. The first reproduction case showed involved ext4 for
-example which does delayed block allocation. It's possible there is some
-problem wherby all the dirty pages to be written to disk need blocks to
-be allocated and GFP_NOFS is not being used properly. Instead of failing
-the high-order allocation, we then block instead hanging direct reclaimers
-and kswapd. The filesystem people looked at this bug but didn't mention if
-something like this was a possibility.
+We do not need to block a PV-PMU for Linux guests (or other OSes that
+want to adopt to it), but that will not be a solution for the problem,
+that's my point. A PV-PMU may even be useful to demonstrate usefulness
+of a virtual PMU the CPU vendors (if they aren't aware of this yet).
+
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
