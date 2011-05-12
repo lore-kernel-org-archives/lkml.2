@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab1ELRIA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:08:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757918Ab1ELRH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:07:58 -0400
-Date: Thu, 12 May 2011 19:06:17 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
-Message-ID: <20110512170617.GB20215@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-5-git-send-email-tj@kernel.org> <20110509165857.GA30607@redhat.com> <20110510095022.GR1661@htj.dyndns.org> <20110510140620.GB21834@redhat.com> <20110510142033.GY1661@htj.dyndns.org> <20110510180811.GB32637@redhat.com> <20110511082947.GB1661@htj.dyndns.org>
+	id S1758102Ab1ELRGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:06:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53409 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756508Ab1ELRG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:06:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=PYm+hMuVJw8K00eqevS8XLGoQ/tF/UMycyo2xggMK3x+WqUGbA+70KNGjavftvMC6t
+         a4yvBauPv4yP81RAI5cWh+TkOw/dGegdcNMvfcaFpdN7Qm2KhKwvYdb4H8a6co//m+fX
+         SnW3odYyITYX8bUu5VqXduvI5qlDmOZRWNReU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110511082947.GB1661@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1305217843.2575.57.camel@mulgrave.site>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	<1305127773-10570-4-git-send-email-mgorman@suse.de>
+	<alpine.DEB.2.00.1105120942050.24560@router.home>
+	<1305213359.2575.46.camel@mulgrave.site>
+	<alpine.DEB.2.00.1105121024350.26013@router.home>
+	<1305214993.2575.50.camel@mulgrave.site>
+	<20110512154649.GB4559@redhat.com>
+	<1305216023.2575.54.camel@mulgrave.site>
+	<alpine.DEB.2.00.1105121121120.26013@router.home>
+	<1305217843.2575.57.camel@mulgrave.site>
+Date: Thu, 12 May 2011 20:06:27 +0300
+X-Google-Sender-Auth: 51_WMaJXvmKysMvloVIbq-7Ehoc
+Message-ID: <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: Pekka Enberg <penberg@kernel.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Christoph Lameter <cl@linux.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11, Tejun Heo wrote:
->
-> On Tue, May 10, 2011 at 08:08:11PM +0200, Oleg Nesterov wrote:
-> >
-> > Hmm. Suddenly I got lost. Perhaps instead JOBCTL_TRAP_INTERRUPT should
-> > be cleared on any trap too, like SEIZE.
->
-> I don't think that's a good idea especially because there are
-> functionality differences among different traps.  ie. group stop and
-> interrupt traps support re-trapping on job control events while other
-> traps don't, so there will be cases where the debugger wants to put
-> tracee specifically into INTERRUPT trap.  It's just cleaner to use and
-> say that if you ask for INTERRUPT, you get an INTERRUPT.
+On Thu, May 12, 2011 at 7:30 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> So suggest an alternative root cause and a test to expose it.
 
-Hmm. This is not clear to me... OK, I'll read other emails first.
-
-> > Another special (and nasty!) case is PTRACE_TRACEME. I do not know
-> > how often it is used, but probabaly it is important enough. At least,
-> > iirc, it is used by strace. Probably we need PTRACE_SEIZEME as well.
->
-> I don't agree.  PTRACE_TRACEME predates PTRACE_ATTACH and is
-> completely redundant.  If you can make the child do PTRACE_TRACEME,
-> you might as well just make it do pause() and PTRACE_SEIZE yourself,
-> so unless there's something PTRACE_SEIZE can't do, I don't think I'll
-> be adding SEIZEME.
-
-Heh. I think that you are very right technically and I thought the
-same. That is why I never mentioned PTRACE_TRACEME before. In fact
-I never understood why PTRACE_TRACEME exists.
-
-However. Perhaps this is wrong from the practical pov. SEIZEME can
-simplify the conversion of the existing code. People are lazy, but
-we need the users of PTRACE_SEIZE.
-
-Anyway. SEIZEME is absolutely trivial. We can add it at any moment,
-right now this is almost offtopic.
-
-Oleg.
-
+Is your .config available somewhere, btw?
