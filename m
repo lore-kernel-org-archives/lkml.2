@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab1ELOHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:07:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52866 "EHLO mga02.intel.com"
+	id S932281Ab1ELOFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:05:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35880 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757465Ab1ELOEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:04:12 -0400
+	id S1757516Ab1ELOES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:04:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,358,1301900400"; 
-   d="scan'208";a="641767825"
-Message-Id: <20110512140032.049072600@intel.com>
+   d="scan'208";a="1345489"
+Message-Id: <20110512140032.160664798@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 12 May 2011 21:57:17 +0800
+Date: Thu, 12 May 2011 21:57:18 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+cc: Jan Kara <jack@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Wu Fengguang <fengguang.wu@intel.com>
 cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/17] writeback: add bdi_dirty_limit() kernel-doc
+Subject: [PATCH 12/17] writeback: skip balance_dirty_pages() for in-memory fs
 References: <20110512135706.937596128@intel.com>
-Content-Disposition: inline; filename=writeback-task_dirty_limit-comment.patch
+Content-Disposition: inline; filename=writeback-trace-global-dirty-states-fix.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clarify the bdi_dirty_limit() comment.
+This avoids unnecessary checks and dirty throttling on tmpfs/ramfs.
 
+It can also prevent
+
+[  388.126563] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+
+in the balance_dirty_pages tracepoint, which will call
+
+	dev_name(mapping->backing_dev_info->dev)
+
+but shmem_backing_dev_info.dev is NULL.
+
+Summary notes about the tmpfs/ramfs behavior changes:
+
+As for 2.6.36 and older kernels, the tmpfs writes will sleep inside
+balance_dirty_pages() as long as we are over the (dirty+background)/2
+global throttle threshold.  This is because both the dirty pages and
+threshold will be 0 for tmpfs/ramfs. Hence this test will always
+evaluate to TRUE:
+
+                dirty_exceeded =
+                        (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
+                        || (nr_reclaimable + nr_writeback >= dirty_thresh);
+
+For 2.6.37, someone complained that the current logic does not allow the
+users to set vm.dirty_ratio=0.  So commit 4cbec4c8b9 changed the test to
+
+                dirty_exceeded =
+                        (bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
+                        || (nr_reclaimable + nr_writeback > dirty_thresh);
+
+So 2.6.37 will behave differently for tmpfs/ramfs: it will never get
+throttled unless the global dirty threshold is exceeded (which is very
+unlikely to happen; once happen, will block many tasks).
+
+I'd say that the 2.6.36 behavior is very bad for tmpfs/ramfs. It means
+for a busy writing server, tmpfs write()s may get livelocked! The
+"inadvertent" throttling can hardly bring help to any workload because
+of its "either no throttling, or get throttled to death" property.
+
+So based on 2.6.37, this patch won't bring more noticeable changes.
+
+CC: Hugh Dickins <hughd@google.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ mm/page-writeback.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-05-05 23:30:22.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-05-05 23:30:31.000000000 +0800
-@@ -437,10 +437,17 @@ void global_dirty_limits(unsigned long *
- 	*pdirty = dirty;
+--- linux-next.orig/mm/page-writeback.c	2011-05-05 23:30:31.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-05-05 23:30:32.000000000 +0800
+@@ -244,13 +244,8 @@ void task_dirty_inc(struct task_struct *
+ static void bdi_writeout_fraction(struct backing_dev_info *bdi,
+ 		long *numerator, long *denominator)
+ {
+-	if (bdi_cap_writeback_dirty(bdi)) {
+-		prop_fraction_percpu(&vm_completions, &bdi->completions,
++	prop_fraction_percpu(&vm_completions, &bdi->completions,
+ 				numerator, denominator);
+-	} else {
+-		*numerator = 0;
+-		*denominator = 1;
+-	}
  }
  
--/*
-+/**
-  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
-+ * @bdi: the backing_dev_info to query
-+ * @dirty: global dirty limit in pages
-+ *
-+ * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
-+ * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
-+ * And the "limit" in the name is not seriously taken as hard limit in
-+ * balance_dirty_pages().
-  *
-- * Allocate high/low dirty limits to fast/slow devices, in order to prevent
-+ * It allocates high/low dirty limits to fast/slow devices, in order to prevent
-  * - starving fast devices
-  * - piling up dirty pages (that will take long time to sync) on slow devices
-  *
+ static inline void task_dirties_fraction(struct task_struct *tsk,
+@@ -495,6 +490,9 @@ static void balance_dirty_pages(struct a
+ 	bool dirty_exceeded = false;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 
++	if (!bdi_cap_account_dirty(bdi))
++		return;
++
+ 	for (;;) {
+ 		struct writeback_control wbc = {
+ 			.sync_mode	= WB_SYNC_NONE,
 
 
