@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab1ELJrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:47:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39390 "EHLO e9.ny.us.ibm.com"
+	id S1756757Ab1ELJsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:48:16 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:16338 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab1ELJrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:47:08 -0400
-Date: Thu, 12 May 2011 02:47:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
-Message-ID: <20110512094704.GL2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <6921.1304989476@localhost>
- <20110510082029.GF2258@linux.vnet.ibm.com>
- <34783.1305155494@localhost>
+	id S1751567Ab1ELJsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:48:14 -0400
+Message-ID: <4DCBACC7.8080000@siemens.com>
+Date: Thu, 12 May 2011 11:47:51 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <34783.1305155494@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org>
+In-Reply-To: <20110512093309.GD8707@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 07:11:34PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 10 May 2011 01:20:29 PDT, "Paul E. McKenney" said:
+On 2011-05-12 11:33, Joerg Roedel wrote:
+> On Wed, May 11, 2011 at 11:55:28AM -0400, Avi Kivity wrote:
+>> This not-for-merging patchset exposes an emulated version 1 architectural
+>> performance monitoring unit to KVM guests.  The PMU is emulated using
+>> perf_events, so the host kernel can multiplex host-wide, host-user, and the
+>> guest on available resources.
+>>
+>> Caveats:
+>> - counters that have PMI (interrupt) enabled stop counting after the
+>>   interrupt is signalled.  This is because we need one-shot samples
+>>   that keep counting, which perf doesn't support yet
+>> - some combinations of INV and CMASK are not supported
+>> - counters keep on counting in the host as well as the guest
+>> - the RDPMC instruction and CR4.PCE bit are not yet emulated
+>> - there is likely a bug in the implementation; running 'perf top' in
+>>   a guest that spends 80% of its time in userspace shows perf itself
+>>   as consuming almost all cpu
+>>
+>> perf maintainers: please consider the first three patches for merging (the
+>> first two make sense even without the rest).  If you're familiar with the Intel
+>> PMU, please review patch 5 as well - it effectively undoes all your work
+>> of abstracting the PMU into perf_events by unabstracting perf_events into what
+>> is hoped is a very similar PMU.
 > 
-> Would test, but it doesn't apply cleanly to my -mmotm0506 tree:
+> Gaah, I was just about to submit a talk about PMU virtualization for KVM
+> Forum :)
 > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 5616b17..20c22c5 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1525,13 +1525,15 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
-> >   */
-> >  static void rcu_cpu_kthread_timer(unsigned long arg)
-> >  {
-> > -	unsigned long flags;
-> > +	unsigned long old;
-> > +	unsigned long new;
-> >  	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, arg);
-> >  	struct rcu_node *rnp = rdp->mynode;
-> >  
-> > -	raw_spin_lock_irqsave(&rnp->lock, flags);
-> > -	rnp->wakemask |= rdp->grpmask;
-> > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +	do {
-> > +		old = rnp->wakemask;
-> > +		new = old | rdp->grpmask;
-> > +	} while (cmpxchg(&rnp->wakemask, old, new) != old);
-> >  	invoke_rcu_node_kthread(rnp);
-> >  }
-> 
-> My source has this:
-> 
->         raw_spin_lock_irqsave(&rnp->lock, flags);
->         rnp->wakemask |= rdp->grpmask;
->         invoke_rcu_node_kthread(rnp);
->         raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> 
-> the last 2 lines swapped from what you diffed against.  I can easily work around
-> that, except it's unclear what the implications of the invoke_rcu moving outside
-> of the irq save/restore pair (or if it being inside is the actual root cause)...
+> Anyway, I thought about a paravirt-approach instead of implementing a
+> real PMU... But there are certainly good reasons for both.
 
-Odd...
+Paravirt is taking away the pressure from CPU vendors to do their virt
+extensions properly - and doesn't help with unmodifiable OSes.
 
-This looks to me like a recent -next -- I do not believe that straight
-mmotm has rcu_cpu_kthread_timer() in it.  The patch should apply to the
-last few days' -next kernels.
+Jan
 
-							Thanx, Paul
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
