@@ -1,72 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1ELPQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 11:16:05 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52210 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752978Ab1ELPQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 11:16:03 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1105120942050.24560@router.home>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 10:15:59 -0500
-Message-ID: <1305213359.2575.46.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1755580Ab1ELPRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 11:17:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab1ELPRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 11:17:45 -0400
+Date: Thu, 12 May 2011 17:17:38 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Weiping =?utf-8?B?UGFuKOa9mOWNq+W5syk=?= <panweiping3@gmail.com>
+Cc: davem@davemloft.net, eric.dumazet@gmail.com, xiaosuo@gmail.com,
+        mirq-linux@rere.qmqm.pl, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] net:set valid name before calling ndo_init()
+Message-ID: <20110512151737.GF6879@psychotron.brq.redhat.com>
+References: <1300936598-3971-1-git-send-email-panweiping3@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300936598-3971-1-git-send-email-panweiping3@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 09:43 -0500, Christoph Lameter wrote:
-> On Wed, 11 May 2011, Mel Gorman wrote:
+Thu, Mar 24, 2011 at 04:16:38AM CET, panweiping3@gmail.com wrote:
+>From: Pan Weiping <panweiping3@gmail.com>
+>
+>A bug of bonding was invloved by e815d19ffe02bdfda1260949ef2b1806171,
+>see example 1 and 2.
+>
+>In register_netdevice(), the name of net_device is not valid until
+>dev_get_valid_name() is called. But dev->netdev_ops->ndo_init(that is
+>bond_init) is called before dev_get_valid_name(),
+>and it uses the invalid name of net_device.
+>
+>I think register_netdevice() should make sure that the name of net_device is
+>valid before calling ndo_init().
+>
+>example 1:
+>modprobe bonding
+>ls  /proc/net/bonding/bond%d
+>
+>ps -eLf
+>root      3398     2  3398  0    1 21:34 ?        00:00:00 [bond%d]
+>
+>example 2:
+>modprobe bonding max_bonds=3
+>
+>[  170.100292] bonding: Ethernet Channel Bonding Driver: v3.7.1 (April 27, 2011)
+>[  170.101090] bonding: Warning: either miimon or arp_interval and arp_ip_target module parameters must be specified, otherwise bonding will not detect link failures! see bonding.txt for details.
+>[  170.102469] ------------[ cut here ]------------
+>[  170.103150] WARNING: at /home/pwp/net-next-2.6/fs/proc/generic.c:586 proc_register+0x126/0x157()
+>[  170.104075] Hardware name: VirtualBox
+>[  170.105065] proc_dir_entry 'bonding/bond%d' already registered
+>[  170.105613] Modules linked in: bonding(+) sunrpc ipv6 uinput microcode ppdev parport_pc parport joydev e1000 pcspkr i2c_piix4 i2c_core [last unloaded: bonding]
+>[  170.108397] Pid: 3457, comm: modprobe Not tainted 2.6.39-rc2+ #14
+>[  170.108935] Call Trace:
+>[  170.109382]  [<c0438f3b>] warn_slowpath_common+0x6a/0x7f
+>[  170.109911]  [<c051a42a>] ? proc_register+0x126/0x157
+>[  170.110329]  [<c0438fc3>] warn_slowpath_fmt+0x2b/0x2f
+>[  170.110846]  [<c051a42a>] proc_register+0x126/0x157
+>[  170.111870]  [<c051a4dd>] proc_create_data+0x82/0x98
+>[  170.112335]  [<f94e6af6>] bond_create_proc_entry+0x3f/0x73 [bonding]
+>[  170.112905]  [<f94dd806>] bond_init+0x77/0xa5 [bonding]
+>[  170.113319]  [<c0721ac6>] register_netdevice+0x8c/0x1d3
+>[  170.113848]  [<f94e0e30>] bond_create+0x6c/0x90 [bonding]
+>[  170.114322]  [<f94f4763>] bonding_init+0x763/0x7b1 [bonding]
+>[  170.114879]  [<c0401240>] do_one_initcall+0x76/0x122
+>[  170.115317]  [<f94f4000>] ? 0xf94f3fff
+>[  170.115799]  [<c0463f1e>] sys_init_module+0x1286/0x140d
+>[  170.116879]  [<c07c6d9f>] sysenter_do_call+0x12/0x28
+>[  170.117404] ---[ end trace 64e4fac3ae5fff1a ]---
+>[  170.117924] bond%d: Warning: failed to register to debugfs
+>[  170.128728] ------------[ cut here ]------------
+>[  170.129360] WARNING: at /home/pwp/net-next-2.6/fs/proc/generic.c:586 proc_register+0x126/0x157()
+>[  170.130323] Hardware name: VirtualBox
+>[  170.130797] proc_dir_entry 'bonding/bond%d' already registered
+>[  170.131315] Modules linked in: bonding(+) sunrpc ipv6 uinput microcode ppdev parport_pc parport joydev e1000 pcspkr i2c_piix4 i2c_core [last unloaded: bonding]
+>[  170.133731] Pid: 3457, comm: modprobe Tainted: G        W   2.6.39-rc2+ #14
+>[  170.134308] Call Trace:
+>[  170.134743]  [<c0438f3b>] warn_slowpath_common+0x6a/0x7f
+>[  170.135305]  [<c051a42a>] ? proc_register+0x126/0x157
+>[  170.135820]  [<c0438fc3>] warn_slowpath_fmt+0x2b/0x2f
+>[  170.137168]  [<c051a42a>] proc_register+0x126/0x157
+>[  170.137700]  [<c051a4dd>] proc_create_data+0x82/0x98
+>[  170.138174]  [<f94e6af6>] bond_create_proc_entry+0x3f/0x73 [bonding]
+>[  170.138745]  [<f94dd806>] bond_init+0x77/0xa5 [bonding]
+>[  170.139278]  [<c0721ac6>] register_netdevice+0x8c/0x1d3
+>[  170.139828]  [<f94e0e30>] bond_create+0x6c/0x90 [bonding]
+>[  170.140361]  [<f94f4763>] bonding_init+0x763/0x7b1 [bonding]
+>[  170.140927]  [<c0401240>] do_one_initcall+0x76/0x122
+>[  170.141494]  [<f94f4000>] ? 0xf94f3fff
+>[  170.141975]  [<c0463f1e>] sys_init_module+0x1286/0x140d
+>[  170.142463]  [<c07c6d9f>] sysenter_do_call+0x12/0x28
+>[  170.142974] ---[ end trace 64e4fac3ae5fff1b ]---
+>[  170.144949] bond%d: Warning: failed to register to debugfs
+>
+>Signed-off-by: Pan Weiping <panweiping3@gmail.com>
+>---
+> net/core/dev.c |    8 ++++----
+> 1 files changed, 4 insertions(+), 4 deletions(-)
+>
+>diff --git a/net/core/dev.c b/net/core/dev.c
+>index 75898a3..f289117 100644
+>--- a/net/core/dev.c
+>+++ b/net/core/dev.c
+>@@ -5412,6 +5412,10 @@ int register_netdevice(struct net_device *dev)
 > 
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -2198,7 +2198,7 @@ EXPORT_SYMBOL(kmem_cache_free);
-> >   * take the list_lock.
-> >   */
-> >  static int slub_min_order;
-> > -static int slub_max_order = PAGE_ALLOC_COSTLY_ORDER;
-> > +static int slub_max_order;
+> 	dev->iflink = -1;
 > 
-> If we really need to do this then do not push this down to zero please.
-> SLAB uses order 1 for the meax. Lets at least keep it theere.
+>+	ret = dev_get_valid_name(dev, dev->name);
+>+	if (ret < 0)
+>+		goto out;
+>+
+> 	/* Init, if this function is available */
+> 	if (dev->netdev_ops->ndo_init) {
+> 		ret = dev->netdev_ops->ndo_init(dev);
+>@@ -5422,10 +5426,6 @@ int register_netdevice(struct net_device *dev)
+> 		}
+> 	}
+> 
+>-	ret = dev_get_valid_name(dev, dev->name);
+>-	if (ret < 0)
+>-		goto err_uninit;
+>-
+> 	dev->ifindex = dev_new_index(net);
+> 	if (dev->iflink == -1)
+> 		dev->iflink = dev->ifindex;
+>-- 
+>1.7.4
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-1 is the current value.  Reducing it to zero seems to fix the kswapd
-induced hangs.  The problem does look to be some shrinker/allocator
-interference somewhere in vmscan.c, but the fact is that it's triggered
-by SLUB and not SLAB.  I really think that what's happening is some type
-of feedback loops where one of the shrinkers is issuing a
-wakeup_kswapd() so kswapd never sleeps (and never relinquishes the CPU
-on non-preempt).
+This is looking good to me.
 
-> We have been using SLUB for a long time. Why is this issue arising now?
-> Due to compaction etc making reclaim less efficient?
-
-This is the snark argument (I've said it thrice the bellman cried and
-what I tell you three times is true).  The fact is that no enterprise
-distribution at all uses SLUB.  It's only recently that the desktop
-distributions started to ... the bugs are showing up under FC15 beta,
-which is the first fedora distribution to enable it.  I'd say we're only
-just beginning widespread SLUB testing.
-
-James
-
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
 
