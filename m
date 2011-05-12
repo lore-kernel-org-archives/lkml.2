@@ -1,62 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab1ELBrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 21:47:24 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41418 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab1ELBrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 21:47:23 -0400
-Date: Thu, 12 May 2011 02:46:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Greg KH <greg@kroah.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "mikew@google.com" <mikew@google.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH] pstore: EFI Support
-Message-ID: <20110512014656.GA12513@srcf.ucam.org>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C16FB4712@USINDEVS01.corp.hds.com>
- <20110510161137.GA14522@kroah.com>
- <BANLkTimV8=o1zOeVJs9EA64kc+1=RZCJeA@mail.gmail.com>
- <4DCA9CE2.1080307@zytor.com>
+	id S1757032Ab1EKQJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 12:09:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26496 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756959Ab1EKQJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 12:09:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,353,1301900400"; 
+   d="scan'208";a="434285594"
+Date: Wed, 11 May 2011 21:52:59 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, david.woodhouse@intel.com,
+        akpm@linux-foundation.org, mingo@elte.hu, tglx@linutronix.de,
+        hpa@zytor.com, hpa@linux.intel.com, allen.m.kay@intel.com,
+        suresh.b.siddha@intel.com, kent.liu@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH v2] x86, vt-d: enable x2apic opt out
+Message-ID: <20110512015259.GA19070@linux-youquan.bj.intel.com>
+References: <1302764783-24491-1-git-send-email-youquan.song@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DCA9CE2.1080307@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1302764783-24491-1-git-send-email-youquan.song@intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 07:27:46AM -0700, H. Peter Anvin wrote:
-> On 05/11/2011 06:09 AM, Américo Wang wrote:
-> >I agree. It seems that we should enable this by default when APEI and
-> >EFI are both enabled, this could be done by Kconfig.
-> >
+
+The path has been verified from customer platform and it works well.
+This patch is also desirable from Linux OSV distributions.
+please take it and get it into 2.6.40 merge window.
+
+Thanks
+-Youquan
+
+
+On Thu, Apr 14, 2011 at 03:06:23PM +0800, Youquan Song wrote:
+> New version of VT-d2 specification (http://download.intel.com/technology
+> /computing/vptech/Intel(r)_VT_for_Direct_IO.pdf) includes a new feature that 
+> provide firmware a way to request system software to opt out of enable x2APIC
+> mode. DMAR ACPI table newly define flags.1 bit: x2APIC_OPT_OUT which is set to
+> request System software opt out xAPIC mode if flags.0 bit:INTR_REMAP is also
+> set.
 > 
-> No, it can't.  That would be a compile-time option, but the
-> selection needs to be at runtime.
+> This patch enable the feature. Also re-define x2apic_supported() to address
+> platform x2apic support needs 1)processor has x2apic capability 2)interrupt
+> remapping support 3)firmware does not request opt-out.
 > 
-> However, it is still unclear that this is actually a win at all...
-
-It's a win in that not all EFI platforms are ACPI. I don't think we're 
-yet in a position to say which is preferable when we have both.
-
-(Are we really arguing over which broken Intel firmware spec is less 
-broken than the other?)
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> Signed-off-by: Youquan Song <youquan.song@intel.com>
+> Reviewed-by: Kay, Allen M <allen.m.kay@intel.com>
+> ---
+>  arch/x86/include/asm/apic.h |    2 --
+>  arch/x86/kernel/apic/apic.c |   13 +++++++++----
+>  drivers/pci/dmar.c          |   28 ++++++++++++++++++++++++++--
+>  include/linux/dmar.h        |    3 +++
+>  include/linux/intel-iommu.h |    4 ++++
+>  5 files changed, 42 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+> index 3c89694..aa3fc82 100644
+> --- a/arch/x86/include/asm/apic.h
+> +++ b/arch/x86/include/asm/apic.h
+> @@ -192,7 +192,6 @@ static inline int x2apic_enabled(void)
+>  	return 0;
+>  }
+>  
+> -#define x2apic_supported()	(cpu_has_x2apic)
+>  static inline void x2apic_force_phys(void)
+>  {
+>  	x2apic_phys = 1;
+> @@ -213,7 +212,6 @@ static inline void x2apic_force_phys(void)
+>  }
+>  
+>  #define	x2apic_preenabled 0
+> -#define	x2apic_supported()	0
+>  #endif
+>  
+>  extern void enable_IR_x2apic(void);
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 76b96d7..6c96c45 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -1449,11 +1449,11 @@ void __init enable_IR_x2apic(void)
+>  {
+>  	unsigned long flags;
+>  	struct IO_APIC_route_entry **ioapic_entries = NULL;
+> -	int ret, x2apic_enabled = 0;
+> +	int ret = 0, x2apic_enabled = 0;
+>  	int dmar_table_init_ret;
+>  
+>  	dmar_table_init_ret = dmar_table_init();
+> -	if (dmar_table_init_ret && !x2apic_supported())
+> +	if (dmar_table_init_ret && !cpu_has_x2apic)
+>  		return;
+>  
+>  	ioapic_entries = alloc_ioapic_entries();
+> @@ -1465,6 +1465,7 @@ void __init enable_IR_x2apic(void)
+>  	ret = save_IO_APIC_setup(ioapic_entries);
+>  	if (ret) {
+>  		pr_info("Saving IO-APIC state failed: %d\n", ret);
+> +		ret = 0;
+>  		goto out;
+>  	}
+>  
+> @@ -1491,7 +1492,8 @@ void __init enable_IR_x2apic(void)
+>  		x2apic_force_phys();
+>  	}
+>  
+> -	x2apic_enabled = 1;
+> +	if (x2apic_supported())
+> +		x2apic_enabled = 1;
+>  
+>  	if (x2apic_supported() && !x2apic_mode) {
+>  		x2apic_mode = 1;
+> @@ -1514,8 +1516,11 @@ out:
+>  
+>  	if (x2apic_preenabled)
+>  		panic("x2apic: enabled by BIOS but kernel init failed.");
+> -	else if (cpu_has_x2apic)
+> +	else if (!ret && cpu_has_x2apic) /* IR enabling failed */
+>  		pr_info("Not enabling x2apic, Intr-remapping init failed.\n");
+> +	else if (!x2apic_supported() && cpu_has_x2apic)
+> +		pr_info("Not enabling x2apic, firmware requests OS opt-out "
+> +			  "x2apic.\n");
+>  }
+>  
+>  #ifdef CONFIG_X86_64
+> diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+> index 09933eb..a35dca9 100644
+> --- a/drivers/pci/dmar.c
+> +++ b/drivers/pci/dmar.c
+> @@ -705,7 +705,7 @@ int __init detect_intel_iommu(void)
+>  		 * is added, we will not need this any more.
+>  		 */
+>  		dmar = (struct acpi_table_dmar *) dmar_tbl;
+> -		if (ret && cpu_has_x2apic && dmar->flags & 0x1)
+> +		if (ret && x2apic_supported() && dmar->flags & DMAR_INTR_REMAP)
+>  			printk(KERN_INFO
+>  			       "Queued invalidation will be enabled to support "
+>  			       "x2apic and Intr-remapping.\n");
+> @@ -1461,6 +1461,30 @@ int __init dmar_ir_support(void)
+>  	dmar = (struct acpi_table_dmar *)dmar_tbl;
+>  	if (!dmar)
+>  		return 0;
+> -	return dmar->flags & 0x1;
+> +	return dmar->flags & DMAR_INTR_REMAP;
+>  }
+> +
+> +/*
+> + * Check if the platform support x2apic
+> + * three necessary conditions:
+> + * a. processor support x2apic
+> + * b. interrupt remapping support
+> + * c. when interrupt reamapping support,bit of x2APIC_OPT_OUT at "DMAR flags"
+> + *  is not set which means firmware does not tell OS opt out x2apic
+> + */
+> +int __init x2apic_supported(void)
+> +{
+> +	struct acpi_table_dmar *dmar;
+> +	unsigned int flags = 0;
+> +
+> +	if (!cpu_has_x2apic)
+> +		return 0;
+> +
+> +	dmar = (struct acpi_table_dmar *)dmar_tbl;
+> +	if (!dmar)
+> +		return 0;
+> +	flags = DMAR_INTR_REMAP | DMAR_X2APIC_OPT_OUT;
+> +	return ((dmar->flags & flags) == DMAR_INTR_REMAP);
+> +}
+> +
+>  IOMMU_INIT_POST(detect_intel_iommu);
+> diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+> index 7b776d7..73c9bff 100644
+> --- a/include/linux/dmar.h
+> +++ b/include/linux/dmar.h
+> @@ -228,8 +228,11 @@ struct dmar_atsr_unit {
+>  };
+>  
+>  extern int intel_iommu_init(void);
+> +extern int x2apic_supported(void);
+> +
+>  #else /* !CONFIG_DMAR: */
+>  static inline int intel_iommu_init(void) { return -ENODEV; }
+> +static inline int x2apic_supported(void) { return 0; }
+>  #endif /* CONFIG_DMAR */
+>  
+>  #endif /* __DMAR_H__ */
+> diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+> index 9310c69..2d086e5 100644
+> --- a/include/linux/intel-iommu.h
+> +++ b/include/linux/intel-iommu.h
+> @@ -29,6 +29,10 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/iommu.h>
+>  
+> +/* DMAR Flags bits */
+> +#define DMAR_INTR_REMAP 0x1
+> +#define DMAR_X2APIC_OPT_OUT 0x2
+> +
+>  /*
+>   * Intel IOMMU register specification per version 1.0 public spec.
+>   */
+> -- 
+> 1.6.4.2
+> 
+> 
