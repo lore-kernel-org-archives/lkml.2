@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758721Ab1ELVIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:08:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36939 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758633Ab1ELVIB convert rfc822-to-8bit (ORCPT
+	id S1758713Ab1ELVJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:09:24 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:56305 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758633Ab1ELVJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:08:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wpmYbJj1jvwIzTRbhuy729pFzNvPLzISUc1gtZb9e//Rl8XRv8huL1vcY4lzjTKuB0
-         h6p1NKNNtgLsE6FVjRwIdo5hO/uHwUzIzlOqhW1PoRbgXFWbwKhyep9PirPgzzIyudPN
-         dfvszlqE6fDpYRS3H43R2SDtrZRFFzRQQGQLI=
-MIME-Version: 1.0
-In-Reply-To: <4DCC4365.3030907@suse.cz>
-References: <1d7d3b31c0da82ce8ce75778922155b7004a8f7e.1305224477.git.mfm@muteddisk.com>
-	<4DCC4365.3030907@suse.cz>
-Date: Thu, 12 May 2011 14:07:57 -0700
-Message-ID: <BANLkTimKpJoUnoYx8gXi6KCYgVpnXno4ow@mail.gmail.com>
-Subject: Re: [Resend PATCH] package: Makefile: fix perf target bug
-From: matt mooney <mfmooney@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 May 2011 17:09:23 -0400
+Date: Thu, 12 May 2011 17:08:45 -0400 (EDT)
+Message-Id: <20110512.170845.1074260586094306244.davem@davemloft.net>
+To: mingo@elte.hu
+Cc: torvalds@linux-foundation.org, eranian@google.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vsprintf: Turn kptr_restrict off by default
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110512210028.GA16600@elte.hu>
+References: <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+	<20110512.164319.1770509419224900253.davem@davemloft.net>
+	<20110512210028.GA16600@elte.hu>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 14:08:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/12 Michal Marek <mmarek@suse.cz>:
-> On 12.5.2011 20:25, mfmooney@gmail.com wrote:
->> diff --git a/scripts/package/Makefile b/scripts/package/Makefile
->> index 1b7eaea..a32dc2d 100644
->> --- a/scripts/package/Makefile
->> +++ b/scripts/package/Makefile
->> @@ -118,10 +118,14 @@ perf-tar=perf-$(KERNELVERSION)
->>
->>  quiet_cmd_perf_tar = TAR
->>        cmd_perf_tar = \
->> -git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
->> -     $$(cat $(srctree)/tools/perf/MANIFEST) -o $(perf-tar).tar;  \
->> +git --git-dir=$(srctree)/.git --work-tree=$(srctree)                \
->
-> Neither git archive not git rev-parse need the work tree, --git-dir=..
-> is sufficient.
+From: Ingo Molnar <mingo@elte.hu>
+Date: Thu, 12 May 2011 23:00:28 +0200
 
-Are you sure? --git-dir points to the .git directory and --work-tree
-points to the actual source code directory. Both are needed when you
-are out of the source tree and the .git directory is not really
-located at .git from the $PWD.
+> Subject: vsprintf: Turn kptr_restrict off by default
+> 
+> kptr_restrict has been triggering bugs in apps such as perf, and it also makes 
+> the system less useful by default, so turn it off by default.
+> 
+> This is how we generally handle security features that remove functionality, 
+> such as firewall code or SELinux - they have to be configured and activated 
+> from user-space.
+> 
+> Distributions can turn kptr_restrict on again via this line in 
+> /etc/sysctrl.conf:
+> 
+> kernel.kptr_restrict = 1
+> 
+> ( Also mark the variable __read_mostly while at it, as it's typically modified 
+>   only once per bootup, or not at all. )
+> 
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
->From an empirical standpoint, this as well as any git command that is
-issued from outside of the working directory fails to function
-properly without --work-tree.
-
--matt
-
->
->> +     archive --prefix=$(perf-tar)/ HEAD^{tree}                   \
->> +     $(addprefix $(srctree)/,                                    \
->> +       $(shell cat $(srctree)/tools/perf/MANIFEST))              \
->> +     -o $(perf-tar).tar;                                         \
->>  mkdir -p $(perf-tar);                                               \
->> -git rev-parse HEAD > $(perf-tar)/HEAD;                              \
->> +git --git-dir=$(srctree)/.git --work-tree=$(srctree)                \
->> +     rev-parse HEAD > $(perf-tar)/HEAD;                          \
->>  tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
->>  rm -r $(perf-tar);                                                  \
->>  $(if $(findstring tar-src,$@),,                                     \
->
->
-
-
-
--- 
-GPG-Key: 9AFE00EA
+Acked-by: David S. Miller <davem@davemloft.net>
