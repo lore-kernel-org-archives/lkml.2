@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476Ab1ELShv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:37:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab1ELShs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:37:48 -0400
-Date: Thu, 12 May 2011 14:37:41 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: eranian@google.com, acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110512183741.GA22269@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Miller <davem@davemloft.net>, eranian@google.com,
-	acme@redhat.com, linux-kernel@vger.kernel.org
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
- <20110512.140630.1779004012724490077.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512.140630.1779004012724490077.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757725Ab1ELShy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:37:54 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44748 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751162Ab1ELShw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 14:37:52 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <1305215742.27848.40.camel@jaguar>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 13:37:47 -0500
+Message-ID: <1305225467.2575.66.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 02:06:30PM -0400, David Miller wrote:
- > From: Stephane Eranian <eranian@google.com>
- > Date: Thu, 12 May 2011 16:48:46 +0200
- > 
- > > I think there is a serious problem with kernel symbol correlation
- > > with the latest perf in 2.6.39-rc7-tip.
- > 
- > The behavior seems to be intentional, so that we don't expose internal
- > kernel addresses to userspace.
+On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
+> On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
+> > However, since you admit even you see problems, let's concentrate on
+> > fixing them rather than recriminations?
+> 
+> Yes, please. So does dropping max_order to 1 help?
+> PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
 
-Sounds like commit 9f36e2c448007b54851e7e4fa48da97d1477a175
+Just booting with max_slab_order=1 (and none of the other patches
+applied) I can still get the machine to go into kswapd at 99%, so it
+doesn't seem to make much of a difference.
 
- > I hate this too, and I think it's absolutely rediculous.
- > 
- > Also, like you, I lost an entire afternoon trying to figure out why
- > this started happening.
- > 
- > I wish we could revert this change.
+Do you want me to try with the other two patches and max_slab_order=1?
 
-At least it can be permanently disabled..
+James
 
-echo kernel.kptr_restrict = 0 >> /etc/sysctl.conf
-
-	Dave
 
