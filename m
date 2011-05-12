@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab1ELJsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:48:16 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:16338 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab1ELJsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:48:14 -0400
-Message-ID: <4DCBACC7.8080000@siemens.com>
-Date: Thu, 12 May 2011 11:47:51 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1756903Ab1ELJwy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:52:54 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59466 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab1ELJwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:52:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=QE/JsAcqIix7+7p1272zKac4VcXxwk89DBL1uZ7s8Rusva1tSkgOajKYA9MeDIn2k2
+         CYwx6AnXW//pxHpea6Md1ccy6tfwOcXS/01qZNiOPEsp3SVtZWNb91jjJxMMg5ADHuQd
+         e1pO/+uXX4Pr0TYNNtDDtTUsGOb8ko+bYnsk8=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] leds: drop leds-h1940 driver
+Date: Thu, 12 May 2011 12:50:32 +0300
+User-Agent: KMail/1.13.6 (Linux/2.6.38-gentoo-anarsoul; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org,
+        "'Arnaud Patard (Rtp)'" <arnaud.patard@rtp-net.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Ben Dooks'" <ben-linux@fluff.org>, rpurdie@rpsys.net
+References: <1303912597-32653-1-git-send-email-anarsoul@gmail.com> <201105061101.34589.anarsoul@gmail.com> <03c101cc1044$c53b7350$4fb259f0$%kim@samsung.com>
+In-Reply-To: <03c101cc1044$c53b7350$4fb259f0$%kim@samsung.com>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
-References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org>
-In-Reply-To: <20110512093309.GD8707@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105121250.32568.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-12 11:33, Joerg Roedel wrote:
-> On Wed, May 11, 2011 at 11:55:28AM -0400, Avi Kivity wrote:
->> This not-for-merging patchset exposes an emulated version 1 architectural
->> performance monitoring unit to KVM guests.  The PMU is emulated using
->> perf_events, so the host kernel can multiplex host-wide, host-user, and the
->> guest on available resources.
->>
->> Caveats:
->> - counters that have PMI (interrupt) enabled stop counting after the
->>   interrupt is signalled.  This is because we need one-shot samples
->>   that keep counting, which perf doesn't support yet
->> - some combinations of INV and CMASK are not supported
->> - counters keep on counting in the host as well as the guest
->> - the RDPMC instruction and CR4.PCE bit are not yet emulated
->> - there is likely a bug in the implementation; running 'perf top' in
->>   a guest that spends 80% of its time in userspace shows perf itself
->>   as consuming almost all cpu
->>
->> perf maintainers: please consider the first three patches for merging (the
->> first two make sense even without the rest).  If you're familiar with the Intel
->> PMU, please review patch 5 as well - it effectively undoes all your work
->> of abstracting the PMU into perf_events by unabstracting perf_events into what
->> is hoped is a very similar PMU.
+On Thursday 12 May 2011 04:34:40 Kukjin Kim wrote:
+
+> Ok, I will do it after merging your patch into Richard's tree.
 > 
-> Gaah, I was just about to submit a talk about PMU virtualization for KVM
-> Forum :)
-> 
-> Anyway, I thought about a paravirt-approach instead of implementing a
-> real PMU... But there are certainly good reasons for both.
+> Thanks.
 
-Paravirt is taking away the pressure from CPU vendors to do their virt
-extensions properly - and doesn't help with unmodifiable OSes.
+Thank you.
 
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Regards
+Vasily
