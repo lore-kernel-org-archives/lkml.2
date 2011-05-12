@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758758Ab1ELVUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:20:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56563 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758678Ab1ELVUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:20:14 -0400
-Message-ID: <4DCC4F05.7010306@suse.cz>
-Date: Thu, 12 May 2011 23:20:05 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: matt mooney <mfmooney@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [Resend PATCH] package: Makefile: fix perf target bug
-References: <1d7d3b31c0da82ce8ce75778922155b7004a8f7e.1305224477.git.mfm@muteddisk.com>	<4DCC4365.3030907@suse.cz> <BANLkTimKpJoUnoYx8gXi6KCYgVpnXno4ow@mail.gmail.com>
-In-Reply-To: <BANLkTimKpJoUnoYx8gXi6KCYgVpnXno4ow@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758754Ab1ELVXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:23:49 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13567 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758657Ab1ELVXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:23:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 12 May 2011 14:23:48 -0700
+Subject: Re: [PATCH v2] net: rfkill: add generic gpio rfkill driver
+From: Rhyland Klein <rklein@nvidia.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "olof@lixom.net" <olof@lixom.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1305226969.3461.38.camel@jlt3.sipsolutions.net>
+References: <1305159661-11982-1-git-send-email-rklein@nvidia.com>
+	 <1305189092.3461.10.camel@jlt3.sipsolutions.net>
+	 <1305224592.10961.10.camel@rklein-linux2>
+	 <1305225648.3461.37.camel@jlt3.sipsolutions.net>
+	 <1305226377.10961.12.camel@rklein-linux2>
+	 <1305226969.3461.38.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 14:23:06 -0700
+Message-ID: <1305235386.10961.13.camel@rklein-linux2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.5.2011 23:07, matt mooney wrote:
-> 2011/5/12 Michal Marek <mmarek@suse.cz>:
->> On 12.5.2011 20:25, mfmooney@gmail.com wrote:
->>> diff --git a/scripts/package/Makefile b/scripts/package/Makefile
->>> index 1b7eaea..a32dc2d 100644
->>> --- a/scripts/package/Makefile
->>> +++ b/scripts/package/Makefile
->>> @@ -118,10 +118,14 @@ perf-tar=perf-$(KERNELVERSION)
->>>
->>>  quiet_cmd_perf_tar = TAR
->>>        cmd_perf_tar = \
->>> -git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
->>> -     $$(cat $(srctree)/tools/perf/MANIFEST) -o $(perf-tar).tar;  \
->>> +git --git-dir=$(srctree)/.git --work-tree=$(srctree)                \
->>
->> Neither git archive not git rev-parse need the work tree, --git-dir=..
->> is sufficient.
+On Thu, 2011-05-12 at 12:02 -0700, Johannes Berg wrote:
+> On Thu, 2011-05-12 at 11:52 -0700, Rhyland Klein wrote:
 > 
-> Are you sure?
+> > > If, on the other hand, rfkill decides that at the time of loading the
+> > > driver wifi should be on, then the first change would be +1 and it'll
+> > > flip between 0 and +1.
+> > > 
+> > > This seems like it'll cause issues at some point, so I think you should
+> > > either allow the driver to set the initial state or hardcode one of
+> > > these possibilities (so at least it's predictable)
+> 
+> > I won't go negative, if you look, it only will disable clock if it knows
+> > it has already enabled it. 
+> 
+> Ah, you're right, I misread the macros.
+> 
+> johannes
+> 
+So the patch is good as is?
 
-Yes.
-$ cd /tmp
-$ git --git-dir=$HOME/linux-2.6/.git rev-parse HEAD
-e0a04b11e4059cab033469617c2a3ce2d8cab416
+rhyland
 
-Michal
+
