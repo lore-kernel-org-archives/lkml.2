@@ -1,226 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab1ELNhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 09:37:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34899 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab1ELNg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 09:36:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:date:content-type:x-mailer:message-id
-         :mime-version;
-        b=hjj6MqO4edb791Yt7p0QZGDqWmFY2X7nENnf9yDRJRrFiDRVQLPgWuZaNJycqQZMs2
-         q7xTalk7FJvktjO+TARv7c38p7P4HnkcnLMMkzjbPMYefMxnAaDNUJKy5fzZs/gyUhsx
-         NA+UPNt3Nd1K1Qtle+mJF7vph9sjcbiopzVEI=
-Subject: [PATCH] kvm: log directly from the guest to the host kvm buffer
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: kvm@vger.kernel.org, joro@8bytes.org, agraf@suse.de, rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 12 May 2011 15:36:44 +0200
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-GGRwtOy/krIvDrdSmGGS"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Message-ID: <1305207413.18715.3.camel@gondor.retis>
-Mime-Version: 1.0
+	id S1757381Ab1ELNip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 09:38:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19362 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757311Ab1ELNie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 09:38:34 -0400
+Message-ID: <4DCBE2C9.20709@redhat.com>
+Date: Thu, 12 May 2011 16:38:17 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBAD8F.8030006@redhat.com> <20110512130644.GF8707@8bytes.org>
+In-Reply-To: <20110512130644.GF8707@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/12/2011 04:06 PM, Joerg Roedel wrote:
+> On Thu, May 12, 2011 at 12:51:11PM +0300, Avi Kivity wrote:
+> >  On 05/12/2011 12:33 PM, Joerg Roedel wrote:
+>
+> >>  Gaah, I was just about to submit a talk about PMU virtualization for KVM
+> >>  Forum :)
+> >
+> >  Speed matters.
+>
+> I'll take that as an argument for paravirt pmu, because that one is
+> certainly faster than anything we can emulate on-top of perf_events ;-)
 
---=-GGRwtOy/krIvDrdSmGGS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Correct, though some massaging of perf_events can make it faster.  Still 
+we'll pay with more exits with the architectural PMU.
 
-Hi,
+Note a v2 PMU can reduce the exit count since it has MSRs for 
+programming many PMCs at once.
 
-As part of some of the work for my project, I have been looking at
-tracing some of the events in the guest from inside the host. In
-my usecase, I have been looking to co-relate the time of a network
-packet arrival with that in the host. ftrace makes such arbitrary
-use quite simple, so I went ahead an extended this functionality
-in terms of a hypercall. There are still a few issues with this patch.
+> >  Note, at this time the architectural PMU is only recognized on an Intel
+> >  host.
+> >
+> >  Is the statement "if an AMD processor returns non-zero information in
+> >  cpuid leaf 0xa, then that processor will be compatible with other
+> >  vendors' processors reporting the same information" correct?
+>
+> AMD processors don't implement that cpuid leaf.
 
-1. For some reason, the first time the hypercall is called, it works
-just fine, but the second invocation refuses to happen. I am still
-clueless about it. (and am looking for hints :-) )
-2. I am not very sure if I got the demarcation between the guest and
-the host code fine or not. Someone more experienced than me should take
-a look at the code as well :-)
-3. This adds a new paravirt call.
-4. This has been implemented just for x86 as of now. If there is enough
-interest, I will look to make it more generic to be used across other
-architectures. However, it is quite easy to do the same.
-5. It still does not have all the fancy ftrace features, but again,
-depending on the interest, I can add all those in.
-6. Create a config option for this feature.
+Right.  But if an AMD processor were to implement that leaf, it would be 
+in a compatible manner, yes?
 
-I think such a feature is useful for debugging purposes and might make
-sense to carry upstream.
-
-Thanks,
-Dhaval
-
----
-kvm: log directly from the guest to the host kvm buffer
-
-Add a new hypercall kvm_pv_ftrace() which logs in the host's
-ftrace buffer. To use, the caller should use the kvm_ftrace
-macro in the guest. This is still very early code and does not fully
-work.
-
-Signed-off-by: Dhaval Giani <dhaval.giani@gmail.com>
-
----
- arch/x86/include/asm/kvm_para.h |   11 +++++++++++
- arch/x86/kernel/kvm.c           |   22 ++++++++++++++++++++++
- arch/x86/kvm/x86.c              |   18 ++++++++++++++++++
- include/linux/kvm_para.h        |    1 +
- 4 files changed, 52 insertions(+)
-
-Index: linux-2.6/arch/x86/kvm/x86.c
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---- linux-2.6.orig/arch/x86/kvm/x86.c
-+++ linux-2.6/arch/x86/kvm/x86.c
-@@ -4832,6 +4832,21 @@ int kvm_hv_hypercall(struct kvm_vcpu *vc
- 	return 1;
- }
-=20
-+int kvm_pv_ftrace(struct kvm_vcpu *vcpu, unsigned long ip, gpa_t addr)
-+{
-+	int ret;
-+	char *fmt =3D (char *) kzalloc(PAGE_SIZE, GFP_KERNEL);
-+
-+	ret =3D kvm_read_guest(vcpu->kvm, addr, fmt, PAGE_SIZE);
-+
-+	trace_printk("KVM instance %p: VCPU %d, IP %lu: %s",
-+				vcpu->kvm, vcpu->vcpu_id, ip, fmt);
-+
-+	kfree(fmt);
-+
-+	return 0;
-+}
-+
- int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
- {
- 	unsigned long nr, a0, a1, a2, a3, ret;
-@@ -4868,6 +4883,9 @@ int kvm_emulate_hypercall(struct kvm_vcp
- 	case KVM_HC_MMU_OP:
- 		r =3D kvm_pv_mmu_op(vcpu, a0, hc_gpa(vcpu, a1, a2), &ret);
- 		break;
-+	case KVM_HC_FTRACE:
-+		ret =3D kvm_pv_ftrace_printk(vcpu, a0, hc_gpa(vcpu, a1, a2));
-+		break;
- 	default:
- 		ret =3D -KVM_ENOSYS;
- 		break;
-Index: linux-2.6/include/linux/kvm_para.h
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---- linux-2.6.orig/include/linux/kvm_para.h
-+++ linux-2.6/include/linux/kvm_para.h
-@@ -19,6 +19,7 @@
- #define KVM_HC_MMU_OP			2
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
-+#define KVM_HC_FTRACE			5
-=20
- /*
-  * hypercalls use architecture specific
-Index: linux-2.6/arch/x86/kernel/kvm.c
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---- linux-2.6.orig/arch/x86/kernel/kvm.c
-+++ linux-2.6/arch/x86/kernel/kvm.c
-@@ -274,6 +274,28 @@ static void kvm_mmu_op(void *buffer, uns
- 	} while (len);
- }
-=20
-+int kvm_ftrace_printk(unsigned long ip, const char *fmt, ...)
-+{
-+	char *buffer =3D kzalloc(PAGE_SIZE, GFP_KERNEL);
-+	int ret;
-+	unsigned long a1, a2;
-+	va_list args;
-+	int i;
-+
-+	va_start(args, fmt);
-+	i =3D vsnprintf(buffer, PAGE_SIZE, fmt, args);
-+	va_end(args);
-+
-+	a1 =3D __pa(buffer);
-+	a2 =3D 0;
-+
-+	ret =3D kvm_hypercall3(KVM_HC_FTRACE, ip, a1, a2);
-+
-+	kfree(buffer);
-+	return ret;
-+}
-+EXPORT_SYMBOL(kvm_ftrace_printk);
-+
- static void mmu_queue_flush(struct kvm_para_state *state)
- {
- 	if (state->mmu_queue_len) {
-Index: linux-2.6/arch/x86/include/asm/kvm_para.h
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---- linux-2.6.orig/arch/x86/include/asm/kvm_para.h
-+++ linux-2.6/arch/x86/include/asm/kvm_para.h
-@@ -21,6 +21,10 @@
-  */
- #define KVM_FEATURE_CLOCKSOURCE2        3
- #define KVM_FEATURE_ASYNC_PF		4
-+/*
-+ * Right now an experiment, hopefully it works
-+ */
-+#define KVM_FEATURE_FTRACE		5
-=20
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -188,6 +192,13 @@ static inline u32 kvm_read_and_reset_pf_
- }
- #endif
-=20
-+int kvm_ftrace_printk(unsigned long ip, const char *fmt, ...);
-+
-+#define kvm_ftrace(fmt, args...)				\
-+	do {							\
-+		kvm_ftrace_printk(_THIS_IP_, fmt, ##args);	\
-+	} while(0)
-+
- #endif /* __KERNEL__ */
-=20
- #endif /* _ASM_X86_KVM_PARA_H */
+That allows us to
 
 
---=-GGRwtOy/krIvDrdSmGGS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+-    if (vendor == intel && leaf_0xa_indicates_arch_pmu)
++    if (leaf_0xa_indicates_arch_pmu)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> >  If so, we can move the detection of the architectural pmu outside the
+> >  cpu vendor checks, and this code will work on both AMD and Intel
+> >  processors (even if the host cpu doesn't have an architectural PMU).
+>
+> Thats already some kind of paravirtualization. Don't get me wrong, I see
+> the point of emulating a real pmu in the guest. But on the other side I
+> think a interface that works across cpu models fits better into the KVM
+> design, because KVM (oposed to other hypervisors) trys to hide details
+> of the host cpu as much as necessary to get migration working between
+> different cpus.
+> And since pmu are, as you said, very model-specific, some abstraction is
+> needed.
 
-iQIcBAABAgAGBQJNy+JsAAoJEFbfuAfUWC1YP9EP/0JLId0kj24iX/nKVjGggmiz
-/KAEo5N+Cx5WbkujEbfEFU45d+Gjky+2tjl24pztAc/Fq/zgKmuc7qJN2lzllw30
-PcpmAZB49G3cLGdPSq4yFh0YQtarpDdr62aqu6H4HXqRLEh3aMhwtnLYNw77guDl
-WvObxQiAYCTNyGJX2IaRvyQIcvu4TYOSEjKRFSYoX6cOlU4X2EgFp3HdLevtgy4p
-bUyZ3AvVhG38Wj7CoDdnoplgV+B8Y4a62Gq/XajcmA60xcO2oF4s7QvDPthRLWuw
-ZRCvzMZRxShvKBpOxfsvKA505xVFVPH54Qsi9N2Q4/YST02PmiS2yD8h+Uq554Tv
-qe7DUKl5fFcffUGZkie+hg8S97GxUSgpQlF20qG97ORdXWfD6/AY/ISQ+q6jy9Ro
-Np6+yRCid1A5rqNuV+EDWDvCWxi0Q8qlQcGRYnHV0ELEnsAlUY3Ku3X7phKAS/yC
-51qe8rK+/lW6ht0iQIx4sy4Z8fiWNkdOpLj0PIKn9mjD0XnSvvZi4K0XlnCqDM9F
-4xAk+xCf0NPpptZU6dBzNOk25ZJRUxKZboiZid97cad4dYJ/uZJK35kK+JRJCxal
-tlBEb8K8dyobcEfzG4p5YfFwvFxXlyLNAUuppq0YQNPzrNF5pa+vAxThS2o1AXA0
-+yi4fMOJKZpOpZgWNXnC
-=xnoD
------END PGP SIGNATURE-----
+The architectural PMU is not model specific.
 
---=-GGRwtOy/krIvDrdSmGGS--
+> In the end probably both ways can be implemented in parallel:
+>
+> 	* re-implementing the host-pmu using perf_events for -cpu host
+> 	  guests
+> 	* a paravirt pmu for everybody that wants migration and more
+> 	  accurate results
+
+
+A paravirt PMU also has to be implemented on top of perf_events.  
+Otherwise we can't share this resource.  So the only question is what 
+the interface looks like.  The arch pmu is non-optimized, but well 
+specified and somewhat supported in guests.  A paravirt pmu is not so 
+well specified at this point but can be faster (less exits).
+
+-- 
+error compiling committee.c: too many arguments to function
 
