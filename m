@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab1ELWE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:04:59 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47645 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758736Ab1ELWE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:04:57 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1305230652.2575.72.camel@mulgrave.site>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
-	 <1305225467.2575.66.camel@mulgrave.site>
-	 <1305229447.2575.71.camel@mulgrave.site>
-	 <1305230652.2575.72.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 17:04:41 -0500
-Message-ID: <1305237882.2575.100.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1758876Ab1ELWH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 18:07:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758842Ab1ELWH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 18:07:27 -0400
+Date: Thu, 12 May 2011 18:07:16 -0400
+From: Dave Jones <davej@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+Message-ID: <20110512220715.GA7451@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+ <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+ <BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
+ <BANLkTimjHiaZ+b03FLb1LX=ycv=cAVyJZw@mail.gmail.com>
+ <20110512213542.GB17596@elte.hu>
+ <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
+ <20110512215023.GA20939@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512215023.GA20939@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
-> Confirmed, I'm afraid ... I can trigger the problem with all three
-> patches under PREEMPT.  It's not a hang this time, it's just kswapd
-> taking 100% system time on 1 CPU and it won't calm down after I unload
-> the system.
-
-Just on a "if you don't know what's wrong poke about and see" basis, I
-sliced out all the complex logic in sleeping_prematurely() and, as far
-as I can tell, it cures the problem behaviour.  I've loaded up the
-system, and taken the tar load generator through three runs without
-producing a spinning kswapd (this is PREEMPT).  I'll try with a
-non-PREEMPT kernel shortly.
-
-What this seems to say is that there's a problem with the complex logic
-in sleeping_prematurely().  I'm pretty sure hacking up
-sleeping_prematurely() just to dump all the calculations is the wrong
-thing to do, but perhaps someone can see what the right thing is ...
-
-By the way, I stripped off all the patches, so this is a plain old
-2.6.38.6 kernel with the default FC15 config.
-
-James
-
----
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0665520..1bdea7d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2255,6 +2255,8 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 	if (remaining)
- 		return true;
+On Thu, May 12, 2011 at 11:50:23PM +0200, Ingo Molnar wrote:
  
-+	return false;
-+
- 	/* Check the watermark levels */
- 	for (i = 0; i < pgdat->nr_zones; i++) {
- 		struct zone *zone = pgdat->node_zones + i;
+ > Dunno, i would not couple them necessarily - certain users might still have 
+ > access to kernel symbols via some other channel - for example the System.map.
+ 
+That always made this security by obscurity feature seem pointless for the bulk
+of users to me. Given the majority are going to be running distro kernels,
+anyone can find those addresses easily no matter how hard we hide them on the
+running system.
 
+Unless we were somehow introduced randomness into where we unpack the kernel
+each boot, and using System.map as a table of offsets instead of absolute addresses.
+
+	Dave
 
