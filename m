@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab1ELQau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 12:30:50 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52578 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757426Ab1ELQar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 12:30:47 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1105121121120.26013@router.home>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <20110512154649.GB4559@redhat.com>
-	 <1305216023.2575.54.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121121120.26013@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 11:30:43 -0500
-Message-ID: <1305217843.2575.57.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1758059Ab1ELQsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 12:48:41 -0400
+Received: from kroah.org ([198.145.64.141]:52506 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758042Ab1ELQsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 12:48:39 -0400
+Date: Thu, 12 May 2011 09:38:49 -0700
+From: Greg KH <greg@kroah.com>
+To: matt mooney <mfmooney@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 00/12] staging: usbip: miscellaneous code cleanup
+Message-ID: <20110512163849.GA26585@kroah.com>
+References: <cover.1305103212.git.mfm@muteddisk.com>
+ <20110511211401.GC4893@kroah.com>
+ <BANLkTikjf9ZAthr3jTUkoUKGJt2UGS73Cg@mail.gmail.com>
+ <20110511231843.GC7362@kroah.com>
+ <BANLkTim_WZdmE31qjChg8u0M8RKzez3fqg@mail.gmail.com>
+ <20110512053109.GA26926@kroah.com>
+ <BANLkTikAVC6vR0SEu86fQ-9mwn9853Qgbg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikAVC6vR0SEu86fQ-9mwn9853Qgbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 11:27 -0500, Christoph Lameter wrote:
-> On Thu, 12 May 2011, James Bottomley wrote:
-> 
-> > However, the fact remains that this seems to be a slub problem and it
-> > needs fixing.
-> 
-> Why are you so fixed on slub in these matters?
+On Wed, May 11, 2011 at 10:41:31PM -0700, matt mooney wrote:
+> I resent two patches that don't rely on my pr_*() commit in a new
+> thread. The other patches will be resent once I get the dev_*()
+> changes in. But I will send in the userspace utility patch asap
+> although I might have created a conflict with the perf patch I sent in
+> earlier.
 
-Because, as has been hashed out in the thread, changing SLUB to SLAB
-makes the hang go away.
+I've applied these two patches.
 
->  Its an key component but
-> there is a high interaction with other subsystems. There was no recent
-> change in slub that changed the order of allocations. There were changes
-> affecting the reclaim logic. Slub has been working just fine with the
-> existing allocation schemes for a long time.
+thanks,
 
-So suggest an alternative root cause and a test to expose it.
-
-James
-
-
+greg k-h
