@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab1ELUak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:30:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46188 "EHLO mx1.suse.de"
+	id S932767Ab1ELUbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:31:42 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:32943 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932642Ab1ELUai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:30:38 -0400
-Message-ID: <4DCC4365.3030907@suse.cz>
-Date: Thu, 12 May 2011 22:30:29 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S932644Ab1ELUbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 16:31:39 -0400
+Date: Thu, 12 May 2011 22:31:25 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110512203125.GL16531@cmpxchg.org>
+References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1105120942050.24560@router.home>
+ <1305213359.2575.46.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121024350.26013@router.home>
+ <1305214993.2575.50.camel@mulgrave.site>
+ <1305215742.27848.40.camel@jaguar>
+ <1305225467.2575.66.camel@mulgrave.site>
+ <1305229447.2575.71.camel@mulgrave.site>
+ <1305230652.2575.72.camel@mulgrave.site>
+ <20110512202917.GK16531@cmpxchg.org>
 MIME-Version: 1.0
-To: mfmooney@gmail.com
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [Resend PATCH] package: Makefile: fix perf target bug
-References: <1d7d3b31c0da82ce8ce75778922155b7004a8f7e.1305224477.git.mfm@muteddisk.com>
-In-Reply-To: <1d7d3b31c0da82ce8ce75778922155b7004a8f7e.1305224477.git.mfm@muteddisk.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512202917.GK16531@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.5.2011 20:25, mfmooney@gmail.com wrote:
-> diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-> index 1b7eaea..a32dc2d 100644
-> --- a/scripts/package/Makefile
-> +++ b/scripts/package/Makefile
-> @@ -118,10 +118,14 @@ perf-tar=perf-$(KERNELVERSION)
->  
->  quiet_cmd_perf_tar = TAR
->        cmd_perf_tar = \
-> -git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
-> -	$$(cat $(srctree)/tools/perf/MANIFEST) -o $(perf-tar).tar;  \
-> +git --git-dir=$(srctree)/.git --work-tree=$(srctree)                \
+On Thu, May 12, 2011 at 10:29:17PM +0200, Johannes Weiner wrote:
+> On Thu, May 12, 2011 at 03:04:12PM -0500, James Bottomley wrote:
+> > On Thu, 2011-05-12 at 14:44 -0500, James Bottomley wrote:
+> > > On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
+> > > > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
+> > > > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
+> > > > > > However, since you admit even you see problems, let's concentrate on
+> > > > > > fixing them rather than recriminations?
+> > > > > 
+> > > > > Yes, please. So does dropping max_order to 1 help?
+> > > > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
+> > > > 
+> > > > Just booting with max_slab_order=1 (and none of the other patches
+> > > > applied) I can still get the machine to go into kswapd at 99%, so it
+> > > > doesn't seem to make much of a difference.
+> > > > 
+> > > > Do you want me to try with the other two patches and max_slab_order=1?
+> > > 
+> > > OK, so patches 1 + 2 plus setting slub_max_order=1 still manages to
+> > > trigger the problem (kswapd spinning at 99%).  This is still with
+> > > PREEMPT; it's possible that non-PREEMPT might be better, so I'll try
+> > > patches 1+2+3 with PREEMPT just to see if the perturbation is caused by
+> > > it.
+> > 
+> > Confirmed, I'm afraid ... I can trigger the problem with all three
+> > patches under PREEMPT.  It's not a hang this time, it's just kswapd
+> > taking 100% system time on 1 CPU and it won't calm down after I unload
+> > the system.
 
-Neither git archive not git rev-parse need the work tree, --git-dir=..
-is sufficient.
+I am so sorry, I missed the "won't" here.  Please ignore.
 
-Michal
-
-> +	archive --prefix=$(perf-tar)/ HEAD^{tree}                   \
-> +	$(addprefix $(srctree)/,                                    \
-> +	  $(shell cat $(srctree)/tools/perf/MANIFEST))              \
-> +	-o $(perf-tar).tar;                                         \
->  mkdir -p $(perf-tar);                                               \
-> -git rev-parse HEAD > $(perf-tar)/HEAD;                              \
-> +git --git-dir=$(srctree)/.git --work-tree=$(srctree)                \
-> +	rev-parse HEAD > $(perf-tar)/HEAD;                          \
->  tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
->  rm -r $(perf-tar);                                                  \
->  $(if $(findstring tar-src,$@),,                                     \
-
+> That is kind of expected, though.  If one CPU is busy with a streaming
+> IO load generating new pages, kswapd is busy reclaiming the old ones
+> so that the generator does not have to do the reclaim itself.
+> 
+> By unload, do you mean stopping the generator?  And if so, how quickly
+> after you stop the generator does kswapd go back to sleep?
