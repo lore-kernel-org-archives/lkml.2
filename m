@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab1ELRYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:24:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49223 "EHLO mx2.suse.de"
+	id S932260Ab1ELR0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:26:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56592 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758179Ab1ELRYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:24:05 -0400
-Date: Thu, 12 May 2011 10:23:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Stephane Pajot <pajot.stephane@gmail.com>
-Cc: arun.thomas@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: comedi: fix tabulation and over 80 chars
- issues in amplc_pci224.c This is a patch to the amplc_pci224.c file that
- fixes up tabulation style errors and over 80 chars warning found by the
- checkpatch.pl tool Signed-off-by: Stephane Pajot <pajot.stephane@gmail.com>
-Message-ID: <20110512172345.GC14812@suse.de>
-References: <1305218698-7889-1-git-send-email-pajot.stephane@gmail.com>
+	id S1758211Ab1ELR0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:26:48 -0400
+Date: Thu, 12 May 2011 19:25:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 09/11] job control: reorganize wait_task_stopped()
+Message-ID: <20110512172506.GA23033@redhat.com>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-10-git-send-email-tj@kernel.org> <20110511154854.GB23688@redhat.com> <20110511192902.GC24245@mtj.dyndns.org> <20110512154247.GC18599@redhat.com> <20110512160253.GK1030@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305218698-7889-1-git-send-email-pajot.stephane@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110512160253.GK1030@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 06:44:58PM +0200, Stephane Pajot wrote:
-> ---
->  drivers/staging/comedi/drivers/amplc_pci224.c |   63 +++++++++++++------------
->  1 files changed, 33 insertions(+), 30 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
-> index 1b5ba1c..2f61358 100644
-> --- a/drivers/staging/comedi/drivers/amplc_pci224.c
-> +++ b/drivers/staging/comedi/drivers/amplc_pci224.c
-> @@ -52,33 +52,33 @@ Supports:
->  Configuration options - PCI224:
->    [0] - PCI bus of device (optional).
->    [1] - PCI slot of device (optional).
-> -          If bus/slot is not specified, the first available PCI device
-> -          will be used.
-> +	If bus/slot is not specified, the first available PCI device
-> +	will be used.
+On 05/12, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Thu, May 12, 2011 at 05:42:47PM +0200, Oleg Nesterov wrote:
+> > On 05/11, Tejun Heo wrote:
+> > >
+> > > > Can't we push this patch ahead of these changes? I can merge it into
+> > > > ptrace branch.
+> > >
+> > > It doesn't really fix the problem tho.  The whole thing is full of
+> > > holes
+> >
+> > Hmm. Could you explain?  (unless you mean ptrace holes)
+>
+> I meant other cases, RUNNING -> STOPPED and EXIT_* transitions.
+> Sleeping wait(2) is reliable without grabbing siglock thanks to
+> setting TASK_INTERRUPTIBLE on start and events waking up the waiter
+> after updating the state, so wait(2) is guaranteed to check the states
+> at least once after change actually has happened.
+>
+> WNOHANG disables that mechanism.
 
-Why did you change these comment lines?
+Yes, this is clear. WNOHANG can "race" with the transitions above.
+But we do not care, this is like reading the word which can be
+changed by another thread, no?
 
-> @@ -401,7 +401,8 @@ MODULE_DEVICE_TABLE(pci, pci224_pci_table);
->  
->  /* this structure is for data unique to this hardware driver.  If
->     several hardware drivers keep similar information in this structure,
-> -   feel free to suggest moving the variable to the struct comedi_device struct.  */
-> +   feel free to suggest moving the variable
-> +   to the struct comedi_device struct.  */
+But this bug is different. Say, the parent does wait(WNOWAIT) and
+gets CLD_STOPPED. After that it has all rights to assume that
+wait(WNOHANG) must report either STOPPED or CONTINUED.
 
-If you are going to change a multi-line comment like this, please use
-the proper formatting for it.  Your change didn't really help anything
-here.
+Oleg.
 
->  struct pci224_private {
->  	struct pci_dev *pci_dev;	/* PCI device */
->  	const unsigned short *hwrange;
-> @@ -678,12 +679,14 @@ static void pci224_ao_handle_fifo(struct comedi_device *dev,
->  	switch (dacstat & PCI224_DACCON_FIFOFL_MASK) {
->  	case PCI224_DACCON_FIFOFL_EMPTY:
->  		room = PCI224_FIFO_ROOM_EMPTY;
-> -		if (!devpriv->ao_stop_continuous && devpriv->ao_stop_count == 0) {
-> -			/* FIFO empty at end of counted acquisition. */
-> -			pci224_ao_stop(dev, s);
-> -			s->async->events |= COMEDI_CB_EOA;
-> -			comedi_event(dev, s);
-> -			return;
-> +		if (!devpriv->ao_stop_continuous == 0) {
-> +			if (devpriv->ao_stop_count == 0) {
-
-You just changed the logic of this if statment, not good at all.
-
-thanks,
-
-greg k-h
