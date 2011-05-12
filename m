@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab1ELTHe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:07:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55904 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752495Ab1ELTHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:07:32 -0400
-Date: Thu, 12 May 2011 12:06:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] genalloc: add support to specify the physical
- address
-Message-Id: <20110512120643.67e7929d.akpm@linux-foundation.org>
-In-Reply-To: <20110512173832.GA8633@n2100.arm.linux.org.uk>
-References: <1303282455-26649-1-git-send-email-plagnioj@jcrosoft.com>
-	<20110428081535.GI17290@n2100.arm.linux.org.uk>
-	<20110512173832.GA8633@n2100.arm.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756253Ab1ELTMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:12:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57004 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754389Ab1ELTMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 15:12:37 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Finn Thain <fthain@telegraphics.com.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Subject: [PATCH 0/3] Fix 8390 regressions
+Date: Thu, 12 May 2011 19:11:37 +0000
+Message-Id: <1305227500-15595-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.5.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 May 2011 19:11:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 18:38:32 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+These patches fix regressions in 3 8390-based network drivers:
+ [1/3] zorro8390: Fix regression caused during net_device_ops conversion
+ [2/3] hydra: Fix regression caused during net_device_ops conversion
+ [3/3] ne-h8300: Fix regression caused during net_device_ops conversion
 
-> On Thu, Apr 28, 2011 at 09:15:35AM +0100, Russell King - ARM Linux wrote:
-> > On Wed, Apr 20, 2011 at 08:54:15AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > > so we specify the virtual address as base of the pool chunk and then
-> > > get the physical address for hardware IP
-> > > 
-> > > as example on at91 we will use on spi, uart or macb
-> > > 
-> > > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > > Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > > Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > ---
-> > > Hi Andrew,
-> > > 	I integrate the documentation fix
-> > > 	could replace the previous one with this one
-> > > 
-> > > V2:
-> > > 	update documentation
-> > > 	use phys_addr_t for physical addr
-> > > Best Regards,
-> > 
-> > I notice no comments on this - maybe it needs to be Cc'd to linux-mm too?
-> > 
-> > Andrew - do you have any views on this?
-> 
-> Still haven't heard anything.  What's the status?
+The first one, for zorro8390, has been tested.
+The second one, for hydra, has been compile-tested only.
 
-Sorry, I missed the earlier email.  I've had v2 queued for 2.6.39 for a
-month.  If someone merges it into some other tree then that's OK by me
-- I'll just drop my copy when it turns up in -next.
+Based on commits 8cfd9e923be54ef66ce174a93f4592b444b96407 ("[ARM] RiscPC: Fix
+etherh oops") and 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390: fix
+regression caused during net_device_ops conversion"), and the patch for
+zorro8390, we have good reasons to believe hydra and ne-h8300 are affected
+as well, as they all include lib8390.c.
+Hence patches for those are also included, although I could not test them.
+
+Gr{oetje,eeting}s,
+
+                                                Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                                            -- Linus Torvalds
 
