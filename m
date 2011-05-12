@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab1ELOFw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:05:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52866 "EHLO mga02.intel.com"
+	id S1757552Ab1ELOEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:04:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35880 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757489Ab1ELOEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:04:14 -0400
+	id S1757463Ab1ELOES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:04:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,358,1301900400"; 
-   d="scan'208";a="641767832"
-Message-Id: <20110512140032.548283918@intel.com>
+   d="scan'208";a="1345484"
+Message-Id: <20110512140032.677908992@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 12 May 2011 21:57:21 +0800
+Date: Thu, 12 May 2011 21:57:22 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -19,98 +19,128 @@ cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/17] writeback: remove .nonblocking and .encountered_congestion
+Subject: [PATCH 16/17] writeback: trace event writeback_single_inode
 References: <20110512135706.937596128@intel.com>
-Content-Disposition: inline; filename=writeback-kill-nonblocking.patch
+Content-Disposition: inline; filename=writeback-trace-writeback_single_inode.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove two unused struct writeback_control fields:
+It is valuable to know how the dirty inodes are iterated and their IO size.
 
-	.encountered_congestion	(completely unused)
-	.nonblocking		(never set, checked/showed in XFS,NFS/btrfs)
+"writeback_single_inode: bdi 8:0: ino=134246746 state=I_DIRTY_SYNC|I_SYNC age=414 index=0 to_write=1024 wrote=0"
 
-The .for_background check in nfs_write_inode() is also removed btw,
-as .for_background implies WB_SYNC_NONE.
+- "state" reflects inode->i_state at the end of writeback_single_inode()
+- "index" reflects mapping->writeback_index after the ->writepages() call
+- "to_write" is the wbc->nr_to_write at entrance of writeback_single_inode()
+- "wrote" is the number of pages actually written
 
-Reviewed-by: Jan Kara <jack@suse.cz>
-Proposed-by: Christoph Hellwig <hch@infradead.org>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/nfs/write.c               |    3 +--
- fs/xfs/linux-2.6/xfs_aops.c  |    2 +-
- include/linux/writeback.h    |    2 --
- include/trace/events/btrfs.h |    6 ++----
- 4 files changed, 4 insertions(+), 9 deletions(-)
+ fs/fs-writeback.c                |    6 ++-
+ include/trace/events/writeback.h |   56 +++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 1 deletion(-)
 
---- linux-next.orig/fs/xfs/linux-2.6/xfs_aops.c	2011-05-06 00:35:11.000000000 +0800
-+++ linux-next/fs/xfs/linux-2.6/xfs_aops.c	2011-05-06 00:35:14.000000000 +0800
-@@ -970,7 +970,7 @@ xfs_vm_writepage(
- 	offset = page_offset(page);
- 	type = IO_OVERWRITE;
+--- linux-next.orig/include/trace/events/writeback.h	2011-05-12 11:46:27.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-05-12 11:48:55.000000000 +0800
+@@ -8,6 +8,19 @@
+ #include <linux/device.h>
+ #include <linux/writeback.h>
  
--	if (wbc->sync_mode == WB_SYNC_NONE && wbc->nonblocking)
-+	if (wbc->sync_mode == WB_SYNC_NONE)
- 		nonblocking = 1;
++#define show_inode_state(state)					\
++	__print_flags(state, "|",				\
++		{I_DIRTY_SYNC,		"I_DIRTY_SYNC"},	\
++		{I_DIRTY_DATASYNC,	"I_DIRTY_DATASYNC"},	\
++		{I_DIRTY_PAGES,		"I_DIRTY_PAGES"},	\
++		{I_NEW,			"I_NEW"},		\
++		{I_WILL_FREE,		"I_WILL_FREE"},		\
++		{I_FREEING,		"I_FREEING"},		\
++		{I_CLEAR,		"I_CLEAR"},		\
++		{I_SYNC,		"I_SYNC"},		\
++		{I_REFERENCED,		"I_REFERENCED"}		\
++	)
++
+ struct wb_writeback_work;
  
- 	do {
---- linux-next.orig/include/trace/events/btrfs.h	2011-05-06 00:35:11.000000000 +0800
-+++ linux-next/include/trace/events/btrfs.h	2011-05-06 00:35:14.000000000 +0800
-@@ -284,7 +284,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
- 		__field(	long,   pages_skipped		)
- 		__field(	loff_t, range_start		)
- 		__field(	loff_t, range_end		)
--		__field(	char,   nonblocking		)
- 		__field(	char,   for_kupdate		)
- 		__field(	char,   for_reclaim		)
- 		__field(	char,   range_cyclic		)
-@@ -299,7 +298,6 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
- 		__entry->pages_skipped	= wbc->pages_skipped;
- 		__entry->range_start	= wbc->range_start;
- 		__entry->range_end	= wbc->range_end;
--		__entry->nonblocking	= wbc->nonblocking;
- 		__entry->for_kupdate	= wbc->for_kupdate;
- 		__entry->for_reclaim	= wbc->for_reclaim;
- 		__entry->range_cyclic	= wbc->range_cyclic;
-@@ -310,13 +308,13 @@ DECLARE_EVENT_CLASS(btrfs__writepage,
- 
- 	TP_printk("root = %llu(%s), ino = %lu, page_index = %lu, "
- 		  "nr_to_write = %ld, pages_skipped = %ld, range_start = %llu, "
--		  "range_end = %llu, nonblocking = %d, for_kupdate = %d, "
-+		  "range_end = %llu, for_kupdate = %d, "
- 		  "for_reclaim = %d, range_cyclic = %d, writeback_index = %lu",
- 		  show_root_type(__entry->root_objectid),
- 		  (unsigned long)__entry->ino, __entry->index,
- 		  __entry->nr_to_write, __entry->pages_skipped,
- 		  __entry->range_start, __entry->range_end,
--		  __entry->nonblocking, __entry->for_kupdate,
-+		  __entry->for_kupdate,
- 		  __entry->for_reclaim, __entry->range_cyclic,
- 		  (unsigned long)__entry->writeback_index)
+ DECLARE_EVENT_CLASS(writeback_work_class,
+@@ -201,6 +214,49 @@ DEFINE_EVENT(writeback_congest_waited_te
+ 	TP_ARGS(usec_timeout, usec_delayed)
  );
---- linux-next.orig/fs/nfs/write.c	2011-05-06 00:35:11.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2011-05-06 00:35:14.000000000 +0800
-@@ -1562,8 +1562,7 @@ int nfs_write_inode(struct inode *inode,
- 		int status;
- 		bool sync = true;
  
--		if (wbc->sync_mode == WB_SYNC_NONE || wbc->nonblocking ||
--		    wbc->for_background)
-+		if (wbc->sync_mode == WB_SYNC_NONE)
- 			sync = false;
++TRACE_EVENT(writeback_single_inode,
++
++	TP_PROTO(struct inode *inode,
++		 struct writeback_control *wbc,
++		 unsigned long nr_to_write
++	),
++
++	TP_ARGS(inode, wbc, nr_to_write),
++
++	TP_STRUCT__entry(
++		__array(char, name, 32)
++		__field(unsigned long, ino)
++		__field(unsigned long, state)
++		__field(unsigned long, age)
++		__field(unsigned long, writeback_index)
++		__field(long, nr_to_write)
++		__field(unsigned long, wrote)
++	),
++
++	TP_fast_assign(
++		strncpy(__entry->name,
++			dev_name(inode->i_mapping->backing_dev_info->dev), 32);
++		__entry->ino		= inode->i_ino;
++		__entry->state		= inode->i_state;
++		__entry->age		= (jiffies - inode->dirtied_when) *
++								1000 / HZ;
++		__entry->writeback_index = inode->i_mapping->writeback_index;
++		__entry->nr_to_write	= nr_to_write;
++		__entry->wrote		= nr_to_write - wbc->nr_to_write;
++	),
++
++	TP_printk("bdi %s: ino=%lu state=%s age=%lu "
++		  "index=%lu to_write=%ld wrote=%lu",
++		  __entry->name,
++		  __entry->ino,
++		  show_inode_state(__entry->state),
++		  __entry->age,
++		  __entry->writeback_index,
++		  __entry->nr_to_write,
++		  __entry->wrote
++	)
++);
++
+ #endif /* _TRACE_WRITEBACK_H */
  
- 		status = pnfs_layoutcommit_inode(inode, sync);
---- linux-next.orig/include/linux/writeback.h	2011-05-06 00:35:14.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-05-06 00:35:14.000000000 +0800
-@@ -36,8 +36,6 @@ struct writeback_control {
- 	loff_t range_start;
- 	loff_t range_end;
+ /* This part must be outside protection */
+--- linux-next.orig/fs/fs-writeback.c	2011-05-12 11:46:27.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-12 11:48:55.000000000 +0800
+@@ -356,6 +356,7 @@ writeback_single_inode(struct inode *ino
+ 		       struct writeback_control *wbc)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
++	long nr_to_write = wbc->nr_to_write;
+ 	unsigned dirty;
+ 	int ret;
  
--	unsigned nonblocking:1;		/* Don't get stuck on request queues */
--	unsigned encountered_congestion:1; /* An output: a queue is full */
- 	unsigned for_kupdate:1;		/* A kupdate writeback */
- 	unsigned for_background:1;	/* A background writeback */
- 	unsigned tagged_sync:1;		/* do livelock prevention for sync */
+@@ -378,7 +379,8 @@ writeback_single_inode(struct inode *ino
+ 		 */
+ 		if (wbc->sync_mode != WB_SYNC_ALL) {
+ 			requeue_io(inode, wb);
+-			return 0;
++			ret = 0;
++			goto out;
+ 		}
+ 
+ 		/*
+@@ -476,6 +478,8 @@ writeback_single_inode(struct inode *ino
+ 		}
+ 	}
+ 	inode_sync_complete(inode);
++out:
++	trace_writeback_single_inode(inode, wbc, nr_to_write);
+ 	return ret;
+ }
+ 
 
 
