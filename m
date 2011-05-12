@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab1ELUgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:36:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:1573 "EHLO mail.perches.com"
+	id S1758626Ab1ELUkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:40:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46407 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758620Ab1ELUgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:36:15 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH] net: af_packet: Don't initialize vnet_hdr
-Date: Thu, 12 May 2011 13:36:10 -0700
-Message-Id: <18a010357eb63dfd50751c5eb529f6261cf90ecd.1305232529.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.5.rc3.dirty
+	id S1757573Ab1ELUkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 16:40:22 -0400
+Date: Thu, 12 May 2011 13:40:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: =?iso-8859-1?Q?St=E9phane?= Pajot <pajot.stephane@gmail.com>
+Cc: arun.thomas@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: comedi: fix tabulation and over 80 chars
+ issues in amplc_pci224.c This is a patch to the amplc_pci224.c file that
+ fixes up tabulation style errors and over 80 chars warning found by the
+ checkpatch.pl tool Signed-off-by: Steph
+Message-ID: <20110512204009.GA3735@suse.de>
+References: <BANLkTi=1fdP1t0SN0fLEq_Rhx7kJkTVRLQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=1fdP1t0SN0fLEq_Rhx7kJkTVRLQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save a memset, initialize only the portion necessary.
+On Thu, May 12, 2011 at 10:03:35PM +0200, Stéphane Pajot wrote:
+> My answer in purple :
 
-packet_snd either gets this structure completely from
-memcpy_fromiovec or uses only the hdr_len set to 0,
-so don't always initialize the structure to 0.
+Purple doesn't show up in plain text email clients :(
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/packet/af_packet.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+> 2011/5/12 Greg KH <gregkh@suse.de>
+> 
+>     On Thu, May 12, 2011 at 06:44:58PM +0200, Stephane Pajot wrote:
+>     > ---
+>     >  drivers/staging/comedi/drivers/amplc_pci224.c |   63
+>     +++++++++++++------------
+>     >  1 files changed, 33 insertions(+), 30 deletions(-)
+>     >
+>     > diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/
+>     staging/comedi/drivers/amplc_pci224.c
+>     > index 1b5ba1c..2f61358 100644
+>     > --- a/drivers/staging/comedi/drivers/amplc_pci224.c
+>     > +++ b/drivers/staging/comedi/drivers/amplc_pci224.c
+>     > @@ -52,33 +52,33 @@ Supports:
+>     >  Configuration options - PCI224:
+>     >    [0] - PCI bus of device (optional).
+>     >    [1] - PCI slot of device (optional).
+>     > -          If bus/slot is not specified, the first available PCI device
+>     > -          will be used.
+>     > +     If bus/slot is not specified, the first available PCI device
+>     > +     will be used.
+> 
+>     Why did you change these comment lines ? 
+> 
+> 
+> I change the space by a tabulation. Checkpatch.pl return errors about that
+> (maybe it's a mistake...). Question : when checkpatch.pl return this kind of
+> error (tabulation, or style in general) do we have to correct it too ?    
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 549527b..ac88df9 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1123,7 +1123,7 @@ static int packet_snd(struct socket *sock,
- 	__be16 proto;
- 	unsigned char *addr;
- 	int ifindex, err, reserve = 0;
--	struct virtio_net_hdr vnet_hdr = { 0 };
-+	struct virtio_net_hdr vnet_hdr;
- 	int offset = 0;
- 	int vnet_hdr_len;
- 	struct packet_sock *po = pkt_sk(sk);
-@@ -1206,7 +1206,9 @@ static int packet_snd(struct socket *sock,
- 				goto out_unlock;
- 
- 		}
--	}
-+	} else
-+		vnet_hdr.hdr_len = 0;
-+
- 
- 	err = -EMSGSIZE;
- 	if (!gso_type && (len > dev->mtu + reserve + VLAN_HLEN))
--- 
-1.7.5.rc3.dirty
+Just leave it alone, checkpatch isn't always correct, it's a guideline.
 
+thanks,
+
+greg k-h
