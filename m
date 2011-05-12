@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab1ELHJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 03:09:06 -0400
-Received: from nm12.access.bullet.mail.sp2.yahoo.com ([98.139.44.139]:38593
-	"HELO nm12.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757131Ab1ELHI6 (ORCPT
+	id S1757128Ab1ELHLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 03:11:18 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:32837 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291Ab1ELHLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 03:08:58 -0400
-X-Yahoo-Newman-Id: 946099.61918.bm@omp1019.access.mail.sp2.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: nOdnFQAVM1kCov2OUFfvrECNzNHLG987KaYSQ4mLSfqW859
- OAv64QTPVbiLeHwz19nK1hneP5aCKitSyiSPXRBQlhwhvBTj4HMhPpgAi_kU
- qcgc3oCty5u5HSNNE1Cv2R7eTwjAbW4Tndu87tQjtWQ7YLnKH85OnUje71lW
- ANYiZ1t0fwg2eoe3.Ionw2ilZD1uIngeisuHmPqLefiuZbY1BdU1eqsmeDcB
- oYo0KUr5jcEd0HbU7HQ5.iwJMTydX4W5jJJrV9GgWoY2UUeBFd6m.oxkV8nw
- PyDG2ILNhjocI9bmlv7WUphEY3kOiU_.492euvOIi6gAyjovDgRHwNAKrWKp
- ya5iM_JyHlfDjIp1iqdTvAXJ_PCQdLUt1EuSZxTSNPx4WuqEb7l5xK6xz_Yw
- NHkWhU9TOiDCBG2Tp30d1_q93_YQPjljv.5uv8_4y3Lfr.TgswasLEprWDYM
- jd2hzqw6PvVhWNWdO6hS3YVGPLEJBZshIBZJiXsMYXTFJgzMLJ02DaCPlrA-
- -
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Svec <martin.svec@zoner.cz>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v3 14/14] iscsi-target: Add Makefile/Kconfig and update TCM top level
-Date: Thu, 12 May 2011 00:07:21 -0700
-Message-Id: <1305184041-32189-15-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1305184041-32189-1-git-send-email-nab@linux-iscsi.org>
-References: <1305184041-32189-1-git-send-email-nab@linux-iscsi.org>
+	Thu, 12 May 2011 03:11:11 -0400
+X-Auth-Info: PHX+E2uwQMX1uX8j9q95/YeCqKALtcW8phC/J4beGxs=
+Message-ID: <4DCB88A4.2010901@grandegger.com>
+Date: Thu, 12 May 2011 09:13:40 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        sachi@mistralsolutions.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Netdev@vger.kernel.org,
+        nsekhar@ti.com, open list <linux-kernel@vger.kernel.org>,
+        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, m-watkins@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/1] can: add pruss CAN driver.
+References: <1303474267-6344-1-git-send-email-subhasish@mistralsolutions.com>	<2BFFDAA0A0DE4820876E5549867938EC@subhasishg>	<201105112331.47954.arnd@arndb.de> <201105112344.44171.arnd@arndb.de>
+In-Reply-To: <201105112344.44171.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On 05/11/2011 11:44 PM, Arnd Bergmann wrote:
+> On Wednesday 11 May 2011, Arnd Bergmann wrote:
+>> If that interpretation is right, I would seriously recommend rethinking
+>> the design of the CAN firmware for pruss, so you can start doing something
+>> useful with the offload engine that fits into the Socket CAN API, or that
+>> would be a useful extension to Socket CAN that is also implementable in
+>> the kernel for all other drivers in a meaningful way.
+> 
+> I've looked some more into the CAN socket implementation, and I suppose that
+> the idea of the pruss driver was really to help do the work from the
+> can_rcv_filter function in hardware.
 
-Add Makefile/Kconfig and update drivers/target/[Makefile,Kconfig]
-to include the fabric module.
+That software filter is per socket while the hardware filter will be per
+device.
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/Kconfig        |    1 +
- drivers/target/Makefile       |    1 +
- drivers/target/iscsi/Kconfig  |   18 ++++++++++++++++++
- drivers/target/iscsi/Makefile |   20 ++++++++++++++++++++
- 4 files changed, 40 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/iscsi/Kconfig
- create mode 100644 drivers/target/iscsi/Makefile
+> Doing this right would really mean supporting both a mode where any new
+> filter that gets added to socket can ends up being added to the hardware
+> as long as it fits, similar to how we can add additional unicast mac
+> addresses to an ethernet NIC. However, when the filters from all user
+> sockets combined can not be represented in the hardware driver, the hardware
+> needs to be put into a less efficient mode where all packets are returned
+> to the kernel and processed in software.
 
-diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig
-index 9ef2dbb..e0619cd 100644
---- a/drivers/target/Kconfig
-+++ b/drivers/target/Kconfig
-@@ -30,5 +30,6 @@ config TCM_PSCSI
- 	passthrough access to Linux/SCSI device
- 
- source "drivers/target/loopback/Kconfig"
-+source "drivers/target/iscsi/Kconfig"
- 
- endif
-diff --git a/drivers/target/Makefile b/drivers/target/Makefile
-index 1178bbf..2fbc20e 100644
---- a/drivers/target/Makefile
-+++ b/drivers/target/Makefile
-@@ -24,3 +24,4 @@ obj-$(CONFIG_TCM_PSCSI)		+= target_core_pscsi.o
- 
- # Fabric modules
- obj-$(CONFIG_LOOPBACK_TARGET)	+= loopback/
-+obj-$(CONFIG_ISCSI_TARGET)	+= iscsi/
-diff --git a/drivers/target/iscsi/Kconfig b/drivers/target/iscsi/Kconfig
-new file mode 100644
-index 0000000..abdb8f9
---- /dev/null
-+++ b/drivers/target/iscsi/Kconfig
-@@ -0,0 +1,18 @@
-+config ISCSI_TARGET
-+	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
-+	depends on m
-+	select CRYPTO
-+	select CRYPTO_CRC32C
-+	select CRYPTO_CRC32C_INTEL if X86
-+	help
-+	Say M here to enable the ConfigFS enabled Linux-iSCSI.org iSCSI
-+	Target Mode Stack.
-+
-+if ISCSI_TARGET
-+
-+config ISCSI_TARGET_DEBUG
-+	bool "LIO-Target iscsi_debug.h ring buffer messages"
-+	help
-+	Say Y here to enable the legacy DEBUG_ISCSI macros in iscsi_debug.h
-+
-+endif
-diff --git a/drivers/target/iscsi/Makefile b/drivers/target/iscsi/Makefile
-new file mode 100644
-index 0000000..5b9a2cf
---- /dev/null
-+++ b/drivers/target/iscsi/Makefile
-@@ -0,0 +1,20 @@
-+iscsi_target_mod-y +=		iscsi_target_parameters.o \
-+				iscsi_target_seq_pdu_list.o \
-+				iscsi_target_tq.o \
-+				iscsi_target_auth.o \
-+				iscsi_target_datain_values.o \
-+				iscsi_target_device.o \
-+				iscsi_target_erl0.o \
-+				iscsi_target_erl1.o \
-+				iscsi_target_erl2.o \
-+				iscsi_target_login.o \
-+				iscsi_target_nego.o \
-+				iscsi_target_nodeattrib.o \
-+				iscsi_target_tmr.o \
-+				iscsi_target_tpg.o \
-+				iscsi_target_util.o \
-+				iscsi_target.o \
-+				iscsi_target_configfs.o \
-+				iscsi_target_stat.o
-+
-+obj-$(CONFIG_ISCSI_TARGET)	+= iscsi_target_mod.o
--- 
-1.7.5.1
+Well, that seems sophisticated resulting in a complex implementation
+(may code line) also because hardware filters are very hardware
+dependent. Usually just one global filter can be defined. I think that's
+overkill. A simple interface using:
 
+  ip link set can0 type can filter <id>:<mask> [<id>:<mask> ...]
+
+would just be fine.
+
+Wolfgang.
