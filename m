@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab1ELLDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 07:03:36 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59645 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab1ELLDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 07:03:35 -0400
-Date: Thu, 12 May 2011 13:03:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf: Carve out cgroup-related code
-Message-ID: <20110512110321.GO9937@elte.hu>
-References: <20110511121135.GA25865@aftab>
- <1305121600.2914.214.camel@laptop>
- <20110511140208.GD25827@aftab>
- <20110511141342.GA19053@elte.hu>
- <20110511143149.GA26548@aftab>
- <20110511152156.GA21707@elte.hu>
- <20110511170912.GA27362@aftab>
- <20110512103644.GH9937@elte.hu>
- <20110512105421.GC17731@aftab>
+	id S1754207Ab1ELLFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 07:05:08 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48066 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751738Ab1ELLFG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 07:05:06 -0400
+From: Amit Virdi <amit.virdi@st.com>
+To: <samuel@sortiz.org>, <alan@linux.intel.com>, <davem@davemloft.net>,
+        <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <amit.virdi@st.com>, <shiraz.hashim@st.com>, <armando.visconti@st.com>,
+        <viresh.kumar@st.com>
+Subject: [PATCH] net/irda/ircomm_tty.c: Use flip buffers to deliver data
+Date: Thu, 12 May 2011 16:34:40 +0530
+Message-ID: <1305198280-14449-1-git-send-email-amit.virdi@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512105421.GC17731@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+use tty_insert_flip_string and tty_flip_buffer_push to deliver incoming data
+packets from the IrDA device instead of delivering the packets directly to the
+line discipline. Following later approach resulted in warning "Sleeping function
+called from invalid context".
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+---
+ net/irda/ircomm/ircomm_tty.c |   14 +++++---------
+ 1 files changed, 5 insertions(+), 9 deletions(-)
 
-> On Thu, May 12, 2011 at 06:36:44AM -0400, Ingo Molnar wrote:
-> > 
-> > * Borislav Petkov <bp@amd64.org> wrote:
-> > 
-> > > Done, patch below. I've moved all exports local to kernel/events/* to
-> > > internal.h. Branch at
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git perf-split
-> > 
-> > Beyond the things Peter noticed, there's also this new bit in perf_event.h:
-> > 
-> > enum event_type_t {
-> >         EVENT_FLEXIBLE = 0x1,
-> >         EVENT_PINNED = 0x2,
-> >         EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
-> > };
-> > 
-> > this got there from core.c, albeit it's only core.c that uses it.
-> > 
-> > If then this should move to internal.h - or stay local to core.c.
-> 
-> event_type_t gets pulled by pushing
-> 
-> ctx_sched_out(..., enum event_type_t event_type)
-> 
-> up into the header since otherwise gcc complains of not seeing the
-> definition of the third argument.
-> 
-> And yes, it should go to internal.h.
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index a39cca8..b3cc8b3 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -38,6 +38,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/termios.h>
+ #include <linux/tty.h>
++#include <linux/tty_flip.h>
+ #include <linux/interrupt.h>
+ #include <linux/device.h>		/* for MODULE_ALIAS_CHARDEV_MAJOR */
+ 
+@@ -1132,7 +1133,6 @@ static int ircomm_tty_data_indication(void *instance, void *sap,
+ 				      struct sk_buff *skb)
+ {
+ 	struct ircomm_tty_cb *self = (struct ircomm_tty_cb *) instance;
+-	struct tty_ldisc *ld;
+ 
+ 	IRDA_DEBUG(2, "%s()\n", __func__ );
+ 
+@@ -1161,15 +1161,11 @@ static int ircomm_tty_data_indication(void *instance, void *sap,
+ 	}
+ 
+ 	/*
+-	 * Just give it over to the line discipline. There is no need to
+-	 * involve the flip buffers, since we are not running in an interrupt
+-	 * handler
++	 * Use flip buffer functions since the code may be called from interrupt
++	 * context
+ 	 */
+-
+-	ld = tty_ldisc_ref(self->tty);
+-	if (ld)
+-		ld->ops->receive_buf(self->tty, skb->data, NULL, skb->len);
+-	tty_ldisc_deref(ld);
++	tty_insert_flip_string(self->tty, skb->data, skb->len);
++	tty_flip_buffer_push(self->tty);
+ 
+ 	/* No need to kfree_skb - see ircomm_ttp_data_indication() */
+ 
+-- 
+1.7.3.4
 
-yeah.
-
-Thanks,
-
-	Ingo
