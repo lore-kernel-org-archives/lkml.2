@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932868Ab1ELViF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:38:05 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53162
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932771Ab1ELViE (ORCPT
+	id S932882Ab1ELViV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:38:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56736 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932759Ab1ELViR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:38:04 -0400
-Date: Thu, 12 May 2011 14:37:30 -0700 (PDT)
-Message-Id: <20110512.143730.193713822.davem@davemloft.net>
-To: sbhatewara@vmware.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH net-next] vmxnet3: Use single tx queue when
- CONFIG_PCI_MSI not defined
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.00.1105100903110.1095@sbhatewara-dev1.eng.vmware.com>
-References: <alpine.LRH.2.00.1105091715150.26660@sbhatewara-dev1.eng.vmware.com>
-	<alpine.LRH.2.00.1105100903110.1095@sbhatewara-dev1.eng.vmware.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 12 May 2011 17:38:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=C4CeOVBQRMnmVqFwyogx2RWrdwJhiGymtPX3n/+lVLAtgqCa0QBDfVT6/AdE00qtpo
+         hDavIV/7b2Sst9AcsZFYKSpcjmUfyAfE06+pghv+hS8uMj3lkw7B4KPRAniFdgovV4B3
+         ITjHK8LEg7x2t2X1kRaB/mc0u29ZUMUK19LTw=
+MIME-Version: 1.0
+In-Reply-To: <4DCC4F05.7010306@suse.cz>
+References: <1d7d3b31c0da82ce8ce75778922155b7004a8f7e.1305224477.git.mfm@muteddisk.com>
+	<4DCC4365.3030907@suse.cz>
+	<BANLkTimKpJoUnoYx8gXi6KCYgVpnXno4ow@mail.gmail.com>
+	<4DCC4F05.7010306@suse.cz>
+Date: Thu, 12 May 2011 14:38:16 -0700
+Message-ID: <BANLkTimrW=ZG2sGG1Q8QehSnh5rW1eBzGw@mail.gmail.com>
+Subject: Re: [Resend PATCH] package: Makefile: fix perf target bug
+From: matt mooney <mfmooney@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-Date: Tue, 10 May 2011 09:13:56 -0700 (PDT)
+On Thu, May 12, 2011 at 2:20 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On 12.5.2011 23:07, matt mooney wrote:
+>> 2011/5/12 Michal Marek <mmarek@suse.cz>:
+>>> On 12.5.2011 20:25, mfmooney@gmail.com wrote:
+>>>> diff --git a/scripts/package/Makefile b/scripts/package/Makefile
+>>>> index 1b7eaea..a32dc2d 100644
+>>>> --- a/scripts/package/Makefile
+>>>> +++ b/scripts/package/Makefile
+>>>> @@ -118,10 +118,14 @@ perf-tar=perf-$(KERNELVERSION)
+>>>>
+>>>>  quiet_cmd_perf_tar = TAR
+>>>>        cmd_perf_tar = \
+>>>> -git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
+>>>> -     $$(cat $(srctree)/tools/perf/MANIFEST) -o $(perf-tar).tar;  \
+>>>> +git --git-dir=$(srctree)/.git --work-tree=$(srctree)                \
+>>>
+>>> Neither git archive not git rev-parse need the work tree, --git-dir=..
+>>> is sufficient.
+>>
+>> Are you sure?
+>
+> Yes.
+> $ cd /tmp
+> $ git --git-dir=$HOME/linux-2.6/.git rev-parse HEAD
+> e0a04b11e4059cab033469617c2a3ce2d8cab416
+>
 
-> 
-> Resending this patch with few changes.
-> 
-> 
-> Avoid multiple queues when MSI or MSI-X not available
-> 
-> Limit number of Tx queues to 1 if MSI/MSI-X support is not configured in
-> the kernel. This will make number of tx and rx queues equal when MSI/X 
-> is not configured thus providing better performance.
-> 
-> Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
-> Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+You are right about that command, but it doesn't use the source tree.
+Do a git --git-dir=$HOME/linux-2.6/.git status from /tmp and see what
+happens.
 
-Applied, thanks.
+So do you want me to send a new patch without --work-tree= in git rev-parse?
+
+-matt
+
+-- 
+GPG-Key: 9AFE00EA
