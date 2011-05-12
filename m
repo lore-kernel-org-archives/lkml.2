@@ -1,108 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab1ELW6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:58:20 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:41267 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab1ELW6T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:58:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qqijDYRAbeoJfiteRNoZPQSEA5eedQ2k1Jrfnm8nD6qHgUONB8XQZGRjCUmO1Z0v/H
-         pYG3zJKfXfpsv90Oyy/z/M86w3y7kO+ys55LP7FQi9GmpEk8xQf+9SPTwGwRuDmt+MsH
-         WroAa9X556yrFMP9MiR7RpYCVv1pB/ysu4vS8=
-MIME-Version: 1.0
-In-Reply-To: <20110512221506.GM16531@cmpxchg.org>
-References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	<alpine.DEB.2.00.1105120942050.24560@router.home>
-	<1305213359.2575.46.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105121024350.26013@router.home>
-	<1305214993.2575.50.camel@mulgrave.site>
-	<1305215742.27848.40.camel@jaguar>
-	<1305225467.2575.66.camel@mulgrave.site>
-	<1305229447.2575.71.camel@mulgrave.site>
-	<1305230652.2575.72.camel@mulgrave.site>
-	<1305237882.2575.100.camel@mulgrave.site>
-	<20110512221506.GM16531@cmpxchg.org>
-Date: Fri, 13 May 2011 07:58:17 +0900
-Message-ID: <BANLkTikRFjGtBhnTBH_n=rDe+Y6kCjt30g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>,
+	id S1757458Ab1ELXBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:01:21 -0400
+Received: from kroah.org ([198.145.64.141]:36050 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756900Ab1ELXBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 19:01:20 -0400
+Date: Thu, 12 May 2011 16:01:02 -0700
+From: Greg KH <greg@kroah.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] sysfs: remove "last sysfs file:" line from the oops messages
+Message-ID: <20110512230102.GA19069@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 7:15 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Thu, May 12, 2011 at 05:04:41PM -0500, James Bottomley wrote:
->> On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
->> > Confirmed, I'm afraid ... I can trigger the problem with all three
->> > patches under PREEMPT.  It's not a hang this time, it's just kswapd
->> > taking 100% system time on 1 CPU and it won't calm down after I unload
->> > the system.
->>
->> Just on a "if you don't know what's wrong poke about and see" basis, I
->> sliced out all the complex logic in sleeping_prematurely() and, as far
->> as I can tell, it cures the problem behaviour.  I've loaded up the
->> system, and taken the tar load generator through three runs without
->> producing a spinning kswapd (this is PREEMPT).  I'll try with a
->> non-PREEMPT kernel shortly.
->>
->> What this seems to say is that there's a problem with the complex logic
->> in sleeping_prematurely().  I'm pretty sure hacking up
->> sleeping_prematurely() just to dump all the calculations is the wrong
->> thing to do, but perhaps someone can see what the right thing is ...
->
-> I think I see the problem: the boolean logic of sleeping_prematurely()
-> is odd.  If it returns true, kswapd will keep running.  So if
-> pgdat_balanced() returns true, kswapd should go to sleep.
->
-> This?
+---------------
+I'm going to queue this up for the .40 kernel merge window, any
+objections?
+---------------
 
-Yes. Good catch.
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2b701e0..092d773 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2261,7 +2261,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
->         * must be balanced
->         */
->        if (order)
-> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
-> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
->        else
->                return !all_zones_ok;
->  }
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+On some arches (x86, sh, arm, unicore, powerpc) the oops message would
+print out the last sysfs file accessed.
 
+This was very useful in finding a number of sysfs and driver core bugs
+in the 2.5 and early 2.6 development days, but it has been a number of
+years since this file has actually helped in debugging anything that
+couldn't also be trivially determined from the stack traceback.
 
+So it's time to delete the line.  This is good as we need all the space
+we can get for oops messages at times on consoles.
 
--- 
-Kind regards,
-Minchan Kim
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/arm/kernel/traps.c       |    1 -
+ arch/powerpc/kernel/traps.c   |    1 -
+ arch/sh/kernel/traps_32.c     |    1 -
+ arch/unicore32/kernel/traps.c |    1 -
+ arch/x86/kernel/dumpstack.c   |    1 -
+ fs/sysfs/file.c               |   12 ------------
+ include/linux/sysfs.h         |    5 -----
+ 7 files changed, 22 deletions(-)
+
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 3b54ad1..d52eec2 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -234,7 +234,6 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
+ 
+ 	printk(KERN_EMERG "Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
+ 	       str, err, ++die_counter);
+-	sysfs_printk_last_file();
+ 
+ 	/* trap and error numbers are mostly meaningless on ARM */
+ 	ret = notify_die(DIE_OOPS, str, regs, err, tsk->thread.trap_no, SIGSEGV);
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index 5ddb801..d782cd7 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -143,7 +143,6 @@ int die(const char *str, struct pt_regs *regs, long err)
+ #endif
+ 		printk("%s\n", ppc_md.name ? ppc_md.name : "");
+ 
+-		sysfs_printk_last_file();
+ 		if (notify_die(DIE_OOPS, str, regs, err, 255,
+ 			       SIGSEGV) == NOTIFY_STOP)
+ 			return 1;
+diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
+index 3484c2f..b51a171 100644
+--- a/arch/sh/kernel/traps_32.c
++++ b/arch/sh/kernel/traps_32.c
+@@ -87,7 +87,6 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 	bust_spinlocks(1);
+ 
+ 	printk("%s: %04lx [#%d]\n", str, err & 0xffff, ++die_counter);
+-	sysfs_printk_last_file();
+ 	print_modules();
+ 	show_regs(regs);
+ 
+diff --git a/arch/unicore32/kernel/traps.c b/arch/unicore32/kernel/traps.c
+index 254e36f..b9a2646 100644
+--- a/arch/unicore32/kernel/traps.c
++++ b/arch/unicore32/kernel/traps.c
+@@ -192,7 +192,6 @@ static int __die(const char *str, int err, struct thread_info *thread,
+ 
+ 	printk(KERN_EMERG "Internal error: %s: %x [#%d]\n",
+ 	       str, err, ++die_counter);
+-	sysfs_printk_last_file();
+ 
+ 	/* trap and error numbers are mostly meaningless on UniCore */
+ 	ret = notify_die(DIE_OOPS, str, regs, err, tsk->thread.trap_no, \
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index e2a3f06..f72e719 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -279,7 +279,6 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ 	printk("DEBUG_PAGEALLOC");
+ #endif
+ 	printk("\n");
+-	sysfs_printk_last_file();
+ 	if (notify_die(DIE_OOPS, str, regs, err,
+ 			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
+ 		return 1;
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index da3fefe..1ad8c93 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -24,13 +24,6 @@
+ 
+ #include "sysfs.h"
+ 
+-/* used in crash dumps to help with debugging */
+-static char last_sysfs_file[PATH_MAX];
+-void sysfs_printk_last_file(void)
+-{
+-	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
+-}
+-
+ /*
+  * There's one sysfs_buffer for each open file and one
+  * sysfs_open_dirent for each sysfs_dirent with one or more open
+@@ -337,11 +330,6 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	struct sysfs_buffer *buffer;
+ 	const struct sysfs_ops *ops;
+ 	int error = -EACCES;
+-	char *p;
+-
+-	p = d_path(&file->f_path, last_sysfs_file, sizeof(last_sysfs_file));
+-	if (!IS_ERR(p))
+-		memmove(last_sysfs_file, p, strlen(p) + 1);
+ 
+ 	/* need attr_sd for attr and ops, its parent for kobj */
+ 	if (!sysfs_get_active(attr_sd))
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 30b8815..c3acda6 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -176,7 +176,6 @@ struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
+ 				      const unsigned char *name);
+ struct sysfs_dirent *sysfs_get(struct sysfs_dirent *sd);
+ void sysfs_put(struct sysfs_dirent *sd);
+-void sysfs_printk_last_file(void);
+ 
+ /* Called to clear a ns tag when it is no longer valid */
+ void sysfs_exit_ns(enum kobj_ns_type type, const void *tag);
+@@ -348,10 +347,6 @@ static inline int __must_check sysfs_init(void)
+ 	return 0;
+ }
+ 
+-static inline void sysfs_printk_last_file(void)
+-{
+-}
+-
+ #endif /* CONFIG_SYSFS */
+ 
+ #endif /* _SYSFS_H_ */
+
