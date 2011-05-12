@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab1ELXDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 19:03:05 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:34152 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757629Ab1ELXDD (ORCPT
+	id S1757649Ab1ELXEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:04:38 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:24700 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757486Ab1ELXEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 19:03:03 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 3/3] checkpatch.pl: Add check for current->comm references
-Date: Thu, 12 May 2011 16:02:51 -0700
-Message-Id: <1305241371-25276-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
-References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
+	Thu, 12 May 2011 19:04:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag4FAI9mzE15LCoe/2dsb2JhbACgDYVreMg+DoYHBJcggSCGNw
+Date: Fri, 13 May 2011 09:04:32 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/17] writeback: remove writeback_control.more_io
+Message-ID: <20110512230432.GL19446@dastard>
+References: <20110512135706.937596128@intel.com>
+ <20110512140032.289087832@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512140032.289087832@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that accessing current->comm needs to be protected,
-avoid new current->comm usage by adding a warning to
-checkpatch.pl.
+On Thu, May 12, 2011 at 09:57:19PM +0800, Wu Fengguang wrote:
+> When wbc.more_io was first introduced, it indicates whether there are
+> at least one superblock whose s_more_io contains more IO work. Now with
+> the per-bdi writeback, it can be replaced with a simple b_more_io test.
+> 
+> Acked-by: Jan Kara <jack@suse.cz>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> CC: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/fs-writeback.c                |    9 ++-------
+>  include/linux/writeback.h        |    1 -
+>  include/trace/events/ext4.h      |    6 ++----
+>  include/trace/events/writeback.h |    5 +----
+>  4 files changed, 5 insertions(+), 16 deletions(-)
+> 
+> --- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:30:30.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2011-05-05 23:30:33.000000000 +0800
+> @@ -560,12 +560,8 @@ static int writeback_sb_inodes(struct su
+>  		iput(inode);
+>  		cond_resched();
+>  		spin_lock(&wb->list_lock);
+> -		if (wbc->nr_to_write <= 0) {
+> -			wbc->more_io = 1;
+> +		if (wbc->nr_to_write <= 0)
+>  			return 1;
+> -		}
+> -		if (!list_empty(&wb->b_more_io))
+> -			wbc->more_io = 1;
+>  	}
+>  	/* b_io is empty */
+>  	return 1;
+> @@ -707,7 +703,6 @@ static long wb_writeback(struct bdi_writ
+>  			wbc.older_than_this = &oldest_jif;
+>  		}
+>  
+> -		wbc.more_io = 0;
+>  		wbc.nr_to_write = write_chunk;
+>  		wbc.pages_skipped = 0;
+>  		wbc.inodes_cleaned = 0;
+> @@ -755,7 +750,7 @@ retry:
+>  		/*
+>  		 * No more inodes for IO, bail
+>  		 */
+> -		if (!wbc.more_io)
+> +		if (list_empty(&wb->b_more_io))
+>  			break;
 
-Fair warning: I know zero perl, so this was written in the
-style of "monkey see, monkey do". It does appear to work
-in my testing though.
+We're not holding the wb->list_lock here, so we need to be careful
+here. I think this is safe given that there shuold only be one
+flusher thread operating on the list, but when we expand to multiple
+flusher threads per-bdi, this coul dbe a nasty landmine. A comment
+is probably in order explaining why this is safe to check unlocked
+right now...
 
-Close review and feedback would be appreciated.
+Cheers,
 
-CC: Ted Ts'o <tytso@mit.edu>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- scripts/checkpatch.pl |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d867081..9d2eab5 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2868,6 +2868,10 @@ sub process {
- 			WARN("usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
- 		}
- 
-+# check for current->comm usage
-+		if ($line =~ /current->comm/) {
-+			WARN("comm access needs to be protected. Use get_task_comm, or printk's \%ptc formatting.\n" . $herecurr);
-+		}
- # check for %L{u,d,i} in strings
- 		my $string;
- 		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
+Dave.
 -- 
-1.7.3.2.146.gca209
-
+Dave Chinner
+david@fromorbit.com
