@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab1ELMti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 08:49:38 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:47414 "EHLO mxout1.idt.com"
+	id S1755689Ab1ELMtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 08:49:46 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:39117 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754909Ab1ELMth convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 08:49:37 -0400
-X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 May 2011 08:49:37 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754835Ab1ELMto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 08:49:44 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] [RFC] remove warning and warning_symbol from struct stacktrace_ops
+Date: Thu, 12 May 2011 14:48:19 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        oprofile-list@lists.sf.net, oleg@redhat.com, akpm@linux-foundation.org,
+        ying.huang@intel.com, ssp@redhat.com, namhyung@gmail.com,
+        x86@kernel.org, hpa@zytor.com, tglx@linutronix.de,
+        robert.richter@amd.com, Ingo Molnar <mingo@elte.hu>
+References: <1304709791-4232-1-git-send-email-richard@nod.at> <20110511223719.GC1846@nowhere>
+In-Reply-To: <20110511223719.GC1846@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] RapidIO: Fix default routing initialization
-Date: Thu, 12 May 2011 05:37:35 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201C8E515@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <20110511130024.955f1981.akpm@linux-foundation.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] RapidIO: Fix default routing initialization
-Thread-Index: AcwQFhQ+eLFVulWzSxOjKvzg10c8ZAAiuGfA
-References: <1305125163-14590-1-git-send-email-alexandre.bounine@idt.com> <20110511130024.955f1981.akpm@linux-foundation.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        "Kumar Gala" <galak@kernel.crashing.org>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>, "Thomas Moll" <thomas.moll@sysgo.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105121448.19446.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> wrote:
- 
-> The changelog doesn't permit me to determine the importance of this
-> fix,
-> so I don't know whether to schedule it for 2.6.39 or for -stable.
+Am Donnerstag 12 Mai 2011, 00:37:23 schrieb Frederic Weisbecker:
+> On Fri, May 06, 2011 at 09:23:11PM +0200, Richard Weinberger wrote:
+> > Both warning and warning_symbol are nowhere used.
+> > Let's get rid of them.
+> 
+> I have no clue what it was used for. But fine let's assume
+> it's a leftover of some previous removal.
+> 
+> > Signed-off-by: Richard Weinberger <richard@nod.at>
+> > ---
+> > 
+> >  arch/sh/include/asm/stacktrace.h  |    3 ---
+> >  arch/sh/kernel/dumpstack.c        |   15 ---------------
+> >  arch/sh/kernel/perf_callchain.c   |   12 ------------
+> >  arch/sh/kernel/stacktrace.c       |   13 -------------
+> >  arch/sh/oprofile/backtrace.c      |   13 -------------
+> 
+> Can you please split your patch in two parts: one for sh and
+> another for x86?
 
-Sorry, my fault. This patch is applicable to kernel versions starting
-from 2.6.37.
+Sure. Will resend!
+
+Thanks,
+//richard
