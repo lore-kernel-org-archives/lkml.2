@@ -1,28 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab1ELDoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 23:44:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53588 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751090Ab1ELDoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 23:44:22 -0400
-Date: Wed, 11 May 2011 20:51:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH 0/7] memcg async reclaim
-Message-Id: <20110511205110.354fa05e.akpm@linux-foundation.org>
-In-Reply-To: <20110512103503.717f4a96.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110511182844.d128c995.akpm@linux-foundation.org>
-	<20110512103503.717f4a96.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1752319Ab1ELDvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 23:51:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53147 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241Ab1ELDvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 23:51:17 -0400
+Date: Thu, 12 May 2011 13:51:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (namespace
+ tree related)
+Message-Id: <20110512135113.93c1b671.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -30,49 +21,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 10:35:03 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi all,
 
-> > What (user-visible) problem is this patchset solving?
-> > 
-> > IOW, what is the current behaviour, what is wrong with that behaviour
-> > and what effects does the patchset have upon that behaviour?
-> > 
-> > The sole answer from the above is "latency spikes".  Anything else?
-> > 
-> 
-> I think this set has possibility to fix latency spike. 
-> 
-> For example, in previous set, (which has tuning knobs), do a file copy
-> of 400M file under 400M limit.
-> ==
-> 1) == hard limit = 400M ==
-> [root@rhel6-test hilow]# time cp ./tmpfile xxx                
-> real    0m7.353s
-> user    0m0.009s
-> sys     0m3.280s
-> 
-> 2) == hard limit 500M/ hi_watermark = 400M ==
-> [root@rhel6-test hilow]# time cp ./tmpfile xxx
-> 
-> real    0m6.421s
-> user    0m0.059s
-> sys     0m2.707s
-> ==
-> and in both case, memory usage after test was 400M.
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-I'm surprised that reclaim consumed so much CPU.  But I guess that's a
-200,000 page/sec reclaim rate which sounds high(?) but it's - what -
-15,000 CPU clocks per page?  I don't recall anyone spending much effort
-on instrumenting and reducing CPU consumption in reclaim.
+net/built-in.o: In function `get_net_ns_by_fd':
+(.text+0x11976): undefined reference to `netns_operations'
+net/built-in.o: In function `get_net_ns_by_fd':
+(.text+0x1197a): undefined reference to `netns_operations'
 
-Presumably there will be no improvement in CPU consumption on
-uniprocessor kernels or in single-CPU containers.  More likely a
-deterioration.
+netns_operations is only available if CONFIG_NET_NS is set ...
 
+Caused by commit f063052947f7 ("net: Allow setting the network namespace
+by fd").
 
-ahem.
+I applied the patch below for today.
 
-Copying a 400MB file in a non-containered kernel on this 8GB machine
-with old, slow CPUs takes 0.64 seconds systime, 0.66 elapsed.  Five
-times less than your machine.  Where the heck did all that CPU time go?
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 12 May 2011 13:41:16 +1000
+Subject: [PATCH] net: fix get_net_ns_by_fd for !CONFIG_NET_NS
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/core/net_namespace.c |   49 +++++++++++++++++++++++++--------------------
+ 1 files changed, 27 insertions(+), 22 deletions(-)
+
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index bddcaff..e630588 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -304,6 +304,28 @@ void __put_net(struct net *net)
+ }
+ EXPORT_SYMBOL_GPL(__put_net);
+ 
++struct net *get_net_ns_by_fd(int fd)
++{
++	struct proc_inode *ei;
++	struct file *file;
++	struct net *net;
++
++	net = ERR_PTR(-EINVAL);
++	file = proc_ns_fget(fd);
++	if (!file)
++		goto out;
++
++	ei = PROC_I(file->f_dentry->d_inode);
++	if (ei->ns_ops != &netns_operations)
++		goto out;
++
++	net = get_net(ei->ns);
++out:
++	if (file)
++		fput(file);
++	return net;
++}
++
+ #else
+ struct net *copy_net_ns(unsigned long flags, struct net *old_net)
+ {
+@@ -311,6 +333,11 @@ struct net *copy_net_ns(unsigned long flags, struct net *old_net)
+ 		return ERR_PTR(-EINVAL);
+ 	return old_net;
+ }
++
++struct net *get_net_ns_by_fd(int fd)
++{
++	return ERR_PTR(-EINVAL);
++}
+ #endif
+ 
+ struct net *get_net_ns_by_pid(pid_t pid)
+@@ -333,28 +360,6 @@ struct net *get_net_ns_by_pid(pid_t pid)
+ }
+ EXPORT_SYMBOL_GPL(get_net_ns_by_pid);
+ 
+-struct net *get_net_ns_by_fd(int fd)
+-{
+-	struct proc_inode *ei;
+-	struct file *file;
+-	struct net *net;
+-
+-	net = ERR_PTR(-EINVAL);
+-	file = proc_ns_fget(fd);
+-	if (!file)
+-		goto out;
+-
+-	ei = PROC_I(file->f_dentry->d_inode);
+-	if (ei->ns_ops != &netns_operations)
+-		goto out;
+-
+-	net = get_net(ei->ns);
+-out:
+-	if (file)
+-		fput(file);
+-	return net;
+-}
+-
+ static int __init net_ns_init(void)
+ {
+ 	struct net_generic *ng;
+-- 
+1.7.5.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
