@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab1ELUbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:31:42 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:32943 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932644Ab1ELUbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932749Ab1ELUbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:31:41 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58777 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932580Ab1ELUbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 May 2011 16:31:39 -0400
-Date: Thu, 12 May 2011 22:31:25 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
         Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -20,27 +21,28 @@ Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110512203125.GL16531@cmpxchg.org>
-References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
- <alpine.DEB.2.00.1105120942050.24560@router.home>
- <1305213359.2575.46.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121024350.26013@router.home>
- <1305214993.2575.50.camel@mulgrave.site>
- <1305215742.27848.40.camel@jaguar>
- <1305225467.2575.66.camel@mulgrave.site>
- <1305229447.2575.71.camel@mulgrave.site>
- <1305230652.2575.72.camel@mulgrave.site>
- <20110512202917.GK16531@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <20110512202917.GK16531@cmpxchg.org>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
+	 <1305225467.2575.66.camel@mulgrave.site>
+	 <1305229447.2575.71.camel@mulgrave.site>
+	 <1305230652.2575.72.camel@mulgrave.site>
+	 <20110512202917.GK16531@cmpxchg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 15:31:35 -0500
+Message-ID: <1305232295.2575.82.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:29:17PM +0200, Johannes Weiner wrote:
+On Thu, 2011-05-12 at 22:29 +0200, Johannes Weiner wrote:
 > On Thu, May 12, 2011 at 03:04:12PM -0500, James Bottomley wrote:
 > > On Thu, 2011-05-12 at 14:44 -0500, James Bottomley wrote:
 > > > On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
@@ -68,12 +70,24 @@ On Thu, May 12, 2011 at 10:29:17PM +0200, Johannes Weiner wrote:
 > > patches under PREEMPT.  It's not a hang this time, it's just kswapd
 > > taking 100% system time on 1 CPU and it won't calm down after I unload
 > > the system.
-
-I am so sorry, I missed the "won't" here.  Please ignore.
-
+> 
 > That is kind of expected, though.  If one CPU is busy with a streaming
 > IO load generating new pages, kswapd is busy reclaiming the old ones
 > so that the generator does not have to do the reclaim itself.
 > 
-> By unload, do you mean stopping the generator?  And if so, how quickly
+> By unload, do you mean stopping the generator? 
+
+Correct.
+
+>  And if so, how quickly
 > after you stop the generator does kswapd go back to sleep?
+
+It doesn't.  At least not on its own; the CPU stays pegged.  If I start
+other work (like a kernel compile), then sometimes it does go back to
+nothing.
+
+I'm speculating that this is the hang case for non-PREEMPT.
+
+James
+
+
