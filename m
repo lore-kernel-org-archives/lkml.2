@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab1ELOpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:45:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36744 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754158Ab1ELOpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:45:43 -0400
-Date: Thu, 12 May 2011 10:45:43 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tanya Brokhman <tlinder@codeaurora.org>
-cc: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>, <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <balbi@ti.com>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v9 7/7] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <000b01cc1064$3b7e51d0$b27af570$@org>
-Message-ID: <Pine.LNX.4.44L0.1105121040190.1917-100000@iolanthe.rowland.org>
+	id S1757872Ab1ELOqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:46:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751955Ab1ELOqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:46:17 -0400
+Message-ID: <4DCBF2A7.4010002@redhat.com>
+Date: Thu, 12 May 2011 17:45:59 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Joerg Roedel <joro@8bytes.org>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com> <20110512131130.GG8707@8bytes.org> <4DCBE13A.2050204@redhat.com> <20110512142449.GI8707@8bytes.org> <4DCBF0B7.7080102@redhat.com>
+In-Reply-To: <4DCBF0B7.7080102@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011, Tanya Brokhman wrote:
+On 05/12/2011 05:37 PM, Avi Kivity wrote:
+>
+> I've considered something similar for mmio - use hypercalls for 
+> ordinary mmio to avoid calling into the emulator - but virtio uses pio 
+> which isn't emulated and we don't have massive consumers of mmio 
+> (except perhaps hpet).
 
-> > >+	retval = usb_add_hcd(hs_hcd, 0, IRQF_DISABLED | IRQF_SHARED);
-> > Why IRQF_DISABLED | IRQF_SHARED? you don't interrupts at all.
-> 
-> I used xhci as reference for this patch. This is the way xhci driver adds
-> the hcds. You can find it in xhci_pci_probe(). 
-> I'm not very familiar with how this two hcds (main and shared shcd) will
-> work together so I thought these flags are needed for their co-operation. 
-> Was my assumption mistaken? What flags should I use? 
+Say,
 
-You don't need any flags at all, because dummy-hcd does not handle any 
-hardware interrupts.
+enum {
+    KVM_OP_MMIO_READ = 1,
+    KVM_OP_MMIO_WRITE = 2,
+    KVM_OP_PIO_READ = 3,
+    KVM_OP_PIO_WRITE = 4,
+    KVM_OP_MSR_READ = 5,
+    KVM_OP_MSR_WRITE = 6,
+    KVM_OP_HLT = 7, /* so we can program the apic timer and sleep */
+}
 
-> Also, Sergei pointed out that IRQF_DISABLED is deprecated so it seems to me
-> that xhci needs an update as well....
+struct kvm_batch_op {
+     u8 op;
+     u8 result;
+     u8 size;
+     u8 reserved[5];
+     u64 address;
+     u64 data;
+};
 
-Plus every other source file that uses IRQF_DISABLED...
+int kvm_batch(int nr, u64 kvm_batch_op_phys);
 
-Alan Stern
+This is really repeating Xen PV though (different ops), not sure it's 
+worth the intrusiveness.
+
+-- 
+error compiling committee.c: too many arguments to function
 
