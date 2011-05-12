@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758711Ab1ELVGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:06:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59490 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758662Ab1ELVGR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:06:17 -0400
-Date: Thu, 12 May 2011 17:06:03 -0400 (EDT)
-Message-Id: <20110512.170603.549349521517995900.davem@davemloft.net>
-To: joe@perches.com
-Cc: vladislav.yasevich@hp.com, sri@us.ibm.com, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] sctp: sctp_sendmsg: Don't initialize default_sinfo
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <a4e846ed62d7f9222dc9b09ca00b5356a1eb9b73.1305227620.git.joe@perches.com>
-References: <cover.1305227620.git.joe@perches.com>
-	<a4e846ed62d7f9222dc9b09ca00b5356a1eb9b73.1305227620.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 14:06:08 -0700 (PDT)
+	id S1758726Ab1ELVG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:06:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50075 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758713Ab1ELVGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:06:24 -0400
+Date: Thu, 12 May 2011 23:06:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: eranian@google.com, acme@redhat.com, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+Message-ID: <20110512210605.GB16600@elte.hu>
+References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+ <20110512.140630.1779004012724490077.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512.140630.1779004012724490077.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Thu, 12 May 2011 12:19:09 -0700
 
-> This variable only needs initialization when cmsgs.info
-> is NULL.
+* David Miller <davem@davemloft.net> wrote:
+
+> From: Stephane Eranian <eranian@google.com>
+> Date: Thu, 12 May 2011 16:48:46 +0200
 > 
-> Don't use memset, just initialize every struct member.
+> > I think there is a serious problem with kernel symbol correlation
+> > with the latest perf in 2.6.39-rc7-tip.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> The behavior seems to be intentional, so that we don't expose internal
+> kernel addresses to userspace.
+> 
+> I hate this too, and I think it's absolutely rediculous.
+> 
+> Also, like you, I lost an entire afternoon trying to figure out why
+> this started happening.
 
-I don't think you do this, this structure has padding holes on pretty
-much every architecture.
+I lost about an hour with Arnaldo on IRC to help me until we figured out that 
+/proc/kallsyms started having zero value entries ... I'm too running perf as an 
+unprivileged user.
 
-It starts with 3 u16's, then there is a u32, so there is a 2-byte
-piece of padding after the 3rd u16.
+Zero is a valid symbol address so nothing within perf tripped up explicitly, 
+but perf report and perf top results were nonsensical.
 
-Can you prove that these uninitialized portions never make it to
-userspace?  If you can, that proof belongs in the commit message.
+There was another problem with it: perf is caching and storing known kernel 
+buildid addresses in ~/.debug, under the (previously correct) assumption that 
+kernel symbols do not change for one given kernel build. But with kptr_restrict 
+it would cache the zero values - which were cached even after kptr_restrict was 
+set back to 0.
 
-I think it's too risky.
+Thanks,
+
+	Ingo
