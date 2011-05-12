@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1ELPAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 11:00:35 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42209 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1ELPAe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 11:00:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=d91uT3rQhWrLEEcZwzMPVyyhKIFTInXakvLW0cPW1gBLQXOMgWsKAX0SY2P1jlNOXR
-         vgclNNHhm03Aw4xMPqPLfPT00sk7Gj6WMIW7csyQzPVWeI6DTEBBHX6MbtSVxam60VcZ
-         t1tsVUmCCiH0c97E+9TcNrNhDOlgboeRjU4k4=
+	id S1757034Ab1ELPiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 11:38:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756240Ab1ELPiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 11:38:19 -0400
+Message-ID: <4DCBF67A.3060700@redhat.com>
+Date: Thu, 12 May 2011 11:02:18 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
-References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
-	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
-	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
-	<009c01cc108b$4635c7d0$d2a15770$@com>
-	<BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
-	<BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
-	<BANLkTik=M8uwnmHABqYBkeVDk56UMrnkMg@mail.gmail.com>
-	<BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
-Date: Thu, 12 May 2011 18:00:32 +0300
-Message-ID: <BANLkTiki_gsyZFTeuRCsJJ19b=ZTEWe26Q@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: boyzccc@gmail.com
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch 1/6] memcg: remove unused retry signal from reclaim
+References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org> <1305212038-15445-2-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1305212038-15445-2-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 5:49 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Thu, May 12, 2011 at 10:33 PM, ttlxzz ccc <boyzccc@gmail.com> wrote:
->> Thanks for Wangcong
->>
->> I have test the kmemleak-test.ko and the result includes no backtrace
->> except fffffffff, too.
->> I'm compling the kernel by make menuconfig. :)
+On 05/12/2011 10:53 AM, Johannes Weiner wrote:
+> If the memcg reclaim code detects the target memcg below its limit it
+> exits and returns a guaranteed non-zero value so that the charge is
+> retried.
 >
-> Odd, this looks like a bug, Cc Catalin Marinas <catalin.marinas@arm.com>
+> Nowadays, the charge side checks the memcg limit itself and does not
+> rely on this non-zero return value trick.
 >
-> I can't reach my test machine right now, I will try this tomorrow.
-What architecture are you running on? Can you try it on a newer kernel?
-Is there anything interesting in dmesg | grep kmemleak?
+> This patch removes it.  The reclaim code will now always return the
+> true number of pages it reclaimed on its own.
+>
+> Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
 
-thanks,
-Daniel.
+Acked-by: Rik van Riel<riel@redhat.com>
+
