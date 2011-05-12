@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab1ELXCG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 19:02:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56171 "EHLO smtps.tip.net.au"
+	id S1757622Ab1ELXDC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:03:02 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41137 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756900Ab1ELXCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 19:02:04 -0400
-Date: Fri, 13 May 2011 09:01:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Javier Cardona <javier@cozybit.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@lists.open80211s.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (wireless tree related)
-Message-Id: <20110513090152.3dcef583.sfr@canb.auug.org.au>
-In-Reply-To: <BANLkTiknar_vMtmr659yNCVFz-V0W9XvOQ@mail.gmail.com>
-References: <20110512141019.72ccb7a7.sfr@canb.auug.org.au>
-	<BANLkTik+=yh3eq6Snp9SfC0xn--Deccefw@mail.gmail.com>
-	<20110512145633.69302dd4.sfr@canb.auug.org.au>
-	<BANLkTiknar_vMtmr659yNCVFz-V0W9XvOQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__13_May_2011_09_01_52_+1000_6H28BxdFX319iH2o"
+	id S1757432Ab1ELXC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 19:02:58 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: [PATCH 0/3] v3 Improve task->comm locking situation
+Date: Thu, 12 May 2011 16:02:48 -0700
+Message-Id: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_May_2011_09_01_52_+1000_6H28BxdFX319iH2o
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since my commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4, the
+current->comm value could be changed by other threads.
 
-Hi Javier,
+This changed the comm locking rules, which previously allowed for
+unlocked current->comm access, since only the thread itself could
+change its comm.
 
-On Thu, 12 May 2011 10:22:20 -0700 Javier Cardona <javier@cozybit.com> wrot=
-e:
->
-> On Wed, May 11, 2011 at 9:56 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
-> > On Wed, 11 May 2011 21:37:16 -0700 Javier Cardona <javier@cozybit.com> =
-wrote:
-> >>
-> >> On Wed, May 11, 2011 at 9:10 PM, Stephen Rothwell <sfr@canb.auug.org.a=
-u> wrote:
-> >> >
-> >> > After merging the final tree, today's linux-next build (i386 defconf=
-ig)
-> >> > failed like this:
-> >> >
-> >> > net/mac80211/cfg.c: In function 'sta_apply_parameters':
-> >> > net/mac80211/cfg.c:746: error: 'struct sta_info' has no member named=
- 'plink_state'
-> >>
-> >> Sorry, I just saw this. =C2=A0My apologies. =C2=A0The fixup is valid b=
-ut I'm
-> >> trying to understand why it is needed.
-> >> ieee80211_vif_is_mesh(&sdata->vif) compiles to 'false' when
-> >> CONFIG_MAC80211_MESH is not defined... wouldn't the compiler remove
-> >> that dead code? (Obviously it did not...)
-> >
-> > The compiler will elide that code but only after compiling it, so the
-> > code still has to be correct.
->=20
-> Thanks for the explanation.
->=20
-> >> Anyway, given that this is necessary, it's probably cleaner to extend
-> >> the #ifdef block to the entire body of the outer if as follows:
-> >
-> > I think you have the #ifdef one line too low.
->=20
-> My intent was to have the #endif one line above, but either way works.
->  That's the problem of preparing patches on pajamas.
-> How can I help at this point?  Would resubmitting the patch help or
-> just add noise?
+While this was brought up at the time, it was not considered
+problematic, as the comm writing was done in such a way that
+only null or incomplete comms could be read. However, recently
+folks have made it clear they want to see this issue resolved.
 
-Unless John has already fixed this, you need to send him a patch.  This
-should be a fix patch as John doesn't normally rebase his tree (I think).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+So fair enough, as I opened this can of worms, I should work
+to resolve it and this patchset is my initial attempt.
 
---Signature=_Fri__13_May_2011_09_01_52_+1000_6H28BxdFX319iH2o
-Content-Type: application/pgp-signature
+The proposed solution here is to introduce a new seqlock that
+exclusively protects the comm value. We use it to serialize
+access via get_task_comm() and set_task_comm(). Since some 
+comm access is open-coded using the task lock, we preserve
+the task locking in set_task_comm for now. Once all comm 
+access is converted to using get_task_comm, we can clean that
+up as well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I've also introduced a printk %ptc accessor, which makes the
+conversion to locked access simpler (as most uses are for printks).
 
-iQEcBAEBAgAGBQJNzGbgAAoJEDMEi1NhKgbs0fsH/iy/R77vTVEUMCquc012c/9r
-TAril8VgurbBotdOMcM3O4EfW6OT/VTVpCDzqGeBffZmFCgoFvUF2XNzEdCMYCqz
-jCdHstDsZz1bxR/o41cYm0AGZPVUyHwInJHVZOL2TNqnxPwVI25c0EyBKvK92O8X
-+QqPm2Gq0d1+7+qqLUmylJ0HlPnVE1zgfugAOOM3qmfqS9w0CWsUqzxdAYSLXZY+
-yX9Qn4VcRhklzowIV2kriyTSM09Ywe0UUxmIdEFyGqvmQFbCm25Cuz4HDnNZobuf
-FxrPH9KPX4un36FzMsCutmlPShou8t08+WELhIhwdoKWcz4b1wo+mye/DFFUsiQ=
-=suIr
------END PGP SIGNATURE-----
+And new in this version: I've added a checkpatch rule to try
+to catch any new current->comm users from being introduced.
+Although I suspect the script will need some additional work.
 
---Signature=_Fri__13_May_2011_09_01_52_+1000_6H28BxdFX319iH2o--
+Hopefully this will allow for a smooth transition, where we can
+slowly fix up the unlocked current->comm access bit by bit,
+reducing the race window with each patch, while not making the
+situation any worse then it was yesterday.
+
+Thanks for the comments and feedback so far. 
+Any additional comments/feedback would still be appreciated.
+
+thanks
+-john
+
+
+CC: Ted Ts'o <tytso@mit.edu>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org
+
+John Stultz (3):
+  comm: Introduce comm_lock seqlock to protect task->comm access
+  printk: Add %ptc to safely print a task's comm
+  checkpatch.pl: Add check for current->comm references
+
+ fs/exec.c                 |   25 ++++++++++++++++++++-----
+ include/linux/init_task.h |    1 +
+ include/linux/sched.h     |    5 ++---
+ lib/vsprintf.c            |   27 +++++++++++++++++++++++++++
+ scripts/checkpatch.pl     |    4 ++++
+ 5 files changed, 54 insertions(+), 8 deletions(-)
+
+-- 
+1.7.3.2.146.gca209
+
