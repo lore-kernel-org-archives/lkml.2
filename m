@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab1ELXDC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 19:03:02 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41137 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757432Ab1ELXC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 19:02:58 -0400
+	id S1757810Ab1ELXDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:03:22 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:32836 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757432Ab1ELXDD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 19:03:03 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
@@ -13,55 +14,36 @@ Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
         David Rientjes <rientjes@google.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 0/3] v3 Improve task->comm locking situation
-Date: Thu, 12 May 2011 16:02:48 -0700
-Message-Id: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect task->comm access
+Date: Thu, 12 May 2011 16:02:49 -0700
+Message-Id: <1305241371-25276-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
+References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since my commit 4614a696bd1c3a9af3a08f0e5874830a85b889d4, the
-current->comm value could be changed by other threads.
+The implicit rules for current->comm access being safe without locking
+are no longer true. Accessing current->comm without holding the task
+lock may result in null or incomplete strings (however, access won't
+run off the end of the string).
 
-This changed the comm locking rules, which previously allowed for
-unlocked current->comm access, since only the thread itself could
-change its comm.
+In order to properly fix this, I've introduced a comm_lock seqlock
+which will protect comm access and modified get_task_comm() and
+set_task_comm() to use it.
 
-While this was brought up at the time, it was not considered
-problematic, as the comm writing was done in such a way that
-only null or incomplete comms could be read. However, recently
-folks have made it clear they want to see this issue resolved.
+Since there are a number of cases where comm access is open-coded
+safely grabbing the task_lock(), we preserve the task locking in
+set_task_comm, so those users are also safe.
 
-So fair enough, as I opened this can of worms, I should work
-to resolve it and this patchset is my initial attempt.
+With this patch, users that access current->comm without a lock
+are still prone to null/incomplete comm strings, but it should
+be no worse then it is now.
 
-The proposed solution here is to introduce a new seqlock that
-exclusively protects the comm value. We use it to serialize
-access via get_task_comm() and set_task_comm(). Since some 
-comm access is open-coded using the task lock, we preserve
-the task locking in set_task_comm for now. Once all comm 
-access is converted to using get_task_comm, we can clean that
-up as well.
-
-I've also introduced a printk %ptc accessor, which makes the
-conversion to locked access simpler (as most uses are for printks).
-
-And new in this version: I've added a checkpatch rule to try
-to catch any new current->comm users from being introduced.
-Although I suspect the script will need some additional work.
-
-Hopefully this will allow for a smooth transition, where we can
-slowly fix up the unlocked current->comm access bit by bit,
-reducing the race window with each patch, while not making the
-situation any worse then it was yesterday.
-
-Thanks for the comments and feedback so far. 
-Any additional comments/feedback would still be appreciated.
-
-thanks
--john
-
+The next step is to go through and convert all comm accesses to
+use get_task_comm(). This is substantial, but can be done bit by
+bit, reducing the race windows with each patch.
 
 CC: Ted Ts'o <tytso@mit.edu>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -69,19 +51,93 @@ CC: David Rientjes <rientjes@google.com>
 CC: Dave Hansen <dave@linux.vnet.ibm.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: linux-mm@kvack.org
-
-John Stultz (3):
-  comm: Introduce comm_lock seqlock to protect task->comm access
-  printk: Add %ptc to safely print a task's comm
-  checkpatch.pl: Add check for current->comm references
-
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
  fs/exec.c                 |   25 ++++++++++++++++++++-----
  include/linux/init_task.h |    1 +
  include/linux/sched.h     |    5 ++---
- lib/vsprintf.c            |   27 +++++++++++++++++++++++++++
- scripts/checkpatch.pl     |    4 ++++
- 5 files changed, 54 insertions(+), 8 deletions(-)
+ 3 files changed, 23 insertions(+), 8 deletions(-)
 
+diff --git a/fs/exec.c b/fs/exec.c
+index 5e62d26..fcd056a 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -998,18 +998,32 @@ static void flush_old_files(struct files_struct * files)
+ 
+ char *get_task_comm(char *buf, struct task_struct *tsk)
+ {
+-	/* buf must be at least sizeof(tsk->comm) in size */
+-	task_lock(tsk);
+-	strncpy(buf, tsk->comm, sizeof(tsk->comm));
+-	task_unlock(tsk);
++	unsigned long seq;
++
++	do {
++		seq = read_seqbegin(&tsk->comm_lock);
++
++		strncpy(buf, tsk->comm, sizeof(tsk->comm));
++
++	} while (read_seqretry(&tsk->comm_lock, seq));
++
+ 	return buf;
+ }
+ 
+ void set_task_comm(struct task_struct *tsk, char *buf)
+ {
+-	task_lock(tsk);
++	unsigned long flags;
+ 
+ 	/*
++	 * XXX - Even though comm is protected by comm_lock,
++	 * we take the task_lock here to serialize against
++	 * current users that directly access comm.
++	 * Once those users are removed, we can drop the
++	 * task locking & memsetting.
++	 */
++	task_lock(tsk);
++	write_seqlock_irqsave(&tsk->comm_lock, flags);
++	/*
+ 	 * Threads may access current->comm without holding
+ 	 * the task lock, so write the string carefully.
+ 	 * Readers without a lock may see incomplete new
+@@ -1018,6 +1032,7 @@ void set_task_comm(struct task_struct *tsk, char *buf)
+ 	memset(tsk->comm, 0, TASK_COMM_LEN);
+ 	wmb();
+ 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
++	write_sequnlock_irqrestore(&tsk->comm_lock, flags);
+ 	task_unlock(tsk);
+ 	perf_event_comm(tsk);
+ }
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index caa151f..b4f7584 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -161,6 +161,7 @@ extern struct cred init_cred;
+ 	.group_leader	= &tsk,						\
+ 	RCU_INIT_POINTER(.real_cred, &init_cred),			\
+ 	RCU_INIT_POINTER(.cred, &init_cred),				\
++	.comm_lock	= SEQLOCK_UNLOCKED,				\
+ 	.comm		= "swapper",					\
+ 	.thread		= INIT_THREAD,					\
+ 	.fs		= &init_fs,					\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 18d63ce..f9324e4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1333,10 +1333,9 @@ struct task_struct {
+ 	const struct cred __rcu *cred;	/* effective (overridable) subjective task
+ 					 * credentials (COW) */
+ 	struct cred *replacement_session_keyring; /* for KEYCTL_SESSION_TO_PARENT */
+-
++	seqlock_t comm_lock;		/* protect's comm */
+ 	char comm[TASK_COMM_LEN]; /* executable name excluding path
+-				     - access with [gs]et_task_comm (which lock
+-				       it with task_lock())
++				     - access with [gs]et_task_comm
+ 				     - initialized normally by setup_new_exec */
+ /* file system info */
+ 	int link_count, total_link_count;
 -- 
 1.7.3.2.146.gca209
 
