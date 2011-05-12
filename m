@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1ELLFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 07:05:08 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48066 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751738Ab1ELLFG (ORCPT
+	id S1753111Ab1ELLNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 07:13:47 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:51184 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab1ELLNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 07:05:06 -0400
-From: Amit Virdi <amit.virdi@st.com>
-To: <samuel@sortiz.org>, <alan@linux.intel.com>, <davem@davemloft.net>,
-        <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <amit.virdi@st.com>, <shiraz.hashim@st.com>, <armando.visconti@st.com>,
-        <viresh.kumar@st.com>
-Subject: [PATCH] net/irda/ircomm_tty.c: Use flip buffers to deliver data
-Date: Thu, 12 May 2011 16:34:40 +0530
-Message-ID: <1305198280-14449-1-git-send-email-amit.virdi@st.com>
-X-Mailer: git-send-email 1.7.2.2
+	Thu, 12 May 2011 07:13:45 -0400
+Message-ID: <4DCBC0E8.5020609@cs.helsinki.fi>
+Date: Thu, 12 May 2011 14:13:44 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Reduce impact to overall system of SLUB using high-order
+ allocations
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>	 <1305149960.2606.53.camel@mulgrave.site>	 <alpine.DEB.2.00.1105111527490.24003@chino.kir.corp.google.com> <1305153267.2606.57.camel@mulgrave.site>
+In-Reply-To: <1305153267.2606.57.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use tty_insert_flip_string and tty_flip_buffer_push to deliver incoming data
-packets from the IrDA device instead of delivering the packets directly to the
-line discipline. Following later approach resulted in warning "Sleeping function
-called from invalid context".
+On 5/12/11 1:34 AM, James Bottomley wrote:
+> On Wed, 2011-05-11 at 15:28 -0700, David Rientjes wrote:
+>> On Wed, 11 May 2011, James Bottomley wrote:
+>>
+>>> OK, I confirm that I can't seem to break this one.  No hangs visible,
+>>> even when loading up the system with firefox, evolution, the usual
+>>> massive untar, X and even a distribution upgrade.
+>>>
+>>> You can add my tested-by
+>>>
+>> Your system still hangs with patches 1 and 2 only?
+> Yes, but only once in all the testing.  With patches 1 and 2 the hang is
+> much harder to reproduce, but it still seems to be present if I hit it
+> hard enough.
 
-Signed-off-by: Amit Virdi <amit.virdi@st.com>
----
- net/irda/ircomm/ircomm_tty.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+Patches 1-2 look reasonable to me. I'm not completely convinced of patch 
+3, though. Why are we seeing these problems now? This has been in 
+mainline for a long time already. Shouldn't we fix kswapd?
 
-diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
-index a39cca8..b3cc8b3 100644
---- a/net/irda/ircomm/ircomm_tty.c
-+++ b/net/irda/ircomm/ircomm_tty.c
-@@ -38,6 +38,7 @@
- #include <linux/seq_file.h>
- #include <linux/termios.h>
- #include <linux/tty.h>
-+#include <linux/tty_flip.h>
- #include <linux/interrupt.h>
- #include <linux/device.h>		/* for MODULE_ALIAS_CHARDEV_MAJOR */
- 
-@@ -1132,7 +1133,6 @@ static int ircomm_tty_data_indication(void *instance, void *sap,
- 				      struct sk_buff *skb)
- {
- 	struct ircomm_tty_cb *self = (struct ircomm_tty_cb *) instance;
--	struct tty_ldisc *ld;
- 
- 	IRDA_DEBUG(2, "%s()\n", __func__ );
- 
-@@ -1161,15 +1161,11 @@ static int ircomm_tty_data_indication(void *instance, void *sap,
- 	}
- 
- 	/*
--	 * Just give it over to the line discipline. There is no need to
--	 * involve the flip buffers, since we are not running in an interrupt
--	 * handler
-+	 * Use flip buffer functions since the code may be called from interrupt
-+	 * context
- 	 */
--
--	ld = tty_ldisc_ref(self->tty);
--	if (ld)
--		ld->ops->receive_buf(self->tty, skb->data, NULL, skb->len);
--	tty_ldisc_deref(ld);
-+	tty_insert_flip_string(self->tty, skb->data, skb->len);
-+	tty_flip_buffer_push(self->tty);
- 
- 	/* No need to kfree_skb - see ircomm_ttp_data_indication() */
- 
--- 
-1.7.3.4
-
+                         Pekka
