@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab1ELJyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:54:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755580Ab1ELJyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:54:13 -0400
-Message-ID: <4DCBAE34.2000203@redhat.com>
-Date: Thu, 12 May 2011 12:53:56 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1757123Ab1ELJ5I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:57:08 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:33381 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756857Ab1ELJ5H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:57:07 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Joerg Roedel <joro@8bytes.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
-References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com>
-In-Reply-To: <4DCBACC7.8080000@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
+Date: Thu, 12 May 2011 17:56:39 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532801AC291A@penmb01.corp.atmel.com>
+In-Reply-To: <Pine.LNX.4.64.1105121131040.24486@axis700.grange>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
+Thread-Index: AcwQh6rMPZbYdkb/Q9yWoT2kG1x4+QAAI5KA
+References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com> <20110512074725.GA1356@n2100.arm.linux.org.uk> <4C79549CB6F772498162A641D92D532801AC28CD@penmb01.corp.atmel.com> <Pine.LNX.4.64.1105121131040.24486@axis700.grange>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, <mchehab@redhat.com>,
+        <linux-media@vger.kernel.org>, "Haring, Lars" <Lars.Haring@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+X-OriginalArrivalTime: 12 May 2011 09:56:43.0525 (UTC) FILETIME=[E5E25B50:01CC108A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2011 12:47 PM, Jan Kiszka wrote:
-> >
-> >  Anyway, I thought about a paravirt-approach instead of implementing a
-> >  real PMU... But there are certainly good reasons for both.
->
-> Paravirt is taking away the pressure from CPU vendors to do their virt
-> extensions properly - and doesn't help with unmodifiable OSes.
+From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de] Sent: Thursday, May 12, 2011 5:32 PM
 
-Yes.  In the case of the PMU things are less clear, since they are very 
-model specific.  In the case of Linux, you have to lie to the guest and 
-present a model number that it doesn't recognize, otherwise it prefers 
-the model-specific PMU to the architectural PMU.
+> On Thu, 12 May 2011, Wu, Josh wrote:
+>> Hi, Russell
+>> 
+>> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] Sent: Thursday, May 12, 2011 3:47 PM
+>> > On Thu, May 12, 2011 at 03:42:18PM +0800, Josh Wu wrote:
+>> >> +err_alloc_isi:
+>> >> +	clk_disable(pclk);
+>> > clk_put() ?
+>> Ok, will be fixed in V2 patch. Thanks.
 
-I though of adding a kvm cpuid bit that says "prefer the architectural 
-pmu" to work around this issue.
+> You might wait with v2 until I find time to review your patch. Will take a 
+> couple of days, I think. A general question, though: how compatible is 
+> this driver with the AVR32?
+That is ok. 
+For AVR32, I think I need time to check with AVR team. I will update the status when I got more information.
 
--- 
-error compiling committee.c: too many arguments to function
-
+Best Regards,
+Josh Wu
