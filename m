@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab1ELOEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:04:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37802 "EHLO mga01.intel.com"
+	id S932085Ab1ELOEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:04:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35880 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757434Ab1ELOEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:04:08 -0400
+	id S1757434Ab1ELOER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:04:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,358,1301900400"; 
-   d="scan'208";a="802514"
-Message-Id: <20110512140030.883635923@intel.com>
+   d="scan'208";a="1345485"
+Message-Id: <20110512140031.025181367@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 12 May 2011 21:57:08 +0800
+Date: Thu, 12 May 2011 21:57:09 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/17] writeback: update dirtied_when for synced inode to prevent livelock
+Subject: [PATCH 03/17] writeback: introduce writeback_control.inodes_cleaned
 References: <20110512135706.937596128@intel.com>
-Content-Disposition: inline; filename=writeback-fix-sync-busyloop.patch
+Content-Disposition: inline; filename=writeback-inodes_written.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Explicitly update .dirtied_when on synced inodes, so that they are no
-longer considered for writeback in the next round.
+The flusher works on dirty inodes in batches, and may quit prematurely
+if the batch of inodes happen to be metadata-only dirtied: in this case
+wbc->nr_to_write won't be decreased at all, which stands for "no pages
+written" but also mis-interpreted as "no progress".
 
-We'll do more aggressive "keep writeback as long as we wrote something"
-logic in wb_writeback(). The "use LONG_MAX .nr_to_write" trick in commit
-b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") will
-no longer be enough to stop sync livelock.
+So introduce writeback_control.inodes_cleaned to count the inodes get
+cleaned.  A non-zero value means there are some progress on writeback,
+in which case more writeback can be tried.
 
-Reviewed-by: Jan Kara <jack@suse.cz>
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/fs-writeback.c         |    4 ++++
+ include/linux/writeback.h |    1 +
+ 2 files changed, 5 insertions(+)
 
-ext3/ext4 are working fine now, however tests show that XFS may still
-livelock inside the XFS routines:
+about v1: The initial version was to count successful ->write_inode()
+calls.  However it leads to busy loops for sync() over NFS, because NFS
+ridiculously returns 0 (success) while at the same time redirties the
+inode.  The NFS case can be trivially fixed, however there may be more
+hidden bugs in other filesystems..
 
-[ 3581.181253] sync            D ffff8800b6ca15d8  4560  4403   4392 0x00000000
-[ 3581.181734]  ffff88006f775bc8 0000000000000046 ffff8800b6ca12b8 00000001b6ca1938
-[ 3581.182411]  ffff88006f774000 00000000001d2e40 00000000001d2e40 ffff8800b6ca1280
-[ 3581.183088]  00000000001d2e40 ffff88006f775fd8 00000340af111ef2 00000000001d2e40
-[ 3581.183765] Call Trace:
-[ 3581.184008]  [<ffffffff8109be73>] ? lock_release_holdtime+0xa3/0xab
-[ 3581.184392]  [<ffffffff8108cc0d>] ? prepare_to_wait+0x6c/0x79
-[ 3581.184756]  [<ffffffff8108cc0d>] ? prepare_to_wait+0x6c/0x79
-[ 3581.185120]  [<ffffffff812ed520>] xfs_ioend_wait+0x87/0x9f
-[ 3581.185474]  [<ffffffff8108c97a>] ? wake_up_bit+0x2a/0x2a
-[ 3581.185827]  [<ffffffff812f742a>] xfs_sync_inode_data+0x92/0x9d
-[ 3581.186198]  [<ffffffff812f76e2>] xfs_inode_ag_walk+0x1a5/0x287
-[ 3581.186569]  [<ffffffff812f779b>] ? xfs_inode_ag_walk+0x25e/0x287
-[ 3581.186946]  [<ffffffff812f7398>] ? xfs_sync_worker+0x69/0x69
-[ 3581.187311]  [<ffffffff812e2354>] ? xfs_perag_get+0x68/0xd0
-[ 3581.187669]  [<ffffffff81092175>] ? local_clock+0x41/0x5a
-[ 3581.188020]  [<ffffffff8109be73>] ? lock_release_holdtime+0xa3/0xab
-[ 3581.188403]  [<ffffffff812e22ec>] ? xfs_check_sizes+0x160/0x160
-[ 3581.188773]  [<ffffffff812e2354>] ? xfs_perag_get+0x68/0xd0
-[ 3581.189130]  [<ffffffff812e236c>] ? xfs_perag_get+0x80/0xd0
-[ 3581.189488]  [<ffffffff812e22ec>] ? xfs_check_sizes+0x160/0x160
-[ 3581.189858]  [<ffffffff812f7831>] ? xfs_inode_ag_iterator+0x6d/0x8f
-[ 3581.190241]  [<ffffffff812f7398>] ? xfs_sync_worker+0x69/0x69
-[ 3581.190606]  [<ffffffff812f780b>] xfs_inode_ag_iterator+0x47/0x8f
-[ 3581.190982]  [<ffffffff811611f5>] ? __sync_filesystem+0x7a/0x7a
-[ 3581.191352]  [<ffffffff812f7877>] xfs_sync_data+0x24/0x43
-[ 3581.191703]  [<ffffffff812f7911>] xfs_quiesce_data+0x2c/0x88
-[ 3581.192065]  [<ffffffff812f5556>] xfs_fs_sync_fs+0x21/0x48
-[ 3581.192419]  [<ffffffff811611e1>] __sync_filesystem+0x66/0x7a
-[ 3581.192783]  [<ffffffff8116120b>] sync_one_sb+0x16/0x18
-[ 3581.193128]  [<ffffffff8113e3e3>] iterate_supers+0x72/0xce
-[ 3581.193482]  [<ffffffff81161140>] sync_filesystems+0x20/0x22
-[ 3581.193842]  [<ffffffff8116127e>] sys_sync+0x21/0x33
-[ 3581.194177]  [<ffffffff819016c2>] system_call_fastpath+0x16/0x1b
-
---- linux-next.orig/fs/fs-writeback.c	2011-05-10 09:50:07.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-10 10:03:00.000000000 +0800
-@@ -419,6 +419,15 @@ writeback_single_inode(struct inode *ino
- 	spin_lock(&inode->i_lock);
- 	inode->i_state &= ~I_SYNC;
- 	if (!(inode->i_state & I_FREEING)) {
-+		/*
-+		 * Sync livelock prevention. Each inode is tagged and synced in
-+		 * one shot, so we can unconditionally update its dirty time to
-+		 * prevent syncing it again. Note that time ordering of b_dirty
-+		 * list will be kept because the following code either removes
-+		 * the inode from b_dirty or calls redirty_tail().
-+		 */
-+		if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_sync)
-+			inode->dirtied_when = jiffies;
- 		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
- 			/*
- 			 * We didn't write back all the pages.  nfs_writepages()
+--- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:30:23.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-05 23:30:24.000000000 +0800
+@@ -464,6 +464,7 @@ writeback_single_inode(struct inode *ino
+ 			 * No need to add it back to the LRU.
+ 			 */
+ 			list_del_init(&inode->i_wb_list);
++			wbc->inodes_cleaned++;
+ 		}
+ 	}
+ 	inode_sync_complete(inode);
+@@ -725,6 +726,7 @@ static long wb_writeback(struct bdi_writ
+ 		wbc.more_io = 0;
+ 		wbc.nr_to_write = write_chunk;
+ 		wbc.pages_skipped = 0;
++		wbc.inodes_cleaned = 0;
+ 
+ 		trace_wbc_writeback_start(&wbc, wb->bdi);
+ 		if (work->sb)
+@@ -741,6 +743,8 @@ static long wb_writeback(struct bdi_writ
+ 		 */
+ 		if (wbc.nr_to_write <= 0)
+ 			continue;
++		if (wbc.inodes_cleaned)
++			continue;
+ 		/*
+ 		 * Didn't write everything and we don't have more IO, bail
+ 		 */
+--- linux-next.orig/include/linux/writeback.h	2011-05-05 23:30:22.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-05-05 23:30:24.000000000 +0800
+@@ -34,6 +34,7 @@ struct writeback_control {
+ 	long nr_to_write;		/* Write this many pages, and decrement
+ 					   this for each page written */
+ 	long pages_skipped;		/* Pages which were not written */
++	long inodes_cleaned;		/* # of inodes cleaned */
+ 
+ 	/*
+ 	 * For a_ops->writepages(): is start or end are non-zero then this is
 
 
