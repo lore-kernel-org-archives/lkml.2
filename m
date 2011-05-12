@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758847Ab1ELWAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:00:04 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45493 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757968Ab1ELWAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:00:02 -0400
-Date: Thu, 12 May 2011 17:59:59 -0400 (EDT)
-Message-Id: <20110512.175959.1343349350164758016.davem@davemloft.net>
-To: joe@perches.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: af_packet: Don't initialize vnet_hdr
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1305237348.6124.72.camel@Joe-Laptop>
-References: <1305236000.6124.67.camel@Joe-Laptop>
-	<20110512.173608.1652572492952866283.davem@davemloft.net>
-	<1305237348.6124.72.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 15:00:01 -0700 (PDT)
+	id S1758855Ab1ELWA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 18:00:29 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33616 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757968Ab1ELWA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 18:00:26 -0400
+Date: Fri, 13 May 2011 00:00:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephane Eranian <eranian@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+Message-ID: <20110512220021.GA21732@elte.hu>
+References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+ <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+ <BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
+ <BANLkTimjHiaZ+b03FLb1LX=ycv=cAVyJZw@mail.gmail.com>
+ <20110512213542.GB17596@elte.hu>
+ <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
+ <20110512215023.GA20939@elte.hu>
+ <BANLkTimO-8QNumkjzYia5P-V3pm_4JMLxg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimO-8QNumkjzYia5P-V3pm_4JMLxg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Thu, 12 May 2011 14:55:48 -0700
 
-> Save an initialization because when this structure
-> is used it's completely filled by memcpy_fromiovec.
-> 
-> Add a new variable used for the 0 sized allocation
-> when this structure is not used.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> ---
-> 
-> On Thu, 2011-05-12 at 17:36 -0400, David Miller wrote:
->> I would rather see the code rearranged such that this sort of
->> hackish scheme isn't necessary.
+* Stephane Eranian <eranian@google.com> wrote:
 
-You misunderstood me.
+> On Thu, May 12, 2011 at 11:50 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Stephane Eranian <eranian@google.com> wrote:
+> >
+> >> On Thu, May 12, 2011 at 11:35 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >> >
+> >> > * Stephane Eranian <eranian@google.com> wrote:
+> >> >
+> >> >> The other contradiction, I see, is that you have perf_event paranoia level
+> >> >> and this new kptr masquerading feature which conflict with each
+> >> >> other.
+> >> >>
+> >> >> You can be allowed to monitor at the kernel level (paranoid=1, default)
+> >> >> but you cannot correlate symbols:
+> >> >>
+> >> >> $ perf record -e cycles:k foo
+> >> >>
+> >> >> I suspect if you have this kptr thing turned on, then you need to disallow
+> >> >> monitoring at the kernel level too.
+> >> >
+> >> > The better (and consistent) solution would be to turn the kptr_restrict thing
+> >> > off - see the patch i sent.
+> >>
+> >> I saw that. But I think that when someone turns it back on, then you need to
+> >> increase the perf_events paranoia level to disallow kernel monitoring to
+> >> regular users such that you maintain consistency across the board.
+> >
+> > Dunno, i would not couple them necessarily - certain users might still have
+> > access to kernel symbols via some other channel - for example the System.map.
+>
+> Ok, that's true, but then you'd need to have perf print a message or refuse to
+> use /proc/kallsyms and suggest that the user provides a System.map.
 
-It's this:
+Correct - the right approach would be to just use what we had in earlier 
+versions, an 'unknown symbol' kind of catch-all entry that shows how much
+stuff we did not recognize.
 
-	struct virtio_net_hdr vnet_hdr;
+Thanks,
 
-
-	if (po->has_vnet_hdr) {
-		initialize &vnet_hdr
-	}
-
-	...
-
-	if (po->has_vnet_hdr) {
-		use vnet_hdr
-	}
-
-which I'm talking about when I say "hackish scheme".
-
-The compiler cannot conclusively see that the control flow always
-goes to the code that initialized vnet_hdr every time it reaches
-the code that uses it.
-
-I want _that_ part rearranged, not what you decided to tackle
-here.
-
-For the third time, I'm not applying your patch.
+	Ingo
