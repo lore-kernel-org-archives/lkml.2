@@ -1,115 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab1ELFr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 01:47:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58741 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1ELFr5 (ORCPT
+	id S1754775Ab1ELFvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 01:51:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52526 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab1ELFve convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 01:47:57 -0400
+	Thu, 12 May 2011 01:51:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=nV5JaSkA39+Qm8NnDrtCL+rqH4JhfUHgVah/Q7ijhVP6jqAgw6kx+OgCsRirp/QsRO
-         kQUmtqnh8hi8TbTRWYw3AUwaYIpBNZIcFBv4Z+VGIzZV9E3eXH7vxuBod8DXfVsIhuSf
-         8gmHSJJaChdRpj6EOh/ZoXnTSl3PSbPC4ea78=
-Subject: [PATCH] regulator: Fix desc_id for tps65023/6507x/65910
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 13:47:50 +0800
-Message-ID: <1305179270.11113.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NnYxobSX0Krns+27hE1MiYWGlM5xJwDB8y83oJZ+W2J2MNH4JXVPpPLI5S3qiTGDqP
+         CskpIigKFUBWvo7IzXgiwMW+IrHWsvPpBj/Uu1BVqNDkMKKNcLt2OrAAyY8l5HmJTbq+
+         067IPdGjq/QUYCxtuKshW8pUIZoqgqM02JR5E=
+MIME-Version: 1.0
+In-Reply-To: <1305152704-4864-8-git-send-email-nacc@us.ibm.com>
+References: <1305152704-4864-1-git-send-email-nacc@us.ibm.com>
+	<1305152704-4864-8-git-send-email-nacc@us.ibm.com>
+Date: Thu, 12 May 2011 07:51:32 +0200
+X-Google-Sender-Auth: YCtI6BaBLd74v7nUVVQinlMZ1f8
+Message-ID: <BANLkTi=eL9uwvNSdEnY4S=k1kjSgH4Q5xg@mail.gmail.com>
+Subject: Re: [PATCH 7/8] powerpc: use the newly added get_required_mask
+ dma_map_ops hook
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Nishanth Aravamudan <nacc@us.ibm.com>, Milton Miller <miltonm@bga.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Arnd Bergmann <arnd@arndb.de>,
+        Geoff Levand <geoff@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sean MacLennan <smaclennan@pikatech.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Will Schmidt <will_schmidt@vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        cbe-oss-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The desc_id variable should not be a static variable.
+On Thu, May 12, 2011 at 00:25, Nishanth Aravamudan <nacc@us.ibm.com> wrote:
+> diff --git a/arch/powerpc/platforms/ps3/system-bus.c b/arch/powerpc/platforms/ps3/system-bus.c
+> index 23083c3..688141c 100644
+> --- a/arch/powerpc/platforms/ps3/system-bus.c
+> +++ b/arch/powerpc/platforms/ps3/system-bus.c
+> @@ -695,12 +695,18 @@ static int ps3_dma_supported(struct device *_dev, u64 mask)
+>        return mask >= DMA_BIT_MASK(32);
+>  }
+>
+> +static u64 ps3_dma_get_required_mask(struct device *_dev)
+> +{
+> +       return DMA_BIT_MASK(32);
 
-The rest of the code assumes the desc_id must less than TPSxxxxx_NUM_REGULATOR.
-If we set desc_id to be a static variable, checking the return value of
-rdev_get_id() may return error.
+Why 32 and not 64?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>
----
- drivers/regulator/tps65023-regulator.c |    3 +--
- drivers/regulator/tps6507x-regulator.c |    3 +--
- drivers/regulator/tps65910-regulator.c |    3 +--
- 3 files changed, 3 insertions(+), 6 deletions(-)
+> +}
+> +
+>  static struct dma_map_ops ps3_sb_dma_ops = {
+>        .alloc_coherent = ps3_alloc_coherent,
+>        .free_coherent = ps3_free_coherent,
+>        .map_sg = ps3_sb_map_sg,
+>        .unmap_sg = ps3_sb_unmap_sg,
+>        .dma_supported = ps3_dma_supported,
+> +       .get_required_mask = ps3_dma_get_required_mask,
+>        .map_page = ps3_sb_map_page,
+>        .unmap_page = ps3_unmap_page,
+>  };
+> @@ -711,6 +717,7 @@ static struct dma_map_ops ps3_ioc0_dma_ops = {
+>        .map_sg = ps3_ioc0_map_sg,
+>        .unmap_sg = ps3_ioc0_unmap_sg,
+>        .dma_supported = ps3_dma_supported,
+> +       .get_required_mask = ps3_dma_get_required_mask,
+>        .map_page = ps3_ioc0_map_page,
+>        .unmap_page = ps3_unmap_page,
+>  };
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 60a7ca5..fbddc15 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -466,7 +466,6 @@ static struct regulator_ops tps65023_ldo_ops = {
- static int __devinit tps_65023_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
- {
--	static int desc_id;
- 	const struct tps_info *info = (void *)id->driver_data;
- 	struct regulator_init_data *init_data;
- 	struct regulator_dev *rdev;
-@@ -499,7 +498,7 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 		tps->info[i] = info;
- 
- 		tps->desc[i].name = info->name;
--		tps->desc[i].id = desc_id++;
-+		tps->desc[i].id = i;
- 		tps->desc[i].n_voltages = num_voltages[i];
- 		tps->desc[i].ops = (i > TPS65023_DCDC_3 ?
- 					&tps65023_ldo_ops : &tps65023_dcdc_ops);
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index 0647552..bfffabc 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -553,7 +553,6 @@ static __devinit
- int tps6507x_pmic_probe(struct platform_device *pdev)
- {
- 	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
--	static int desc_id;
- 	struct tps_info *info = &tps6507x_pmic_regs[0];
- 	struct regulator_init_data *init_data;
- 	struct regulator_dev *rdev;
-@@ -598,7 +597,7 @@ int tps6507x_pmic_probe(struct platform_device *pdev)
- 		}
- 
- 		tps->desc[i].name = info->name;
--		tps->desc[i].id = desc_id++;
-+		tps->desc[i].id = i;
- 		tps->desc[i].n_voltages = num_voltages[i];
- 		tps->desc[i].ops = (i > TPS6507X_DCDC_3 ?
- 		&tps6507x_pmic_ldo_ops : &tps6507x_pmic_dcdc_ops);
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index d461fa7..048ba47 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -604,7 +604,6 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
- 	struct regulator_dev *rdev;
- 	struct tps65910_reg *pmic;
- 	struct tps65910_board *pmic_plat_data;
--	static int desc_id;
- 	int i, err;
- 
- 	pmic_plat_data = dev_get_platdata(tps65910->dev);
-@@ -630,7 +629,7 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
- 		pmic->info[i] = info;
- 
- 		pmic->desc[i].name = info->name;
--		pmic->desc[i].id = desc_id++;
-+		pmic->desc[i].id = i;
- 		pmic->desc[i].n_voltages = info->table_len;
- 
- 		if ((i == TPS65910_REG_VDD1) || (i == TPS65910_REG_VDD2))
--- 
-1.7.1
+Gr{oetje,eeting}s,
 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
