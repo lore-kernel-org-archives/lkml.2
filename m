@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab1ELJcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:32:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50619 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab1ELJcs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:32:48 -0400
-Date: Thu, 12 May 2011 11:32:18 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Wu, Josh" <Josh.wu@atmel.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, mchehab@redhat.com,
-        linux-media@vger.kernel.org, "Haring, Lars" <Lars.Haring@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: RE: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
-In-Reply-To: <4C79549CB6F772498162A641D92D532801AC28CD@penmb01.corp.atmel.com>
-Message-ID: <Pine.LNX.4.64.1105121131040.24486@axis700.grange>
-References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>
- <20110512074725.GA1356@n2100.arm.linux.org.uk>
- <4C79549CB6F772498162A641D92D532801AC28CD@penmb01.corp.atmel.com>
+	id S1753793Ab1ELJdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:33:12 -0400
+Received: from 8bytes.org ([88.198.83.132]:39225 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab1ELJdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:33:10 -0400
+Date: Thu, 12 May 2011 11:33:09 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+Message-ID: <20110512093309.GD8707@8bytes.org>
+References: <1305129333-7456-1-git-send-email-avi@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:wb8gym7ssry2RXJ8zdsmd9x8XRke+yOwNpgC1DVfAaz
- JiDWhpNiqaxPcoUz4UqwGi6Fa2HoEQN0q6ugCEu+WZM6ezuG0x
- z/ovJmbdz9E8CrmwYSa1baa9f7uzFw3OLIrTCO0WaZiKWHLlyr
- md6Dp1jp4+gvdM9XtUi7v+scYZuVsTd1V5+6iFa5YWmsE4dDAS
- VFsYJ81ZaUGuPgJMSdl88Eb6S2sjzrVBzXQlNlunns=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305129333-7456-1-git-send-email-avi@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011, Wu, Josh wrote:
-
-> Hi, Russell
+On Wed, May 11, 2011 at 11:55:28AM -0400, Avi Kivity wrote:
+> This not-for-merging patchset exposes an emulated version 1 architectural
+> performance monitoring unit to KVM guests.  The PMU is emulated using
+> perf_events, so the host kernel can multiplex host-wide, host-user, and the
+> guest on available resources.
 > 
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] Sent: Thursday, May 12, 2011 3:47 PM
-> > On Thu, May 12, 2011 at 03:42:18PM +0800, Josh Wu wrote:
-> >> +err_alloc_isi:
-> >> +	clk_disable(pclk);
-> > clk_put() ?
-> Ok, will be fixed in V2 patch. Thanks.
+> Caveats:
+> - counters that have PMI (interrupt) enabled stop counting after the
+>   interrupt is signalled.  This is because we need one-shot samples
+>   that keep counting, which perf doesn't support yet
+> - some combinations of INV and CMASK are not supported
+> - counters keep on counting in the host as well as the guest
+> - the RDPMC instruction and CR4.PCE bit are not yet emulated
+> - there is likely a bug in the implementation; running 'perf top' in
+>   a guest that spends 80% of its time in userspace shows perf itself
+>   as consuming almost all cpu
+> 
+> perf maintainers: please consider the first three patches for merging (the
+> first two make sense even without the rest).  If you're familiar with the Intel
+> PMU, please review patch 5 as well - it effectively undoes all your work
+> of abstracting the PMU into perf_events by unabstracting perf_events into what
+> is hoped is a very similar PMU.
 
-You might wait with v2 until I find time to review your patch. Will take a 
-couple of days, I think. A general question, though: how compatible is 
-this driver with the AVR32?
+Gaah, I was just about to submit a talk about PMU virtualization for KVM
+Forum :)
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Anyway, I thought about a paravirt-approach instead of implementing a
+real PMU... But there are certainly good reasons for both.
+
+	Joerg
+
