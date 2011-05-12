@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab1ELQAe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 12:00:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757331Ab1ELQAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 12:00:32 -0400
-Date: Thu, 12 May 2011 17:59:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
-	ptrace_check_attach()
-Message-ID: <20110512155910.GD18599@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-11-git-send-email-tj@kernel.org> <20110511164947.GA26383@redhat.com> <20110511195333.GE24245@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110511195333.GE24245@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757922Ab1ELQA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 12:00:28 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56342 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757331Ab1ELQA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 12:00:26 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <20110512154649.GB4559@redhat.com>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <20110512154649.GB4559@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 11:00:23 -0500
+Message-ID: <1305216023.2575.54.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11, Tejun Heo wrote:
->
-> On Wed, May 11, 2011 at 06:49:47PM +0200, Oleg Nesterov wrote:
-> > On 05/08, Tejun Heo wrote:
-> > > this patch moves TRAPPING wait from attach completion path to
-> > > operations which are actually affected by the transition - wait(2) and
-> > > following ptrace(2) requests.
-> >
-> > You know, I'd wish I could find the serious bugs in this patch. The
-> > code becomes really hairy. -EAGAIN in do_wait() doesn't make it more
-> > simple ;)
->
-> I don't know.  Why is retrying hairy?  The whole waiting logic is
-> built for clean retries.  The suggested change just does it without
-> intervening sleeping and waking up.  I don't see anything particularly
-> hairy there.
+On Thu, 2011-05-12 at 11:46 -0400, Dave Jones wrote:
+> On Thu, May 12, 2011 at 10:43:13AM -0500, James Bottomley wrote:
+> 
+>  > As I said above, no released fedora version uses SLUB.  It's only just
+>  > been enabled for the unreleased FC15; I'm testing a beta copy.
+> 
+> James, this isn't true.
+> 
+> $ grep SLUB /boot/config-2.6.35.12-88.fc14.x86_64 
+> CONFIG_SLUB_DEBUG=y
+> CONFIG_SLUB=y
+> 
+> (That's the oldest release I have right now, but it's been enabled even
+> before that release).
 
-As always, this is subjective. But I didn't mean -EAGAIN itself. In fact
-I was going to add this (simple) logic some time ago and kill the EXIT_DEAD
-state. Hmm, and I'd still like to do this...
+OK, I concede the point ... I haven't actually kept any of my FC
+machines current for a while.
 
-I meant the whole ptrace_wait_trapping() + lock dance + retry thing.
-But of course I do not pretend my feeling is right.
+However, the fact remains that this seems to be a slub problem and it
+needs fixing.
 
-Also. _Perhaps_ we can rethink the SIGCONT trapping, and perhaps in
-this case do_wait() won't need any changes. May be.
+James
 
-> > > Both wait and ptrace paths are updated to retry the operation after
-> > > TRAPPING wait.  Note that wait_task_stopped() now always grabs siglock
-> > > for ptrace waits.  This can be avoided with "task_stopped_code() ->
-> > > rmb() -> TRAPPING -> rmb() -> task_stopped_code()" sequence
-> >
-> > And so far I think this would be better, because it seems we can avoid
-> > the retry logic.
->
-> Well, the above memory barrier dance wouldn't really change whether
-> retry logic is required or not and I'd _really_ like to avoid complex
-> barrier dances.
-
-Agreed, the barriers always complicate the understanding.
-
-Oleg.
 
