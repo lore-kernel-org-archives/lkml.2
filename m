@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab1ELSSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:18:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16167 "EHLO mx1.redhat.com"
+	id S1758230Ab1ELSVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:21:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932361Ab1ELSSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:18:48 -0400
-Date: Thu, 12 May 2011 20:18:31 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110512181831.GQ11579@random.random>
-References: <1305213359.2575.46.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121024350.26013@router.home>
- <1305214993.2575.50.camel@mulgrave.site>
- <20110512154649.GB4559@redhat.com>
- <1305216023.2575.54.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121121120.26013@router.home>
- <1305217843.2575.57.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121144320.27324@router.home>
- <20110512174641.GL11579@random.random>
- <alpine.DEB.2.00.1105121255060.28493@router.home>
+	id S1757387Ab1ELSVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 14:21:21 -0400
+Date: Thu, 12 May 2011 20:20:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
+	ptrace_check_attach()
+Message-ID: <20110512182006.GA25850@redhat.com>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-11-git-send-email-tj@kernel.org> <20110511164947.GA26383@redhat.com> <20110511195333.GE24245@mtj.dyndns.org> <20110512155910.GD18599@redhat.com> <20110512160709.GL1030@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105121255060.28493@router.home>
+In-Reply-To: <20110512160709.GL1030@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 01:00:10PM -0500, Christoph Lameter wrote:
-> On Thu, 12 May 2011, Andrea Arcangeli wrote:
-> 
-> > order 1 should work better, because it's less likely we end up here
-> > (which leaves RECLAIM_MODE_LUMPYRECLAIM on and then see what happens
-> > at the top of page_check_references())
-> >
-> >    else if (sc->order && priority < DEF_PRIORITY - 2)
-> 
-> Why is this DEF_PRIORITY - 2? Shouldnt it be DEF_PRIORITY? An accomodation
-> for SLAB order 1 allocs?
+On 05/12, Tejun Heo wrote:
+>
+> On Thu, May 12, 2011 at 05:59:10PM +0200, Oleg Nesterov wrote:
+>
+> > Also. _Perhaps_ we can rethink the SIGCONT trapping, and perhaps in
+> > this case do_wait() won't need any changes. May be.
+>
+> But, if there's a better way, sure.
 
-That's to allow a few loops of the shrinker (i.e. not take down
-everything in the way regardless of any aging information in pte/page
-if there's no memory pressure). This "- 2" is independent of the
-allocation order. If it was < DEF_PRIORITY it'd trigger lumpy already
-at the second loop (in do_try_to_free_pages). So it'd make things
-worse. Like it'd make things worse decreasing the
-PAGE_ALLOC_COSTLY_ORDER define to 2 and keeping slub at 3.
+Unfortunately, I have no any particular ideas right now, and I doubt
+I can invent something clean. But I'd like at least to try to think
+a bit.
 
-> May I assume that the case of order 2 and 3 allocs in that case was not
-> very well tested after the changes to introduce compaction since people
-> were focusing on RHEL testing?
 
-Not really, I had to eliminate lumpy before compaction was
-developed. RHEL6 has zero lumpy code (not even at compile time) and
-compaction enabled by default, so even if we enabled SLUB=y it should
-work ok (not sure why James still crashes with patch 2 applied that
-clears __GFP_WAIT, that crash likely has nothing to do with compaction
-or lumpy as both are off with __GFP_WAIT not set).
+Now about GROUP_STOP_TRAPPING. To simplify the discussion, lets
+forget about this series, please recall the previous
+"ptrace: use GROUP_STOP_TRAPPING for PTRACE_DETACH too" change.
 
-Lumpy is also eliminated upstream now (but only at runtime when
-COMPACTION=y), unless __GFP_REPEAT is set, in which case I think lumpy
-will still work upstream too but few unfrequent things like increasing
-nr_hugepages uses that.
+http://marc.info/?l=linux-kernel&m=130486589601593
+
+In short, it changes __ptrace_unlink() to set _TRAPPING if needed,
+and ptrace_attach() waits for !TRAPPING unconditionally.
+
+Problem: TRAPPING can be set outside of do_signal_stop() paths, and
+I think we should avoid this as much as possible.
+
+(I am ignoring the problem this patch addresses temporary, I think
+ we can fix it a bit differently).
+
+As we already discussed, this patch is not right, we have the problems
+with KILL/CONT. The proposed solution is to clear TRAPPING on kill,
+but I think this is not enough.
+
+One particular example. Note that de_thread() waits ->notify_count == 0
+in TASK_UNINTERRUPTIBLE. Btw, this is not good, we need TASK_KILLABLE,
+but this doesn't matter in this discussion. The only imporant thing is
+that it is practically impossible to make this path restartable.
+
+Note also we have PT_TRACE_EXIT, the sub-thread stops even if killed by
+the execing thread. (to clarify, this depends on /dev/random and should
+be fixed, and in fact it is debatable whether it should stop, please
+ignore).
+
+Now suppose we are tracing 2 threads, T1 execs and kills T2, T2 reports
+PTRACE_EVENT_EXIT. Now, if the tracer waits for !(T1 & TRAPPING), it will
+wait forever.
+
+
+Say, the thread group was stopped, the tracer PTRACE_CONT's T1, it calls
+sys_execve() and reports the trap from syscall_trace_enter().
+
+The tracer does ptrace(T1, DETACH) + ptrace(T1, SEIZE) and hangs forever.
+
+
+Once again, this is only one example. coredump, vfork, probably something
+else. In short: I think that TRAPPING-outside-of-do_signal_stop is the
+can of worms.
+
+Oleg.
+
