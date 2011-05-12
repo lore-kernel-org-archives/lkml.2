@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758305Ab1ELRit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:38:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35403 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758281Ab1ELRiq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:38:46 -0400
+	id S1758335Ab1ELRjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:39:36 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48749 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758259Ab1ELRjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:39:35 -0400
+Date: Thu, 12 May 2011 18:38:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] genalloc: add support to specify the physical
+	address
+Message-ID: <20110512173832.GA8633@n2100.arm.linux.org.uk>
+References: <1303282455-26649-1-git-send-email-plagnioj@jcrosoft.com> <20110428081535.GI17290@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 May 2011 10:37:53 -0700
-Message-ID: <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
- right after logging in)
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, git@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110428081535.GI17290@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:15 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> OK, this sucks.  In the course of bisecting this, I've hit two other
-> apparently unrelated bugs that prevent my from testing large numbers
-> of kernels.  Do I have two questions:
->
-> 1. Anyone have any ideas from looking at the log?
+On Thu, Apr 28, 2011 at 09:15:35AM +0100, Russell King - ARM Linux wrote:
+> On Wed, Apr 20, 2011 at 08:54:15AM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > so we specify the virtual address as base of the pool chunk and then
+> > get the physical address for hardware IP
+> > 
+> > as example on at91 we will use on spi, uart or macb
+> > 
+> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > ---
+> > Hi Andrew,
+> > 	I integrate the documentation fix
+> > 	could replace the previous one with this one
+> > 
+> > V2:
+> > 	update documentation
+> > 	use phys_addr_t for physical addr
+> > Best Regards,
+> 
+> I notice no comments on this - maybe it needs to be Cc'd to linux-mm too?
+> 
+> Andrew - do you have any views on this?
 
-Nope, that doesn't look very helpful.
+Still haven't heard anything.  What's the status?
 
-> 2.  The !&$#@ bisection is skipping all over the place.  I've seen
-> 2.6.37 versions and all manner of -rc's out of order.
-
-That's the _point_ of bisection. It jumps around. You can start off
-trying to pick points on my development tree, but I only have a
-hundred merges or so. You're going to start delving into the actual
-development versions very quickly. And if you don't do it early,
-bisection is going to be much much slower, because it's not going to
-pick half-way points.
-
-So bisection works so well exactly because it picks points that are
-far away from each other, and you should just totally ignore the
-version number. It's meaningless. Looking at it just confuses you.
-Don't do it.
-
-Now, "pick stable points" would obviously be nice, but that is going
-to have to be manual. You can certainly make some helper scripts, and
-that's where that "--first-parent" thing comes in. So if you want to,
-just use "git bisect reset" to the commit you want to test.
-
-If you think it's networking, for example, and you've bisected into
-there but aren't sure, do "gitk --bisect", find the point where I
-merge, and pick that (and my parent), and "git bisect reset" those
-points. That way you can verify that it's the networking merge (or
-verify that it isn't).
-
-                         Linus
+If this isn't going into mainline, I'll queue up my work consolidating
+the existing ARM sram allocators instead, and when this hits we can see
+about moving stuff over to it then.
