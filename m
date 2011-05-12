@@ -1,126 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab1ELRPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:15:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36442 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757308Ab1ELRPY convert rfc822-to-8bit (ORCPT
+	id S1758152Ab1ELRQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:16:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58832 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758099Ab1ELRP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:15:24 -0400
+	Thu, 12 May 2011 13:15:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=dM+BZam5ok9q/M9db+e00078eEJjduPFqrfh5V1g2pM5pk4lMPPAzJH0OFWuUZK5jU
-         45nHjx/sgkXcj+n/jCb/bMfvWvwxjsT1ilf+0yymgt6NyTp37HY6d2JDHIVmGwPGXfNj
-         0PBg+UnBH42d8eBGXErisaOquV+jR1X0UjBNM=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=s5pg2dHUpl7tuhuEA1CFCZxB/eTx88rIwW8GS0vysO4aXyRFBijhjt0a6NDR7hmwEA
+         zUH3RnAxIULoK7t+g8OkH26udRR28mXITPQMjOjTjLKuCFQ0qhD1rZnPc8iXyBSiv4Z1
+         74zaK881r7xjcxQWJjVbH1my5XpntCr5o9x6M=
+Date: Thu, 12 May 2011 19:15:53 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
+        Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org
+Subject: Re: [PATCH 06/11] ptrace: make group stop state visible via
+ PTRACE_GETSIGINFO
+Message-ID: <20110512171553.GM1030@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-7-git-send-email-tj@kernel.org>
+ <20110510165545.GA30198@redhat.com>
+ <20110511080852.GA1661@htj.dyndns.org>
+ <20110512164745.GA20215@redhat.com>
 MIME-Version: 1.0
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 12 May 2011 13:15:03 -0400
-X-Google-Sender-Auth: NJ7eBcnn6uKKhGZhbP9c4MvRK0w
-Message-ID: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
-Subject: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
- right after logging in)
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, git@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512164745.GA20215@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 9:31 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> I just installed 9f381a6 (-linus from yesterday) on my Sandy Bridge
-> desktop, and it locks up hard within a few seconds of logging in.
-> netconsole says:
->
-> [  506.629723] block group 24725422080 has an wrong amount of free space
-> [  506.629723] block group 24725422080 has an wrong amount of free space
-> [  506.808501] fuse init (API version 7.16)
-> [  506.819996] SELinux: initialized (dev fuse, type fuse), uses genfs_contexts
-> [  506.829847] SELinux: initialized (dev fusectl, type fusectl), uses
-> genfs_contexts
-> [  506.808501] fuse init (API version 7.16)
-> [  506.819996] SELinux: initialized (dev fuse, type fuse), uses genfs_contexts
-> [  506.829847] SELinux: initialized (dev fusectl, type fusectl), uses
-> genfs_contexts
->
-> If it's any help, the system is locked so hard that the reset button
-> doesn't work.  It's an Intel DQ67SW board, which apparently doesn't
-> have the most reliable reset button in the world :)
->
-> 2.6.38.{4,5,6} are all rock-solid on this box.
->
-> I've started bisecting, but I don't expect to finish today.  I need to
-> do some work other than kernel hacking...
+Hello,
 
-OK, this sucks.  In the course of bisecting this, I've hit two other
-apparently unrelated bugs that prevent my from testing large numbers
-of kernels.  Do I have two questions:
+On Thu, May 12, 2011 at 06:47:45PM +0200, Oleg Nesterov wrote:
+> On 05/11, Tejun Heo wrote:
+> >
+> > On Tue, May 10, 2011 at 06:55:45PM +0200, Oleg Nesterov wrote:
+> > > IOW, if the tracee reports via ptrace_notify*, the tracee can look at
+> > > si_pt_flags == stop-in-effect. If the tracer reports a signal, the
+> > > tracer obviously lacks this info, hmm.
+> >
+> > Which indicates tracee is in group stop trap.
+> 
+> What do you mean?
 
-1. Anyone have any ideas from looking at the log?
+I meant that whether group stop is in effect or not can be determined
+reliably in most cases.  The only exception is signal delivery trap as
+siginfo there isn't from trap but I think we can survive that.
 
-It looks like most of what's left is network code, so cc netdev.
+> si_pt_flags doesn't "exist" when the tracee reports the signal or
+> CLD_STOPPED. This doesn't look clean.
 
-2.  The !&$#@ bisection is skipping all over the place.  I've seen
-2.6.37 versions and all manner of -rc's out of order.  Linus, and
-other people who like pontificating about git bisection: is there any
-way to get the bisection to follow Linus' tree?  I think that if
-bisect could be persuaded to consider only changes that are reached by
-following only the *first* merge parent all the way from the bad
-revision to the good revision, then the bisection would build versions
-that were at least good enough for Linus to pull and might have fewer
-bisection-killing bugs.
+Sure, it ain't clean.  Fully agreed.
 
-(This isn't a new idea [1], and git rev-list --bisect --first-parent
-isn't so bad except that it doesn't bisect.)
+> > I don't know.  PTRACE_GETSIGINFO seemed to already fit the bill and I
+> > want to avoid introducing a new request if at all possible.  It sure
+> > is a bit quirky but doesn't compromisea functionality.
+> 
+> I am not sure too, but the new request is much simpler to use, and it
+> is more extensible. We can report more info. Say, the state of
+> JOBCTL_STOP_CONSUME or something else.
 
+Functionality-wise, I don't think GETSIGINFO is worse.  We can add
+more flags and fields there too.  It sure is cumbersome to use because
+the information isn't there for signal delivery and group stop traps;
+however, both aren't critical.  Debugger can simply force INTERRUPT
+trap and get it there.
 
+> > This was quick hack.  Proper test would look like,
+> >
+> > 	si.si_code && (si.si_pt_flags & PTRACE_SI_STOPPED)
+> 
+> This doesn't look right too? How can we know we can trust si_pt_flags?
+> This needs some YES_YOU_CAN_CHECK_si_pt_flags(si_code), but I can't
+> understand what it should do right now...
 
-Here's the log.
+Ah, okay, you were asking how to tell si has the SIGTRAP info.  IIUC,
+si_code is non-zero iff the information is generated from kernel so
+testing lower bits against SIGTRAP should be good enough.  It can't
+happen by user generated signals.  The only way to side step that
+would be using PTRACE_SETSIGINFO - but that's the debugger shooting
+its own foot.  I don't feel particularly sympathetic.
 
-$ git bisect log
-# bad: [9f381a61f58bb6487c93ce2233bb9992f8ea9211] Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6
-# good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 2.6.38
-git bisect start 'HEAD' 'v2.6.38'
-# skip: [6899608533410557e6698cb9d4ff6df553916e98] Merge branch
-'for-linus' of git://codeaurora.org/quic/kernel/davidb/linux-msm
-# ******* This revision didn't build due to PSTORE.
-# ******* Fixed config for the rest but no point in retrying...
-git bisect skip 6899608533410557e6698cb9d4ff6df553916e98
-# bad: [d3e458d78167102cc961237cfceef6fffc80c0b3] Merge branch
-'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6
-git bisect bad d3e458d78167102cc961237cfceef6fffc80c0b3
-# good: [6445ced8670f37cfc2c5e24a9de9b413dbfc788d] Merge branch
-'staging-next' of
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
-git bisect good 6445ced8670f37cfc2c5e24a9de9b413dbfc788d
-# bad: [40c7f2112ce18fa5eb6dc209c50dd0f046790191] Merge branch
-'drm-core-next' of
-git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6
-git bisect bad 40c7f2112ce18fa5eb6dc209c50dd0f046790191
-# bad: [23b41168fc942a4a041325a04ecc1bd17d031a3e] netdevice: make
-initial group visible to userspace
-git bisect bad 23b41168fc942a4a041325a04ecc1bd17d031a3e
-# bad: [c0c84ef5c130f8871adbdaac2ba824b9195cb6d9] Merge branch
-'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
-git bisect bad c0c84ef5c130f8871adbdaac2ba824b9195cb6d9
-# skip: [3ad97fbcc233a295f2ccc2c6bdeb32323e360a5e] mac80211: remove
-unneeded check
-# ******* This revision hangs at edd=off
-git bisect skip 3ad97fbcc233a295f2ccc2c6bdeb32323e360a5e
-# skip: [5bec3e5ade813ee4bdbab03af1bb6f85859272ea] ath9k: fix tx queue
-index confusion in debugfs code
-# ******* This revision hangs at edd=off
-git bisect skip 5bec3e5ade813ee4bdbab03af1bb6f85859272ea
-# skip: [c210de8f88215db31cf3529c9763fc3124d6e09d] ath5k: Fix fast
-channel switching
-# ******* This revision hangs at edd=off
-git bisect skip c210de8f88215db31cf3529c9763fc3124d6e09d
+> > > We have more and more "group_stop_count || SIGNAL_STOP_STOPPED" checks,
+> > > perhaps we should make a helper. Or at least invent the short name to
+> > > denote the group-stopped-or-in-progress to simplify the discussions ;)
+> >
+> > Yeah, how about group_stop_in_effect()?
+> 
+> Or may me signal_stop_stopped(struct signal_struct *sig), like
+> signal_group_exit/SIGNAL_GROUP_EXIT. But I am fine with
+> group_stop_in_effect, probably it is more explanatorily.
 
-# ******* For added fun, 479600777bb588724d044815415f7d708d06644b gets
-stuck in systemd initialization.
+Given that stop might be in progress (not complete yet), I think a
+name which clearly notes that is preferable.  signal_stpo_stopped()
+sounds like it's already stopped.
 
---Andy
+> > * I think we better block PTRACE_SETSIGINFO for non signal delivery
+> >   traps.  It doesn't make any sense.  Let's just fail that with
+> >   -EINVAL if PT_SEIZED.
+> 
+> Oh I agree, it does not make any sense. Should we change the current
+> behaviour for PT_SEIZED? I don't really care, this looks minor.
+
+Hmmm... I don't wanna change PTRACE_ATTACH behavior unless necessary.
+The pt_flags part isn't even reported if ATTACHed.
+
+> > * I don't think PTRACE_GETSIGINFO returning volatile information to be
+> >   problematic.  The information is generated on the fly on trap
+> >   anyway.
+> 
+> Yes. And I'd understand if si_pt_flags was filled by the tracee
+> during the trap (although I do not think this makes sense) to record
+> the state at the time of this trap.
+> 
+> But PTRACE_GETSIGINFO returns the dynamic info which reflects the
+> process-wide state at the time of syscall.
+
+Hmmm... Well, if we're gonna introduce a new request, it's gonna have
+to be able to replace PTRACE_GETSIGINFO.  I don't wanna ask userland
+to make two ptrace requests on each trap to tell what's going on.
+
+Another point is that most programs would have to support pre-SEIZE
+behavior as well so I'd like to avoid deviating the interface too much
+if possible.
+
+If you combine the two, we basically end up something which carries
+both siginfo and something else at one go.  Its semantics can
+definitely be made prettier, I agree, but I'm not sure whether the
+benefits would be enough to justify a new request.  Maybe it would be.
+
+If you can propose something sane, it would be awesome.
+
+Thanks.
+
+-- 
+tejun
