@@ -1,92 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab1ELXEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 19:04:38 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:24700 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757486Ab1ELXEh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 19:04:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag4FAI9mzE15LCoe/2dsb2JhbACgDYVreMg+DoYHBJcggSCGNw
-Date: Fri, 13 May 2011 09:04:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/17] writeback: remove writeback_control.more_io
-Message-ID: <20110512230432.GL19446@dastard>
-References: <20110512135706.937596128@intel.com>
- <20110512140032.289087832@intel.com>
+	id S1757778Ab1ELXMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:12:05 -0400
+Received: from cpc7-stkp7-2-0-cust918.10-2.cable.virginmedia.com ([86.22.251.151]:52638
+	"EHLO freya" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757521Ab1ELXME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 19:12:04 -0400
+Date: Fri, 13 May 2011 00:12:05 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: please pull bjdooks' i2c fixes
+Message-ID: <20110512231205.GA28409@freya.fluff.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110512140032.289087832@intel.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 09:57:19PM +0800, Wu Fengguang wrote:
-> When wbc.more_io was first introduced, it indicates whether there are
-> at least one superblock whose s_more_io contains more IO work. Now with
-> the per-bdi writeback, it can be replaced with a simple b_more_io test.
-> 
-> Acked-by: Jan Kara <jack@suse.cz>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> CC: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  fs/fs-writeback.c                |    9 ++-------
->  include/linux/writeback.h        |    1 -
->  include/trace/events/ext4.h      |    6 ++----
->  include/trace/events/writeback.h |    5 +----
->  4 files changed, 5 insertions(+), 16 deletions(-)
-> 
-> --- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:30:30.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2011-05-05 23:30:33.000000000 +0800
-> @@ -560,12 +560,8 @@ static int writeback_sb_inodes(struct su
->  		iput(inode);
->  		cond_resched();
->  		spin_lock(&wb->list_lock);
-> -		if (wbc->nr_to_write <= 0) {
-> -			wbc->more_io = 1;
-> +		if (wbc->nr_to_write <= 0)
->  			return 1;
-> -		}
-> -		if (!list_empty(&wb->b_more_io))
-> -			wbc->more_io = 1;
->  	}
->  	/* b_io is empty */
->  	return 1;
-> @@ -707,7 +703,6 @@ static long wb_writeback(struct bdi_writ
->  			wbc.older_than_this = &oldest_jif;
->  		}
->  
-> -		wbc.more_io = 0;
->  		wbc.nr_to_write = write_chunk;
->  		wbc.pages_skipped = 0;
->  		wbc.inodes_cleaned = 0;
-> @@ -755,7 +750,7 @@ retry:
->  		/*
->  		 * No more inodes for IO, bail
->  		 */
-> -		if (!wbc.more_io)
-> +		if (list_empty(&wb->b_more_io))
->  			break;
+Please pull the following commit:
 
-We're not holding the wb->list_lock here, so we need to be careful
-here. I think this is safe given that there shuold only be one
-flusher thread operating on the list, but when we expand to multiple
-flusher threads per-bdi, this coul dbe a nasty landmine. A comment
-is probably in order explaining why this is safe to check unlocked
-right now...
+The following changes since commit ca1376d10810bc2c20c8d0821a9ee04ca2507c01:
 
-Cheers,
+  Merge branch 'fix/asoc' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-05-12 12:41:30 -0700)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+are available in the git repository at:
+
+  git://git.fluff.org/bjdooks/linux.git for-2639-rc7/i2c-fixes
+
+Wolfram Sang (1):
+      i2c: pnx: Fix crash due to wrong init of timer->data
+
+ drivers/i2c/busses/i2c-pnx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
