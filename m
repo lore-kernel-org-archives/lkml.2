@@ -1,133 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab1ELWzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:55:40 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:39509 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757315Ab1ELWzj (ORCPT
+	id S1757416Ab1ELW6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 18:58:20 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41267 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756240Ab1ELW6T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:55:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAANjzE15LCoe/2dsb2JhbACleHjIOw6GBwSedw
-Date: Fri, 13 May 2011 08:55:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/17] writeback: sync expired inodes first in
- background writeback
-Message-ID: <20110512225525.GK19446@dastard>
-References: <20110512135706.937596128@intel.com>
- <20110512140031.390955672@intel.com>
+	Thu, 12 May 2011 18:58:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qqijDYRAbeoJfiteRNoZPQSEA5eedQ2k1Jrfnm8nD6qHgUONB8XQZGRjCUmO1Z0v/H
+         pYG3zJKfXfpsv90Oyy/z/M86w3y7kO+ys55LP7FQi9GmpEk8xQf+9SPTwGwRuDmt+MsH
+         WroAa9X556yrFMP9MiR7RpYCVv1pB/ysu4vS8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512140031.390955672@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110512221506.GM16531@cmpxchg.org>
+References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	<alpine.DEB.2.00.1105120942050.24560@router.home>
+	<1305213359.2575.46.camel@mulgrave.site>
+	<alpine.DEB.2.00.1105121024350.26013@router.home>
+	<1305214993.2575.50.camel@mulgrave.site>
+	<1305215742.27848.40.camel@jaguar>
+	<1305225467.2575.66.camel@mulgrave.site>
+	<1305229447.2575.71.camel@mulgrave.site>
+	<1305230652.2575.72.camel@mulgrave.site>
+	<1305237882.2575.100.camel@mulgrave.site>
+	<20110512221506.GM16531@cmpxchg.org>
+Date: Fri, 13 May 2011 07:58:17 +0900
+Message-ID: <BANLkTikRFjGtBhnTBH_n=rDe+Y6kCjt30g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 09:57:12PM +0800, Wu Fengguang wrote:
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
-> 
-> At each queue_io() time, first try enqueuing only newly expired inodes.
-> If there are zero expired inodes to work with, then relax the rule and
-> enqueue all dirty inodes.
-> 
-> It at least makes sense from the data integrity point of view.
-> 
-> This may also reduce the number of dirty pages encountered by page
-> reclaim, eg. the pageout() calls. Normally older inodes contain older
-> dirty pages, which are more close to the end of the LRU lists. So
-> syncing older inodes first helps reducing the dirty pages reached by the
-> page reclaim code.
-> 
-> More background: as Mel put it, "it makes sense to write old pages first
-> to reduce the chances page reclaim is initiating IO."
-> 
-> Rik also presented the situation with a graph:
-> 
-> LRU head                                 [*] dirty page
-> [                          *              *      * *  *  * * * * * *]
-> 
-> Ideally, most dirty pages should lie close to the LRU tail instead of
-> LRU head. That requires the flusher thread to sync old/expired inodes
-> first (as there are obvious correlations between inode age and page
-> age), and to give fair opportunities to newly expired inodes rather
-> than sticking with some large eldest inodes (as larger inodes have
-> weaker correlations in the inode<=>page ages).
-> 
-> This patch helps the flusher to meet both the above requirements.
-> 
-> Side effects: it might reduce the batch size and hence reduce
-> inode_wb_list_lock hold time, but in turn make the cluster-by-partition
-> logic in the same function less effective on reducing disk seeks.
-> 
-> v2: keep policy changes inside wb_writeback() and keep the
-> wbc.older_than_this visibility as suggested by Dave.
-> 
-> CC: Dave Chinner <david@fromorbit.com>
-> Acked-by: Jan Kara <jack@suse.cz>
-> Acked-by: Rik van Riel<riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  fs/fs-writeback.c |   16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
-> 
-> --- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:30:25.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2011-05-05 23:30:26.000000000 +0800
-> @@ -718,7 +718,7 @@ static long wb_writeback(struct bdi_writ
->  		if (work->for_background && !over_bground_thresh())
->  			break;
->  
-> -		if (work->for_kupdate) {
-> +		if (work->for_kupdate || work->for_background) {
->  			oldest_jif = jiffies -
->  				msecs_to_jiffies(dirty_expire_interval * 10);
->  			wbc.older_than_this = &oldest_jif;
-> @@ -729,6 +729,7 @@ static long wb_writeback(struct bdi_writ
->  		wbc.pages_skipped = 0;
->  		wbc.inodes_cleaned = 0;
->  
-> +retry:
->  		trace_wbc_writeback_start(&wbc, wb->bdi);
->  		if (work->sb)
->  			__writeback_inodes_sb(work->sb, wb, &wbc);
-> @@ -752,6 +753,19 @@ static long wb_writeback(struct bdi_writ
->  		if (wbc.inodes_cleaned)
->  			continue;
->  		/*
-> +		 * background writeback will start with expired inodes, and
-> +		 * if none is found, fallback to all inodes. This order helps
-> +		 * reduce the number of dirty pages reaching the end of LRU
-> +		 * lists and cause trouble to the page reclaim.
-> +		 */
-> +		if (work->for_background &&
-> +		    wbc.older_than_this &&
-> +		    list_empty(&wb->b_io) &&
-> +		    list_empty(&wb->b_more_io)) {
-> +			wbc.older_than_this = NULL;
-> +			goto retry;
-> +		}
-> +		/*
->  		 * No more inodes for IO, bail
->  		 */
->  		if (!wbc.more_io)
+On Fri, May 13, 2011 at 7:15 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Thu, May 12, 2011 at 05:04:41PM -0500, James Bottomley wrote:
+>> On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
+>> > Confirmed, I'm afraid ... I can trigger the problem with all three
+>> > patches under PREEMPT.  It's not a hang this time, it's just kswapd
+>> > taking 100% system time on 1 CPU and it won't calm down after I unload
+>> > the system.
+>>
+>> Just on a "if you don't know what's wrong poke about and see" basis, I
+>> sliced out all the complex logic in sleeping_prematurely() and, as far
+>> as I can tell, it cures the problem behaviour.  I've loaded up the
+>> system, and taken the tar load generator through three runs without
+>> producing a spinning kswapd (this is PREEMPT).  I'll try with a
+>> non-PREEMPT kernel shortly.
+>>
+>> What this seems to say is that there's a problem with the complex logic
+>> in sleeping_prematurely().  I'm pretty sure hacking up
+>> sleeping_prematurely() just to dump all the calculations is the wrong
+>> thing to do, but perhaps someone can see what the right thing is ...
+>
+> I think I see the problem: the boolean logic of sleeping_prematurely()
+> is odd.  If it returns true, kswapd will keep running.  So if
+> pgdat_balanced() returns true, kswapd should go to sleep.
+>
+> This?
 
-I have to say that I dislike this implicit nested looping structure
-using a goto. It would seem better to me to make it explicit that we
-can do multiple writeback calls by using a do/while loop here and
-moving the logic of setting/resetting wbc.older_than_this to one
-place inside the nested loop...
+Yes. Good catch.
 
-Cheers,
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 2b701e0..092d773 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2261,7 +2261,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+>         * must be balanced
+>         */
+>        if (order)
+> -               return pgdat_balanced(pgdat, balanced, classzone_idx);
+> +               return !pgdat_balanced(pgdat, balanced, classzone_idx);
+>        else
+>                return !all_zones_ok;
+>  }
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-Dave.
+
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Kind regards,
+Minchan Kim
