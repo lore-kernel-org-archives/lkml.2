@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab1ELUlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:41:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60690 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758600Ab1ELUlB (ORCPT
+	id S1758655Ab1ELUoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:44:07 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43163 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab1ELUoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:41:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SIvsIln1+WTIeXSSSnML7BgOwI+UxKcBpRAFqvivKCtX8rFkoed1kAOVEhuoZhWXf8
-         DQSbng9IW97Z7bkbNKM9YWupRbVesy2uax1EPUzRfOagsOdrzaKXSotYcUNMpOeL5E6y
-         5I31WGG0d+vIgTS3YHfe8RCjUkb3/V08CQjX8=
-Date: Thu, 12 May 2011 22:40:54 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely
- callable from scheduler
-Message-ID: <20110512204051.GD7410@nowhere>
-References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
- <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 May 2011 16:44:05 -0400
+Date: Thu, 12 May 2011 16:43:19 -0400 (EDT)
+Message-Id: <20110512.164319.1770509419224900253.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: eranian@google.com, acme@redhat.com, linux-kernel@vger.kernel.org,
+        mingo@elte.hu
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+	<BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 13:43:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:32:06PM +0200, Frederic Weisbecker wrote:
-> Avoid potential scheduler recursion and deadlock from the
-> stacktrace code by avoiding rescheduling when we re-enable
-> preemption.
-> 
-> This robustifies some scheduler trace events like sched switch
-> when they are used to produce callchains in perf or ftrace.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 May 2011 13:31:37 -0700
 
-Actually trace events are already safe because they already disable
-preemption so callchains won't call schedule() there. But still
-let's be careful, we never know how stacktrace can be used.
+> That said, I have considered just reverting the thing that makes
+> kptr_restrict be 1 by default. I do like the security implications of
+> restricting visibility into kernel pointers, but I also think that
+> security rules that make the system less usable are dubious. So I
+> dunno.
+
+We don't have any firewalling or SELINUX rules installed by default,
+even if those features are enabled in the kernel.  Userspace asks for
+it.
+
+Many people would claim that use of such things are "essential" these
+days.
+
+I don't see a good reason to handle kptr_restrict any differently.
