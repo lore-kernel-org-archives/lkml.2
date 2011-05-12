@@ -1,101 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab1ELJeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:34:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56022 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1ELJem (ORCPT
+	id S1756514Ab1ELJfC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:35:02 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48774 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478Ab1ELJfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:34:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=Ln2/nXS/q+gBq7ZJMG8oP7vA9G/PsSx6I2ShV9peoTKBTIo0W4m1AHTjI77+dPuxud
-         wOX/3MTUeG7q9NWXRiQ8sc0HDywLJpfjNdx1SW9255meyTIPz0vMqPJmHTkjrWQHOm1s
-         q9xvuLa5ARok3sxx6neZ4kyrMUaS/QSbvNW+k=
-Message-ID: <4DCBA9A5.9040306@gmail.com>
-Date: Thu, 12 May 2011 11:34:29 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Thu, 12 May 2011 05:35:00 -0400
+Date: Thu, 12 May 2011 10:34:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Josh Wu <josh.wu@atmel.com>
+Cc: mchehab@redhat.com, linux-media@vger.kernel.org, lars.haring@atmel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        g.liakhovetski@gmx.de
+Subject: Re: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)
+	support
+Message-ID: <20110512093433.GD1356@n2100.arm.linux.org.uk>
+References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>
 MIME-Version: 1.0
-To: jlbec@evilplan.org
-CC: Jiri Slaby <jslaby@suse.cz>, npiggin@kernel.dk,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: OOPS in configfs when doing d_delete
-References: <4D623C62.8030509@suse.cz> <20110221104359.GA18538@noexit> <4D6242AD.2090600@suse.cz> <20110222091415.GD30966@noexit>
-In-Reply-To: <20110222091415.GD30966@noexit>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 10:14 AM, Joel Becker wrote:
-> On Mon, Feb 21, 2011 at 11:47:09AM +0100, Jiri Slaby wrote:
->>> 	I think you're right about the superfluous test, but I need more
->>> investigation to see what's going on.  Thanks for the report.
->>> 	What was causing attach_group() to fail?  Do you know?
->>
->> Dunno, I just modprobe'd the configfs example from Doc dir
->> (configfs_example_macros).
-> 
-> 	I'm going to revisit the failed example (which shouldn't fail, I
-> would think).  Can you try the following patch to safely handle the
-> failure rather than crashing the kernel?
-> 
-> Joel
+On Thu, May 12, 2011 at 03:42:18PM +0800, Josh Wu wrote:
+> This patch is to enable Atmel Image Sensor Interface (ISI) driver support. 
+> - Using soc-camera framework with videobuf2 dma-contig allocator
+> - Supporting video streaming of YUV packed format
+> - Tested on AT91SAM9M10G45-EK with OV2640
 
-Hi, what's the status of this? (It's verified to work some time ago.)
+A few more points...
 
-> From 68bbb327c48fdcdc48b71435d19b9e899745adf0 Mon Sep 17 00:00:00 2001
-> From: Joel Becker <jlbec@evilplan.org>
-> Date: Tue, 22 Feb 2011 01:09:49 -0800
-> Subject: [PATCH] configfs: Don't try to d_delete() negative dentries.
-> 
-> When configfs is faking mkdir() on its subsystem or default group
-> objects, it starts by adding a negative dentry.  It then tries to
-> instantiate the group.  If that should fail, it must clean up after
-> itself.
-> 
-> I was using d_delete() here, but configfs_attach_group() promises to
-> return an empty dentry on error.  d_delete() explodes with the entry
-> dentry.  Let's try d_drop() instead.  The unhashing is what we want for
-> our dentry.
-> 
-> Signed-off-by: Joel Becker <jlbec@evilplan.org>
-> ---
->  fs/configfs/dir.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-> index 90ff3cb..2af26b8 100644
-> --- a/fs/configfs/dir.c
-> +++ b/fs/configfs/dir.c
-> @@ -689,7 +689,8 @@ static int create_default_group(struct config_group *parent_group,
->  			sd = child->d_fsdata;
->  			sd->s_type |= CONFIGFS_USET_DEFAULT;
->  		} else {
-> -			d_delete(child);
-> +			BUG_ON(child->d_inode);
-> +			d_drop(child);
->  			dput(child);
->  		}
->  	}
-> @@ -1683,7 +1684,8 @@ int configfs_register_subsystem(struct configfs_subsystem *subsys)
->  		err = configfs_attach_group(sd->s_element, &group->cg_item,
->  					    dentry);
->  		if (err) {
-> -			d_delete(dentry);
-> +			BUG_ON(dentry->d_inode);
-> +			d_drop(dentry);
->  			dput(dentry);
->  		} else {
->  			spin_lock(&configfs_dirent_lock);
+> +static int __init atmel_isi_probe(struct platform_device *pdev)
 
+Should be __devinit otherwise you'll have section errors.
 
--- 
-js
+> +{
+> +	unsigned int irq;
+> +	struct atmel_isi *isi;
+> +	struct clk *pclk;
+> +	struct resource *regs;
+> +	int ret;
+> +	struct device *dev = &pdev->dev;
+> +	struct isi_platform_data *pdata;
+> +	struct soc_camera_host *soc_host;
+> +
+> +	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!regs)
+> +		return -ENXIO;
+> +
+> +	pclk = clk_get(&pdev->dev, "isi_clk");
+> +	if (IS_ERR(pclk))
+> +		return PTR_ERR(pclk);
+> +
+> +	clk_enable(pclk);
+
+Return value of clk_enable() should be checked.
+
+> +
+> +	isi = kzalloc(sizeof(struct atmel_isi), GFP_KERNEL);
+> +	if (!isi) {
+> +		ret = -ENOMEM;
+> +		dev_err(&pdev->dev, "can't allocate interface!\n");
+> +		goto err_alloc_isi;
+> +	}
+> +
+> +	isi->pclk = pclk;
+> +
+> +	spin_lock_init(&isi->lock);
+> +	init_waitqueue_head(&isi->capture_wq);
+> +
+> +	isi->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
+> +	if (IS_ERR(isi->alloc_ctx)) {
+> +		ret = PTR_ERR(isi->alloc_ctx);
+> +		goto err_alloc_isi;
+> +	}
+> +
+> +	isi->regs = ioremap(regs->start, resource_size(regs));
+> +	if (!isi->regs) {
+> +		ret = -ENOMEM;
+> +		goto err_ioremap;
+> +	}
+> +
+> +	if (dev->platform_data)
+> +		pdata = (struct isi_platform_data *) dev->platform_data;
+> +	else {
+> +		static struct isi_platform_data isi_default_data = {
+> +			.frate		= 0,
+> +			.has_emb_sync	= 0,
+> +			.emb_crc_sync	= 0,
+> +			.hsync_act_low	= 0,
+> +			.vsync_act_low	= 0,
+> +			.pclk_act_falling = 0,
+> +			.isi_full_mode	= 1,
+> +			/* to use codec and preview path simultaneously */
+> +			.flags = ISI_DATAWIDTH_8 |
+> +				ISI_DATAWIDTH_10,
+> +		};
+> +		dev_info(&pdev->dev,
+> +			"No config available using default values\n");
+> +		pdata = &isi_default_data;
+> +	}
+> +
+> +	isi->pdata = pdata;
+> +	isi->platform_flags = pdata->flags;
+> +	if (isi->platform_flags == 0)
+> +		isi->platform_flags = ISI_DATAWIDTH_8;
+> +
+> +	isi_writel(isi, V2_CTRL, ISI_BIT(V2_DIS));
+> +	/* Check if module disable */
+> +	while (isi_readl(isi, V2_STATUS) & ISI_BIT(V2_DIS))
+> +		cpu_relax();
+> +
+> +	irq = platform_get_irq(pdev, 0);
+
+This should also be checked.
