@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab1ELTPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:15:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64393 "EHLO
+	id S1757099Ab1ELTQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:16:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55301 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab1ELTPD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754774Ab1ELTQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:15:03 -0400
+	Thu, 12 May 2011 15:16:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=tRZDNRmGSj6AABSKAH7pKwRZ0fMmlPRnmpDB2UVSP2MS0WFXfY4AJYFl/g8yGNwAwL
-         EmznhgNjzqmLzeLHVlTbfy6q5VecdwXVMsuMfaC6aJBMaWSWe8/3N+JLGYcplTocrtmN
-         BVB97F3fDgsjMSkXZ32rpfIwFUF74u+/p1+PA=
+        b=lj00vdUhc9V5RMo/Qr3O3ctYxhcNQoB1kuJm84EIIByQFsZz1BJI6exzbxmwolaB86
+         YDroWM/HrobqPYmbpB9XA7bCbgJoSf5twt6FQF5REBk4DcvGNGujy+an4GZgsdyZxAJc
+         QI2Aqrq2+Uo8Ie9EFVYSGqTJGXDOaMyiQsX40=
 MIME-Version: 1.0
-In-Reply-To: <1305227500-15595-3-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1305227500-15595-4-git-send-email-geert@linux-m68k.org>
 References: <1305227500-15595-1-git-send-email-geert@linux-m68k.org>
-	<1305227500-15595-3-git-send-email-geert@linux-m68k.org>
-Date: Thu, 12 May 2011 21:15:01 +0200
-X-Google-Sender-Auth: n_B6X4nEc-WcDfIBrGZqU47ApvY
-Message-ID: <BANLkTinjoDhQRZ+1nc2uow3bWepziGMf0g@mail.gmail.com>
-Subject: Re: [PATCH 2/3] hydra: Fix regression caused during net_device_ops conversion
+	<1305227500-15595-4-git-send-email-geert@linux-m68k.org>
+Date: Thu, 12 May 2011 21:16:06 +0200
+X-Google-Sender-Auth: 6jbecuOPJmQYYhM63YfshHQXMwU
+Message-ID: <BANLkTik1_YpK-4X_+Axs9Zicne_zGVoGHg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ne-h8300: Fix regression caused during net_device_ops conversion
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: "David S. Miller" <davem@davemloft.net>,
         Stephen Hemminger <shemminger@vyatta.com>,
@@ -30,7 +30,6 @@ To: "David S. Miller" <davem@davemloft.net>,
 Cc: Russell King <linux@arm.linux.org.uk>,
         Finn Thain <fthain@telegraphics.com.au>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        Geert Uytterhoeven <geert@chicken.sonytel.be>,
         Geert Uytterhoeven <geert@linux-m68k.org>, stable@kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
@@ -43,9 +42,9 @@ On Thu, May 12, 2011 at 21:11, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
 Sorry, the above line is bogus. Please remove it.
 
-> Changeset 5618f0d1193d6b051da9b59b0e32ad24397f06a4 ("hydra: convert to
-> net_device_ops") broke hydra by adding 8390.o to the link. That
-> meant that lib8390.c was included twice, once in hydra.c and once in
+> Changeset dcd39c90290297f6e6ed8a04bb20da7ac2b043c5 ("ne-h8300: convert to
+> net_device_ops") broke ne-h8300 by adding 8390.o to the link. That
+> meant that lib8390.c was included twice, once in ne-h8300.c and once in
 > 8390.c, subject to different macros. This patch reverts that by
 > avoiding the wrappers in 8390.c.
 >
@@ -57,30 +56,39 @@ Sorry, the above line is bogus. Please remove it.
 > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 > Cc: stable@kernel.org
 > ---
->  drivers/net/Makefile |    2 +-
->  drivers/net/hydra.c  |   14 +++++++-------
->  2 files changed, 8 insertions(+), 8 deletions(-)
+>  drivers/net/Makefile   |    2 +-
+>  drivers/net/ne-h8300.c |   16 ++++++++--------
+>  2 files changed, 9 insertions(+), 9 deletions(-)
 >
 > diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-> index c64675f..4d2f094 100644
+> index 4d2f094..e5a7375 100644
 > --- a/drivers/net/Makefile
 > +++ b/drivers/net/Makefile
-> @@ -231,7 +231,7 @@ obj-$(CONFIG_SGI_IOC3_ETH) += ioc3-eth.o
->  obj-$(CONFIG_DECLANCE) += declance.o
->  obj-$(CONFIG_ATARILANCE) += atarilance.o
->  obj-$(CONFIG_A2065) += a2065.o
-> -obj-$(CONFIG_HYDRA) += hydra.o 8390.o
-> +obj-$(CONFIG_HYDRA) += hydra.o
->  obj-$(CONFIG_ARIADNE) += ariadne.o
->  obj-$(CONFIG_CS89x0) += cs89x0.o
->  obj-$(CONFIG_MACSONIC) += macsonic.o
-> diff --git a/drivers/net/hydra.c b/drivers/net/hydra.c
-> index c5ef62c..1cd481c 100644
-> --- a/drivers/net/hydra.c
-> +++ b/drivers/net/hydra.c
-> @@ -98,15 +98,15 @@ static const struct net_device_ops hydra_netdev_ops = {
->        .ndo_open               = hydra_open,
->        .ndo_stop               = hydra_close,
+> @@ -144,7 +144,7 @@ obj-$(CONFIG_NE3210) += ne3210.o 8390.o
+>  obj-$(CONFIG_SB1250_MAC) += sb1250-mac.o
+>  obj-$(CONFIG_B44) += b44.o
+>  obj-$(CONFIG_FORCEDETH) += forcedeth.o
+> -obj-$(CONFIG_NE_H8300) += ne-h8300.o 8390.o
+> +obj-$(CONFIG_NE_H8300) += ne-h8300.o
+>  obj-$(CONFIG_AX88796) += ax88796.o
+>  obj-$(CONFIG_BCM63XX_ENET) += bcm63xx_enet.o
+>  obj-$(CONFIG_FTMAC100) += ftmac100.o
+> diff --git a/drivers/net/ne-h8300.c b/drivers/net/ne-h8300.c
+> index 30be8c6..7298a34 100644
+> --- a/drivers/net/ne-h8300.c
+> +++ b/drivers/net/ne-h8300.c
+> @@ -167,7 +167,7 @@ static void cleanup_card(struct net_device *dev)
+>  #ifndef MODULE
+>  struct net_device * __init ne_probe(int unit)
+>  {
+> -       struct net_device *dev = alloc_ei_netdev();
+> +       struct net_device *dev = ____alloc_ei_netdev(0);
+>        int err;
+>
+>        if (!dev)
+> @@ -197,15 +197,15 @@ static const struct net_device_ops ne_netdev_ops = {
+>        .ndo_open               = ne_open,
+>        .ndo_stop               = ne_close,
 >
 > -       .ndo_start_xmit         = ei_start_xmit,
 > -       .ndo_tx_timeout         = ei_tx_timeout,
@@ -100,15 +108,15 @@ Sorry, the above line is bogus. Please remove it.
 >  #endif
 >  };
 >
-> @@ -125,7 +125,7 @@ static int __devinit hydra_init(struct zorro_dev *z)
->        0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e,
->     };
+> @@ -637,7 +637,7 @@ int init_module(void)
+>        int err;
 >
-> -    dev = alloc_ei_netdev();
-> +    dev = ____alloc_ei_netdev(0);
->     if (!dev)
->        return -ENOMEM;
->
+>        for (this_dev = 0; this_dev < MAX_NE_CARDS; this_dev++) {
+> -               struct net_device *dev = alloc_ei_netdev();
+> +               struct net_device *dev = ____alloc_ei_netdev(0);
+>                if (!dev)
+>                        break;
+>                if (io[this_dev]) {
 > --
 > 1.7.0.4
 
