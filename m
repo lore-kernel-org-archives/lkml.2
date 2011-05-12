@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab1ELRqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:46:47 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:35820 "EHLO mx2.netapp.com"
+	id S1758377Ab1ELRrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:47:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758201Ab1ELRqq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:46:46 -0400
-X-IronPort-AV: E=Sophos;i="4.64,359,1301900400"; 
-   d="scan'208";a="547509346"
-Subject: Re: [GIT PULL] fuse fix for 2.6.39
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-In-Reply-To: <BANLkTikBVAJSmBZrAvJ6fRQD32TFNeO4zQ@mail.gmail.com>
-References: <87fwokarjj.fsf@tucsk.pomaz.szeredi.hu>
-	 <BANLkTin6Ujea+qdkvwkH_9o5F8WKPyFdyA@mail.gmail.com>
-	 <BANLkTi=4rdtB5dQH=tycT1sybe7iJmTVcA@mail.gmail.com>
-	 <1305217732.15566.31.camel@lade.trondhjem.org>
-	 <BANLkTikBVAJSmBZrAvJ6fRQD32TFNeO4zQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 12 May 2011 13:46:29 -0400
-Message-ID: <1305222389.21868.10.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 12 May 2011 17:46:30.0681 (UTC) FILETIME=[86BD0890:01CC10CC]
+	id S1758355Ab1ELRq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:46:58 -0400
+Date: Thu, 12 May 2011 19:46:41 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110512174641.GL11579@random.random>
+References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1105120942050.24560@router.home>
+ <1305213359.2575.46.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121024350.26013@router.home>
+ <1305214993.2575.50.camel@mulgrave.site>
+ <20110512154649.GB4559@redhat.com>
+ <1305216023.2575.54.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121121120.26013@router.home>
+ <1305217843.2575.57.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121144320.27324@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105121144320.27324@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 10:21 -0700, Linus Torvalds wrote:
-> On Thu, May 12, 2011 at 9:28 AM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > NFS also requires look up using the full 'struct path' if/when we happen
-> > upon an automount point (i.e. if we cross into a submounted filesystem
-> > on the server or if we encounter an NFSv4 referral). Again, this is
-> > something that lookup_one_len() can't do.
-> 
-> Sure. But we might not want to oops. Would you be willing to try
-> ecryptfs over NFS to at least make it limp along?
-> 
->                        Linus
+On Thu, May 12, 2011 at 11:48:19AM -0500, Christoph Lameter wrote:
+> Try order = 1 which gives you SLAB like interaction with the page
+> allocator. Then we at least know that it is the order 2 and 3 allocs that
+> are the problem and not something else.
 
-I was thinking rather of just returning an EIO if people try. We know
-that there are breakages w.r.t. certain operations as I pointed out in
-my previous email.
+order 1 should work better, because it's less likely we end up here
+(which leaves RECLAIM_MODE_LUMPYRECLAIM on and then see what happens
+at the top of page_check_references())
 
-I suppose it really boils down to the following:
+   else if (sc->order && priority < DEF_PRIORITY - 2)
+   	sc->reclaim_mode |= syncmode;
 
-Is there really a community of people out there relying on being able to
-do ecryptfs over NFS today?
-If so, what are they using it for, and are they going to care about
-those breakages?
+with order 1 more likely we end up here as enough pages are freed for
+order 1 and we're safe:
 
-Cheers
-  Trond
+     else
+	sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+None of these issue should materialize with COMPACTION=n. Even
+__GFP_WAIT can be left enabled to run compaction without expecting
+adverse behavior, but running compaction may still not be worth it for
+small systems where the benefit of having order 1/2/3 allocation may
+not outweight the cost of compaction itself.
