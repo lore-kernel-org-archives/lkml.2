@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab1ELWH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:07:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758842Ab1ELWH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:07:27 -0400
-Date: Thu, 12 May 2011 18:07:16 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110512220715.GA7451@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
- <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
- <BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
- <BANLkTimjHiaZ+b03FLb1LX=ycv=cAVyJZw@mail.gmail.com>
- <20110512213542.GB17596@elte.hu>
- <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
- <20110512215023.GA20939@elte.hu>
+	id S1758887Ab1ELWKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 18:10:19 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29656 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758851Ab1ELWKS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 18:10:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=gZ+XVWdjoGJuMEJPn7xi/gcBjeicp/w+VsvhqDW6rnq5JE2x3Ph1ntRgWDAK0l/9Yt
+         tPT1YqUec+XS70CstwLg==
+Date: Thu, 12 May 2011 15:10:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: John Stultz <john.stultz@linaro.org>
+cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
+In-Reply-To: <1305076246.2939.67.camel@work-vm>
+Message-ID: <alpine.DEB.2.00.1105121508030.9130@chino.kir.corp.google.com>
+References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org> <1305073386-4810-3-git-send-email-john.stultz@linaro.org> <1305075090.19586.189.camel@Joe-Laptop> <1305076246.2939.67.camel@work-vm>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512215023.GA20939@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 11:50:23PM +0200, Ingo Molnar wrote:
- 
- > Dunno, i would not couple them necessarily - certain users might still have 
- > access to kernel symbols via some other channel - for example the System.map.
- 
-That always made this security by obscurity feature seem pointless for the bulk
-of users to me. Given the majority are going to be running distro kernels,
-anyone can find those addresses easily no matter how hard we hide them on the
-running system.
+On Tue, 10 May 2011, John Stultz wrote:
 
-Unless we were somehow introduced randomness into where we unpack the kernel
-each boot, and using System.map as a table of offsets instead of absolute addresses.
+> > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> > > index bc0ac6b..b9c97b8 100644
+> > > --- a/lib/vsprintf.c
+> > > +++ b/lib/vsprintf.c
+> > > @@ -797,6 +797,26 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+> > >  	return string(buf, end, uuid, spec);
+> > >  }
+> > >  
+> > > +static noinline_for_stack
+> > > +char *task_comm_string(char *buf, char *end, u8 *addr,
+> > > +			 struct printf_spec spec, const char *fmt)
+> > 
+> > addr should be void * not u8 *
+> > 
+> > > +{
+> > > +	struct task_struct *tsk = (struct task_struct *) addr;
+> > 
+> > no cast.
+> > 
+> > Maybe it'd be better to use current inside this routine and not
+> > pass the pointer at all.
+> 
+> That sounds reasonable. Most users are current, so forcing the more rare
+> non-current users to copy it to a buffer first and use the normal %s
+> would not be of much impact.
+> 
 
-	Dave
+Please still require an argument, otherwise the oom killer (which could 
+potentially called right before a stack overflow) would be required to use 
+buffers for the commands printed in the tasklist dump.
 
+> Although I'm not sure if there's precedent for a %p value that didn't
+> take a argument. Thoughts on that? Anyone else have an opinion here?
+> 
+
+After the cleanups are addressed:
+
+	Acked-by: David Rientjes <rientjes@google.com>
+
+It would have been nice if we could force %ptc to expect a 
+struct task_struct * rather than a void *, however.
