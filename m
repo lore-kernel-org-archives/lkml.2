@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab1ELOqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751955Ab1ELOqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:46:17 -0400
-Message-ID: <4DCBF2A7.4010002@redhat.com>
-Date: Thu, 12 May 2011 17:45:59 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1757888Ab1ELOqa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:46:30 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:23708 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757875Ab1ELOq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:46:28 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: wrTR_oQVM1ljQagnBuNmGDTlmMyLIgQtMFeMGBiIzE7.yY9
+ k7rjk_b2_VoNqPGrfqvGpNOcZNhevV9851vAVRh.blBHHyEpeObizl5DiwWU
+ B4fOHQ1391w5oHkTVdX0kjG8WoeWmLj2Lg9DtyNHeGpVeAivzz2C0tB2Alql
+ HZ58j8SM7wG2bVOUo2O4hzBl.LmyzRzxzA7uMYYNYGTN.AQ2EDMVaBfsaF54
+ 9YdEg9rkYHd9kuXdBcX1hkALLjmtyG6CM.RrTnaJkzWu30.S1ZPIPCSdR2du
+ KQnV_U9H1Jd6mMJGq8u6oSgY8mBZiEOdQHpyNVuR54mfnuIePjNP9LGbIGRP
+ D6EJ.SHQS4GCzajgdSpCsI1in
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 12 May 2011 09:46:26 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] slub: Per object NUMA support
+In-Reply-To: <alpine.DEB.2.00.1105111407530.9346@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1105120944480.24560@router.home>
+References: <alpine.DEB.2.00.1104151449370.12627@router.home> <alpine.DEB.2.00.1105111407530.9346@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
-References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com> <20110512131130.GG8707@8bytes.org> <4DCBE13A.2050204@redhat.com> <20110512142449.GI8707@8bytes.org> <4DCBF0B7.7080102@redhat.com>
-In-Reply-To: <4DCBF0B7.7080102@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2011 05:37 PM, Avi Kivity wrote:
+On Wed, 11 May 2011, David Rientjes wrote:
+
+> > Anyways the implementation is rather simple.
+> >
 >
-> I've considered something similar for mmio - use hypercalls for 
-> ordinary mmio to avoid calling into the emulator - but virtio uses pio 
-> which isn't emulated and we don't have massive consumers of mmio 
-> (except perhaps hpet).
+> The implementation may be simple, but it seems like this would absolutely
+> kill performance for MPOL_INTERLEAVE if slub is required for every
+> kmalloc() or kmem_cache_alloc() to take the alternate slab node's
+> list_lock to scan the partial list or, worse yet, allocate a new slab on
+> that node when there are objects available on the freelist.
 
-Say,
+Right. SLAB does something similar though. We could optimize it more by
+taking locks like done there and aovid the switching of the per cpu slabs.
 
-enum {
-    KVM_OP_MMIO_READ = 1,
-    KVM_OP_MMIO_WRITE = 2,
-    KVM_OP_PIO_READ = 3,
-    KVM_OP_PIO_WRITE = 4,
-    KVM_OP_MSR_READ = 5,
-    KVM_OP_MSR_WRITE = 6,
-    KVM_OP_HLT = 7, /* so we can program the apic timer and sleep */
-}
+> That, to me, would always nullify the performance benefit of using the
+> mempolicy in the first place and end up making MPOL_INTERLEAVE worse than
+> no mempolicy.  Do you have any benchmarks that suggest this has no
+> negative impact?  I'd be very surprised.
 
-struct kvm_batch_op {
-     u8 op;
-     u8 result;
-     u8 size;
-     u8 reserved[5];
-     u64 address;
-     u64 data;
-};
-
-int kvm_batch(int nr, u64 kvm_batch_op_phys);
-
-This is really repeating Xen PV though (different ops), not sure it's 
-worth the intrusiveness.
-
--- 
-error compiling committee.c: too many arguments to function
-
+The default is no memory policy. You would only use MPOL_INTERLEAVE on
+large NUMA system that incur sufficient cross node latency to justify the
+interleave.
