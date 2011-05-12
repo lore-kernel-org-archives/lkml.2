@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab1ELDqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 23:46:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44901 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab1ELDqi (ORCPT
+	id S1751984Ab1ELDoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 23:44:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53588 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751090Ab1ELDoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 23:46:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 12 May 2011 12:39:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
-        Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 2/4] oom: kill younger process first
-Message-Id: <20110512123942.4b641e2d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <BANLkTimWOtKKj+Jq1vqHfOfQ2UvP7Xxa3g@mail.gmail.com>
-References: <20110509182110.167F.A69D9226@jp.fujitsu.com>
-	<20110510171335.16A7.A69D9226@jp.fujitsu.com>
-	<20110510171641.16AF.A69D9226@jp.fujitsu.com>
-	<20110512095243.c57e3e83.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTi=ya1rAqC+nMPHkBaMsoXpsCeHH=w@mail.gmail.com>
-	<20110512105351.a57970d7.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTimWOtKKj+Jq1vqHfOfQ2UvP7Xxa3g@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 11 May 2011 23:44:22 -0400
+Date: Wed, 11 May 2011 20:51:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [RFC][PATCH 0/7] memcg async reclaim
+Message-Id: <20110511205110.354fa05e.akpm@linux-foundation.org>
+In-Reply-To: <20110512103503.717f4a96.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110511182844.d128c995.akpm@linux-foundation.org>
+	<20110512103503.717f4a96.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 11:23:38 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+On Thu, 12 May 2011 10:35:03 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> On Thu, May 12, 2011 at 10:53 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Thu, 12 May 2011 10:30:45 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-
-> > As above implies, (B)->prev pointer is invalid pointer after list_del().
-> > So, there will be race with list modification and for_each_list_reverse under
-> > rcu_read__lock()
-> >
-> > So, when you need to take atomic lock (as tasklist lock is) is...
-> >
-> >  1) You can't check 'entry' is valid or not...
-> >    In above for_each_list_rcu(), you may visit an object which is under removing.
-> >    You need some flag or check to see the object is valid or not.
-> >
-> >  2) you want to use list_for_each_safe().
-> >    You can't do list_del() an object which is under removing...
-> >
-> >  3) You want to walk the list in reverse.
-> >
-> >  3) Some other reasons. For example, you'll access an object pointed by the
-> >    'entry' and the object is not rcu safe.
-> >
-> > make sense ?
+> > What (user-visible) problem is this patchset solving?
+> > 
+> > IOW, what is the current behaviour, what is wrong with that behaviour
+> > and what effects does the patchset have upon that behaviour?
+> > 
+> > The sole answer from the above is "latency spikes".  Anything else?
+> > 
 > 
-> Yes. Thanks, Kame.
-> It seems It is caused by prev poisoning of list_del_rcu.
-> If we remove it, isn't it possible to traverse reverse without atomic lock?
+> I think this set has possibility to fix latency spike. 
 > 
+> For example, in previous set, (which has tuning knobs), do a file copy
+> of 400M file under 400M limit.
+> ==
+> 1) == hard limit = 400M ==
+> [root@rhel6-test hilow]# time cp ./tmpfile xxx                
+> real    0m7.353s
+> user    0m0.009s
+> sys     0m3.280s
+> 
+> 2) == hard limit 500M/ hi_watermark = 400M ==
+> [root@rhel6-test hilow]# time cp ./tmpfile xxx
+> 
+> real    0m6.421s
+> user    0m0.059s
+> sys     0m2.707s
+> ==
+> and in both case, memory usage after test was 400M.
 
-IIUC, it's possible (Fix me if I'm wrong) but I don't like that because of 2 reasons.
+I'm surprised that reclaim consumed so much CPU.  But I guess that's a
+200,000 page/sec reclaim rate which sounds high(?) but it's - what -
+15,000 CPU clocks per page?  I don't recall anyone spending much effort
+on instrumenting and reducing CPU consumption in reclaim.
 
-1. LIST_POISON is very important information at debug.
-
-2. If we don't clear prev pointer, ok, we'll allow 2 directional walk of list
-   under RCU.
-   But, in following case
-   1. you are now at (C). you'll visit (C)->next...(D)
-   2. you are now at (D). you want to go back to (C) via (D)->prev.
-   3. But (D)->prev points to (B)
-
-  It's not a 2 directional list, something other or broken one.
-  Then, the rculist is 1 directional list in nature, I think. 
-
-So, without very very big reason, we should keep POISON.
-
-Thanks,
--Kame
+Presumably there will be no improvement in CPU consumption on
+uniprocessor kernels or in single-CPU containers.  More likely a
+deterioration.
 
 
+ahem.
 
-
-
-
-
-
-
+Copying a 400MB file in a non-containered kernel on this 8GB machine
+with old, slow CPUs takes 0.64 seconds systime, 0.66 elapsed.  Five
+times less than your machine.  Where the heck did all that CPU time go?
 
