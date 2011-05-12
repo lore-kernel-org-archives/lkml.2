@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab1ELUkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:40:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46407 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757573Ab1ELUkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:40:22 -0400
-Date: Thu, 12 May 2011 13:40:09 -0700
-From: Greg KH <gregkh@suse.de>
-To: =?iso-8859-1?Q?St=E9phane?= Pajot <pajot.stephane@gmail.com>
-Cc: arun.thomas@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: comedi: fix tabulation and over 80 chars
- issues in amplc_pci224.c This is a patch to the amplc_pci224.c file that
- fixes up tabulation style errors and over 80 chars warning found by the
- checkpatch.pl tool Signed-off-by: Steph
-Message-ID: <20110512204009.GA3735@suse.de>
-References: <BANLkTi=1fdP1t0SN0fLEq_Rhx7kJkTVRLQ@mail.gmail.com>
+	id S1758651Ab1ELUlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:41:04 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60690 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758600Ab1ELUlB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 16:41:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SIvsIln1+WTIeXSSSnML7BgOwI+UxKcBpRAFqvivKCtX8rFkoed1kAOVEhuoZhWXf8
+         DQSbng9IW97Z7bkbNKM9YWupRbVesy2uax1EPUzRfOagsOdrzaKXSotYcUNMpOeL5E6y
+         5I31WGG0d+vIgTS3YHfe8RCjUkb3/V08CQjX8=
+Date: Thu, 12 May 2011 22:40:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely
+ callable from scheduler
+Message-ID: <20110512204051.GD7410@nowhere>
+References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
+ <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=1fdP1t0SN0fLEq_Rhx7kJkTVRLQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:03:35PM +0200, Stéphane Pajot wrote:
-> My answer in purple :
-
-Purple doesn't show up in plain text email clients :(
-
-> 2011/5/12 Greg KH <gregkh@suse.de>
+On Thu, May 12, 2011 at 10:32:06PM +0200, Frederic Weisbecker wrote:
+> Avoid potential scheduler recursion and deadlock from the
+> stacktrace code by avoiding rescheduling when we re-enable
+> preemption.
 > 
->     On Thu, May 12, 2011 at 06:44:58PM +0200, Stephane Pajot wrote:
->     > ---
->     >  drivers/staging/comedi/drivers/amplc_pci224.c |   63
->     +++++++++++++------------
->     >  1 files changed, 33 insertions(+), 30 deletions(-)
->     >
->     > diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/
->     staging/comedi/drivers/amplc_pci224.c
->     > index 1b5ba1c..2f61358 100644
->     > --- a/drivers/staging/comedi/drivers/amplc_pci224.c
->     > +++ b/drivers/staging/comedi/drivers/amplc_pci224.c
->     > @@ -52,33 +52,33 @@ Supports:
->     >  Configuration options - PCI224:
->     >    [0] - PCI bus of device (optional).
->     >    [1] - PCI slot of device (optional).
->     > -          If bus/slot is not specified, the first available PCI device
->     > -          will be used.
->     > +     If bus/slot is not specified, the first available PCI device
->     > +     will be used.
-> 
->     Why did you change these comment lines ? 
-> 
-> 
-> I change the space by a tabulation. Checkpatch.pl return errors about that
-> (maybe it's a mistake...). Question : when checkpatch.pl return this kind of
-> error (tabulation, or style in general) do we have to correct it too ?    
+> This robustifies some scheduler trace events like sched switch
+> when they are used to produce callchains in perf or ftrace.
 
-Just leave it alone, checkpatch isn't always correct, it's a guideline.
-
-thanks,
-
-greg k-h
+Actually trace events are already safe because they already disable
+preemption so callchains won't call schedule() there. But still
+let's be careful, we never know how stacktrace can be used.
