@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab1ELOqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:46:30 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:23708 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757875Ab1ELOq2 (ORCPT
+	id S1757874Ab1ELOsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:48:51 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:4421 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab1ELOsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:46:28 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: wrTR_oQVM1ljQagnBuNmGDTlmMyLIgQtMFeMGBiIzE7.yY9
- k7rjk_b2_VoNqPGrfqvGpNOcZNhevV9851vAVRh.blBHHyEpeObizl5DiwWU
- B4fOHQ1391w5oHkTVdX0kjG8WoeWmLj2Lg9DtyNHeGpVeAivzz2C0tB2Alql
- HZ58j8SM7wG2bVOUo2O4hzBl.LmyzRzxzA7uMYYNYGTN.AQ2EDMVaBfsaF54
- 9YdEg9rkYHd9kuXdBcX1hkALLjmtyG6CM.RrTnaJkzWu30.S1ZPIPCSdR2du
- KQnV_U9H1Jd6mMJGq8u6oSgY8mBZiEOdQHpyNVuR54mfnuIePjNP9LGbIGRP
- D6EJ.SHQS4GCzajgdSpCsI1in
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 12 May 2011 09:46:26 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] slub: Per object NUMA support
-In-Reply-To: <alpine.DEB.2.00.1105111407530.9346@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1105120944480.24560@router.home>
-References: <alpine.DEB.2.00.1104151449370.12627@router.home> <alpine.DEB.2.00.1105111407530.9346@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 12 May 2011 10:48:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Wd+UqqhZVz3it39DVamMeYkZa5FmOGrF7tNzW9YC+7+MJErsme8tOdJJr+wa7rLtJK
+         1eKZ+YaJMQkAstrIeP9A==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 12 May 2011 16:48:46 +0200
+Message-ID: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+Subject: [BUG] perf: bogus correlation of kernel symbols
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011, David Rientjes wrote:
+Hi,
 
-> > Anyways the implementation is rather simple.
-> >
->
-> The implementation may be simple, but it seems like this would absolutely
-> kill performance for MPOL_INTERLEAVE if slub is required for every
-> kmalloc() or kmem_cache_alloc() to take the alternate slab node's
-> list_lock to scan the partial list or, worse yet, allocate a new slab on
-> that node when there are objects available on the freelist.
+I think there is a serious problem with kernel symbol correlation
+with the latest perf in 2.6.39-rc7-tip.
 
-Right. SLAB does something similar though. We could optimize it more by
-taking locks like done there and aovid the switching of the per cpu slabs.
+Here is a simple example with a stupid program that only
+does open()/close on /dev/null:
 
-> That, to me, would always nullify the performance benefit of using the
-> mempolicy in the first place and end up making MPOL_INTERLEAVE worse than
-> no mempolicy.  Do you have any benchmarks that suggest this has no
-> negative impact?  I'd be very surprised.
+$ perf record -e cycles:k openclose
+$ perf report --stdio
 
-The default is no memory policy. You would only use MPOL_INTERLEAVE on
-large NUMA system that incur sufficient cross node latency to justify the
-interleave.
+# Events: 2K cycles
+#
+# Overhead    Command     Shared Object           Symbol
+# ........  .........  ................  ...............
+#
+    99.76%  openclose  [binfmt_misc]     [k] 0xffffffff81010fe6
+     0.13%  openclose  libc-2.12.1.so    [.] __open_nocancel
+     0.09%  openclose  libc-2.12.1.so    [.] __GI_close
+
+The DSO (binfmt_misc) is bogus. That's not where time is spent.
+
+But if I ran the same test as root:
+
+$ sudo perf record -e cycles:k openclose
+$ sudo perf report --stdio
+
+# Events: 2K cycles
+#
+# Overhead    Command      Shared Object                         Symbol
+# ........  .........  .................  .............................
+#
+    17.13%  openclose  [kernel.kallsyms]  [k] __lock_acquire
+    11.77%  openclose  [kernel.kallsyms]  [k] native_sched_clock
+     7.36%  openclose  [kernel.kallsyms]  [k] sched_clock_local
+     5.99%  openclose  [kernel.kallsyms]  [k] lock_release
+     5.38%  openclose  [kernel.kallsyms]  [k] local_clock
+     4.43%  openclose  [kernel.kallsyms]  [k] lock_acquired
+     4.05%  openclose  [kernel.kallsyms]  [k] lock_acquire
+     3.95%  openclose  [kernel.kallsyms]  [k] lock_is_held
+     3.51%  openclose  [kernel.kallsyms]  [k] sched_clock_cpu
+     3.24%  openclose  [kernel.kallsyms]  [k] trace_hardirqs_off_caller
+
+This is much more meaningful.
+
+This is not related to the paranoid level (1 for me).
+
+Looking at perf report -D, the same kernel address is associated to different
+module based on my permission level.
+
+first perf.data:
+416749738927 0x4210 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 4886/4886:
+0xffffffff8107c1d8 period: 2262681
+ ... thread: openclose:4886
+ ...... dso: /lib/modules/2.6.39-rc7-tip/kernel/fs/binfmt_misc.ko
+
+second perf.data:
+436879910722 0xc950 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 4894/4894:
+0xffffffff8107c1d8 period: 2280253
+ ... thread: openclose:4894
+ ...... dso: vmlinux
+
+Same address different mapping!
+
+My path to vmlinux is all accessible to me.
+
+If there were permission problems, I would expect perf record or perf report
+to tell me and not fallback to some bogus mappings.
