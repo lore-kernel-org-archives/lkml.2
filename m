@@ -1,187 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1ELCf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 22:35:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62732 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751626Ab1ELCf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 22:35:28 -0400
-Message-ID: <4DCB4827.4030609@cn.fujitsu.com>
-Date: Thu, 12 May 2011 10:38:31 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Doug Thompson <dougthompson@xmission.com>,
-        EDAC-CORE <bluesmoke-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] edac,rcu: use synchronize_rcu() instead of call_rcu()+rcu_barrier()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-12 10:35:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-12 10:35:38,
-	Serialize complete at 2011-05-12 10:35:38
+	id S1754500Ab1ELCkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 22:40:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2856 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840Ab1ELCkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 22:40:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,356,1301900400"; 
+   d="scan'208";a="746009885"
+Subject: Re: [patch v2 4/5] percpu_counter: use atomic64 for counter in SMP
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+In-Reply-To: <20110511023425.2d23a38a.akpm@linux-foundation.org>
+References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
+	 <20110511081433.987756741@sli10-conroe.sh.intel.com>
+	 <20110511023425.2d23a38a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 10:40:14 +0800
+Message-ID: <1305168014.2373.7.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-synchronize_rcu() does the stuff as needed.
+On Wed, 2011-05-11 at 17:34 +0800, Andrew Morton wrote:
+> On Wed, 11 May 2011 16:10:16 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+> 
+> > The percpu_counter global lock is only used to protect updating fbc->count after
+> > we use lglock to protect percpu data. Uses atomic64 for percpu_counter, because
+> > it is cheaper than spinlock. This doesn't slow fast path (percpu_counter_read).
+> > atomic64_read equals to read fbc->count for 64-bit system, or equals to
+> > spin_lock-read-spin_unlock for 32-bit system.
+> > 
+> > Note, originally the percpu_counter_read for 32-bit system doesn't hold
+> > spin_lock, but that is buggy and might cause very wrong value accessed.
+> > This patch fixes the issue.
+> > 
+> > This can also improve some workloads with percpu_counter->lock heavily
+> > contented. For example, vm_committed_as sometimes causes the contention.
+> > We should tune the batch count, but if we can make percpu_counter better,
+> > why not? In a 24 CPUs system and 24 processes, each runs:
+> > while (1) {
+> > 	mmap(128M);
+> > 	munmap(128M);
+> > }
+> > we then measure how many loops each process can take:
+> > orig: 1226976
+> > patched: 6727264
+> > The atomic method gives 5x~6x faster.
+> 
+> How much slower did percpu_counter_sum() become?
+I did a stress test. 23 CPU run _add, one cpu runs _sum
+In both cases (_add fast path (don't hold lock), _add slow path (hold
+lock)), _sum becomes about 2.4x slower. Not too much slower, anyway,
+_sum isn't frequently used.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- drivers/edac/edac_core.h   |   12 ------------
- drivers/edac/edac_device.c |   24 ++++++------------------
- drivers/edac/edac_mc.c     |   16 ++++++----------
- drivers/edac/edac_pci.c    |   21 ++++++---------------
- 4 files changed, 18 insertions(+), 55 deletions(-)
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index eefa350..55b8278 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -421,10 +421,6 @@ struct mem_ctl_info {
- 	u32 ce_count;		/* Total Correctable Errors for this MC */
- 	unsigned long start_time;	/* mci load start time (in jiffies) */
- 
--	/* this stuff is for safe removal of mc devices from global list while
--	 * NMI handlers may be traversing list
--	 */
--	struct rcu_head rcu;
- 	struct completion complete;
- 
- 	/* edac sysfs device control */
-@@ -620,10 +616,6 @@ struct edac_device_ctl_info {
- 
- 	unsigned long start_time;	/* edac_device load start time (jiffies) */
- 
--	/* these are for safe removal of mc devices from global list while
--	 * NMI handlers may be traversing list
--	 */
--	struct rcu_head rcu;
- 	struct completion removal_complete;
- 
- 	/* sysfs top name under 'edac' directory
-@@ -722,10 +714,6 @@ struct edac_pci_ctl_info {
- 
- 	unsigned long start_time;	/* edac_pci load start time (jiffies) */
- 
--	/* these are for safe removal of devices from global list while
--	 * NMI handlers may be traversing list
--	 */
--	struct rcu_head rcu;
- 	struct completion complete;
- 
- 	/* sysfs top name under 'edac' directory
-diff --git a/drivers/edac/edac_device.c b/drivers/edac/edac_device.c
-index a7408cf..c3f6743 100644
---- a/drivers/edac/edac_device.c
-+++ b/drivers/edac/edac_device.c
-@@ -346,30 +346,18 @@ fail1:
- }
- 
- /*
-- * complete_edac_device_list_del
-- *
-- *	callback function when reference count is zero
-- */
--static void complete_edac_device_list_del(struct rcu_head *head)
--{
--	struct edac_device_ctl_info *edac_dev;
--
--	edac_dev = container_of(head, struct edac_device_ctl_info, rcu);
--	INIT_LIST_HEAD(&edac_dev->link);
--}
--
--/*
-  * del_edac_device_from_global_list
-- *
-- *	remove the RCU, setup for a callback call,
-- *	then wait for the callback to occur
-  */
- static void del_edac_device_from_global_list(struct edac_device_ctl_info
- 						*edac_device)
- {
- 	list_del_rcu(&edac_device->link);
--	call_rcu(&edac_device->rcu, complete_edac_device_list_del);
--	rcu_barrier();
-+
-+	/* these are for safe removal of devices from global list while
-+	 * NMI handlers may be traversing list
-+	 */
-+	synchronize_rcu();
-+	INIT_LIST_HEAD(&edac_device->link);
- }
- 
- /*
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 1d80560..d69144a 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -447,20 +447,16 @@ fail1:
- 	return 1;
- }
- 
--static void complete_mc_list_del(struct rcu_head *head)
--{
--	struct mem_ctl_info *mci;
--
--	mci = container_of(head, struct mem_ctl_info, rcu);
--	INIT_LIST_HEAD(&mci->link);
--}
--
- static void del_mc_from_global_list(struct mem_ctl_info *mci)
- {
- 	atomic_dec(&edac_handlers);
- 	list_del_rcu(&mci->link);
--	call_rcu(&mci->rcu, complete_mc_list_del);
--	rcu_barrier();
-+
-+	/* these are for safe removal of devices from global list while
-+	 * NMI handlers may be traversing list
-+	 */
-+	synchronize_rcu();
-+	INIT_LIST_HEAD(&mci->link);
- }
- 
- /**
-diff --git a/drivers/edac/edac_pci.c b/drivers/edac/edac_pci.c
-index efb5d56..2b378207 100644
---- a/drivers/edac/edac_pci.c
-+++ b/drivers/edac/edac_pci.c
-@@ -164,19 +164,6 @@ fail1:
- }
- 
- /*
-- * complete_edac_pci_list_del
-- *
-- *	RCU completion callback to indicate item is deleted
-- */
--static void complete_edac_pci_list_del(struct rcu_head *head)
--{
--	struct edac_pci_ctl_info *pci;
--
--	pci = container_of(head, struct edac_pci_ctl_info, rcu);
--	INIT_LIST_HEAD(&pci->link);
--}
--
--/*
-  * del_edac_pci_from_global_list
-  *
-  *	remove the PCI control struct from the global list
-@@ -184,8 +171,12 @@ static void complete_edac_pci_list_del(struct rcu_head *head)
- static void del_edac_pci_from_global_list(struct edac_pci_ctl_info *pci)
- {
- 	list_del_rcu(&pci->link);
--	call_rcu(&pci->rcu, complete_edac_pci_list_del);
--	rcu_barrier();
-+
-+	/* these are for safe removal of devices from global list while
-+	 * NMI handlers may be traversing list
-+	 */
-+	synchronize_rcu();
-+	INIT_LIST_HEAD(&pci->link);
- }
- 
- #if 0
+Thanks,
+Shaohua
+
