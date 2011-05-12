@@ -1,76 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab1ELUaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:30:09 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43487 "EHLO zene.cmpxchg.org"
+	id S932674Ab1ELU37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:29:59 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:38558 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580Ab1ELUaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:30:04 -0400
-Date: Thu, 12 May 2011 22:29:17 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110512202917.GK16531@cmpxchg.org>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
- <1305127773-10570-4-git-send-email-mgorman@suse.de>
- <alpine.DEB.2.00.1105120942050.24560@router.home>
- <1305213359.2575.46.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121024350.26013@router.home>
- <1305214993.2575.50.camel@mulgrave.site>
- <1305215742.27848.40.camel@jaguar>
- <1305225467.2575.66.camel@mulgrave.site>
- <1305229447.2575.71.camel@mulgrave.site>
- <1305230652.2575.72.camel@mulgrave.site>
+	id S932580Ab1ELU35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 16:29:57 -0400
+X-ASG-Debug-ID: 1305232196-03d6a50f3672400001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DCC4340.6000407@fusionio.com>
+Date: Thu, 12 May 2011 22:29:52 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305230652.2575.72.camel@mulgrave.site>
+To: "Alex,Shi" <alex.shi@intel.com>
+CC: "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Perfromance drop on SCSI hard disk
+References: <1305009600.21534.587.camel@debian>
+X-ASG-Orig-Subj: Re: Perfromance drop on SCSI hard disk
+In-Reply-To: <1305009600.21534.587.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1305232196
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.63549
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 03:04:12PM -0500, James Bottomley wrote:
-> On Thu, 2011-05-12 at 14:44 -0500, James Bottomley wrote:
-> > On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
-> > > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
-> > > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
-> > > > > However, since you admit even you see problems, let's concentrate on
-> > > > > fixing them rather than recriminations?
-> > > > 
-> > > > Yes, please. So does dropping max_order to 1 help?
-> > > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
-> > > 
-> > > Just booting with max_slab_order=1 (and none of the other patches
-> > > applied) I can still get the machine to go into kswapd at 99%, so it
-> > > doesn't seem to make much of a difference.
-> > > 
-> > > Do you want me to try with the other two patches and max_slab_order=1?
-> > 
-> > OK, so patches 1 + 2 plus setting slub_max_order=1 still manages to
-> > trigger the problem (kswapd spinning at 99%).  This is still with
-> > PREEMPT; it's possible that non-PREEMPT might be better, so I'll try
-> > patches 1+2+3 with PREEMPT just to see if the perturbation is caused by
-> > it.
+On 2011-05-10 08:40, Alex,Shi wrote:
+> commit c21e6beba8835d09bb80e34961 removed the REENTER flag and changed
+> scsi_run_queue() to punt all requests on starved_list devices to
+> kblockd. Yes, like Jens mentioned, the performance on slow SCSI disk was
+> hurt here.  :) (Intel SSD isn't effected here)
 > 
-> Confirmed, I'm afraid ... I can trigger the problem with all three
-> patches under PREEMPT.  It's not a hang this time, it's just kswapd
-> taking 100% system time on 1 CPU and it won't calm down after I unload
-> the system.
+> In our testing on 12 SAS disk JBD, the fio write with sync ioengine drop
+> about 30~40% throughput, fio randread/randwrite with aio ioengine drop
+> about 20%/50% throughput. and fio mmap testing was hurt also. 
+> 
+> With the following debug patch, the performance can be totally recovered
+> in our testing. But without REENTER flag here, in some corner case, like
+> a device is keeping blocked and then unblocked repeatedly,
+> __blk_run_queue() may recursively call scsi_run_queue() and then cause
+> kernel stack overflow. 
+> I don't know details of block device driver, just wondering why on scsi
+> need the REENTER flag here. :) 
 
-That is kind of expected, though.  If one CPU is busy with a streaming
-IO load generating new pages, kswapd is busy reclaiming the old ones
-so that the generator does not have to do the reclaim itself.
+This is a problem and we should do something about it for 2.6.39. I knew
+that there would be cases where the async offload would cause a
+performance degredation, but not to the extent that you are reporting.
+Must be hitting the pathological case.
 
-By unload, do you mean stopping the generator?  And if so, how quickly
-after you stop the generator does kswapd go back to sleep?
+I can think of two scenarios where it could potentially recurse:
+
+- request_fn enter, end up requeuing IO. Run queue at the end. Rinse,
+  repeat.
+- Running starved list from request_fn, two (or more) devices could
+  alternately recurse.
+
+The first case should be fairly easy to handle. The second one is
+already handled by the local list splice.
+
+Looking at the code, is this a real scenario? Only potential recurse I
+see is:
+
+scsi_request_fn()
+        scsi_dispatch_cmd()
+                scsi_queue_insert()
+                        __scsi_queue_insert()
+                                scsi_run_queue()
+
+Why are we even re-running the queue immediately on a BUSY condition?
+Should only be needed if we have zero pending commands from this
+particular queue, and for that particular case async run is just fine
+since it's a rare condition (or performance would suck already).
+
+And it should only really be needed for the 'q' being passed in, not the
+others. Something like the below.
+
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 0bac91e..0b01c1f 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -74,7 +74,7 @@ struct kmem_cache *scsi_sdb_cache;
+  */
+ #define SCSI_QUEUE_DELAY	3
+ 
+-static void scsi_run_queue(struct request_queue *q);
++static void scsi_run_queue_async(struct request_queue *q);
+ 
+ /*
+  * Function:	scsi_unprep_request()
+@@ -161,7 +161,7 @@ static int __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+ 	blk_requeue_request(q, cmd->request);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ 
+-	scsi_run_queue(q);
++	scsi_run_queue_async(q);
+ 
+ 	return 0;
+ }
+@@ -391,13 +391,14 @@ static inline int scsi_host_is_busy(struct Scsi_Host *shost)
+  * Purpose:	Select a proper request queue to serve next
+  *
+  * Arguments:	q	- last request's queue
++ * 		async	- prevent potential request_fn recurse by running async
+  *
+  * Returns:     Nothing
+  *
+  * Notes:	The previous command was completely finished, start
+  *		a new one if possible.
+  */
+-static void scsi_run_queue(struct request_queue *q)
++static void __scsi_run_queue(struct request_queue *q, bool async)
+ {
+ 	struct scsi_device *sdev = q->queuedata;
+ 	struct Scsi_Host *shost;
+@@ -438,13 +439,30 @@ static void scsi_run_queue(struct request_queue *q)
+ 			continue;
+ 		}
+ 
+-		blk_run_queue_async(sdev->request_queue);
++		spin_unlock(shost->host_lock);
++		spin_lock(sdev->request_queue->queue_lock);
++		__blk_run_queue(sdev->request_queue);
++		spin_unlock(sdev->request_queue->queue_lock);
++		spin_lock(shost->host_lock);
+ 	}
+ 	/* put any unprocessed entries back */
+ 	list_splice(&starved_list, &shost->starved_list);
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+-	blk_run_queue(q);
++	if (async)
++		blk_run_queue_async(q);
++	else
++		blk_run_queue(q);
++}
++
++static void scsi_run_queue(struct request_queue *q)
++{
++	__scsi_run_queue(q, false);
++}
++
++static void scsi_run_queue_async(struct request_queue *q)
++{
++	__scsi_run_queue(q, true);
+ }
+ 
+ /*
+
+-- 
+Jens Axboe
+
