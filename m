@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab1ELTnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:43:51 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63450 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755421Ab1ELTnu (ORCPT
+	id S932559Ab1ELToN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:44:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33386 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757842Ab1ELToM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:43:50 -0400
-Message-ID: <4DCC384B.1020202@metafoo.de>
-Date: Thu, 12 May 2011 12:43:07 -0700
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "'Grant Likely'" <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        toshiharu-linux@dsn.okisemi.com
-Subject: Re: Question: GPIO driver how to get irq_base
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com> <4DCAE163.2050602@metafoo.de> <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com>
-In-Reply-To: <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 May 2011 15:44:12 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <1305225467.2575.66.camel@mulgrave.site>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
+	 <1305225467.2575.66.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 14:44:07 -0500
+Message-ID: <1305229447.2575.71.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2011 05:01 AM, Tomoya MORINAGA wrote:
->  Hi Lars, Grant
+On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
+> On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
+> > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
+> > > However, since you admit even you see problems, let's concentrate on
+> > > fixing them rather than recriminations?
+> > 
+> > Yes, please. So does dropping max_order to 1 help?
+> > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
 > 
-> According to "/proc/interrupts", IRQ18 is not empty.
-> However, irq_alloc_descs returns "18".
-> I suspect irq_alloc_descs returns should not return "18".
+> Just booting with max_slab_order=1 (and none of the other patches
+> applied) I can still get the machine to go into kswapd at 99%, so it
+> doesn't seem to make much of a difference.
 > 
->> Grant,
-> Let me know your opinion.
-> 
-> With Best Regards,
+> Do you want me to try with the other two patches and max_slab_order=1?
 
-Is it already used at the time when you call irq_alloc_descs?
+OK, so patches 1 + 2 plus setting slub_max_order=1 still manages to
+trigger the problem (kswapd spinning at 99%).  This is still with
+PREEMPT; it's possible that non-PREEMPT might be better, so I'll try
+patches 1+2+3 with PREEMPT just to see if the perturbation is caused by
+it.
 
-- Lars
+James
+
+
