@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1ELEn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 00:43:28 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53663 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab1ELEn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 00:43:27 -0400
-Date: Thu, 12 May 2011 00:42:50 -0400 (EDT)
-Message-Id: <20110512.004250.1962490475502866566.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+	id S1753088Ab1ELE4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 00:56:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39239 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab1ELE4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 00:56:41 -0400
+Date: Thu, 12 May 2011 14:56:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Javier Cardona <javier@cozybit.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Subject: Re: linux-next: build failure after merge of the final tree
+ (wireless tree related)
+Message-Id: <20110512145633.69302dd4.sfr@canb.auug.org.au>
+In-Reply-To: <BANLkTik+=yh3eq6Snp9SfC0xn--Deccefw@mail.gmail.com>
+References: <20110512141019.72ccb7a7.sfr@canb.auug.org.au>
+	<BANLkTik+=yh3eq6Snp9SfC0xn--Deccefw@mail.gmail.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 11 May 2011 21:42:54 -0700 (PDT)
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__12_May_2011_14_56_33_+1000_jLBs3dauDdVXxKX5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__12_May_2011_14_56_33_+1000_jLBs3dauDdVXxKX5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Three sparc32 bug fixes here:
+On Wed, 11 May 2011 21:37:16 -0700 Javier Cardona <javier@cozybit.com> wrot=
+e:
+>
+> Hi Stephen,
+>=20
+> On Wed, May 11, 2011 at 9:10 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+> > Hi John,
+> >
+> > After merging the final tree, today's linux-next build (i386 defconfig)
+> > failed like this:
+> >
+> > net/mac80211/cfg.c: In function 'sta_apply_parameters':
+> > net/mac80211/cfg.c:746: error: 'struct sta_info' has no member named 'p=
+link_state'
+>=20
+> Sorry, I just saw this.  My apologies.  The fixup is valid but I'm
+> trying to understand why it is needed.
+> ieee80211_vif_is_mesh(&sdata->vif) compiles to 'false' when
+> CONFIG_MAC80211_MESH is not defined... wouldn't the compiler remove
+> that dead code? (Obviously it did not...)
 
-1) Correct unaligned pointer determination in sparc32 checksumming asm
-   code, from Tkhai Kirill.
+The compiler will elide that code but only after compiling it, so the
+code still has to be correct.
 
-2) Sparc5 bootup busted because of incorrect CPU ID probing, fix from
-   Sam Ravnborg.
+> Anyway, given that this is necessary, it's probably cleaner to extend
+> the #ifdef block to the entire body of the outer if as follows:
 
-3) Bad __init markings cause references to freed up memory after bootup,
-   also from Sam Ravnborg.
+I think you have the #ifdef one line too low.
 
-Please pull, thanks a lot!
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-The following changes since commit 3568bd9720b4a775f28a718fcbb462ce2f386988:
+--Signature=_Thu__12_May_2011_14_56_33_+1000_jLBs3dauDdVXxKX5
+Content-Type: application/pgp-signature
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2011-05-11 19:13:34 -0700)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-are available in the git repository at:
+iQEcBAEBAgAGBQJNy2iBAAoJEDMEi1NhKgbs8hEH/jIIIY9lPk7Z77/hZ3dT6ZeV
+3yL8Hv4j13b1wOxxapdyCITchm5/e37KFaR4WAgeYQ++WPOYaWG+Ai9JMSffEB38
+K9qsZGrl8cSorDyu7idtXRZ1LG0MqsW1mD8JEiGEJ8GIYhFpgxOVO7A5XbDuK/m8
+L3FKCejkwx8VtWm5hiMvOcE73D2DKavmjE9ucz/uMxUrNFjhoGIm53Dkm6kBJaVk
+j+k8q/NiqseTzIFDu/eSA+ThdlZFM5sy29V0G1E1tJC61kcSSZ5Bb4gR3QwtcN9X
+9UjQFCBiI6lBzyhXWchcdpVIxcZbSEj1gQ9sqob4l8mTWBOGxOT3B2wqY3zeSxc=
+=DPpZ
+-----END PGP SIGNATURE-----
 
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
-
-Sam Ravnborg (2):
-      sparc32: fix section mismatch warnings in apc, pmc and time_32
-      sparc32: fix sparcstation 5 boot
-
-Tkhai Kirill (1):
-      sparc32: Fixed unaligned memory copying in function __csum_partial_copy_sparc_generic
-
- arch/sparc/kernel/apc.c      |    2 +-
- arch/sparc/kernel/pmc.c      |    2 +-
- arch/sparc/kernel/smp_32.c   |   10 +++++++---
- arch/sparc/kernel/time_32.c  |    2 +-
- arch/sparc/lib/checksum_32.S |   12 +++++++++---
- 5 files changed, 19 insertions(+), 9 deletions(-)
+--Signature=_Thu__12_May_2011_14_56_33_+1000_jLBs3dauDdVXxKX5--
