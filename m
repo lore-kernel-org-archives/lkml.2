@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab1ELUSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:18:34 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:54161 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758572Ab1ELUSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:18:32 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Subject: [PATCH 3/3] tea575x: use better card and bus names
-Date: Thu, 12 May 2011 22:18:22 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-media@vger.kernel.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
+	id S1758597Ab1ELUV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:21:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12285 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755077Ab1ELUVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 16:21:25 -0400
+Date: Thu, 12 May 2011 16:21:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: Question about life time of block device request queue
+Message-ID: <20110512202121.GA24843@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201105122218.24910.linux@rainbow-software.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide real card and bus_info instead of hardcoded values.
+Hi,
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+I am reading following code and wondering what makes sure that request
+queue lock is still valid by the time we call __make_request().
 
---- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-12 21:53:43.000000000 +0200
-+++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-12 21:37:40.000000000 +0200
-@@ -52,6 +52,8 @@ struct snd_tea575x {
- 	unsigned long in_use;		/* set if the device is in use */
- 	struct snd_tea575x_ops *ops;
- 	void *private_data;
-+	u8 card[32];
-+	u8 bus_info[32];
- };
- 
- int snd_tea575x_init(struct snd_tea575x *tea);
---- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-12 21:22:35.000000000 +0200
-+++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-12 21:41:11.000000000 +0200
-@@ -178,8 +178,9 @@ static int vidioc_querycap(struct file *
- 	struct snd_tea575x *tea = video_drvdata(file);
- 
- 	strlcpy(v->driver, "tea575x-tuner", sizeof(v->driver));
--	strlcpy(v->card, tea->tea5759 ? "TEA5759" : "TEA5757", sizeof(v->card));
--	sprintf(v->bus_info, "PCI");
-+	strlcpy(v->card, tea->card, sizeof(v->card));
-+	strlcat(v->card, tea->tea5759 ? " TEA5759" : " TEA5757", sizeof(v->card));
-+	strlcpy(v->bus_info, tea->bus_info, sizeof(v->bus_info));
- 	v->version = RADIO_VERSION;
- 	v->capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
- 	return 0;
---- linux-2.6.39-rc2-/sound/pci/es1968.c	2011-05-12 21:53:43.000000000 +0200
-+++ linux-2.6.39-rc2/sound/pci/es1968.c	2011-05-12 21:45:59.000000000 +0200
-@@ -2795,6 +2795,8 @@ static int __devinit snd_es1968_create(s
- #ifdef CONFIG_SND_ES1968_RADIO
- 	chip->tea.private_data = chip;
- 	chip->tea.ops = &snd_es1968_tea_ops;
-+	strlcpy(chip->tea.card, "SF64-PCE2", sizeof(chip->tea.card));
-+	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
- 	if (!snd_tea575x_init(&chip->tea))
- 		printk(KERN_INFO "es1968: detected TEA575x radio\n");
- #endif
---- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-12 21:53:43.000000000 +0200
-+++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-12 21:50:19.000000000 +0200
-@@ -1232,6 +1232,7 @@ static int __devinit snd_fm801_create(st
- #ifdef TEA575X_RADIO
- 	chip->tea.private_data = chip;
- 	chip->tea.ops = &snd_fm801_tea_ops;
-+	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
- 	if ((tea575x_tuner & TUNER_TYPE_MASK) > 0 &&
- 	    (tea575x_tuner & TUNER_TYPE_MASK) < 4) {
- 		if (snd_tea575x_init(&chip->tea))
-@@ -1246,6 +1247,7 @@ static int __devinit snd_fm801_create(st
- 				break;
- 			}
- 		}
-+	strlcpy(chip->tea.card, snd_fm801_tea575x_gpios[(tea575x_tuner & TUNER_TYPE_MASK) - 1].name, sizeof(chip->tea.card));
- #endif
- 
- 	*rchip = chip;
+__generic_make_request() {
+...
+...
+                if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+                        goto end_io;
 
+...
+...
+		ret = q->make_request_fn(q, bio); ---> __make_request();
+}
 
--- 
-Ondrej Zary
+__make_request(q)
+{
+	spin_lock_irq(q->queue_lock);
+}
+
+blk_cleanup_queue()
+{
+...
+...
+	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+...
+...
+}
+
+So when a driver tears down the request queue it should call
+blk_cleanup_queue() which will mark queue as DEAD.
+
+In __generic_make_request() once we have checked for dead queue and then
+we run bunch of more instructions and then call q->make_request_fn() which
+calls __make_request() and in __make_request we take ->queue_lock. What
+makes sure that driver did not call blk_cleanup_queue() between DEAD flag
+test and taking of spin lock?
+
+Is this a race condition or I am missing something.
+
+Thanks
+Vivek
