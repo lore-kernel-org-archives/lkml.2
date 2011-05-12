@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab1ELUbl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:31:41 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58777 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932580Ab1ELUbj (ORCPT
+	id S1758643Ab1ELUcd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 16:32:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34608 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758615Ab1ELUca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:31:39 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <20110512202917.GK16531@cmpxchg.org>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
-	 <1305225467.2575.66.camel@mulgrave.site>
-	 <1305229447.2575.71.camel@mulgrave.site>
-	 <1305230652.2575.72.camel@mulgrave.site>
-	 <20110512202917.GK16531@cmpxchg.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 15:31:35 -0500
-Message-ID: <1305232295.2575.82.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 May 2011 16:32:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 May 2011 13:31:37 -0700
+Message-ID: <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 22:29 +0200, Johannes Weiner wrote:
-> On Thu, May 12, 2011 at 03:04:12PM -0500, James Bottomley wrote:
-> > On Thu, 2011-05-12 at 14:44 -0500, James Bottomley wrote:
-> > > On Thu, 2011-05-12 at 13:37 -0500, James Bottomley wrote:
-> > > > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
-> > > > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
-> > > > > > However, since you admit even you see problems, let's concentrate on
-> > > > > > fixing them rather than recriminations?
-> > > > > 
-> > > > > Yes, please. So does dropping max_order to 1 help?
-> > > > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
-> > > > 
-> > > > Just booting with max_slab_order=1 (and none of the other patches
-> > > > applied) I can still get the machine to go into kswapd at 99%, so it
-> > > > doesn't seem to make much of a difference.
-> > > > 
-> > > > Do you want me to try with the other two patches and max_slab_order=1?
-> > > 
-> > > OK, so patches 1 + 2 plus setting slub_max_order=1 still manages to
-> > > trigger the problem (kswapd spinning at 99%).  This is still with
-> > > PREEMPT; it's possible that non-PREEMPT might be better, so I'll try
-> > > patches 1+2+3 with PREEMPT just to see if the perturbation is caused by
-> > > it.
-> > 
-> > Confirmed, I'm afraid ... I can trigger the problem with all three
-> > patches under PREEMPT.  It's not a hang this time, it's just kswapd
-> > taking 100% system time on 1 CPU and it won't calm down after I unload
-> > the system.
-> 
-> That is kind of expected, though.  If one CPU is busy with a streaming
-> IO load generating new pages, kswapd is busy reclaiming the old ones
-> so that the generator does not have to do the reclaim itself.
-> 
-> By unload, do you mean stopping the generator? 
+On Thu, May 12, 2011 at 7:48 AM, Stephane Eranian <eranian@google.com> wrote:
+>
+> I think there is a serious problem with kernel symbol correlation
+> with the latest perf in 2.6.39-rc7-tip.
 
-Correct.
+Yeah. It's annoying. It's a "perf" bug, though - triggered by
+/proc/sys/kernel/kptr_restrict being set to 1.
 
->  And if so, how quickly
-> after you stop the generator does kswapd go back to sleep?
+The bug is that perf doesn't say "I can't match kernel symbols", but
+instead does some crazy matching and gives total crap module
+information (I think it just picks the one that shows up last in
+/proc/kallsyms).
 
-It doesn't.  At least not on its own; the CPU stays pegged.  If I start
-other work (like a kernel compile), then sometimes it does go back to
-nothing.
+That said, I have considered just reverting the thing that makes
+kptr_restrict be 1 by default. I do like the security implications of
+restricting visibility into kernel pointers, but I also think that
+security rules that make the system less usable are dubious. So I
+dunno.
 
-I'm speculating that this is the hang case for non-PREEMPT.
-
-James
-
-
+                           Linus
