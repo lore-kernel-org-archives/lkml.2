@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab1ELOn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:43:28 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:23426 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752789Ab1ELOn0 (ORCPT
+	id S1757805Ab1ELOpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:45:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36744 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754158Ab1ELOpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:43:26 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: IOyCbZoVM1milIbsRFrjM8nJOHK4N2nShG_HLWSmb_LxfKU
- vVAwsiBREaMRZr8og9NxwE4v7S.wI48QOnbrdJDSYCFDTxSF_UKuU5G.ZooS
- zkTOLV9zkx3LHBQYghpzTSKRqo0gHOLyqJ3w0RIcO_SXuTS88HtGfcNOR.70
- UkHaLfO6NXwi2.dibCdKe4yjsFRtcP3tFIrUZKaQxFLvjIvXx8zty2jfoQ6D
- JfmkgS6EifSazH9TymYTfdnBhLor5tY3FHVBHPcCu0tj5ObJPKizYyQGfPtk
- kwf6OZQRXXchlphoLt7faQgzJ.eaoCaLr3pFMRHTTTymhgRoT
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 12 May 2011 09:43:21 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-In-Reply-To: <1305127773-10570-4-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.DEB.2.00.1105120942050.24560@router.home>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de> <1305127773-10570-4-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 12 May 2011 10:45:43 -0400
+Date: Thu, 12 May 2011 10:45:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>, <greg@kroah.com>,
+        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <balbi@ti.com>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v9 7/7] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <000b01cc1064$3b7e51d0$b27af570$@org>
+Message-ID: <Pine.LNX.4.44L0.1105121040190.1917-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011, Mel Gorman wrote:
+On Thu, 12 May 2011, Tanya Brokhman wrote:
 
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2198,7 +2198,7 @@ EXPORT_SYMBOL(kmem_cache_free);
->   * take the list_lock.
->   */
->  static int slub_min_order;
-> -static int slub_max_order = PAGE_ALLOC_COSTLY_ORDER;
-> +static int slub_max_order;
+> > >+	retval = usb_add_hcd(hs_hcd, 0, IRQF_DISABLED | IRQF_SHARED);
+> > Why IRQF_DISABLED | IRQF_SHARED? you don't interrupts at all.
+> 
+> I used xhci as reference for this patch. This is the way xhci driver adds
+> the hcds. You can find it in xhci_pci_probe(). 
+> I'm not very familiar with how this two hcds (main and shared shcd) will
+> work together so I thought these flags are needed for their co-operation. 
+> Was my assumption mistaken? What flags should I use? 
 
-If we really need to do this then do not push this down to zero please.
-SLAB uses order 1 for the meax. Lets at least keep it theere.
+You don't need any flags at all, because dummy-hcd does not handle any 
+hardware interrupts.
 
-We have been using SLUB for a long time. Why is this issue arising now?
-Due to compaction etc making reclaim less efficient?
+> Also, Sergei pointed out that IRQF_DISABLED is deprecated so it seems to me
+> that xhci needs an update as well....
+
+Plus every other source file that uses IRQF_DISABLED...
+
+Alan Stern
 
