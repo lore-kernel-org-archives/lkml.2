@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab1ELK06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 06:26:58 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:55085 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab1ELK05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 06:26:57 -0400
-Date: Thu, 12 May 2011 12:25:15 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: David Rientjes <rientjes@google.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] mm: Remove dependency on CONFIG_FLATMEM from online_page()
-Message-ID: <20110512102515.GA27851@router-fw-old.local.net-space.pl>
-References: <20110502211915.GB4623@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105111547160.24003@chino.kir.corp.google.com>
-Mime-Version: 1.0
+	id S1757028Ab1ELKg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 06:36:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57947 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab1ELKgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 06:36:55 -0400
+Date: Thu, 12 May 2011 12:36:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        osrc-patches <osrc-patches@elbe.amd.com>
+Subject: Re: [RFC PATCH] perf: Carve out cgroup-related code
+Message-ID: <20110512103644.GH9937@elte.hu>
+References: <20110511121135.GA25865@aftab>
+ <1305121600.2914.214.camel@laptop>
+ <20110511140208.GD25827@aftab>
+ <20110511141342.GA19053@elte.hu>
+ <20110511143149.GA26548@aftab>
+ <20110511152156.GA21707@elte.hu>
+ <20110511170912.GA27362@aftab>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105111547160.24003@chino.kir.corp.google.com>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <20110511170912.GA27362@aftab>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 03:47:49PM -0700, David Rientjes wrote:
-> On Mon, 2 May 2011, Daniel Kiper wrote:
->
-> > Memory hotplug code strictly depends on CONFIG_SPARSEMEM.
-> > It means that code depending on CONFIG_FLATMEM in online_page()
-> > is never compiled. Remove it because it is not needed anymore.
-> >
-> > Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
->
-> The code you're patching depends on CONFIG_MEMORY_HOTPLUG_SPARSE, so this
-> is valid.  The changelog should be updated to reflect that, however.
->
-> Acked-by: David Rientjes <rientjes@google.com>
 
-No problem, however, this bundle of patches was added to the -mm tree.
-In this situation should I repost whole bundle with relevant changes
-or post only those two patches requested by you ??? For which tree
-should I prepare new version of patches ???
+* Borislav Petkov <bp@amd64.org> wrote:
 
-Daniel
+> Done, patch below. I've moved all exports local to kernel/events/* to
+> internal.h. Branch at
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git perf-split
+
+Beyond the things Peter noticed, there's also this new bit in perf_event.h:
+
+enum event_type_t {
+        EVENT_FLEXIBLE = 0x1,
+        EVENT_PINNED = 0x2,
+        EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
+};
+
+this got there from core.c, albeit it's only core.c that uses it.
+
+If then this should move to internal.h - or stay local to core.c.
+
+Thanks,
+
+	Ingo
