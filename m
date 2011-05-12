@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab1ELJoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:44:25 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:49240 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab1ELJoY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:44:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eU7+4gOi1pRR5UGUk95bY4Lt3zelsZeZxDhPyA0aDSTa/DmeOK3b0kM1sgLl5drsVf
-         nva7GGjt05xpwGcDuprxvfBz+Z4MG0LPfPTu95KV+W3PsoDodILrLW5meC81DzOdSM+K
-         UMH4DtGe1r56AfrMZS7SWuGJdXmztwpMCovgY=
+	id S1756728Ab1ELJrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:47:10 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39390 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab1ELJrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:47:08 -0400
+Date: Thu, 12 May 2011 02:47:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: 2.6.39-rc6-mmotm0506 - lockdep splat in RCU code on page fault
+Message-ID: <20110512094704.GL2258@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <6921.1304989476@localhost>
+ <20110510082029.GF2258@linux.vnet.ibm.com>
+ <34783.1305155494@localhost>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
-References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
-	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
-Date: Thu, 12 May 2011 10:44:23 +0100
-Message-ID: <BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
-Subject: Re: problem with kmemleak
-From: Maxin B John <maxin.john@gmail.com>
-To: ttlxzz ccc <boyzccc@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <34783.1305155494@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 11, 2011 at 07:11:34PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 10 May 2011 01:20:29 PDT, "Paul E. McKenney" said:
+> 
+> Would test, but it doesn't apply cleanly to my -mmotm0506 tree:
+> 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index 5616b17..20c22c5 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1525,13 +1525,15 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
+> >   */
+> >  static void rcu_cpu_kthread_timer(unsigned long arg)
+> >  {
+> > -	unsigned long flags;
+> > +	unsigned long old;
+> > +	unsigned long new;
+> >  	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, arg);
+> >  	struct rcu_node *rnp = rdp->mynode;
+> >  
+> > -	raw_spin_lock_irqsave(&rnp->lock, flags);
+> > -	rnp->wakemask |= rdp->grpmask;
+> > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > +	do {
+> > +		old = rnp->wakemask;
+> > +		new = old | rdp->grpmask;
+> > +	} while (cmpxchg(&rnp->wakemask, old, new) != old);
+> >  	invoke_rcu_node_kthread(rnp);
+> >  }
+> 
+> My source has this:
+> 
+>         raw_spin_lock_irqsave(&rnp->lock, flags);
+>         rnp->wakemask |= rdp->grpmask;
+>         invoke_rcu_node_kthread(rnp);
+>         raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> 
+> the last 2 lines swapped from what you diffed against.  I can easily work around
+> that, except it's unclear what the implications of the invoke_rcu moving outside
+> of the irq save/restore pair (or if it being inside is the actual root cause)...
 
-Could you please share some more information about your setup ?
+Odd...
 
-Regards,
-Maxin
+This looks to me like a recent -next -- I do not believe that straight
+mmotm has rcu_cpu_kthread_timer() in it.  The patch should apply to the
+last few days' -next kernels.
 
-On Thu, May 12, 2011 at 4:13 AM, ttlxzz ccc <boyzccc@gmail.com> wrote:
-> help~~~：） please ！thx！！
->
-> On Thu, May 12, 2011 at 10:06 AM, ttlxzz ccc <boyzccc@gmail.com> wrote:
->> Hi, all:
->>
->>
->>
->> I just want to use kmemleak, so I make the CONFIG_DEBUG_KMEMLEAK and
->> CONFIG_DEBUG_FS on, mount the debugfs.
->>
->> But when I insmod mm/kmemleak-test.ko, echo scan >
->> /sys/kernel/debug/kmemleak and cat /sys/kernel/debug/kmemleak. I just
->> see this:
->>
->> unreferenced object 0xffffc90012d21000 (size 64):
->>
->>  comm "insmod", pid 13092, jiffies 4298369684
->>
->>  hex dump (first 32 bytes):
->>
->>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>
->>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>
->>  backtrace:
->>
->>    [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> unreferenced object 0xffffc90012d24000 (size 64):
->>
->>  comm "insmod", pid 13092, jiffies 4298369684
->>
->>  hex dump (first 32 bytes):
->>
->>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>
->>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>
->>  backtrace:
->>
->>    [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> unreferenced object 0xffffc90012d27000 (size 64):
->>
->>  comm "insmod", pid 13092, jiffies 4298369684
->>
->>  hex dump (first 32 bytes):
->>
->>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>
->>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>
->>  backtrace:
->>
->>    [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> There is no other backtrace except [<ffffffffffffffff>]
->> 0xffffffffffffffff. Then I read the mm/kmemleak.c. In
->> kmemleak_seq_show(), I find that the object->trace_len is 1.
->>
->>
->>
->> How can I get the full backtrace?
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+							Thanx, Paul
