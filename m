@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab1ELN2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 09:28:46 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:37876 "EHLO slimlogic.co.uk"
+	id S1757280Ab1ELNb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 09:31:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757048Ab1ELN2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 09:28:02 -0400
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, balbi@ti.com, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH v2 4/4] USB: TWL6025 allow different regulator name
-Date: Thu, 12 May 2011 14:27:58 +0100
-Message-Id: <1305206878-18094-5-git-send-email-gg@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1305206878-18094-1-git-send-email-gg@slimlogic.co.uk>
-References: <1305206878-18094-1-git-send-email-gg@slimlogic.co.uk>
+	id S1757064Ab1ELNb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 09:31:57 -0400
+Message-ID: <4DCBE13A.2050204@redhat.com>
+Date: Thu, 12 May 2011 16:31:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com> <20110512131130.GG8707@8bytes.org>
+In-Reply-To: <20110512131130.GG8707@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The twl6025 uses a different regulator for USB than the 6030 so select
-the correct regulator name depending on the subclass of device.
+On 05/12/2011 04:11 PM, Joerg Roedel wrote:
+> On Thu, May 12, 2011 at 11:47:51AM +0200, Jan Kiszka wrote:
+> >  On 2011-05-12 11:33, Joerg Roedel wrote:
+>
+> >  >  Anyway, I thought about a paravirt-approach instead of implementing a
+> >  >  real PMU... But there are certainly good reasons for both.
+> >
+> >  Paravirt is taking away the pressure from CPU vendors to do their virt
+> >  extensions properly - and doesn't help with unmodifiable OSes.
+>
+> Seriously, I think such decisions should be technical only and not
+> political like that. The losers of such political decisions are always
+> the users because they don't get useful features that are technical
+> possible.
 
-Since V1
+I agree.  But there are technical advantages to using architectural 
+features instead of paravirt:
 
-Use features passed via platform data instead of global variable.
+- when the cpu gains support for virtualizing the architectural feature, 
+we transparently speed the guest up, including support for live 
+migrating from a deployment that emulates the feature to a deployment 
+that properly virtualizes the feature, and back.  Usually the 
+virtualized support will beat the pants off any paravirtualization we can do
+- following an existing spec is a lot easier to get right than doing 
+something from scratch
+- no need to meticulously document the feature
+- easier testing
+- existing guest support - only need to write the host side (sometimes 
+the only one available to us)
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
----
- drivers/usb/otg/twl6030-usb.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+We saw all that with the move from shadow paging to nested paging.  We 
+had paravirt support which turned out to be poorly documented, had a 
+security issue, and would have been slower on npt.  In the end we ripped 
+it out.
 
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 6e920de..2ad69a4 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -99,6 +99,7 @@ struct twl6030_usb {
- 	u8			linkstat;
- 	u8			asleep;
- 	bool			irq_enabled;
-+	unsigned long		features;
- };
- 
- #define xceiv_to_twl(x)		container_of((x), struct twl6030_usb, otg)
-@@ -190,6 +191,12 @@ static int twl6030_phy_suspend(struct otg_transceiver *x, int suspend)
- 
- static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
- {
-+	char *regulator_name;
-+
-+	if (twl->features & TWL6025_SUBCLASS)
-+		regulator_name = "ldousb";
-+	else
-+		regulator_name = "vusb";
- 
- 	/* Set to OTG_REV 1.3 and turn on the ID_WAKEUP_COMP */
- 	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x1, TWL6030_BACKUP_REG);
-@@ -200,7 +207,7 @@ static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
- 	/* Program MISC2 register and set bit VUSB_IN_VBAT */
- 	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x10, TWL6030_MISC2);
- 
--	twl->usb3v3 = regulator_get(twl->dev, "vusb");
-+	twl->usb3v3 = regulator_get(twl->dev, regulator_name);
- 	if (IS_ERR(twl->usb3v3))
- 		return -ENODEV;
- 
-@@ -395,6 +402,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
- 	twl->irq2		= platform_get_irq(pdev, 1);
-+	twl->features		= pdata->features;
- 	twl->otg.dev		= twl->dev;
- 	twl->otg.label		= "twl6030";
- 	twl->otg.set_host	= twl6030_set_host;
+Paravirtualizing does have its advantages.  For the PMU, for example, we 
+can have a single hypercall read and reprogram all counters, saving 
+*many* exits.  But I think we need to start from the architectural PMU 
+and see exactly what the problems are, before we optimize it to death.
+
 -- 
-1.7.4.1
+error compiling committee.c: too many arguments to function
 
