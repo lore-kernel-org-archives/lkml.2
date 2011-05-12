@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab1ELVld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:41:33 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:8232 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757968Ab1ELVlc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:41:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BaUtSZV8rExLYotsySrrwwJomdfX5hqCqTGs0+4O1Mn6uIc9UUEfU0q6ZG1vG2fHLc
-         Iywmi/3RAss8rmY9raLw==
-MIME-Version: 1.0
-In-Reply-To: <20110512213657.GC17596@elte.hu>
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
-	<BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
-	<BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
-	<20110512213657.GC17596@elte.hu>
-Date: Thu, 12 May 2011 23:41:28 +0200
-Message-ID: <BANLkTi=O-59PS5cXevufqm741wwH5kuxXg@mail.gmail.com>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
+	id S932874Ab1ELVl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:41:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21574 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757968Ab1ELVl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:41:56 -0400
+Message-Id: <72a37e$j47ear@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,360,1301900400"; 
+   d="scan'208";a="641972571"
+Date: Thu, 12 May 2011 22:41:52 +0100
+To: Melchior FRANZ <melchior.franz@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.39 regression] i915/kms: garbled screen because of 49183b281  (was: Re: Linux 2.6.39-rc7)
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        dri-devel@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
+References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com> <201105121849.09225@rk-nord.at>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <201105121849.09225@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 11:36 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> > The bug is that perf doesn't say "I can't match kernel symbols", but
->> > instead does some crazy matching and gives total crap module information (I
->> > think it just picks the one that shows up last in /proc/kallsyms).
->>
->> But I agree perf must not silently return bogus information. It should print
->> a big warning message and/or fallback to printing the raw addresses. [...]
->
-> Yes, agreed, this is a bug in perf. I found out about this about two weeks ago
-> and reported it to Arnaldo, but he is away right now - he might be able to fix
-> it next week the earliest.
->
->> [...] So much for having perf in the kernel source tree to keep things in
->> sync...
->
-> What do you mean?
->
-I meant that when this kptr feature was added, people should have scanned the
-entire tree (include tools/perf) to look for potential impact on
-programs relying
-on /proc/kallsyms. Having perf in the tree should have made this easier to
-catch. That's all.
+On Thu, 12 May 2011 18:49:08 +0200, Melchior FRANZ <melchior.franz@gmail.com> wrote:
+> * Linus Torvalds -- Tuesday 10 May 2011:
+> > But please do test, just to make sure that 39-final is good.
+> 
+> > Chris Wilson (4):
+> >       drm/i915: Only enable the plane after setting the fb base (pre-ILK)
+> 
+> This patch introduces a bug on my infamous "Acer Travelmate
+> 5735Z-452G32Mnss": when KMS takes over, the frame buffer contents
+> get completely garbled up on screen, with colored stripes and
+> unreadable text (photo on request). Only when X11 is started, the
+> screen gets restored again. Closing and re-opening the lid partly
+> cures the mess, too: it makes the font readable, though horizontally
+> stretched.
 
+So we think that enabling the plane at this point is masking a bug in our
+modeset, or that some side-effect of writing those registers or waiting
+for that vblank has a vital latching or delay that we have not accounted
+for.
 
+Can you please grab intel_reg_dumper from 
 
-> Thanks,
->
->        Ingo
->
+  http://cgit.freedesktop.org/xorg/app/intel-gpu-tools
+
+and attach its output after passing nomodeset on your kernel boot
+parameters (without starting X). That should capture the registers as they
+were left by the BIOS. Alternatively, if you load i915.ko as a module, you
+can run intel_reg_dumper before loading the module. Then can you attach
+the output from intel_reg_dumper from the VT before starting X (whilst the
+display is skewiff) and then after (when the display has recovered). That
+may help, unless we are right in that it is in the timing of the register
+writes.
+
+Thanks,
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
