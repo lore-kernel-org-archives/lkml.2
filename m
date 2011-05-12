@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab1ELO75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:59:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44421 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab1ELO74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:59:56 -0400
-Date: Thu, 12 May 2011 16:59:55 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Jamey Sharp <jamey@minilop.net>
-Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] scripts/gen_initramfs_list.sh: Convert to a /bin/sh
- script
-Message-ID: <20110512145954.GK13293@sepie.suse.cz>
-References: <1304622227-18204-1-git-send-email-jamey@minilop.net>
- <1304622227-18204-2-git-send-email-jamey@minilop.net>
+	id S1754158Ab1ELPAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 11:00:35 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42209 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1ELPAe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 11:00:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=d91uT3rQhWrLEEcZwzMPVyyhKIFTInXakvLW0cPW1gBLQXOMgWsKAX0SY2P1jlNOXR
+         vgclNNHhm03Aw4xMPqPLfPT00sk7Gj6WMIW7csyQzPVWeI6DTEBBHX6MbtSVxam60VcZ
+         t1tsVUmCCiH0c97E+9TcNrNhDOlgboeRjU4k4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304622227-18204-2-git-send-email-jamey@minilop.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
+References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
+	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
+	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
+	<009c01cc108b$4635c7d0$d2a15770$@com>
+	<BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
+	<BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
+	<BANLkTik=M8uwnmHABqYBkeVDk56UMrnkMg@mail.gmail.com>
+	<BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
+Date: Thu, 12 May 2011 18:00:32 +0300
+Message-ID: <BANLkTiki_gsyZFTeuRCsJJ19b=ZTEWe26Q@mail.gmail.com>
+Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: boyzccc@gmail.com
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 05, 2011 at 12:03:47PM -0700, Jamey Sharp wrote:
-> Replace bashisms with POSIX-compatible shell scripting.
-> 
-> Notably, de-duplicate '/' using a sed command from elsewhere in the same script
-> rather than "${name//\/\///}".
-> 
-> Commit by Jamey Sharp and Josh Triplett.
-> 
-> Signed-off-by: Jamey Sharp <jamey@minilop.net>
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  scripts/gen_initramfs_list.sh |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+On Thu, May 12, 2011 at 5:49 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Thu, May 12, 2011 at 10:33 PM, ttlxzz ccc <boyzccc@gmail.com> wrote:
+>> Thanks for Wangcong
+>>
+>> I have test the kmemleak-test.ko and the result includes no backtrace
+>> except fffffffff, too.
+>> I'm compling the kernel by make menuconfig. :)
+>
+> Odd, this looks like a bug, Cc Catalin Marinas <catalin.marinas@arm.com>
+>
+> I can't reach my test machine right now, I will try this tomorrow.
+What architecture are you running on? Can you try it on a newer kernel?
+Is there anything interesting in dmesg | grep kmemleak?
 
-Applied to kbuild-2.6.git#kbuild, thanks.
-
-Michal
+thanks,
+Daniel.
