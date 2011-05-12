@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab1ELB1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 21:27:24 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:51380 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab1ELB1W (ORCPT
+	id S1753089Ab1ELBWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 21:22:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59238 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752673Ab1ELBW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 21:27:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=gH5KurrFGu8sDVkRgWGUS+kLs
-	nwhEw4UBHdFR8pUsdqwkB0t+Pxfoo+mHvz7ui6qoIDlfi8jZHnyIaf5ZHlgUDcPx
-	dMA6MbAfScjrTZD+WfHdFALPL+UpYhnAFje4KB0oOGUUdgZYn94BL9ZAySAp9F75
-	UsiY8WUfJCSpEvEtVk=
-Date: Wed, 11 May 2011 18:28:11 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: viro@ZenIV.linux.org.uk, hch@lst.de
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ceph-devel@vger.kernel.org
-Subject: Re: [PATCH 0/3] d_prune
-In-Reply-To: <1305164616-26597-1-git-send-email-sage@newdream.net>
-Message-ID: <Pine.LNX.4.64.1105111826390.14263@cobra.newdream.net>
-References: <1305164616-26597-1-git-send-email-sage@newdream.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 May 2011 21:22:29 -0400
+Date: Wed, 11 May 2011 18:28:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [RFC][PATCH 0/7] memcg async reclaim
+Message-Id: <20110511182844.d128c995.akpm@linux-foundation.org>
+In-Reply-To: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011, Sage Weil wrote:
-> [half written email from wrong patch directory]
+On Tue, 10 May 2011 19:02:16 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Hi Al, Christoph,
+> Hi, thank you for all comments on previous patches for watermarks for memcg.
+> 
+> This is a new series as 'async reclaim', no watermark.
+> This version is a RFC again and I don't ask anyone to test this...but
+> comments/review are appreciated. 
+> 
+> Major changes are
+>   - no configurable watermark
+>   - hierarchy support
+>   - more fix for static scan rate round robin scanning of memcg.
+> 
+> (assume x86-64 in following.)
+> 
+> 'async reclaim' works when
+>    - usage > limit - 4MB.
+> until
+>    - usage < limit - 8MB.
+> 
+> when the limit is larger than 128MB. This value of margin to limit
+> has some purpose for helping to reduce page fault latency at using
+> Transparent hugepage.
+> 
+> Considering THP, we need to reclaim HPAGE_SIZE(2MB) of pages when we hit
+> limit and consume HPAGE_SIZE(2MB) immediately. Then, the application need to
+> scan 2MB per each page fault and get big latency. So, some margin > HPAGE_SIZE
+> is required. I set it as 2*HPAGE_SIZE/4*HPAGE_SIZE, here. The kernel
+> will do async reclaim and reduce usage to limit - 8MB in background.
+> 
+> BTW, when an application gets a page, it tend to do some action to fill the
+> gotton page. For example, reading data from file/network and fill buffer.
+> This implies the application will have a wait or consumes cpu other than
+> reclaiming memory. So, if the kernel can help memory freeing in background
+> while application does another jobs, application latency can be reduced.
+> Then, this kind of asyncronous reclaim of memory will be a help for reduce
+> memory reclaim latency by memcg. But the total amount of cpu time consumed
+> will not have any difference.
+> 
+> This patch series implements
+>   - a logic for trigger async reclaim
+>   - help functions for async reclaim
+>   - core logic for async reclaim, considering memcg's hierarchy.
+>   - static scan rate memcg reclaim.
+>   - workqueue for async reclaim.
+> 
+> Some concern is that I didn't implement a code for handle the case
+> most of pages are mlocked or anon memory in swapless system. I need some
+> detection logic to avoid hopless async reclaim.
+> 
 
-Once the dentry_unhash series is merged, the VFS won't be doing any
-hashing or unhashing of dentries on behalf of file systems; that will
-almost solely their responsibility the respective i_op and d_ops.
+What (user-visible) problem is this patchset solving?
 
-The one exception is dcache pruning.  Because this is something that is
-out of the file system's direct control, it can't control the
-consistently or completeness of the contents of the dcache.  This new
-d_prune method will notify the fs prior to dropping a dentry so that it
-can know whether the dcache contents are complete (say, for a given
-directory) in a non-racy way.
+IOW, what is the current behaviour, what is wrong with that behaviour
+and what effects does the patchset have upon that behaviour?
 
-The first patch simply adds a d_prune d_op.  The next two patches just
-wire ceph up to use it (and can probably be ignored): the second patch
-implements a method in Ceph to maintain a flag that indicates whether a
-given directory's child list is complete, and the third converts
-everything over to use the new flag instead of the old one (which was
-racy and is currently disabled).
+The sole answer from the above is "latency spikes".  Anything else?
 
-Al previously expressed reservations about imposing any new rules on the
-dcache with respect to hashing/unhashing (or anything else) until the
-code had been cleaned up.  At least as far as hashing goes, I think the
-dcache behavior is now pretty clean on that front.  I also think it
-makes sense intuitively that the VFS wouldn't be futzing around with
-that on behalf of file systems, which leads me to believe this is a
-reasonable new 'restriction'. Of course, I also need it to make my
-caching work, so I'm a bit biased.  :)  Linus didn't hate it, at least
-(that much count for something!).
+Have these spikes been observed and measured?  We should have a
+testcase/worload with quantitative results to demonstrate and measure
+the problem(s), so the effectiveness of the proposed solution can be
+understood.
 
-Al, is this reasonable?  Is there something else specifically you would
-like to see cleaned up before doing this?
-
-Thanks!
-sage
