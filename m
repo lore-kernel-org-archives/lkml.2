@@ -1,128 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1ELPNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 11:13:05 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43647 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab1ELPND convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 11:13:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rwk7HwbnGhbQttbiST0Y9YS6m9oPL1/sDD3HbuC424TQq5tMGGh85n8GQHOsCQpoYE
-         PmvBSt5rDs0iml8bBc/gcUuFA09dMwV/rPE3VH7rCRxfqkCvRdNsUKVJ9CLzQXCaHxB8
-         z6rLpzsRt64ccn52uHvOzYZfYJclMnPxbTEeI=
+	id S1755436Ab1ELPNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 11:13:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755112Ab1ELPNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 11:13:20 -0400
+Message-ID: <4DCBF904.6040104@redhat.com>
+Date: Thu, 12 May 2011 18:13:08 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110512143148.GB7410@nowhere>
-References: <20110511121135.GA25865@aftab>
-	<1305121600.2914.214.camel@laptop>
-	<20110511140208.GD25827@aftab>
-	<20110511141342.GA19053@elte.hu>
-	<20110511143149.GA26548@aftab>
-	<20110511152156.GA21707@elte.hu>
-	<20110511170912.GA27362@aftab>
-	<1305190277.2914.259.camel@laptop>
-	<20110512101839.GA17731@aftab>
-	<20110512143148.GB7410@nowhere>
-Date: Thu, 12 May 2011 23:13:02 +0800
-Message-ID: <BANLkTinq=_KLGu0xAJCYMgRqVBkNXUozzw@mail.gmail.com>
-Subject: Re: [RFC PATCH] perf: Carve out cgroup-related code
-From: Lin Ming <minggr@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dhaval Giani <dhaval.giani@gmail.com>
+CC: kvm@vger.kernel.org, joro@8bytes.org, agraf@suse.de, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: log directly from the guest to the host kvm buffer
+References: <1305207413.18715.3.camel@gondor.retis>
+In-Reply-To: <1305207413.18715.3.camel@gondor.retis>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:31 PM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Thu, May 12, 2011 at 12:18:39PM +0200, Borislav Petkov wrote:
->> On Thu, May 12, 2011 at 04:51:17AM -0400, Peter Zijlstra wrote:
->> > On Wed, 2011-05-11 at 19:09 +0200, Borislav Petkov wrote:
->> >
->> > I can't really say I like this move stuff into perf_event.h and then
->> > move it out again dance. Makes it exceedingly hard for me to tell wth
->> > actually happened.
->> >
->> > >  include/linux/perf_event.h |  132 --------------------------------------------
->> >
->> > Compared with:
->> >
->> >  include/linux/perf_event.h |  126 +++++++++++-
->> >  include/linux/perf_event.h |    7 +-
->> >
->> > Its very hard to tell if this undoes the exact damage you did earlier.
->>
->> The right thing to do would be to redo the patches again with internal.h
->> in mind.
->>
->> > >  kernel/events/callchain.c  |    3 +
->> > >  kernel/events/cgroup.c     |    2 +
->> > >  kernel/events/core.c       |    2 +
->> > >  kernel/events/internal.h   |  129 +++++++++++++++++++++++++++++++++++++++++++
->> > >  5 files changed, 136 insertions(+), 132 deletions(-)
->> > >  create mode 100644 kernel/events/internal.h
->> > >
->> > > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> > > index 7978850..6b25452 100644
->> > > --- a/include/linux/perf_event.h
->> > > +++ b/include/linux/perf_event.h
->> > > @@ -963,7 +963,6 @@ enum event_type_t {
->> > >  #ifdef CONFIG_PERF_EVENTS
->> > >  extern struct list_head pmus;
->> > >  extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
->> > > -extern void perf_pmu_unregister(struct pmu *pmu);
->> >
->> > That just doesn't make any sense. If we publish one side of the API we
->> > should also publish the other side.
->>
->> Fair enough. It was unused, therefore I removed it.
->>
->> > >  extern int perf_num_counters(void);
->> > >  extern const char *perf_pmu_name(void);
->> > > @@ -985,8 +984,6 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr,
->> > >                                 int cpu,
->> > >                                 struct task_struct *task,
->> > >                                 perf_overflow_handler_t callback);
->> > > -extern u64 perf_event_read_value(struct perf_event *event,
->> > > -                                u64 *enabled, u64 *running);
->> >
->> > While not used, that is a valid part of the API.
->>
->> Yep, ditto.
->>
->> > >
->> > >  struct perf_sample_data {
->> > >         u64                             type;
->> > > @@ -1152,60 +1149,10 @@ extern int perf_output_begin(struct perf_output_handle *handle,
->> > >                              struct perf_event *event, unsigned int size,
->> > >                              int nmi, int sample);
->> > >  extern void perf_output_end(struct perf_output_handle *handle);
->> > > -extern void perf_output_copy(struct perf_output_handle *handle,
->> > > -                            const void *buf, unsigned int len);
->> >
->> > idem
->> >
->> > >  extern int perf_swevent_get_recursion_context(void);
->> > > -extern void perf_swevent_put_recursion_context(int rctx);
->> >
->> > Again, creating asymmetry.
->>
->> Ok, I won't be able to redo the patches before Mo. due to travel. Also,
->> I think that you should do the splitting, as I suggested so at the
->> beginning!
+On 05/12/2011 04:36 PM, Dhaval Giani wrote:
+> Hi,
 >
-> I can take it if you want. I'm currently splitting the buffer
-> part so I can try to relay the rest as well :)
+> As part of some of the work for my project, I have been looking at
+> tracing some of the events in the guest from inside the host. In
+> my usecase, I have been looking to co-relate the time of a network
+> packet arrival with that in the host. ftrace makes such arbitrary
+> use quite simple, so I went ahead an extended this functionality
+> in terms of a hypercall. There are still a few issues with this patch.
+>
+> 1. For some reason, the first time the hypercall is called, it works
+> just fine, but the second invocation refuses to happen. I am still
+> clueless about it. (and am looking for hints :-) )
+> 2. I am not very sure if I got the demarcation between the guest and
+> the host code fine or not. Someone more experienced than me should take
+> a look at the code as well :-)
+> 3. This adds a new paravirt call.
+> 4. This has been implemented just for x86 as of now. If there is enough
+> interest, I will look to make it more generic to be used across other
+> architectures. However, it is quite easy to do the same.
+> 5. It still does not have all the fancy ftrace features, but again,
+> depending on the interest, I can add all those in.
+> 6. Create a config option for this feature.
+>
+> I think such a feature is useful for debugging purposes and might make
+> sense to carry upstream.
 
-Another split could be to split the software pmus out.
-perf_swevent, perf_cpu_clock and perf_task_clock.
+I guess it could help things like virtio/vhost development and profiling.
+
+
+I think that one hypercall per trace is too expensive.  Tracing is meant 
+to be lightweight!  I think the guest can log to a buffer, which is 
+flushed on overflow or when a vmexit occurs.  That gives us automatic 
+serialization between a vcpu and the cpu it runs on, but not between a 
+vcpu and a different host cpu.
+
+>
+> +int kvm_pv_ftrace(struct kvm_vcpu *vcpu, unsigned long ip, gpa_t addr)
+> +{
+> +	int ret;
+> +	char *fmt = (char *) kzalloc(PAGE_SIZE, GFP_KERNEL);
+> +
+> +	ret = kvm_read_guest(vcpu->kvm, addr, fmt, PAGE_SIZE);
+> +
+> +	trace_printk("KVM instance %p: VCPU %d, IP %lu: %s",
+> +				vcpu->kvm, vcpu->vcpu_id, ip, fmt);
+> +
+> +	kfree(fmt);
+> +
+> +	return 0;
+> +}
+
+A kmalloc and printf seem expensive here.  I'd prefer to log the 
+arguments and format descriptor instead.  Similarly the guest should 
+pass unformatted parameters.+int kvm_ftrace_printk(unsigned long ip, 
+const char *fmt, ...)
+> +{
+> +	char *buffer = kzalloc(PAGE_SIZE, GFP_KERNEL);
+> +	int ret;
+> +	unsigned long a1, a2;
+> +	va_list args;
+> +	int i;
+> +
+> +	va_start(args, fmt);
+> +	i = vsnprintf(buffer, PAGE_SIZE, fmt, args);
+> +	va_end(args);
+> +
+> +	a1 = __pa(buffer);
+> +	a2 = 0;
+> +
+> +	ret = kvm_hypercall3(KVM_HC_FTRACE, ip, a1, a2);
+> +
+> +	kfree(buffer);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(kvm_ftrace_printk);
+> +
+>   static void mmu_queue_flush(struct kvm_para_state *state)
+>   {
 
 -- 
-Lin Ming -- Intel Open Source Technology Center
+error compiling committee.c: too many arguments to function
+
