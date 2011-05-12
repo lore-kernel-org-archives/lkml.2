@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab1ELN5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 09:57:12 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:53650 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab1ELN5K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 09:57:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Cv2hNssMzIMJsFZpKSb4XbZnEYTTXDlDRB4y40jdHRbRzw4S0t05li6jlzHWijmCMa
-         pjZjNQqOBqCIIwEzGl8Q3+aOJ2F38F+Yfm82QRnxzSm4sGAkLAwgIsEpY8YeVJOLL5Y2
-         btSieYwS7a2/j0tQNTzyk1vGklp2Oq9DCQAjQ=
-Subject: Re: Bug in MTD NAND ONFI chipsize detection
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Nitin Garg <nitingarg98@gmail.com>
-Cc: Matthieu CASTET <matthieu.castet@parrot.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1305208380.14423.10.camel@localhost>
-References: <BANLkTi=e1mUTX4X7ui+HVCGh=sZ=HLoNCw@mail.gmail.com>
-	 <20110511183322.da0739c9.akpm@linux-foundation.org>
-	 <BANLkTikrqzpU8qZ5FUgG4HaBgZAvmbOHrQ@mail.gmail.com>
-	 <BANLkTinGFDHj4s6nAXMiq8dYW_UO6W+YXg@mail.gmail.com>
-	 <BANLkTin5X7d+_b5+7N5g941bz12jc+zMZA@mail.gmail.com>
-	 <4DCB908C.80505@parrot.com>
-	 <BANLkTik37R8tSxc9_qmBT5a2m9mAA_2XKQ@mail.gmail.com>
-	 <1305208380.14423.10.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 16:53:46 +0300
-Message-ID: <1305208426.14423.11.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1757627Ab1ELOHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:07:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65228 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757464Ab1ELOEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:04:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,358,1301900400"; 
+   d="scan'208";a="434940471"
+Message-Id: <20110512135706.937596128@intel.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 12 May 2011 21:57:06 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jan Kara <jack@suse.cz>
+cc: Dave Chinner <david@fromorbit.com>
+cc: Christoph Hellwig <hch@infradead.org>
+cc: <linux-fsdevel@vger.kernel.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/17] writeback fixes and cleanups for 2.6.40 (v2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 16:53 +0300, Artem Bityutskiy wrote:
-> which problem the bug fixes, and make sure the commit message is
+Andrew,
 
-Sorry, s/the bug fixes/the patch fixes/
+This is the combination of all the recent writeback patches that get
+reasonably reviewed and tested.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+The first 10 patches are already in -mm tree, with updates:
+
+- remove "writeback: pass writeback_control down to move_expired_inodes()", and
+  resolve the resulting merge conflicts in other patches.
+- move ahead the sync livelock prevention patches (01, 02) so that (04) won't livelock sync
+- merge the three -mm fixes to (08)
+- fixed changelog of (01)
+
+	[PATCH 01/17] writeback: introduce .tagged_sync for the WB_SYNC_NONE sync stage
+	[PATCH 02/17] writeback: update dirtied_when for synced inode to prevent livelock
+	[PATCH 03/17] writeback: introduce writeback_control.inodes_cleaned
+	[PATCH 04/17] writeback: try more writeback as long as something was written
+	[PATCH 05/17] writeback: the kupdate expire timestamp should be a moving target
+	[PATCH 06/17] writeback: sync expired inodes first in background writeback
+	[PATCH 07/17] writeback: refill b_io iff empty
+	[PATCH 08/17] writeback: split inode_wb_list_lock into bdi_writeback.list_lock
+	[PATCH 09/17] writeback: elevate queue_io() into wb_writeback()
+	[PATCH 10/17] writeback: avoid extra sync work at enqueue time
+
+The following 7 patches were posted and reviewed these days:
+
+	[PATCH 11/17] writeback: add bdi_dirty_limit() kernel-doc
+	[PATCH 12/17] writeback: skip balance_dirty_pages() for in-memory fs
+	[PATCH 13/17] writeback: remove writeback_control.more_io
+	[PATCH 14/17] writeback: make writeback_control.nr_to_write straight
+	[PATCH 15/17] writeback: remove .nonblocking and .encountered_congestion
+	[PATCH 16/17] writeback: trace event writeback_single_inode
+	[PATCH 17/17] writeback: trace event writeback_queue_io
+
+Thanks to Jan and Dave for the careful reviews!
+
+The patches are git pullable from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git fs-writeback
+
+Thanks,
+Fengguang
 
