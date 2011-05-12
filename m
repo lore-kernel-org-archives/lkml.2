@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab1ELHo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 03:44:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47675 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab1ELHo1 (ORCPT
+	id S1753937Ab1ELHrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 03:47:25 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36887 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab1ELHrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 03:44:27 -0400
-Date: Thu, 12 May 2011 09:44:21 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 0/4] Pinmux subsystem
-Message-ID: <20110512074421.GA2429@pengutronix.de>
-References: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
+	Thu, 12 May 2011 03:47:24 -0400
+Date: Thu, 12 May 2011 09:47:20 +0200 (CEST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 0/5] Basic ARM devicetree support
+In-Reply-To: <20110511211438.GM5315@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1105120940490.28229@xanadu.home>
+References: <BANLkTi=yCmxgv1fQKRJSZK3FkkRwjS2r=Q@mail.gmail.com> <20110511211438.GM5315@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:23:53 up 4 days, 23:01, 33 users,  load average: 0.17, 0.43, 0.60
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 11 May 2011, Russell King - ARM Linux wrote:
 
-On Mon, May 02, 2011 at 09:16:08PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+> On Wed, May 11, 2011 at 10:44:49PM +0200, Grant Likely wrote:
+> > Right now it merges cleanly with linux-next and the resulting tree
+> > builds and boots at least on qemu.  Unless you really object, I'm
+> > going to ask Stephen to add the following branch to the /end/ of the
+> > list of trees for linux-next so it can easily be dropped it if it
+> > causes any problems.
 > 
-> This patchset creates a pinmux subsystem and switches U300 to use that new
-> subsystem as an example. The problem is not that fantastically hard to
-> solve in a general way, nobody got around to it because it requires some
-> upfront code I believe, and this is my stab at it.
+> As far as the set of five patches looks fine to me, I don't have any
+> objections against them.  So I think we can merge them for .40.
+> 
+> What I've always worried about is the platform stuff, and that's
+> something I'm going to continue worrying about because I don't think
+> we have sufficient review capacity to ensure that we don't end up
+> with lots of stupidities.
 
-This is a good step in the right direction. It solves the problem of
-potential conflicts between different mux functions. Also it gives a
-well defined interface between drivers and board code.
+DT is certainly not a silver bullet.  Good judgement will be needed as 
+to what is put in DT and how it is represented.  I don't think that it 
+would make things worse than they are now though.
 
-What I'm missing though is a generic way a single pad/mux mode
-combination can be described. Let me take a look around how the
-different subarchs do this:
+I also do have some concerns about some aspects of DT which I've 
+expressed several times in the past.  However I don't think holding back 
+those patches any longer is a solution though.
 
-omap:
+So consider this as a ACK from my part to merge those patches now.  This 
+will get the ball rolling.
 
-	_OMAP3_MUXENTRY(DSS_DATA21, 91,
-		"dss_data21", NULL, "mcspi3_cs0", "dss_data3",
-		"gpio_91", NULL, NULL, "safe_mode"),
-	_OMAP3_MUXENTRY(DSS_DATA22, 92,
-		"dss_data22", NULL, "mcspi3_cs1", "dss_data4",
-		"gpio_92", NULL, NULL, "safe_mode"),
 
-pxa:
-
-#define GPIO16_FFUART_TXD       MFP_CFG_OUT(GPIO16, AF3, DRIVE_HIGH)
-#define GPIO37_FFUART_TXD       MFP_CFG_OUT(GPIO37, AF3, DRIVE_HIGH)
-#define GPIO39_FFUART_TXD       MFP_CFG_OUT(GPIO39, AF2, DRIVE_HIGH)
-#define GPIO83_FFUART_TXD       MFP_CFG_OUT(GPIO83, AF2, DRIVE_HIGH)
-#define GPIO99_FFUART_TXD       MFP_CFG_OUT(GPIO99, AF3, DRIVE_HIGH)
-
-i.MX:
-
-#define _MX51_PAD_UART3_RXD__CSI1_D0            IOMUX_PAD(0x630, 0x240, 2, 0x0000, 0, 0)
-#define _MX51_PAD_UART3_RXD__GPIO1_22           IOMUX_PAD(0x630, 0x240, 3, 0x0000, 0, 0)
-#define _MX51_PAD_UART3_RXD__UART1_DTR          IOMUX_PAD(0x630, 0x240, 0, 0x0000, 0, 0)
-#define _MX51_PAD_UART3_RXD__UART3_RXD          IOMUX_PAD(0x630, 0x240, 1, 0x09f4, 4, 0)
-#define _MX51_PAD_UART3_TXD__CSI1_D1            IOMUX_PAD(0x634, 0x244, 2, 0x0000, 0, 0)
-
-These all basically describe the same thing: put pad x into one of modes
-a, b, c and apply certain flags like drive strength on this.
-
-the other class of pin muxing I know of is that a whole group of pads
-can be switched to a particular mode using a mux register like I think
-is used used in your ux300 driver.
-
-I'd like to have a unified way to describe this. If we ever want to move
-this into the device tree we need this anyway as I think it's not an
-option to have completely different SoC specific descriptions in the
-device tree.
-
-Do you think it's possible to do some consolidation on this level
-aswell? It would really bring different SoCs more together.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Nicolas
