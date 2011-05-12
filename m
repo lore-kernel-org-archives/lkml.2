@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758855Ab1ELWA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:00:29 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33616 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757968Ab1ELWA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:00:26 -0400
-Date: Fri, 13 May 2011 00:00:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110512220021.GA21732@elte.hu>
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
- <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
- <BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
- <BANLkTimjHiaZ+b03FLb1LX=ycv=cAVyJZw@mail.gmail.com>
- <20110512213542.GB17596@elte.hu>
- <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
- <20110512215023.GA20939@elte.hu>
- <BANLkTimO-8QNumkjzYia5P-V3pm_4JMLxg@mail.gmail.com>
+	id S1758864Ab1ELWAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 18:00:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:13486 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757984Ab1ELWAx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 18:00:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=nxsFC5SalTa3FXN3dLAebGLP0eS+/YrQZaTXPD0MNUHq/bLK54OgCQJWGjOt5isWJp
+         ynyBPVfZYkpdDiPX1hjA==
+Date: Thu, 12 May 2011 15:00:44 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect task->comm
+ access
+In-Reply-To: <1305073386-4810-2-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.DEB.2.00.1105121458130.7530@chino.kir.corp.google.com>
+References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org> <1305073386-4810-2-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimO-8QNumkjzYia5P-V3pm_4JMLxg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 10 May 2011, John Stultz wrote:
 
-* Stephane Eranian <eranian@google.com> wrote:
+> The implicit rules for current->comm access being safe without locking
+> are no longer true. Accessing current->comm without holding the task
+> lock may result in null or incomplete strings (however, access won't
+> run off the end of the string).
+> 
+> In order to properly fix this, I've introduced a comm_lock seqlock
+> which will protect comm access and modified get_task_comm() and
+> set_task_comm() to use it.
+> 
+> Since there are a number of cases where comm access is open-coded
+> safely grabbing the task_lock(), we preserve the task locking in
+> set_task_comm, so those users are also safe.
+> 
+> With this patch, users that access current->comm without a lock
+> are still prone to null/incomplete comm strings, but it should
+> be no worse then it is now.
+> 
+> The next step is to go through and convert all comm accesses to
+> use get_task_comm(). This is substantial, but can be done bit by
+> bit, reducing the race windows with each patch.
+> 
+> CC: Ted Ts'o <tytso@mit.edu>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Dave Hansen <dave@linux.vnet.ibm.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: linux-mm@kvack.org
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-> On Thu, May 12, 2011 at 11:50 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Stephane Eranian <eranian@google.com> wrote:
-> >
-> >> On Thu, May 12, 2011 at 11:35 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> >
-> >> > * Stephane Eranian <eranian@google.com> wrote:
-> >> >
-> >> >> The other contradiction, I see, is that you have perf_event paranoia level
-> >> >> and this new kptr masquerading feature which conflict with each
-> >> >> other.
-> >> >>
-> >> >> You can be allowed to monitor at the kernel level (paranoid=1, default)
-> >> >> but you cannot correlate symbols:
-> >> >>
-> >> >> $ perf record -e cycles:k foo
-> >> >>
-> >> >> I suspect if you have this kptr thing turned on, then you need to disallow
-> >> >> monitoring at the kernel level too.
-> >> >
-> >> > The better (and consistent) solution would be to turn the kptr_restrict thing
-> >> > off - see the patch i sent.
-> >>
-> >> I saw that. But I think that when someone turns it back on, then you need to
-> >> increase the perf_events paranoia level to disallow kernel monitoring to
-> >> regular users such that you maintain consistency across the board.
-> >
-> > Dunno, i would not couple them necessarily - certain users might still have
-> > access to kernel symbols via some other channel - for example the System.map.
->
-> Ok, that's true, but then you'd need to have perf print a message or refuse to
-> use /proc/kallsyms and suggest that the user provides a System.map.
-
-Correct - the right approach would be to just use what we had in earlier 
-versions, an 'unknown symbol' kind of catch-all entry that shows how much
-stuff we did not recognize.
-
-Thanks,
-
-	Ingo
+Acked-by: David Rientjes <rientjes@google.com>
