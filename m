@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab1ELPlo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 11:41:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30944 "EHLO mx1.redhat.com"
+	id S1757391Ab1ELPnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 11:43:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53587 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756674Ab1ELPln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 11:41:43 -0400
-Date: Thu, 12 May 2011 17:40:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 08/11] ptrace: move fallback JOBCTL_TRAPPING clearing
-	to get_signal_to_deliver()
-Message-ID: <20110512154019.GB18599@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-9-git-send-email-tj@kernel.org> <20110511154834.GA23688@redhat.com> <20110511191731.GA24245@mtj.dyndns.org>
+	id S1756768Ab1ELPnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 11:43:02 -0400
+Message-ID: <4DCBFFF2.3030804@redhat.com>
+Date: Thu, 12 May 2011 18:42:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110511191731.GA24245@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dhaval Giani <dhaval.giani@gmail.com>
+CC: kvm@vger.kernel.org, joro@8bytes.org, agraf@suse.de, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Fabio Checconi <fchecconi@gmail.com>,
+        Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
+Subject: Re: [PATCH] kvm: log directly from the guest to the host kvm buffer
+References: <1305207413.18715.3.camel@gondor.retis>	<4DCBF904.6040104@redhat.com> <BANLkTi=BnRCJ4S32S=+zNNOSTxmZsR6Jrg@mail.gmail.com>
+In-Reply-To: <BANLkTi=BnRCJ4S32S=+zNNOSTxmZsR6Jrg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11, Tejun Heo wrote:
->
-> On Wed, May 11, 2011 at 05:48:34PM +0200, Oleg Nesterov wrote:
-> > On 05/08, Tejun Heo wrote:
-> > > Move the fallback clearing to the end of get_signal_to_deliver() so
-> > > that TRAPPING is maintained while tracee is inside signal delivery
-> > > path.  When killed, tracee is guaranteed to leave signal delivery path
-> > > in finite amount of time and thus TRAPPING is still guaranteed to be
-> > > cleared on kill.
+On 05/12/2011 06:39 PM, Dhaval Giani wrote:
 > >
-> > Mostly yes, but we can race with freeze_processes() and deadlock.
+> >  I think that one hypercall per trace is too expensive.  Tracing is meant to
+> >  be lightweight!  I think the guest can log to a buffer, which is flushed on
+> >  overflow or when a vmexit occurs.  That gives us automatic serialization
+> >  between a vcpu and the cpu it runs on, but not between a vcpu and a
+> >  different host cpu.
+> >
 >
-> Ah... the try_to_freeze().  Nice spotting.  It isn't necessarily a
-> deadlock tho.
+> hmm. So, basically, log all of these events, and then send them to the
+> host either on an exit, or when your buffer fills up. There is one
+> problem with approach though. One of the reasons I wanted this
+> approach was beacuse i wanted to co-relate the guest and the host
+> times. (which is why I kept is synchronous). I lose out that
+> information with what you say. However I see your point about the
+> overhead. I will think about this a bit more.
 
-Yes, it is not "fatal" for the system.
+You might use kvmclock to get a zero-exit (but not zero-cost) time which 
+can be correlated.
 
-> I
-> think the right thing to do here is making the TRAPPING sleep an
-> interruptible one and let the syscall restart logic deal with it.
+Another option is to use xadd on a shared memory area to have a global 
+counter incremented.  However that can be slow on large machines, and is 
+hard to do securely with multiple guests.
 
-Oh, yes, we can. But this adds more complications again. We can fix
-this particular problem simpler. Say, freezer_do_not_count(). There
-are other options afaics.
 
-> * Make TRAPPING wait INTERRUPTIBLE.
-
-I am starting to strongly dislike TRAPPING outside of do_signal_stop().
-
-> * Move clearing of pending group stop and traps to the actions which
->   require such clearing.
-
-Not sure this is enough. OTOH, perhaps this is unnneeded.
-
-I'll write another email to explain what I mean.
-
-Oleg.
+-- 
+error compiling committee.c: too many arguments to function
 
