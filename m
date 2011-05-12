@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab1ELU70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 16:59:26 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53569 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758559Ab1ELU7Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 16:59:25 -0400
+	id S932729Ab1ELVAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:00:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56368 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758559Ab1ELVAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:00:39 -0400
+Date: Thu, 12 May 2011 23:00:28 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, eranian@google.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] vsprintf: Turn kptr_restrict off by default
+Message-ID: <20110512210028.GA16600@elte.hu>
+References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
+ <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
+ <20110512.164319.1770509419224900253.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1305232563.2575.85.camel@mulgrave.site>
-References: <BANLkTi=XNyR8GD43GGnMag+=JmhUd_5HtA@mail.gmail.com>
-	<201105122203.13671.rjw@sisk.pl>
-	<1305232563.2575.85.camel@mulgrave.site>
-Date: Thu, 12 May 2011 16:59:24 -0400
-Message-ID: <BANLkTin1peZBPiRZCbMEeqaME=-ok5dCQw@mail.gmail.com>
-Subject: Re: [PATCH] scsi/sd: fix suspend with USB-connected Android phone
- (one line)
-From: Charles Hannum <root@ihack.net>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-scsi <linux-scsi@vger.kernel.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512.164319.1770509419224900253.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 16:36, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Thu, 2011-05-12 at 22:03 +0200, Rafael J. Wysocki wrote:
->> Hi,
->>
->> Added some CCs.
->>
->> On Thursday, May 12, 2011, Charles Hannum wrote:
->> > Short version: My laptop doesn't suspend when my Android phone is
->> > connected and has been “ejected”.
->> >
->> > Long version:
->> >
->> > Android phones connect as USB mass storage devices.  After the “Turn
->> > on USB storage” button has been clicked, there are a few different
->> > ways to detach the “disk”:
->> >
->> > 1) pull the cable
->> > 2) click “Turn off USB storage”
->> > 3) “eject” the device
->> >
->> > In cases 2 & 3, the USB device is still attached to the system, but
->> > will now return MEDIUM NOT PRESENT for many commands, including
->> > SYNCHRONIZE CACHE—basically it acts like any device with removable
->> > media.  However, the act of the “media” being removed does not
->> > invalidate sdkp->WCE; therefore sd_shutdown() and sd_suspend() still
->> > call sd_sync_cache(), which *fails* because it gets a MEDIUM NOT
->> > PRESENT sense code.  In the sd_suspend() case, this causes the entire
->> > suspend to fail, and the laptop rewakes immediately.
->
-> So this was the subject of some debate when suspend of sd was first
-> introduced.  The synopsis of that debate is that by suspending, we're
-> about the power down the system, and anything in the cache will be lost,
-> possibly causing corruption, so failure to synchronise the cache
-> *should* abort suspend.
 
-If the device has been “ejected”, there is by definition no data in
-the cache that needs to be synchronized—or, if there is, it's because
-we failed to do a SYNCHRONIZE CACHE in the eject path.  At this point
-the device believes there's no medium present, and the driver even
-agrees, so it's perfectly reasonable for the device to return MEDIUM
-NOT PRESENT.  The problem here is a generic failure of the suspend
-code in the case of removable media that has been removed—there is a
-piece of state left behind in the driver that causes it to misbehave.
+* David Miller <davem@davemloft.net> wrote:
 
-Nothing I have mentioned (other than enumerating the cable-pulling
-case), nor the change I proposed, has anything whatsoever to do with
-the user inappropriately yanking an active device.
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Thu, 12 May 2011 13:31:37 -0700
+> 
+> > That said, I have considered just reverting the thing that makes
+> > kptr_restrict be 1 by default. I do like the security implications of
+> > restricting visibility into kernel pointers, but I also think that
+> > security rules that make the system less usable are dubious. So I
+> > dunno.
+> 
+> We don't have any firewalling or SELINUX rules installed by default, even if 
+> those features are enabled in the kernel.  Userspace asks for it.
+> 
+> Many people would claim that use of such things are "essential" these days.
+> 
+> I don't see a good reason to handle kptr_restrict any differently.
 
->> > There are a few different ways to fix this; e.g. one could
->> > specifically test media_not_present() if a sense code is returned in
->> > sd_sync_cache().
->
-> Isn't this the best approach?  For removable medium, the onus is on the
-> user not to eject with the cache unsynced.  If the user ignores that, we
-> should recognise the problem and take a caveat emptor approach.
+That's a good argument.
 
-I was attempting to make the case where the user behaved completely
-appropriately work right, not worrying about the other cases.  It
-seems a bit silly to even call sd_sync_cache() if we already know the
-medium has been removed; furthermore, it means the behavior is
-different between when the device is first plugged in (WCE is still 0)
-and when it's been used and then ejected (WCE remains 1 until a new
-medium is inserted); this inconsistency seems poor.
+We'll fix the perf bug - i was bitten by another incarnation of it: 'perf top' 
+stops showing kernel symbols and it took some time that kptr_restrict was 
+turned on by default. I reported it to Arnaldo knows about it but there's no 
+fix yet at the moment.
 
-> As a side note: having write through caches on removable media is a
-> really silly idea because of the above problem ...
+I didnt realize that perf diff got confused by this as well. (but it's logical)
 
-In the Android case, I see no reason why it's a problem, and the
-device acts appropriately under the circumstances.  And given tray
-locking, I'm not sure why it's a problem even for spinning media.  But
-regardless, these are real devices, and that ship has long since
-sailed.
+So how about the patch below?
+
+Thanks,
+
+	Ingo
+
+------------------------>
+Subject: vsprintf: Turn kptr_restrict off by default
+
+kptr_restrict has been triggering bugs in apps such as perf, and it also makes 
+the system less useful by default, so turn it off by default.
+
+This is how we generally handle security features that remove functionality, 
+such as firewall code or SELinux - they have to be configured and activated 
+from user-space.
+
+Distributions can turn kptr_restrict on again via this line in 
+/etc/sysctrl.conf:
+
+kernel.kptr_restrict = 1
+
+( Also mark the variable __read_mostly while at it, as it's typically modified 
+  only once per bootup, or not at all. )
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index bc0ac6b..dfd6019 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -797,7 +797,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 	return string(buf, end, uuid, spec);
+ }
+ 
+-int kptr_restrict = 1;
++int kptr_restrict __read_mostly;
+ 
+ /*
+  * Show a '%p' thing.  A kernel extension is that the '%p' is followed
