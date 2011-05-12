@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab1ELMFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 08:05:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36316 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756549Ab1ELMFO (ORCPT
+	id S1756851Ab1ELMGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 08:06:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44107 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756549Ab1ELMGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 08:05:14 -0400
+	Thu, 12 May 2011 08:06:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=W9C7IHfvY7KSUAAh6KhhY3dxP/qTj+dOs3et8j10BrnZroxKqgEPlHVCtCAOaRuOBx
-         h00Qnkkk6HaUv6VJ+e8yKVDcB58LQemXoMmVZFtue+4MCUmb5e8KOQjWZzAGFwXNAsf7
-         OMYqdQsff8+ojxLeu8vYBXRZiBE7gAVXU3PiQ=
-Message-ID: <4DCBCCF5.5040501@gmail.com>
-Date: Thu, 12 May 2011 16:05:09 +0400
-From: Igor Plyatov <plyatov@gmail.com>
-Reply-To: plyatov@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VYSV2VooSuopVQWLh5rmQ9sOpFJJ49R3YChIL1iVR/f3M9cc63JIjs5ITD/iSoIA5k
+         7egV/3UnqBCb7pt+7AZLpSzq2hB/Ozggn2oSVPwPax4QSxL79NXrCHzlR4mh+J1J8wii
+         DUq+0xflIkKlhayfkIvKJ1OCP8FE8pkvDmQ/I=
+Date: Thu, 12 May 2011 20:06:06 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: correct how RT task is picked
+Message-ID: <20110512120606.GA3639@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <BANLkTikkeR_yf1HGhgq7WEO-kEvDGkV_tw@mail.gmail.com>
+ <BANLkTim4n-WA_6nJpg4Nd99yuc3f+VWkcw@mail.gmail.com>
+ <BANLkTikOecxhb8pZfAd19FLrPAPY4zacDQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, stf_xl@wp.pl
-Subject: Re: [PATCH] ATA: pata_at91.c bugfixes
-References: <1303299877-12088-1-git-send-email-plyatov@gmail.com> <4DB4433A.5000609@pobox.com>
-In-Reply-To: <4DB4433A.5000609@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <BANLkTikOecxhb8pZfAd19FLrPAPY4zacDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff!
+On Wed, May 11, 2011 at 09:44:04PM +0800, Hillf Danton wrote:
+> On Wed, May 11, 2011 at 4:43 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> > On Tue, May 10, 2011 at 9:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> >> When picking RT task for given CPU,
+> >> [1] if the cpu is invalid for cpumask test, right result could not be
+> >
+> > 'cpu is invalid' means weather we care it or not, it's not real 'invalid'
+> >
+> If cpu is not cared, how to determine whether it is allowed for task to run?
 
-> On 04/20/2011 07:44 AM, Igor Plyatov wrote:
->> * Fix "initial_timing" structure initialisation. The "struct 
->> ata_timing" must
->>    contain 10 members, but ".dmack_hold" member was not initialised.
->> * The AT91SAM9 microcontrollers use special coding scheme for SMC_SETUP,
->>    SMC_PULSE, SMC_CYCLE registers.
->>    Old driver operates correctly only with low master clock values, but
->>    with high master clock it incorrectly calculates SMC values and stops
->>    to operate, because SMC can be setup only to admissible ranges in 
->> special
->>    format.
->>    New code correctly calculates SMC registers values, adjusts 
->> calculated
->>    to admissible ranges, enlarges cycles if required and converts values
->>    into SMC's format.
->> * Old driver calculates CS_SETUP and CS_PULSE cycles incorrectly
->>    because of wrong assumptions.
->>    New code calculates:
->>        CS_SETUP = SETUP/2
->>        CS_PULSE = PULSE + SETUP/2 + HOLD/2
->> * This fixes allows to correctly operate with any master clock 
->> frequency.
->>
->> Signed-off-by: Igor Plyatov<plyatov@gmail.com>
->> ---
->>   drivers/ata/pata_at91.c |  223 
->> ++++++++++++++++++++++++++++++++---------------
->>   1 files changed, 154 insertions(+), 69 deletions(-)
->
-> FYI, the two previous "v4" patches are now applied.
->
-> Based on the comments from Stanislaw, this patch would need to be 
-> updated anyway.
+pick_next_highest_task_rt() can be used to get the next highest pullable
+task on a certain rq(regradless on which cpu that task could run). but
+currently we have no such kind of caller.
 
-Thank you for info!
+> 
+> >> reached even by further checking nr_cpus_allowed,
+> >> on the other hand, the input cpu is valid in two cases that
+> >> pick_next_highest_task_rt() is called, thus the invalid input cpu
+> >> looks over-concern.
+> >> [2] if the cpu is valid for cpumask test, further checking
+> >> nr_cpus_allowed looks overwork, since it is computed based on
+> >> cpus_allowed,
+> >
+> > No, cpumask_test_cpu(cpu, &p->cpus_allowed) doesn't mean
+> > p->rt.nr_cpus_allowed > 1.
+> >
+> If cpu is allowed for task to run, then why more cpus are enforced?
 
-I will update this patch.
+I think you can take a look at next_prio(), it just calculate the
+next highest task on the current cpu; in this case,
+cpumask_test_cpu(cpu, &p->cpus_allowed) will be true for the most
+of time, but maybe that task is bound to this cpu.
 
-Best regards!
-
--- 
-Igor Plyatov
-
+Thanks,
+Yong
+> 
+> thanks
+>           Hillf
