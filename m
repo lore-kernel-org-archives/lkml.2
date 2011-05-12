@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab1ELVE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:04:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56166 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758659Ab1ELVE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:04:26 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH v2 4/4] coredump: escape / in hostname and comm fix
-Date: Thu, 12 May 2011 23:04:18 +0200
-Message-Id: <1305234258-28184-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.4.2
+	id S1758711Ab1ELVGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:06:19 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59490 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758662Ab1ELVGR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:06:17 -0400
+Date: Thu, 12 May 2011 17:06:03 -0400 (EDT)
+Message-Id: <20110512.170603.549349521517995900.davem@davemloft.net>
+To: joe@perches.com
+Cc: vladislav.yasevich@hp.com, sri@us.ibm.com, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] sctp: sctp_sendmsg: Don't initialize default_sinfo
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <a4e846ed62d7f9222dc9b09ca00b5356a1eb9b73.1305227620.git.joe@perches.com>
+References: <cover.1305227620.git.joe@perches.com>
+	<a4e846ed62d7f9222dc9b09ca00b5356a1eb9b73.1305227620.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 14:06:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Escape comm also in failing %E case.
+From: Joe Perches <joe@perches.com>
+Date: Thu, 12 May 2011 12:19:09 -0700
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>
----
- fs/exec.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> This variable only needs initialization when cmsgs.info
+> is NULL.
+> 
+> Don't use memset, just initialize every struct member.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-diff --git a/fs/exec.c b/fs/exec.c
-index dafded4..13b4fce 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1563,8 +1563,8 @@ static int cn_print_exe_file(struct core_name *cn)
- 	exe_file = get_mm_exe_file(current->mm);
- 	if (!exe_file) {
- 		char comm[TASK_COMM_LEN];
--		return cn_printf(cn, "%s (path unknown)", get_task_comm(comm,
--					current));
-+		cn_escape(get_task_comm(comm, current));
-+		return cn_printf(cn, "%s (path unknown)", comm);
- 	}
- 
- 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
--- 
-1.7.4.2
+I don't think you do this, this structure has padding holes on pretty
+much every architecture.
 
+It starts with 3 u16's, then there is a u32, so there is a 2-byte
+piece of padding after the 3rd u16.
+
+Can you prove that these uninitialized portions never make it to
+userspace?  If you can, that proof belongs in the commit message.
+
+I think it's too risky.
