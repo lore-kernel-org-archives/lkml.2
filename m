@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab1ELIqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 04:46:49 -0400
-Received: from hull.simtec.co.uk ([78.105.113.97]:38938 "EHLO
-	preston.local.simtec.co.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752552Ab1ELIqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 04:46:47 -0400
-X-Greylist: delayed 1304 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 May 2011 04:46:47 EDT
-Message-ID: <4DCB9985.2050100@simtec.co.uk>
-Date: Thu, 12 May 2011 09:25:41 +0100
-From: Ben Dooks <ben@simtec.co.uk>
-Organization: Simtec Electronics, UK
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH] spi: tle620x: add missing device_remove_file()
-References: <1305117545.6324.3.camel@phoenix>
-In-Reply-To: <1305117545.6324.3.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755245Ab1ELJBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:01:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20731 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab1ELJBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:01:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,357,1301900400"; 
+   d="scan'208";a="746134482"
+Subject: Re: [PATCH] dmaengine: at_hdmac: pause: no need to wait for FIFO
+ empty
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1304957497-22814-1-git-send-email-nicolas.ferre@atmel.com>
+References: <be7d19459501aaa604aebe91daa9e9e59bb41c86.1304704588.git.nicolas.ferre@atmel.com>
+	 <1304957497-22814-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 13:58:56 +0530
+Message-ID: <1305188936.28926.66.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/11 13:39, Axel Lin wrote:
-> This patch includes below fixes:
-> 1. Add missing device_remove_file for dev_attr_status_show in tle62x0_remove.
-> 2. Fix tle62x0_probe error handling:
->     Currently, if the error happens when ptr>  0, gpio_attrs[0] is not
->     properly remove.
->
-> Signed-off-by: Axel Lin<axel.lin@gmail.com>
-Acked-by: Ben Dooks <ben-linux@fluff.org>
+On Mon, 2011-05-09 at 18:11 +0200, Nicolas Ferre wrote:
+> The addition of the pause feature to atc_control an active wait was introduced
+> to check the FIFO empty event. This event was not always happening and
+> a timout contition was needed.
+> But, in some cases, this event depend on the peripheral connected to the
+> channel that is paused: FIFO becomes empty if the peripheral consumes data.
+> The timeout is pretty difficult to evaluate. Moreover, this check is not
+> needed.
+> In conclusion, it seems sensible to entirely remove the checking of
+> "FIFO empty" status when pausing.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > ---
->   drivers/spi/tle62x0.c |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/spi/tle62x0.c b/drivers/spi/tle62x0.c
-> index a393895..32a4087 100644
-> --- a/drivers/spi/tle62x0.c
-> +++ b/drivers/spi/tle62x0.c
-> @@ -283,7 +283,7 @@ static int __devinit tle62x0_probe(struct spi_device *spi)
->   	return 0;
->
->    err_gpios:
-> -	for (; ptr>  0; ptr--)
-> +	while (--ptr>= 0)
->   		device_remove_file(&spi->dev, gpio_attrs[ptr]);
->
->   	device_remove_file(&spi->dev,&dev_attr_status_show);
-> @@ -301,6 +301,7 @@ static int __devexit tle62x0_remove(struct spi_device *spi)
->   	for (ptr = 0; ptr<  st->nr_gpio; ptr++)
->   		device_remove_file(&spi->dev, gpio_attrs[ptr]);
->
-> +	device_remove_file(&spi->dev,&dev_attr_status_show);
->   	kfree(st);
->   	return 0;
->   }
+> Vinod,
+> 
+> This additional patch goes on top of your current "next" branch. It is a
+> removing of some code added to the pause/resume patch sent earlier and can be
+> folded into this one if you want to.
+> 
+Applied with edit in commit msg, Thanks
+
+-- 
+~Vinod
 
