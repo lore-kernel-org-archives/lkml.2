@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab1ELSwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:52:38 -0400
-Received: from home.keithp.com ([63.227.221.253]:41268 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752379Ab1ELSwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:52:36 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Melchior FRANZ <melchior.franz@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH] Revert "drm/i915: Only enable the plane after setting the fb base (pre-ILK)"
-In-Reply-To: <201105121849.09225@rk-nord.at>
-References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com> <201105121849.09225@rk-nord.at>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 12 May 2011 11:52:29 -0700
-Message-ID: <yun39kjah02.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1753015Ab1ELSxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:53:40 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16359 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab1ELSxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 14:53:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 12 May 2011 11:53:38 -0700
+Subject: Re: [PATCH v2] net: rfkill: add generic gpio rfkill driver
+From: Rhyland Klein <rklein@nvidia.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "olof@lixom.net" <olof@lixom.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1305225648.3461.37.camel@jlt3.sipsolutions.net>
+References: <1305159661-11982-1-git-send-email-rklein@nvidia.com>
+	 <1305189092.3461.10.camel@jlt3.sipsolutions.net>
+	 <1305224592.10961.10.camel@rklein-linux2>
+	 <1305225648.3461.37.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 11:52:57 -0700
+Message-ID: <1305226377.10961.12.camel@rklein-linux2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-05-12 at 11:40 -0700, Johannes Berg wrote:
+> On Thu, 2011-05-12 at 11:23 -0700, Rhyland Klein wrote:
+> 
+> > > Are you sure starting out with UNSPECIFIED works? Then you'll always
+> > > change, but if the clock was enabled already you still enable it on the
+> > > first set_block() from rfkill, which still has the refcount problem, no?
+> > > It seems to me that the original state has to be passed in from the
+> > > platform?
+> 
+> > I thought about that. But I decided the clock that it is possible to
+> > have the clock used for the radio used for something else right? 
+> 
+> Sure.
+> 
+> > in
+> > which case, the driver will leave the clk in whatever state it initially
+> > finds it. I.e. if the clock is disabled, then it will enable it only
+> > once and work, if it is enabled, it will add a refcount (only once) and
+> > then work and disable it again only once. It never changes the refcount
+> > in either direction by more than 1, and this way the initial setting of
+> > the clock is irrelevant. The board files can simply initialize the block
+> > as off if that is the initial clk state they want.
+> 
+> The issue is that depending on how you boot, the first refcount change
+> might be +1 or it might be -1.
+> 
+> If rfkill decides that at the time of loading wifi should be off, then
+> the first change would be -1, and after that it would flip between 0 and
+> -1.
+> 
+> If, on the other hand, rfkill decides that at the time of loading the
+> driver wifi should be on, then the first change would be +1 and it'll
+> flip between 0 and +1.
+> 
+> This seems like it'll cause issues at some point, so I think you should
+> either allow the driver to set the initial state or hardcode one of
+> these possibilities (so at least it's predictable)
+> 
+> johannes
+> 
 
+I won't go negative, if you look, it only will disable clock if it knows
+it has already enabled it. 
 
-This reverts commit 49183b2818de6899383bb82bc032f9344d6791ff.
+rhyland
 
-Franz Melchior:
-
- This patch introduces a bug on my infamous "Acer Travelmate
- 5735Z-452G32Mnss": when KMS takes over, the frame buffer contents
- get completely garbled up on screen, with colored stripes and
- unreadable text (photo on request). Only when X11 is started, the
- screen gets restored again. Closing and re-opening the lid partly
- cures the mess, too: it makes the font readable, though horizontally
- stretched.
-
-=2D--
-
-On Thu, 12 May 2011 18:49:08 +0200, Melchior FRANZ <melchior.franz@gmail.co=
-m> wrote:
-
-> * Linus Torvalds -- Tuesday 10 May 2011:
-> > But please do test, just to make sure that 39-final is good.
->=20
-> > Chris Wilson (4):
-> >       drm/i915: Only enable the plane after setting the fb base (pre-IL=
-K)
->=20
-> This patch introduces a bug on my infamous "Acer Travelmate
-> 5735Z-452G32Mnss": when KMS takes over, the frame buffer contents
-> get completely garbled up on screen, with colored stripes and
-> unreadable text (photo on request). Only when X11 is started, the
-> screen gets restored again. Closing and re-opening the lid partly
-> cures the mess, too: it makes the font readable, though horizontally
-> stretched.
->=20
-> Reverting 49183b2818de6899383bb82bc032f9344d6791ff fixes the
-> bug.
-
-It's Whack-a-Mole time! Fix one laptop, break another. We'll pick 'no
-regressions' over 'fixes existing bug' today.
-
- drivers/gpu/drm/i915/intel_display.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/in=
-tel_display.c
-index 373c2a0..2166ee0 100644
-=2D-- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5154,6 +5154,8 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
-=20
- 	I915_WRITE(DSPCNTR(plane), dspcntr);
- 	POSTING_READ(DSPCNTR(plane));
-+	if (!HAS_PCH_SPLIT(dev))
-+		intel_enable_plane(dev_priv, plane, pipe);
-=20
- 	ret =3D intel_pipe_set_base(crtc, x, y, old_fb);
-=20
-=2D-=20
-1.7.5.1
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFNzCxuQp8BWwlsTdMRAsWrAJ93tX1JXU7jePhI7f0i00M59OOBpgCeIjp2
-BLUL6t7IVvgZlPN6tq2VTm8=
-=mYZa
------END PGP SIGNATURE-----
---=-=-=--
