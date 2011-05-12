@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab1ELT0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:26:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39773 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757519Ab1ELT0h convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:26:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110512113726.123fd85b@jbarnes-desktop>
-References: <20110506081243.GF16782@ram-laptop> <4DC4586C.6020308@kernel.org>
- <20110507015240.GN16782@ram-laptop> <4DC4B059.3030502@kernel.org>
- <4DC64C58.70203@kernel.org> <20110509142014.617e3100@jbarnes-desktop>
- <BANLkTi=U0LSj45y+5+n+7R=Cj4uRqk-LQw@mail.gmail.com> <4DC9E415.5010402@kernel.org>
- <20110512180638.GA5012@ram-laptop> <BANLkTikGG6F22+JEtueF8c5xjX9bBPp+0A@mail.gmail.com>
- <20110512182229.GQ8195@ram-laptop> <20110512113726.123fd85b@jbarnes-desktop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 May 2011 12:18:43 -0700
-Message-ID: <BANLkTikt_oWhYHZwVMnrxvow4j+zkPuFCQ@mail.gmail.com>
-Subject: Re: [PATCH -v2] pci: Check bridge resources after resource allocation.
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Ram Pai <linuxram@us.ibm.com>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932513Ab1ELTTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:19:14 -0400
+Received: from mail.perches.com ([173.55.12.10]:1564 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755816Ab1ELTTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 15:19:12 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-sctp@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] sctp: socket cleanups
+Date: Thu, 12 May 2011 12:19:08 -0700
+Message-Id: <cover.1305227620.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.5.rc3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 11:37 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->
-> Linus, I don't have anything else queued up, so you may as well take
-> this one directly if you want it in 2.6.39.  It's a regression fix, but
-> resource changes always make me nervous.  Alternately, I could put it
-> into 2.6.40 instead, the backport to 2.6.39.x if it survives until
-> 2.6.40-rc2 or so...
+Size trivially reduced as well.
 
-Considering the trouble resource allocation always ends up being, I'd
-almost prefer that "mark it for stable and put it in the 2.6.40
-queue".
+$ size net/sctp/socket.o
+   text	   data	    bss	    dec	    hex	filename
+  55720	    442	  14988	  71150	  115ee	net/sctp/socket.o.new
+  55730	    442	  14996	  71168	  11600	net/sctp/socket.o.old
 
-Afaik this problem hasn't actually hit any "normal" users, has it? So ...
+Joe Perches (2):
+  sctp: sctp_sendmsg: Don't initialize default_sinfo
+  sctp: sctp_sendmsg: Don't test known non-null sinfo
 
-                        Linus
+ net/sctp/socket.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
+
+-- 
+1.7.5.rc3.dirty
+
