@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab1ELQ3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 12:29:31 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:39823 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757426Ab1ELQ3a convert rfc822-to-8bit (ORCPT
+	id S1758018Ab1ELQau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 12:30:50 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52578 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757426Ab1ELQar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 12:29:30 -0400
-X-IronPort-AV: E=Sophos;i="4.64,359,1301900400"; 
-   d="scan'208";a="547479315"
-Subject: Re: [GIT PULL] fuse fix for 2.6.39
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-In-Reply-To: <BANLkTi=4rdtB5dQH=tycT1sybe7iJmTVcA@mail.gmail.com>
-References: <87fwokarjj.fsf@tucsk.pomaz.szeredi.hu>
-	 <BANLkTin6Ujea+qdkvwkH_9o5F8WKPyFdyA@mail.gmail.com>
-	 <BANLkTi=4rdtB5dQH=tycT1sybe7iJmTVcA@mail.gmail.com>
+	Thu, 12 May 2011 12:30:47 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1105121121120.26013@router.home>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <20110512154649.GB4559@redhat.com>
+	 <1305216023.2575.54.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121121120.26013@router.home>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 12 May 2011 12:28:52 -0400
-Message-ID: <1305217732.15566.31.camel@lade.trondhjem.org>
+Date: Thu, 12 May 2011 11:30:43 -0500
+Message-ID: <1305217843.2575.57.camel@mulgrave.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 12 May 2011 16:28:53.0984 (UTC) FILETIME=[AF217600:01CC10C1]
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 08:19 -0700, Linus Torvalds wrote:
-> Ooh.
+On Thu, 2011-05-12 at 11:27 -0500, Christoph Lameter wrote:
+> On Thu, 12 May 2011, James Bottomley wrote:
 > 
-> It's "lookup_one_len()", isn't it?
+> > However, the fact remains that this seems to be a slub problem and it
+> > needs fixing.
 > 
-> So any filesystem that uses that helper will need to be protected from
-> a NULL 'nd'.
-> 
-> And then you have nfsd, ecryptfs and cachefiles that will do it on
-> _other_ filesystems.
->
-> Gaah. Ugly. So either we really should fix the filesystems that don't
-> have protection from a NULL nd, or we should fix lookup_one_len() (are
-> there perhaps other cases I missed?)
+> Why are you so fixed on slub in these matters?
 
-As long as we have filesystems that need to rely on intents and that
-have the ability to generate automount points, we should deprecate the
-use of lookup_one_len() and add something else to help ecryptfs and co
-to do safe component-wise lookups, opens and creates.
+Because, as has been hashed out in the thread, changing SLUB to SLAB
+makes the hang go away.
 
-The point is that filesystems such as Fuse and NFSv4 rely on intents for
-opens and file creation; even NFSv3 relies on it for doing safe O_EXCL
-creates. For NFSv4, the struct nameidata carries not only the path
-information, but also returns the fully initialised 'struct file'. Al
-has plans to clean up that interface, but lookup_one_len() will still be
-insufficient as a replacement.
+>  Its an key component but
+> there is a high interaction with other subsystems. There was no recent
+> change in slub that changed the order of allocations. There were changes
+> affecting the reclaim logic. Slub has been working just fine with the
+> existing allocation schemes for a long time.
 
-NFS also requires look up using the full 'struct path' if/when we happen
-upon an automount point (i.e. if we cross into a submounted filesystem
-on the server or if we encounter an NFSv4 referral). Again, this is
-something that lookup_one_len() can't do.
+So suggest an alternative root cause and a test to expose it.
 
-Trond
+James
 
-> Al? Christoph? Comments?
-> 
->                             Linus
-> 
-> On Thu, May 12, 2011 at 8:12 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > Hmm.
-> >
-> > Do we really ever have a NULL 'nd' these days? Can you send me the
-> > backtrace for whatever oops that was reported?
-> >
-> > The reason I ask is because at least NFS also does just
-> >
-> >        if (nd->flags & LOOKUP_RCU)
-> >                return -ECHILD;
-> >
-> > in its nfs_lookup/open_revalidate() functions. As does cifs, ncpfs, p9
-> > and coda from a quick grep.
-> >
-> >                        Linus
-> >
-> > On Thu, May 12, 2011 at 8:04 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >>
-> >> Please pull from
-> >>
-> >>  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
-> >>
-> >> Miklos Szeredi (1):
-> >>      fuse: fix oops in revalidate when called with NULL nameidata
-> >>
-> >> ---
-> >>  fs/fuse/dir.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
 
