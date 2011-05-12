@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758183Ab1ELRWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:22:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57202 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758108Ab1ELRWK (ORCPT
+	id S1758173Ab1ELRVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:21:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48221 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758027Ab1ELRVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:22:10 -0400
+	Thu, 12 May 2011 13:21:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jnWsTHZHpFqyRiPO7OubFs4AFUudDptZy/4kg5FTAvpag2k9LZBvVwl9r/shE8NsSc
+         Mnsl6G2OHcJZd0Y9ig/W7s+fxNK2Tei7FUGteVbnw2a9hQC6jJGn2bhARaDJIAyimmwX
+         xhWxDOXIXFxO+8lvfvp3NbulLmrcPAugBR/Jw=
+Date: Thu, 12 May 2011 19:21:33 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
+Message-ID: <20110512172133.GN1030@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-5-git-send-email-tj@kernel.org>
+ <20110509165857.GA30607@redhat.com>
+ <20110510095022.GR1661@htj.dyndns.org>
+ <20110510140620.GB21834@redhat.com>
+ <20110510142033.GY1661@htj.dyndns.org>
+ <20110510180811.GB32637@redhat.com>
+ <20110511082947.GB1661@htj.dyndns.org>
+ <20110512170617.GB20215@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1305217732.15566.31.camel@lade.trondhjem.org>
-References: <87fwokarjj.fsf@tucsk.pomaz.szeredi.hu> <BANLkTin6Ujea+qdkvwkH_9o5F8WKPyFdyA@mail.gmail.com>
- <BANLkTi=4rdtB5dQH=tycT1sybe7iJmTVcA@mail.gmail.com> <1305217732.15566.31.camel@lade.trondhjem.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 May 2011 10:21:21 -0700
-Message-ID: <BANLkTikBVAJSmBZrAvJ6fRQD32TFNeO4zQ@mail.gmail.com>
-Subject: Re: [GIT PULL] fuse fix for 2.6.39
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512170617.GB20215@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 9:28 AM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
->
-> NFS also requires look up using the full 'struct path' if/when we happen
-> upon an automount point (i.e. if we cross into a submounted filesystem
-> on the server or if we encounter an NFSv4 referral). Again, this is
-> something that lookup_one_len() can't do.
+Hello, again.
 
-Sure. But we might not want to oops. Would you be willing to try
-ecryptfs over NFS to at least make it limp along?
+On Thu, May 12, 2011 at 07:06:17PM +0200, Oleg Nesterov wrote:
+> > I don't agree.  PTRACE_TRACEME predates PTRACE_ATTACH and is
+> > completely redundant.  If you can make the child do PTRACE_TRACEME,
+> > you might as well just make it do pause() and PTRACE_SEIZE yourself,
+> > so unless there's something PTRACE_SEIZE can't do, I don't think I'll
+> > be adding SEIZEME.
+> 
+> Heh. I think that you are very right technically and I thought the
+> same. That is why I never mentioned PTRACE_TRACEME before. In fact
+> I never understood why PTRACE_TRACEME exists.
+> 
+> However. Perhaps this is wrong from the practical pov. SEIZEME can
+> simplify the conversion of the existing code. People are lazy, but
+> we need the users of PTRACE_SEIZE.
 
-                       Linus
+Hmmm... given that the attaching part is somewhat isolated from the
+rest of code.  I'm hoping to get away with providing a sample code in
+documentation.  :-)
+
+Thanks.
+
+-- 
+tejun
