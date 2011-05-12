@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab1ELVFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:05:31 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59451 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758661Ab1ELVF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:05:29 -0400
-Date: Thu, 12 May 2011 17:02:54 -0400 (EDT)
-Message-Id: <20110512.170254.1553444447781324461.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: shemminger@vyatta.com, ysato@users.sourceforge.jp, linux@arm.linux.org.uk,
-        fthain@telegraphics.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 0/3] Fix 8390 regressions
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1305227500-15595-1-git-send-email-geert@linux-m68k.org>
-References: <1305227500-15595-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 14:02:58 -0700 (PDT)
+	id S1758690Ab1ELVE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:04:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56166 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758659Ab1ELVE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:04:26 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH v2 4/4] coredump: escape / in hostname and comm fix
+Date: Thu, 12 May 2011 23:04:18 +0200
+Message-Id: <1305234258-28184-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Thu, 12 May 2011 19:11:37 +0000
+Escape comm also in failing %E case.
 
-> These patches fix regressions in 3 8390-based network drivers:
->  [1/3] zorro8390: Fix regression caused during net_device_ops conversion
->  [2/3] hydra: Fix regression caused during net_device_ops conversion
->  [3/3] ne-h8300: Fix regression caused during net_device_ops conversion
-> 
-> The first one, for zorro8390, has been tested.
-> The second one, for hydra, has been compile-tested only.
-> 
-> Based on commits 8cfd9e923be54ef66ce174a93f4592b444b96407 ("[ARM] RiscPC: Fix
-> etherh oops") and 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390: fix
-> regression caused during net_device_ops conversion"), and the patch for
-> zorro8390, we have good reasons to believe hydra and ne-h8300 are affected
-> as well, as they all include lib8390.c.
-> Hence patches for those are also included, although I could not test them.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>
+---
+ fs/exec.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-All applied, thanks Geert, and I made the "From: " removals you requested.
+diff --git a/fs/exec.c b/fs/exec.c
+index dafded4..13b4fce 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1563,8 +1563,8 @@ static int cn_print_exe_file(struct core_name *cn)
+ 	exe_file = get_mm_exe_file(current->mm);
+ 	if (!exe_file) {
+ 		char comm[TASK_COMM_LEN];
+-		return cn_printf(cn, "%s (path unknown)", get_task_comm(comm,
+-					current));
++		cn_escape(get_task_comm(comm, current));
++		return cn_printf(cn, "%s (path unknown)", comm);
+ 	}
+ 
+ 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+-- 
+1.7.4.2
+
