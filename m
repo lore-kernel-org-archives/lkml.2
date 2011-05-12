@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1ELAwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 20:52:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57609 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab1ELAwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 20:52:08 -0400
-Date: Thu, 12 May 2011 10:51:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linaro-dev@lists.linaro.org, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 0/5] Basic ARM devicetree support
-Message-Id: <20110512105152.8c6d9b67.sfr@canb.auug.org.au>
-In-Reply-To: <BANLkTi=yCmxgv1fQKRJSZK3FkkRwjS2r=Q@mail.gmail.com>
-References: <BANLkTi=yCmxgv1fQKRJSZK3FkkRwjS2r=Q@mail.gmail.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1752067Ab1ELA7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 20:59:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47869 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab1ELA72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 20:59:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 12 May 2011 09:52:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 2/4] oom: kill younger process first
+Message-Id: <20110512095243.c57e3e83.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110510171641.16AF.A69D9226@jp.fujitsu.com>
+References: <20110509182110.167F.A69D9226@jp.fujitsu.com>
+	<20110510171335.16A7.A69D9226@jp.fujitsu.com>
+	<20110510171641.16AF.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__12_May_2011_10_51_52_+1000_9Ul4Mb69ecP/CJqS"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_May_2011_10_51_52_+1000_9Ul4Mb69ecP/CJqS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 10 May 2011 17:15:01 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Hi Grant,
+> This patch introduces do_each_thread_reverse() and
+> select_bad_process() uses it. The benefits are two,
+> 1) oom-killer can kill younger process than older if
+> they have a same oom score. Usually younger process
+> is less important. 2) younger task often have PF_EXITING
+> because shell script makes a lot of short lived processes.
+> Reverse order search can detect it faster.
+> 
+> Reported-by: CAI Qian <caiqian@redhat.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-On Wed, 11 May 2011 22:44:49 +0200 Grant Likely <grant.likely@secretlab.ca>=
- wrote:
->
-> Right now it merges cleanly with linux-next and the resulting tree
-> builds and boots at least on qemu.  Unless you really object, I'm
-> going to ask Stephen to add the following branch to the /end/ of the
-> list of trees for linux-next so it can easily be dropped it if it
-> causes any problems.
->=20
-> git://git.secretlab.ca/git/linux-2.6 devicetree/arm-next
+IIUC, for_each_thread() can be called under rcu_read_lock() but 
+for_each_thread_reverse() must be under tasklist_lock.
 
-OK, given Russell's qualified agreement, I will add this tree today.
+Could you add some comment ? and prev_task() should use list_entry()
+not list_entry_rcu().
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+Thanks,
+-Kame
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+> ---
+>  include/linux/sched.h |    6 ++++++
+>  mm/oom_kill.c         |    2 +-
+>  2 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 013314a..a0a8339 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2194,6 +2194,9 @@ static inline unsigned long wait_task_inactive(struct task_struct *p,
+>  #define next_task(p) \
+>  	list_entry_rcu((p)->tasks.next, struct task_struct, tasks)
+>  
+> +#define prev_task(p) \
+> +	list_entry_rcu((p)->tasks.prev, struct task_struct, tasks)
+> +
+>  #define for_each_process(p) \
+>  	for (p = &init_task ; (p = next_task(p)) != &init_task ; )
+>  
+> @@ -2206,6 +2209,9 @@ extern bool current_is_single_threaded(void);
+>  #define do_each_thread(g, t) \
+>  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+>  
+> +#define do_each_thread_reverse(g, t) \
+> +	for (g = t = &init_task ; (g = t = prev_task(g)) != &init_task ; ) do
+> +
+>  #define while_each_thread(g, t) \
+>  	while ((t = next_thread(t)) != g)
+>  
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 118d958..0cf5091 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -282,7 +282,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  	struct task_struct *chosen = NULL;
+>  	*ppoints = 0;
+>  
+> -	do_each_thread(g, p) {
+> +	do_each_thread_reverse(g, p) {
+>  		unsigned int points;
+>  
+>  		if (!p->mm)
+> -- 
+> 1.7.3.1
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Thu__12_May_2011_10_51_52_+1000_9Ul4Mb69ecP/CJqS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNyy8oAAoJEDMEi1NhKgbsBn8H/1J919K+uStjAoDyHC69kmbW
-pOQsO5XWT8LVj4Q6rwG6t4u1kbTL0pIVe0aX2YKBLB6/GYUeEaTNs0A+9NlzNSBo
-LESBu261BkVih/P1kX99ml4p4VHlPlkdfD70c+H7p8qwt9/kMclf/mtwKbGUpxeV
-MO0RzGot8Tbes49LuPNDd5cftg2BwRf1tEsMJ/N//klzf73d7DVbWB+8Az5rlhql
-uJXQvSicDZGsfmSs3cAsk7wkR+zFGybq/ae3o1bMmXOuPBNbUBFT3Nk7l2zbdE7d
-R4BFeKZreuntpb+0L15x2XKzre3y3cS3ysCUasSbUdfe9UZ1CVeEfz+OaLZVCLg=
-=8a2A
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_May_2011_10_51_52_+1000_9Ul4Mb69ecP/CJqS--
