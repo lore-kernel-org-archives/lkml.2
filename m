@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab1ELS4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:56:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775Ab1ELS4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:56:17 -0400
-Date: Thu, 12 May 2011 20:54:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/6] signal: introduce do_sigtimedwait() to factor
-	out compat/native code
-Message-ID: <20110512185434.GA27589@redhat.com>
-References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com> <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com> <20110426194904.GC8520@redhat.com> <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
+	id S1757719Ab1ELT0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:26:44 -0400
+Received: from bsmtp3.bon.at ([213.33.87.17]:27289 "EHLO lbmfmo03.bon.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757615Ab1ELT0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 15:26:42 -0400
+X-Greylist: delayed 1886 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 May 2011 15:26:41 EDT
+Message-ID: <4DCC2CFD.4010807@kdbg.org>
+Date: Thu, 12 May 2011 20:54:53 +0200
+From: Johannes Sixt <j6t@kdbg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Lutomirski <luto@mit.edu>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, git@vger.kernel.org
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up
+ hard right after logging in)
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com> <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11, Mike Frysinger wrote:
->
-> On Tue, Apr 26, 2011 at 15:49, Oleg Nesterov wrote:
-> > --- sigprocmask/include/linux/signal.h~2_do_sigtimedwait        2011-04-26 19:52:30.000000000 +0200
-> > +++ sigprocmask/include/linux/signal.h  2011-04-26 19:53:42.000000000 +0200
-> > @@ -242,6 +242,8 @@ extern int __group_send_sig_info(int, st
-> >  extern long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig,
-> >                                 siginfo_t *info);
-> >  extern long do_sigpending(void __user *, unsigned long);
-> > +extern int do_sigtimedwait(const sigset_t *, siginfo_t *,
-> > +                               const struct timespec *);
-> >  extern int sigprocmask(int, sigset_t *, sigset_t *);
-> >  extern void set_current_blocked(const sigset_t *);
-> >  extern int show_unhandled_signals;
->
-> this causes a build warning:
-> In file included from arch/blackfin/kernel/signal.c:8:
-> include/linux/signal.h:246: warning: 'struct timespec' declared inside
-> parameter list
+Am 12.05.2011 19:37, schrieb Linus Torvalds:
+> If you think it's networking, for example, and you've bisected into
+> there but aren't sure, do "gitk --bisect", find the point where I
+> merge, and pick that (and my parent), and "git bisect reset" those
+> points.
 
-Oh, thanks Mike. I'll send the simple fix tomorrow.
+Except that you should git reset --hard; git bisect reset gets you out
+of bisect-mode, no?
 
-Oleg.
-
+-- Hannes
