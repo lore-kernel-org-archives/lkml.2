@@ -1,110 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab1ELRLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:11:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53198 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758099Ab1ELRL1 (ORCPT
+	id S1758124Ab1ELRPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:15:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36442 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757308Ab1ELRPY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:11:27 -0400
+	Thu, 12 May 2011 13:15:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=SRCup1MSlqIRXKFiaDONCNgEkMcahqqWuaP3rN6VC8/VlC/e4WRIyix+oYzENBGuCx
-         B3PWTP6t4UaRvjAnOEkIrninpJaRWPp4nxvOlVAXgKod9d55xzIFGyH5SPufehRrFjFm
-         mfwvF+l2U23qa0cYcrU/DcMPqbxrux0jHwoG8=
-From: Raffaele Recalcati <lamiaposta71@gmail.com>
-To: linux-pm@lists.linux-foundation.org
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org,
-        Raffaele Recalcati <raffaele.recalcati@bticino.it>
-Subject: [PATCH 4/4] DaVinci: vpfe: support for pm_loss
-Date: Thu, 12 May 2011 19:11:05 +0200
-Message-Id: <1305220265-9020-5-git-send-email-lamiaposta71@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
-References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=dM+BZam5ok9q/M9db+e00078eEJjduPFqrfh5V1g2pM5pk4lMPPAzJH0OFWuUZK5jU
+         45nHjx/sgkXcj+n/jCb/bMfvWvwxjsT1ilf+0yymgt6NyTp37HY6d2JDHIVmGwPGXfNj
+         0PBg+UnBH42d8eBGXErisaOquV+jR1X0UjBNM=
+MIME-Version: 1.0
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 12 May 2011 13:15:03 -0400
+X-Google-Sender-Auth: NJ7eBcnn6uKKhGZhbP9c4MvRK0w
+Message-ID: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+Subject: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, git@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+On Thu, May 12, 2011 at 9:31 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> I just installed 9f381a6 (-linus from yesterday) on my Sandy Bridge
+> desktop, and it locks up hard within a few seconds of logging in.
+> netconsole says:
+>
+> [  506.629723] block group 24725422080 has an wrong amount of free space
+> [  506.629723] block group 24725422080 has an wrong amount of free space
+> [  506.808501] fuse init (API version 7.16)
+> [  506.819996] SELinux: initialized (dev fuse, type fuse), uses genfs_contexts
+> [  506.829847] SELinux: initialized (dev fusectl, type fusectl), uses
+> genfs_contexts
+> [  506.808501] fuse init (API version 7.16)
+> [  506.819996] SELinux: initialized (dev fuse, type fuse), uses genfs_contexts
+> [  506.829847] SELinux: initialized (dev fusectl, type fusectl), uses
+> genfs_contexts
+>
+> If it's any help, the system is locked so hard that the reset button
+> doesn't work.  It's an Intel DQ67SW board, which apparently doesn't
+> have the most reliable reset button in the world :)
+>
+> 2.6.38.{4,5,6} are all rock-solid on this box.
+>
+> I've started bisecting, but I don't expect to finish today.  I need to
+> do some work other than kernel hacking...
 
-Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
----
- drivers/media/video/davinci/vpfe_capture.c |   45 ++++++++++++++++++++++++++++
- 1 files changed, 45 insertions(+), 0 deletions(-)
+OK, this sucks.  In the course of bisecting this, I've hit two other
+apparently unrelated bugs that prevent my from testing large numbers
+of kernels.  Do I have two questions:
 
-diff --git a/drivers/media/video/davinci/vpfe_capture.c b/drivers/media/video/davinci/vpfe_capture.c
-index 353eada..21fa9bf 100644
---- a/drivers/media/video/davinci/vpfe_capture.c
-+++ b/drivers/media/video/davinci/vpfe_capture.c
-@@ -74,6 +74,8 @@
- #include <media/v4l2-common.h>
- #include <linux/io.h>
- #include <media/davinci/vpfe_capture.h>
-+#include <linux/pm.h>
-+#include <linux/pm_loss.h>
- #include "ccdc_hw_device.h"
- 
- static int debug;
-@@ -2051,6 +2053,46 @@ static int __devexit vpfe_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_LOSS
-+static int vpfe_capture_power_changed(struct device *dev,
-+				      enum sys_power_state s)
-+{
-+	int ret;
-+	struct vpfe_device *vpfe_dev = dev_get_drvdata(dev);
-+	struct vpfe_subdev_info *sdinfo = vpfe_dev->current_subdev;
-+
-+	if (!sdinfo)
-+		return -EINVAL;
-+
-+	if (!vpfe_dev->started) {
-+		pr_debug_pm_loss("vpfe_capture_power_changed(%d) "
-+				 "BUT NOTHING TO DO\n", s);
-+		return 0;
-+	}
-+
-+	sdinfo = vpfe_dev->current_subdev;
-+
-+	switch (s) {
-+	case SYS_PWR_GOOD:
-+		pr_debug_pm_loss("vpfe_capture_power_changed(%d)\n", s);
-+		ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev,
-+						 sdinfo->grp_id,
-+						 video, s_stream, 1);
-+		break;
-+	case SYS_PWR_FAILING:
-+		pr_debug_pm_loss("vpfe_capture_power_changed(%d)\n", s);
-+		ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev,
-+						 sdinfo->grp_id,
-+						 video, s_stream, 0);
-+		break;
-+	default:
-+		BUG();
-+		ret = -ENODEV;
-+	}
-+	return ret;
-+}
-+#endif /* CONFIG_PM_LOSS */
-+
- static int vpfe_suspend(struct device *dev)
- {
- 	return 0;
-@@ -2064,6 +2106,9 @@ static int vpfe_resume(struct device *dev)
- static const struct dev_pm_ops vpfe_dev_pm_ops = {
- 	.suspend = vpfe_suspend,
- 	.resume = vpfe_resume,
-+#ifdef CONFIG_PM_LOSS
-+	.power_changed = vpfe_capture_power_changed,
-+#endif
- };
- 
- static struct platform_driver vpfe_driver = {
--- 
-1.7.0.4
+1. Anyone have any ideas from looking at the log?
 
+It looks like most of what's left is network code, so cc netdev.
+
+2.  The !&$#@ bisection is skipping all over the place.  I've seen
+2.6.37 versions and all manner of -rc's out of order.  Linus, and
+other people who like pontificating about git bisection: is there any
+way to get the bisection to follow Linus' tree?  I think that if
+bisect could be persuaded to consider only changes that are reached by
+following only the *first* merge parent all the way from the bad
+revision to the good revision, then the bisection would build versions
+that were at least good enough for Linus to pull and might have fewer
+bisection-killing bugs.
+
+(This isn't a new idea [1], and git rev-list --bisect --first-parent
+isn't so bad except that it doesn't bisect.)
+
+
+
+Here's the log.
+
+$ git bisect log
+# bad: [9f381a61f58bb6487c93ce2233bb9992f8ea9211] Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6
+# good: [521cb40b0c44418a4fd36dc633f575813d59a43d] Linux 2.6.38
+git bisect start 'HEAD' 'v2.6.38'
+# skip: [6899608533410557e6698cb9d4ff6df553916e98] Merge branch
+'for-linus' of git://codeaurora.org/quic/kernel/davidb/linux-msm
+# ******* This revision didn't build due to PSTORE.
+# ******* Fixed config for the rest but no point in retrying...
+git bisect skip 6899608533410557e6698cb9d4ff6df553916e98
+# bad: [d3e458d78167102cc961237cfceef6fffc80c0b3] Merge branch
+'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6
+git bisect bad d3e458d78167102cc961237cfceef6fffc80c0b3
+# good: [6445ced8670f37cfc2c5e24a9de9b413dbfc788d] Merge branch
+'staging-next' of
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+git bisect good 6445ced8670f37cfc2c5e24a9de9b413dbfc788d
+# bad: [40c7f2112ce18fa5eb6dc209c50dd0f046790191] Merge branch
+'drm-core-next' of
+git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6
+git bisect bad 40c7f2112ce18fa5eb6dc209c50dd0f046790191
+# bad: [23b41168fc942a4a041325a04ecc1bd17d031a3e] netdevice: make
+initial group visible to userspace
+git bisect bad 23b41168fc942a4a041325a04ecc1bd17d031a3e
+# bad: [c0c84ef5c130f8871adbdaac2ba824b9195cb6d9] Merge branch
+'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
+git bisect bad c0c84ef5c130f8871adbdaac2ba824b9195cb6d9
+# skip: [3ad97fbcc233a295f2ccc2c6bdeb32323e360a5e] mac80211: remove
+unneeded check
+# ******* This revision hangs at edd=off
+git bisect skip 3ad97fbcc233a295f2ccc2c6bdeb32323e360a5e
+# skip: [5bec3e5ade813ee4bdbab03af1bb6f85859272ea] ath9k: fix tx queue
+index confusion in debugfs code
+# ******* This revision hangs at edd=off
+git bisect skip 5bec3e5ade813ee4bdbab03af1bb6f85859272ea
+# skip: [c210de8f88215db31cf3529c9763fc3124d6e09d] ath5k: Fix fast
+channel switching
+# ******* This revision hangs at edd=off
+git bisect skip c210de8f88215db31cf3529c9763fc3124d6e09d
+
+# ******* For added fun, 479600777bb588724d044815415f7d708d06644b gets
+stuck in systemd initialization.
+
+--Andy
