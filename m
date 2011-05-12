@@ -1,241 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab1ELMz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 08:55:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26125 "EHLO mx1.redhat.com"
+	id S1755883Ab1ELNE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 09:04:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48795 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab1ELMzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 08:55:54 -0400
-Subject: Re: [04/16] add support for C64x+ debugger based console
-From: Mark Salter <msalter@redhat.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <c64-hvc-reply@mdm.bga.com>
-References: <1305144843-5058-5-git-send-email-msalter@redhat.com>
-	 <c64-hvc-reply@mdm.bga.com>
-Content-Type: text/plain
-Organization: Red Hat, Inc
-Date: Thu, 12 May 2011 08:55:52 -0400
-Message-Id: <1305204952.15167.124.camel@deneb.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752415Ab1ELNEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 09:04:55 -0400
+Date: Thu, 12 May 2011 13:04:11 GMT
+From: tip-bot for Samir Bellabes <sam@synack.fr>
+Message-ID: <tip-3e51e3edfd81bfd9853ad7de91167e4ce33d0fe7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, sam@synack.fr, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, sam@synack.fr, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1305130685-1047-1-git-send-email-sam@synack.fr>
+References: <1305130685-1047-1-git-send-email-sam@synack.fr>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Remove unused parameters from sched_fork() and wake_up_new_task()
+Git-Commit-ID: 3e51e3edfd81bfd9853ad7de91167e4ce33d0fe7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 May 2011 13:04:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-11 at 21:41 -0500, Milton Miller wrote:
-> On Wed, 11 May 2011 about 20:13:51 -0000, Mark Salter wrote:
-> > Texas Instruments debugger support for the C64X+ family of DSPs includes a
-> > console for the unit under test. This patch adds write-only console support
-> > to send kernel output to the debugger. It is safe to have this driver in
-> > place even if the system is not being run under the debugger.
-> > 
-> > Signed-off-by: Mark Salter <msalter@redhat.com>
-> > 
-> > ---
-> > drivers/tty/hvc/Makefile  |    1 +
-> >  drivers/tty/hvc/hvc_c6x.c |  125 +++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 126 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/tty/hvc/hvc_c6x.c
-> 
-> 
-> Hmm, no Kconfig?   Oh, I see, you have a very minimal entry in
-> arch/c6x/Kconfig via "[07/16] C6X: add toplevel configury and makefile".
-> 
-> Except that is too minimal.  It should give the user guidance
-> like the changelog: it provides a hook for a that the debuger
-> can set a breakpoint to know when to pick up the data, is safe
-> when the debugger is not enabled, etc.  Answer "why would a
-> user want this?".
-> 
-> Also, I prefer it to be local with the driver and makefile even
-> if it depends on your architecture.  There is nothing processor
-> architeture specific about this driver, even the asm is 2 nops
-> and a label; so some other arch may want to reuse this driver.
-> 
-> > +/*
-> > + * TI C6X Host Port hypervisor console
-> > + */
-> 
-> Nothing is really hypervisor, other than the name of the framework.
-> More like debugger driver?
-> 
-> > +
-> > +#include <linux/console.h>
-> > +#include <linux/delay.h>
-> 
-> Not sure you use anything from delay.h
-> 
-> > +#include <linux/err.h>
-> > +#include <linux/init.h>
-> > +#include <linux/moduleparam.h>
-> > +#include <linux/types.h>
-> > +
-> > +#include "hvc_console.h"
-> > +
-> > +#define PARAMSIZE	8
-> > +#define MSGSIZE		256
-> > +
-> > +#define CIO_READ	0xF2
-> > +#define CIO_WRITE	0xF3
-> > +
-> > +#define CIO_STDIN	0
-> > +#define CIO_STDOUT	1
-> > +#define CIO_STDERR	2
-> > +
-> 
-> So you probably have some method to read characters that could be added.
-> No pressure, but that could be useful.  Your raw transport also has
-> multiple channels which could be used.
-> 
-> > +struct c6x_msg {
-> > +	unsigned int	length;
-> > +	unsigned char	command;
-> > +	unsigned char	params[PARAMSIZE];
-> > +	unsigned char	msg[MSGSIZE];
-> > +};
-> > +
-> > +union c6x_msgparam {
-> > +	unsigned char	params[PARAMSIZE];
-> > +	struct {
-> > +		unsigned short fd;
-> > +		unsigned short count;
-> > +	} host_write;
-> > +};
-> > +
-> > +/*
-> > + * __CIOBUF__ and C$$IO$$ are special symbols for debugger.
-> > + *
-> > + * If debugger is running kernel, it will set a breakpoint
-> > + * at C$$IO$$ which is hit when the kernel wants attention
-> > + * from the debugger. __CIOBUF__ is used to pass messages
-> > + * between debugger and kernel when the breakpoint is hit.
-> > + */
-> > +struct c6x_msg _CIOBUF_;
-> > +
-> > +static noinline void notify_debugger(void)
-> > +{
-> > +	asm volatile (".global C$$IO$$\n"
-> > +		      "nop\n"
-> > +		      "C$$IO$$: nop\n");
-> > +}
-> > +
-> > +static int hvc_c6x_put_chars(uint32_t vt, const char *buf, int count)
-> > +{
-> > +	union c6x_msgparam params;
-> > +	int to_write, remaining;
-> > +
-> > +	remaining = count;
-> > +	while (remaining > 0) {
-> > +		to_write = (remaining > MSGSIZE) ? MSGSIZE : remaining;
-> > +
-> > +		_CIOBUF_.length = to_write;
-> > +		_CIOBUF_.command = CIO_WRITE;
-> > +
-> > +		params.host_write.fd = cpu_to_le16(CIO_STDOUT);
-> > +		params.host_write.count = cpu_to_le16(to_write);
-> > +		memcpy(_CIOBUF_.params, &params, PARAMSIZE);
-> > +
-> > +		memcpy(_CIOBUF_.msg, buf, to_write);
-> > +
-> > +		notify_debugger();
-> > +
-> > +		remaining -= to_write;
-> > +	}
-> > +	return count;
-> > +}
-> > +
-> > +#ifdef CONFIG_EARLY_PRINTK
-> > +void hvc_c6x_early_puts(const char *buf, unsigned count)
-> > +{
-> > +	hvc_c6x_put_chars(0, buf, count);
-> > +}
-> > +#endif
-> 
-> Hmm, so you have
-> 
-> (1) early_printk only avail if CONFIG_EARLY_PRINTK (no #else nop),
-> and this hook is protyped in include/early_printk under ifdef.
-> 
-> (2) arch/c6x/kernel/early_console.c implements a hook, with an
-> explict ifdef for this driver to fill in the hook
-> 
-> So both files ifdef the config used to build the other file.
-> 
-> Do you have other hook implementations for your early_puts?
+Commit-ID:  3e51e3edfd81bfd9853ad7de91167e4ce33d0fe7
+Gitweb:     http://git.kernel.org/tip/3e51e3edfd81bfd9853ad7de91167e4ce33d0fe7
+Author:     Samir Bellabes <sam@synack.fr>
+AuthorDate: Wed, 11 May 2011 18:18:05 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 12 May 2011 09:36:37 +0200
 
-No. None of the currently supported boards have a simple UART :(
-Several of the boards do have i2c-uart bridges but we don't have
-code to support those outside of the normal i2c driver which is
-too late for early_printk.
+sched: Remove unused parameters from sched_fork() and wake_up_new_task()
 
-> 
-> (3) the effect of doing the above gets a console that gets called
-> with upto 512 characters per buffer (which would require 2 messages,
-> but you handle that), instead of the hvc_console N_OUTBUF = 16
-> per loop.
-> 
-> 
-> The hvc console is supposed to auto-register the console either when
-> the hvc_console console_initcall is made or when some sub driver calls
-> hvc_instantiate.  While its not as clear as it used to be that calling
-> it early is safe, I think it stll is.
-> 
-> I can see how the early-printk console could be about 16x faster;
-> maybe we should create a static buffer for console output.  Its
-> always filled under the console locks and drained under the same
-> call.  (The n_outbuf code was added to hvc later).  Some drivers
-> need the aligned to long of that buffer and we dont' want to
-> grow the stack too much.   ... but I digress.   I won't hold
-> the driver up for that, but could you take a look?
+sched_fork() and wake_up_new_task() are defined with a parameter
+'unsigned long clone_flags', which is unused.
 
-Yes I will. This debugger console support was originally done using
-the tty interface directly but it was suggested to use the HVC
-framework to simplify it (which it did). But we did notice it seemed
-somewhat slower than the direct tty driver, so this could use some
-investigation.
+This patch removes the parameters.
 
-> 
-> > +
-> > +static int hvc_c6x_get_chars(uint32_t vt, char *buf, int count)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static const struct hv_ops hvc_c6x_get_put_ops = {
-> > +	.get_chars = hvc_c6x_get_chars,
-> > +	.put_chars = hvc_c6x_put_chars,
-> > +};
-> > +
-> > +static int __init hvc_c6x_console_init(void)
-> > +{
-> > +	hvc_instantiate(0, 0, &hvc_c6x_get_put_ops);
-> > +	add_preferred_console("hvc", 0, NULL);
-> 
-> This (calling add_preferred_console from the drivers console_initcall)
-> is bad if you ever get an alternative console.   It seems convinient
-> until then.
-> 
-> > +	return 0;
-> > +}
-> > +console_initcall(hvc_c6x_console_init);
-> > +
-> > +static int __init hvc_c6x_init(void)
-> > +{
-> > +	struct hvc_struct *s;
-> > +	s = hvc_alloc(0, 0, &hvc_c6x_get_put_ops, 128);
-> 
-> So you tell the hvc layer you want upto 128 bytes at a time, but
-> your driver can handle MSGSIZE = 256 ?   Why would you not request
-> MSGSIZE at a time?
-> 
+Signed-off-by: Samir Bellabes <sam@synack.fr>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1305130685-1047-1-git-send-email-sam@synack.fr
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/sched.h |    5 ++---
+ kernel/fork.c         |    4 ++--
+ kernel/sched.c        |    4 ++--
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-We should. I just copied the above from hvc_tile.c without giving the
-128 a lot of thought.
-
-Thanks for the great guidance. I'll rework the patch with above comments
-in mind.
-
---Mark
-
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6b4280b..12211e1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2051,14 +2051,13 @@ extern void xtime_update(unsigned long ticks);
+ 
+ extern int wake_up_state(struct task_struct *tsk, unsigned int state);
+ extern int wake_up_process(struct task_struct *tsk);
+-extern void wake_up_new_task(struct task_struct *tsk,
+-				unsigned long clone_flags);
++extern void wake_up_new_task(struct task_struct *tsk);
+ #ifdef CONFIG_SMP
+  extern void kick_process(struct task_struct *tsk);
+ #else
+  static inline void kick_process(struct task_struct *tsk) { }
+ #endif
+-extern void sched_fork(struct task_struct *p, int clone_flags);
++extern void sched_fork(struct task_struct *p);
+ extern void sched_dead(struct task_struct *p);
+ 
+ extern void proc_caches_init(void);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index aca6287..2b44d82 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1152,7 +1152,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ #endif
+ 
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+-	sched_fork(p, clone_flags);
++	sched_fork(p);
+ 
+ 	retval = perf_event_init_task(p);
+ 	if (retval)
+@@ -1463,7 +1463,7 @@ long do_fork(unsigned long clone_flags,
+ 		 */
+ 		p->flags &= ~PF_STARTING;
+ 
+-		wake_up_new_task(p, clone_flags);
++		wake_up_new_task(p);
+ 
+ 		tracehook_report_clone_complete(trace, regs,
+ 						clone_flags, nr, p);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index da93381..f9778c0 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2741,7 +2741,7 @@ static void __sched_fork(struct task_struct *p)
+ /*
+  * fork()/clone()-time setup:
+  */
+-void sched_fork(struct task_struct *p, int clone_flags)
++void sched_fork(struct task_struct *p)
+ {
+ 	unsigned long flags;
+ 	int cpu = get_cpu();
+@@ -2823,7 +2823,7 @@ void sched_fork(struct task_struct *p, int clone_flags)
+  * that must be done for every newly created context, then puts the task
+  * on the runqueue and wakes it.
+  */
+-void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
++void wake_up_new_task(struct task_struct *p)
+ {
+ 	unsigned long flags;
+ 	struct rq *rq;
