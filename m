@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab1ELRae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:30:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57004 "EHLO
+	id S1758305Ab1ELRit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:38:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35403 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758008Ab1ELRab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:30:31 -0400
-Date: Thu, 12 May 2011 10:37:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mel Gorman <mgorman@suse.de>, Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-Id: <20110512103709.abbc9872.akpm@linux-foundation.org>
-In-Reply-To: <1305216638.3795.36.camel@edumazet-laptop>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	<1305127773-10570-4-git-send-email-mgorman@suse.de>
-	<alpine.DEB.2.00.1105120942050.24560@router.home>
-	<1305213359.2575.46.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105121024350.26013@router.home>
-	<1305214993.2575.50.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105121050220.26013@router.home>
-	<1305216638.3795.36.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	by vger.kernel.org with ESMTP id S1758281Ab1ELRiq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:38:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 May 2011 10:37:53 -0700
+Message-ID: <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, git@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 18:10:38 +0200 Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Thu, May 12, 2011 at 10:15 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>
+> OK, this sucks.  In the course of bisecting this, I've hit two other
+> apparently unrelated bugs that prevent my from testing large numbers
+> of kernels.  Do I have two questions:
+>
+> 1. Anyone have any ideas from looking at the log?
 
-> More fuel to this discussion with commit 6d4831c2
-> 
-> Something is wrong with high order allocations, on some machines.
-> 
-> Maybe we can find real cause instead of limiting us to use order-0 pages
-> in the end... ;)
-> 
-> commit 6d4831c283530a5f2c6bd8172c13efa236eb149d
-> Author: Andrew Morton <akpm@linux-foundation.org>
-> Date:   Wed Apr 27 15:26:41 2011 -0700
-> 
->     vfs: avoid large kmalloc()s for the fdtable
+Nope, that doesn't look very helpful.
 
-Well, it's always been the case that satisfying higher-order
-allocations take a disproportionate amount of work in page reclaim. 
-And often causes excessive reclaim.
+> 2.  The !&$#@ bisection is skipping all over the place.  I've seen
+> 2.6.37 versions and all manner of -rc's out of order.
 
-That's why we've traditionally worked to avoid higher-order
-allocations, and this has always been a problem with slub.
+That's the _point_ of bisection. It jumps around. You can start off
+trying to pick points on my development tree, but I only have a
+hundred merges or so. You're going to start delving into the actual
+development versions very quickly. And if you don't do it early,
+bisection is going to be much much slower, because it's not going to
+pick half-way points.
 
-But the higher-order allocations shouldn't cause the VM to melt down. 
-We changed something, and now it melts down.  Changing slub to avoid
-that meltdown doesn't fix the thing we broke.
+So bisection works so well exactly because it picks points that are
+far away from each other, and you should just totally ignore the
+version number. It's meaningless. Looking at it just confuses you.
+Don't do it.
 
+Now, "pick stable points" would obviously be nice, but that is going
+to have to be manual. You can certainly make some helper scripts, and
+that's where that "--first-parent" thing comes in. So if you want to,
+just use "git bisect reset" to the commit you want to test.
+
+If you think it's networking, for example, and you've bisected into
+there but aren't sure, do "gitk --bisect", find the point where I
+merge, and pick that (and my parent), and "git bisect reset" those
+points. That way you can verify that it's the networking merge (or
+verify that it isn't).
+
+                         Linus
