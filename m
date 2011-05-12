@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab1ELCQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 22:16:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44940 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab1ELCQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 22:16:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=CTizkHBsJCQFcl9yk79EqNMoyr0sj9dtx2Wkxk23fN0OfORer3lMd4RiH/aIALQa+y
-         vjfFEYZx3Nme0fe2iAPIdN+6GoAOX4adgiN/vFQ42VUk/jd6bZUX8wQRM0xiFewHeHmd
-         YdjCw5MF+gx1yD7lwyALM/idCMjTOXNY+VFCg=
-From: Jason Stubbs <jasonbstubbs@gmail.com>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] platform: fix samsung brightness min/max calculations
-Date: Thu, 12 May 2011 12:13:59 +1000
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r3; KDE/4.6.3; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-References: <201104201358.50443.jasonbstubbs@gmail.com> <201105111447.49816.jasonbstubbs@gmail.com> <20110511135114.GD12717@kroah.com>
-In-Reply-To: <20110511135114.GD12717@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105121214.00015.jasonbstubbs@gmail.com>
+	id S1753869Ab1ELCO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 22:14:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59600 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab1ELCO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 22:14:26 -0400
+Date: Thu, 12 May 2011 12:14:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the drm tree
+Message-Id: <20110512121416.bf2f2ea6.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__12_May_2011_12_14_16_+1000_KYXic/DA0IXG/WIo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011 23:51:14 Greg KH wrote:
-> On Wed, May 11, 2011 at 02:47:49PM +1000, Jason Stubbs wrote:
-> > On Wed, 11 May 2011 08:39:08 Greg KH wrote:
-> > > On Thu, Apr 28, 2011 at 06:55:50PM +1000, Jason Stubbs wrote:
-> > > > Not sure of the "bump" process, so I'll just go over each part of the
-> > > > patch.
-> > > > 
-> > > > Note that all the changes only affect the sabi_config where
-> > > > min_brightness is 1 so you might not see in difference on your
-> > > > hardware.
-> > > 
-> > > This isn't needed anymore due to your other patch superseeding it,
-> > > right?
-> > 
-> > Actually, this one is irrelevant to the nc210/nc110 support as that
-> > laptop uses the "SwSmi@" sabi. It was just something I noticed while
-> > learning the code. The miscalculations will only affect any laptops that
-> > use the "SECLINUX" sabi but I tested it by setting min_brightness to 2
-> > for my laptop.
-> 
-> That's wierd, as that is the type of laptop I have here and it seems to
-> work just fine for me as-is.
+--Signature=_Thu__12_May_2011_12_14_16_+1000_KYXic/DA0IXG/WIo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Throwing a printk of user_level into set_brightness when min_brightness = 1,
-I get the following behaviour:
+Hi Dave,
 
-# cd /sys/class/backlight/samsung
-# for x in 8 7 2 1 0; do echo $x > brightness; done
-# dmesg | tail -n6
-user_level is 0x07
-user_level is 0x06
-user_level is 0x01
-user_level is 0x00
-user_level is 0xff
-samsung_laptop: SABI set command 0x11 failed with completion flag 0xaa and data 0xff
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
-Essentially, setting brightness to the maximum actually sets it one less and
-setting it to zero does bad thngs.
+arch/x86/kernel/apic/x2apic_uv_x.c: In function 'uv_system_init':
+arch/x86/kernel/apic/x2apic_uv_x.c:815: warning: passing argument 1 of 'pci=
+_register_set_vga_state' from incompatible pointer type
+include/linux/pci.h:1085: note: expected 'arch_set_vga_state_t' but argumen=
+t is of type 'int (*)(struct pci_dev *, bool,  unsigned int,  bool)'
 
-> > The patch doesn't apply cleanly on top of the nc210/nc110 patch though as
-> > they both modify set_brightness(). It might apply with a higher fuzz
-> > factor as the changes don't actually clash. Should I redo the patch?
-> 
-> Please do.
+Introduced by commit 3448a19da479 ("vgaarb: use bridges to control VGA
+routing where possible).
 
-Will send seperately. Doing this though, I found a problem with the
-nc210/nc110 patch in that (user_level == read_brightness()) check should
-actually be (user_brightness == read_brightness()). What should I do about
-this?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Regards,
-Jason Stubbs
+--Signature=_Thu__12_May_2011_12_14_16_+1000_KYXic/DA0IXG/WIo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNy0J4AAoJEDMEi1NhKgbs4AwH/1ejr+uJM0RBYsGWLvFjYOKc
+z5JsB9zotKcqJzbUPf7c0u3Ptvf0fnwrgmyzTv2qCdYY88VUXDP8tbV3QYhYSnYr
+JlAjZDSx8Ue4kDgby69oYQ1WSMh4a27P0nVL4xUVwnRsQYzOjMAq1jGWCUG7WYUm
+BkGnvswVpXii+ujcU+/YYpHQV8qLYy5v6A8gYFcjvI2Ndvc9u2s2HdGZ+s0DO1Dz
+UaLEBjQOMce5EJc4XkIE9Dys+yF5NFKNVDHnUnUD/0NJhNvI+se5av1s18Ak33jF
+8tGhVFGL/d57YVWA2Key+RayAJjjGvX2aY89SV52+6q8ZNFs4IyOK2bp5dJ53qc=
+=y2ED
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__12_May_2011_12_14_16_+1000_KYXic/DA0IXG/WIo--
