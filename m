@@ -1,35 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab1ELRk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:40:58 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57047 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758259Ab1ELRk4 (ORCPT
+	id S1758301Ab1ELRqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:46:47 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:35820 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758201Ab1ELRqq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:40:56 -0400
-Date: Thu, 12 May 2011 18:40:30 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@lst.de>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+	Thu, 12 May 2011 13:46:46 -0400
+X-IronPort-AV: E=Sophos;i="4.64,359,1301900400"; 
+   d="scan'208";a="547509346"
 Subject: Re: [GIT PULL] fuse fix for 2.6.39
-Message-ID: <20110512174029.GB19987@ZenIV.linux.org.uk>
-References: <87fwokarjj.fsf@tucsk.pomaz.szeredi.hu>
- <BANLkTin6Ujea+qdkvwkH_9o5F8WKPyFdyA@mail.gmail.com>
- <BANLkTi=4rdtB5dQH=tycT1sybe7iJmTVcA@mail.gmail.com>
- <1305217732.15566.31.camel@lade.trondhjem.org>
- <BANLkTikBVAJSmBZrAvJ6fRQD32TFNeO4zQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
 In-Reply-To: <BANLkTikBVAJSmBZrAvJ6fRQD32TFNeO4zQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <87fwokarjj.fsf@tucsk.pomaz.szeredi.hu>
+	 <BANLkTin6Ujea+qdkvwkH_9o5F8WKPyFdyA@mail.gmail.com>
+	 <BANLkTi=4rdtB5dQH=tycT1sybe7iJmTVcA@mail.gmail.com>
+	 <1305217732.15566.31.camel@lade.trondhjem.org>
+	 <BANLkTikBVAJSmBZrAvJ6fRQD32TFNeO4zQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 12 May 2011 13:46:29 -0400
+Message-ID: <1305222389.21868.10.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 12 May 2011 17:46:30.0681 (UTC) FILETIME=[86BD0890:01CC10CC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:21:21AM -0700, Linus Torvalds wrote:
+On Thu, 2011-05-12 at 10:21 -0700, Linus Torvalds wrote:
 > On Thu, May 12, 2011 at 9:28 AM, Trond Myklebust
 > <Trond.Myklebust@netapp.com> wrote:
 > >
@@ -40,23 +44,28 @@ On Thu, May 12, 2011 at 10:21:21AM -0700, Linus Torvalds wrote:
 > 
 > Sure. But we might not want to oops. Would you be willing to try
 > ecryptfs over NFS to at least make it limp along?
+> 
+>                        Linus
 
-IMO that's crap; not the part about not wanting an oops, but lookup_one_len()
-one.  We do *NOT* want to pass nameidata all over the place; that had been
-a mistake in the first place.  Proper solution will have to wait one more
-cycle, but it's going to be along the lines of "pass struct file * explicitly
-on the last component handling; screw nameidata for everything else for old
-methods".  We already have the call sites (almost) separated in namei.c and
-I'm going to finish that come the next cycle.  Again, the long-term solution
-will have ->d_revalidate() and ->lookup() *lose* struct nameidata * argument,
-with new method used in place of ->open() for the last component.  Defaulting
-to the current sequence, yes, but NFS will be a lot more comfortable using
-it instead of the Cthulhu-scaring kludges it relies upon now.  At the same
-point ecryptfs will have one more method to pass through to the underlying
-fs.  And nameidata will be passed only to ->follow_link(), where it's
-inevitable.  I hoped to do (and debug) that during the last cycle, but
-do_last() got mutilated by Nick's patchset and during this cycle I was
-MIA completely.  Sorry, but that'll have to wait until .40 ;-/
+I was thinking rather of just returning an EIO if people try. We know
+that there are breakages w.r.t. certain operations as I pointed out in
+my previous email.
 
-Again, lookup_one_len() (and not having nameidata anywhere in sight) is
-right and proper.
+I suppose it really boils down to the following:
+
+Is there really a community of people out there relying on being able to
+do ecryptfs over NFS today?
+If so, what are they using it for, and are they going to care about
+those breakages?
+
+Cheers
+  Trond
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
