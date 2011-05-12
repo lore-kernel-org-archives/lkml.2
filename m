@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab1ELBNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 21:13:07 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:55763 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab1ELBNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 21:13:04 -0400
-Date: Thu, 12 May 2011 11:12:55 +1000
-From: Stephen Rothwell <sfr@au1.ibm.com>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the nfs tree
-Message-Id: <20110512111255.95a765aa.sfr@au.ibm.com>
-Organization: IBM Ozlabs Linux Technology Centre
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1752522Ab1ELBQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 21:16:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40057 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab1ELBQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 21:16:32 -0400
+Subject: Re: [PATCH] arch/c6x: new architecture port for linux
+From: Mark Salter <msalter@redhat.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110511180711.6be689bd.rdunlap@xenotime.net>
+References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
+	 <20110511143442.7c163a74.rdunlap@xenotime.net>
+	 <1305161873.15167.78.camel@deneb.localdomain>
+	 <20110511180711.6be689bd.rdunlap@xenotime.net>
+Content-Type: text/plain
+Organization: Red Hat, Inc
+Date: Wed, 11 May 2011 21:16:30 -0400
+Message-Id: <1305162990.15167.82.camel@deneb.localdomain>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2011-05-11 at 18:07 -0700, Randy Dunlap wrote:
+> There was one in drivers/platform/c6x/ where a driver included asm/timer.h
+> instead of linux/timer.h (IIRC - I don't have the patch handy ATM to run it
+> again).  checkpatch said to use linux/ instead of asm/.
 
-Hi Trond,
+Ah, okay. Yeah, that's in a few places actually. Generally speaking,
+there is no asm/timer.h and linux/timer.h doesn't include it. Maybe I
+should just rename it or make it mach/timer.h which is probably more
+appropriate anyway.
 
-After merging the nfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+--Mark
 
-fs/nfs/write.c: In function 'nfs_flush_multi':
-fs/nfs/write.c:942: error: too many arguments to function 'pnfs_update_layo=
-ut'
-fs/nfs/write.c: In function 'nfs_flush_one':
-fs/nfs/write.c:1016: error: too many arguments to function 'pnfs_update_lay=
-out'
-fs/nfs/read.c: In function 'nfs_pagein_multi':
-fs/nfs/read.c:291: error: too many arguments to function 'pnfs_update_layou=
-t'
-fs/nfs/read.c: In function 'nfs_pagein_one':
-fs/nfs/read.c:354: error: too many arguments to function 'pnfs_update_layou=
-t'
 
-Cased by commit 4b386a0fe47b ("NFSv4.1: Ensure that layoutget uses the
-correct gfp modes") which forgot to update the function declaration for
-the !CONFIG_NFS_V4_1 case.
-
-I have used the nfs tree from next-20110511 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@au.ibm.com
-IBM OzLabs Linux Technology Centre
-
---Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNyzQXAAoJEDMEi1NhKgbs/UAH/11ZsRnv80MSYNO+yDL4z+oi
-xqHLnckHMWJZK4o8T3wj2ui1F2qQn9wgW4Q0XzgGoIgqybaAA1BlvjIMvGJtf13t
-5o1/c6rmVG8Fsw5wXsSZ7LvY3aRT7N6dbhqHopAfRvOARRbWYYxZFMFsSCYbUSTL
-Z6oJ0I4F8IhJZVG06CvYAIZzZMmBmZ9QPu7KAIuJXL/QRxoRfpsKRs1jhsf2ovMx
-RZEQl2pQ2EjgsQ9wiTNbsdHC1lAERP759SWYXevT14ljiCusWM87Ivlb4gfh0vrg
-ZoQqiIw7vDHQsIGr8bd0jOx5ukEYp6xy00jg1mwnBnnQiYmdzWwo+K9nWPDvUvk=
-=GcXK
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b--
