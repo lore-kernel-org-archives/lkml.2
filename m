@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab1ELHHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 03:07:51 -0400
-Received: from nm2.access.bullet.mail.mud.yahoo.com ([66.94.237.203]:26557
-	"HELO nm2.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754541Ab1ELHHr (ORCPT
+	id S1756717Ab1ELHHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 03:07:55 -0400
+Received: from nm24.access.bullet.mail.mud.yahoo.com ([66.94.237.89]:32429
+	"HELO nm24.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756597Ab1ELHHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 03:07:47 -0400
-X-Yahoo-Newman-Id: 295424.3076.bm@omp1029.access.mail.mud.yahoo.com
+	Thu, 12 May 2011 03:07:53 -0400
+X-Yahoo-Newman-Id: 621616.42379.bm@omp1023.access.mail.mud.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: W56DseEVM1l6glySAMcWv7qgsImYXCTsDaYhVVcDSjyCVju
- M1wkpmt1Eg4MlQmtsO7yw2EQP54IgZbrcT3sZZzjvh3i2CEKzjqoQwH0ZIxs
- bq03NUbsiFCoiFCtlMZHxfB4dqRFaByoBwRCY7Tr9FzkcnuW5q2d8SaaCo2x
- aqmXsuwXDb7AmUJ6SOhvcwJleko4_zEAhSEPXNT8sI0okRHUbGosEUMhg41W
- m8A1XBLLLhLbM0CHhXVSpEXJJM103eMiDuXDA7WPehyLGSqM0toiwkQpDZLH
- OrBwGB701k5T.cBfWrZVsyZa6yd28JtcRcd8ana_JGJURyVUZulw5EZtIMaG
- zRepSDcxGV._lRbC7XoaZ5jiHoBGY4RbARW.zs8aBa5rx.rKL.Ad1bUY8lIu
- tC40Og3wdfb4g9UE0qfUYPwVr88QLGA--
+X-YMail-OSG: MUWyefoVM1lICVLQZzoc8Wl9G3EXv1vKJz8lw.Xcdvkie9t
+ NgyIOxdYnnTklkpVOqtLm9Z6pBilVWl9mX2qzNwuKUxp0mcrg78Z_ZVrTeNJ
+ 93SgvzdnUP1qXcsi4fi6GjvO.lh.BkeUqs632aSyR1tYT1EKuZe9K9QjRqvg
+ rk4emVtc.uggl4U8DKkmQb5Nswe6L7ueLBAp0BtJE_7z5olfgV9vmpjcMPuN
+ .OOQxFMbMG8FSE9Vyv4ImxpEaTv2_9YE1OwRuH4wkRG4SuXwXNlJy5tIcceT
+ _.rR47bNXUbuNB8OJnM_U0aH9x5S7GJsfe0On7mUgMhjJIOl4
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>,
@@ -31,9 +29,9 @@ Cc: Christoph Hellwig <hch@lst.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Martin Svec <martin.svec@zoner.cz>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v3 02/14] iscsi: Add Serial Number Arithmetic LT and GT into iscsi_proto.h
-Date: Thu, 12 May 2011 00:07:09 -0700
-Message-Id: <1305184041-32189-3-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH-v3 03/14] target: Convert REPORT_LUNs to use int_to_scsilun
+Date: Thu, 12 May 2011 00:07:10 -0700
+Message-Id: <1305184041-32189-4-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1305184041-32189-1-git-send-email-nab@linux-iscsi.org>
 References: <1305184041-32189-1-git-send-email-nab@linux-iscsi.org>
@@ -43,109 +41,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch moves the iscsi_sna_lt() and iscsi_sna_lte(), along with
-iscsi_sna_gt() and iscsi_sna_gte() from iscsi_target_mod into
-static inlines inside of include/scsi/iscsi_proto.h
+This patch converts transport_core_report_lun_response() to use
+drivers/scsi/scsi_scan.c:int_to_scsilun instead of using the
+struct target_core_fabric_ops->pack_lun() fabric provided API vector.
 
-This patch also includes the ISCSI_HDR_LEN and ISCSI_CRC_LEN
-definitions.
+It also removes the tfo->pack_lun check from target_fabric_tf_ops_check()
+and will be removed from struct target_core_fabric_ops in a seperate
+patch.
 
 Reported-by: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/libiscsi.c    |   16 ----------------
- include/scsi/iscsi_proto.h |   40 +++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 39 insertions(+), 17 deletions(-)
+ drivers/target/target_core_configfs.c |    4 ----
+ drivers/target/target_core_device.c   |   26 +++++---------------------
+ 2 files changed, 5 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 9c3cb4e..3461a03 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -84,22 +84,6 @@ MODULE_PARM_DESC(debug_libiscsi_eh,
- 					     __func__, ##arg);		\
- 	} while (0);
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index a5f44a6..ee6fad9 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -497,10 +497,6 @@ static int target_fabric_tf_ops_check(
+ 		printk(KERN_ERR "Missing tfo->is_state_remove()\n");
+ 		return -EINVAL;
+ 	}
+-	if (!(tfo->pack_lun)) {
+-		printk(KERN_ERR "Missing tfo->pack_lun()\n");
+-		return -EINVAL;
+-	}
+ 	/*
+ 	 * We at least require tfo->fabric_make_wwn(), tfo->fabric_drop_wwn()
+ 	 * tfo->fabric_make_tpg() and tfo->fabric_drop_tpg() in
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index d25e208..64a7b4d 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -38,6 +38,7 @@
+ #include <net/sock.h>
+ #include <net/tcp.h>
+ #include <scsi/scsi.h>
++#include <scsi/scsi_device.h>
  
--/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
--#define SNA32_CHECK 2147483648UL
--
--static int iscsi_sna_lt(u32 n1, u32 n2)
--{
--	return n1 != n2 && ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
--			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
--}
--
--/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
--static int iscsi_sna_lte(u32 n1, u32 n2)
--{
--	return n1 == n2 || ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
--			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
--}
--
- inline void iscsi_conn_queue_work(struct iscsi_conn *conn)
- {
- 	struct Scsi_Host *shost = conn->session->host;
-diff --git a/include/scsi/iscsi_proto.h b/include/scsi/iscsi_proto.h
-index a9c9058..4a433a5 100644
---- a/include/scsi/iscsi_proto.h
-+++ b/include/scsi/iscsi_proto.h
-@@ -29,10 +29,48 @@
- /* default iSCSI listen port for incoming connections */
- #define ISCSI_LISTEN_PORT	3260
+ #include <target/target_core_base.h>
+ #include <target/target_core_device.h>
+@@ -658,8 +659,7 @@ int transport_core_report_lun_response(struct se_cmd *se_cmd)
+ 	struct se_session *se_sess = SE_SESS(se_cmd);
+ 	struct se_task *se_task;
+ 	unsigned char *buf = (unsigned char *)T_TASK(se_cmd)->t_task_buf;
+-	u32 cdb_offset = 0, lun_count = 0, offset = 8;
+-	u64 i, lun;
++	u32 cdb_offset = 0, lun_count = 0, offset = 8, i;
  
-+/* iSCSI header length */
-+#define ISCSI_HDR_LEN		48
-+
-+/* iSCSI CRC32C length */
-+#define ISCSI_CRC_LEN		4
-+
- /* Padding word length */
- #define ISCSI_PAD_LEN		4
+ 	list_for_each_entry(se_task, &T_TASK(se_cmd)->t_task_list, t_list)
+ 		break;
+@@ -675,15 +675,7 @@ int transport_core_report_lun_response(struct se_cmd *se_cmd)
+ 	 * a $FABRIC_MOD.  In that case, report LUN=0 only.
+ 	 */
+ 	if (!(se_sess)) {
+-		lun = 0;
+-		buf[offset++] = ((lun >> 56) & 0xff);
+-		buf[offset++] = ((lun >> 48) & 0xff);
+-		buf[offset++] = ((lun >> 40) & 0xff);
+-		buf[offset++] = ((lun >> 32) & 0xff);
+-		buf[offset++] = ((lun >> 24) & 0xff);
+-		buf[offset++] = ((lun >> 16) & 0xff);
+-		buf[offset++] = ((lun >> 8) & 0xff);
+-		buf[offset++] = (lun & 0xff);
++		int_to_scsilun(0, (struct scsi_lun *)&buf[offset]);
+ 		lun_count = 1;
+ 		goto done;
+ 	}
+@@ -703,16 +695,8 @@ int transport_core_report_lun_response(struct se_cmd *se_cmd)
+ 		if ((cdb_offset + 8) >= se_cmd->data_length)
+ 			continue;
  
- /*
-+ * Serial Number Arithmetic, 32 bits, RFC1982
-+ */
-+
-+static inline int iscsi_sna_lt(u32 n1, u32 n2)
-+{
-+	s32 diff = n1 - n2;
-+
-+	return diff < 0;
-+}
-+
-+static inline int iscsi_sna_lte(u32 n1, u32 n2)
-+{
-+	s32 diff = n1 - n2;
-+
-+	return diff <= 0;
-+}
-+
-+static inline int iscsi_sna_gt(u32 n1, u32 n2)
-+{
-+	s32 diff = n1 - n2;
-+
-+	return diff > 0;
-+}
-+
-+static inline int iscsi_sna_gte(u32 n1, u32 n2)
-+{
-+	s32 diff = n1 - n2;
-+
-+	return diff >= 0;
-+}
-+
-+/*
-  * useful common(control and data pathes) macro
-  */
- #define ntoh24(p) (((p)[0] << 16) | ((p)[1] << 8) | ((p)[2]))
-@@ -559,7 +597,7 @@ struct iscsi_snack {
- 	uint8_t rsvd2[2];
- 	uint8_t hlength;
- 	uint8_t dlength[3];
--	uint8_t lun[8];
-+	uint8_t lun[8];	
- 	itt_t	 itt;
- 	__be32  ttt;
- 	uint8_t rsvd3[4];
+-		lun = cpu_to_be64(CMD_TFO(se_cmd)->pack_lun(deve->mapped_lun));
+-		buf[offset++] = ((lun >> 56) & 0xff);
+-		buf[offset++] = ((lun >> 48) & 0xff);
+-		buf[offset++] = ((lun >> 40) & 0xff);
+-		buf[offset++] = ((lun >> 32) & 0xff);
+-		buf[offset++] = ((lun >> 24) & 0xff);
+-		buf[offset++] = ((lun >> 16) & 0xff);
+-		buf[offset++] = ((lun >> 8) & 0xff);
+-		buf[offset++] = (lun & 0xff);
+-		cdb_offset += 8;
++		int_to_scsilun(deve->mapped_lun, (struct scsi_lun *)&buf[offset]);
++		cdb_offset += 16;
+ 	}
+ 	spin_unlock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
+ 
 -- 
 1.7.5.1
 
