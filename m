@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758864Ab1ELWAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 18:00:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13486 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757984Ab1ELWAx (ORCPT
+	id S1758881Ab1ELWFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 18:05:04 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48878 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758736Ab1ELWFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 18:00:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=nxsFC5SalTa3FXN3dLAebGLP0eS+/YrQZaTXPD0MNUHq/bLK54OgCQJWGjOt5isWJp
-         ynyBPVfZYkpdDiPX1hjA==
-Date: Thu, 12 May 2011 15:00:44 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect task->comm
- access
-In-Reply-To: <1305073386-4810-2-git-send-email-john.stultz@linaro.org>
-Message-ID: <alpine.DEB.2.00.1105121458130.7530@chino.kir.corp.google.com>
-References: <1305073386-4810-1-git-send-email-john.stultz@linaro.org> <1305073386-4810-2-git-send-email-john.stultz@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Thu, 12 May 2011 18:05:00 -0400
+Date: Thu, 12 May 2011 18:03:03 -0400 (EDT)
+Message-Id: <20110512.180303.182109841640606265.davem@davemloft.net>
+To: alan@lxorguk.ukuu.org.uk
+Cc: amit.virdi@st.com, samuel@sortiz.org, alan@linux.intel.com,
+        eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shiraz.hashim@st.com,
+        armando.visconti@st.com, viresh.kumar@st.com
+Subject: Re: [PATCH] net/irda/ircomm_tty.c: Use flip buffers to deliver data
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110512121751.61d62446@lxorguk.ukuu.org.uk>
+References: <1305198280-14449-1-git-send-email-amit.virdi@st.com>
+	<20110512121751.61d62446@lxorguk.ukuu.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 15:03:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 May 2011, John Stultz wrote:
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Thu, 12 May 2011 12:17:51 +0100
 
-> The implicit rules for current->comm access being safe without locking
-> are no longer true. Accessing current->comm without holding the task
-> lock may result in null or incomplete strings (however, access won't
-> run off the end of the string).
+> On Thu, 12 May 2011 16:34:40 +0530
+> Amit Virdi <amit.virdi@st.com> wrote:
 > 
-> In order to properly fix this, I've introduced a comm_lock seqlock
-> which will protect comm access and modified get_task_comm() and
-> set_task_comm() to use it.
+>> use tty_insert_flip_string and tty_flip_buffer_push to deliver incoming data
+>> packets from the IrDA device instead of delivering the packets directly to the
+>> line discipline. Following later approach resulted in warning "Sleeping function
+>> called from invalid context".
+>> 
+>> Signed-off-by: Amit Virdi <amit.virdi@st.com>
 > 
-> Since there are a number of cases where comm access is open-coded
-> safely grabbing the task_lock(), we preserve the task locking in
-> set_task_comm, so those users are also safe.
-> 
-> With this patch, users that access current->comm without a lock
-> are still prone to null/incomplete comm strings, but it should
-> be no worse then it is now.
-> 
-> The next step is to go through and convert all comm accesses to
-> use get_task_comm(). This is substantial, but can be done bit by
-> bit, reducing the race windows with each patch.
-> 
-> CC: Ted Ts'o <tytso@mit.edu>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: David Rientjes <rientjes@google.com>
-> CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: linux-mm@kvack.org
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> Acked-by: Alan Cox <alan@linux.intel.com>
 
-Acked-by: David Rientjes <rientjes@google.com>
+Applied to net-next-2.6, thanks.
