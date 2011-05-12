@@ -1,104 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab1ELQtU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 12:49:20 -0400
-Received: from smtpout02.highway.telekom.at ([195.3.96.113]:25329 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758044Ab1ELQtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 12:49:14 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [2.6.39 regression] i915/kms: garbled screen because of 49183b281  (was: Re: Linux 2.6.39-rc7)
-Date: Thu, 12 May 2011 18:49:08 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
-In-Reply-To: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1758082Ab1ELQwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 12:52:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44043 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758046Ab1ELQwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 12:52:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=guxS1g9gOyqMITU3eZiGRJPgcJjzP3HWUtXrcRj5Nc6u7FquouOXVDSr04Kf1mTuNW
+         DOfbQLKFoeyQ9wGNt6aQ==
+Date: Thu, 12 May 2011 09:52:04 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Miklos Szeredi <miklos@szeredi.hu>
+cc: Michal Suchanek <hramrach@centrum.cz>, Andreas Dilger <adilger@dilger.ca>,
+        Jiri Kosina <jkosina@suse.cz>, Ric Wheeler <ricwheeler@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Ian Kent <ikent@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: Re: [PATCH] tmpfs: implement generic xattr support
+In-Reply-To: <87oc38m31z.fsf@tucsk.pomaz.szeredi.hu>
+Message-ID: <alpine.LSU.2.00.1105120929190.2735@sister.anvils>
+References: <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <alpine.LRH.2.00.1104131618170.6953@twin.jikos.cz> <BANLkTindBULU9KAVWPJQ7oQvfCNQU-BuAg@mail.gmail.com>
+ <BANLkTin6CVFOAECWwYg3B5V2AfscFfjt8w@mail.gmail.com> <BANLkTik7jasnvqFQohRdU-3crM8fr9pBXg@mail.gmail.com> <BANLkTikF_hgYSaZJbZosWwcs715tLXYfmQ@mail.gmail.com> <BANLkTikTUo17RncV7bushPTri=LEykep5g@mail.gmail.com> <BANLkTikUe_2Uo2_tSYdfNoNXKYO4Bj30iQ@mail.gmail.com>
+ <C450CD68-10AE-4527-B6BF-A5D5F0BF005F@dilger.ca> <BANLkTinMNL8Q+_MCHDqAGSdYNAvHB2GdLw@mail.gmail.com> <87tydu3t4p.fsf_-_@tucsk.pomaz.szeredi.hu> <alpine.LSU.2.00.1105112023560.1424@sister.anvils> <87sjskm7dk.fsf@tucsk.pomaz.szeredi.hu>
+ <87oc38m31z.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105121849.09225@rk-nord.at>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds -- Tuesday 10 May 2011:
-> But please do test, just to make sure that 39-final is good.
+On Thu, 12 May 2011, Miklos Szeredi wrote:
+> Miklos Szeredi <miklos@szeredi.hu> writes:
+> 
+> >>> +	info = SHMEM_I(dentry->d_inode);
+> >>> +
+> >>> +	spin_lock(&dentry->d_inode->i_lock);
+> >>
+> >> Not important, but I suggest you use info->lock throughout for this,
+> >> instead of dentry->d_inode->i_lock: in each case you need "info" for
+> >> info->xattr_list (and don't need "inode" at all I think), so info->lock
+> >> seems appropriate, and may be in the same cacheline once I make
+> >> shmem_inode_info smaller.  But don't worry if you'd prefer to leave
+> >> it.
+> >
+> > Makes sense.  I updated the locking.
+> 
+> This uncovered a nasty bug lurking in there: the "info" area, including
+> lock and xattr_list, may be overwritten by inline symlinks.  Because
+> xattr_list is near the end, this wasn't noticed with casual testing, but
+> info->lock would immediately Oops on getxattr for symlinks.
 
-> Chris Wilson (4):
->       drm/i915: Only enable the plane after setting the fb base (pre-ILK)
+Yikes, I'd completely forgotten about those inline symlinks:
+many thanks for reminding me.
 
-This patch introduces a bug on my infamous "Acer Travelmate
-5735Z-452G32Mnss": when KMS takes over, the frame buffer contents
-get completely garbled up on screen, with colored stripes and
-unreadable text (photo on request). Only when X11 is started, the
-screen gets restored again. Closing and re-opening the lid partly
-cures the mess, too: it makes the font readable, though horizontally
-stretched.
+> 
+> I propose the following solution.  It results in slightly less space for
+> inline symlinks, but correct operation for xattrs.  Does the anonymous
+> union/struct solution look acceptable?
 
-Reverting 49183b2818de6899383bb82bc032f9344d6791ff fixes the
-bug.
+You're being conscientious to minimize the space reduction, and I wonder
+if I'm being sloppy about it: but I think I'd prefer you to keep it simple
+and just make a union of the i_direct[SHMEM_NR_DIRECT] array and the inline
+symlink buffer.  That does waste space that was occasionally being put to
+use before, but saves us from embarrassment next time we forget about the
+inline symlinks.
 
-m.
+I intend to be removing that i_direct array very soon: I guess I'll want
+to kmalloc for short symlinks then, certainly not overlaying over what
+fields are left: so you'd be moving in that direction if you just reuse
+the i_direct area now.
 
+Hugh
 
-
-
-
-drm.debug=0x02
-
-[    2.604831] [drm] Initialized drm 1.1.0 20060810
-[    2.648409] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[    2.648415] i915 0000:00:02.0: setting latency timer to 64
-[    2.708949] [drm:intel_opregion_setup], graphic opregion physical addr: 0x7ba8c018
-[    2.708987] [drm:intel_opregion_setup], Public ACPI methods supported
-[    2.708989] [drm:intel_opregion_setup], SWSCI supported
-[    2.708991] [drm:intel_opregion_setup], ASLE supported
-[    2.709047] i915 0000:00:02.0: irq 44 for MSI/MSI-X
-[    2.709053] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[    2.709054] [drm] Driver supports precise vblank timestamp query.
-[    2.735626] [drm:init_status_page], render ring hws offset: 0x00000000
-[    2.735747] [drm:init_status_page], bsd ring hws offset: 0x00021000
-[    2.735852] [drm:intel_parse_bios], Using VBT from OpRegion: $VBT CANTIGA        d
-[    2.779279] [drm:intel_panel_get_backlight], get backlight PWM = 0
-[    2.779287] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-[    2.779616] [drm:intel_panel_set_backlight], set backlight PWM = 0
-[    2.779619] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[    2.779626] [drm:intel_opregion_asle_intr], non asle set request??
-[    3.022059] [drm:gm45_get_vblank_counter], trying to get vblank count for disabled pipe A
-[    3.022065] [drm:gm45_get_vblank_counter], trying to get vblank count for disabled pipe A
-[    3.074270] checking generic (80000000 3ff0000) vs hw (80000000 10000000)
-[    3.074274] fb: conflicting fb hw usage inteldrmfb vs VESA VGA - removing generic driver
-[    3.074293] Console: switching to colour dummy device 80x25
-[    3.074806] fbcon: inteldrmfb (fb0) is primary device
-[    3.109085] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[    3.109087] [drm:intel_panel_set_backlight], set backlight PWM = 736950
-[    3.109090] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[    3.109098] [drm:intel_opregion_asle_intr], non asle set request??
-[    3.109111] Console: switching to colour frame buffer device 170x48
-[    3.111779] fb0: inteldrmfb frame buffer device
-[    3.111780] drm: registered panic notifier
-[    3.158015] scsi 4:0:0:0: Direct-Access     Generic- Multi-Card       1.00 PQ: 0 ANSI: 0 CCS
-[    3.413081] acpi device:07: registered as cooling_device2
-[    3.413431] input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:01/input/input6
-[    3.413532] ACPI: Video Device [OVGA] (multi-head: yes  rom: no  post: no)
-[    3.413982] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-[    4.059019] sd 4:0:0:0: [sdb] 15720448 512-byte logical blocks: (8.04 GB/7.49 GiB)
-[    4.059746] sd 4:0:0:0: [sdb] Write Protect is off
-[    4.059750] sd 4:0:0:0: [sdb] Mode Sense: 03 00 00 00
-[    4.059752] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[    4.061879] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[    4.066269]  sdb: sdb1
-[    4.067995] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[    4.068056] sd 4:0:0:0: [sdb] Attached SCSI removable disk
-[    5.016884] md: linear personality registered for level -1
-[   94.800469] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[   94.800473] [drm:intel_panel_set_backlight], set backlight PWM = 72250
-[   94.800477] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[   94.800482] [drm:intel_opregion_asle_intr], non asle set request??
-[   94.800485] [drm:intel_opregion_asle_intr], non asle set request??
+> 
+> Thanks,
+> Miklos
+> 
+> Index: linux-2.6/include/linux/shmem_fs.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/shmem_fs.h	2011-05-12 15:59:08.000000000 +0200
+> +++ linux-2.6/include/linux/shmem_fs.h	2011-05-12 15:58:25.000000000 +0200
+> @@ -11,15 +11,39 @@
+>  
+>  struct shmem_inode_info {
+>  	spinlock_t		lock;
+> -	unsigned long		flags;
+> -	unsigned long		alloced;	/* data pages alloced to file */
+> -	unsigned long		swapped;	/* subtotal assigned to swap */
+> -	unsigned long		next_index;	/* highest alloced index + 1 */
+> -	struct shared_policy	policy;		/* NUMA memory alloc policy */
+> -	struct page		*i_indirect;	/* top indirect blocks page */
+> -	swp_entry_t		i_direct[SHMEM_NR_DIRECT]; /* first blocks */
+> -	struct list_head	swaplist;	/* chain of maybes on swap */
+> -	struct list_head	xattr_list;	/* list of shmem_xattr */
+> +
+> +	/* list of shmem_xattr */
+> +	struct list_head	xattr_list;
+> +
+> +	union {
+> +		char			inline_symlink[0];
+> +
+> +		/* Members not used by inline symlinks: */
+> +		struct {
+> +			unsigned long		flags;
+> +
+> +			/* data pages alloced to file */
+> +			unsigned long		alloced;
+> +
+> +			/* subtotal assigned to swap */
+> +			unsigned long		swapped;
+> +
+> +			/* highest alloced index + 1 */
+> +			unsigned long		next_index;
+> +
+> +			/* NUMA memory alloc policy */
+> +			struct shared_policy	policy;
+> +
+> +			/* top indirect blocks page */
+> +			struct page		*i_indirect;
+> +
+> +			/* first blocks */
+> +			swp_entry_t		i_direct[SHMEM_NR_DIRECT];
+> +
+> +			/* chain of maybes on swap */
+> +			struct list_head	swaplist;
+> +		};
+> +	};
+>  	struct inode		vfs_inode;
+>  };
+>  
+> Index: linux-2.6/mm/shmem.c
+> ===================================================================
+> --- linux-2.6.orig/mm/shmem.c	2011-05-12 15:59:08.000000000 +0200
+> +++ linux-2.6/mm/shmem.c	2011-05-12 15:50:10.000000000 +0200
+> @@ -2029,9 +2029,9 @@ static int shmem_symlink(struct inode *d
+>  
+>  	info = SHMEM_I(inode);
+>  	inode->i_size = len-1;
+> -	if (len <= (char *)inode - (char *)info) {
+> +	if (len <= (char *)inode - info->inline_symlink) {
+>  		/* do it inline */
+> -		memcpy(info, symname, len);
+> +		memcpy(info->inline_symlink, symname, len);
+>  		inode->i_op = &shmem_symlink_inline_operations;
+>  	} else {
+>  		error = shmem_getpage(inode, 0, &page, SGP_WRITE, NULL);
+> @@ -2057,7 +2057,7 @@ static int shmem_symlink(struct inode *d
+>  
+>  static void *shmem_follow_link_inline(struct dentry *dentry, struct nameidata *nd)
+>  {
+> -	nd_set_link(nd, (char *)SHMEM_I(dentry->d_inode));
+> +	nd_set_link(nd, SHMEM_I(dentry->d_inode)->inline_symlink);
+>  	return NULL;
+>  }
