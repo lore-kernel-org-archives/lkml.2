@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab1ELV2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 17:28:18 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:32911 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758736Ab1ELV2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 17:28:17 -0400
-Date: Thu, 12 May 2011 23:28:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely callable
- from scheduler
-Message-ID: <20110512212810.GA17596@elte.hu>
-References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
- <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
+	id S932782Ab1ELV3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 17:29:20 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:22155 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758730Ab1ELV3S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 17:29:18 -0400
+Message-ID: <4DCC512E.1000603@bluewatersys.com>
+Date: Fri, 13 May 2011 09:29:18 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        mchehab@redhat.com, linux-kernel@vger.kernel.org,
+        Josh Wu <josh.wu@atmel.com>, lars.haring@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)
+ support
+References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>	<20110512114530.GE18952@game.jcrosoft.org> <Pine.LNX.4.64.1105121413220.24486@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1105121413220.24486@axis700.grange>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> Avoid potential scheduler recursion and deadlock from the
-> stacktrace code by avoiding rescheduling when we re-enable
-> preemption.
+On 05/13/2011 12:14 AM, Guennadi Liakhovetski wrote:
+> On Thu, 12 May 2011, Jean-Christophe PLAGNIOL-VILLARD wrote:
 > 
-> This robustifies some scheduler trace events like sched switch
-> when they are used to produce callchains in perf or ftrace.
+> [snip]
+> 
+>>> +	if (0 == *nbuffers)
+>> please invert the test
+> 
+> Don't think this is required by CodingStyle or anything like that. If it 
+> were, you'd have to revamp half of the kernel.
 
-> -	put_cpu();
-> +
-> +	/* We want stacktrace to be computable anywhere, even in the scheduler */
-> +	preempt_enable_no_resched();
+It should at least be consistent within a file, which it is not true in
+this case. I think the preferred style is to have the variable on the left.
 
-So what happens if a callchain profiling happens to be interrupted by a hardirq 
-and the interrupt reschedules the current task? We'll miss the reschedule, 
-right?
+~Ryan
 
-preempt_enable_no_resched() is not a magic 'solve scheduler recursions' bullet 
-- it's to be used only if something else will guarantee the preemption check! 
-But nothing guarantees it here AFAICS.
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
-A better fix would be to use local_irq_save()/restore().
-
-Thanks,
-
-	Ingo
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
