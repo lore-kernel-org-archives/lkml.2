@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab1ELJFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:05:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39493 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab1ELJFT (ORCPT
+	id S1755664Ab1ELJK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:10:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49507 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab1ELJKZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:05:19 -0400
-Subject: Re: [PATCH v1 00/19] Increase resolution of load weights
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Stephan Barwolf <stephan.baerwolf@tu-ilmenau.de>
-In-Reply-To: <BANLkTi=rnOZb-E35SC5B9Xb3SXMwFZi=Fg@mail.gmail.com>
-References: <1304299157-25769-1-git-send-email-ncrao@google.com>
-	 <20110502061411.GA16682@elte.hu>
-	 <BANLkTiktch2mHDLXZCdCED3XoqmkVRfghA@mail.gmail.com>
-	 <20110504111355.GC5914@elte.hu>
-	 <BANLkTi=rnOZb-E35SC5B9Xb3SXMwFZi=Fg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 11:08:20 +0200
-Message-ID: <1305191300.2914.263.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 May 2011 05:10:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=oycm5KIGH2gO7lrMS0NLvZP7qG8YzL8+5nWEuOR7QPLX1yPIJyqQWFbGIFNxsRYp/D
+         Y+Fn8FrHw4UHDXgZ2960ykhCqLLZglHnx9qbU3Yjuj8rzUhNbkkvCSBny/vAtvQKCmYY
+         2N0dJVqVBrjUZyUPvmoQAbrhUCC28NoAPro5s=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikFSN-DkkPNPtv1VigCg08YoB_q2g@mail.gmail.com>
+References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+	<BANLkTi=y60Jt3-OMzbxQJzGkvzCzNJfJtA@mail.gmail.com>
+	<BANLkTimfFEv+vZ8dYvhG0oj2Q4g+KnG4aA@mail.gmail.com>
+	<BANLkTinDiGCaKPtS+ZpKf2swJpParJ4eew@mail.gmail.com>
+	<BANLkTi=JXq+V783amiJB-qLX=7PaeH-83w@mail.gmail.com>
+	<BANLkTi=OXuR4iJFqUEa4pA=yO0aXaqEzyA@mail.gmail.com>
+	<BANLkTikFSN-DkkPNPtv1VigCg08YoB_q2g@mail.gmail.com>
+Date: Thu, 12 May 2011 11:10:24 +0200
+X-Google-Sender-Auth: GHxI7IM11GsE-r8t4DkXkyam7Rg
+Message-ID: <BANLkTi=fhsSP069WMNPN8BA=E1=1TZ6Zmw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Speed up the symbols' resolution process V4
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-05 at 18:29 -0700, Nikhil Rao wrote:
-> > It's a cost/benefit analysis and for 32-bit systems the benefits seem to be
-> > rather small, right?
-> >
-> 
-> Yes, that's right. The benefits for 32-bit systems do seem to be limited.
+Dear Mr. Frysinger,
 
-deep(er) hierarchies on 32 bits still require this, it would be good to
-verify that the cgroup mess created by the insanity called libvirt will
-indeed work as expected.
+Thank you for excellent explanation!
 
+2011/5/11 Mike Frysinger <vapier.adi@gmail.com>:
+[...]
+> if you export _foo/foo, you'll get an error with the current code:
+> /* EXPORT_SYMBOL(foo); */
+>        .section        ___ksymtab__foo,"a",@progbits
+> ___ksymtab_foo:
+> /* EXPORT_SYMBOL(_foo); */
+>        .section        ___ksymtab___foo,"a",@progbits
+> ___ksymtab__foo:
+[...]
 
+So I can suggest two possible solutions for section names:
 
+1) As you suggested change "__" to "+" so
+i.e. ___ksymtab+foo
+
+2) Pick a more appropriate name:
+i.e. ___ksym__foo
+or
+i.e. ___ksymsec__foo
+
+In fact these section names aren't a table of symbols (in ksymtab the
+"tab" part stand for table, I suppose) so I think that name should be
+changed accordingly (my patchset create a temporary section for every
+symbol).
+
+Which do you prefer?
+
+Ciao,
+Alessio
