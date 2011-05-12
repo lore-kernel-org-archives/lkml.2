@@ -1,68 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757679Ab1ELTe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:34:26 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.39.38]:58388 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757008Ab1ELTeY convert rfc822-to-8bit (ORCPT
+	id S1757473Ab1ELTif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:38:35 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:12893 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab1ELTid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:34:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=mc37+GMhs9foecrt6u1/Xqx+1l1E8cqWPeYtrHHGhUQrQFfCeru+2Dzb12pUFms+V/zXcpKyR8mBKH6JVBlrxdCa2bdsqnzcqC2lj50NjVVie8ZypidWLEuyzUueqyVP;
-Date: Thu, 12 May 2011 12:34:12 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ram Pai <linuxram@us.ibm.com>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH -v2] pci: Check bridge resources after resource
- allocation.
-Message-ID: <20110512123412.64e9b4cc@jbarnes-desktop>
-In-Reply-To: <BANLkTikt_oWhYHZwVMnrxvow4j+zkPuFCQ@mail.gmail.com>
-References: <20110506081243.GF16782@ram-laptop>
-	<4DC4586C.6020308@kernel.org>
-	<20110507015240.GN16782@ram-laptop>
-	<4DC4B059.3030502@kernel.org>
-	<4DC64C58.70203@kernel.org>
-	<20110509142014.617e3100@jbarnes-desktop>
-	<BANLkTi=U0LSj45y+5+n+7R=Cj4uRqk-LQw@mail.gmail.com>
-	<4DC9E415.5010402@kernel.org>
-	<20110512180638.GA5012@ram-laptop>
-	<BANLkTikGG6F22+JEtueF8c5xjX9bBPp+0A@mail.gmail.com>
-	<20110512182229.GQ8195@ram-laptop>
-	<20110512113726.123fd85b@jbarnes-desktop>
-	<BANLkTikt_oWhYHZwVMnrxvow4j+zkPuFCQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 12 May 2011 15:38:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=R4VOC91YtjhJz1508drMnHD3bCYuZ1drUbIxqPYzdXz2D2p4lXgEyicBS/b9hzc7ul
+         onKcHIrnwXq6zzaqSF+A==
+Date: Thu, 12 May 2011 12:38:28 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: CAI Qian <caiqian@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: OOM Killer don't works at all if the system have >gigabytes
+ memory (was Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable())
+In-Reply-To: <BANLkTi=fNtPZQk5Mp7rbZJFpA1tzBh+VcA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1105121229150.2407@chino.kir.corp.google.com>
+References: <1889981320.330808.1305081044822.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <alpine.DEB.2.00.1105111331480.9346@chino.kir.corp.google.com> <BANLkTi=fNtPZQk5Mp7rbZJFpA1tzBh+VcA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-109542298-1305229109=:2407"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 12:18:43 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Thu, May 12, 2011 at 11:37 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+--531368966-109542298-1305229109=:2407
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Thu, 12 May 2011, Minchan Kim wrote:
+
+> > processes a 1% bonus for every 30% of memory they use as proposed
+> > earlier.)
+> 
+> I didn't follow earlier your suggestion.
+> But it's not formal patch so I expect if you send formal patch to
+> merge, you would write down the rationale.
+> 
+
+Yes, I'm sure we'll still have additional discussion when KOSAKI-san 
+replies to my review of his patchset, so this quick patch was written only 
+for CAI's testing at this point.
+
+In reference to the above, I think that giving root processes a 3% bonus 
+at all times may be a bit aggressive.  As mentioned before, I don't think 
+that all root processes using 4% of memory and the remainder of system 
+threads are using 1% should all be considered equal.  At the same time, I 
+do not believe that two threads using 50% of memory should be considered 
+equal if one is root and one is not.  So my idea was to discount 1% for 
+every 30% of memory that a root process uses rather than a strict 3%.
+
+That change can be debated and I think we'll probably settle on something 
+more aggressive like 1% for every 10% of memory used since oom scores are 
+only useful in comparison to other oom scores: in the above scenario where 
+there are two threads, one by root and one not by root, using 50% of 
+memory each, I think it would be legitimate to give the root task a 5% 
+bonus so that it would only be selected if no other threads used more than 
+44% of memory (even though the root thread is truly using 50%).
+
+This is a heuristic within the oom killer badness scoring that can always 
+be debated back and forth, but I think a 1% bonus for root processes for 
+every 10% of memory used is plausible.
+
+Comments?
+
+> > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > --- a/mm/oom_kill.c
+> > +++ b/mm/oom_kill.c
+> > @@ -160,7 +160,7 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+> >         */
+> >        if (p->flags & PF_OOM_ORIGIN) {
+> >                task_unlock(p);
+> > -               return 1000;
+> > +               return 10000;
+> >        }
 > >
-> > Linus, I don't have anything else queued up, so you may as well take
-> > this one directly if you want it in 2.6.39. �It's a regression fix, but
-> > resource changes always make me nervous. �Alternately, I could put it
-> > into 2.6.40 instead, the backport to 2.6.39.x if it survives until
-> > 2.6.40-rc2 or so...
+> >        /*
+> > @@ -177,32 +177,32 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+> >        points = get_mm_rss(p->mm) + p->mm->nr_ptes;
+> >        points += get_mm_counter(p->mm, MM_SWAPENTS);
+> >
+> > -       points *= 1000;
+> > +       points *= 10000;
+> >        points /= totalpages;
+> >        task_unlock(p);
+> >
+> >        /*
+> > -        * Root processes get 3% bonus, just like the __vm_enough_memory()
+> > -        * implementation used by LSMs.
+> > +        * Root processes get 1% bonus per 30% memory used for a total of 3%
+> > +        * possible just like LSMs.
+> >         */
+> >        if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+> > -               points -= 30;
+> > +               points -= 100 * (points / 3000);
+> >
+> >        /*
+> >         * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+> >         * either completely disable oom killing or always prefer a certain
+> >         * task.
+> >         */
+> > -       points += p->signal->oom_score_adj;
+> > +       points += p->signal->oom_score_adj * 10;
+> >
+> >        /*
+> >         * Never return 0 for an eligible task that may be killed since it's
+> > -        * possible that no single user task uses more than 0.1% of memory and
+> > +        * possible that no single user task uses more than 0.01% of memory and
+> >         * no single admin tasks uses more than 3.0%.
+> >         */
+> >        if (points <= 0)
+> >                return 1;
+> > -       return (points < 1000) ? points : 1000;
+> > +       return (points < 10000) ? points : 10000;
+> >  }
+> >
+> >  /*
+> > @@ -314,7 +314,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+> >                         */
+> >                        if (p == current) {
+> >                                chosen = p;
+> > -                               *ppoints = 1000;
+> > +                               *ppoints = 10000;
 > 
-> Considering the trouble resource allocation always ends up being, I'd
-> almost prefer that "mark it for stable and put it in the 2.6.40
-> queue".
+> Scattering constant value isn't good.
+> You are proving it now.
+> I think you did it since this is not a formal patch.
+> I expect you will define new value (ex, OOM_INTERNAL_MAX_SCORE or whatever)
 > 
-> Afaik this problem hasn't actually hit any "normal" users, has it? So ...
 
-Sounds good, thanks.  Yeah I don't think it's hit anyone but Yinghai
-(at least I don't know of any other reports).
+Right, we could probably do something like
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+	#define OOM_SCORE_MAX_FACTOR	10
+	#define OOM_SCORE_MAX		(OOM_SCORE_ADJ_MAX * OOM_SCORE_MAX_FACTOR)
+
+in mm/oom_kill.c, which would then be used to replace all of the constants 
+above since OOM_SCORE_ADJ_MAX is already defined to be 1000 in 
+include/linux/oom.h.
+--531368966-109542298-1305229109=:2407--
