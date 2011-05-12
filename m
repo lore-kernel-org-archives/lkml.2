@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab1ELTTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:19:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:1571 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932544Ab1ELTTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:19:14 -0400
-From: Joe Perches <joe@perches.com>
-To: Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] sctp: sctp_sendmsg: Don't test known non-null sinfo
-Date: Thu, 12 May 2011 12:19:10 -0700
-Message-Id: <b6372a0ac574e3fd110de57eb3e41d97c73d5423.1305227621.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.5.rc3.dirty
-In-Reply-To: <cover.1305227620.git.joe@perches.com>
-References: <cover.1305227620.git.joe@perches.com>
+	id S1757449Ab1ELTVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:21:17 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50924 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753692Ab1ELTVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 15:21:16 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1105121345450.29359@router.home>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
+	 <1305225467.2575.66.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121345450.29359@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 14:21:12 -0500
+Message-ID: <1305228072.2575.67.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's already known non-null above.
+On Thu, 2011-05-12 at 13:46 -0500, Christoph Lameter wrote:
+> On Thu, 12 May 2011, James Bottomley wrote:
+> 
+> > On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
+> > > On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
+> > > > However, since you admit even you see problems, let's concentrate on
+> > > > fixing them rather than recriminations?
+> > >
+> > > Yes, please. So does dropping max_order to 1 help?
+> > > PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
+> >
+> > Just booting with max_slab_order=1 (and none of the other patches
+> > applied) I can still get the machine to go into kswapd at 99%, so it
+> > doesn't seem to make much of a difference.
+> 
+> slub_max_order=1 right? Not max_slab_order.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/sctp/socket.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+Yes.
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index a5d3560..10ebcd7 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -1793,12 +1793,10 @@ SCTP_STATIC int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
- 		goto out_free;
- 	}
- 
--	if (sinfo) {
--		/* Check for invalid stream. */
--		if (sinfo->sinfo_stream >= asoc->c.sinit_num_ostreams) {
--			err = -EINVAL;
--			goto out_free;
--		}
-+	/* Check for invalid stream. */
-+	if (sinfo->sinfo_stream >= asoc->c.sinit_num_ostreams) {
-+		err = -EINVAL;
-+		goto out_free;
- 	}
- 
- 	timeo = sock_sndtimeo(sk, msg->msg_flags & MSG_DONTWAIT);
--- 
-1.7.5.rc3.dirty
+James
+
 
