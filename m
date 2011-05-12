@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab1EKPhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 11:37:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21107 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719Ab1EKPho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 11:37:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,353,1301900400"; 
-   d="scan'208";a="925346"
-Date: Wed, 11 May 2011 23:39:23 -0400
-From: Youquan Song <youquan.song@linux.intel.com>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: "Song, Youquan" <youquan.song@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "Kay, Allen M" <allen.m.kay@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Liu, Kent" <kent.liu@intel.com>,
-        Youquan Song <youquan.song@linux.intel.com>, rajesh.sankaran@intel.com,
-        asit.k.mallick@intel.com
-Subject: Re: [PATCH v2] x86, vt-d: enable x2apic opt out
-Message-ID: <20110512033923.GA19708@linux-youquan.bj.intel.com>
-References: <1302764783-24491-1-git-send-email-youquan.song@intel.com> <1305126431.30435.163.camel@i7.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305126431.30435.163.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752140Ab1ELDqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 23:46:39 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44901 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab1ELDqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 23:46:38 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 12 May 2011 12:39:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 2/4] oom: kill younger process first
+Message-Id: <20110512123942.4b641e2d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTimWOtKKj+Jq1vqHfOfQ2UvP7Xxa3g@mail.gmail.com>
+References: <20110509182110.167F.A69D9226@jp.fujitsu.com>
+	<20110510171335.16A7.A69D9226@jp.fujitsu.com>
+	<20110510171641.16AF.A69D9226@jp.fujitsu.com>
+	<20110512095243.c57e3e83.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTi=ya1rAqC+nMPHkBaMsoXpsCeHH=w@mail.gmail.com>
+	<20110512105351.a57970d7.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTimWOtKKj+Jq1vqHfOfQ2UvP7Xxa3g@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> Given that x2apic is *required* to be safe from irq injection tricks,
-> why would we ever want to manually disable it?
-> Is this just a workaround for a crappy BIOS? What is the *actual* reason
-> for wanting to disable x2apic?
+On Thu, 12 May 2011 11:23:38 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-The VT-d 1.3 version specification add this new feature because OEM
-request it. If OEM platform has issues to support x2apic or BIOS is 
-buggy to support x2apic, there is alternative way to opt out x2apic. 
+> On Thu, May 12, 2011 at 10:53 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Thu, 12 May 2011 10:30:45 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Refer to VT-d 1.3 specification Chpater 8.1.
+> > As above implies, (B)->prev pointer is invalid pointer after list_del().
+> > So, there will be race with list modification and for_each_list_reverse under
+> > rcu_read__lock()
+> >
+> > So, when you need to take atomic lock (as tasklist lock is) is...
+> >
+> >  1) You can't check 'entry' is valid or not...
+> >    In above for_each_list_rcu(), you may visit an object which is under removing.
+> >    You need some flag or check to see the object is valid or not.
+> >
+> >  2) you want to use list_for_each_safe().
+> >    You can't do list_del() an object which is under removing...
+> >
+> >  3) You want to walk the list in reverse.
+> >
+> >  3) Some other reasons. For example, you'll access an object pointed by the
+> >    'entry' and the object is not rcu safe.
+> >
+> > make sense ?
+> 
+> Yes. Thanks, Kame.
+> It seems It is caused by prev poisoning of list_del_rcu.
+> If we remove it, isn't it possible to traverse reverse without atomic lock?
+> 
 
-Thanks
--Youquan
+IIUC, it's possible (Fix me if I'm wrong) but I don't like that because of 2 reasons.
+
+1. LIST_POISON is very important information at debug.
+
+2. If we don't clear prev pointer, ok, we'll allow 2 directional walk of list
+   under RCU.
+   But, in following case
+   1. you are now at (C). you'll visit (C)->next...(D)
+   2. you are now at (D). you want to go back to (C) via (D)->prev.
+   3. But (D)->prev points to (B)
+
+  It's not a 2 directional list, something other or broken one.
+  Then, the rculist is 1 directional list in nature, I think. 
+
+So, without very very big reason, we should keep POISON.
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
+
 
