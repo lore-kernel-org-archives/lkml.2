@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab1ELR0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:26:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56592 "EHLO mx1.redhat.com"
+	id S1758207Ab1ELR0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:26:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44697 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758211Ab1ELR0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:26:48 -0400
-Date: Thu, 12 May 2011 19:25:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 09/11] job control: reorganize wait_task_stopped()
-Message-ID: <20110512172506.GA23033@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-10-git-send-email-tj@kernel.org> <20110511154854.GB23688@redhat.com> <20110511192902.GC24245@mtj.dyndns.org> <20110512154247.GC18599@redhat.com> <20110512160253.GK1030@htj.dyndns.org>
+	id S1758127Ab1ELR0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:26:32 -0400
+Date: Thu, 12 May 2011 19:25:14 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mm: slub: Do not take expensive steps for SLUBs
+ speculative high-order allocations
+Message-ID: <20110512172514.GI11579@random.random>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
+ <1305127773-10570-3-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1105111312020.9346@chino.kir.corp.google.com>
+ <20110511211043.GB17898@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110512160253.GK1030@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110511211043.GB17898@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12, Tejun Heo wrote:
->
-> Hello,
->
-> On Thu, May 12, 2011 at 05:42:47PM +0200, Oleg Nesterov wrote:
-> > On 05/11, Tejun Heo wrote:
-> > >
-> > > > Can't we push this patch ahead of these changes? I can merge it into
-> > > > ptrace branch.
-> > >
-> > > It doesn't really fix the problem tho.  The whole thing is full of
-> > > holes
-> >
-> > Hmm. Could you explain?  (unless you mean ptrace holes)
->
-> I meant other cases, RUNNING -> STOPPED and EXIT_* transitions.
-> Sleeping wait(2) is reliable without grabbing siglock thanks to
-> setting TASK_INTERRUPTIBLE on start and events waking up the waiter
-> after updating the state, so wait(2) is guaranteed to check the states
-> at least once after change actually has happened.
->
-> WNOHANG disables that mechanism.
+Hi,
 
-Yes, this is clear. WNOHANG can "race" with the transitions above.
-But we do not care, this is like reading the word which can be
-changed by another thread, no?
+On Wed, May 11, 2011 at 10:10:43PM +0100, Mel Gorman wrote:
+> > > diff --git a/mm/slub.c b/mm/slub.c
+> > > index 98c358d..1071723 100644
+> > > --- a/mm/slub.c
+> > > +++ b/mm/slub.c
+> > > @@ -1170,7 +1170,8 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+> > >  	 * Let the initial higher-order allocation fail under memory pressure
+> > >  	 * so we fall-back to the minimum order allocation.
+> > >  	 */
+> > > -	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_NOFAIL;
+> > > +	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) &
+> > > +			~(__GFP_NOFAIL | __GFP_WAIT);
+> > 
+> > __GFP_NORETRY is a no-op without __GFP_WAIT.
+> > 
+> 
+> True. I'll remove it in a V2 but I won't respin just yet.
 
-But this bug is different. Say, the parent does wait(WNOWAIT) and
-gets CLD_STOPPED. After that it has all rights to assume that
-wait(WNOHANG) must report either STOPPED or CONTINUED.
+Nothing wrong and no performance difference with clearing
+__GFP_NORETRY too, if something it doesn't make sense for a caller to
+use __GFP_NOFAIL without __GFP_WAIT so the original version above
+looks cleaner. I like this change overall to only poll the buddy
+allocator without spinning kswapd and without invoking lumpy reclaim.
 
-Oleg.
+Like you noted in the first mail, compaction was disabled, and very
+bad behavior is expected without it unless GFP_ATOMIC|__GFP_NO_KSWAPD
+is set (that was the way I had to use before disabling lumpy
+compaction when first developing THP too for the same reasons).
 
+But when compaction enabled slub could try to only clear __GFP_NOFAIL
+and leave __GFP_WAIT and no bad behavior should happen... but it's
+probably slower so I prefer to clear __GFP_WAIT too (for THP
+compaction is worth it because the allocation is generally long lived,
+but for slub allocations like tiny skb the allocation can be extremely
+short lived so it's unlikely to be worth it). So this way compaction
+is then invoked only by the minimal order allocation later if needed.
