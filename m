@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab1ELJFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 05:05:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52801 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab1ELJFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 05:05:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aKY59aFH4w405EO5D2yu1jI44tbCxsyMZWZYuerPbRiG4AXkaWYncFEInp/LaOcztz
-         3oMirF2LhH0QmqmDM55d3aviiBugxZ8w64fTZFHF8F23leIixG1TF0eNo7akmB61Ltvb
-         8YD7ji7Zkkf4y8ccv5lDzT9JTKMUvfc7g2eWg=
-Date: Thu, 12 May 2011 11:05:34 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Shaohua Li <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
-Message-ID: <20110512090534.GE1030@htj.dyndns.org>
-References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
- <20110511092848.GE1661@htj.dyndns.org>
- <1305168493.2373.15.camel@sli10-conroe>
- <20110512082159.GB1030@htj.dyndns.org>
- <1305190520.2373.18.camel@sli10-conroe>
- <20110512085922.GD1030@htj.dyndns.org>
- <1305190936.3795.1.camel@edumazet-laptop>
+	id S1755608Ab1ELJGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 05:06:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755008Ab1ELJGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 05:06:15 -0400
+Message-ID: <4DCBA2FB.3040907@redhat.com>
+Date: Thu, 12 May 2011 11:06:03 +0200
+From: Zdenek Kabelac <zkabelac@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc16 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305190936.3795.1.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        Matthew Wilcox <matthew@wil.cx>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] Don't mlock guardpage if the stack is growing up
+References: <alpine.DEB.2.00.1105082045250.15552@artax.karlin.mff.cuni.cz> <BANLkTikEpaRZK3X4YReeQAwgcv3HAGUwSw@mail.gmail.com> <alpine.DEB.2.00.1105091246550.32299@artax.karlin.mff.cuni.cz> <4DC7D37F.9040308@redhat.com> <20110509224511.GC15227@parisc-linux.org> <BANLkTikz-sGiy2NdzQMPzCWF64cVF-DZ7w@mail.gmail.com> <20110510225659.GE9253@agk-dp.fab.redhat.com> <4DCA4C05.4030803@redhat.com> <BANLkTi=4raxPiRzBH=b44=SLsAujhx2xUw@mail.gmail.com>
+In-Reply-To: <BANLkTi=4raxPiRzBH=b44=SLsAujhx2xUw@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, May 12, 2011 at 11:02:15AM +0200, Eric Dumazet wrote:
-> > I don't think @maxfuzzy is necessary there.  I wrote this before but
-> > why can't we track the actual deviation instead of the number of
-> > deviation events?
+Dne 12.5.2011 04:12, Linus Torvalds napsal(a):
+> On Wed, May 11, 2011 at 1:42 AM, Milan Broz <mbroz@redhat.com> wrote:
+>>
+>> Another one is cryptsetup [..]
 > 
-> Thats roughly same thing (BATCH multiplicator factor apart)
+> Quite frankly, all security-related uses should always be happy about
+> a "MCL_SPARSE" model, since there is no point in ever bringing in
+> pages that haven't been used. The whole (and only) point of
+> mlock[all]() for them is the "avoid to push to disk" issue.
 > 
-> Most percpu_counter users for a given percpu_counter object use a given
-> BATCH, dont they ?
+> I do wonder if we really should ever do the page-in at all. We might
+> simply be better off always just saying "we'll lock pages you've
+> touched, that's it".
+> 
 
-Well, @maxfuzzy is much harder than @batch.  It's way less intuitive.
-Although I haven't really thought about it that much, I think it might
-be possible to eliminate it.  Maybe I'm confused.  I'll take another
-look later but if someone can think of something, please jump right
-in.
 
-Thanks.
+For LVM we need to ensure the code which might ever be executed during  disk
+suspend state must be paged and locked in - thus we would need MCL_SPARSE only
+on several selected 'unneeded' libraries - as we are obviously not really able
+to select which part of glibc might be needed during all code path (though I
+guess we may find some limits).  But if we are sure that some libraries and
+locale files will never be used during suspend state - we do not care about
+those pages at all.
 
--- 
-tejun
+So it's not like we would always need only MCL_SPARSE all the time - we would
+probably need to have some control to switch i.e.  glibc into MCL_ALL.
+
+Zdenek
