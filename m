@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab1ELMBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 08:01:08 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:48023 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753196Ab1ELMBG (ORCPT
+	id S1756760Ab1ELMBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 08:01:24 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:43423 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab1ELMBW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 08:01:06 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>
-Cc: <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com> <4DCAE163.2050602@metafoo.de>
-Subject: RE: Question: GPIO driver how to get irq_base
-Date: Thu, 12 May 2011 21:01:04 +0900
-Message-ID: <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com>
+	Thu, 12 May 2011 08:01:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iImwphsql7Ws3wxUHUinnyPC4KF9X/A+hO36gDqsm5WWoC4C6TZWCxzpXUhZsEGJ91
+         Em+GbkZHWQwjKMwiJ20WxHTL4gIUp+x9upNeVTsiYLvzQV07JzLLhrOS5Xf+fX7FhgIr
+         ZL5m3HIL8iMPBv8Q2eOW7LUKdUVRflmyKFz3Q=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <4DCAE163.2050602@metafoo.de>
-Thread-Index: AcwQEIL8P0V3oljIRJ6wdVExyUuARAAiwC2w
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+In-Reply-To: <BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
+References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
+	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
+	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
+	<009c01cc108b$4635c7d0$d2a15770$@com>
+	<BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
+Date: Thu, 12 May 2011 20:01:21 +0800
+Message-ID: <BANLkTim7d-szCHm1F2Hndiraa0u5795tbg@mail.gmail.com>
+Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
+From: ttlxzz ccc <boyzccc@gmail.com>
+To: Daniel Baluta <daniel.baluta@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi Lars, Grant
+Hi, Daniel:
 
-According to "/proc/interrupts", IRQ18 is not empty.
-However, irq_alloc_descs returns "18".
-I suspect irq_alloc_descs returns should not return "18".
-
-> Grant,
-Let me know your opinion.
-
-With Best Regards,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
-> Sent: Thursday, May 12, 2011 4:20 AM
-> To: Tomoya MORINAGA
-> Cc: 'Grant Likely'; linux-kernel@vger.kernel.org; 
-> toshiharu-linux@dsn.okisemi.com
-> Subject: Re: Question: GPIO driver how to get irq_base
-> 
-> On 05/09/2011 10:54 PM, Tomoya MORINAGA wrote:
-> > Hi Lars,
-> > 
-> > Did you see this email ?
-> > I'm waiting for your response.
-> > 
-> 
-> Hi
-> 
-> Well, it looks as if io-apic assumes that IRQ18 is reserved 
-> for itself, while it actually is requested by your driver. 
-> But that's all I can say. I'm not familiar with the x86 irq 
-> code, so I've no idea what the proper fix would be.
-> 
-> - Lars
-> 
-
+    I remove the module and didn't happen any exception. and U can see
+that memory leak of insmod has been found int the kmemleak log. So I
+think it doesn't happen in the rmmod.
+    Do you have other ideas, please?
+    thank you~~:)
+On Thu, May 12, 2011 at 7:16 PM, Daniel Baluta <daniel.baluta@gmail.com> wrote:
+> On Thu, May 12, 2011 at 12:59 PM, chenxi <chenxi05@baidu.com> wrote:
+>> Thx, Maxin :)
+>> ok
+>> I did steps below:
+>> 1 make oldconfig
+>> 2 vim .config
+>>  ...
+>>  CONFIG_DEBUG_FS = y
+>>  CONFIG_DEBUG_KMEMLEAK = y
+>>  CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE = 1200
+>>  ...
+>> 3 make ; make modules ; and replace the kernel; reboot
+>> 4 mount -t debugfs debugfs /sys/kernel/debug
+>> 4 I wrote a module like this
+>>  #include <linux/init.h>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/vmalloc.h>
+>>
+>> void myfunc(void)
+>> {
+>>        char *ptr;
+>>        ptr = vmalloc(512);
+>>        ptr = vmalloc(512);
+>>        ptr = vmalloc(512);
+>> }
+>>
+>> int hello_init(void)
+>> {
+>>        printk(KERN_ALERT "Hello World");
+>>        myfunc();
+>>        return 0;
+>> }
+>>
+>> static void hello_exit(void)
+>> {
+>>        printk(KERN_ALERT "Goodbye World");
+>> }
+>>
+>> module_init(hello_init);
+>> module_exit(hello_exit);
+>>
+>> MODULE_LICENSE("GPL v2");
+>>
+>> 5 clear the kmemleak
+>>  Echo clear > /sys/kernel/debug/kmemleak
+>> 6 insmod the module
+>>  Insmod xxx.ko
+>
+> Can you please remove your module?
+> I think the memory is leaked at unload time.
+>
+> thanks,
+> Daniel
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
