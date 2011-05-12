@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab1ELT0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:26:44 -0400
-Received: from bsmtp3.bon.at ([213.33.87.17]:27289 "EHLO lbmfmo03.bon.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757615Ab1ELT0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:26:42 -0400
-X-Greylist: delayed 1886 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 May 2011 15:26:41 EDT
-Message-ID: <4DCC2CFD.4010807@kdbg.org>
-Date: Thu, 12 May 2011 20:54:53 +0200
-From: Johannes Sixt <j6t@kdbg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1752991Ab1ELS6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:58:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64339 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1ELS6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 14:58:23 -0400
+Date: Thu, 12 May 2011 14:58:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [Xen-devel] [PATCH] arch/x86/xen/setup: Fix for incorrect
+ xen_extra_mem_start initialization ifdef CONFIG_X86_32
+Message-ID: <20110512185808.GA26281@dumpdata.com>
+References: <20110511203438.GA21034@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Lutomirski <luto@mit.edu>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, git@vger.kernel.org
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up
- hard right after logging in)
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com> <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
-In-Reply-To: <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110511203438.GA21034@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DCC2DCA.014D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.05.2011 19:37, schrieb Linus Torvalds:
-> If you think it's networking, for example, and you've bisected into
-> there but aren't sure, do "gitk --bisect", find the point where I
-> merge, and pick that (and my parent), and "git bisect reset" those
-> points.
+On Wed, May 11, 2011 at 10:34:38PM +0200, Daniel Kiper wrote:
+> git commit 24bdb0b62cc82120924762ae6bc85afc8c3f2b26 (xen: do not create
+> the extra e820 region at an addr lower than 4G) does not take into
+> account that ifdef CONFIG_X86_32 instead of e820_end_of_low_ram_pfn()
+> find_low_pfn_range() is called (both calls are from arch/x86/kernel/setup.c).
+> find_low_pfn_range() behaves correctly and does not require change in
+> xen_extra_mem_start initialization. Additionally, if xen_extra_mem_start
+> is initialized in the same way as ifdef CONFIG_X86_64 then memory hotplug
+> support for Xen balloon driver (under development) is broken.
 
-Except that you should git reset --hard; git bisect reset gets you out
-of bisect-mode, no?
-
--- Hannes
+in linux-next.
