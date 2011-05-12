@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab1ELL4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 07:56:03 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:58648 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756120Ab1ELL4A (ORCPT
+	id S1756628Ab1ELMBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 08:01:08 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:48023 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753196Ab1ELMBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 07:56:00 -0400
-From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Date: Thu, 12 May 2011 13:54:46 +0200
-Subject: RE: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
-Thread-Topic: [PATCH v6] staging: Add ST-Ericsson CG2900 driver
-Thread-Index: AcwP4r5iTiZzbKiLTzOXKzxYPLLQJAAt3uGA
-Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA3395A6DC72@EXDCVYMBSTM005.EQ1STM.local>
-References: <1305040232-750-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
- <20110510200801.GA8125@kroah.com>
- <AFCDDB4A3EA003429EEF1E7B211FDBBA3395A1A289@EXDCVYMBSTM005.EQ1STM.local>
- <20110511134859.GB12717@kroah.com>
-In-Reply-To: <20110511134859.GB12717@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 12 May 2011 08:01:06 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, <toshiharu-linux@dsn.okisemi.com>
+References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com> <4DCAE163.2050602@metafoo.de>
+Subject: RE: Question: GPIO driver how to get irq_base
+Date: Thu, 12 May 2011 21:01:04 +0900
+Message-ID: <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <4DCAE163.2050602@metafoo.de>
+Thread-Index: AcwQEIL8P0V3oljIRJ6wdVExyUuARAAiwC2w
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4CBu8rs008016
+
+ Hi Lars, Grant
+
+According to "/proc/interrupts", IRQ18 is not empty.
+However, irq_alloc_descs returns "18".
+I suspect irq_alloc_descs returns should not return "18".
+
+> Grant,
+Let me know your opinion.
+
+With Best Regards,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
 > -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: den 11 maj 2011 15:49
->
-> > I used next-20110510 and in that tag the file
-> include/Linux/mfd/core.h
-> > The struct mfd_cell has a parameter called platform_data, while in
-> your
-> > build it seems it doesn't.
-> > This was changed very recently in the core.h file (on April 6).
-> > So for core.h the last commit ID I have in the tag I built upon is
-> > 558aa9c0d620b91a896d5e39ce8a570bed65589b.
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
+> Sent: Thursday, May 12, 2011 4:20 AM
+> To: Tomoya MORINAGA
+> Cc: 'Grant Likely'; linux-kernel@vger.kernel.org; 
+> toshiharu-linux@dsn.okisemi.com
+> Subject: Re: Question: GPIO driver how to get irq_base
 > 
-> So do I need that patch on the staging-next tree also?
+> On 05/09/2011 10:54 PM, Tomoya MORINAGA wrote:
+> > Hi Lars,
+> > 
+> > Did you see this email ?
+> > I'm waiting for your response.
+> > 
 > 
-> Or is it an issue of building this on x86-64...
+> Hi
 > 
-> thanks,
+> Well, it looks as if io-apic assumes that IRQ18 is reserved 
+> for itself, while it actually is requested by your driver. 
+> But that's all I can say. I'm not familiar with the x86 irq 
+> code, so I've no idea what the proper fix would be.
 > 
-> greg k-h
+> - Lars
+> 
 
-Hi Greg,
-
-I downloaded you staging tree and compared the logs for the core.h file.
-Compared to linux-next tag next-20110510 it is missing 2 commits:
-4dbee6b76fffd5740e87e286f4f4c1c15901bcae
-558aa9c0d620b91a896d5e39ce8a570bed65589b
-where the first one is the "oldest" one in the log and is the most
-important one for my patch.
-Another option would be for me to fix the patch for your tree, but
-then I would probably have to fix it back in a few days when you update
-your staging tree to Linux-next. How often is your tree updated?
-
-The easiest is probably to wait a few days until you have the next-20110510
-tag in your tree and then apply the patch.
-
-Thanks,
-P-G
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
