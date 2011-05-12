@@ -1,70 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab1ELRLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:11:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57841 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758033Ab1ELRLG (ORCPT
+	id S1758169Ab1ELRLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:11:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53198 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758099Ab1ELRL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:11:06 -0400
+	Thu, 12 May 2011 13:11:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=S83rIYxPmJWZLBS6PN/JHbtDLYtFn9vG8iJRPz5n0Xj+IsjXwXJnP4OqRWGbWtJ17u
-         8O/uSXdBDcf3B5RlKjKN17ztSPqBhFwMioNfVzs1XNaZvIp1qk3oZnyZAn0YqdtWEBwc
-         onhBCh3TaC7N2ztpkFvEsgEg7qPtTN7DUz/EE=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	<1305127773-10570-4-git-send-email-mgorman@suse.de>
-	<alpine.DEB.2.00.1105120942050.24560@router.home>
-	<1305213359.2575.46.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105121024350.26013@router.home>
-	<1305214993.2575.50.camel@mulgrave.site>
-	<20110512154649.GB4559@redhat.com>
-	<1305216023.2575.54.camel@mulgrave.site>
-	<alpine.DEB.2.00.1105121121120.26013@router.home>
-	<1305217843.2575.57.camel@mulgrave.site>
-	<BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
-Date: Thu, 12 May 2011 20:11:05 +0300
-X-Google-Sender-Auth: ZW5ucF_orEUb8MfC8YfrAPVRdRE
-Message-ID: <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: Pekka Enberg <penberg@kernel.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Christoph Lameter <cl@linux.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=SRCup1MSlqIRXKFiaDONCNgEkMcahqqWuaP3rN6VC8/VlC/e4WRIyix+oYzENBGuCx
+         B3PWTP6t4UaRvjAnOEkIrninpJaRWPp4nxvOlVAXgKod9d55xzIFGyH5SPufehRrFjFm
+         mfwvF+l2U23qa0cYcrU/DcMPqbxrux0jHwoG8=
+From: Raffaele Recalcati <lamiaposta71@gmail.com>
+To: linux-pm@lists.linux-foundation.org
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org,
+        Raffaele Recalcati <raffaele.recalcati@bticino.it>
+Subject: [PATCH 4/4] DaVinci: vpfe: support for pm_loss
+Date: Thu, 12 May 2011 19:11:05 +0200
+Message-Id: <1305220265-9020-5-git-send-email-lamiaposta71@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 8:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Thu, May 12, 2011 at 7:30 PM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
->> So suggest an alternative root cause and a test to expose it.
->
-> Is your .config available somewhere, btw?
+From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
 
-If it's this:
+Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+---
+ drivers/media/video/davinci/vpfe_capture.c |   45 ++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-http://pkgs.fedoraproject.org/gitweb/?p=kernel.git;a=blob_plain;f=config-x86_64-generic;hb=HEAD
+diff --git a/drivers/media/video/davinci/vpfe_capture.c b/drivers/media/video/davinci/vpfe_capture.c
+index 353eada..21fa9bf 100644
+--- a/drivers/media/video/davinci/vpfe_capture.c
++++ b/drivers/media/video/davinci/vpfe_capture.c
+@@ -74,6 +74,8 @@
+ #include <media/v4l2-common.h>
+ #include <linux/io.h>
+ #include <media/davinci/vpfe_capture.h>
++#include <linux/pm.h>
++#include <linux/pm_loss.h>
+ #include "ccdc_hw_device.h"
+ 
+ static int debug;
+@@ -2051,6 +2053,46 @@ static int __devexit vpfe_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_LOSS
++static int vpfe_capture_power_changed(struct device *dev,
++				      enum sys_power_state s)
++{
++	int ret;
++	struct vpfe_device *vpfe_dev = dev_get_drvdata(dev);
++	struct vpfe_subdev_info *sdinfo = vpfe_dev->current_subdev;
++
++	if (!sdinfo)
++		return -EINVAL;
++
++	if (!vpfe_dev->started) {
++		pr_debug_pm_loss("vpfe_capture_power_changed(%d) "
++				 "BUT NOTHING TO DO\n", s);
++		return 0;
++	}
++
++	sdinfo = vpfe_dev->current_subdev;
++
++	switch (s) {
++	case SYS_PWR_GOOD:
++		pr_debug_pm_loss("vpfe_capture_power_changed(%d)\n", s);
++		ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev,
++						 sdinfo->grp_id,
++						 video, s_stream, 1);
++		break;
++	case SYS_PWR_FAILING:
++		pr_debug_pm_loss("vpfe_capture_power_changed(%d)\n", s);
++		ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev,
++						 sdinfo->grp_id,
++						 video, s_stream, 0);
++		break;
++	default:
++		BUG();
++		ret = -ENODEV;
++	}
++	return ret;
++}
++#endif /* CONFIG_PM_LOSS */
++
+ static int vpfe_suspend(struct device *dev)
+ {
+ 	return 0;
+@@ -2064,6 +2106,9 @@ static int vpfe_resume(struct device *dev)
+ static const struct dev_pm_ops vpfe_dev_pm_ops = {
+ 	.suspend = vpfe_suspend,
+ 	.resume = vpfe_resume,
++#ifdef CONFIG_PM_LOSS
++	.power_changed = vpfe_capture_power_changed,
++#endif
+ };
+ 
+ static struct platform_driver vpfe_driver = {
+-- 
+1.7.0.4
 
-I'd love to see what happens if you disable
-
-CONFIG_TRANSPARENT_HUGEPAGE=y
-
-because that's going to reduce high order allocations as well, no?
-
-                        Pekka
