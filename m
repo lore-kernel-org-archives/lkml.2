@@ -1,107 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758498Ab1ELTpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 15:45:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64698 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756660Ab1ELTpq convert rfc822-to-8bit (ORCPT
+	id S932600Ab1ELTqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 15:46:13 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41469 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754971Ab1ELTqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 15:45:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=sWYENKDLH8VeW1Lkkl2+VCvmaiC6aXPRX5FtM9N5UfLFVIMrx03C3fCJMegfaBB5I0
-         TAFcIjcaMuWoagYdz5KY4lOtUgW+QRxfSlSdJOAXn9bIwNz5dCf/QBpMNCpHa+CbCNsq
-         2Sq9c8RCB4sv9tbhXk07gAd4esm7kHZEEqbeo=
+	Thu, 12 May 2011 15:46:11 -0400
+X-Sasl-enc: hjtSWQUZdO4Lu4/qomfdNpKq4WZMAJ6fF67nRFvwCuh5 1305229570
+Message-ID: <4DCC3901.9090200@fastmail.fm>
+Date: Thu, 12 May 2011 20:46:09 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DCBE83C.2080403@greenroomsoftware.com>
-References: <1304488750-13606-1-git-send-email-subtil@gmail.com>
- <20110504204807.GB13293@sepie.suse.cz> <20110505090728.GC30678@vostochny.stro.at>
- <4DC2C568.9090803@greenroomsoftware.com> <BANLkTinjBun=TzjveEiJsEJYKH_+NRCP7Q@mail.gmail.com>
- <4DC2EB2B.1050203@greenroomsoftware.com> <BANLkTimApO4j-Hsvo2OCc=PnEdOhHu76OA@mail.gmail.com>
- <20110510124123.GE13278@vostochny.stro.at> <4DCBE83C.2080403@greenroomsoftware.com>
-From: Nuno Subtil <subtil@gmail.com>
-Date: Thu, 12 May 2011 12:45:24 -0700
-Message-ID: <BANLkTi=e62Whz+jyW-MtCN-nYGwUUBR6sg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] deb-pkg: fix cross-compile build
-To: Robert Gordon <robert@greenroomsoftware.com>
-Cc: maximilian attems <max@stro.at>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Margarita Olaya <magi@slimlogic.co.uk>
+CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com
+Subject: Re: [PATCHv2 1/4] mfd: tps65912: Add new mfd device
+References: <BANLkTikWhA2OQABA1QYUrLdasbmH8yusNg@mail.gmail.com>
+In-Reply-To: <BANLkTikWhA2OQABA1QYUrLdasbmH8yusNg@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The debian/control file for an unpatched scripts/package/builddeb would
-> assign 'i386' instead of 'amd64'.
+Hi Margarita,
 
-That seems wrong to me. Were the resulting packages actually usable on amd64?
+Just a few comments.
 
-On Thu, May 12, 2011 at 07:01, Robert Gordon
-<robert@greenroomsoftware.com> wrote:
-> On 05/10/2011 05:41 AM, maximilian attems wrote:
->> On Mon, May 09, 2011 at 10:29:22PM -0700, Nuno Subtil wrote:
->>> It looks like your patch duplicates the arch detection logic that's
->>> already in create_package, except not completely. I think this is not
->>> desirable.
->>>
->>> I modified your patch to isolate this logic into a separate function
->>> and respect the KBUILD_DEBARCH override (which mostly means I moved
->>> the original logic into a separate function). This should make your
->>> case work as well, besides respecting the KBUILD_DEBARCH override.
->>>
->>> Maks, Michal, can you please take a look at this new patch?
->> thanks doing right now.
->>
->> Michal please hold off until I have time to give it some runs.
->>
-> I have tested this patch.  It builds fine for arm with the following
-> command:
-> fakeroot make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- deb-pkg
->
-> However x86_64 fails (when using an i386 machine).
-> fakeroot make ARCH=x86_64 deb-pkg
->
-> The error occurs in scripts/package/builddeb
-> + forcearch=-DArchitecture=amd64
-> + dpkg-gencontrol -isp -DArchitecture=amd64 -plinux-headers-2.6.39-rc7+
-> -P/opt/kernel-linus/linux-2.6/debian/hdrtmp
-> dpkg-gencontrol: error: current host architecture 'i386' does not appear
-> in package's architecture list (amd64)
->
-> The debian/control file is as follows:
-> cat debian/control
-> Source: linux-upstream
-> Section: kernel
-> Priority: optional
-> Maintainer: Anonymous <root@robert-VGN-Z690Y>
-> Standards-Version: 3.8.4
-> Homepage: http://www.kernel.org/
->
-> Package: linux-image-2.6.39-rc7+
-> Provides: linux-image, linux-image-2.6, linux-modules-2.6.39-rc7+
-> Suggests: linux-firmware-image
-> Architecture: any
-> Description: Linux kernel, version 2.6.39-rc7+
->  This package contains the Linux kernel, modules and corresponding other
->  files, version: 2.6.39-rc7+.
->
-> Package: linux-headers-2.6.39-rc7+
-> Provides: linux-headers, linux-headers-2.6
-> Architecture: amd64
-> Description: Linux kernel headers for 2.6.39-rc7+ on amd64
->  This package provides kernel header files for 2.6.39-rc7+ on amd64
->  .
->  This is useful for people who need to build external modules
->
->
->
-> The debian/control file for an unpatched scripts/package/builddeb would
-> assign 'i386' instead of 'amd64'.
->
-> Regards,
-> Robert
->
->
+On 12/05/2011 19:42, Margarita Olaya wrote:
+[snip]
+
+> +#if defined(CONFIG_SPI_MASTER)
+> +static int tps65912_spi_write(struct tps65912 *tps65912, u8 addr,
+> +							int bytes, void *src)
+> +{
+> +	struct spi_device *spi = tps65912->spi_device;
+> +	u8 *data = (u8 *) src;
+> +	int ret;
+> +
+> +	unsigned long spi_data = 1 << 23 | addr << 15 | *data;
+> +	struct spi_transfer xfer;
+> +	struct spi_message msg;
+> +	u32 tx_buf = 0, rx_buf = 0;
+These are initialized below. Can we have a blank line here please.
+> +	tx_buf = spi_data;
+> +	rx_buf = 0;
+> +
+> +	xfer.tx_buf	= &tx_buf;
+> +	xfer.rx_buf	= NULL;
+> +	xfer.len	= sizeof(unsigned long);
+> +	xfer.bits_per_word = 24;
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfer, &msg);
+> +
+> +	ret = spi_sync(spi, &msg);
+> +	return ret;
+> +}
+> +
+> +static int tps65912_spi_read(struct tps65912 *tps65912, u8 addr,
+> +							int bytes, void *dest)
+> +{
+> +	struct spi_device *spi = tps65912->spi_device;
+> +
+> +	unsigned long spi_data = 0 << 23 | addr << 15;
+
+Is the 0 << 23 meant to be 1 << 23? Like the write function.
+
+> +	struct spi_transfer xfer;
+> +	struct spi_message msg;
+> +	int ret;
+> +	u8 *data = (u8 *) dest;
+Shouldn't need to cast a void *
+
+> +	u32 tx_buf = 0, rx_buf = 0;
+These are initialized below.
+
+> +	tx_buf = spi_data;
+> +	rx_buf = 0;
+> +
+> +	xfer.tx_buf	= &tx_buf;
+> +	xfer.rx_buf	= &rx_buf;
+> +	xfer.len	= sizeof(unsigned long);
+> +	xfer.bits_per_word = 24;
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfer, &msg);
+> +
+> +	if (spi == NULL)
+> +		return 0;
+> +
+> +	ret = spi_sync(spi, &msg);
+> +	if (ret == 0)
+> +		*data = (u8) (rx_buf & 0xFF);
+> +	return ret;
+> +}
+> +
+The spi read/write functions both ignore the bytes argument and only
+transfer one byte, whereas the i2c versions appear to read/write
+multiple bytes. Which one is correct?
+
+
+I'm confused about init_data in this function.
+> +static int __devinit tps65912_spi_probe(struct spi_device *spi)
+> +{
+> +	struct tps65912 *tps65912;
+> +	struct tps65912_platform_data *init_data;
+> +	int dcdc_avs, value, ret = 0;
+> +
+> +	init_data = kzalloc(sizeof(struct tps65912_platform_data),
+> +								GFP_KERNEL);
+> +	if (init_data == NULL)
+> +		return -ENOMEM;
+
+We zero allocate it here
+
+> +	tps65912 = kzalloc(sizeof(struct tps65912), GFP_KERNEL);
+> +	if (tps65912 == NULL)
+> +		return -ENOMEM;
+> +
+> +	tps65912->dev = &spi->dev;
+> +	tps65912->spi_device = spi;
+> +	tps65912->read = tps65912_spi_read;
+> +	tps65912->write = tps65912_spi_write;
+> +	mutex_init(&tps65912->io_mutex);
+> +
+> +	dcdc_avs = (init_data->is_dcdc1_avs << 0 |
+> +				init_data->is_dcdc2_avs  << 1 |
+> +					init_data->is_dcdc3_avs << 2 |
+> +						init_data->is_dcdc4_avs << 3);
+
+And then use it here so dcdc_avs is guaranteed to be zero.
+
+> +	if (dcdc_avs) {
+> +		tps65912->read(tps65912, TPS65912_I2C_SPI_CFG, 1, &value);
+> +		dcdc_avs |= value;
+> +		tps65912->write(tps65912, TPS65912_I2C_SPI_CFG, 1, &dcdc_avs);
+> +	}
+Which means that this code will never run.
+
+> +
+> +	spi_set_drvdata(spi, tps65912);
+> +	ret = mfd_add_devices(tps65912->dev, -1,
+> +			      tps65912s, ARRAY_SIZE(tps65912s),
+> +			      NULL, 0);
+> +	if (ret < 0)
+> +		goto err;
+> +
+> +	return ret;
+> +
+> +err:
+> +	mfd_remove_devices(tps65912->dev);
+> +	kfree(tps65912);
+> +	return ret;
+> +}
+
+And as far as I can see nothing ever frees it.
+
+Also this is not present in the i2c version of this function...
+
+Thanks,
+
+Jack
+
