@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab1ELHnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 03:43:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51524 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab1ELHnD (ORCPT
+	id S1753574Ab1ELHo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 03:44:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47675 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab1ELHo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 03:43:03 -0400
-Message-ID: <4DCB8F7A.90603@kernel.org>
-Date: Thu, 12 May 2011 00:42:50 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Thu, 12 May 2011 03:44:27 -0400
+Date: Thu, 12 May 2011 09:44:21 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 0/4] Pinmux subsystem
+Message-ID: <20110512074421.GA2429@pengutronix.de>
+References: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-References: <20110510085623.GG2258@linux.vnet.ibm.com> <4DC97E49.7040401@kernel.org> <20110510193216.GN2258@linux.vnet.ibm.com> <4DC9A5A4.1050308@kernel.org> <20110511045443.GS2258@linux.vnet.ibm.com> <BANLkTi=r707A9yy5-7+dw3Hozt=G1HBQ-Q@mail.gmail.com> <20110511201852.GC2258@linux.vnet.ibm.com> <4DCAF894.7030707@kernel.org> <4DCAFFD8.2080605@kernel.org> <4DCB157F.20202@kernel.org> <20110512060344.GB3191@elte.hu> <4DCB8BCD.1080607@kernel.org>
-In-Reply-To: <4DCB8BCD.1080607@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4DCB8F83.0061,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:23:53 up 4 days, 23:01, 33 users,  load average: 0.17, 0.43, 0.60
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2011 12:27 AM, Yinghai Lu wrote:
-> On 05/11/2011 11:03 PM, Ingo Molnar wrote:
->>
->> * Yinghai Lu <yinghai@kernel.org> wrote:
->>
->>> e59fb3120becfb36b22ddb8bd27d065d3cdca499 is the first bad commit
->>> commit e59fb3120becfb36b22ddb8bd27d065d3cdca499
->>> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>> Date:   Tue Sep 7 10:38:22 2010 -0700
->>>
->>>     rcu: Decrease memory-barrier usage based on semi-formal proof
->>
->> Find below an (untested!) attempt at reverting it for debugging purposes: could 
->> you please try it, does your system now boot up fine?
->>
->> Thanks,
->>
->> 	Ingo
->>
+Hi Linus,
+
+On Mon, May 02, 2011 at 09:16:08PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> yes, reverted manually that commit fix the problem.
+> This patchset creates a pinmux subsystem and switches U300 to use that new
+> subsystem as an example. The problem is not that fantastically hard to
+> solve in a general way, nobody got around to it because it requires some
+> upfront code I believe, and this is my stab at it.
 
-on system with 8 sockets westmere-ex
+This is a good step in the right direction. It solves the problem of
+potential conflicts between different mux functions. Also it gives a
+well defined interface between drivers and board code.
 
-it seems other commits after that commit contribute some delay too.
+What I'm missing though is a generic way a single pad/mux mode
+combination can be described. Let me take a look around how the
+different subarchs do this:
 
-[   32.240739] cpu_dev_init done
-[   73.587288] memory_dev_init done
+omap:
 
-Thanks
+	_OMAP3_MUXENTRY(DSS_DATA21, 91,
+		"dss_data21", NULL, "mcspi3_cs0", "dss_data3",
+		"gpio_91", NULL, NULL, "safe_mode"),
+	_OMAP3_MUXENTRY(DSS_DATA22, 92,
+		"dss_data22", NULL, "mcspi3_cs1", "dss_data4",
+		"gpio_92", NULL, NULL, "safe_mode"),
 
-Yinghai
+pxa:
+
+#define GPIO16_FFUART_TXD       MFP_CFG_OUT(GPIO16, AF3, DRIVE_HIGH)
+#define GPIO37_FFUART_TXD       MFP_CFG_OUT(GPIO37, AF3, DRIVE_HIGH)
+#define GPIO39_FFUART_TXD       MFP_CFG_OUT(GPIO39, AF2, DRIVE_HIGH)
+#define GPIO83_FFUART_TXD       MFP_CFG_OUT(GPIO83, AF2, DRIVE_HIGH)
+#define GPIO99_FFUART_TXD       MFP_CFG_OUT(GPIO99, AF3, DRIVE_HIGH)
+
+i.MX:
+
+#define _MX51_PAD_UART3_RXD__CSI1_D0            IOMUX_PAD(0x630, 0x240, 2, 0x0000, 0, 0)
+#define _MX51_PAD_UART3_RXD__GPIO1_22           IOMUX_PAD(0x630, 0x240, 3, 0x0000, 0, 0)
+#define _MX51_PAD_UART3_RXD__UART1_DTR          IOMUX_PAD(0x630, 0x240, 0, 0x0000, 0, 0)
+#define _MX51_PAD_UART3_RXD__UART3_RXD          IOMUX_PAD(0x630, 0x240, 1, 0x09f4, 4, 0)
+#define _MX51_PAD_UART3_TXD__CSI1_D1            IOMUX_PAD(0x634, 0x244, 2, 0x0000, 0, 0)
+
+These all basically describe the same thing: put pad x into one of modes
+a, b, c and apply certain flags like drive strength on this.
+
+the other class of pin muxing I know of is that a whole group of pads
+can be switched to a particular mode using a mux register like I think
+is used used in your ux300 driver.
+
+I'd like to have a unified way to describe this. If we ever want to move
+this into the device tree we need this anyway as I think it's not an
+option to have completely different SoC specific descriptions in the
+device tree.
+
+Do you think it's possible to do some consolidation on this level
+aswell? It would really bring different SoCs more together.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
