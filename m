@@ -1,132 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab1ELGyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 02:54:39 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:47869 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab1ELGyi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 02:54:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=oBlTl/b5JFQ/Q0LvX8MTkgHlbFPZai4WU/M0LNKtS9rAF6iS03b4ZNX3fVFhofO7wk
-         cBnLWBRiZRQPeFnjNYUe9F9hcjNJE/HGnPdKXL3lg3K/nCYHQj4g8auCFcI9VseLI09p
-         O3dVQJgALdK62XfimAht9vlIUeucrlH+Z2HCE=
+	id S1755028Ab1ELG7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 02:59:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38278 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753218Ab1ELG7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 02:59:41 -0400
+Date: Thu, 12 May 2011 08:59:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Bruce Schlobohm <bruce.schlobohm@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] x86, cpu: Enable/disable SMEP
+Message-ID: <20110512065923.GL3191@elte.hu>
+References: <1305141480-843-1-git-send-email-fenghua.yu@intel.com>
+ <1305141480-843-4-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20110511183322.da0739c9.akpm@linux-foundation.org>
-References: <BANLkTi=e1mUTX4X7ui+HVCGh=sZ=HLoNCw@mail.gmail.com>
-	<20110511183322.da0739c9.akpm@linux-foundation.org>
-Date: Thu, 12 May 2011 01:54:37 -0500
-Message-ID: <BANLkTikrqzpU8qZ5FUgG4HaBgZAvmbOHrQ@mail.gmail.com>
-Subject: Re: Bug in MTD NAND ONFI chipsize detection
-From: Nitin Garg <nitingarg98@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Content-Type: multipart/mixed; boundary=001e680f0fa89b90ba04a30ea9d4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305141480-843-4-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001e680f0fa89b90ba04a30ea9d4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Here is the tested patch, pls apply.
+* Fenghua Yu <fenghua.yu@intel.com> wrote:
 
-Regards,
-Nitin Garg
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Enable/disable newly documented SMEP (Supervisor Mode Execution Protection) CPU
+> feature in kernel. CR4.SMEP (bit 20) is 0 at power-on. If the feature is
+> supported by CPU (X86_FEATURE_SMEP), enable SMEP by setting CR4.SMEP. New kernel
+> option nosmep disables the feature even if the feature is supported by CPU.
 
->From 1a73f1c3d066a491d0c806883788ab9abdc736f3 Mon Sep 17 00:00:00 2001
-From: Nitin Garg <nitingarg98@gmail.com>
-Date: Thu, 12 May 2011 01:31:53 -0500
-Subject: [PATCH] Fix ONFI NAND flash size detection by using number of
-Logical Units in device
+Please add a clearer explanation to the changelog and the code as well, 
+something like:
 
+   SMEP prevents the CPU in kernel-mode to jump to an executable page that does
+   not have the kernel/system flag set in the pte. This prevents the kernel
+   from executing user-space code accidentally or maliciously, so it for 
+   example prevents kernel exploits from jumping to specially prepared 
+   user-mode shell code.
 
-Signed-off-by: Nitin Garg <nitingarg98@gmail.com>
----
- drivers/mtd/nand/nand_base.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  Documentation/kernel-parameters.txt |    4 ++++
+>  arch/x86/kernel/cpu/common.c        |   21 +++++++++++++++++++++
+>  2 files changed, 25 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index cc85a92..56fb8c1 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1664,6 +1664,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			noexec=on: enable non-executable mappings (default)
+>  			noexec=off: disable non-executable mappings
+>  
+> +	nosmep		[X86]
+> +			Disable SMEP (Supervisor Mode Execution Protection)
+> +			even if it is supported by processor.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index c54a4cb..cdf6015 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2892,7 +2892,7 @@ static int nand_flash_detect_onfi(struct
-mtd_info *mtd, struct nand_chip *chip,
- 	mtd->writesize =3D le32_to_cpu(p->byte_per_page);
- 	mtd->erasesize =3D le32_to_cpu(p->pages_per_block) * mtd->writesize;
- 	mtd->oobsize =3D le16_to_cpu(p->spare_bytes_per_page);
--	chip->chipsize =3D (uint64_t)le32_to_cpu(p->blocks_per_lun) * mtd->erases=
-ize;
-+	chip->chipsize =3D (uint64_t)le32_to_cpu(p->blocks_per_lun) *
-le32_to_cpu(p->lun_count) * mtd->erasesize;
- 	busw =3D 0;
- 	if (le16_to_cpu(p->features) & 1)
- 		busw =3D NAND_BUSWIDTH_16;
---=20
-1.5.5.6
+Typo: s/by processor/by the processor
 
+> +
+>  	noexec32	[X86-64]
+>  			This affects only 32-bit executables.
+>  			noexec32=on: enable non-executable mappings (default)
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index e2ced00..f06b2d5 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -254,6 +254,25 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
+>  }
+>  #endif
+>  
+> +static int disable_smep;
+> +static __init int setup_disable_smep(char *arg)
 
+Nit: please put a newline between variables and the next function.
 
-On Wed, May 11, 2011 at 8:33 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 11 May 2011 11:25:22 -0500 Nitin Garg <nitingarg98@gmail.com> wro=
-te:
->
->> Hi All,
->>
->> The nand_flash_detect_onfi function in mtd/nand detects the NAND flash
->> device size using the ONFI parameters:
->> =A0 =A0 =A0 chip->chipsize =3D (uint64_t)le32_to_cpu(p->blocks_per_lun) =
-* mtd->erasesize;
->>
->> The lun_count is not taken into consideration due to which we detect
->> wrong size for Micron MT29F8G08ADADAH4 as it has 2 logical units.
->>
->> We should change the chipsize calculation to:
->> =A0 =A0 =A0 chip->chipsize =3D (uint64_t)le32_to_cpu(p->blocks_per_lun) =
-*
->> (uint64_t)le32_to_cpu(p->lun_count) * mtd->erasesize;
->>
->> Pls suggest.
->>
->
-> Please send a tested, changelogged patch to fix it. =A0Be sure to cc the
-> relevant maintainer and mailing list.
->
-> Thanks.
->
+Also, since setup_smep() is __init this could be __initdata.
 
---001e680f0fa89b90ba04a30ea9d4
-Content-Type: application/octet-stream; 
-	name="0001-Fix-ONFI-NAND-flash-size-detection-by-using-number-o.patch"
-Content-Disposition: attachment; 
-	filename="0001-Fix-ONFI-NAND-flash-size-detection-by-using-number-o.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gnlcek4j0
+> +{
+> +	disable_smep = 1;
+> +	return 1;
+> +}
+> +__setup("nosmep", setup_disable_smep);
 
-RnJvbSAxYTczZjFjM2QwNjZhNDkxZDBjODA2ODgzNzg4YWI5YWJkYzczNmYzIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBOaXRpbiBHYXJnIDxuaXRpbmdhcmc5OEBnbWFpbC5jb20+CkRh
-dGU6IFRodSwgMTIgTWF5IDIwMTEgMDE6MzE6NTMgLTA1MDAKU3ViamVjdDogW1BBVENIXSBGaXgg
-T05GSSBOQU5EIGZsYXNoIHNpemUgZGV0ZWN0aW9uIGJ5IHVzaW5nIG51bWJlciBvZiBMb2dpY2Fs
-IFVuaXRzIGluIGRldmljZQoKClNpZ25lZC1vZmYtYnk6IE5pdGluIEdhcmcgPG5pdGluZ2FyZzk4
-QGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL210ZC9uYW5kL25hbmRfYmFzZS5jIHwgICAgMiArLQog
-MSBmaWxlcyBjaGFuZ2VkLCAxIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb25zKC0pCgpkaWZmIC0t
-Z2l0IGEvZHJpdmVycy9tdGQvbmFuZC9uYW5kX2Jhc2UuYyBiL2RyaXZlcnMvbXRkL25hbmQvbmFu
-ZF9iYXNlLmMKaW5kZXggYzU0YTRjYi4uY2RmNjAxNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9tdGQv
-bmFuZC9uYW5kX2Jhc2UuYworKysgYi9kcml2ZXJzL210ZC9uYW5kL25hbmRfYmFzZS5jCkBAIC0y
-ODkyLDcgKzI4OTIsNyBAQCBzdGF0aWMgaW50IG5hbmRfZmxhc2hfZGV0ZWN0X29uZmkoc3RydWN0
-IG10ZF9pbmZvICptdGQsIHN0cnVjdCBuYW5kX2NoaXAgKmNoaXAsCiAJbXRkLT53cml0ZXNpemUg
-PSBsZTMyX3RvX2NwdShwLT5ieXRlX3Blcl9wYWdlKTsKIAltdGQtPmVyYXNlc2l6ZSA9IGxlMzJf
-dG9fY3B1KHAtPnBhZ2VzX3Blcl9ibG9jaykgKiBtdGQtPndyaXRlc2l6ZTsKIAltdGQtPm9vYnNp
-emUgPSBsZTE2X3RvX2NwdShwLT5zcGFyZV9ieXRlc19wZXJfcGFnZSk7Ci0JY2hpcC0+Y2hpcHNp
-emUgPSAodWludDY0X3QpbGUzMl90b19jcHUocC0+YmxvY2tzX3Blcl9sdW4pICogbXRkLT5lcmFz
-ZXNpemU7CisJY2hpcC0+Y2hpcHNpemUgPSAodWludDY0X3QpbGUzMl90b19jcHUocC0+YmxvY2tz
-X3Blcl9sdW4pICogbGUzMl90b19jcHUocC0+bHVuX2NvdW50KSAqIG10ZC0+ZXJhc2VzaXplOwog
-CWJ1c3cgPSAwOwogCWlmIChsZTE2X3RvX2NwdShwLT5mZWF0dXJlcykgJiAxKQogCQlidXN3ID0g
-TkFORF9CVVNXSURUSF8xNjsKLS0gCjEuNS41LjYKCg==
---001e680f0fa89b90ba04a30ea9d4--
+Naming nit: s/setup_disable_smep/setup_nosmep
+
+> +static __init void setup_smep(struct cpuinfo_x86 *c)
+> +{
+> +	if (cpu_has(c, X86_FEATURE_SMEP)) {
+> +		if (unlikely(disable_smep)) {
+> +			setup_clear_cpu_cap(X86_FEATURE_SMEP);
+> +			clear_in_cr4(X86_CR4_SMEP);
+> +		} else
+> +			set_in_cr4(X86_CR4_SMEP);
+
+Nit: Please use symmetric curly braces.
+
+> +	}
+> +}
+> +
+>  /*
+>   * Some CPU features depend on higher CPUID levels, which may not always
+>   * be available due to CPUID level capping or broken virtualization
+> @@ -867,6 +886,8 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
+>  	/* Init Machine Check Exception if available. */
+>  	mcheck_cpu_init(c);
+>  
+> +	setup_smep(c);
+> +
+>  	select_idle_routine(c);
+
+The other option would be to enable SMEP in arch/x86/kernel/head_32/64.S where 
+we twiddle the cr4 anyway and enable PAE and PGE, and where we do a cpuid to 
+check whether the CPU supports NX.
+
+This means we enable SMEP unconditionally on all CPUs that support it, the 
+nosmep boot option would turn it off shortly afterwards.
+
+Also, is there some KVM impact of this CPU feature? If the hypervisor can pass 
+this to the guest kernel as well then we want to add support there as well, and 
+probably want to turn it on by default. (unless it breaks something in a bad 
+way)
+
+Thanks,
+
+	Ingo
