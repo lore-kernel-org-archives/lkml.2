@@ -1,110 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab1ELPjv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 11:39:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37293 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab1ELPjt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 11:39:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tbqe++Qv1ASY4x0czcX972/XFrC6D6QGxaWDbiqsq30cnYpxuk9t27VcKaADvd618f
-         eKW05blh52mfi7Z8kv7pkd64x+OYBuPealZu6bpLAesrRHWoVLsG/eqHaE2zbp2dUD1j
-         BiSiZS/fqbFG5BoCieOfgKMP1fdp4DqCe1/s8=
+	id S1757257Ab1ELPkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 11:40:33 -0400
+Received: from co202.xi-lite.net ([149.6.83.202]:50096 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756674Ab1ELPkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 11:40:32 -0400
+Message-ID: <4DCBFF4B.9030609@parrot.com>
+Date: Thu, 12 May 2011 17:39:55 +0200
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
 MIME-Version: 1.0
-In-Reply-To: <4DCBF904.6040104@redhat.com>
-References: <1305207413.18715.3.camel@gondor.retis>
-	<4DCBF904.6040104@redhat.com>
-Date: Thu, 12 May 2011 17:39:47 +0200
-Message-ID: <BANLkTi=BnRCJ4S32S=+zNNOSTxmZsR6Jrg@mail.gmail.com>
-Subject: Re: [PATCH] kvm: log directly from the guest to the host kvm buffer
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, joro@8bytes.org, agraf@suse.de, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Fabio Checconi <fchecconi@gmail.com>,
-        Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Nitin Garg <nitingarg98@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in MTD NAND ONFI chipsize detection
+References: <BANLkTi=e1mUTX4X7ui+HVCGh=sZ=HLoNCw@mail.gmail.com>	<20110511183322.da0739c9.akpm@linux-foundation.org>	<BANLkTikrqzpU8qZ5FUgG4HaBgZAvmbOHrQ@mail.gmail.com>	<BANLkTinGFDHj4s6nAXMiq8dYW_UO6W+YXg@mail.gmail.com>	<BANLkTin5X7d+_b5+7N5g941bz12jc+zMZA@mail.gmail.com>	<4DCB908C.80505@parrot.com> <BANLkTik37R8tSxc9_qmBT5a2m9mAA_2XKQ@mail.gmail.com>
+In-Reply-To: <BANLkTik37R8tSxc9_qmBT5a2m9mAA_2XKQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 5:13 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 05/12/2011 04:36 PM, Dhaval Giani wrote:
->>
+Nitin Garg a écrit :
+> I do not see any diff for mtd.
+> 
+ONFI spec say [1].
+
+Why this doesn't apply to mtd ?
+
+
+[1]
+    3.1.2. Logical Unit Selection
+Logical units within one target share a single data bus with the host. The host
+shall ensure that
+only one LUN is selected for data output to the host at any particular point in
+time to avoid bus
+contention.
+The host selects a LUN for future data output by issuing a Read Status Enhanced
+command to
+that LUN. The Read Status Enhanced command shall deselect the output path for
+all LUNs that
+are not addressed by the command. The page register selected for output within
+the LUN is
+determined by the previous Read (Cache) commands issued, and is not impacted by Read
+Status Enhanced.
+
+
+
+> Regards,
+> Nitin
+> 
+> On Thu, May 12, 2011 at 2:47 AM, Matthieu CASTET
+> <matthieu.castet@parrot.com> wrote:
 >> Hi,
 >>
->> As part of some of the work for my project, I have been looking at
->> tracing some of the events in the guest from inside the host. In
->> my usecase, I have been looking to co-relate the time of a network
->> packet arrival with that in the host. ftrace makes such arbitrary
->> use quite simple, so I went ahead an extended this functionality
->> in terms of a hypercall. There are still a few issues with this patch.
 >>
->> 1. For some reason, the first time the hypercall is called, it works
->> just fine, but the second invocation refuses to happen. I am still
->> clueless about it. (and am looking for hints :-) )
->> 2. I am not very sure if I got the demarcation between the guest and
->> the host code fine or not. Someone more experienced than me should take
->> a look at the code as well :-)
->> 3. This adds a new paravirt call.
->> 4. This has been implemented just for x86 as of now. If there is enough
->> interest, I will look to make it more generic to be used across other
->> architectures. However, it is quite easy to do the same.
->> 5. It still does not have all the fancy ftrace features, but again,
->> depending on the interest, I can add all those in.
->> 6. Create a config option for this feature.
+>> What's the difference between one lun and multiple lun for mtd ?
 >>
->> I think such a feature is useful for debugging purposes and might make
->> sense to carry upstream.
->
-> I guess it could help things like virtio/vhost development and profiling.
->
-
-Exactly what i am using it for.
-
->
-> I think that one hypercall per trace is too expensive.  Tracing is meant to
-> be lightweight!  I think the guest can log to a buffer, which is flushed on
-> overflow or when a vmexit occurs.  That gives us automatic serialization
-> between a vcpu and the cpu it runs on, but not between a vcpu and a
-> different host cpu.
->
-
-hmm. So, basically, log all of these events, and then send them to the
-host either on an exit, or when your buffer fills up. There is one
-problem with approach though. One of the reasons I wanted this
-approach was beacuse i wanted to co-relate the guest and the host
-times. (which is why I kept is synchronous). I lose out that
-information with what you say. However I see your point about the
-overhead. I will think about this a bit more.
-
+>> Aren't any command to select the current lun ?
 >>
->> +int kvm_pv_ftrace(struct kvm_vcpu *vcpu, unsigned long ip, gpa_t addr)
->> +{
->> +       int ret;
->> +       char *fmt = (char *) kzalloc(PAGE_SIZE, GFP_KERNEL);
->> +
->> +       ret = kvm_read_guest(vcpu->kvm, addr, fmt, PAGE_SIZE);
->> +
->> +       trace_printk("KVM instance %p: VCPU %d, IP %lu: %s",
->> +                               vcpu->kvm, vcpu->vcpu_id, ip, fmt);
->> +
->> +       kfree(fmt);
->> +
->> +       return 0;
->> +}
->
-> A kmalloc and printf seem expensive here.  I'd prefer to log the arguments
-> and format descriptor instead.  Similarly the guest should pass unformatted
-> parameters.+int kvm_ftrace_printk(unsigned long ip, const char *fmt, ...)
+>> Matthieu
 >>
-
-the trace_printk is actually quite cheap (IIRC), but I guess Steve is
-the best person to let us know about that. We can avoid the kzalloc
-overhead though.
-
-Dhaval
+>>
+>> Nitin Garg a écrit :
+>>> Why isn't my patch going through? re-sending again,
+>>>
+>>> Signed-off-by: Nitin Garg <nitingarg98@xxxxxxxx>
+>>> ---
+>>>  drivers/mtd/nand/nand_base.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+>>> index c54a4cb..cdf6015 100644
+>>> --- a/drivers/mtd/nand/nand_base.c
+>>> +++ b/drivers/mtd/nand/nand_base.c
+>>> @@ -2892,7 +2892,7 @@ static int nand_flash_detect_onfi(struct
+>>> mtd_info *mtd, struct nand_chip *chip,
+>>>       mtd->writesize = le32_to_cpu(p->byte_per_page);
+>>>       mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
+>>>       mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+>>> -     chip->chipsize = (uint64_t)le32_to_cpu(p->blocks_per_lun) * mtd->erasesize;
+>>> +     chip->chipsize = (uint64_t)le32_to_cpu(p->blocks_per_lun) *
+>>> le32_to_cpu(p->lun_count) * mtd->erasesize;
+>>>       busw = 0;
+>>>       if (le16_to_cpu(p->features) & 1)
+>>>               busw = NAND_BUSWIDTH_16;
+> 
