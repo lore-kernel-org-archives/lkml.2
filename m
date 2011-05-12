@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725Ab1ELShy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 14:37:54 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44748 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751162Ab1ELShw (ORCPT
+	id S1752228Ab1ELSkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 14:40:52 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:60821 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab1ELSkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 14:37:52 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1305215742.27848.40.camel@jaguar>
-References: <1305127773-10570-1-git-send-email-mgorman@suse.de>
-	 <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
+	Thu, 12 May 2011 14:40:51 -0400
+Subject: Re: [PATCH v2] net: rfkill: add generic gpio rfkill driver
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: "olof@lixom.net" <olof@lixom.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1305224592.10961.10.camel@rklein-linux2>
+References: <1305159661-11982-1-git-send-email-rklein@nvidia.com>
+	 <1305189092.3461.10.camel@jlt3.sipsolutions.net>
+	 <1305224592.10961.10.camel@rklein-linux2>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 13:37:47 -0500
-Message-ID: <1305225467.2575.66.camel@mulgrave.site>
+Date: Thu, 12 May 2011 20:40:48 +0200
+Message-ID: <1305225648.3461.37.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 18:55 +0300, Pekka Enberg wrote:
-> On Thu, 2011-05-12 at 10:43 -0500, James Bottomley wrote:
-> > However, since you admit even you see problems, let's concentrate on
-> > fixing them rather than recriminations?
-> 
-> Yes, please. So does dropping max_order to 1 help?
-> PAGE_ALLOC_COSTLY_ORDER is set to 3 in 2.6.39-rc7.
+On Thu, 2011-05-12 at 11:23 -0700, Rhyland Klein wrote:
 
-Just booting with max_slab_order=1 (and none of the other patches
-applied) I can still get the machine to go into kswapd at 99%, so it
-doesn't seem to make much of a difference.
+> > Are you sure starting out with UNSPECIFIED works? Then you'll always
+> > change, but if the clock was enabled already you still enable it on the
+> > first set_block() from rfkill, which still has the refcount problem, no?
+> > It seems to me that the original state has to be passed in from the
+> > platform?
 
-Do you want me to try with the other two patches and max_slab_order=1?
+> I thought about that. But I decided the clock that it is possible to
+> have the clock used for the radio used for something else right? 
 
-James
+Sure.
 
+> in
+> which case, the driver will leave the clk in whatever state it initially
+> finds it. I.e. if the clock is disabled, then it will enable it only
+> once and work, if it is enabled, it will add a refcount (only once) and
+> then work and disable it again only once. It never changes the refcount
+> in either direction by more than 1, and this way the initial setting of
+> the clock is irrelevant. The board files can simply initialize the block
+> as off if that is the initial clk state they want.
+
+The issue is that depending on how you boot, the first refcount change
+might be +1 or it might be -1.
+
+If rfkill decides that at the time of loading wifi should be off, then
+the first change would be -1, and after that it would flip between 0 and
+-1.
+
+If, on the other hand, rfkill decides that at the time of loading the
+driver wifi should be on, then the first change would be +1 and it'll
+flip between 0 and +1.
+
+This seems like it'll cause issues at some point, so I think you should
+either allow the driver to set the initial state or hardcode one of
+these possibilities (so at least it's predictable)
+
+johannes
 
