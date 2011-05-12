@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab1ELB0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 21:26:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53037 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753035Ab1ELB0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 21:26:48 -0400
-Date: Wed, 11 May 2011 18:33:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nitin Garg <nitingarg98@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Subject: Re: Bug in MTD NAND ONFI chipsize detection
-Message-Id: <20110511183322.da0739c9.akpm@linux-foundation.org>
-In-Reply-To: <BANLkTi=e1mUTX4X7ui+HVCGh=sZ=HLoNCw@mail.gmail.com>
-References: <BANLkTi=e1mUTX4X7ui+HVCGh=sZ=HLoNCw@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756546Ab1ELBeC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 21:34:02 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:12677
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756467Ab1ELBeA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 May 2011 21:34:00 -0400
+X-SpamScore: -22
+X-BigFish: VS-22(zz9371O4015L542M1432Nzz1202hzz8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Hu Mingkai-B21284 <B21284@freescale.com>
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>
+Subject: RE: spi_fsl_spi broken when compiled as module by
+ b36ece832512c1a0afa54ff0a56d63492a1caf08
+Thread-Topic: spi_fsl_spi broken when compiled as module by
+ b36ece832512c1a0afa54ff0a56d63492a1caf08
+Thread-Index: AQHMD/NmlBRc3temmEW7N4NnUhxzZZSIaR3w
+Date: Thu, 12 May 2011 01:33:55 +0000
+Message-ID: <9389EE59E16E9447AFB481039183BCF4117B10@039-SN1MPN1-005.039d.mgd.msft.net>
+References: <20110511155211.GA21349@caffeine.csclub.uwaterloo.ca>
+In-Reply-To: <20110511155211.GA21349@caffeine.csclub.uwaterloo.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 May 2011 11:25:22 -0500 Nitin Garg <nitingarg98@gmail.com> wrote:
+Hi Len,
 
-> Hi All,
-> 
-> The nand_flash_detect_onfi function in mtd/nand detects the NAND flash
-> device size using the ONFI parameters:
-> 	chip->chipsize = (uint64_t)le32_to_cpu(p->blocks_per_lun) * mtd->erasesize;
-> 
-> The lun_count is not taken into consideration due to which we detect
-> wrong size for Micron MT29F8G08ADADAH4 as it has 2 logical units.
-> 
-> We should change the chipsize calculation to:
-> 	chip->chipsize = (uint64_t)le32_to_cpu(p->blocks_per_lun) *
-> (uint64_t)le32_to_cpu(p->lun_count) * mtd->erasesize;
-> 
-> Pls suggest.
-> 
+Please submit a patch to modify it.
 
-Please send a tested, changelogged patch to fix it.  Be sure to cc the
-relevant maintainer and mailing list.
+Thanks,
+Mingkai
 
-Thanks.
+> -----Original Message-----
+> From: Lennart Sorensen [mailto:lsorense@csclub.uwaterloo.ca]
+> Sent: Wednesday, May 11, 2011 11:52 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Hu Mingkai-B21284; Len Sorensen; Grant Likely
+> Subject: spi_fsl_spi broken when compiled as module by
+> b36ece832512c1a0afa54ff0a56d63492a1caf08
+> 
+> When code was refactored, spi_fsl_spi now depends on funfcionts in spi-
+> fsl_lib, but those are not exported symbols so when building as a module
+> the symbols are missing and the compile fails.
+> 
+> Adding these to spi_fsl_lib.c fixes the compile.
+> 
+> EXPORT_SYMBOL(mpc8xxx_spi_tx_buf_u32);
+> EXPORT_SYMBOL(mpc8xxx_spi_rx_buf_u32);
+> EXPORT_SYMBOL(mpc8xxx_spi_tx_buf_u16);
+> EXPORT_SYMBOL(mpc8xxx_spi_rx_buf_u16);
+> EXPORT_SYMBOL(mpc8xxx_spi_tx_buf_u8);
+> EXPORT_SYMBOL(mpc8xxx_spi_rx_buf_u8);
+> EXPORT_SYMBOL(mpc8xxx_spi_strmode);
+> EXPORT_SYMBOL(mpc8xxx_spi_probe);
+> EXPORT_SYMBOL(of_mpc8xxx_spi_probe);
+> EXPORT_SYMBOL(mpc8xxx_spi_remove);
+> EXPORT_SYMBOL(to_of_pinfo);
+> 
+> All releases since the refactoring was done would be affected.
+> 
+> --
+> Len Sorensen
+
+
