@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808Ab1ELOd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 10:33:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58471 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab1ELOd2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 10:33:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=M9Nz1It2GiCopF84ZdWYtXcON0THrKQ9C3zUfjoMssyzH/SmS9dw7JBAXcmaUaXeO/
-         3Kxxc7or9YA01KegDYnOU3CewJ+mS00YnRDtpd40gWmRnypVqIN0c3o56dSgQbfwC1Pa
-         kyYN3Lx+fLIPm1G25AZmyJxihAbmqPPm2k9nU=
+	id S1757846Ab1ELOiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 10:38:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757491Ab1ELOh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 10:37:59 -0400
+Message-ID: <4DCBF0B7.7080102@redhat.com>
+Date: Thu, 12 May 2011 17:37:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
-References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
-	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
-	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
-	<009c01cc108b$4635c7d0$d2a15770$@com>
-	<BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
-	<BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
-Date: Thu, 12 May 2011 22:33:27 +0800
-Message-ID: <BANLkTik=M8uwnmHABqYBkeVDk56UMrnkMg@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
-From: ttlxzz ccc <boyzccc@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Joerg Roedel <joro@8bytes.org>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com> <20110512131130.GG8707@8bytes.org> <4DCBE13A.2050204@redhat.com> <20110512142449.GI8707@8bytes.org>
+In-Reply-To: <20110512142449.GI8707@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for Wangcong
-
-I have test the kmemleak-test.ko and the result includes no backtrace
-except fffffffff, too.
-I'm compling the kernel by make menuconfig. :)
-
-If it still doesn't make sense, please help me again. Thank you.:)
-
-On Thu, May 12, 2011 at 10:18 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Thu, May 12, 2011 at 7:16 PM, Daniel Baluta <daniel.baluta@gmail.com> wrote:
->>
->> Can you please remove your module?
->> I think the memory is leaked at unload time.
->>
+On 05/12/2011 05:24 PM, Joerg Roedel wrote:
+> >  Paravirtualizing does have its advantages.  For the PMU, for example, we
+> >  can have a single hypercall read and reprogram all counters, saving
+> >  *many* exits.  But I think we need to start from the architectural PMU
+> >  and see exactly what the problems are, before we optimize it to death.
 >
-> No, in kmemleak-test.c we have same examples.
->
-> chenxi, I assume you didn't edit the .config manually?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> The problem certainly is that with arch-pmu we add a lot of msr-exits to
+> the guest-context-switch path if it uses per-task profiling. Depending
+> on the workload this can very much distort the results.
+
+Right.  The combination of per-task profiling with high context switch 
+rates is problematic.
+
+One thing we could do is paravirtualize at a lower level, introduce a 
+hypercall for batch MSR reads and writes.  So we can use the existing 
+PMU semantics and code, just optimize the switch.  This is similar to 
+what Xen did with lazy cpu updates, and what kvm did for paravirt 
+pagetable writes.
+
+I've considered something similar for mmio - use hypercalls for ordinary 
+mmio to avoid calling into the emulator - but virtio uses pio which 
+isn't emulated and we don't have massive consumers of mmio (except 
+perhaps hpet).
+
+(and we can have a cpuid bit that advertises whether we recommend to use 
+this feature for PMU MSRs; if/when we get hardware support, we turn it off)
+
+-- 
+error compiling committee.c: too many arguments to function
+
