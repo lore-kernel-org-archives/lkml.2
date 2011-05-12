@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab1ELRDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 13:03:15 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46940 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757988Ab1ELRDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 13:03:14 -0400
-Date: Thu, 12 May 2011 19:03:11 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Arnd Bergmann <arnd@arndb.de>,
-        John Williams <john.williams@petalogix.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v5] uio/pdrv_genirq: Add OF support
-Message-ID: <20110512170310.GA13751@pengutronix.de>
-References: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
+	id S1758116Ab1ELRIA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 13:08:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757918Ab1ELRH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 13:07:58 -0400
+Date: Thu, 12 May 2011 19:06:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 04/11] ptrace: implement PTRACE_INTERRUPT
+Message-ID: <20110512170617.GB20215@redhat.com>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-5-git-send-email-tj@kernel.org> <20110509165857.GA30607@redhat.com> <20110510095022.GR1661@htj.dyndns.org> <20110510140620.GB21834@redhat.com> <20110510142033.GY1661@htj.dyndns.org> <20110510180811.GB32637@redhat.com> <20110511082947.GB1661@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1304577644-4024-1-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110511082947.GB1661@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/11, Tejun Heo wrote:
+>
+> On Tue, May 10, 2011 at 08:08:11PM +0200, Oleg Nesterov wrote:
+> >
+> > Hmm. Suddenly I got lost. Perhaps instead JOBCTL_TRAP_INTERRUPT should
+> > be cleared on any trap too, like SEIZE.
+>
+> I don't think that's a good idea especially because there are
+> functionality differences among different traps.  ie. group stop and
+> interrupt traps support re-trapping on job control events while other
+> traps don't, so there will be cases where the debugger wants to put
+> tracee specifically into INTERRUPT trap.  It's just cleaner to use and
+> say that if you ask for INTERRUPT, you get an INTERRUPT.
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmm. This is not clear to me... OK, I'll read other emails first.
 
-On Thu, May 05, 2011 at 08:40:44AM +0200, Michal Simek wrote:
-> Adding OF binding to genirq.
-> Version string is setup to the "devicetree".
->=20
-> Compatible string is not setup for now but you can add your
-> custom compatible string to uio_of_genirq_match structure.
->=20
-> For example with "vendor,device" compatible string:
-> static const struct of_device_id __devinitconst uio_of_genirq_match[] =3D=
- {
-> 	{ .compatible =3D "vendor,device", },
-> 	{ /* empty for now */ },
-> };
->=20
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> > Another special (and nasty!) case is PTRACE_TRACEME. I do not know
+> > how often it is used, but probabaly it is important enough. At least,
+> > iirc, it is used by strace. Probably we need PTRACE_SEIZEME as well.
+>
+> I don't agree.  PTRACE_TRACEME predates PTRACE_ATTACH and is
+> completely redundant.  If you can make the child do PTRACE_TRACEME,
+> you might as well just make it do pause() and PTRACE_SEIZE yourself,
+> so unless there's something PTRACE_SEIZE can't do, I don't think I'll
+> be adding SEIZEME.
 
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+Heh. I think that you are very right technically and I thought the
+same. That is why I never mentioned PTRACE_TRACEME before. In fact
+I never understood why PTRACE_TRACEME exists.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+However. Perhaps this is wrong from the practical pov. SEIZEME can
+simplify the conversion of the existing code. People are lazy, but
+we need the users of PTRACE_SEIZE.
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Anyway. SEIZEME is absolutely trivial. We can add it at any moment,
+right now this is almost offtopic.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Oleg.
 
-iEYEARECAAYFAk3MEs4ACgkQD27XaX1/VRvb1QCgtfXA1rVtZ/l8vwzSbLiTvX5N
-oNwAoKNLrSBNRGRUxWlO6ts4t5EYwcbd
-=Fan0
------END PGP SIGNATURE-----
-
---X1bOJ3K7DJ5YkBrT--
