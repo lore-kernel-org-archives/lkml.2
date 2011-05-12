@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab1ELBIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 May 2011 21:08:54 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47865 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab1ELBIx (ORCPT
+	id S1752340Ab1ELBNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 May 2011 21:13:07 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:55763 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab1ELBNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 May 2011 21:08:53 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: mmotm 2011-04-29 - wonky VmRSS and VmHWM values after swapping
-In-Reply-To: Your message of "Tue, 10 May 2011 18:04:45 +0200."
-             <1305043485.2914.110.camel@laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <201104300002.p3U02Ma2026266@imap1.linux-foundation.org> <49683.1304296014@localhost> <8185.1304347042@localhost> <20110502164430.eb7d451d.akpm@linux-foundation.org>
-            <1305043485.2914.110.camel@laptop>
+	Wed, 11 May 2011 21:13:04 -0400
+Date: Thu, 12 May 2011 11:12:55 +1000
+From: Stephen Rothwell <sfr@au1.ibm.com>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the nfs tree
+Message-Id: <20110512111255.95a765aa.sfr@au.ibm.com>
+Organization: IBM Ozlabs Linux Technology Centre
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1305162521_2485P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 11 May 2011 21:08:41 -0400
-Message-ID: <3313.1305162521@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4DCB331D.00C8,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1305162521_2485P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 10 May 2011 18:04:45 +0200, Peter Zijlstra said:
+Hi Trond,
 
-> I haven't quite figured out how to reproduce, but does the below cure
-> things? If so, it should probably be folded into the first patch
-> (mm-mmu_gather-rework.patch?) since that is the one introducing this.
-> 
-> ---
-> Subject: mm: Fix RSS zap_pte_range() accounting
-> 
-> Since we update the RSS counters when breaking out of the loop and
-> release the PTE lock, we should start with fresh deltas when we
-> restart the gather loop.
+After merging the nfs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Confirming this patch makes the numbers look sane and plausible again, so
-feel free to stick a Tested-By: to match the Reported-By:.
+fs/nfs/write.c: In function 'nfs_flush_multi':
+fs/nfs/write.c:942: error: too many arguments to function 'pnfs_update_layo=
+ut'
+fs/nfs/write.c: In function 'nfs_flush_one':
+fs/nfs/write.c:1016: error: too many arguments to function 'pnfs_update_lay=
+out'
+fs/nfs/read.c: In function 'nfs_pagein_multi':
+fs/nfs/read.c:291: error: too many arguments to function 'pnfs_update_layou=
+t'
+fs/nfs/read.c: In function 'nfs_pagein_one':
+fs/nfs/read.c:354: error: too many arguments to function 'pnfs_update_layou=
+t'
 
---==_Exmh_1305162521_2485P
+Cased by commit 4b386a0fe47b ("NFSv4.1: Ensure that layoutget uses the
+correct gfp modes") which forgot to update the function declaration for
+the !CONFIG_NFS_V4_1 case.
+
+I have used the nfs tree from next-20110511 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@au.ibm.com
+IBM OzLabs Linux Technology Centre
+
+--Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFNyzMZcC3lWbTT17ARApyMAKCJfiHzhEgR8XwpgnhK12nzEBoNUgCgpXah
-1caMfu6xRn68C2XkrP7CCMI=
-=lTLb
+iQEcBAEBAgAGBQJNyzQXAAoJEDMEi1NhKgbs/UAH/11ZsRnv80MSYNO+yDL4z+oi
+xqHLnckHMWJZK4o8T3wj2ui1F2qQn9wgW4Q0XzgGoIgqybaAA1BlvjIMvGJtf13t
+5o1/c6rmVG8Fsw5wXsSZ7LvY3aRT7N6dbhqHopAfRvOARRbWYYxZFMFsSCYbUSTL
+Z6oJ0I4F8IhJZVG06CvYAIZzZMmBmZ9QPu7KAIuJXL/QRxoRfpsKRs1jhsf2ovMx
+RZEQl2pQ2EjgsQ9wiTNbsdHC1lAERP759SWYXevT14ljiCusWM87Ivlb4gfh0vrg
+ZoQqiIw7vDHQsIGr8bd0jOx5ukEYp6xy00jg1mwnBnnQiYmdzWwo+K9nWPDvUvk=
+=GcXK
 -----END PGP SIGNATURE-----
 
---==_Exmh_1305162521_2485P--
-
+--Signature=_Thu__12_May_2011_11_12_55_+1000_7NQMv7anBxxGsj6b--
