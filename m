@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab1ELLQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 07:16:34 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37264 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1ELLQd convert rfc822-to-8bit (ORCPT
+	id S1754283Ab1ELLQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 07:16:58 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38219 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab1ELLQ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 07:16:33 -0400
+	Thu, 12 May 2011 07:16:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=c63izd6VqfCf4tOMj+XSgaUQ01b+AeVEdniERL0rMnFAqjUa5np+wCRWOJZRc9ucFB
-         TmmCIt3F2aXhUFRNTdY0q0rbeBJdB0vgrx7R+Dvn8zCBm81OgJQqe8WBIWDaMw8Apk0R
-         t+0Y5v6JckBnNo27yE0+Nb1GRhpHI/RfYuQyI=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=ISCLT57dB8LqZU6P1LK4GlRtgsFnRl67zs/zqTR9yOjTDhMbjd1wx2eA3uqG4F72e0
+         DdO4u03+QTI/4ORaIqCrWNX4I5u9Je3zkkL7PRJzG9JUDUJSLdfS8IFu7aZX/KUUWW4O
+         1Xm2mcrUgWD2QN591QOouLi/YAn0uHLHGHd9g=
 MIME-Version: 1.0
-In-Reply-To: <009c01cc108b$4635c7d0$d2a15770$@com>
-References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
-	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
-	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
-	<009c01cc108b$4635c7d0$d2a15770$@com>
-Date: Thu, 12 May 2011 14:16:32 +0300
-Message-ID: <BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: chenxi <chenxi05@baidu.com>
-Cc: Maxin B John <maxin.john@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110510144811.GA3347@gere.osrc.amd.com>
+References: <cover.1305035945.git.luto@mit.edu> <83043199068052b26ba63edc088f1d0be7d0df1d.1305035945.git.luto@mit.edu>
+ <20110510144811.GA3347@gere.osrc.amd.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 12 May 2011 07:16:36 -0400
+X-Google-Sender-Auth: a7Np-3WuVPPnc_wE7L0sJ2B-GYI
+Message-ID: <BANLkTi=jtUv9k5FxqGJ9rXpZivpfhTN=wQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/6] x86-64: Clean up vdso/kernel shared variables
+To: Borislav Petkov <bp@amd64.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 12:59 PM, chenxi <chenxi05@baidu.com> wrote:
-> Thx, Maxin :)
-> ok
-> I did steps below:
-> 1 make oldconfig
-> 2 vim .config
->  ...
->  CONFIG_DEBUG_FS = y
->  CONFIG_DEBUG_KMEMLEAK = y
->  CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE = 1200
->  ...
-> 3 make ; make modules ; and replace the kernel; reboot
-> 4 mount -t debugfs debugfs /sys/kernel/debug
-> 4 I wrote a module like this
->  #include <linux/init.h>
->  #include <linux/module.h>
->  #include <linux/kernel.h>
->  #include <linux/vmalloc.h>
->
-> void myfunc(void)
-> {
->        char *ptr;
->        ptr = vmalloc(512);
->        ptr = vmalloc(512);
->        ptr = vmalloc(512);
-> }
->
-> int hello_init(void)
-> {
->        printk(KERN_ALERT "Hello World");
->        myfunc();
->        return 0;
-> }
->
-> static void hello_exit(void)
-> {
->        printk(KERN_ALERT "Goodbye World");
-> }
->
-> module_init(hello_init);
-> module_exit(hello_exit);
->
-> MODULE_LICENSE("GPL v2");
->
-> 5 clear the kmemleak
->  Echo clear > /sys/kernel/debug/kmemleak
-> 6 insmod the module
->  Insmod xxx.ko
+On Tue, May 10, 2011 at 10:48 AM, Borislav Petkov <bp@amd64.org> wrote:
+> On Tue, May 10, 2011 at 10:15:03AM -0400, Andy Lutomirski wrote:
+>> Variables that are shared between the vdso and the kernel are
+>> currently a bit of a mess.  They are each defined with their own
+>> magic, they are accessed differently in the kernel, the vsyscall page,
+>> and the vdso, and one of them (vsyscall_clock) doesn't even really
+>> exist.
+>>
+>> This changes them all to use a common mechanism.  All of them are
+>> delcared in vvar.h with a fixed address (validated by the linker
+>> script).  In the kernel (as before), they look like ordinary
+>> read-write variables.  In the vsyscall page and the vdso, they are
+>> accessed through a new macro VVAR, which gives read-only access.
+>>
+>> The vdso is now loaded verbatim into memory without any fixups.  As a
+>> side bonus, access from the vdso is faster because a level of
+>> indirection is removed.
+>> ---
+>>  arch/x86/include/asm/vdso.h     |   14 ----------
+>>  arch/x86/include/asm/vgtod.h    |    2 -
+>>  arch/x86/include/asm/vsyscall.h |   12 +-------
+>>  arch/x86/include/asm/vvar.h     |   52 +++++++++++++++++++++++++++++++++++++++
+>>  arch/x86/kernel/time.c          |    2 +-
+>>  arch/x86/kernel/tsc.c           |    4 +-
+>>  arch/x86/kernel/vmlinux.lds.S   |   34 ++++++++-----------------
+>>  arch/x86/kernel/vsyscall_64.c   |   46 +++++++++++++++-------------------
+>>  arch/x86/vdso/Makefile          |    2 +-
+>>  arch/x86/vdso/vclock_gettime.c  |    3 +-
+>>  arch/x86/vdso/vdso.lds.S        |    7 -----
+>>  arch/x86/vdso/vextern.h         |   16 ------------
+>>  arch/x86/vdso/vgetcpu.c         |    3 +-
+>>  arch/x86/vdso/vma.c             |   27 --------------------
+>>  arch/x86/vdso/vvar.c            |   12 ---------
+>>  15 files changed, 91 insertions(+), 145 deletions(-)
+>>  create mode 100644 arch/x86/include/asm/vvar.h
+>>  delete mode 100644 arch/x86/vdso/vextern.h
+>>  delete mode 100644 arch/x86/vdso/vvar.c
+>>
 
-Can you please remove your module?
-I think the memory is leaked at unload time.
+>> +/* DECLARE_VVAR(offset, type, name) */
+>> +
+>> +DECLARE_VVAR(0, volatile unsigned long, jiffies)
+>> +DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
+>> +DECLARE_VVAR(256, int, vgetcpu_mode)
+>
+> Why so spread out? Maybe put each on a single cacheline instead?
 
-thanks,
-Daniel
+They're currently on their own cachelines.  I just spread them out
+because there's room and that way modification to their types is less
+likely to make them conflict.
+
+I'll add a patch at the end of the series to pack them into two
+cachelines.  All of the variables are read-mostly so it should be a
+win.
+
+--Andy
