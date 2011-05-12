@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958Ab1ELXuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 19:50:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:13001 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab1ELXuQ (ORCPT
+	id S1758938Ab1ELXuU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 19:50:20 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:51853 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab1ELXuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 May 2011 19:50:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6344"; a="91115526"
+X-IronPort-AV: E=McAfee;i="5400,1158,6344"; a="90916794"
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Intel Linux Wireless <ilw@linux.intel.com>, linux-scsi@vger.kernel.org,
-        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/9] strict user copy checks on x86_64
-Date: Thu, 12 May 2011 16:50:03 -0700
-Message-Id: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 1/9] iwlegacy: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
+Date: Thu, 12 May 2011 16:50:04 -0700
+Message-Id: <1305244212-19183-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.5.1.217.g4e3aa
+In-Reply-To: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
+References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It turns out that strict user copy checks (also known as
-CONFIG_DEBUG_STRICT_USER_COPY_CHECKS) isn't actually implemented
-on x86_64 and thus we aren't catching potential security holes
-at compile time.
+Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
+warning:
 
-This series adds support for strict user copy checks on x86_64
-and silences all the benign warnings in the x86_64 allyesconfig.
+In file included from arch/x86/include/asm/uaccess.h:573,
+                 from include/net/checksum.h:25,
+                 from include/linux/skbuff.h:28,
+                 from drivers/net/wireless/iwlegacy/iwl-4965-rs.c:28:
+In function 'copy_from_user',
+    inlined from 'iwl4965_rs_sta_dbgfs_scale_table_write' at
+    drivers/net/wireless/iwlegacy/iwl-4965-rs.c:2616:
+arch/x86/include/asm/uaccess_64.h:65:
+warning: call to 'copy_from_user_overflow' declared with
+attribute warning: copy_from_user() buffer size is not provably
+correct
 
-The final patch consolidates the config option as its duplicated
-across mutliple arches. I don't know what tree this series should
-go through so I tried to send the individual driver patches to the
-respective maintainers.
+presumably due to buf_size being signed causing GCC to fail to
+see that buf_size can't become negative.
 
-Stephen Boyd (9):
-  iwlegacy: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  iwlwifi: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  [SCSI] lpfc: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  debugfs: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  kprobes: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  Bluetooth: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  ASoC: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
-  x86: Implement strict user copy checks for x86_64
-  Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
-
- arch/parisc/Kconfig                         |    1 +
- arch/parisc/Kconfig.debug                   |   14 --------------
- arch/s390/Kconfig                           |    1 +
- arch/s390/Kconfig.debug                     |   14 --------------
- arch/s390/lib/Makefile                      |    1 -
- arch/s390/lib/usercopy.c                    |    8 --------
- arch/sparc/lib/Makefile                     |    1 -
- arch/sparc/lib/usercopy.c                   |    8 --------
- arch/tile/Kconfig                           |    8 +-------
- arch/tile/include/asm/uaccess.h             |    7 ++++++-
- arch/tile/lib/uaccess.c                     |    8 --------
- arch/x86/Kconfig                            |    1 +
- arch/x86/Kconfig.debug                      |   14 --------------
- arch/x86/include/asm/uaccess_64.h           |   12 +++++++++---
- arch/x86/lib/usercopy_32.c                  |    6 ------
+Cc: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
  drivers/net/wireless/iwlegacy/iwl-4965-rs.c |    2 +-
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c   |    2 +-
- drivers/scsi/lpfc/lpfc_debugfs.c            |    3 ++-
- fs/debugfs/file.c                           |    2 +-
- kernel/kprobes.c                            |    2 +-
- lib/Kconfig.debug                           |   18 ++++++++++++++++++
- lib/Makefile                                |    1 +
- lib/usercopy.c                              |    8 ++++++++
- net/bluetooth/rfcomm/sock.c                 |    3 ++-
- sound/soc/soc-core.c                        |    2 +-
- 25 files changed, 55 insertions(+), 92 deletions(-)
- delete mode 100644 arch/s390/lib/usercopy.c
- delete mode 100644 arch/sparc/lib/usercopy.c
- create mode 100644 lib/usercopy.c
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+index 31ac672..cc4751c 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
++++ b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+@@ -2604,7 +2604,7 @@ static ssize_t iwl4965_rs_sta_dbgfs_scale_table_write(struct file *file,
+ 	struct iwl_lq_sta *lq_sta = file->private_data;
+ 	struct iwl_priv *priv;
+ 	char buf[64];
+-	int buf_size;
++	size_t buf_size;
+ 	u32 parsed_rate;
+ 	struct iwl_station_priv *sta_priv =
+ 		container_of(lq_sta, struct iwl_station_priv, lq_sta);
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
