@@ -1,143 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab1EMKtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 06:49:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49428 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab1EMKtR (ORCPT
+	id S1758749Ab1EMKse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 06:48:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53353 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab1EMKsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 06:49:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Mfd1DD59oca2SPwmek3SHOwe2JgTJkCtcWDn8LDjCEeT2Br46EaUW7sTaqk6YZ55aj
-         FheI3hS9zmmIufjdQZZMAMJwaGCqmoZvJuFeR15RwPDrKGaYAEBfKPle/JfGehGUG3ng
-         SziINxucYwNx0YiqGr8tNL+tVokuls+6HDpSs=
-From: Jason Stubbs <jasonbstubbs@gmail.com>
-To: Greg KH <greg@kroah.com>
-Subject: [PATCH] platform: add support for samsung nc210/nc110
-Date: Fri, 13 May 2011 20:47:07 +1000
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r5; KDE/4.6.3; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-References: <201104201358.50443.jasonbstubbs@gmail.com> <20110512164402.GD26585@kroah.com> <201105132044.25928.jasonbstubbs@gmail.com>
-In-Reply-To: <201105132044.25928.jasonbstubbs@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Fri, 13 May 2011 06:48:33 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=gsWbSYZL9csA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IlRtrzvXJsBKLpsI-xMA:9 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely
+ callable from scheduler
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
+References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
+	 <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 06:48:26 -0400
+Message-ID: <1305283706.22280.40.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105132047.07544.jasonbstubbs@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Stubbs <jasonbstubbs@gmail.com>
+On Thu, 2011-05-12 at 22:32 +0200, Frederic Weisbecker wrote:
+> Avoid potential scheduler recursion and deadlock from the
+> stacktrace code by avoiding rescheduling when we re-enable
+> preemption.
 
-This patch adds support for the NC210/NC110 to the samsung-laptop driver.
+I'm curious to where you saw this deadlock? As I have the function stack
+tracer using preempt_disable_notrace and enable_notrace without any
+issues, and it traces all functions in the kernel[*]. I have no issue
+with using raw_local_irq_save/restore() if it is to protect the per_cpu
+variable from interrupt corruption, but I don't see the problem with
+recursion.
 
-All SABI commands except for set_brightness work as expected. The behaviour
-of set_brightness is as follows:
+There's only one function I had to worry about with preempt disable, not
+the entire scheduler. That was the function preempt_schedule(). This
+function is called by preempt_enable() and that will cause an infinite
+loop if you have something in preempt_schedule() call preempt_enable().
 
-- Setting a new brightness will only step one level toward the new brightness
-  level. For example, setting a level of 5 when the current level is 2 will
-  result in a brightness level of 3.
-- A spurious KEY_BRIGHTNESS_UP or KEY_BRIGHTNESS_DOWN event is also generated
-  along with the change in brightness.
-- Neither of the above two issues occur when changing from/to brightness level 0.
+Remember that ftrace_preempt_disable/enable() crap that I did to try to
+avoid the scheduler deadlock? I found it was complex and unnecessary
+because the scheduler itself was not an issue, it was only
+preempt_schedule(). I replaced all that crappy code with a single line
+that added notrace to preempt_schedule() and everything just worked.
 
-Along with adding the DMI checks for the NC210/NC110, this patch adds
-detection and a non-intrusive workaround for the above issues.
+Thus, if you disable interrupts to protect the cpu data, that's fine,
+and say so in the change log. I really like to know if you really saw
+this deadlock. Yes enabling preemption in the scheduler may recurse, but
+it will only do so once.
 
-Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
---
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index ebf1b07..89fd703 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -226,6 +226,7 @@ static struct backlight_device *backlight_device;
- static struct mutex sabi_mutex;
- static struct platform_device *sdev;
- static struct rfkill *rfk;
-+static int has_stepping_quirk;
- 
- static int force;
- module_param(force, bool, 0);
-@@ -382,6 +383,17 @@ static void set_brightness(u8 user_brightness)
- {
- 	u8 user_level = user_brightness + sabi_config->min_brightness;
- 
-+	if (has_stepping_quirk && user_level != 0) {
-+		/*
-+		 * short circuit if the specified level is what's already set
-+		 * to prevent the screen from flickering needlessly
-+		 */
-+		if (user_brightness == read_brightness())
-+			return;
-+
-+		sabi_set_command(sabi_config->commands.set_brightness, 0);
-+	}
-+
- 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
- }
- 
-@@ -390,6 +402,34 @@ static int get_brightness(struct backlight_device *bd)
- 	return (int)read_brightness();
- }
- 
-+static void check_for_stepping_quirk(void)
-+{
-+	u8 initial_level = read_brightness();
-+	u8 check_level;
-+
-+	/*
-+	 * Some laptops (nc210/nc110 at the very least) exhibit the strange
-+	 * behaviour of stepping toward rather than setting the brightness
-+	 * except when changing to/from brightness level 0. This behaviour
-+	 * is checked for here and worked around in set_brightness.
-+	 */
-+
-+	if (initial_level <= 2)
-+		check_level = initial_level + 2;
-+	else
-+		check_level = initial_level - 2;
-+
-+	has_stepping_quirk = 0;
-+	set_brightness(check_level);
-+
-+	if (read_brightness() != check_level) {
-+		has_stepping_quirk = 1;
-+		pr_info("enabled workaround for brightness stepping quirk\n");
-+	}
-+
-+	set_brightness(initial_level);
-+}
-+
- static int update_status(struct backlight_device *bd)
- {
- 	set_brightness(bd->props.brightness);
-@@ -668,6 +708,15 @@ static struct dmi_system_id __initdata samsung_dmi_table[] = {
- 		},
- 		.callback = dmi_check_cb,
- 	},
-+	{
-+		.ident = "NC210/NC110",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "NC210/NC110"),
-+			DMI_MATCH(DMI_BOARD_NAME, "NC210/NC110"),
-+		},
-+		.callback = dmi_check_cb,
-+	},
- 	{ },
- };
- MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
-@@ -776,6 +825,9 @@ static int __init samsung_init(void)
- 		}
- 	}
- 
-+	/* Check for stepping quirk */
-+	check_for_stepping_quirk();
-+
- 	/* knock up a platform device to hang stuff off of */
- 	sdev = platform_device_register_simple("samsung", -1, NULL, 0);
- 	if (IS_ERR(sdev))
+I still argue that interrupt enabling is slow. I've seen a large slow
+down of the code by switching stack tracer from preempt disable to irq
+disable. I used perf to see why, and it told me that disabling
+interrupts as fine, but enabling interrupts can cost you quite a bit.
+
+-- Steve
+
+[*] of course function tracing does not trace other notrace functions.
+
