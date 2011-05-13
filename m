@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab1EMSml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:42:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53495 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753061Ab1EMSmj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:42:39 -0400
+	id S1754275Ab1EMSmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:42:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7409 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab1EMSl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:41:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,365,1301900400"; 
+   d="scan'208";a="1944164"
+Date: Fri, 13 May 2011 20:41:54 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Liam Girdwood <lrg@ti.com>, "grant@secretlab.ca" <grant@secretlab.ca>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCHv5 2/4] TPS65910: GPIO: Add GPIO driver
+Message-ID: <20110513184153.GZ8970@sortiz-mobl>
+References: <2CAE1D41-48DC-457F-8FF3-E45B17AC3E0F@slimlogic.co.uk>
+ <4DBAD7E8.8090703@ti.com>
+ <20110429220651.GG7497@ponder.secretlab.ca>
 MIME-Version: 1.0
-In-Reply-To: <4DCD79A0.7000500@kdbg.org>
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
- <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
- <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
- <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
- <4DCD79A0.7000500@kdbg.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 May 2011 11:41:46 -0700
-Message-ID: <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
- right after logging in)
-To: Johannes Sixt <j6t@kdbg.org>
-Cc: Andrew Lutomirski <luto@mit.edu>,
-        Christian Couder <christian.couder@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110429220651.GG7497@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 11:34 AM, Johannes Sixt <j6t@kdbg.org> wrote:
-> Am 13.05.2011 19:54, schrieb Linus Torvalds:
->> For example, in your case, since you had certain requirements of
->> support that simply didn't exist earlier, something like
->>
->>    git bisect requires v2.6.38
->>
->> would have been really useful - telling git bisect that any commit
->> that cannot reach that required commit is not even worth testing.
->
-> You can already have this with
->
->   git bisect good v2.6.38
->
-> It sounds a bit unintuitive, but with a slight mind-twist it can even be
-> regarded as correct in a mathematical sense: when the precondition is
-> false, the result is true. ;-)
+Hi Grant,
 
-No. That's not the same thing AT ALL.
+On Fri, Apr 29, 2011 at 04:06:51PM -0600, Grant Likely wrote:
+> On Fri, Apr 29, 2011 at 04:23:20PM +0100, Liam Girdwood wrote:
+> > On 27/04/11 16:51, Jorge Eduardo Candelaria wrote:
+> > > From: Graeme Gregory <gg@slimlogic.co.uk>
+> > > 
+> > > TPS65910 has one configurable GPIO that can be used for several
+> > > purposes. Subsequent versions of the TPS chip support more than
+> > > one GPIO.
+> > > 
+> > > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > > Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+> > > ---
+> > >  drivers/mfd/Makefile         |    2 +-
+> > >  drivers/mfd/tps65910-gpio.c  |   91 ++++++++++++++++++++++++++++++++++++++++++
+> > >  drivers/mfd/tps65910.c       |    7 +++
+> > >  include/linux/mfd/tps65910.h |    2 +
+> > >  4 files changed, 101 insertions(+), 1 deletions(-)
+> > >  create mode 100644 drivers/mfd/tps65910-gpio.c
+> > > 
+> > 
+> > Grant, if you are happy with this I can take all via regulator.
+> 
+> Yes, I'm okay with it.
+Would you be ok with moving this one to drivers/gpio/ ? And in general, moving
+most of the GPIO drivers under drivers/mfd/ back to drivers/gpio/ ?
+David didn't want to take the basic MFD related GPIO drivers, that's why we
+have several of them under mfd.
 
-When you say that v2.6.38 is good, that means that everything that can
-be reached from 2.6.38 is good.
+Cheers,
+Samuel.
 
-NOT AT ALL the same thing as "git bisect requires v2.6.38" would be.
-
-The "requires v2.6.38" would basically say that anything that doesn't
-contain v2.6.38 is "off-limits". It's fine to call them "good", but
-that's not the same thing as "git bisect good v2.6.38".
-
-Why?
-
-Think about it. It's the "reachable from v2.6.38" vs "cannot reach
-v2.6.38" difference. That's a HUGE difference.
-
-                       Linus
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
