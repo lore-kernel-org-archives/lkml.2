@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab1EMX02 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 19:26:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57103 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758715Ab1EMX0Y convert rfc822-to-8bit (ORCPT
+	id S1758815Ab1EMXke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:40:34 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45036 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758472Ab1EMXkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 19:26:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SxYFFId0ELaSBUKb8gwd98P5Yy4RJ61IvpGv+FuyyvocwA4733IENYEr7OL/HR2zvr
-         cVEE3W4CSpZfZtWILkjL48qNkVFymElNQdQ9u16lS8xzZzb/sm7Vi1Waqm3/+PKpL5cl
-         F0DuClMJYZs+eHlgAQazeI3lETwaw1rhapW/8=
-MIME-Version: 1.0
-In-Reply-To: <4DCD8CE4.4090404@suse.cz>
-References: <1d7d3b31c0da82ce8ce75778922155b7004a8f7e.1305224477.git.mfm@muteddisk.com>
-	<4DCC4365.3030907@suse.cz>
-	<BANLkTimKpJoUnoYx8gXi6KCYgVpnXno4ow@mail.gmail.com>
-	<4DCC4F05.7010306@suse.cz>
-	<BANLkTimrW=ZG2sGG1Q8QehSnh5rW1eBzGw@mail.gmail.com>
-	<4DCCEB48.7030602@suse.cz>
-	<BANLkTimcs83J3O8o7npLftBaQk1WKKZ=2Q@mail.gmail.com>
-	<4DCD8CE4.4090404@suse.cz>
-Date: Fri, 13 May 2011 16:26:23 -0700
-Message-ID: <BANLkTinGrUb-U_7TLbMiqacC2mywAbxJVw@mail.gmail.com>
-Subject: Re: [Resend PATCH] package: Makefile: fix perf target bug
-From: matt mooney <mfmooney@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 May 2011 19:40:33 -0400
+Subject: Re: [PATCH-v3 13/14] iscsi-target: Add misc utility and debug logic
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Arne Redlich <arne.redlich@googlemail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Svec <martin.svec@zoner.cz>
+In-Reply-To: <BANLkTikMdAUjT=G+DHaJwDOXuh532uN8nw@mail.gmail.com>
+References: <1305184041-32189-1-git-send-email-nab@linux-iscsi.org>
+	 <1305184041-32189-14-git-send-email-nab@linux-iscsi.org>
+	 <BANLkTikMdAUjT=G+DHaJwDOXuh532uN8nw@mail.gmail.com>
+Content-Type: text/plain
+Date: Fri, 13 May 2011 16:32:25 -0700
+Message-Id: <1305329545.7102.53.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 12:56 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 13.5.2011 20:52, matt mooney wrote:
->> So the real problem is that tools/perf/MANIFEST contains wildcards,
->> and when git archive is run, file name expansion isn't working
->> properly. By adding the $(srctree) as a prefix, globbing works but
->> then git archive requires --work-tree to be set.
->
-> I see. So how about
-> git --git-dir=$(srctree)/.git archive ... \
->    $$(cd $(srctree); echo $$(cat tools/perf/MANIFEST))
-> ? That does exactly the same as before the patch, just changes to
-> $(srctree) so that the expansion works.
+On Fri, 2011-05-13 at 21:30 +0200, Arne Redlich wrote:
+> 2011/5/12 Nicholas A. Bellinger <nab@linux-iscsi.org>:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This file adds iscsi_target_util.[c,h] code containing a number
+> > of miscellaneous utility functions for iscsi_target_mod.
+> >
+> > It also contains iscsi_debug.h macros for CONFIG_ISCSI_TARGET_DEBUG
+> >
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> 
+> <snip>
+> 
+> > diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+> > new file mode 100644
+> > index 0000000..af1c5c44
+> > --- /dev/null
+> > +++ b/drivers/target/iscsi/iscsi_target_util.c
+> 
+> <snip>
+> 
+> > +
+> > +struct iscsi_r2t *iscsit_get_r2t_for_eos(
+> > +       struct iscsi_cmd *cmd,
+> > +       u32 offset,
+> > +       u32 length)
+> > +{
+> > +       struct iscsi_r2t *r2t;
+> > +
+> > +       spin_lock_bh(&cmd->r2t_lock);
+> > +       list_for_each_entry(r2t, &cmd->cmd_r2t_list, r2t_list) {
+> > +               if ((r2t->offset <= offset) &&
+> > +                   (r2t->offset + r2t->xfer_len) >= (offset + length))
+> > +                       break;
+> > +       }
+> > +       spin_unlock_bh(&cmd->r2t_lock);
+> > +
+> > +       if (!r2t) {
+> > +               printk(KERN_ERR "Unable to locate R2T for Offset: %u, Length:"
+> > +                               " %u\n", offset, length);
+> > +               return NULL;
+> > +       }
+> > +
+> > +       return r2t;
+> > +}
+> > +
+> 
+> Nicholas,
+> 
+> This lookup pattern (repeated several times throughout the patch)
+> looks seriously flawed to me as r2t will never be NULL.
+> 
 
-Sure that works too! I guess it is less invasive than my original
-change. I will fix that up and resend it.
+Ugh..
 
--matt
+Unfortuately this breakage was introduced during the v4 conversion of
+iscsi-target to use struct list_head instead of the legacy raw ->next
+pointers for list walking in about 10 different locations..
 
--- 
-GPG-Key: 9AFE00EA
+I have pushed the following commit into lio-core-2.6.git to address the
+cases where a bogus NULL check of *pos after list_for_each_entry()
+exists:
+
+iscsi-target: Fix incorrect list_for_each_entry() NULL checks
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=af66a1368ec3256ba44656490688364084fa893d
+
+Please review the changes in lio-core-2.6.git/lio-4.1 and let me know if
+you see any more of these cases that need to be fixed, or have any
+additional review comments.
+
+So with that, I will go ahead and re-spin a proper PATCH-v4 series over
+the weekend for James to merge with this patch, and hopefully one
+additional v4.1 specific bugfix that is currently be investigated by
+Martin.
+
+Seriously, thanks for catching this one Arne..
+
+Best Regards,
+
+--nab
+
