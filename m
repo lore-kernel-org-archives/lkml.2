@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab1EMLjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 07:39:15 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47920 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab1EMLjN (ORCPT
+	id S1757308Ab1EMLkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 07:40:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44772 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826Ab1EMLkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 07:39:13 -0400
+	Fri, 13 May 2011 07:40:31 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DCD18C4.1000902@jp.fujitsu.com>
-Date: Fri, 13 May 2011 20:40:52 +0900
+Message-ID: <4DCD1913.2090200@jp.fujitsu.com>
+Date: Fri, 13 May 2011 20:42:11 +0900
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
@@ -17,7 +17,7 @@ To: kosaki.motohiro@jp.fujitsu.com
 CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
         minchan.kim@gmail.com, riel@redhat.com
-Subject: [PATCH 2/3] vmscan: implement swap token trace
+Subject: [PATCH 3/3] vmscan: implement swap token priority decay
 References: <4DCD1824.1060801@jp.fujitsu.com>
 In-Reply-To: <4DCD1824.1060801@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
@@ -26,201 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful for observing swap token activity.
+While testing for memcg aware swap token, I observed a swap token
+was often grabbed an intermittent running process (eg init, auditd)
+and they never release a token.
 
-example output:
+Why? Currently, swap toke priority is only decreased at page fault
+path. Then, if the process sleep immediately after to grab swap
+token, their swap token priority never be decreased. That makes
+obviously undesired result.
 
-             zsh-1845  [000]   598.962716: update_swap_token_priority:
-mm=ffff88015eaf7700 old_prio=1 new_prio=0
-          memtoy-1830  [001]   602.033900: update_swap_token_priority:
-mm=ffff880037a45880 old_prio=947 new_prio=949
-          memtoy-1830  [000]   602.041509: update_swap_token_priority:
-mm=ffff880037a45880 old_prio=949 new_prio=951
-          memtoy-1830  [000]   602.051959: update_swap_token_priority:
-mm=ffff880037a45880 old_prio=951 new_prio=953
-          memtoy-1830  [000]   602.052188: update_swap_token_priority:
-mm=ffff880037a45880 old_prio=953 new_prio=955
-          memtoy-1830  [001]   602.427184: put_swap_token:
-token_mm=ffff880037a45880
-             zsh-1789  [000]   602.427281: replace_swap_token:
-old_token_mm=          (null) old_prio=0 new_token_mm=ffff88015eaf7018
-new_prio=2
-             zsh-1789  [001]   602.433456: update_swap_token_priority:
-mm=ffff88015eaf7018 old_prio=2 new_prio=4
-             zsh-1789  [000]   602.437613: update_swap_token_priority:
-mm=ffff88015eaf7018 old_prio=4 new_prio=6
-             zsh-1789  [000]   602.443924: update_swap_token_priority:
-mm=ffff88015eaf7018 old_prio=6 new_prio=8
-             zsh-1789  [000]   602.451873: update_swap_token_priority:
-mm=ffff88015eaf7018 old_prio=8 new_prio=10
-             zsh-1789  [001]   602.462639: update_swap_token_priority:
-mm=ffff88015eaf7018 old_prio=10 new_prio=12
+This patch implement very poor (and lightweight) priority decay
+mechanism. It only be affect to the above corner case and doesn't
+change swap tendency workload performance (eg multi process qsbench
+load)
 
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- include/trace/events/vmscan.h |   77 +++++++++++++++++++++++++++++++++++++++++
- mm/thrash.c                   |   11 +++++-
- 2 files changed, 87 insertions(+), 1 deletions(-)
+ include/trace/events/vmscan.h |   12 ++++++++----
+ mm/thrash.c                   |    5 ++++-
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index ea422aa..1798e0c 100644
+index 1798e0c..ba18137 100644
 --- a/include/trace/events/vmscan.h
 +++ b/include/trace/events/vmscan.h
-@@ -6,6 +6,8 @@
+@@ -366,9 +366,10 @@ DEFINE_EVENT_CONDITION(put_swap_token_template, disable_swap_token,
 
- #include <linux/types.h>
- #include <linux/tracepoint.h>
-+#include <linux/mm.h>
-+#include <linux/memcontrol.h>
- #include "gfpflags.h"
+ TRACE_EVENT_CONDITION(update_swap_token_priority,
+ 	TP_PROTO(struct mm_struct *mm,
+-		 unsigned int old_prio),
++		 unsigned int old_prio,
++		 struct mm_struct *swap_token_mm),
 
- #define RECLAIM_WB_ANON		0x0001u
-@@ -310,6 +312,81 @@ TRACE_EVENT(mm_vmscan_lru_shrink_inactive,
- 		show_reclaim_flags(__entry->reclaim_flags))
+-	TP_ARGS(mm, old_prio),
++	TP_ARGS(mm, old_prio, swap_token_mm),
+
+ 	TP_CONDITION(mm->token_priority != old_prio),
+
+@@ -376,16 +377,19 @@ TRACE_EVENT_CONDITION(update_swap_token_priority,
+ 		__field(struct mm_struct*, mm)
+ 		__field(unsigned int, old_prio)
+ 		__field(unsigned int, new_prio)
++		__field(unsigned int, token_prio)
+ 	),
+
+ 	TP_fast_assign(
+ 		__entry->mm = mm;
+ 		__entry->old_prio = old_prio;
+ 		__entry->new_prio = mm->token_priority;
++		__entry->token_prio = swap_token_mm ? swap_token_mm->token_priority : 0;
+ 	),
+
+-	TP_printk("mm=%p old_prio=%u new_prio=%u",
+-		  __entry->mm, __entry->old_prio, __entry->new_prio)
++	TP_printk("mm=%p old_prio=%u new_prio=%u token_prio=%u",
++		  __entry->mm, __entry->old_prio, __entry->new_prio,
++		  __entry->token_prio)
  );
 
-+TRACE_EVENT(replace_swap_token,
-+	TP_PROTO(struct mm_struct *old_mm,
-+		 struct mm_struct *new_mm),
-+
-+	TP_ARGS(old_mm, new_mm),
-+
-+	TP_STRUCT__entry(
-+		__field(struct mm_struct*,	old_mm)
-+		__field(unsigned int,		old_prio)
-+		__field(struct mm_struct*,	new_mm)
-+		__field(unsigned int,		new_prio)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->old_mm   = old_mm;
-+		__entry->old_prio = old_mm ? old_mm->token_priority : 0;
-+		__entry->new_mm   = new_mm;
-+		__entry->new_prio = new_mm->token_priority;
-+	),
-+
-+	TP_printk("old_token_mm=%p old_prio=%u new_token_mm=%p new_prio=%u",
-+		  __entry->old_mm, __entry->old_prio,
-+		  __entry->new_mm, __entry->new_prio)
-+);
-+
-+DECLARE_EVENT_CLASS(put_swap_token_template,
-+	TP_PROTO(struct mm_struct *swap_token_mm),
-+
-+	TP_ARGS(swap_token_mm),
-+
-+	TP_STRUCT__entry(
-+		__field(struct mm_struct*, swap_token_mm)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->swap_token_mm = swap_token_mm;
-+	),
-+
-+	TP_printk("token_mm=%p", __entry->swap_token_mm)
-+);
-+
-+DEFINE_EVENT(put_swap_token_template, put_swap_token,
-+	TP_PROTO(struct mm_struct *swap_token_mm),
-+	TP_ARGS(swap_token_mm)
-+);
-+
-+DEFINE_EVENT_CONDITION(put_swap_token_template, disable_swap_token,
-+	TP_PROTO(struct mm_struct *swap_token_mm),
-+	TP_ARGS(swap_token_mm),
-+	TP_CONDITION(swap_token_mm != NULL)
-+);
-+
-+TRACE_EVENT_CONDITION(update_swap_token_priority,
-+	TP_PROTO(struct mm_struct *mm,
-+		 unsigned int old_prio),
-+
-+	TP_ARGS(mm, old_prio),
-+
-+	TP_CONDITION(mm->token_priority != old_prio),
-+
-+	TP_STRUCT__entry(
-+		__field(struct mm_struct*, mm)
-+		__field(unsigned int, old_prio)
-+		__field(unsigned int, new_prio)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mm = mm;
-+		__entry->old_prio = old_prio;
-+		__entry->new_prio = mm->token_priority;
-+	),
-+
-+	TP_printk("mm=%p old_prio=%u new_prio=%u",
-+		  __entry->mm, __entry->old_prio, __entry->new_prio)
-+);
-
  #endif /* _TRACE_VMSCAN_H */
-
 diff --git a/mm/thrash.c b/mm/thrash.c
-index 32c07fd..14c6c9f 100644
+index 14c6c9f..0c4f0a8 100644
 --- a/mm/thrash.c
 +++ b/mm/thrash.c
-@@ -23,6 +23,8 @@
- #include <linux/swap.h>
- #include <linux/memcontrol.h>
-
-+#include <trace/events/vmscan.h>
-+
- static DEFINE_SPINLOCK(swap_token_lock);
- struct mm_struct *swap_token_mm;
- struct mem_cgroup *swap_token_memcg;
-@@ -31,6 +33,7 @@ static unsigned int global_faults;
- void grab_swap_token(struct mm_struct *mm)
- {
- 	int current_interval;
-+	unsigned int old_prio = mm->token_priority;
- 	struct mem_cgroup *memcg;
-
- 	global_faults++;
-@@ -46,7 +49,7 @@ void grab_swap_token(struct mm_struct *mm)
-
- 	if (mm == swap_token_mm) {
- 		mm->token_priority += 2;
--		goto out;
-+		goto update_priority;
- 	}
-
- 	if (current_interval < mm->last_interval)
-@@ -60,6 +63,9 @@ void grab_swap_token(struct mm_struct *mm)
- 	if (mm->token_priority > swap_token_mm->token_priority)
+@@ -47,6 +47,9 @@ void grab_swap_token(struct mm_struct *mm)
+ 	if (!swap_token_mm)
  		goto replace_token;
 
-+update_priority:
-+	trace_update_swap_token_priority(mm, old_prio);
++	if (!(global_faults & 0xff))
++		mm->token_priority /= 2;
 +
+ 	if (mm == swap_token_mm) {
+ 		mm->token_priority += 2;
+ 		goto update_priority;
+@@ -64,7 +67,7 @@ void grab_swap_token(struct mm_struct *mm)
+ 		goto replace_token;
+
+ update_priority:
+-	trace_update_swap_token_priority(mm, old_prio);
++	trace_update_swap_token_priority(mm, old_prio, swap_token_mm);
+
  out:
  	mm->faultstamp = global_faults;
- 	mm->last_interval = current_interval;
-@@ -71,6 +77,7 @@ replace_token:
- 	memcg = try_get_mem_cgroup_from_mm(mm);
- 	if (memcg)
- 		css_put(mem_cgroup_css(memcg));
-+	trace_replace_swap_token(swap_token_mm, mm);
- 	swap_token_mm = mm;
- 	swap_token_memcg = memcg;
- 	goto out;
-@@ -81,6 +88,7 @@ void __put_swap_token(struct mm_struct *mm)
- {
- 	spin_lock(&swap_token_lock);
- 	if (likely(mm == swap_token_mm)) {
-+		trace_put_swap_token(swap_token_mm);
- 		swap_token_mm = NULL;
- 		swap_token_memcg = NULL;
- 	}
-@@ -104,6 +112,7 @@ void disable_swap_token(struct mem_cgroup *memcg)
- 	if (match_memcg(memcg, swap_token_memcg)) {
- 		spin_lock(&swap_token_lock);
- 		if (match_memcg(memcg, swap_token_memcg)) {
-+			trace_disable_swap_token(swap_token_mm);
- 			swap_token_mm = NULL;
- 			swap_token_memcg = NULL;
- 		}
 -- 
 1.7.3.1
 
