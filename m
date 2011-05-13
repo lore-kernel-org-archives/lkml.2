@@ -1,118 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab1EMTTB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 15:19:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55883 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751095Ab1EMTS7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 15:18:59 -0400
+	id S1759163Ab1ENUeP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 16:34:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62693 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab1ENUeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 16:34:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI) support
+Date: Fri, 13 May 2011 21:18:32 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Josh Wu <josh.wu@atmel.com>, mchehab@redhat.com,
+        linux-media@vger.kernel.org, lars.haring@atmel.com,
+        linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de
+References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>
+In-Reply-To: <1305186138-5656-1-git-send-email-josh.wu@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <7vliya77xl.fsf@alter.siamese.dyndns.org>
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
- <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
- <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
- <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
- <4DCD79A0.7000500@kdbg.org> <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
- <7vliya77xl.fsf@alter.siamese.dyndns.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 May 2011 12:18:03 -0700
-Message-ID: <BANLkTinGOHX-fNuQqZr50nvUC4BTymwBNg@mail.gmail.com>
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
- right after logging in)
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Johannes Sixt <j6t@kdbg.org>, Andrew Lutomirski <luto@mit.edu>,
-        Christian Couder <christian.couder@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105132118.32590.arnd@arndb.de>
+X-Provags-ID: V02:K0:g5ZjGlNICtpgPQwiglIldDNl1TyraYxuqUs90zeka8S
+ PcVUlYcNXm33PdA//HFhiivuxFadir9xUWDahoLAGP1WCwoK4O
+ 7h2Zo2hG+174caxfg8tmxE8PtbiyCwapyPEaZu9FOgk7Xzp+yW
+ wpLzxFSQD9P/dJV30d9VRqmLRsAUaKR7To6u4g1K2YbYuid8nB
+ ttkytxPQIW4szWQmT79bQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 11:48 AM, Junio C Hamano <gitster@pobox.com> wrote:
+On Thursday 12 May 2011, Josh Wu wrote:
+> This patch is to enable Atmel Image Sensor Interface (ISI) driver support. 
+> - Using soc-camera framework with videobuf2 dma-contig allocator
+> - Supporting video streaming of YUV packed format
+> - Tested on AT91SAM9M10G45-EK with OV2640
 >
-> Could you please clarify "off-limits"?
->
-> Do you mean "anything before v2.6.38 did not even have this feature, so
-> the result of testing a version in that range does not give us any
-> information"?
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
 
-Well, I think it's useful in two cases.
+This looks like a very well written driver for the most part. I have a few
+comments, mainly regarding maintainability that you should probably look
+into.
+ 
+>  arch/arm/mach-at91/include/mach/at91_isi.h |  454 ++++++++++++
+>  drivers/media/video/Kconfig                |   10 +
+>  drivers/media/video/Makefile               |    1 +
+>  drivers/media/video/atmel-isi.c            | 1089 ++++++++++++++++++++++++++++
 
-It's useful for the "before this version, the test we're doing doesn't
-even make sense and cannot succeed" sense.
+So you have a mach specific header file that is used by a single driver?
+That does not lean itself it code reuse. Better move the header file into
+the same directory as the driver, or (better) merge its contents into the
+same file.
 
-That doesn't have to be about hardware support, it could be any
-feature. For example, in git, say that you noticed that
---dirstat-by-file stopped working at some point. You know it was good
-when you merged it, so you'd do
+This is especially important if the driver is possibly shared with avr32
+socs.
 
-  git bisect start
-  git bisect good ac9666f84a59
+> +/* Constants for RGB_CFG */
+> +#define ISI_RGB_CFG_DEFAULT			0
+> +#define ISI_RGB_CFG_MODE_1			1
+> +#define ISI_RGB_CFG_MODE_2			2
+> +#define ISI_RGB_CFG_MODE_3			3
+> +
+> +/* Constants for RGB_CFG(ISI_V2) */
+> +#define ISI_V2_RGB_CFG_DEFAULT			0
+> +#define ISI_V2_RGB_CFG_MODE_1			1
+> +#define ISI_V2_RGB_CFG_MODE_2			2
+> +#define ISI_V2_RGB_CFG_MODE_3			3
+> +
+> +/* Bit manipulation macros */
+> +#define ISI_BIT(name)					\
+> +	(1 << ISI_##name##_OFFSET)
+> +#define ISI_BF(name, value)				\
+> +	(((value) & ((1 << ISI_##name##_SIZE) - 1))	\
+> +	 << ISI_##name##_OFFSET)
+> +#define ISI_BFEXT(name, value)				\
+> +	(((value) >> ISI_##name##_OFFSET)		\
+> +	 & ((1 << ISI_##name##_SIZE) - 1))
+> +#define ISI_BFINS(name, value, old)			\
+> +	(((old) & ~(((1 << ISI_##name##_SIZE) - 1)	\
+> +		    << ISI_##name##_OFFSET))\
+> +	 | ISI_BF(name, value))
 
-but you'd also go "that's also when I introduced the *test* for it, so
-I'll need to require that":
+A much better way to express the above would be to define the constants as
+mask values rather than using the macros with bit numbers. There are
+conflicting views on how bits are counted, plus the use of macros
+makes it harder to grep for the idenfiers.
 
-  git bisect requires ac9666f84a59
+For example, do
 
-and then you can start it all off:
+#define ISI_RGB_CFG_DEFAULT	0x0001
+#define ISI_RGB_CFG_MODE_1	0x0002
+#define ISI_RGB_CFG_MODE_2	0x0004
+#define ISI_RGB_CFG_MODE_3	0x0008
 
-  git bisect bad
-  git bisect run sh -c "make test"
+For the two examples I quoted, the values are actually the same,
+so you might also want to name them so that you don't have to
+define multiple versions but can simply reuse the same macros.
 
-or whatever.
+Some people also prefer the use of enum over #define, but I
+leave that to your judgement
 
-Because you don't want to go into the merges that were based on code
-that didn't even _have_ that feature.
+> +/* Register access macros */
+> +#define isi_readl(port, reg)				\
+> +	__raw_readl((port)->regs + ISI_##reg)
+> +#define isi_writel(port, reg, value)			\
+> +	__raw_writel((value), (port)->regs + ISI_##reg)
 
-Ok, so that's a made-up and contrieved example (it would make more
-sense for when you add a whole new flag, and your test-script is
-testign that new functionality), but it kind of explains the notion:
-it will not bother to run bisect on code that simply isn't _relevant_
-for the issue you are bisecting.
+Please explain why you use __raw_* instead of the proper
+accessors in the comment. Normal drivers should always
+use readl/writel.
 
-> Upon seeing "bad" result from a version before v2.6.38, what can we conclude?
+Better don't concatenate identifiers, in order to make
+grep and ctags work on the arguments.
 
-The point would be that such versions aren't even _testable_. So the
-whole "seeing 'bad'" concept is a NULL concept. It's like the above
-"new command line flag to 'git'" example: it's not that those commits
-might not have broken something, but those commits are crazy to test.
+> +
+> +#define ATMEL_ISI_VERSION	KERNEL_VERSION(1, 0, 0)
 
-If it turns out that a merge brought in the breakage, we'd have to do
-a totally new kind of test thing. But from a bisect standpoint, it's
-already very interesting if the end result is "hey, you merged that
-code that didn't even _support_ the feature we're testing, and that
-broke it". That gives quite a bit of information, and opens up new
-avenues for testing.
+Don't use KERNEL_VERSION() here, it means something else.
 
-For example, at that point, we might decide that "Oh, ok, now I will
-need to re-run the bisect for everthing that came in in that merge,
-but I will do a new merge at that point to see which commit it is that
-doesn't play nice with the new feature".
+Better yet, don't define a version at all. It is not acceptable
+to make any user space interface depend on specific versions,
+this is a compatibility nightmare.
 
-> The breakage cannot possibly come from the feature
-> that is being checked, so the procedure to check itself is busted?
+> +/* Frame buffer descriptor
+> + *  Used by the ISI module as a linked list for the DMA controller.
+> + */
+> +struct fbd {
+> +	/* Physical address of the frame buffer */
+> +	u32 fb_address;
+> +#if defined(CONFIG_ARCH_AT91SAM9G45) ||\
+> +	defined(CONFIG_ARCH_AT91SAM9X5)
+> +	/* DMA Control Register(only in HISI2) */
+> +	u32 dma_ctrl;
+> +#endif
+> +	/* Physical address of the next fbd */
+> +	u32 next_fbd_address;
+> +};
+> +
+> +#if defined(CONFIG_ARCH_AT91SAM9G45) ||\
+> +	defined(CONFIG_ARCH_AT91SAM9X5)
+> +static void set_dma_ctrl(struct fbd *fb_desc, u32 ctrl)
+> +{
+> +	fb_desc->dma_ctrl = ctrl;
+> +}
+> +#else
+> +static void set_dma_ctrl(struct fbd *fb_desc, u32 ctrl) { }
+> +#endif
 
-Right.
+Make these runtime checks, not compile-time. Best define different
+identifiers for the platform device, then key the differences off
+the device, not the platform.
 
-HOWEVER.
+> +struct atmel_isi {
+> +	/* ISI module spin lock. Protects against concurrent access of variables
+> +	 * that are shared with the ISR */
+> +	spinlock_t			lock;
+> +	void __iomem			*regs;
+> +
+> +	/*  If set ISI is in still capture mode */
+> +	int				still_capture;
+> +	int				sequence;
+> +	/* State of the ISI module in capturing mode */
+> +	int				state;
+> +
+> +	/* Capture/streaming wait queue for waiting for SOF */
+> +	wait_queue_head_t		capture_wq;
+> +
+> +	struct v4l2_device		v4l2_dev;
+> +
+> +	struct vb2_alloc_ctx		*alloc_ctx;
+> +
+> +	struct clk			*pclk;
+> +	struct platform_device		*pdev;
 
-There's another reason to say "require version XYZ", and that's
-essentially a "I want to do a (quicker) high-level bisect". Especially
-the way the kernel merge window is done, it might be that versions
-prior to v2.6.38 work perfectly _fine_, but what you want to do is to
-quickly bisect down to which subsystem caused breakage.
+pdev is unused?
 
-A good way to do that would be to just say "requires v2.6.38", and
-suddenly the actual set of commits that we're going to bisect is going
-to be *much* smaller. We're basically throwing away all the individual
-commits that were merged in the merge window, and saying something
-that approximates to "we are only interested in the merge points".
+> +	spin_lock_irq(&isi->lock);
+> +	isi->still_capture = 0;
+> +	isi->active = NULL;
+> +
+> +	while (isi_readl(isi, V2_STATUS) & ISI_BIT(V2_CDC))
+> +		cpu_relax();
 
-Why would we do that? Just to get a quicker "this is the problematic
-subsystem". So the "requires xyz" might be quite useful for that
-reason too.
+A busy loop with interrupts disabled is rather nasty.
+Is there a guaranteed upper bound on how long this can take?
 
-                 Linus
+You have the same loop in other places, maybe you can move
+it into a separate function with a comment explaining what
+you wait for and how long it can take.
+
+	Arnd
+
