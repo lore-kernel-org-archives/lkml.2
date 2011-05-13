@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab1EMHSw (ORCPT <rfc822;w@1wt.eu>);
+	id S1757345Ab1EMHTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 03:19:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36076 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757077Ab1EMHSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 May 2011 03:18:52 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37851 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757006Ab1EMHSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 03:18:51 -0400
-Date: Fri, 13 May 2011 09:18:34 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 3/6] mm: memcg-aware global reclaim
-Message-ID: <20110513071834.GD18610@cmpxchg.org>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
- <1305212038-15445-4-git-send-email-hannes@cmpxchg.org>
- <20110513090450.3c40d2ee.kamezawa.hiroyu@jp.fujitsu.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=G1jhGU/KlAU3jUtz9JI6rtpV98nAZVRmL61MTIk0ITy2yUsoNMcBU/aYY3DlRQAuoh
+         rPr1cRLr1dz8Blc2RgIZobopXAF5xpFMNdtZQ+MS+K/z5VaFEv+HJKDS3o09WiBKAZkt
+         PP5ijNdAsPijXuvdcVowhjdkw0bBOE9WyAHac=
+Message-ID: <4DCCDB57.70706@suse.cz>
+Date: Fri, 13 May 2011 09:18:47 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513090450.3c40d2ee.kamezawa.hiroyu@jp.fujitsu.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Jiri Slaby <jirislaby@gmail.com>,
+        Robert Hancock <hancockrwd@gmail.com>, lenb@kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
+References: <4C87A62E.30108@gmail.com> <1302598086-3622-1-git-send-email-jslaby@suse.cz> <20110412085622.43488ed9@jbarnes-desktop> <20110412155921.GA531@srcf.ucam.org>
+In-Reply-To: <20110412155921.GA531@srcf.ucam.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 09:04:50AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 12 May 2011 16:53:55 +0200
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 04/12/2011 05:59 PM, Matthew Garrett wrote:
+> On Tue, Apr 12, 2011 at 08:56:22AM -0700, Jesse Barnes wrote:
+>> I'll defer to the ACPI experts, Len or Matthew have you checked this
+>> one out?
 > 
-> > A page charged to a memcg is linked to a lru list specific to that
-> > memcg.  At the same time, traditional global reclaim is obvlivious to
-> > memcgs, and all the pages are also linked to a global per-zone list.
-> > 
-> > This patch changes traditional global reclaim to iterate over all
-> > existing memcgs, so that it no longer relies on the global list being
-> > present.
-> > 
-> > This is one step forward in integrating memcg code better into the
-> > rest of memory management.  It is also a prerequisite to get rid of
-> > the global per-zone lru lists.
-> 
-> As I said, I don't want removing global reclaim until dirty_ratio support and
-> better softlimit algorithm, at least. Current my concern is dirty_ratio,
-> if you want to speed up, please help Greg and implement dirty_ratio first.
+> Windows appears to work without this, so it seems likely that we're 
+> doing something wrong in some other sense, but I don't think we have a 
+> good idea as to what we're doing wrong...
 
-As I said, I am not proposing this for integration now.  It was more
-like asking if people were okay with this direction before we put
-things in place that could be in the way of the long-term plan.
+I changed the irq assignment like (to take the lowest
+available/non-conflicting IRQ):
+--- a/drivers/acpi/pci_link.c
++++ b/drivers/acpi/pci_link.c
+@@ -557,7 +557,7 @@ static int acpi_pci_link_allocate(struct
+          * the use of IRQs 9, 10, 11, and >15.
+          */
+         for (i = (link->irq.possible_count - 1); i >= 0; i--) {
+-            if (acpi_irq_penalty[irq] >
++            if (acpi_irq_penalty[irq] >=
+                 acpi_irq_penalty[link->irq.possible[i]])
+                 irq = link->irq.possible[i];
+         }
 
-Note that 6/6 is an attempt to improve the soft limit algorithm.
 
-> BTW, could you separete clean up code and your new logic ? 1st half of
-> codes seems to be just a clean up and seems nice. But , IIUC, someone
-> changed the arguments from chunk of params to be a flags....in some patch.
+And with this change it works _without_ acpi=noirq.
 
-Sorry again, I know that the series is pretty unorganized.
+Does it help somehow?
 
-> +	do {
-> +		mem_cgroup_hierarchy_walk(root, &mem);
-> +		sc->current_memcg = mem;
-> +		do_shrink_zone(priority, zone, sc);
-> +	} while (mem != root);
-> 
-> This move hierarchy walk from memcontrol.c to vmscan.c ?
-> 
-> About moving hierarchy walk, I may say okay...because my patch does this, too.
-> 
-> But....doesn't this reclaim too much memory if hierarchy is very deep ?
-> Could you add some 'quit' path ?
+dmesg then shows a difference like:
+ serial8250: ttyS1 at I/O 0x2f8 (irq = 3) is a 16550A
+ 00:07: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+ 00:08: ttyS1 at I/O 0x2f8 (irq = 3) is a 16550A
+-ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 11
+-PCI: setting IRQ 11 as level-triggered
+-serial 0000:00:09.0: PCI INT A -> Link[LNKB] -> GSI 11 (level, low) ->
+IRQ 11
+-0000:00:09.0: ttyS4 at I/O 0x1898 (irq = 11) is a 16550A
+-0000:00:09.0: ttyS5 at I/O 0x1890 (irq = 11) is a 16550A
++ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 10
++PCI: setting IRQ 10 as level-triggered
++serial 0000:00:09.0: PCI INT A -> Link[LNKB] -> GSI 10 (level, low) ->
+IRQ 10
++0000:00:09.0: ttyS4 at I/O 0x1898 (irq = 10) is a 16550A
++0000:00:09.0: ttyS5 at I/O 0x1890 (irq = 10) is a 16550A
+ ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 11
++PCI: setting IRQ 11 as level-triggered
+ serial 0000:00:0b.0: PCI INT A -> Link[LNKA] -> GSI 11 (level, low) ->
+IRQ 11
+ 0000:00:0b.0: ttyS6 at I/O 0x18c0 (irq = 11) is a 16550A
+ 0000:00:0b.0: ttyS7 at I/O 0x18b8 (irq = 11) is a 16550A
 
-Yes, I think I'll just reinstate the logic from
-mem_cgroup_select_victim() to remember the last child, and add an exit
-condition based on the number of reclaimed pages.
-
-This was also suggested by Rik in this thread already.
+thanks,
+-- 
+js
+suse labs
