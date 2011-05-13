@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1EMDEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 23:04:23 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59921 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1EMDEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 23:04:21 -0400
-Date: Thu, 12 May 2011 23:04:05 -0400 (EDT)
-Message-Id: <20110512.230405.532264333967231887.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110513114139.b1ed88ae.sfr@canb.auug.org.au>
-References: <20110513114139.b1ed88ae.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 20:04:13 -0700 (PDT)
+	id S1753571Ab1EMDIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 23:08:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23915 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab1EMDIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 23:08:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
+   d="scan'208";a="435365746"
+Date: Fri, 13 May 2011 11:08:10 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/17] writeback: update dirtied_when for synced inode
+ to prevent livelock
+Message-ID: <20110513030810.GB8016@localhost>
+References: <20110512135706.937596128@intel.com>
+ <20110512140030.883635923@intel.com>
+ <20110512224211.GI19446@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512224211.GI19446@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 13 May 2011 11:41:39 +1000
-
-> After merging the net tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
+On Fri, May 13, 2011 at 06:42:11AM +0800, Dave Chinner wrote:
+> On Thu, May 12, 2011 at 09:57:08PM +0800, Wu Fengguang wrote:
+> > Explicitly update .dirtied_when on synced inodes, so that they are no
+> > longer considered for writeback in the next round.
+> > 
+> > We'll do more aggressive "keep writeback as long as we wrote something"
+> > logic in wb_writeback(). The "use LONG_MAX .nr_to_write" trick in commit
+> > b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") will
+> > no longer be enough to stop sync livelock.
+> > 
+> > Reviewed-by: Jan Kara <jack@suse.cz>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  fs/fs-writeback.c |    9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> > 
+> > ext3/ext4 are working fine now, however tests show that XFS may still
+> > livelock inside the XFS routines:
+> > 
+> > [ 3581.181253] sync            D ffff8800b6ca15d8  4560  4403   4392 0x00000000
+> > [ 3581.181734]  ffff88006f775bc8 0000000000000046 ffff8800b6ca12b8 00000001b6ca1938
+> > [ 3581.182411]  ffff88006f774000 00000000001d2e40 00000000001d2e40 ffff8800b6ca1280
+> > [ 3581.183088]  00000000001d2e40 ffff88006f775fd8 00000340af111ef2 00000000001d2e40
+> > [ 3581.183765] Call Trace:
+> > [ 3581.184008]  [<ffffffff8109be73>] ? lock_release_holdtime+0xa3/0xab
+> > [ 3581.184392]  [<ffffffff8108cc0d>] ? prepare_to_wait+0x6c/0x79
+> > [ 3581.184756]  [<ffffffff8108cc0d>] ? prepare_to_wait+0x6c/0x79
+> > [ 3581.185120]  [<ffffffff812ed520>] xfs_ioend_wait+0x87/0x9f
+> > [ 3581.185474]  [<ffffffff8108c97a>] ? wake_up_bit+0x2a/0x2a
+> > [ 3581.185827]  [<ffffffff812f742a>] xfs_sync_inode_data+0x92/0x9d
+> > [ 3581.186198]  [<ffffffff812f76e2>] xfs_inode_ag_walk+0x1a5/0x287
+> > [ 3581.186569]  [<ffffffff812f779b>] ? xfs_inode_ag_walk+0x25e/0x287
+> > [ 3581.186946]  [<ffffffff812f7398>] ? xfs_sync_worker+0x69/0x69
+> > [ 3581.187311]  [<ffffffff812e2354>] ? xfs_perag_get+0x68/0xd0
+> > [ 3581.187669]  [<ffffffff81092175>] ? local_clock+0x41/0x5a
+> > [ 3581.188020]  [<ffffffff8109be73>] ? lock_release_holdtime+0xa3/0xab
+> > [ 3581.188403]  [<ffffffff812e22ec>] ? xfs_check_sizes+0x160/0x160
+> > [ 3581.188773]  [<ffffffff812e2354>] ? xfs_perag_get+0x68/0xd0
+> > [ 3581.189130]  [<ffffffff812e236c>] ? xfs_perag_get+0x80/0xd0
+> > [ 3581.189488]  [<ffffffff812e22ec>] ? xfs_check_sizes+0x160/0x160
+> > [ 3581.189858]  [<ffffffff812f7831>] ? xfs_inode_ag_iterator+0x6d/0x8f
+> > [ 3581.190241]  [<ffffffff812f7398>] ? xfs_sync_worker+0x69/0x69
+> > [ 3581.190606]  [<ffffffff812f780b>] xfs_inode_ag_iterator+0x47/0x8f
+> > [ 3581.190982]  [<ffffffff811611f5>] ? __sync_filesystem+0x7a/0x7a
+> > [ 3581.191352]  [<ffffffff812f7877>] xfs_sync_data+0x24/0x43
+> > [ 3581.191703]  [<ffffffff812f7911>] xfs_quiesce_data+0x2c/0x88
+> > [ 3581.192065]  [<ffffffff812f5556>] xfs_fs_sync_fs+0x21/0x48
+> > [ 3581.192419]  [<ffffffff811611e1>] __sync_filesystem+0x66/0x7a
+> > [ 3581.192783]  [<ffffffff8116120b>] sync_one_sb+0x16/0x18
+> > [ 3581.193128]  [<ffffffff8113e3e3>] iterate_supers+0x72/0xce
+> > [ 3581.193482]  [<ffffffff81161140>] sync_filesystems+0x20/0x22
+> > [ 3581.193842]  [<ffffffff8116127e>] sys_sync+0x21/0x33
+> > [ 3581.194177]  [<ffffffff819016c2>] system_call_fastpath+0x16/0x1b
+> > 
+> > --- linux-next.orig/fs/fs-writeback.c	2011-05-10 09:50:07.000000000 +0800
+> > +++ linux-next/fs/fs-writeback.c	2011-05-10 10:03:00.000000000 +0800
+> > @@ -419,6 +419,15 @@ writeback_single_inode(struct inode *ino
+> >  	spin_lock(&inode->i_lock);
+> >  	inode->i_state &= ~I_SYNC;
+> >  	if (!(inode->i_state & I_FREEING)) {
+> > +		/*
+> > +		 * Sync livelock prevention. Each inode is tagged and synced in
+> > +		 * one shot, so we can unconditionally update its dirty time to
+> > +		 * prevent syncing it again. Note that time ordering of b_dirty
+> > +		 * list will be kept because the following code either removes
+> > +		 * the inode from b_dirty or calls redirty_tail().
+> > +		 */
+> > +		if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_sync)
+> > +			inode->dirtied_when = jiffies;
 > 
-> net/ipv4/ip_forward.c: In function 'ip_forward':
-> net/ipv4/ip_forward.c:87: warning: 'iph' may be used uninitialized in this function
-> 
-> Introduced by commit def57687e957 ("ipv4: Elide use of rt->rt_dst in
-> ip_forward()").  It may be a false positive, but it is not obvious how
-> iph is assigned before being used.
+> Shouldn't this  update only ocur if the inode is still dirty?
 
-My compiler didn't warn, (and I just double checked this) which is
-weird.  Sigh.
+Yeah, that would be better even though the current form won't lead to
+errors.
 
-Thanks, here is the fix I'll push:
+Let's add one more test (inode->i_state & I_DIRTY)?
+(I was actually aware of the trade offs and didn't bother to add it..)
 
---------------------
-ipv4: Fix 'iph' use before set.
-
-I swear none of my compilers warned about this, yet it is so
-obvious.
-
-> net/ipv4/ip_forward.c: In function 'ip_forward':
-> net/ipv4/ip_forward.c:87: warning: 'iph' may be used uninitialized in this function
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/ipv4/ip_forward.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
-index fcbc0c8..3b34d1c 100644
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -84,7 +84,7 @@ int ip_forward(struct sk_buff *skb)
- 
- 	rt = skb_rtable(skb);
- 
--	if (opt->is_strictroute && iph->daddr != rt->rt_gateway)
-+	if (opt->is_strictroute && ip_hdr(skb)->daddr != rt->rt_gateway)
- 		goto sr_failed;
- 
- 	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
--- 
-1.7.4.4
-
+Thanks,
+Fengguang
