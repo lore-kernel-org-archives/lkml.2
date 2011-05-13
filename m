@@ -1,112 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab1EMIsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 04:48:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41974 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758113Ab1EMIr5 (ORCPT
+	id S1758236Ab1EMIuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 04:50:04 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37952 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758132Ab1EMIt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 04:47:57 -0400
-Date: Fri, 13 May 2011 10:47:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-In-Reply-To: <20110513083738.GA19733@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1105131047200.2866@ionos>
-References: <20110513131437.8999e8eb.sfr@canb.auug.org.au> <20110513080634.GA13647@elte.hu> <20110513083738.GA19733@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 13 May 2011 04:49:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=pJ7rywwjL7iNx1Zii3/VsSdjN/DUsCI9rx9sWCIBAcUm+rJrURAhVaKJW/HgNo4s8
+	SW1vF3ntegrUx26Ck3UWw==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>
+Subject: [RFC][PATCH v7 01/14] memcg: document cgroup dirty memory interfaces
+Date: Fri, 13 May 2011 01:47:40 -0700
+Message-Id: <1305276473-14780-2-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1305276473-14780-1-git-send-email-gthelen@google.com>
+References: <1305276473-14780-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011, Russell King - ARM Linux wrote:
+Document cgroup dirty memory interfaces and statistics.
 
-> On Fri, May 13, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
-> > 
-> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Today's linux-next merge of the tip tree got a conflict in 
-> > > arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource: convert 
-> > > x86 to generic i8253 clocksource") from the arm tree and commit b01cc1b0eae0 
-> > > ("x86: Convert remaining x86 clocksources to clocksource_register_hz/khz") 
-> > > from the tip tree.
-> > > 
-> > > The former seems to supercede the latter, so I used the former.
-> > 
-> > Russell, how the heck did this commit:
-> > 
-> >  commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
-> >  Author:     Russell King <rmk+kernel@arm.linux.org.uk>
-> >  AuthorDate: Sun May 8 18:55:19 2011 +0100
-> >  Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
-> >  CommitDate: Tue May 10 08:20:54 2011 +0100
-> > 
-> >     clocksource: convert x86 to generic i8253 clocksource
-> > 
-> > which has such a clearly x86 diffstat:
-> > 
-> >  arch/x86/Kconfig             |    1 +
-> >  arch/x86/include/asm/i8253.h |    2 +
-> >  arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
-> >  3 files changed, 4 insertions(+), 78 deletions(-)
-> > 
-> > end up in the ARM tree without an ack from an x86 maintainer??
+The implementation for these new interfaces routines comes in a series
+of following patches.
 
-Acked-by-me!
+Signed-off-by: Andrea Righi <arighi@develer.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+---
+Changelog since v6:
+- Removed 'Inode writeback issue' now that memcg-writeback is implemented in 
+  the series.
+- Trivial reword of section 5.6 "dirty memory".
+
+Changelog since v4:
+- Minor rewording of '5.5 dirty memory' section.
+- Added '5.5.1 Inode writeback issue' section.
+
+Changelog since v3:
+- Described interactions with memory.use_hierarchy.
+- Added description of total_dirty, total_writeback, and total_nfs_unstable.
+
+Changelog since v1:
+- Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+  memory.stat to match /proc/meminfo.
+- Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+- Describe a situation where a cgroup can exceed its dirty limit.
+
+ Documentation/cgroups/memory.txt |   70 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 70 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 43b9e46..15019a3 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -395,6 +395,10 @@ soft_direct_steal- # of pages reclaimed in global hierarchical reclaim from
+ 		direct reclaim
+ soft_direct_scan- # of pages scanned in global hierarchical reclaim from
+ 		direct reclaim
++dirty		- # of bytes that are waiting to get written back to the disk.
++writeback	- # of bytes that are actively being written back to the disk.
++nfs_unstable	- # of bytes sent to the NFS server, but not yet committed to
++		the actual storage.
+ inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+ 		LRU list.
+ active_anon	- # of bytes of anonymous and swap cache memory on active
+@@ -420,6 +424,9 @@ total_soft_kswapd_steal	- sum of all children's "soft_kswapd_steal"
+ total_soft_kswapd_scan	- sum of all children's "soft_kswapd_scan"
+ total_soft_direct_steal	- sum of all children's "soft_direct_steal"
+ total_soft_direct_scan	- sum of all children's "soft_direct_scan"
++total_dirty		- sum of all children's "dirty"
++total_writeback		- sum of all children's "writeback"
++total_nfs_unstable	- sum of all children's "nfs_unstable"
+ total_inactive_anon	- sum of all children's "inactive_anon"
+ total_active_anon	- sum of all children's "active_anon"
+ total_inactive_file	- sum of all children's "inactive_file"
+@@ -476,6 +483,69 @@ value for efficient access. (Of course, when necessary, it's synchronized.)
+ If you want to know more exact memory usage, you should use RSS+CACHE(+SWAP)
+ value in memory.stat(see 5.2).
  
-> The "no response" means two things: either that people are busy, or people
-> don't care about the patch.  There is a patch from David Martin modifying
-> linux/elf.h adding one line to it which has not had any response.  Should
-> we assume the silence means that people are busy?  If we did that, nothing
-> would ever happen.
-> 
-> > I see the commit has an ack from John but that feedback is not visible in the 
-> > lkml thread of this patch nor did John really realize the conflict nor the 
-> 
-> I have no idea why John's ack is not visible, especially as it was sent
-> to lkml _and_ explicitly copied to you.
-> 
-> > build breakage. The patch was still in the to-be-reviewed queue of our patches.
-> > 
-> > Nor was it tested properly. The patch looks sane but your workflow sucks.
-> > Please revert it and use a proper Git workflow to change arch/x86/ details ...
-> 
-> I don't think so.  I created a patch.  I posted it to relevant people.
-> I got an ack.  So I put it into linux-next for further testing rather
-> than having it sitting around here getting zero testing.
-> 
-> That's the _proper_ thing to do.  linux-next found some problems, so
-> let's sort them out - great, that's what linux-next is there for.  Let's
-> sort them out instead of assigning blame.
-> 
-> And hey, it found a problem, and the problem has now been fixed.  Which
-> is great, and that should be visible to linux-next soon.
-> 
-> As for merge conflicts, they happen.  They get sorted.  It's no big deal.
-> Again, that's what linux-next is there to find and allow people to
-> _discuss_ how to resolve them.  It's not about avoiding all conflicts
-> no matter what or blaming people when conflicts happen.
-> 
-> Lastly, I have absolutely no problem about pulling the x86 bits out of
-> this series if they cause a conflict or don't get an ack.  I operate a
-> flexible approach to my git tree for stuff like this which allows stuff
-> to be dropped or updated as necessary.
-> 
++5.6 dirty memory
++
++Control the maximum amount of dirty pages a cgroup can have at any given time.
++
++Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
++page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
++not be able to consume more than their designated share of dirty pages and will
++be throttled if they cross that limit.  System-wide dirty limits are also
++consulted.  Dirty memory consumption is checked against both system-wide and
++per-cgroup dirty limits.
++
++The interface is similar to the procfs interface: /proc/sys/vm/dirty_*.  It is
++possible to configure a limit to trigger throttling of a dirtier or queue
++background writeback.  The root cgroup memory.dirty_* control files are
++read-only and match the contents of the /proc/sys/vm/dirty_* files.
++
++Per-cgroup dirty limits can be set using the following files in the cgroupfs:
++
++- memory.dirty_ratio: the amount of dirty memory (expressed as a percentage of
++  cgroup memory) at which a process generating dirty pages will be throttled.
++  The default value is the system-wide dirty ratio, /proc/sys/vm/dirty_ratio.
++
++- memory.dirty_limit_in_bytes: the amount of dirty memory (expressed in bytes)
++  in the cgroup at which a process generating dirty pages will be throttled.
++  Suffix (k, K, m, M, g, or G) can be used to indicate that value is kilo, mega
++  or gigabytes.  The default value is the system-wide dirty limit,
++  /proc/sys/vm/dirty_bytes.
++
++  Note: memory.dirty_limit_in_bytes is the counterpart of memory.dirty_ratio.
++  Only one may be specified at a time.  When one is written it is immediately
++  taken into account to evaluate the dirty memory limits and the other appears
++  as 0 when read.
++
++- memory.dirty_background_ratio: the amount of dirty memory of the cgroup
++  (expressed as a percentage of cgroup memory) at which background writeback
++  kernel threads will start writing out dirty data.  The default value is the
++  system-wide background dirty ratio, /proc/sys/vm/dirty_background_ratio.
++
++- memory.dirty_background_limit_in_bytes: the amount of dirty memory (expressed
++  in bytes) in the cgroup at which background writeback kernel threads will
++  start writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to
++  indicate that value is kilo, mega or gigabytes.  The default value is the
++  system-wide dirty background limit, /proc/sys/vm/dirty_background_bytes.
++
++  Note: memory.dirty_background_limit_in_bytes is the counterpart of
++  memory.dirty_background_ratio.  Only one may be specified at a time.  When one
++  is written it is immediately taken into account to evaluate the dirty memory
++  limits and the other appears as 0 when read.
++
++A cgroup may contain more dirty memory than its dirty limit.  This is possible
++because of the principle that the first cgroup to touch a page is charged for
++it.  Subsequent page counting events (dirty, writeback, nfs_unstable) are also
++counted to the originally charged cgroup.  Example: If page is allocated by a
++cgroup A task, then the page is charged to cgroup A.  If the page is later
++dirtied by a task in cgroup B, then the cgroup A dirty count will be
++incremented.  If cgroup A is over its dirty limit but cgroup B is not, then
++dirtying a cgroup A page from a cgroup B task may push cgroup A over its dirty
++limit without throttling the dirtying cgroup B task.
++
++When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
++When use_hierarchy=1 the dirty limits of parent cgroups are also checked to
++ensure that no dirty limit is exceeded.
++
+ 6. Hierarchy support
+ 
+ The memory controller supports a deep hierarchy and hierarchical accounting.
+-- 
+1.7.3.1
+
