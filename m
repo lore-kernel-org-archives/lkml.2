@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab1EMJqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:46:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51947 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758162Ab1EMJqg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:46:36 -0400
-Subject: Re: Sched_autogroup and niced processes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
-        Carl-Johan Kjellander <carl-johan@klarna.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110513092933.GL13647@elte.hu>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-	 <1305273950.15080.7.camel@marge.simson.net>
-	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
-	 <20110513090537.GH13647@elte.hu> <1305277666.2561.9.camel@twins>
-	 <20110513092933.GL13647@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 13 May 2011 11:46:30 +0200
-Message-ID: <1305279990.2466.4.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1759140Ab1EMJuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:50:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36157 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758804Ab1EMJuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:50:06 -0400
+Date: Fri, 13 May 2011 10:49:58 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110513094958.GA3569@suse.de>
+References: <alpine.DEB.2.00.1105121024350.26013@router.home>
+ <1305214993.2575.50.camel@mulgrave.site>
+ <20110512154649.GB4559@redhat.com>
+ <1305216023.2575.54.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121121120.26013@router.home>
+ <1305217843.2575.57.camel@mulgrave.site>
+ <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
+ <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
+ <alpine.DEB.2.00.1105121232110.28493@router.home>
+ <20110512180018.GN11579@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110512180018.GN11579@random.random>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 11:29 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
-> > > Could we somehow automate this:
-> > > 
-> > >   > echo 19 > /proc/'pid of seti@home'/autogroup
-> > > 
-> > > and split off nice 19 tasks into separate groups and lower the group's 
-> > > priority? 
-> > 
-> > Well I guess you can stack on all kinds of heuristics, do we want to?
-> 
-> Well have you seen my non-heuristic suggestion:
-> 
->  | Another thing we could do is to lower the priority of a cgroup if it *only* 
->  | runs reniced tasks. I.e. track the 'maximum priority' of cgroups and 
->  | propagate that to their weight.
->  |
->  | This way renicing within cgroups will be more powerful and people do not have 
->  | to muck with cgroup details.
-> 
-> A cgroup assuming the highest priority of all tasks it contains is a pretty 
-> natural definition and extension of priorities and also solves this usecase.
+On Thu, May 12, 2011 at 08:00:18PM +0200, Andrea Arcangeli wrote:
+> <SNIP>
+>
+> BTW, it comes to mind in patch 2, SLUB should clear __GFP_REPEAT too
+> (not only __GFP_NOFAIL). Clearing __GFP_WAIT may be worth it or not
+> with COMPACTION=y, definitely good idea to clear __GFP_WAIT unless
+> lumpy is restricted to __GFP_REPEAT|__GFP_NOFAIL.
 
-Well, that a heuristic in my book, and it totally destroys the
-independence of groups from tasks (resulting in O(n) task nice
-behaviour).
+This is in V2 (unreleased, testing in progress and was running
+overnight). I noticed that clearing __GFP_REPEAT is required for
+reclaim/compaction if direct reclaimers from SLUB are to return false in
+should_continue_reclaim() and bail out from high-order allocation
+properly. As it is, there is a possibility for slub high-order direct
+reclaimers to loop in reclaim/compaction for a long time. This is
+only important when CONFIG_COMPACTION=y.
 
-I really don't see why we should do this, if people don't want what it
-does, don't use it. If you want something else, you can do all these
-things from userspace to suit your exact needs.
-
-We have enough knobs to set things up as you want them, no need to make
-things more complicated.
+-- 
+Mel Gorman
+SUSE Labs
