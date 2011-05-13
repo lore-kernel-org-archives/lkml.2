@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab1EMPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:40:29 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37921 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab1EMPk1 convert rfc822-to-8bit (ORCPT
+	id S1759495Ab1EMPri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:47:38 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:47958 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759466Ab1EMPrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:40:27 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: =?utf-8?Q?Bj=C3=B6rn?= JACKE <bj@SerNet.DE>, "Ted Ts'o" <tytso@mit.edu>,
-        sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
-        sandeen@redhat.com, bfields@fieldses.org, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <E1QKJAl-00DGc7-EB@intern.SerNet.DE>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110228211145.GG28617@thunk.org> <E1QKJAl-00DGc7-EB@intern.SerNet.DE>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Fri, 13 May 2011 21:10:09 +0530
-Message-ID: <87zkmqobhi.fsf@linux.vnet.ibm.com>
+	Fri, 13 May 2011 11:47:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=k8bIinC5kgGMeQr/njuL240XxHDdD5kmCeHGCNcUYyriPgjTb9HXmhsDzAIj7bHb9d
+         aC7Fq0nABaTi8W1vMPIgwBBL9eN+g7KvmKNAaOJ9mRDXPuN9iEoCcRrxeSCHST6bt8h/
+         LLaX4HktKiB+QuZv/7YZBnfXDSI8v1Gk5ZkOM=
+Message-ID: <4DCD5112.3020307@gmail.com>
+Date: Fri, 13 May 2011 09:41:06 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110421 Fedora/3.1.9-2.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Wim Heirman <wim@heirman.net>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: Re: perf-stat per thread results
+References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com> <20110513153028.GC3854@elte.hu>
+In-Reply-To: <20110513153028.GC3854@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 00:16:13 +0200, Björn JACKE <bj@SerNet.DE> wrote:
-> Hi,
+On 05/13/11 09:30, Ingo Molnar wrote:
+
+> Yes perf record --stat should work. 'perf report -T --stdio' is supposed to 
+> print this, but it has regressed i think.
+
+There is a known regression in 2.6.39; perf-record and perf-top cannot
+profile all threads in a process. They fail with:
+
+  Fatal: failed to mmap with 22 (Invalid argument)
+
+Curiously, perf-stat does work - or at least does not fail with the mmap
+error.
+
+David
+
+
 > 
-> On 2011-02-28 at 16:11 -0500 Ted Ts'o sent off:
-> > What is the current status of this patch series?  I seem to remember
-> > that Christoph and Al Viro had some objections; have those been
-> > cleared yet?  If not, can you summarize what their objections are?
-> > 
-> > To be honest I haven't been paying super close attention to this patch
-> > series, and I'm curious what needs to happen with it one way or
-> > another.
+> Arnaldo, any ideas?
 > 
-> after the discussion of this path submission thread are there any major or
-> minor issues left that prevent these to go upstream? I'd really love to see
-> NFSv4 ACLs being available on Linux, too.
+> Thanks,
 > 
-
-I updated richaclv23 branch at 
-
-http://git.kernel.org/?p=linux/kernel/git/kvaneesh/linux-richacl.git;a=summary
-
-which is rebased against latest linus tree.  The changes pass richacl
-test against local file system. I am yet to test richacl on NFS
-client. Once i get the results i will repost the series again. 
-
--aneesh
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
