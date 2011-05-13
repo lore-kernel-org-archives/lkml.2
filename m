@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab1EMH2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 03:28:32 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:32924 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757172Ab1EMH2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 03:28:30 -0400
-Date: Fri, 13 May 2011 09:28:15 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sysfs: remove "last sysfs file:" line from the oops
- messages
-Message-ID: <20110513072815.GA10584@elte.hu>
-References: <20110512230102.GA19069@kroah.com>
+	id S1757387Ab1EMH34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 03:29:56 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37061 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995Ab1EMH3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 03:29:55 -0400
+Date: Fri, 13 May 2011 09:29:50 +0200 (CEST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Dave Martin <dave.martin@linaro.org>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Ulrich Weigand <ulrich.weigand@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, patches@linaro.org
+Subject: Re: [PATCH v4 1/2] ARM: ELF: Define new core note type for VFP
+ registers
+In-Reply-To: <20110513065902.GA2867@localhost>
+Message-ID: <alpine.LFD.2.00.1105130926180.2762@xanadu.home>
+References: <1302688597-2969-1-git-send-email-dave.martin@linaro.org> <1302688597-2969-2-git-send-email-dave.martin@linaro.org> <20110428184925.GM17290@n2100.arm.linux.org.uk> <20110503093659.GA2503@arm.com> <20110512091400.GC1356@n2100.arm.linux.org.uk>
+ <20110513065902.GA2867@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512230102.GA19069@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 13 May 2011, Dave Martin wrote:
 
-* Greg KH <greg@kroah.com> wrote:
+> On Thu, May 12, 2011 at 10:14:00AM +0100, Russell King - ARM Linux wrote:
+> > On Tue, May 03, 2011 at 10:36:59AM +0100, Dave Martin wrote:
+> > > On Thu, Apr 28, 2011 at 07:49:25PM +0100, Russell King - ARM Linux wrote:
+> > > > On Wed, Apr 13, 2011 at 10:56:36AM +0100, Dave Martin wrote:
+> > > > > The VFP registers are not currently included in coredumps,
+> > > > > and there's no existing note type where they can sensibly be
+> > > > > included, so this patch defines a dedicated note type for them.
+> > > > 
+> > > > This probably wants to be copied to LKML (added).
+> > > 
+> > > Good point-- thanks.
+> > 
+> > What news on this?
+> 
+> None whatsoever.  Do you think I need to push harder for feedback?
 
-> ---------------
-> I'm going to queue this up for the .40 kernel merge window, any
-> objections?
-> ---------------
+I think that the patch should just be merged.  If someone had a problem 
+with this, we would have heard about it by now.
 
-> --- a/arch/x86/kernel/dumpstack.c
-> +++ b/arch/x86/kernel/dumpstack.c
-> @@ -279,7 +279,6 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
->  	printk("DEBUG_PAGEALLOC");
->  #endif
->  	printk("\n");
-> -	sysfs_printk_last_file();
->  	if (notify_die(DIE_OOPS, str, regs, err,
->  			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
->  		return 1;
 
-Good idea - that line has become quite a bit less useful over the past few 
-years and oops output is valuable screen real estate.
-
-Acked-by: Ingo Molnar <mingo@elte.hu>
-
-Thanks,
-
-	Ingo
+Nicolas
