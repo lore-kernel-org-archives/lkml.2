@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759358Ab1EMOlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:41:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51728 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759039Ab1EMOlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:41:10 -0400
-Date: Fri, 13 May 2011 16:40:59 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110513144059.GA32554@elte.hu>
-References: <20110512060344.GB3191@elte.hu>
- <4DCB8BCD.1080607@kernel.org>
- <4DCB8F7A.90603@kernel.org>
- <20110512092013.GJ2258@linux.vnet.ibm.com>
- <4DCC52FB.6030500@kernel.org>
- <4DCC894D.3070204@kernel.org>
- <20110513084253.GE13647@elte.hu>
- <20110513121906.GA3676@elte.hu>
- <20110513130414.GA6863@elte.hu>
- <20110513131218.GA7669@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513131218.GA7669@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1759362Ab1EMOoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:44:22 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50457 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759039Ab1EMOoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:44:21 -0400
+From: jean.pihet@newoldbits.com
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH] perf: export power_start and power_end tracepoints
+Date: Fri, 13 May 2011 16:43:58 +0200
+Message-Id: <1305297838-4015-1-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jean Pihet <j-pihet@ti.com>
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+If used in a module both tracepoints need to be exported by the
+kernel.
+Fixed a typo in CONFIG_EVENT_POWER_TRACING_DEPRECATED to really
+export the tracepoints.
 
-> > very clearly indicate that this is an RCU regression.
-> 
-> This might be the same one Yinghai found:
-> 
->  e59fb3120bec: rcu: Decrease memory-barrier usage based on semi-formal proof
-> 
-> So with the config i sent it's definitely reproducible.
+Signed-off-by: Jean Pihet <j-pihet@ti.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/trace/power-traces.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-yes. And note that the system does not lock up, but boots up after a really 
-long time - perhaps as a side-effect of very rare timer irqs driving forward 
-the RCU state machine?
+diff --git a/kernel/trace/power-traces.c b/kernel/trace/power-traces.c
+index f55fcf6..29b60f2 100644
+--- a/kernel/trace/power-traces.c
++++ b/kernel/trace/power-traces.c
+@@ -13,8 +13,9 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/power.h>
+ 
+-#ifdef EVENT_POWER_TRACING_DEPRECATED
++#ifdef CONFIG_EVENT_POWER_TRACING_DEPRECATED
+ EXPORT_TRACEPOINT_SYMBOL_GPL(power_start);
++EXPORT_TRACEPOINT_SYMBOL_GPL(power_end);
+ #endif
+ EXPORT_TRACEPOINT_SYMBOL_GPL(cpu_idle);
+ 
+-- 
+1.7.1
 
-Thanks,
-
-	Ingo
