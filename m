@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab1EMQpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 12:45:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	id S1759629Ab1EMQqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 12:46:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56944 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759198Ab1EMQpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 12:45:50 -0400
-Date: Fri, 13 May 2011 18:44:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] signal: trivial, fix the "timespec declared inside
-	parameter list" warning
-Message-ID: <20110513164435.GA22435@redhat.com>
-References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com> <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com> <20110426194904.GC8520@redhat.com> <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759198Ab1EMQqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 12:46:14 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Tony Lindgren <tony@atomide.com>
+Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arch/arm/mach-omap1/dma.c: Invert calls to platform_device_put and platform_device_del
+Date: Fri, 13 May 2011 18:46:10 +0200
+Message-Id: <1305305170-16922-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the compile warning, do_sigtimedwait(struct timespec *) in signal.h
-needs the forward declaration of timespec.
+From: Julia Lawall <julia@diku.dk>
 
-Reported-by: Mike Frysinger <vapier.adi@gmail.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Platform_device_del should be called before platform_device_put, as
+platform_device_put can delete the structure.
+
+Additionally, improve the error handling code for the call to ioremap, so
+that it calls platform_device_put.
+
+The semantic match that finds this problem is:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression e1,e2;
+@@
+
+*platform_device_put(e1);
+... when != e1 = e2
+*platform_device_del(e1);
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
+Is an ioremap needed also?  Not clear, because dma_base i a global variable.
 
- include/linux/signal.h |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-omap1/dma.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- sigprocmask/include/linux/signal.h~15_stw_warning	2011-05-12 20:44:43.000000000 +0200
-+++ sigprocmask/include/linux/signal.h	2011-05-13 18:10:40.000000000 +0200
-@@ -242,6 +242,7 @@ extern int __group_send_sig_info(int, st
- extern long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig,
- 				 siginfo_t *info);
- extern long do_sigpending(void __user *, unsigned long);
-+struct timespec;
- extern int do_sigtimedwait(const sigset_t *, siginfo_t *,
- 				const struct timespec *);
- extern int sigprocmask(int, sigset_t *, sigset_t *);
+diff --git a/arch/arm/mach-omap1/dma.c b/arch/arm/mach-omap1/dma.c
+index d855934..f5a5220 100644
+--- a/arch/arm/mach-omap1/dma.c
++++ b/arch/arm/mach-omap1/dma.c
+@@ -284,14 +284,15 @@ static int __init omap1_system_dma_init(void)
+ 	dma_base = ioremap(res[0].start, resource_size(&res[0]));
+ 	if (!dma_base) {
+ 		pr_err("%s: Unable to ioremap\n", __func__);
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto exit_device_put;
+ 	}
+ 
+ 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "%s: Unable to add resources for %s%d\n",
+ 			__func__, pdev->name, pdev->id);
+-		goto exit_device_del;
++		goto exit_device_put;
+ 	}
+ 
+ 	p = kzalloc(sizeof(struct omap_system_dma_plat_info), GFP_KERNEL);
+@@ -299,7 +300,7 @@ static int __init omap1_system_dma_init(void)
+ 		dev_err(&pdev->dev, "%s: Unable to allocate 'p' for %s\n",
+ 			__func__, pdev->name);
+ 		ret = -ENOMEM;
+-		goto exit_device_put;
++		goto exit_device_del;
+ 	}
+ 
+ 	d = kzalloc(sizeof(struct omap_dma_dev_attr), GFP_KERNEL);
+@@ -380,10 +381,10 @@ exit_release_d:
+ 	kfree(d);
+ exit_release_p:
+ 	kfree(p);
+-exit_device_put:
+-	platform_device_put(pdev);
+ exit_device_del:
+ 	platform_device_del(pdev);
++exit_device_put:
++	platform_device_put(pdev);
+ 
+ 	return ret;
+ }
 
