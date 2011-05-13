@@ -1,142 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab1EMPn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:43:28 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47290 "EHLO mx1.suse.de"
+	id S1757791Ab1EMPob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:44:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38833 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754049Ab1EMPn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:43:27 -0400
-Date: Fri, 13 May 2011 16:43:22 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Reduce impact to overall system of SLUB using
- high-order allocations V2
-Message-ID: <20110513154322.GI3569@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
- <alpine.DEB.2.00.1105131009530.24193@router.home>
+	id S1751366Ab1EMPoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 11:44:30 -0400
+Date: Fri, 13 May 2011 17:44:10 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Ahern <dsahern@gmail.com>
+Cc: Wim Heirman <wim@heirman.net>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Brice Goglin <Brice.Goglin@inria.fr>
+Subject: Re: perf-stat per thread results
+Message-ID: <20110513154410.GA6373@elte.hu>
+References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com>
+ <4DCD4FC5.8020608@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105131009530.24193@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DCD4FC5.8020608@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 10:21:46AM -0500, Christoph Lameter wrote:
-> On Fri, 13 May 2011, Mel Gorman wrote:
+
+* David Ahern <dsahern@gmail.com> wrote:
+
+> On 05/13/11 09:14, Wim Heirman wrote:
+> > Hi all,
+> > 
+> > I'm using perf-stat to look at hardware performance counters for a
+> > parallel program. Is there a way to get counter values for each thread
+> > individually, rather than aggregated for the whole process? I know I
+> > can attach to a specific thread using --tid=, but due to the time
+> > required to find the tid and attach/detach this isn't accurate for
+> > short-running programs.
 > 
-> > SLUB using high orders is the trigger but not the root cause as SLUB
-> > has been using high orders for a while. The following four patches
-> > aim to fix the problems in reclaim while reducing the cost for SLUB
-> > using those high orders.
-> >
-> > Patch 1 corrects logic introduced by commit [1741c877: mm:
-> > 	kswapd: keep kswapd awake for high-order allocations until
-> > 	a percentage of the node is balanced] to allow kswapd to
-> > 	go to sleep when balanced for high orders.
+> perf-stat requires changes to dump counters per thread; it currently
+> sums all threads into a single value.
 > 
-> The above looks good.
+> > Or, alternatively, can I use perf record --stat and get an exact count
+> > for each performance counter?
 > 
+> perf-record does not read values from hardware counters.
 
-Ok.
+It's supposed to do that if --stat is specified, and it used to work - see this 
+commit:
 
-> > Patch 2 prevents kswapd waking up in response to SLUBs speculative
-> > 	use of high orders.
-> 
-> Not sure if that is necessary since it seems that we triggered kswapd
-> before? Why not continue to do it? Once kswapd has enough higher order
-> pages kswapd should no longer be triggered right?
-> 
+  8d51327090ac: perf report: Fix and improve the displaying of per-thread event counters
 
-Because kswapd waking up isn't cheap and we are reclaiming pages
-just so SLUB may get high-order pages in the future. As it's for
-PAGE_ORDER_COSTLY_ORDER, we are not entering lumpy reclaim and just
-selecting a few random order-0 pages which may or may not help. There
-is very little control of how many pages are getting freed if kswapd
-is being woken frequently.
+and the output there:
 
-> > Patch 3 further reduces the cost by prevent SLUB entering direct
-> > 	compaction or reclaim paths on the grounds that falling
-> > 	back to order-0 should be cheaper.
-> 
-> Its cheaper for reclaim path true but more expensive in terms of SLUBs
-> management costs of the data and it also increases the memory wasted.
+     #  PID   TID  cache-misses  cache-references
+       4658  4659        495581           3238779
+       4658  4662        498246           3236823
+       4658  4663        499531           3243162
 
-Surely the reclaim cost exceeds SLUB management cost?
+which appears to be roughly what Wim is asking for, AFAICT.
 
-> A
-> higher order means denser packing of objects less page management
-> overhead. Fallback is not for free.
+But this seems to have regressed meanwhile.
 
-Neither is reclaiming a large bunch of pages. Worse, reclaiming
-pages so SLUB gets a high-order means it's likely to be stealing
-MIGRATE_MOVABLE blocks which eventually gives diminishing returns but
-may not be noticeable for weeks. From a fragmentation perspective,
-it's better if SLUB uses order-0 allocations when memory is low so
-that SLUB pages continue to get packed into as few MIGRATE_UNMOVABLE
-and MIGRATE_UNRECLAIMABLE blocks as possible.
+Thanks,
 
->  Reasonable effort should be made to
-> allocate the page order requested.
-> 
-> > Patch 4 notes that even when kswapd is failing to keep up with
-> > 	allocation requests, it should still go to sleep when its
-> > 	quota has expired to prevent it spinning.
-> 
-> Looks good too.
-> 
-> Overall, it looks like the compaction logic and the modifications to
-> reclaim introduced recently with the intend to increase the amount of
-> physically contiguous memory is not working as expected.
-> 
-
-The reclaim and kswapd damage was unintended and this is my fault
-but reclaim/compaction still makes a lot more sense than lumpy
-reclaim. Testing showed it disrupted the system a lot less and
-allocated high-order pages faster with fewer pages reclaimed.
-
-> SLUBs chance of getting higher order pages should be *increasing* as a
-> result of these changes. The above looks like the chances are decreasing
-> now.
-> 
-
-Patches 2 and 3 may mean that SLUB gets fewer high order pages when
-memory is low and it's depending on high-order pages to be naturally
-freed by SLUB as it recycles slabs of old objects. On the flip-side,
-fewer pages will be reclaimed. I'd expect the latter option is
-cheaper overall.
-
-> This is a matter of future concern. The metadata management overhead
-> in the kernel is continually increasing since memory sizes keep growing
-> and we typically manage memory in 4k chunks. Through large allocation
-> sizes we can reduce that management overhead but we can only do this if we
-> have an effective way of defragmenting memory to get longer contiguous
-> chunks that can be managed to a single page struct.
-> 
-> Please make sure that compaction and related measures really work properly.
-> 
-
-Local testing still shows them to be behaving as expected but then
-again, I haven't reproduced the simple problem reported by Chris
-and James despite using a few different laptops and two different
-low-end servers.
-
-> The patches suggest that the recent modifications are not improving the
-> situation.
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+	Ingo
