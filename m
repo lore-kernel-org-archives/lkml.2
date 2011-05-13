@@ -1,140 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab1EMItd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 04:49:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11532 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758132Ab1EMIt1 (ORCPT
+	id S1758208Ab1EMIsA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 04:48:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41974 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758113Ab1EMIr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 04:49:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=JizrqwbusmY37aU69If2aSnnSHY60VhgJTqvCJHcFUtWbXqDpe7iATaPMAdZZdGPl
-	EkCDBTxpF+IzC+0KFEVxQ==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>
-Subject: [RFC][PATCH v7 00/14] memcg: per cgroup dirty page accounting
-Date: Fri, 13 May 2011 01:47:39 -0700
-Message-Id: <1305276473-14780-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 13 May 2011 04:47:57 -0400
+Date: Fri, 13 May 2011 10:47:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jacob Pan <jacob.jun.pan@intel.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris McDermott <lcm@us.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the tip tree with the arm tree
+In-Reply-To: <20110513083738.GA19733@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1105131047200.2866@ionos>
+References: <20110513131437.8999e8eb.sfr@canb.auug.org.au> <20110513080634.GA13647@elte.hu> <20110513083738.GA19733@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series provides the ability for each cgroup to have independent dirty
-page usage limits.  Limiting dirty memory fixes the max amount of dirty (hard to
-reclaim) page cache used by a cgroup.  This allows for better per cgroup memory
-isolation and fewer ooms within a single cgroup.
+On Fri, 13 May 2011, Russell King - ARM Linux wrote:
 
-Having per cgroup dirty memory limits is not very interesting unless writeback
-is cgroup aware.  There is not much isolation if cgroups have to writeback data
-from other cgroups to get below their dirty memory threshold.
+> On Fri, May 13, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
+> > 
+> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > Today's linux-next merge of the tip tree got a conflict in 
+> > > arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource: convert 
+> > > x86 to generic i8253 clocksource") from the arm tree and commit b01cc1b0eae0 
+> > > ("x86: Convert remaining x86 clocksources to clocksource_register_hz/khz") 
+> > > from the tip tree.
+> > > 
+> > > The former seems to supercede the latter, so I used the former.
+> > 
+> > Russell, how the heck did this commit:
+> > 
+> >  commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
+> >  Author:     Russell King <rmk+kernel@arm.linux.org.uk>
+> >  AuthorDate: Sun May 8 18:55:19 2011 +0100
+> >  Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
+> >  CommitDate: Tue May 10 08:20:54 2011 +0100
+> > 
+> >     clocksource: convert x86 to generic i8253 clocksource
+> > 
+> > which has such a clearly x86 diffstat:
+> > 
+> >  arch/x86/Kconfig             |    1 +
+> >  arch/x86/include/asm/i8253.h |    2 +
+> >  arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
+> >  3 files changed, 4 insertions(+), 78 deletions(-)
+> > 
+> > end up in the ARM tree without an ack from an x86 maintainer??
 
-Per-memcg dirty limits are provided to support isolation and thus cross cgroup
-inode sharing is not a priority.  This allows the code be simpler.
-
-To add cgroup awareness to writeback, this series adds a memcg field to the
-inode to allow writeback to isolate inodes for a particular cgroup.  When an
-inode is marked dirty, i_memcg is set to the current cgroup.  When inode pages
-are marked dirty the i_memcg field compared against the page's cgroup.  If they
-differ, then the inode is marked as shared by setting i_memcg to a special
-shared value (zero).
-
-Previous discussions suggested that a per-bdi per-memcg b_dirty list was a good
-way to assoicate inodes with a cgroup without having to add a field to struct
-inode.  I prototyped this approach but found that it involved more complex
-writeback changes and had at least one major shortcoming: detection of when an
-inode becomes shared by multiple cgroups.  While such sharing is not expected to
-be common, the system should gracefully handle it.
-
-balance_dirty_pages() calls mem_cgroup_balance_dirty_pages(), which checks the
-dirty usage vs dirty thresholds for the current cgroup and its parents.  If any
-over-limit cgroups are found, they are marked in a global over-limit bitmap
-(indexed by cgroup id) and the bdi flusher is awoke.
-
-The bdi flusher uses wb_check_background_flush() to check for any memcg over
-their dirty limit.  When performing per-memcg background writeback,
-move_expired_inodes() walks per bdi b_dirty list using each inode's i_memcg and
-the global over-limit memcg bitmap to determine if the inode should be written.
-
-If mem_cgroup_balance_dirty_pages() is unable to get below the dirty page
-threshold writing per-memcg inodes, then downshifts to also writing shared
-inodes (i_memcg=0).
-
-I know that there is some significant writeback changes associated with the
-IO-less balance_dirty_pages() effort.  I am not trying to derail that, so this
-patch series is merely an RFC to get feedback on the design.  There are probably
-some subtle races in these patches.  I have done moderate functional testing of
-the newly proposed features.
-
-Here is an example of the memcg-oom that is avoided with this patch series:
-	# mkdir /dev/cgroup/memory/x
-	# echo 100M > /dev/cgroup/memory/x/memory.limit_in_bytes
-	# echo $$ > /dev/cgroup/memory/x/tasks
-	# dd if=/dev/zero of=/data/f1 bs=1k count=1M &
-        # dd if=/dev/zero of=/data/f2 bs=1k count=1M &
-        # wait
-	[1]-  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
-	[2]+  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
-
-Known limitations:
-	If a dirty limit is lowered a cgroup may be over its limit.
-
-Changes since -v6:
-- memcg aware writeback.
-
-Single patch that can be applied to mmotm-2011-05-06-16-39:
-  http://www.kernel.org/pub/linux/kernel/people/gthelen/memcg/memcg-dirty-limits-v7-on-mmotm-2011-05-06-16-39.patch
-
-Patches are based on mmotm-2011-05-06-16-39.
-
-Greg Thelen (14):
-  memcg: document cgroup dirty memory interfaces
-  memcg: add page_cgroup flags for dirty page tracking
-  memcg: add mem_cgroup_mark_inode_dirty()
-  memcg: add dirty page accounting infrastructure
-  memcg: add kernel calls for memcg dirty page stats
-  memcg: add dirty limits to mem_cgroup
-  memcg: add cgroupfs interface to memcg dirty limits
-  writeback: add memcg fields to writeback_control
-  cgroup: move CSS_ID_MAX to cgroup.h
-  memcg: dirty page accounting support routines
-  memcg: create support routines for writeback
-  memcg: create support routines for page-writeback
-  writeback: make background writeback cgroup aware
-  memcg: check memcg dirty limits in page writeback
-
- Documentation/cgroups/memory.txt  |   70 ++++
- fs/fs-writeback.c                 |   33 ++-
- fs/inode.c                        |    3 +
- fs/nfs/write.c                    |    4 +
- include/linux/cgroup.h            |    1 +
- include/linux/fs.h                |    9 +
- include/linux/memcontrol.h        |   64 ++++-
- include/linux/page_cgroup.h       |   23 ++
- include/linux/writeback.h         |    5 +-
- include/trace/events/memcontrol.h |  198 +++++++++++
- kernel/cgroup.c                   |    1 -
- mm/filemap.c                      |    1 +
- mm/memcontrol.c                   |  705 ++++++++++++++++++++++++++++++++++++-
- mm/page-writeback.c               |   42 ++-
- mm/truncate.c                     |    1 +
- mm/vmscan.c                       |    2 +-
- 16 files changed, 1134 insertions(+), 28 deletions(-)
- create mode 100644 include/trace/events/memcontrol.h
-
--- 
-1.7.3.1
-
+Acked-by-me!
+ 
+> The "no response" means two things: either that people are busy, or people
+> don't care about the patch.  There is a patch from David Martin modifying
+> linux/elf.h adding one line to it which has not had any response.  Should
+> we assume the silence means that people are busy?  If we did that, nothing
+> would ever happen.
+> 
+> > I see the commit has an ack from John but that feedback is not visible in the 
+> > lkml thread of this patch nor did John really realize the conflict nor the 
+> 
+> I have no idea why John's ack is not visible, especially as it was sent
+> to lkml _and_ explicitly copied to you.
+> 
+> > build breakage. The patch was still in the to-be-reviewed queue of our patches.
+> > 
+> > Nor was it tested properly. The patch looks sane but your workflow sucks.
+> > Please revert it and use a proper Git workflow to change arch/x86/ details ...
+> 
+> I don't think so.  I created a patch.  I posted it to relevant people.
+> I got an ack.  So I put it into linux-next for further testing rather
+> than having it sitting around here getting zero testing.
+> 
+> That's the _proper_ thing to do.  linux-next found some problems, so
+> let's sort them out - great, that's what linux-next is there for.  Let's
+> sort them out instead of assigning blame.
+> 
+> And hey, it found a problem, and the problem has now been fixed.  Which
+> is great, and that should be visible to linux-next soon.
+> 
+> As for merge conflicts, they happen.  They get sorted.  It's no big deal.
+> Again, that's what linux-next is there to find and allow people to
+> _discuss_ how to resolve them.  It's not about avoiding all conflicts
+> no matter what or blaming people when conflicts happen.
+> 
+> Lastly, I have absolutely no problem about pulling the x86 bits out of
+> this series if they cause a conflict or don't get an ack.  I operate a
+> flexible approach to my git tree for stuff like this which allows stuff
+> to be dropped or updated as necessary.
+> 
