@@ -1,147 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab1EMSxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:53:10 -0400
-Received: from relay.ptn-ipout02.plus.net ([212.159.7.36]:15242 "EHLO
-	relay.ptn-ipout02.plus.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757347Ab1EMSxH (ORCPT
+	id S1758360Ab1EMSzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:55:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34979 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab1EMSzX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:53:07 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjMWAMt8zU3Unw4T/2dsb2JhbACCNIJkkj6OMne1HAKHIIkdDoYHBJQ1hByGJw
-Subject: [PATCH v4 2/2] mfd: Add ASIC3 LED support
-From: "Paul Parsons" <lost.distance@yahoo.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <sameo@linux.intel.com>, <philipp.zabel@gmail.com>
-Date: Fri, 13 May 2011 18:53:03 +0000
-Content-Type: text/plain
-Mime-Version: 1.0
-X-Mailer: email v2.5.0 (Linux 2.6.38 x86_64 [http://email.cleancode.org])
-Message-Id: <E1QKxU0-0007P3-Cj@outmx04.plus.net>
+	Fri, 13 May 2011 14:55:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=P1AguGsWLA6a2XeVlojE8LT7ZuF+A28mmdRNxwBez2eiBo1YcaEt365dCrACcw4uzQ
+         TXe0mg9aOZDvNUlAgc/gbzqwK3zixA36MhID20UjLsu3oxESPoaHOr7LGK/RxEyTSHjp
+         kOp6DcW0AvOAN9+88QY1B0l75Rn5EG3WW8Xxo=
+MIME-Version: 1.0
+In-Reply-To: <7vliya77xl.fsf@alter.siamese.dyndns.org>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+ <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+ <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
+ <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
+ <4DCD79A0.7000500@kdbg.org> <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
+ <7vliya77xl.fsf@alter.siamese.dyndns.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 13 May 2011 14:55:03 -0400
+X-Google-Sender-Auth: E-KDphPh0SXJPp5rjtGcrYpWuac
+Message-ID: <BANLkTi=dFhxWHHPiYi6P7Mn45J7dZXn=AQ@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Sixt <j6t@kdbg.org>,
+        Christian Couder <christian.couder@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add LED support for the HTC ASIC3. Underlying support is provided by the mfd/asic3 and leds/leds-asic3 drivers. An example configuration is provided by the pxa/hx4700 platform.
+On Fri, May 13, 2011 at 2:48 PM, Junio C Hamano <gitster@pobox.com> wrote:
+> Linus Torvalds <torvalds@linux-foundation.org> writes:
+>
+>> When you say that v2.6.38 is good, that means that everything that can
+>> be reached from 2.6.38 is good.
+>>
+>> NOT AT ALL the same thing as "git bisect requires v2.6.38" would be.
+>>
+>> The "requires v2.6.38" would basically say that anything that doesn't
+>> contain v2.6.38 is "off-limits". It's fine to call them "good", but
+>> that's not the same thing as "git bisect good v2.6.38".
+>>
+>> Why?
+>>
+>> Think about it. It's the "reachable from v2.6.38" vs "cannot reach
+>> v2.6.38" difference. That's a HUGE difference.
+>
+> Could you please clarify "off-limits"?
+>
+> Do you mean "anything before v2.6.38 did not even have this feature, so
+> the result of testing a version in that range does not give us any
+> information"?  The feature didn't even exist, so a bug can never trigger,
+> and seeing "good" from such a version does not mean everything reachable
+> from it is good?  Upon seeing "bad" result from a version before v2.6.38,
+> what can we conclude?  The breakage cannot possibly come from the feature
+> that is being checked, so the procedure to check itself is busted?
+>
 
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
----
-Identical to v3 but submitted as 2 separate patches as requested: one for the LED driver and the asic3.h changes and a second one for the asic3.c changes.
-diff -uprN clean-2.6.39-rc7/drivers/mfd/asic3.c linux-2.6.39-rc7/drivers/mfd/asic3.c
---- clean-2.6.39-rc7/drivers/mfd/asic3.c	2011-05-11 00:54:17.415288366 +0100
-+++ linux-2.6.39-rc7/drivers/mfd/asic3.c	2011-05-13 19:38:51.178956499 +0100
-@@ -88,19 +88,19 @@ struct asic3 {
- 
- static int asic3_gpio_get(struct gpio_chip *chip, unsigned offset);
- 
--static inline void asic3_write_register(struct asic3 *asic,
--				 unsigned int reg, u32 value)
-+void asic3_write_register(struct asic3 *asic, unsigned int reg, u32 value)
- {
- 	iowrite16(value, asic->mapping +
- 		  (reg >> asic->bus_shift));
- }
-+EXPORT_SYMBOL_GPL(asic3_write_register);
- 
--static inline u32 asic3_read_register(struct asic3 *asic,
--			       unsigned int reg)
-+u32 asic3_read_register(struct asic3 *asic, unsigned int reg)
- {
- 	return ioread16(asic->mapping +
- 			(reg >> asic->bus_shift));
- }
-+EXPORT_SYMBOL_GPL(asic3_read_register);
- 
- static void asic3_set_register(struct asic3 *asic, u32 reg, u32 bits, bool set)
- {
-@@ -782,7 +782,55 @@ static struct mfd_cell asic3_cell_mmc =
- 	.resources     = asic3_mmc_resources,
- };
- 
-+static const int clock_ledn[ASIC3_NUM_LEDS] = {
-+	[0] = ASIC3_CLOCK_LED0,
-+	[1] = ASIC3_CLOCK_LED1,
-+	[2] = ASIC3_CLOCK_LED2,
-+};
-+
-+static int asic3_leds_enable(struct platform_device *pdev)
-+{
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct asic3 *asic = dev_get_drvdata(pdev->dev.parent);
-+
-+	asic3_clk_enable(asic, &asic->clocks[clock_ledn[cell->id]]);
-+
-+	return 0;
-+}
-+
-+static int asic3_leds_disable(struct platform_device *pdev)
-+{
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct asic3 *asic = dev_get_drvdata(pdev->dev.parent);
-+
-+	asic3_clk_disable(asic, &asic->clocks[clock_ledn[cell->id]]);
-+
-+	return 0;
-+}
-+
-+static struct mfd_cell asic3_cell_leds[ASIC3_NUM_LEDS] = {
-+	[0] = {
-+		.name          = "leds-asic3",
-+		.id            = 0,
-+		.enable        = asic3_leds_enable,
-+		.disable       = asic3_leds_disable,
-+	},
-+	[1] = {
-+		.name          = "leds-asic3",
-+		.id            = 1,
-+		.enable        = asic3_leds_enable,
-+		.disable       = asic3_leds_disable,
-+	},
-+	[2] = {
-+		.name          = "leds-asic3",
-+		.id            = 2,
-+		.enable        = asic3_leds_enable,
-+		.disable       = asic3_leds_disable,
-+	},
-+};
-+
- static int __init asic3_mfd_probe(struct platform_device *pdev,
-+				  struct asic3_platform_data *pdata,
- 				  struct resource *mem)
- {
- 	struct asic3 *asic = platform_get_drvdata(pdev);
-@@ -820,9 +868,23 @@ static int __init asic3_mfd_probe(struct
- 	if (ret < 0)
- 		goto out;
- 
--	if (mem_sdio && (irq >= 0))
-+	if (mem_sdio && (irq >= 0)) {
- 		ret = mfd_add_devices(&pdev->dev, pdev->id,
- 			&asic3_cell_mmc, 1, mem_sdio, irq);
-+		if (ret < 0)
-+			goto out;
-+	}
-+
-+	if (pdata->leds) {
-+		int i;
-+
-+		for (i = 0; i < ASIC3_NUM_LEDS; ++i) {
-+			asic3_cell_leds[i].platform_data = &pdata->leds[i];
-+			asic3_cell_leds[i].pdata_size = sizeof(pdata->leds[i]);
-+		}
-+		ret = mfd_add_devices(&pdev->dev, 0,
-+			asic3_cell_leds, ASIC3_NUM_LEDS, NULL, 0);
-+	}
- 
-  out:
- 	return ret;
-@@ -903,7 +965,7 @@ static int __init asic3_probe(struct pla
- 	 */
- 	memcpy(asic->clocks, asic3_clk_init, sizeof(asic3_clk_init));
- 
--	asic3_mfd_probe(pdev, mem);
-+	asic3_mfd_probe(pdev, pdata, mem);
- 
- 	dev_info(asic->dev, "ASIC3 Core driver\n");
- 
+In my case, if I'd given bisect a hint that commits that don't include
+v2.6.38 are unlikely to work for reasons unrelated to the bug, then
+there should still have been enough revisions left for bisect to tell
+me "the bug was introduced by the merge of the drm tree but I can't
+tell you more without testing off-limits revisions".  That would have
+avoided testing three or four revisions that just failed to boot.
 
+In my particular case I think it would also have avoided an
+unnecessary set of tests to figure out why the networking merge broke
+my system when the networking merge did not, in fact, break my system.
+ This is coincidence -- all of the commits that didn't have the change
+that fixed the bug the first time around also didn't contain v2.6.38,
+so I never would have tested them.
+
+This is maybe some further justification for a bisect mode that
+follows the --first-parent path as long as possible -- it might take
+one or two more kernel builds, but it avoids odd trips around the
+history that can hit random crap like that.  (Of course, it could lead
+to different random crap, but what can you do?)
+
+--Andy
+
+--Andy
+
+>
+>
