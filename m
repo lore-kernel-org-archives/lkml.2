@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1EMDJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 23:09:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58943 "EHLO mga03.intel.com"
+	id S1754032Ab1EMDLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 23:11:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48933 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab1EMDJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 23:09:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
-   d="scan'208";a="435365988"
-Date: Fri, 13 May 2011 11:09:03 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
-Message-ID: <20110513030903.GA26981@sli10-conroe.sh.intel.com>
-References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
- <20110511092848.GE1661@htj.dyndns.org>
- <1305168493.2373.15.camel@sli10-conroe>
- <20110512082159.GB1030@htj.dyndns.org>
- <1305190520.2373.18.camel@sli10-conroe>
- <20110512085922.GD1030@htj.dyndns.org>
- <1305190936.3795.1.camel@edumazet-laptop>
- <20110512090534.GE1030@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512090534.GE1030@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750895Ab1EMDK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 23:10:58 -0400
+Date: Fri, 13 May 2011 13:10:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: linux-next: manual merge of the tip tree with the  tree
+Message-Id: <20110513131044.499e82d0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__13_May_2011_13_10_44_+1000_vEePqgvS0QWd4Eh3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Thu, May 12, 2011 at 05:05:34PM +0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, May 12, 2011 at 11:02:15AM +0200, Eric Dumazet wrote:
-> > > I don't think @maxfuzzy is necessary there.  I wrote this before but
-> > > why can't we track the actual deviation instead of the number of
-> > > deviation events?
-> > 
-> > Thats roughly same thing (BATCH multiplicator factor apart)
-> > 
-> > Most percpu_counter users for a given percpu_counter object use a given
-> > BATCH, dont they ?
-> 
-> Well, @maxfuzzy is much harder than @batch.  It's way less intuitive.
-> Although I haven't really thought about it that much, I think it might
-> be possible to eliminate it.  Maybe I'm confused.  I'll take another
-> look later but if someone can think of something, please jump right
-> in.
-there is another problem here, _sum could keep spin if cocurrent updater
-is running.
+--Signature=_Fri__13_May_2011_13_10_44_+1000_vEePqgvS0QWd4Eh3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We could slightly change Eric's idea, how about something like this:
+Hi all,
 
-s64 __percpu_counter_sum(struct percpu_counter *fbc)
-{
-	retry_times = 0;
-retry:
-	old_seq = fbc->seq;
-	sum = do_sum()
-	if (old_seq != fbc->seq && retry_times++ < MAX_RETRY)
-		goto retry;
-	return sum;
-}
-MAX_RETRY could be nr_cpu_ids. The rational here is if cocurrent updater
-keeps running, we can't get accurate sum, so just don't try hard.
+Today's linux-next merge of the tip tree got a conflict in
+arch/mips/kernel/i8253.c between commit 2b9b7cd782a5 ("clocksource:
+convert mips to generic i8253 clocksource") from the arm tree and commit
+75c4fd8c7862 ("mips: convert to clocksource_register_hz/khz") from the
+tip tree.
 
-Thanks,
-Shaohua
+The former seems to supercede the latter, so I used the former.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__13_May_2011_13_10_44_+1000_vEePqgvS0QWd4Eh3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNzKE0AAoJEDMEi1NhKgbsPWYH/RlzCk59DUAB8GFYwzIW4imO
+m9VBnMscNSad9Pwrl7AC2IrWs6Z6Fc0E8hT2KvWNepmOUa/vl2mkWd4AKigkX7l5
+3YrJTjNQCDIWTtr5cQO9c0K6nMJzURrNXTO4IZ9Hh0UnsIUKY9KMgv2cVCxaqHt7
+HuANKCZ+nkd/bOmB1R32Cjjulx4BCs/sfOuodik8VNtGd1Baxiq82ex1bvgQ43b/
+qZE/NRHpJ8NmtBPV14VBBcRhDcP7lT9LxfkEGh08yeTLscraHUS3l2xUElnAYBhj
+qINHkcv7YEJRqouxBAmixiGZD+b1MwfMcRckp/NWDQW7L0+T+VXZgUWX6JOrUQY=
+=mHKg
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__13_May_2011_13_10_44_+1000_vEePqgvS0QWd4Eh3--
