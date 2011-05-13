@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab1EMHbc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 03:31:32 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52531 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757231Ab1EMHba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 03:31:30 -0400
-Date: Fri, 13 May 2011 09:31:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, x86@kernel.org,
-        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 9/9] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
-Message-ID: <20110513073101.GD10584@elte.hu>
-References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
- <1305244212-19183-10-git-send-email-sboyd@codeaurora.org>
+	id S1757555Ab1EMHbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 03:31:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58392 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab1EMHbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 03:31:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DCCDEC5.3040201@jp.fujitsu.com>
+Date: Fri, 13 May 2011 16:33:25 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305244212-19183-10-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
+ update tsk->rt.nr_cpus_allowed
+References: <20110428161149.GA15658@redhat.com>	<20110502194416.2D61.A69D9226@jp.fujitsu.com>	<20110502195657.2D68.A69D9226@jp.fujitsu.com>	<1305129929.2914.247.camel@laptop>	<4DCCC61F.80408@jp.fujitsu.com> <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
+In-Reply-To: <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>> (3) schedule() makes fallback and cpuset_cpus_allowed_fallback
+>>>>      change task->cpus_allowed
+>>>
+>>> I'm failing to see how this is happening, surely that kthread isn't
+>>> actually running that early?
+>>
+>> If my understand correctly, current call graph is below.
+>>
+>> kernel_init()
+>>         smp_init();
+>>                 cpu_up()
+>>                         ... cpu hotplug notification
+>>                                 kthread_create()
+>>         sched_init_smp();
+>>
+>>
+>> So, cpu hotplug event is happen before sched_init_smp(). The old rule is,
+>> all kthreads of using cpu-up notification have to use kthread_bind(). It
+>> protected from sched load balance.
+>>
+>> but, now cpuset_cpus_allowed_fallback() forcedly change kthread's cpumask.
+>> Why is this works? the point are two.
+>>
+>> - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
+>> periodically.
+>>   then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
+>>   my debug print obseve following cpumask change occur at boot time.
+>>      1) kthread_bind: bind cpu1
+>>      2) cpuset_cpus_allowed_fallback: bind possible cpu
+>>      3) rcu_cpu_kthread_should_stop: rebind cpu1
+>> - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
+>
+> Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
+> which is under hotplug event CPU_UP_PREPARE. Maybe it should be
+> under CPU_ONLINE.
 
-> The help text for this config is duplicated across the x86,
-> parisc, and s390 Kconfig.debug files. Arnd Bergman noted that the
-> help text was slightly misleading and should be fixed to state
-> that enabling this option isn't a problem when using pre 4.4 gcc.
-> 
-> To simplify the rewording, consolidate the text into
-> lib/Kconfig.debug and modify it there to be more explicit about
-> when you should say N to this config.
-> 
-> Also, make the text a bit more generic by stating that this
-> option enables compile time checks so we can cover architectures
-> which emit warnings vs. ones which emit errors. The details of
-> how an architecture decided to implement the checks isn't as
-> important as the concept of compile time checking of
-> copy_from_user() calls.
-> 
-> While we're doing this, remove all the copy_from_user_overflow()
-> code that's duplicated many times and place it into lib/ so that
-> any architecture supporting this option can get the function for
-> free.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: x86@kernel.org
-> Cc: linux-parisc@vger.kernel.org
-> Cc: linux-s390@vger.kernel.org
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/parisc/Kconfig             |    1 +
->  arch/parisc/Kconfig.debug       |   14 --------------
->  arch/s390/Kconfig               |    1 +
->  arch/s390/Kconfig.debug         |   14 --------------
->  arch/s390/lib/Makefile          |    1 -
->  arch/s390/lib/usercopy.c        |    8 --------
->  arch/sparc/lib/Makefile         |    1 -
->  arch/sparc/lib/usercopy.c       |    8 --------
->  arch/tile/Kconfig               |    8 +-------
->  arch/tile/include/asm/uaccess.h |    7 ++++++-
->  arch/tile/lib/uaccess.c         |    8 --------
->  arch/x86/Kconfig                |    1 +
->  arch/x86/Kconfig.debug          |   14 --------------
->  arch/x86/lib/usercopy_32.c      |    6 ------
->  arch/x86/lib/usercopy_64.c      |    6 ------
->  lib/Kconfig.debug               |   18 ++++++++++++++++++
->  lib/Makefile                    |    1 +
->  lib/usercopy.c                  |    8 ++++++++
->  18 files changed, 37 insertions(+), 88 deletions(-)
->  delete mode 100644 arch/s390/lib/usercopy.c
->  delete mode 100644 arch/sparc/lib/usercopy.c
->  create mode 100644 lib/usercopy.c
+Hmm..
 
-Very nice!
+I haven't catch your point. cpu_up() call both CPU_UP_PREPARE and CPU_ONLINE
+notification. Thus, CPU_ONLINE still be called before sched_init_smp().
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+Am I missing something?
 
-	Ingo
+
