@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab1EMNYN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:24:13 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:32781 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab1EMNYL convert rfc822-to-8bit (ORCPT
+	id S933024Ab1EMNYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:24:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43406 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1EMNYi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:24:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ulAHQl51NefSeYuTEL558fV18psXf9XUwk+6y1sKAOQ4C2Uf/XtAw2C11w/QnPCyD3
-         JD/TGfsRWYxzcH5LeUUunP8ksxxJjUUDxRBM4ex7QR7vCH0D97AqNZxAWrwB1LLuPTor
-         Uj16tDscCQ3f1NgEZiBuPQAaZW/j/56p5qUXA=
-MIME-Version: 1.0
-In-Reply-To: <20110513130011.GA6474@elte.hu>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
-	<20110513124523.GM13984@redhat.com>
-	<20110513130011.GA6474@elte.hu>
-Date: Fri, 13 May 2011 21:24:10 +0800
-Message-ID: <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 May 2011 09:24:38 -0400
+Subject: Re: Sched_autogroup and niced processes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Yong Zhang <yong.zhang0@gmail.com>,
+        Carl-Johan Kjellander <carl-johan@klarna.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1305292406.27263.20.camel@marge.simson.net>
+References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
+	 <1305273950.15080.7.camel@marge.simson.net>
+	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
+	 <20110513090537.GH13647@elte.hu> <1305277666.2561.9.camel@twins>
+	 <20110513092933.GL13647@elte.hu> <1305279990.2466.4.camel@twins>
+	 <20110513100411.GA21022@elte.hu>
+	 <1305292406.27263.20.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 13 May 2011 15:24:30 +0200
+Message-ID: <1305293070.2466.32.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Ingo,
+On Fri, 2011-05-13 at 15:13 +0200, Mike Galbraith wrote:
+> 
+> > Still, the other important problem is that we still seem to have a bug, even 
+> > with the cgroup set to low prio seti@home is sucking up CPU resources ...
+> 
+> I don't see how.  
 
-On Fri, May 13, 2011 at 9:00 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Don Zickus <dzickus@redhat.com> wrote:
->
->> On Fri, May 13, 2011 at 04:23:38PM +0800, Huang Ying wrote:
->> > In general, unknown NMI is used by hardware and firmware to notify
->> > fatal hardware errors to OS. So the Linux should treat unknown NMI as
->> > hardware error and go panic upon unknown NMI for better error
->> > containment.
->>
->> I have a couple of concerns about this patch.  One I don't think BIOSes
->> are ready for this.  I have Intel Westmere boxes that say they have a
->> valid HEST, GHES, and EINJ table, but when I inject an error there is no
->> GHES record.  This leaves me with an unknown NMI and panic.  Yeah, it is a
->> BIOS bug I guess, but I think vendors are going to be slow fixing all this
->> stuff (my Nehalem box is in even worse shape with this stuff).
->
-> Agreed, doing this is not a very good idea - we have spurious unknown NMIs
-> again and again, crashing the box is not a good idea.
+Agreed, with two groups, a spinner each, and then setting the group
+weight low yields things like:
 
-So we use white list to filter out spurious hardware.
+ 1927 root      20   0  105m  672  192 R 98.1  0.0   0:20.50 bash  
+ 1933 root      20   0  105m  656  180 R  2.0  0.0   0:07.29 bash  
 
-> What should be done instead is to add an event for unknown NMIs, which can then
-> be processed by the RAS daemon to implement policy.
->
-> By using 'active' event filters it could even be set on a system to panic the
-> box by default.
-
-If there is real fatal hardware error, maybe we have no luxury to go
-from NMI handler to user space RAS daemon to determine what to do.
-System may explode, bad data may go to disk before that.
-
-Best Regards,
-Huang Ying
+So all just seems to work as advertised.
