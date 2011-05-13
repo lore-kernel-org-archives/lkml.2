@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab1EMQMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 12:12:41 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48225 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757619Ab1EMQMj (ORCPT
+	id S1759541Ab1EMQNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 12:13:45 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36318 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757619Ab1EMQNo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 12:12:39 -0400
-Subject: Possible sandybridge livelock issue
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: x86@kernel.org
-Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 11:12:36 -0500
-Message-ID: <1305303156.2611.51.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 13 May 2011 12:13:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=rCYkKDTfEqiKDPgXcJ3TeAHMm3eE0w+7h4bUcFZx6C937kqaPHJkg/7ufLloYGy8oi
+         8xXSSC5DgKDLJ74JW6kIyghSsj2Hzg7/5f9WPEfJ2W2KNyRwSSpbMGR7IbKEFdAynO1g
+         aZp0qZxEqdGbdHdceir9gdvn43eAW1OgjrZnY=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+ <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+ <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 13 May 2011 12:13:23 -0400
+X-Google-Sender-Auth: lDEBlXagh6MUQKH7Sm4wIpGou1M
+Message-ID: <BANLkTikDafbCnsXPoidnMBAE0qtd9aC4oQ@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christian Couder <christian.couder@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've just come off a large round of debugging a kswapd problem over on
-linux-mm:
+On Fri, May 13, 2011 at 12:11 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, May 13, 2011 at 7:56 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>
+>> So what I really want is a fancy version of git bisect that makes no
+>> assumptions about the relationship of good and bad commits in the
+>> graph and just finds me a commit that is bad but for which all parents
+>> are good or vice versa.
+>
+> Ehh. That's the "non-fancy" way of testing, I'm afraid: if you cannot
+> make assumption about the relationship between good and bad commits,
+> then you have to test _every_ commit.
+>
+> So yes, bisection has its problems. But they really do come from the
+> fact that it's very efficient. When you have (on average) about ten
+> thousand commits between releases, you have to make assumptions about
+> the relationships. But once you do that, the efficiency also results
+> in a certain fragility.
+>
+> Think of it as a compression method: it generates the smallest
+> possible set of test points for you. But it's a "lossy" compression -
+> you don't test everything. And it's extreme: it boils down 10k commit
+> events to about 13 bisection events. If anything goes wrong (like the
+> bug not being entirely repeatable, or the bug comes and goes), it will
+> give the wrong answer.
+>
+> The good news is that _usually_ it works really well. And when the
+> choice is between "works really well for 10k commits but can have
+> problems" and "you need to test all 10k commits", the "can have
+> problems" part turns out to be a pretty small downside ;)
 
-http://marc.info/?t=130392066000001
+In conclusion, I found the problem.  It's a clusterfuck and I think
+there's no way that any bisection tool under any sane assumptions
+could have found it.  Patch coming in a couple seconds b/c I think it
+needs to go in to 2.6.39.
 
-The upshot was that kswapd wasn't being allowed to sleep (which we're
-now fixing).  However, in spite of intensive efforts, the actual hang
-was only reproducible on sandybridge laptops.
+--Andy
 
-When the hang occurred, kswapd basically pegged one core in 100% system
-time.  This looks like there's something specific to sandybridge that
-causes this type of bad interaction.  I was wondering if it could be
-something to to with a scheduling problem in turbo mode?  Once kswapd
-goes flat out, the core its on will kick into turbo mode, which causes
-it to get preferentially scheduled there, leading to the live lock.
-
-The only evidence I have to support this theory is that when I reproduce
-the problem with PREEMPT, the core pegs at 100% system time and stays
-there even if I turn off the load.  However, if I can execute work that
-causes kswapd to be kicked off the core it's running on, it will calm
-back down and go to sleep.
-
-James
-
-
+>
+>                                Linus
+>
