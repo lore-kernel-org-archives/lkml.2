@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759196Ab1EMO2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:28:36 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54198 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757131Ab1EMO2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:28:34 -0400
-Date: Fri, 13 May 2011 16:28:17 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 1/4] mm: vmscan: Correct use of pgdat_balanced in
- sleeping_prematurely
-Message-ID: <20110513142817.GQ16531@cmpxchg.org>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
- <1305295404-12129-2-git-send-email-mgorman@suse.de>
+	id S1759329Ab1EMObZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:31:25 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:37862 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758712Ab1EMObX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:31:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=m/jN+50EpbNqwJVL4bM8RI61T3RRKREZGV5ENWh+cSSMJyL45fGWhMZLvRPN0JC1DX
+         dc6Oo9zgYdKCTqHazgEcd+aO8vgWWQeo+iqz1AGSztXFOk1VOIvTeAW4EjVATNEZjJS7
+         e+wh7KXNRiwF8pL9ob0AqTeV7HrZnIBiQK/bg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305295404-12129-2-git-send-email-mgorman@suse.de>
+In-Reply-To: <20110513103202.GA27578@infradead.org>
+References: <1305147805-5756-1-git-send-email-shawn.p.huang@gmail.com>
+	<20110513103202.GA27578@infradead.org>
+Date: Fri, 13 May 2011 10:31:22 -0400
+Message-ID: <BANLkTikeCHBe3OBpuyF6jd_UeF0az0BYcg@mail.gmail.com>
+Subject: Re: [PATCH] nfs: check a crash in nfs_lookup_revalidate
+From: Peng Huang <shawn.p.huang@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 03:03:21PM +0100, Mel Gorman wrote:
-> Johannes Weiner poined out that the logic in commit [1741c877: mm:
-> kswapd: keep kswapd awake for high-order allocations until a percentage
-> of the node is balanced] is backwards. Instead of allowing kswapd to go
-> to sleep when balancing for high order allocations, it keeps it kswapd
-> running uselessly.
-> 
-> From-but-was-not-signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+I did not write any code to call lookup_one_len(). I just mounted an
+ecryptfs on nfs, and then got the oops. So it should be a problem in
+nfs or ecryptfs or both. At least it should not crash.
 
-Thanks for picking it up, Mel.
+Peng
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-> Will-sign-off-after-Johannes: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/vmscan.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index f6b435c..af24d1e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2286,7 +2286,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
->  	 * must be balanced
->  	 */
->  	if (order)
-> -		return pgdat_balanced(pgdat, balanced, classzone_idx);
-> +		return !pgdat_balanced(pgdat, balanced, classzone_idx);
->  	else
->  		return !all_zones_ok;
->  }
-> -- 
-> 1.7.3.4
+On Fri, May 13, 2011 at 6:32 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, May 11, 2011 at 05:03:25PM -0400, Peng Huang wrote:
+>> lookup_one_len() may call nfs_loopup_revalidate() with nd == NULL
+>> indirectly, that causes the kernel crash.
+>
+> lookup_one_len must only be called by a filesystem or a library function
+> called by the filesystem.  You are not allowed to call it on a random
+> filesystem like nfs that doesn't support the underlying assumptions.
+>
+>
