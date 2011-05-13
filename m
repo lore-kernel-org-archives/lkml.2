@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab1EMDPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 23:15:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36058 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab1EMDPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 23:15:13 -0400
-Date: Fri, 13 May 2011 13:14:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: linux-next: manual merge of the tip tree with the arm tree
-Message-Id: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__13_May_2011_13_14_37_+1000_r_HPsC+sfYUBuVw7"
+	id S1754200Ab1EMDQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 23:16:32 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41354 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab1EMDQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 23:16:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WrxeBvAYJpl4SJgAHYH8vtbLmemzOEqkfVn0/52z6tGpryHD22u3DSD4pBrLgw8AB1
+         uVqu4GJeqQVfJJUU1xy6NAvkBqs4J63XAXo+3kgFJalbLslezu9DVUR/6q9DtMoK3G3w
+         fGPHgLxRLKmFJvo+HbErBfozlOGXnkaVyIMaU=
+MIME-Version: 1.0
+In-Reply-To: <69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
+References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
+	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
+Date: Fri, 13 May 2011 11:16:30 +0800
+Message-ID: <BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
+Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_May_2011_13_14_37_+1000_r_HPsC+sfYUBuVw7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 13 May 2011 10:44, H. Peter Anvin <hpa@zytor.com> wrote:
+> Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+>> Rebooting on the Dell E5420 often hangs with the keyboard method, but is
+>> reliable via the PCI method. Signed-off-by: Daniel J Blueman
+>> <daniel.blueman@gmail.com> --- arch/x86/kernel/reboot.c | 8 ++++++++ 1 files
+>> changed, 8 insertions(+), 0 deletions(-) diff --git
+>> a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c index 08c44b0..b16032d
+>> 100644 --- a/arch/x86/kernel/reboot.c +++ b/arch/x86/kernel/reboot.c @@
+>> -411,6 +411,14 @@ static struct dmi_system_id __initdata
+>> pci_reboot_dmi_table[] = { DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"), }, }, + {
+>> + .callback = set_pci_reboot, + .ident = "Dell Latitude E5420", + .matches =
+>> { + DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."), + DMI_MATCH(DMI_PRODUCT_NAME,
+>> "Latitude E5420"), + }, + }, { } }; -- 1.7.4.1
 
-Hi all,
+> How does it work with ACPI?
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource:
-convert x86 to generic i8253 clocksource") from the arm tree and
-commitb01cc1b0eae0  ("x86: Convert remaining x86 clocksources to
-clocksource_register_hz/khz") from the tip tree.
+All other reboot methods including ACPI are unreliable and seem to
+demonstrate the same failure probability; PCI is the only reliable
+method alas.
 
-The former seems to supercede the latter, so I used the former.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I guess the ACPI reboot method is the supported 'official' vector (and
+is what Windows uses [1]), so there must be some other constraints
+preventing it work as expected, unless the ACPI tables delivered to
+Linux are broken, would you say?
 
---Signature=_Fri__13_May_2011_13_14_37_+1000_r_HPsC+sfYUBuVw7
-Content-Type: application/pgp-signature
+Daniel
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNzKIdAAoJEDMEi1NhKgbsJhoH/3+okqRPxMsLorUCYTFtt5JT
-dQXaq8vjFciVHE9K9rX04n9OsZ8RrYbRYIWL0UUTNBE8Ww+Iioi3Iv4897LhbKIb
-Di4kR7bf6qmHYPiRwxepRCq3H1c887EEOPSyWYeUzLPYda7JnOE8OWPAFUx/nx3j
-WwaHRudKT120BpgshpRtT6u/me/coHRh4Z3QZs2p8TT3wr1/D5bCzGorL/9hfKyv
-Xv3snUzK9DQrxynJJ1ZXNNILbl04I/hR06mWwyd4Qk5QhpvmI0UvswCNbogV2mV1
-U2y2qX/ecGaRUesPQQS+qIh+xbK8HY2oeiYuH6AQbl2b1iIqm07T2G0HHieDvXM=
-=Nsfp
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_May_2011_13_14_37_+1000_r_HPsC+sfYUBuVw7--
+[1] http://comments.gmane.org/gmane.linux.kernel/1122388
+-- 
+Daniel J Blueman
