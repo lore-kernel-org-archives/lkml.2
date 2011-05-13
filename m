@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab1EMSfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:35:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63453 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab1EMSfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:35:43 -0400
-Date: Fri, 13 May 2011 20:34:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
-	ptrace_check_attach()
-Message-ID: <20110513183416.GA31415@redhat.com>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-11-git-send-email-tj@kernel.org> <20110511164947.GA26383@redhat.com> <20110511195333.GE24245@mtj.dyndns.org> <20110512155910.GD18599@redhat.com> <20110512160709.GL1030@htj.dyndns.org> <20110512182006.GA25850@redhat.com> <20110513091311.GC6500@htj.dyndns.org>
+	id S1753189Ab1EMShz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:37:55 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:29847 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1EMShy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:37:54 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-160.messagelabs.com!1305311867!13663289!15
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.32]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/gpio/Kconfig: remove redundant depends on GPIOLIB
+Date: Fri, 13 May 2011 11:37:28 -0700
+User-Agent: KMail/1.9.9
+CC: <grant.likely@secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20110513091311.GC6500@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-ID: <201105131137.28730.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13, Tejun Heo wrote:
->
-> On Thu, May 12, 2011 at 08:20:06PM +0200, Oleg Nesterov wrote:
-> > Now about GROUP_STOP_TRAPPING. To simplify the discussion, lets
-> > forget about this series,
-> >
-> > ...
-> >
-> > Problem: TRAPPING can be set outside of do_signal_stop() paths, and
-> > I think we should avoid this as much as possible.
->
-> For PTRACE_DETACH, this was true but it isn't true for notification
-> re-traps.  Notification re-traps happen iff JOBCTL_TRAPPED
+Since all the drivers are in a 'if GPIOLIB/endif block', the depends on GPIOLIB
+is redundant so remove them.
 
-Yes I see, and task_clear_jobctl_trapping() was moved into
-get_signal_to_deliver().
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 
-So, if we return to this series then "outside of do_signal_stop()" is
-not accurate.
+---
 
-> > (I am ignoring the problem this patch addresses temporary, I think
-> >  we can fix it a bit differently).
->
-> Just leaving it alone also is an option.  We can just mandate
-> ptrace(2) users to always perform sleeping wait(2) after PTRACE_SEIZE.
-> If it can be fixed easily, sure.  If not, let's leave it alone.
-
-Let's leave it alone in this thread, unless I missed something this is
-simple. Or I missed something and it is not that simple ;)
-
-> > Say, the thread group was stopped, the tracer PTRACE_CONT's T1, it calls
-> > sys_execve() and reports the trap from syscall_trace_enter().
-> >
-> > The tracer does ptrace(T1, DETACH) + ptrace(T1, SEIZE) and hangs forever.
-> >
-> > Once again, this is only one example. coredump, vfork, probably something
-> > else. In short: I think that TRAPPING-outside-of-do_signal_stop is the
-> > can of worms.
->
-> Yeap, fully agreed.  We need something different for detach case;
-> however, for re-trap, tracee is known to be in signal delivery path
-> and should be okay, I think.  Right?
-
-I think this is right, but there were so many issues, that is why I
-suggested to ignore this series temporary. And, to be honest, because
-I was a bit confused, somehow I thought you are going to add more
-TRAPPING's.
-
-So, we agree that we can only set TRAPPING iff we know what the tracee
-should do "really soon". Great.
-
-I have other concerns, but I noticed you have already sent V2. Let's
-continue there.
-
-Oleg.
-
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index b7fac15..fe12959 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -77,7 +77,6 @@ config GPIO_BASIC_MMIO
+ 
+ config GPIO_IT8761E
+ 	tristate "IT8761E GPIO support"
+-	depends on GPIOLIB
+ 	help
+ 	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
+ 
+@@ -101,7 +100,7 @@ config GPIO_VR41XX
+ 
+ config GPIO_SCH
+ 	tristate "Intel SCH/TunnelCreek GPIO"
+-	depends on GPIOLIB && PCI && X86
++	depends on PCI && X86
+ 	select MFD_CORE
+ 	select LPC_SCH
+ 	help
+@@ -121,7 +120,7 @@ config GPIO_SCH
+ 
+ config GPIO_U300
+ 	bool "ST-Ericsson U300 COH 901 335/571 GPIO"
+-	depends on GPIOLIB && ARCH_U300
++	depends on ARCH_U300
+ 	help
+ 	  Say yes here to support GPIO interface on ST-Ericsson U300.
+ 	  The names of the two IP block variants supported are
+@@ -130,7 +129,7 @@ config GPIO_U300
+ 
+ config GPIO_NOMADIK
+ 	bool "ST-Ericsson Nomadik GPIO"
+-	depends on GPIOLIB && (ARCH_U8500 || ARCH_NOMADIK)
++	depends on ARCH_U8500 || ARCH_NOMADIK
+ 	help
+ 	  Say yes here to support GPIO interface for ST-Ericsson Nomadik.
+ 	  This is found in the Nomadik NHK8815, DB8500, DB5500 SoCs
+@@ -138,7 +137,7 @@ config GPIO_NOMADIK
+ 
+ config GPIO_VX855
+ 	tristate "VIA VX855/VX875 GPIO"
+-	depends on GPIOLIB && MFD_SUPPORT && PCI
++	depends on MFD_SUPPORT && PCI
+ 	select MFD_CORE
+ 	select MFD_VX855
+ 	help
+@@ -364,13 +363,13 @@ config GPIO_ML_IOH
+ 
+ config GPIO_TIMBERDALE
+ 	bool "Support for timberdale GPIO IP"
+-	depends on MFD_TIMBERDALE && GPIOLIB && HAS_IOMEM
++	depends on MFD_TIMBERDALE && HAS_IOMEM
+ 	---help---
+ 	Add support for the GPIO IP in the timberdale FPGA.
+ 
+ config GPIO_RDC321X
+ 	tristate "RDC R-321x GPIO support"
+-	depends on PCI && GPIOLIB
++	depends on PCI
+ 	select MFD_SUPPORT
+ 	select MFD_CORE
+ 	select MFD_RDC321X
