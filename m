@@ -1,231 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab1EMF2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 01:28:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59652 "EHLO mga09.intel.com"
+	id S1756072Ab1EMF3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 01:29:05 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57609 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752129Ab1EMF2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 01:28:17 -0400
+	id S1755761Ab1EMF3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 01:29:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
-   d="scan'208";a="642124267"
-Date: Fri, 13 May 2011 13:28:06 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 14/17] writeback: make writeback_control.nr_to_write
- straight
-Message-ID: <20110513052806.GE8016@localhost>
-References: <20110512135706.937596128@intel.com>
- <20110512140032.418803138@intel.com>
- <20110512231759.GM19446@dastard>
+   d="scan'208";a="435413702"
+Date: Fri, 13 May 2011 13:28:59 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
+Message-ID: <20110513052859.GA11088@sli10-conroe.sh.intel.com>
+References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
+ <20110511092848.GE1661@htj.dyndns.org>
+ <1305168493.2373.15.camel@sli10-conroe>
+ <20110512082159.GB1030@htj.dyndns.org>
+ <1305190520.2373.18.camel@sli10-conroe>
+ <20110512085922.GD1030@htj.dyndns.org>
+ <1305190936.3795.1.camel@edumazet-laptop>
+ <20110512090534.GE1030@htj.dyndns.org>
+ <1305261477.2373.45.camel@sli10-conroe>
+ <1305264007.2831.14.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110512231759.GM19446@dastard>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1305264007.2831.14.camel@edumazet-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 07:18:00AM +0800, Dave Chinner wrote:
-> On Thu, May 12, 2011 at 09:57:20PM +0800, Wu Fengguang wrote:
-> > Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
-> > and initialize the struct writeback_control there.
+Hi,
+On Fri, May 13, 2011 at 01:20:06PM +0800, Eric Dumazet wrote:
+> Le vendredi 13 mai 2011 à 12:37 +0800, Shaohua Li a écrit :
+> > On Thu, 2011-05-12 at 17:05 +0800, Tejun Heo wrote:
+> > > Hello,
+> > > 
+> > > On Thu, May 12, 2011 at 11:02:15AM +0200, Eric Dumazet wrote:
+> > > > > I don't think @maxfuzzy is necessary there.  I wrote this before but
+> > > > > why can't we track the actual deviation instead of the number of
+> > > > > deviation events?
+> > > > 
+> > > > Thats roughly same thing (BATCH multiplicator factor apart)
+> > > > 
+> > > > Most percpu_counter users for a given percpu_counter object use a given
+> > > > BATCH, dont they ?
+> > > 
+> > > Well, @maxfuzzy is much harder than @batch.  It's way less intuitive.
+> > > Although I haven't really thought about it that much, I think it might
+> > > be possible to eliminate it.  Maybe I'm confused.  I'll take another
+> > > look later but if someone can think of something, please jump right
+> > > in.
+> > Hmm, looks Eric's approach doesn't work. because we want to remove lock
+> > in _add, checking seq in _sum still races with _add.
 > > 
-> > struct writeback_control is basically designed to control writeback of a
-> > single file, but we keep abuse it for writing multiple files in
-> > writeback_sb_inodes() and its callers.
-> > 
-> > It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
-> > work->nr_pages starts to make sense, and instead of saving and restoring
-> > pages_skipped in writeback_sb_inodes it can always start with a clean
-> > zero value.
-> > 
-> > It also makes a neat IO pattern change: large dirty files are now
-> > written in the full 4MB writeback chunk size, rather than whatever
-> > remained quota in wbc->nr_to_write.
-> > 
-> > Proposed-by: Christoph Hellwig <hch@infradead.org>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> .....
-> > @@ -543,34 +588,44 @@ static int writeback_sb_inodes(struct su
-> >  			requeue_io(inode, wb);
-> >  			continue;
-> >  		}
-> > -
-> >  		__iget(inode);
-> > +		write_chunk = writeback_chunk_size(work);
-> > +		wbc.nr_to_write = write_chunk;
-> > +		wbc.pages_skipped = 0;
-> > +
-> > +		writeback_single_inode(inode, wb, &wbc);
-> >  
-> > -		pages_skipped = wbc->pages_skipped;
-> > -		writeback_single_inode(inode, wb, wbc);
-> > -		if (wbc->pages_skipped != pages_skipped) {
-> > +		work->nr_pages -= write_chunk - wbc.nr_to_write;
-> > +		wrote += write_chunk - wbc.nr_to_write;
-> > +		if (wbc.pages_skipped) {
-> >  			/*
-> >  			 * writeback is not making progress due to locked
-> >  			 * buffers.  Skip this inode for now.
-> >  			 */
-> >  			redirty_tail(inode, wb);
-> > -		}
-> > +		} else if (!(inode->i_state & I_DIRTY))
-> > +			wrote++;
 > 
-> Oh, that's just ugly. Do that accounting via nr_to_write in
-> writeback_single_inode() as I suggested earlier, please.
-
-This is the more simple and reliable test "whether the inode is
-cleaned" that does not rely on the return value of ->write_inode(),
-as replied in the earlier email.
-
-> >  		spin_unlock(&inode->i_lock);
-> >  		spin_unlock(&wb->list_lock);
-> >  		iput(inode);
-> >  		cond_resched();
-> >  		spin_lock(&wb->list_lock);
-> > -		if (wbc->nr_to_write <= 0)
-> > -			return 1;
-> > +		/*
-> > +		 * bail out to wb_writeback() often enough to check
-> > +		 * background threshold and other termination conditions.
-> > +		 */
-> > +		if (wrote >= MAX_WRITEBACK_PAGES)
-> > +			break;
+> Why ?
 > 
-> Why do this so often? If you are writing large files, it will be
-> once every writeback_single_inode() call that you bail. Seems rather
-> inefficient to me to go back to the top level loop just to check for
-> more work when we already know we have more work to do because
-> there's still inodes on b_io....
+> I'll code a patch, I believe it should work.
+I thought your proposal is:
+in _add
+{
+	if (count >= batch || count <= -batch) {
+		fbc->seq_count++;
+               atomic64_add(count, &fbc->count);
+-------->
+                __this_cpu_write(*fbc->counters, 0);
+	}
+}
 
-(answering the below comments together)
-
-For large files, it's exactly the same behavior as in the old
-wb_writeback(), which sets .nr_to_write = MAX_WRITEBACK_PAGES.
-
-So it's not "more inefficient" than the original code.
-
-For balance_dirty_pages(), it may change behavior by splitting one
-16MB write to four 4MB writes. However the good side could be less
-throttle latency.
-
-The fix is to do IO-less balance_dirty_pages() and do larger write
-chunk size (around half write bandwidth). Then we get reasonable good
-bail frequent as well as IO efficiency.
+in _sum
+{
+restart:
+	oldseq = fbc->seqcount;
+	smp_rmb();
+	do_sum();
+	smp_rmb()
+	newseq = fbc->seqcount;
+	if (newseq - oldseq >= maxfuzzy)
+		goto restart;
+	return ret;
+} 
+if _sum run between above line marked in _add, then the seqcount check
+doesn't work, we still have deviation Tejun pointed out.
 
 Thanks,
-Fengguang
-
-> > +		if (work->nr_pages <= 0)
-> > +			break;
-> >  	}
-> > -	/* b_io is empty */
-> > -	return 1;
-> > +	return wrote;
-> >  }
-> >  
-> > -static void __writeback_inodes_wb(struct bdi_writeback *wb,
-> > -				  struct writeback_control *wbc)
-> > +static long __writeback_inodes_wb(struct bdi_writeback *wb,
-> > +				  struct wb_writeback_work *work)
-> >  {
-> > -	int ret = 0;
-> > +	long wrote = 0;
-> >  
-> >  	while (!list_empty(&wb->b_io)) {
-> >  		struct inode *inode = wb_inode(wb->b_io.prev);
-> > @@ -580,33 +635,34 @@ static void __writeback_inodes_wb(struct
-> >  			requeue_io(inode, wb);
-> >  			continue;
-> >  		}
-> > -		ret = writeback_sb_inodes(sb, wb, wbc, false);
-> > +		wrote += writeback_sb_inodes(sb, wb, work);
-> >  		drop_super(sb);
-> >  
-> > -		if (ret)
-> > +		if (wrote >= MAX_WRITEBACK_PAGES)
-> > +			break;
-> > +		if (work->nr_pages <= 0)
-> >  			break;
-> 
-> Same here.
-> 
-> >  	}
-> >  	/* Leave any unwritten inodes on b_io */
-> > +	return wrote;
-> >  }
-> >  
-> > -void writeback_inodes_wb(struct bdi_writeback *wb,
-> > -		struct writeback_control *wbc)
-> > +long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages)
-> >  {
-> > +	struct wb_writeback_work work = {
-> > +		.nr_pages	= nr_pages,
-> > +		.sync_mode	= WB_SYNC_NONE,
-> > +		.range_cyclic	= 1,
-> > +	};
-> > +
-> >  	spin_lock(&wb->list_lock);
-> >  	if (list_empty(&wb->b_io))
-> > -		queue_io(wb, wbc->older_than_this);
-> > -	__writeback_inodes_wb(wb, wbc);
-> > +		queue_io(wb, NULL);
-> > +	__writeback_inodes_wb(wb, &work);
-> >  	spin_unlock(&wb->list_lock);
-> > -}
-> >  
-> > -/*
-> > - * The maximum number of pages to writeout in a single bdi flush/kupdate
-> > - * operation.  We do this so we don't hold I_SYNC against an inode for
-> > - * enormous amounts of time, which would block a userspace task which has
-> > - * been forced to throttle against that inode.  Also, the code reevaluates
-> > - * the dirty each time it has written this many pages.
-> > - */
-> > -#define MAX_WRITEBACK_PAGES     1024
-> > +	return nr_pages - work.nr_pages;
-> > +}
-> 
-> And this change means we'll only ever write 1024 pages maximum per
-> call to writeback_inodes_wb() when large files are present. that
-> means:
-> 
-> ....
-> > @@ -562,17 +555,17 @@ static void balance_dirty_pages(struct a
-> >  		 * threshold otherwise wait until the disk writes catch
-> >  		 * up.
-> >  		 */
-> > -		trace_wbc_balance_dirty_start(&wbc, bdi);
-> > +		trace_balance_dirty_start(bdi);
-> >  		if (bdi_nr_reclaimable > bdi_thresh) {
-> > -			writeback_inodes_wb(&bdi->wb, &wbc);
-> > -			pages_written += write_chunk - wbc.nr_to_write;
-> > -			trace_wbc_balance_dirty_written(&wbc, bdi);
-> > +			pages_written += writeback_inodes_wb(&bdi->wb,
-> > +							     write_chunk);
-> > +			trace_balance_dirty_written(bdi, pages_written);
-> >  			if (pages_written >= write_chunk)
-> >  				break;		/* We've done our duty */
-> >  		}
-> > -		trace_wbc_balance_dirty_wait(&wbc, bdi);
-> >  		__set_current_state(TASK_UNINTERRUPTIBLE);
-> >  		io_schedule_timeout(pause);
-> > +		trace_balance_dirty_wait(bdi);
-> 
-> We're going to get different throttling behaviour dependent on
-> whether there are large dirty files present or not in cache....
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
+Shaohua
