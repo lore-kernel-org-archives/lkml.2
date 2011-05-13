@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab1EMVTu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 17:19:50 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:25475 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab1EMVTr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 17:19:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=lMNmlvmmIQTKN5Lhluz0kj3NRDc8VmCushDBD2JI+vlDC9v765KZHks/1PuTrq7S7
-	iZGGUb5BJg/RWiQ9+4I5Q==
-From: Vivek Haldar <haldar@google.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vivek Haldar <haldar@google.com>
-Subject: [PATCH] ext4: do not normalize block requests from fallocate.
-Date: Fri, 13 May 2011 14:19:05 -0700
-Message-Id: <1305321545-17214-1-git-send-email-haldar@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1757085Ab1EMVUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 17:20:55 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:41630 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751148Ab1EMVUy (ORCPT
+	<rfc822;groupwise-jlee@novell.com:5:1>);
+	Fri, 13 May 2011 17:20:54 -0400
+Message-Id: <4DCE2D4D020000230002C96A@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Fri, 13 May 2011 15:20:45 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: "Michael Chang" <MChang@novell.com>
+Cc: <chris@chris-wilson.co.uk>, <dri-devel@lists.freedesktop.org>,
+        <tiwai@suse.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: i915/kms/backlight-combo mode problem
+References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com>
+ <BANLkTimtvAWeS-t3bWjJmdVtyaPDw2uWDA@mail.gmail.com>
+ <BANLkTi=hUBrKnbrF+Q_ZOxdUPVSOUYUm2Q@mail.gmail.com>
+ <201105101308.24662@rk-nord.at>
+ <BANLkTimQJM3N1WdBhYVOH0UyyOTFcxOfUQ@mail.gmail.com>
+In-Reply-To: <BANLkTimQJM3N1WdBhYVOH0UyyOTFcxOfUQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, an fallocate request of size slightly larger than a power of
-2 is turned into two block requests, each a power of 2, with the extra
-blocks pre-allocated for future use. When an application calls
-fallocate, it already has an idea about how large the file may grow so
-there is usually little benefit to reserve extra blocks on the
-preallocation list. This reduces disk fragmentation.
+Forward to upstream for more discussion.
 
-Tested: fsstress. Also verified manually that fallocat'ed files are
-contiguously laid out with this change (whereas without it they begin at
-power-of-2 boundaries, leaving blocks in between). CPU usage of
-fallocate is not appreciably higher. In a tight fallocate loop, CPU
-usage hovers between 5%-8% with this change, and 5%-7% without it.
+於 五，2011-05-13 於 17:27 +0800，Michael Chang 提到：
+> Melchior,
+> 
+> I tried to puzzle out the possible cause of the problem, but sorry
+> that no further progress to give you. I'd like to debug this issue,
+> also did Joey. But there's more questions in my mind, made me feel not
+> able to proceed any further.. :(
+> 
+> 1. is_backlight_combination_mode() really returns 0x4 ..? I understand
+> your words, but if this is true then Joey Lee provided patch should
+> log out some information about changing the LPBC
+> 
+>   set backlight lbpc = ...
+> 
+> but I didn't see any of the log output .. :(
+> 
+> 2.  I dig the old mailing thread .. found a post
+> 
+> http://marc.info/?l=linux-kernel&m=130462815211684&w=2
+> 
+> If you rebase this patch to your currently git commit, will it fixes
+> all problems for you now (only vanilla kernel with this patch)? (You
+> replied that this patch works for you ..) Also another interesting
+> finding...
+> 
+> > +	if (!lbpc)
+> > +		combo_mode = 0;
+> 
+> Looks like the purpose of it is to NOT touch the LPBC registers if
+> lbpc is zero ...(since this forces is_backlight_combination_mode
+> return 0). This would make contradiction about the assumption that you
+> could change to back-light via LPBC ..   (using setpci is actually
+> access the LPBC registers .. IMHO).
+> 
+> Total a mess for me now .. Did I made anything wrong .. I know I may
+> lose some details.
+> 
+> I'm thinking is it ok for us to discuss in IRC, the communication
+> would be more efficient. Would this be convenient for you ? This is up
+> to you.
+> 
+> Have nice weekend .. :)
+> 
+> Regards,
+> Michael Chang
+> 
+> 2011/5/10 Melchior FRANZ <melchior.franz@gmail.com>:
+> > * Michael Chang -- Tuesday 10 May 2011:
+> >> Could you please try this patch and get the log ? We wonder why
+> >> is_backlight_combination_mode () returns false.
+> >
+> > This information was already buried in the bugzilla thread:
+> >
+> >  https://bugzilla.kernel.org/show_bug.cgi?id=31522
+> >  "It turned out that on this machine INTEL_INFO(dev)->gen equals 4,
+> >  and is_backlight_combination_mode() returns 0x40000000."
+> >
+> >
+> > But to say it again in your words:   :-)
+> >
+> >  [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824  (0x40000000)
+> >
+> > 6x during boot-up, and several times later when changing the backlight
+> > brightness.
+> >
+> >
+> > This was with 8b061610dac3a3b89770c85ad63b481a47b0c38e. And now
+> > I have a little shocker for you (and me): because this was a
+> > vanilla kernel (apart from these debug messages), the screen went
+> > black again, like I knew it. But pressing the "brightness down"
+> > key turns the backlight on! I can't believe that I haven't tested
+> > that. I guess I've only tried "brightness up" and "display toggle".
+> > Those don't turn backlight on. Or maybe somethine else relevant
+> > meanwhile changed in the i915 drivers. (I've regularly been
+> > updating to HEAD.)
+> >
+> > So, the problem was just the initial state all the time?
+> >
+> > m.
+> >
 
-Signed-off-by: Vivek Haldar <haldar@google.com>
----
- fs/ext4/ext4.h    |    2 ++
- fs/ext4/extents.c |    5 ++++-
- 2 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 076c5d2..e606d34 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -512,6 +512,8 @@ struct ext4_new_group_data {
- 	/* Convert extent to initialized after IO complete */
- #define EXT4_GET_BLOCKS_IO_CONVERT_EXT		(EXT4_GET_BLOCKS_CONVERT|\
- 					 EXT4_GET_BLOCKS_CREATE_UNINIT_EXT)
-+	/* Don't normalize when fallocat'ing */
-+#define EXT4_GET_BLOCKS_NO_NORMALIZE		0x0020
- 
- /*
-  * Flags used by ext4_free_blocks
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index e363f21..f02dd52 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3304,6 +3304,8 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
- 	else
- 		/* disable in-core preallocation for non-regular files */
- 		ar.flags = 0;
-+	if (flags & EXT4_GET_BLOCKS_NO_NORMALIZE)
-+		ar.flags |= EXT4_MB_HINT_NOPREALLOC;
- 	newblock = ext4_mb_new_blocks(handle, &ar, &err);
- 	if (!newblock)
- 		goto out2;
-@@ -3549,7 +3551,8 @@ retry:
- 			break;
- 		}
- 		ret = ext4_map_blocks(handle, inode, &map,
--				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT);
-+				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT |
-+				      EXT4_GET_BLOCKS_NO_NORMALIZE);
- 		if (ret <= 0) {
- #ifdef EXT4FS_DEBUG
- 			WARN_ON(ret <= 0);
--- 
-1.7.3.1
 
