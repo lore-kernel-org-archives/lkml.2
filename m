@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759736Ab1EMV1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 17:27:40 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:51773 "EHLO
+	id S1759707Ab1EMV1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 17:27:37 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:51821 "EHLO
 	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759155Ab1EMV1b (ORCPT
+	by vger.kernel.org with ESMTP id S1759320Ab1EMV1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 17:27:31 -0400
+	Fri, 13 May 2011 17:27:33 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Luciano Coelho <coelho@ti.com>
 Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>
-Subject: [RFC/PATCH 09/13] net: wl12xx: sdio: add a platform_device
-Date: Sat, 14 May 2011 00:26:26 +0300
-Message-Id: <1305321990-22041-10-git-send-email-balbi@ti.com>
+Subject: [RFC/PATCH 10/13] net: wl12xx: main: add platform device
+Date: Sat, 14 May 2011 00:26:27 +0300
+Message-Id: <1305321990-22041-11-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.4.1.343.ga91df
 In-Reply-To: <1305321990-22041-1-git-send-email-balbi@ti.com>
 References: <1305321990-22041-1-git-send-email-balbi@ti.com>
@@ -22,100 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-that device will match with a driver to
-be added to the core driver.
+now that we have a platform_driver on both
+glue layers, add a platform_device to the
+core driver.
+
+It's currently an empty platform_driver but
+more functionality will be added on later
+patches.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/net/wireless/wl12xx/sdio.c |   45 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 45 insertions(+), 0 deletions(-)
+ drivers/net/wireless/wl12xx/main.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/wireless/wl12xx/sdio.c b/drivers/net/wireless/wl12xx/sdio.c
-index bb7569c..5c5e4f2 100644
---- a/drivers/net/wireless/wl12xx/sdio.c
-+++ b/drivers/net/wireless/wl12xx/sdio.c
-@@ -25,6 +25,7 @@
- #include <linux/module.h>
- #include <linux/crc7.h>
- #include <linux/vmalloc.h>
-+#include <linux/platform_device.h>
- #include <linux/mmc/sdio_func.h>
- #include <linux/mmc/sdio_ids.h>
- #include <linux/mmc/card.h>
-@@ -48,6 +49,7 @@
- struct wl12xx_sdio_glue {
- 	struct device		*dev;
- 	struct wl1271		*wl;
-+	struct platform_device	*core;
- };
- 
- static const struct sdio_device_id wl1271_devices[] __devinitconst = {
-@@ -210,6 +212,8 @@ static int __devinit wl1271_probe(struct sdio_func *func,
- {
- 	const struct wl12xx_platform_data *wlan_data;
- 
-+	struct platform_device		*core;
-+	struct resource			res[1];
- 	struct wl12xx_sdio_glue		*glue;
- 	struct ieee80211_hw		*hw;
- 	struct wl1271			*wl;
-@@ -277,8 +281,47 @@ static int __devinit wl1271_probe(struct sdio_func *func,
- 	/* Tell PM core that we don't need the card to be powered now */
- 	pm_runtime_put_noidle(&func->dev);
- 
-+	core = platform_device_alloc("wl12xx-sdio", -1);
-+	if (!core) {
-+		dev_err(&func->dev, "can't allocate platform_device\n");
-+		ret = -ENOMEM;
-+		goto err4;
-+	}
-+
-+	core->dev.parent = &func->dev;
-+
-+	memset(res, 0x00, sizeof(res) * ARRAY_SIZE(res));
-+
-+	res[0].start	= wlan_data->irq;
-+	res[0].flags	= IORESOURCE_IRQ;
-+	res[0].name	= "irq";
-+
-+	ret = platform_device_add_resources(core, res, ARRAY_SIZE(res));
-+	if (ret) {
-+		dev_err(&func->dev, "can't add resources\n");
-+		goto err5;
-+	}
-+
-+	ret = platform_device_add_data(core, wlan_data, sizeof(*wlan_data));
-+	if (ret) {
-+		dev_err(&func->dev, "can't add platform data\n");
-+		goto err5;
-+	}
-+
-+	ret = platform_device_register(core);
-+	if (ret) {
-+		dev_err(&func->dev, "can't register platform device\n");
-+		goto err5;
-+	}
-+
- 	return 0;
- 
-+err5:
-+	platform_device_put(core);
-+
-+err4:
-+	wl1271_unregister_hw(wl);
-+
- err3:
- 	free_irq(wl->irq, wl);
- 
-@@ -303,6 +346,8 @@ static void __devexit wl1271_remove(struct sdio_func *func)
- 	wl1271_unregister_hw(wl);
- 	free_irq(wl->irq, wl);
- 	wl1271_free_hw(wl);
-+	platform_device_del(glue->core);
-+	platform_device_put(glue->core);
- 	kfree(glue);
+diff --git a/drivers/net/wireless/wl12xx/main.c b/drivers/net/wireless/wl12xx/main.c
+index 8b3c8d1..d377e1f 100644
+--- a/drivers/net/wireless/wl12xx/main.c
++++ b/drivers/net/wireless/wl12xx/main.c
+@@ -3547,6 +3547,41 @@ int wl1271_free_hw(struct wl1271 *wl)
  }
+ EXPORT_SYMBOL_GPL(wl1271_free_hw);
  
++static int __devinit wl12xx_probe(struct platform_device *pdev)
++{
++	return 0;
++}
++
++static int __devexit wl12xx_remove(struct platform_device *pdev)
++{
++	return 0;
++}
++
++static const struct platform_device_id wl12xx_id_table[] __devinitconst = {
++	{ "wl12xx-sdio", 0 },
++	{ "wl12xx-spi", 0 },
++	{  }	/* Terminating Entry */
++};
++MODULE_DEVICE_TABLE(platform, wl12xx_id_table);
++
++static struct platform_driver wl12xx_driver = {
++	.probe		= wl12xx_probe,
++	.remove		= __devexit_p(wl12xx_remove),
++	.id_table	= wl12xx_id_table,
++};
++
++static int __init wl12xx_init(void)
++{
++	return platform_driver_register(&wl12xx_driver);
++}
++module_init(wl12xx_init);
++
++static void __exit wl12xx_exit(void)
++{
++	platform_driver_unregister(&wl12xx_driver);
++}
++module_exit(wl12xx_exit);
++
+ u32 wl12xx_debug_level = DEBUG_NONE;
+ EXPORT_SYMBOL_GPL(wl12xx_debug_level);
+ module_param_named(debug_level, wl12xx_debug_level, uint, S_IRUSR | S_IWUSR);
 -- 
 1.7.4.1.343.ga91df
 
