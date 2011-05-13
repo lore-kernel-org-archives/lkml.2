@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758648Ab1EMXY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 19:24:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59038 "EHLO mga01.intel.com"
+	id S1758775Ab1EMXZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:25:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26532 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758272Ab1EMXYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 19:24:55 -0400
+	id S1758272Ab1EMXY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 19:24:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,366,1301900400"; 
-   d="scan'208";a="2026749"
+   d="scan'208";a="435890991"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: libc-alpha@sourceware.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/5] VFS: Make symlink nesting limit a define
-Date: Fri, 13 May 2011 16:24:15 -0700
-Message-Id: <1305329059-2017-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/5] Move max_threads variable declaration into include file
+Date: Fri, 13 May 2011 16:24:16 -0700
+Message-Id: <1305329059-2017-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
 References: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
@@ -24,73 +24,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Use a SYMLOOP_MAX define for the total symlink nesting limit instead
-of a hardcoded 40. No behaviour change.
+Multiple files have a private extern for the max_threads variable
+defined in fork.c. Declare it in linux/sched.h and remove the
+special externs.
 
-Used in a followon patch
+Needed for followon patch.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- fs/namei.c             |    6 +++---
- include/linux/limits.h |    1 +
- include/linux/namei.h  |    1 +
- 3 files changed, 5 insertions(+), 3 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/kmod.c         |    2 --
+ kernel/sysctl.c       |    1 -
+ 3 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 54fc993..9d0a92e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -763,7 +763,7 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
- 	if (link->mnt == nd->path.mnt)
- 		mntget(link->mnt);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 781abd1..34b487b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -134,6 +134,7 @@ extern void get_avenrun(unsigned long *loads, unsigned long offset, int shift);
  
--	if (unlikely(current->total_link_count >= 40)) {
-+	if (unlikely(current->total_link_count >= SYMLOOP_MAX)) {
- 		*p = ERR_PTR(-ELOOP); /* no ->put_link(), please */
- 		path_put(&nd->path);
- 		return -ELOOP;
-@@ -871,7 +871,7 @@ static int follow_automount(struct path *path, unsigned flags,
- 		return -EISDIR;
+ extern unsigned long total_forks;
+ extern int nr_threads;
++extern int max_threads;
+ DECLARE_PER_CPU(unsigned long, process_counts);
+ extern int nr_processes(void);
+ extern unsigned long nr_running(void);
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 9cd0591..3c12d13 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -39,8 +39,6 @@
  
- 	current->total_link_count++;
--	if (current->total_link_count >= 40)
-+	if (current->total_link_count >= SYMLOOP_MAX)
- 		return -ELOOP;
+ #include <trace/events/module.h>
  
- 	mnt = path->dentry->d_op->d_automount(path);
-@@ -1369,7 +1369,7 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
+-extern int max_threads;
+-
+ static struct workqueue_struct *khelper_wq;
  
- /*
-  * This limits recursive symlink follows to 8, while
-- * limiting consecutive symlinks to 40.
-+ * limiting consecutive symlinks to 40 (SYMLOOP_MAX)
-  *
-  * Without that kind of total limit, nasty chains of consecutive
-  * symlinks can cause almost arbitrarily long lookups.
-diff --git a/include/linux/limits.h b/include/linux/limits.h
-index 2d0f941..2f39657 100644
---- a/include/linux/limits.h
-+++ b/include/linux/limits.h
-@@ -14,6 +14,7 @@
- #define XATTR_NAME_MAX   255	/* # chars in an extended attribute name */
- #define XATTR_SIZE_MAX 65536	/* size of an extended attribute value (64k) */
- #define XATTR_LIST_MAX 65536	/* size of extended attribute namelist (64k) */
-+#define SYMLOOP_MAX	  40	/* max number of total symlink nests */
- 
- #define RTSIG_MAX	  32
- 
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index eba45ea..403e39c 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -4,6 +4,7 @@
- #include <linux/dcache.h>
- #include <linux/linkage.h>
- #include <linux/path.h>
-+#include <linux/limits.h>
- 
- struct vfsmount;
- 
+ #ifdef CONFIG_MODULES
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c0bb324..ece9b94 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -88,7 +88,6 @@
+ /* External variables not in a header file. */
+ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
+-extern int max_threads;
+ extern int core_uses_pid;
+ extern int suid_dumpable;
+ extern char core_pattern[];
 -- 
 1.7.4.4
 
