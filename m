@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1EMOOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:14:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31618 "EHLO mga09.intel.com"
+	id S1755624Ab1EMOPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:15:46 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53876 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab1EMOOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:14:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,364,1301900400"; 
-   d="scan'208";a="642294453"
-Date: Fri, 13 May 2011 16:14:34 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
-        a.zummo@towertech.it, khali@linux-fr.org, ben-linux@fluff.org
-Subject: Re: [PATCH 2/6] mfd: 88pm860x: avoid to allocate static platform
- data
-Message-ID: <20110513141433.GB8970@sortiz-mobl>
-References: <2011050601>
- <1304673685-21324-1-git-send-email-haojian.zhuang@marvell.com>
- <1304673685-21324-2-git-send-email-haojian.zhuang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304673685-21324-2-git-send-email-haojian.zhuang@marvell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750815Ab1EMOPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:15:44 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Karsten Keil <isdn@linux-pingi.de>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/isdn/hisax: Drop unused list
+Date: Fri, 13 May 2011 16:15:39 +0200
+Message-Id: <1305296139-16773-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Haojian,
+The file st5481_init.c locally defines and initializes the adapter_list
+variable, but does not use it for anything.  Removing the list makes it
+possible to remove the list field from the st5481_adapter data structure.
+In the function probe_st5481, it also makes it possible to free the locally
+allocated adapter value on an error exit.
 
-On Fri, May 06, 2011 at 05:21:21PM +0800, Haojian Zhuang wrote:
-> Maybe multiple PMIC devices are installed into one board. Static variable
-> can only make driver logic mess. So remove these variable, and use
-> platform data from platform driver instead.
-Very good, thanks a lot.
-Applied to my for-next branch.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Cheers,
-Samuel.
+---
+ drivers/isdn/hisax/st5481.h      |    1 -
+ drivers/isdn/hisax/st5481_init.c |    6 +-----
+ 2 files changed, 1 insertion(+), 6 deletions(-)
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+diff --git a/drivers/isdn/hisax/st5481.h b/drivers/isdn/hisax/st5481.h
+index 64f78a8..b9054cb 100644
+--- a/drivers/isdn/hisax/st5481.h
++++ b/drivers/isdn/hisax/st5481.h
+@@ -377,7 +377,6 @@ struct st5481_bcs {
+ };
+ 
+ struct st5481_adapter {
+-	struct list_head list;
+ 	int number_of_leds;
+ 	struct usb_device *usb_dev;
+ 	struct hisax_d_if hisax_d_if;
+diff --git a/drivers/isdn/hisax/st5481_init.c b/drivers/isdn/hisax/st5481_init.c
+index 1375123..9f7fd18 100644
+--- a/drivers/isdn/hisax/st5481_init.c
++++ b/drivers/isdn/hisax/st5481_init.c
+@@ -46,8 +46,6 @@ module_param(debug, int, 0);
+ #endif
+ int st5481_debug;
+ 
+-static LIST_HEAD(adapter_list);
+-
+ /* ======================================================================
+  * registration/deregistration with the USB layer
+  */
+@@ -86,7 +84,6 @@ static int probe_st5481(struct usb_interface *intf,
+ 		adapter->bcs[i].b_if.ifc.priv = &adapter->bcs[i];
+ 		adapter->bcs[i].b_if.ifc.l2l1 = st5481_b_l2l1;
+ 	}
+-	list_add(&adapter->list, &adapter_list);
+ 
+ 	retval = st5481_setup_usb(adapter);
+ 	if (retval < 0)
+@@ -125,6 +122,7 @@ static int probe_st5481(struct usb_interface *intf,
+  err_usb:
+ 	st5481_release_usb(adapter);
+  err:
++	kfree(adapter);
+ 	return -EIO;
+ }
+ 
+@@ -142,8 +140,6 @@ static void disconnect_st5481(struct usb_interface *intf)
+ 	if (!adapter)
+ 		return;
+ 	
+-	list_del(&adapter->list);
+-
+ 	st5481_stop(adapter);
+ 	st5481_release_b(&adapter->bcs[1]);
+ 	st5481_release_b(&adapter->bcs[0]);
+
