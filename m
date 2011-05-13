@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab1EMVPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 17:15:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46659 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab1EMVPn (ORCPT
+	id S1756762Ab1EMVTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 17:19:50 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:25475 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab1EMVTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 17:15:43 -0400
-Date: Fri, 13 May 2011 22:15:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Colin Cross <ccross@android.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        martin persson <martin.persson@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Jonas =?iso-8859-1?Q?=C5berg?= <jonas.aberg@stericsson.com>
-Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency
-	withcpufreqnotifiers
-Message-ID: <20110513211512.GA30539@n2100.arm.linux.org.uk>
-References: <4D714C17.7080102@gmail.com> <AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com> <eea425c066cc69c30f118fb102fff43e@mail.gmail.com> <AANLkTi=KcmqmghVxhwGvv79heRU3C+TC-v2VnWSWt7bU@mail.gmail.com> <7e9fafa016bfe536ccc373fc2cc7ba61@mail.gmail.com> <AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com> <AANLkTikkcYw66MiJO9Bpm+De=XD2-1MFxm-CUPp6sMqL@mail.gmail.com> <BANLkTi=-T6P0KrsQ8+Ot_inq1JabY62LvA@mail.gmail.com> <alpine.LFD.2.02.1105131138460.2831@ionos> <BANLkTikY9VBXuT78k3GFkeG+q=ppMsz3iQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikY9VBXuT78k3GFkeG+q=ppMsz3iQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 13 May 2011 17:19:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=lMNmlvmmIQTKN5Lhluz0kj3NRDc8VmCushDBD2JI+vlDC9v765KZHks/1PuTrq7S7
+	iZGGUb5BJg/RWiQ9+4I5Q==
+From: Vivek Haldar <haldar@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vivek Haldar <haldar@google.com>
+Subject: [PATCH] ext4: do not normalize block requests from fallocate.
+Date: Fri, 13 May 2011 14:19:05 -0700
+Message-Id: <1305321545-17214-1-git-send-email-haldar@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 12:59:20PM +0200, Linus Walleij wrote:
-> This patch is interesting because it uses calc_mult_shift() and the current
-> localtimer driver for TWD (arch/arm/kernel/smp_twd.c) still uses hardcoded
-> mult+shift.
+Currently, an fallocate request of size slightly larger than a power of
+2 is turned into two block requests, each a power of 2, with the extra
+blocks pre-allocated for future use. When an application calls
+fallocate, it already has an idea about how large the file may grow so
+there is usually little benefit to reserve extra blocks on the
+preallocation list. This reduces disk fragmentation.
 
-I don't think there's any reason it uses a hard coded shift, just
-that's what was the norm when the code was originally written.  It
-(and many other clock event code) probably could do with an update.
+Tested: fsstress. Also verified manually that fallocat'ed files are
+contiguously laid out with this change (whereas without it they begin at
+power-of-2 boundaries, leaving blocks in between). CPU usage of
+fallocate is not appreciably higher. In a tight fallocate loop, CPU
+usage hovers between 5%-8% with this change, and 5%-7% without it.
+
+Signed-off-by: Vivek Haldar <haldar@google.com>
+---
+ fs/ext4/ext4.h    |    2 ++
+ fs/ext4/extents.c |    5 ++++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 076c5d2..e606d34 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -512,6 +512,8 @@ struct ext4_new_group_data {
+ 	/* Convert extent to initialized after IO complete */
+ #define EXT4_GET_BLOCKS_IO_CONVERT_EXT		(EXT4_GET_BLOCKS_CONVERT|\
+ 					 EXT4_GET_BLOCKS_CREATE_UNINIT_EXT)
++	/* Don't normalize when fallocat'ing */
++#define EXT4_GET_BLOCKS_NO_NORMALIZE		0x0020
+ 
+ /*
+  * Flags used by ext4_free_blocks
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index e363f21..f02dd52 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3304,6 +3304,8 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
+ 	else
+ 		/* disable in-core preallocation for non-regular files */
+ 		ar.flags = 0;
++	if (flags & EXT4_GET_BLOCKS_NO_NORMALIZE)
++		ar.flags |= EXT4_MB_HINT_NOPREALLOC;
+ 	newblock = ext4_mb_new_blocks(handle, &ar, &err);
+ 	if (!newblock)
+ 		goto out2;
+@@ -3549,7 +3551,8 @@ retry:
+ 			break;
+ 		}
+ 		ret = ext4_map_blocks(handle, inode, &map,
+-				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT);
++				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT |
++				      EXT4_GET_BLOCKS_NO_NORMALIZE);
+ 		if (ret <= 0) {
+ #ifdef EXT4FS_DEBUG
+ 			WARN_ON(ret <= 0);
+-- 
+1.7.3.1
+
