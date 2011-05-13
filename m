@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076Ab1EMN32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:29:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49485 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932345Ab1EMN3Z (ORCPT
+	id S933073Ab1EMNbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:31:33 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51069 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933041Ab1EMNbb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:29:25 -0400
+	Fri, 13 May 2011 09:31:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XNX2MonXDTZtVWL897ZEEx9zhjj+d3twjpVEWfu1WH8JJTzyvZemYV80lNuHp1b4gK
-         bPL+ySXycX5XMy0P/qBqfMSijcaHbobnTRCBHFdw/fJz01YeTxS3H+zQ1juTtPlK5OL+
-         u+mPMN0/fjJlJ5JEefGylnw/y6t/N/bfwXRTQ=
-Date: Fri, 13 May 2011 15:29:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely
- callable from scheduler
-Message-ID: <20110513132916.GB1840@nowhere>
-References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
- <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
- <1305283706.22280.40.camel@frodo>
- <20110513124800.GA1840@nowhere>
- <1305292798.2466.29.camel@twins>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eJrzGoxxdX9HxVABU6lVi07jmXFM5PnvnR6y4+4J0T8vKkjLI7s13EGQxJxGhXUtSf
+         9kYu09fq1QlWB0pybaQFp9yEwtwBGeBDbezzFCPS19omX/z5x97fOEoQgKM0MDrnF2rB
+         JG0LLi4sarSN0vUgaVLqXWWL/FMEOZHr2Wxls=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305292798.2466.29.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110512161914.e16be4d3.randy.dunlap@oracle.com>
+References: <20110512142303.8117a0b6.sfr@canb.auug.org.au>
+	<20110512161914.e16be4d3.randy.dunlap@oracle.com>
+Date: Fri, 13 May 2011 15:31:30 +0200
+Message-ID: <BANLkTin4+TiW=ejBKHMeF3o1K98HpUX8Hg@mail.gmail.com>
+Subject: Re: linux-next: Tree for May 12 (ssb)
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Michael Buesch <mb@bu3sch.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 03:19:58PM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-05-13 at 14:48 +0200, Frederic Weisbecker wrote:
-> > I haven't observed any deadlock. trace events disable preemption and
-> > other tracers do too (my changelog was buggy).
-> > 
-> > I just worried about potential other users, like a WARN_ON in the
-> > scheduler or so.
-> > 
-> > My worry is the following scenario:
-> > 
-> > schedule() {
-> >         acquire(rq)
-> >                                                         set_tsk_need_resched
-> >         WARN_ON() {
-> >                 stack_trace() {
-> >                         preempt_enable() {
-> >                                 preempt_schedule() {
-> 
-> Would never happen, because rq->lock is a spinlock which holds another
-> preempt count so preempt_enable() would never schedule.
+2011/5/13 Randy Dunlap <randy.dunlap@oracle.com>:
+> On Thu, 12 May 2011 14:23:03 +1000 Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20110511:
+>
+>
+> on i386 and x86_64 (many randconfigs fail with these errors):
+>
+> drivers/ssb/main.c:1336: error: 'SSB_PCICORE_BCAST_ADDR' undeclared (first use in this function)
+> drivers/ssb/main.c:1337: error: 'SSB_PCICORE_BCAST_DATA' undeclared (first use in this function)
+> drivers/ssb/main.c:1349: error: 'struct ssb_pcicore' has no member named 'dev'
 
-Oh right.
+Whoops, I'm sorry. I'll check this today late night. I'm quite sure I
+tested it, I don't know what does it happen.
 
-> 
-> >                                         acquire(rq)
-> >                                 }
-> >                         }
-> >                 }
-> >         }
-> > }
-> 
-> 
-> 
-> > I don't know if it happens that one set TIF_NEED_RESCHED remotely,
-> 
-> Yes
-> 
-> > or if TIF_NEED_RESCHED can be set when we hold the rq,
-> 
-> Yes
-> 
-> >  and then we
-> > can be followed by a WARN_ON, ...
-> 
-> Not quite sure, but possible.
-> 
-> > So I preferred to be careful. 
-> 
-> Still not quite seeing how all things could go bang.
-
-Nah, forget about that, I was just confused ;)
+-- 
+Rafał
