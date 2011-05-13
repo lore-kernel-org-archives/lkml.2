@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab1EMQRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 12:17:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45678 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759483Ab1EMQRl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 12:17:41 -0400
+	id S932839Ab1EMQXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 12:23:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57352 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752851Ab1EMQXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 12:23:49 -0400
+Date: Fri, 13 May 2011 09:20:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-usb@vger.kernel.org, sshtylyov@mvista.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] usb/gadget: at91sam9g20 fix end point max packet size
+Message-ID: <20110513162054.GC2728@suse.de>
+References: <1305042888-19401-1-git-send-email-plagnioj@jcrosoft.com>
+ <1305298982-5789-1-git-send-email-plagnioj@jcrosoft.com>
 MIME-Version: 1.0
-In-Reply-To: <20110513131904.GA2519@mail.hallyn.com>
-References: <BANLkTi=nc3WGaASQm1Pc9byshLOmLf2bXQ@mail.gmail.com>
- <20110513025013.GA13209@mail.hallyn.com> <20110513040214.GA25270@mail.hallyn.com>
- <BANLkTim3cy8Jf3URYTW+cbr3nrdWVbsmGw@mail.gmail.com> <20110513131904.GA2519@mail.hallyn.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 May 2011 09:16:40 -0700
-Message-ID: <BANLkTi=yyoMXNqGtVX9KxHjVaDVGW9uzdA@mail.gmail.com>
-Subject: Re: acl_permission_check: disgusting performance
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305298982-5789-1-git-send-email-plagnioj@jcrosoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 6:19 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
->
-> Compile-tested with and without CONFIG_USERNS.
+On Fri, May 13, 2011 at 05:03:02PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> on 9g20 they are the same as the 9260
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+> Resent upon Greg's request.
+> Based on current linux-next.
+> Applies cleanly on current linus' tree (2.6.39-rc7+)
+> 
+> BTW, can we imagine it going to mainline before .39-final in a "fixes" pull
+> request to Linus from a at91 tree?
 
-Looks ok to me. And generates good code for acl_permission_check
-without CONFIG_USER_NS.
+No, as I don't think this is a bug-fix-only-for-regression, is it?
 
-I'll see how much that function drops on the kernel profiles..
+It looks to be a "fix for new hardware" type thing, right?
 
-                       Linus
+And is this really the correct way to do this for the .40 kernel, which
+is where I would be queueing this up for?
+
+thanks,
+
+greg k-h
