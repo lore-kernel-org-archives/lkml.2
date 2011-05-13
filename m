@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759026Ab1EMODd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:03:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53069 "EHLO mx2.suse.de"
+	id S1759342Ab1EMOD7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:03:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44366 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab1EMODa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:03:30 -0400
+	id S1757235Ab1EMODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:03:32 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
@@ -18,9 +18,9 @@ Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-ext4 <linux-ext4@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/4] mm: slub: Do not wake kswapd for SLUBs speculative high-order allocations
-Date: Fri, 13 May 2011 15:03:22 +0100
-Message-Id: <1305295404-12129-3-git-send-email-mgorman@suse.de>
+Subject: [PATCH 3/4] mm: slub: Do not take expensive steps for SLUBs speculative high-order allocations
+Date: Fri, 13 May 2011 15:03:23 +0100
+Message-Id: <1305295404-12129-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1305295404-12129-1-git-send-email-mgorman@suse.de>
 References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
@@ -30,30 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 To avoid locking and per-cpu overhead, SLUB optimisically uses
 high-order allocations and falls back to lower allocations if they
-fail.  However, by simply trying to allocate, kswapd is woken up to
-start reclaiming at that order. On a desktop system, two users report
-that the system is getting locked up with kswapd using large amounts
-of CPU.  Using SLAB instead of SLUB made this problem go away.
+fail. However, by simply trying to allocate, the caller can enter
+compaction or reclaim - both of which are likely to cost more than the
+benefit of using high-order pages in SLUB. On a desktop system, two
+users report that the system is getting stalled with kswapd using large
+amounts of CPU.
 
-This patch prevents kswapd being woken up for high-order allocations.
-Testing indicated that with this patch applied, the system was much
-harder to hang and even when it did, it eventually recovered.
+This patch prevents SLUB taking any expensive steps when trying to use
+high-order allocations. Instead, it is expected to fall back to smaller
+orders more aggressively. Testing was somewhat inconclusive on how much
+this helped but it makes sense that falling back to order-0 allocations
+is faster than entering compaction or direct reclaim.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/slub.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/page_alloc.c |    3 ++-
+ mm/slub.c       |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9f8a97b..057f1e2 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1972,6 +1972,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const gfp_t can_wake_kswapd = !(gfp_mask & __GFP_NO_KSWAPD);
+ 
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -1984,7 +1985,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 
+-	if (!wait) {
++	if (!wait && can_wake_kswapd) {
+ 		/*
+ 		 * Not worth trying to allocate harder for
+ 		 * __GFP_NOMEMALLOC even if it can't schedule.
 diff --git a/mm/slub.c b/mm/slub.c
-index 9d2e5e4..98c358d 100644
+index 98c358d..c5797ab 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -1170,7 +1170,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+@@ -1170,7 +1170,8 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
  	 * Let the initial higher-order allocation fail under memory pressure
  	 * so we fall-back to the minimum order allocation.
  	 */
--	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
-+	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_NOFAIL;
+-	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_NOFAIL;
++	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NO_KSWAPD) &
++			~(__GFP_NOFAIL | __GFP_WAIT | __GFP_REPEAT);
  
  	page = alloc_slab_page(alloc_gfp, node, oo);
  	if (unlikely(!page)) {
