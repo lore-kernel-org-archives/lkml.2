@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051Ab1EMJsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:48:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56853 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758552Ab1EMJsJ (ORCPT
+	id S1758872Ab1EMJqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:46:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51947 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758162Ab1EMJqg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:48:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 13 May 2011 18:41:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [RFC][PATCH v7 08/14] writeback: add memcg fields to
- writeback_control
-Message-Id: <20110513184120.0f9444bc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1305276473-14780-9-git-send-email-gthelen@google.com>
-References: <1305276473-14780-1-git-send-email-gthelen@google.com>
-	<1305276473-14780-9-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Fri, 13 May 2011 05:46:36 -0400
+Subject: Re: Sched_autogroup and niced processes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        Carl-Johan Kjellander <carl-johan@klarna.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110513092933.GL13647@elte.hu>
+References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
+	 <1305273950.15080.7.camel@marge.simson.net>
+	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
+	 <20110513090537.GH13647@elte.hu> <1305277666.2561.9.camel@twins>
+	 <20110513092933.GL13647@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 13 May 2011 11:46:30 +0200
+Message-ID: <1305279990.2466.4.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011 01:47:47 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> Add writeback_control fields to differentiate between bdi-wide and
-> per-cgroup writeback.  Cgroup writeback is also able to differentiate
-> between writing inodes isolated to a particular cgroup and inodes shared
-> by multiple cgroups.
+On Fri, 2011-05-13 at 11:29 +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 > 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-
-Personally, I want to see new flags with their usage in a patch...
-
-
-> ---
->  include/linux/writeback.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> > On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
+> > > Could we somehow automate this:
+> > > 
+> > >   > echo 19 > /proc/'pid of seti@home'/autogroup
+> > > 
+> > > and split off nice 19 tasks into separate groups and lower the group's 
+> > > priority? 
+> > 
+> > Well I guess you can stack on all kinds of heuristics, do we want to?
 > 
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index d10d133..4f5c0d2 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -47,6 +47,8 @@ struct writeback_control {
->  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
->  	unsigned range_cyclic:1;	/* range_start is cyclic */
->  	unsigned more_io:1;		/* more io to be dispatched */
-> +	unsigned for_cgroup:1;		/* enable cgroup writeback */
-> +	unsigned shared_inodes:1;	/* write inodes spanning cgroups */
->  };
+> Well have you seen my non-heuristic suggestion:
+> 
+>  | Another thing we could do is to lower the priority of a cgroup if it *only* 
+>  | runs reniced tasks. I.e. track the 'maximum priority' of cgroups and 
+>  | propagate that to their weight.
+>  |
+>  | This way renicing within cgroups will be more powerful and people do not have 
+>  | to muck with cgroup details.
+> 
+> A cgroup assuming the highest priority of all tasks it contains is a pretty 
+> natural definition and extension of priorities and also solves this usecase.
 
+Well, that a heuristic in my book, and it totally destroys the
+independence of groups from tasks (resulting in O(n) task nice
+behaviour).
 
-If shared_inode is really rare case...we don't need to have this shared_inodes
-flag and do writeback shared_inode always.....No ?
+I really don't see why we should do this, if people don't want what it
+does, don't use it. If you want something else, you can do all these
+things from userspace to suit your exact needs.
 
-Thanks,
--Kame
-
+We have enough knobs to set things up as you want them, no need to make
+things more complicated.
