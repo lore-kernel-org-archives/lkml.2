@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab1EMR0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 13:26:25 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59904 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089Ab1EMR0Y (ORCPT
+	id S933150Ab1EMR1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 13:27:20 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63249 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933089Ab1EMR1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 13:26:24 -0400
-Date: Fri, 13 May 2011 18:25:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-Message-ID: <20110513172509.GC19733@n2100.arm.linux.org.uk>
-References: <20110513131437.8999e8eb.sfr@canb.auug.org.au> <20110513080634.GA13647@elte.hu> <20110513083738.GA19733@n2100.arm.linux.org.uk> <20110513092646.GK13647@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513092646.GK13647@elte.hu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 13 May 2011 13:27:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OEAzhdtmKz0uGrMj3FRzK/6qtZg76HMf7tPTMLk+DwGFt4RBFNGfesLrgMVeIBX7Vo
+         rAa19x8CUBzA7TuKTkH1pnt2qRQHlDDpxYsDlK4XTV0S5QJE9SuaZxp4yL1HzYwWtSEa
+         yRFbjd0dPdj++qoYuK3Hymk2itsRHYCmx/Ebw=
+Subject: Re: kernel BUG at net/ipv4/tcp_output.c:1006!
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: TB <lkml@techboom.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <4DCD6658.3020901@techboom.com>
+References: <4DCD6658.3020901@techboom.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 19:27:13 +0200
+Message-ID: <1305307633.3866.61.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 11:26:46AM +0200, Ingo Molnar wrote:
-> Also note that there's also some pending changes in the x86 tree modifying
-> arch/x86/kernel/i8253.c:
+Le vendredi 13 mai 2011 à 13:11 -0400, TB a écrit :
+> This is the 2.6.38.5 kernel with the patch in
+> [PATCH] tcp_cubic: limit delayed_ack ratio to prevent divide error
 > 
->   b01cc1b0eae0: x86: Convert remaining x86 clocksources to clocksource_register_hz/khz
-> 
-> If you want to do any further change to this file you need to pull in this 
-> change first or need to resolve the conflict in some other way.
+> Had this crash a few days ago, but never got any response to subsequent
+> emails. Another server crashed today with a network related backtrace,
+> but netconsole did not work.
 
-I have been told by Linus on more than one occasion that Linus wants to
-see exactly these kinds of merge conflicts, as it helps him track what's
-going on.
+I understand you are anxious, but sending this message to lkml will
+hardly find more people to look at this problem.
 
-He's made that point again recently during discussions with the ARM
-community, and he's gone further to explicitly state that he does _not_
-want these kinds of merge conflicts to be hidden from him.
+You sent your messages two days ago on netdev, thats not like its one or
+two months.
 
-So I really don't see what the issue here is - if Linus is happy _and_
-wants to resolve trivial merge conflicts then there's no problem here.
-It's probably a good thing that Linus does see the conflict so he gets
-to know that at least some ARM folk _are_ looking at common things
-across all architectures.
+Please send us full disassembly of tcp_fragment (from vmlinux file)
+
+
+
