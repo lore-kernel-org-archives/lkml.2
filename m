@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab1EMSoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:44:06 -0400
-Received: from mx1.netlogicmicro.com ([12.203.210.36]:2745 "EHLO
-	orion5.netlogicmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751496Ab1EMSoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:44:04 -0400
-X-TM-IMSS-Message-ID: <50b6596a0004c398@netlogicmicro.com>
-Date: Sat, 14 May 2011 00:15:33 +0530
-From: "Jayachandran C." <jayachandranc@netlogicmicro.com>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
-Message-ID: <20110513184532.GC14607@jayachandranc.netlogicmicro.com>
-References: <7aa38c32b7748a95e814e5bb0583f967@localhost>
- <20110513150707.GA26389@linux-mips.org>
- <BANLkTikcyEzjOWt9pWToE=89dySSEYbw_g@mail.gmail.com>
- <20110513155605.GA30674@linux-mips.org>
- <BANLkTinnALQV6dXkJ0AjaQ1=bTawYMMkuQ@mail.gmail.com>
- <20110513173633.GA14607@jayachandranc.netlogicmicro.com>
- <BANLkTim+z7TSCvNA2duA6LsUzNsiu9OQaQ@mail.gmail.com>
+	id S1757286Ab1EMSrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:47:40 -0400
+Received: from bsmtp4.bon.at ([195.3.86.186]:39521 "EHLO bsmtp.bon.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751219Ab1EMSri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:47:38 -0400
+Message-ID: <4DCD7CBE.9010409@kdbg.org>
+Date: Fri, 13 May 2011 20:47:26 +0200
+From: Johannes Sixt <j6t@kdbg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTim+z7TSCvNA2duA6LsUzNsiu9OQaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 13 May 2011 18:44:31.0519 (UTC) FILETIME=[CBE482F0:01CC119D]
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Lutomirski <luto@mit.edu>,
+        Christian Couder <christian.couder@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up
+ hard right after logging in)
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com> <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com> <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com> <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com> <4DCD79A0.7000500@kdbg.org> <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
+In-Reply-To: <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 10:51:44AM -0700, Kevin Cernekee wrote:
-> On Fri, May 13, 2011 at 10:36 AM, Jayachandran C.
-> <jayachandranc@netlogicmicro.com> wrote:
-> > For 32-bit the config is nlm_xlr_defconfig in the source tree. Let me know if
-> > you need any further info.
+Am 13.05.2011 20:41, schrieb Linus Torvalds:
+> On Fri, May 13, 2011 at 11:34 AM, Johannes Sixt <j6t@kdbg.org> wrote:
+>>   git bisect good v2.6.38
 > 
-> Would you be able to dump out the TLB handlers in this configuration,
-> per David's suggestion?
+> When you say that v2.6.38 is good, that means that everything that can
+> be reached from 2.6.38 is good.
+> 
+> NOT AT ALL the same thing as "git bisect requires v2.6.38" would be.
+> 
+> Think about it. It's the "reachable from v2.6.38" vs "cannot reach
+> v2.6.38" difference. That's a HUGE difference.
 
-The current linux-mips queue works for me, and I don't have the old source
-or binaries with me anymore. You surely should be able build with
-nlm_xlr_defconfig and see if the rixi is enabled in the build, if you want
-any config register dump on the CPU, please let me know.
+Oops, you're right, I got it upside-down.
 
-JC.
+Thanks,
+-- Hannes
