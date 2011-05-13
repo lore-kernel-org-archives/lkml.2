@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759377Ab1EMOyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:54:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65285 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab1EMOyn (ORCPT
+	id S1759390Ab1EMO5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:57:17 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:37097 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758703Ab1EMO5Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:54:43 -0400
+	Fri, 13 May 2011 10:57:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=M+M8yAcoDCKWBRoR/kwrNWUJHweLbG7Wi5mn43NB1oH2KEFbP0ecAwhLuS6CtgB+o9
-         R3e8QXxcoUVFYh5bf4L2dgYhiC70UTO3HudKrsZT0zkC2et8DcuxHKMq0560Zrn3UfEq
-         6lDf0PPH6Pr0D8ebVZ8LB+F9H/YAlNZe3RwPk=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=FnIBuccDQ8T9OpLn4Th3Dk+A5d5c4hHQ7lkTxqxHFir9vzwAUlg6Ot9EudyqDnCXMu
+         2Oi+2+SYs6e0n1ntDWxEy8sp6vOHCCdN/McvuAH/tsuBU+nAdaxshZzLPdiN2ogti4Zr
+         qsIaySVxhX147lO9DHwoDFwtW3pBdvxEdIJlA=
 MIME-Version: 1.0
-In-Reply-To: <1303973940-13296-1-git-send-email-linus.walleij@stericsson.com>
-References: <1303973940-13296-1-git-send-email-linus.walleij@stericsson.com>
-Date: Fri, 13 May 2011 16:54:42 +0200
-X-Google-Sender-Auth: ChGaSGsi5AAThXMbBza0Ii0cTFk
-Message-ID: <BANLkTi==T3MGumCAhrEyf4ipZo80eNiciA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: rename VIA local config struct
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+ <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 13 May 2011 10:56:54 -0400
+X-Google-Sender-Auth: a25XyeT2y0XY6I_b5girSa_-ZOc
+Message-ID: <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Christian Couder <christian.couder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, git@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shuang He <shuang.he@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/4/28 Linus Walleij <linus.walleij@stericsson.com>:
-
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Fri, May 13, 2011 at 9:38 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Fri, May 13, 2011 at 4:20 AM, Christian Couder
+> <christian.couder@gmail.com> wrote:
+>> On Thu, May 12, 2011 at 7:15 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>>
+>>> OK, this sucks.  In the course of bisecting this, I've hit two other
+>>> apparently unrelated bugs that prevent my from testing large numbers
+>>> of kernels.  Do I have two questions:
+>>>
+>>> 1. Anyone have any ideas from looking at the log?
+>>>
+>>> It looks like most of what's left is network code, so cc netdev.
+>>>
+>>> 2.  The !&$#@ bisection is skipping all over the place.  I've seen
+>>> 2.6.37 versions and all manner of -rc's out of order.  Linus, and
+>>> other people who like pontificating about git bisection: is there any
+>>> way to get the bisection to follow Linus' tree?  I think that if
+>>> bisect could be persuaded to consider only changes that are reached by
+>>> following only the *first* merge parent all the way from the bad
+>>> revision to the good revision, then the bisection would build versions
+>>> that were at least good enough for Linus to pull and might have fewer
+>>> bisection-killing bugs.
+>>>
+>>> (This isn't a new idea [1], and git rev-list --bisect --first-parent
+>>> isn't so bad except that it doesn't bisect.)
+>>
+>> Did you forget to put the reference [1] in your email? Was it this one
+>> you were thinking about:
+>>
+>> http://thread.gmane.org/gmane.comp.version-control.git/165433/
 >
-> The local VIA GPIO config struct "gpio_config" collides with my
-> extension to the gpio_chip struct, so rename it to via_gpio_config
-> so we don't get this clash.
+> No, it was this:
 >
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> http://stackoverflow.com/questions/5638211/how-do-you-get-git-bisect-to-ignore-merged-branches
+>
 
-Even if we're not merging anything like my configuration API for
-2.6.40 IMHO this patch makes sense anyway, so please consider
-applying it for bringing clarity to the source code.
+Sadly even that's not enough.  I finished the bisection (by
+standard-ish techniques but with a bit of overriding of git bisect's
+choices and occasional merging of newer versions of -linus to get
+something that would boot) and it pointed to a commit that wasn't the
+culprit.
 
-Yours,
-Linus Walleij
+The problem is that 2.6.39-rc7 is bad, 2.6.38 (and 2.6.38.{5,6}) is
+good, but 2.6.38-rc5 is bad and fails identically to 2.6.39-rc7.  I
+think that git bisect makes the assumption that ancestors of a good
+commit are good, and that just isn't true for this bug.
+
+So what I really want is a fancy version of git bisect that makes no
+assumptions about the relationship of good and bad commits in the
+graph and just finds me a commit that is bad but for which all parents
+are good or vice versa.
+
+I'm currently bisecting the other way to find the commit before 2.6.38
+that fixed the bug, since there's presumably less churn there than in
+the early bits of 2.6.39.
+
+--Andy
