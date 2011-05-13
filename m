@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab1EMNUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:20:32 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:51919 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab1EMNUa (ORCPT
+	id S933045Ab1EMNYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:24:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:32781 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932618Ab1EMNYL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:20:30 -0400
-Subject: Re: question about drivers/isdn/hisax/st5481_init.c
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1105130748060.9190@ask.diku.dk>
-References: <Pine.LNX.4.64.1105130748060.9190@ask.diku.dk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare
-Date: Fri, 13 May 2011 14:20:26 +0100
-Message-ID: <1305292826.4065.443.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 May 2011 13:20:29.0544 (UTC) FILETIME=[87928E80:01CC1170]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18132.005
-X-TM-AS-Result: No--17.192300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Fri, 13 May 2011 09:24:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ulAHQl51NefSeYuTEL558fV18psXf9XUwk+6y1sKAOQ4C2Uf/XtAw2C11w/QnPCyD3
+         JD/TGfsRWYxzcH5LeUUunP8ksxxJjUUDxRBM4ex7QR7vCH0D97AqNZxAWrwB1LLuPTor
+         Uj16tDscCQ3f1NgEZiBuPQAaZW/j/56p5qUXA=
+MIME-Version: 1.0
+In-Reply-To: <20110513130011.GA6474@elte.hu>
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
+	<20110513124523.GM13984@redhat.com>
+	<20110513130011.GA6474@elte.hu>
+Date: Fri, 13 May 2011 21:24:10 +0800
+Message-ID: <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 07:53 +0200, Julia Lawall wrote:
-> The function probe_st5481 allocates an adapter value using kzalloc, adds 
-> it to adapter_list, and then performs various initialization operations, 
-> which may fail.  adapter_list is a static variable that is never otherwise 
-> referenced in the file.  There is a list_del that removes the adapter from 
-> the list in the function disconnect_st5481.  The presence of the adapter 
-> on the list makes it possibly unsafe to free adapter in the failure cases.
-> 
-> Could the list just be removed, if it is not being used anywhere?
-> 
-> Or if the list should be kept because it is useful or it is planned to be 
-> useful in the future, could the insertion into the list be moved to the 
-> end of the function, after the potentially failing operations, so that 
-> adapter can be freed when a failure occurs?
+Hi, Ingo,
 
-Some older drivers have these device lists hanging around from before
-the device model has implemented.  If the list isn't being used now then
-it's probably fine to remove.
+On Fri, May 13, 2011 at 9:00 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Don Zickus <dzickus@redhat.com> wrote:
+>
+>> On Fri, May 13, 2011 at 04:23:38PM +0800, Huang Ying wrote:
+>> > In general, unknown NMI is used by hardware and firmware to notify
+>> > fatal hardware errors to OS. So the Linux should treat unknown NMI as
+>> > hardware error and go panic upon unknown NMI for better error
+>> > containment.
+>>
+>> I have a couple of concerns about this patch.  One I don't think BIOSes
+>> are ready for this.  I have Intel Westmere boxes that say they have a
+>> valid HEST, GHES, and EINJ table, but when I inject an error there is no
+>> GHES record.  This leaves me with an unknown NMI and panic.  Yeah, it is a
+>> BIOS bug I guess, but I think vendors are going to be slow fixing all this
+>> stuff (my Nehalem box is in even worse shape with this stuff).
+>
+> Agreed, doing this is not a very good idea - we have spurious unknown NMIs
+> again and again, crashing the box is not a good idea.
 
-Ben.
+So we use white list to filter out spurious hardware.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+> What should be done instead is to add an event for unknown NMIs, which can then
+> be processed by the RAS daemon to implement policy.
+>
+> By using 'active' event filters it could even be set on a system to panic the
+> box by default.
 
+If there is real fatal hardware error, maybe we have no luxury to go
+from NMI handler to user space RAS daemon to determine what to do.
+System may explode, bad data may go to disk before that.
+
+Best Regards,
+Huang Ying
