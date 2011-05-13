@@ -1,51 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1EMPac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:30:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26631 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1EMPa3 (ORCPT
+	id S1754679Ab1EMPaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:30:23 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:3286 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab1EMPaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:30:29 -0400
-Date: Fri, 13 May 2011 11:30:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: yinghai@kernel.org, jeremy@goop.org, stefano.stabellini@eu.citrix.com,
-        hpa@zytor.com, hpa@linux.intel.com,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Xen MMU's requirement to pin pages RO and initial_memory_mapping.
-Message-ID: <20110513153010.GB16519@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DCD4E8E.0061:SCFMA922111,ss=1,fgs=0
+	Fri, 13 May 2011 11:30:21 -0400
+Subject: Re: [PATCH 03/16] add driver for C64x+ ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1305144843-5058-4-git-send-email-msalter@redhat.com>
+References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
+	 <1305144843-5058-2-git-send-email-msalter@redhat.com>
+	 <1305144843-5058-3-git-send-email-msalter@redhat.com>
+	 <1305144843-5058-4-git-send-email-msalter@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 13 May 2011 16:30:18 +0100
+Message-ID: <1305300618.2851.29.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 May 2011 15:30:20.0812 (UTC) FILETIME=[AB87B4C0:01CC1182]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18132.005
+X-TM-AS-Result: No--15.205200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aka, remove the hack added by git commit 609cfda586c7fe3e5d1a02c51edb587506294167
-(Merge branch 'stable/bug-fixes-for-rc5' of git://git.kernel.org/../xen)
+Please send network drivers to netdev for review.
 
-One idea that is on the table was proposed by Yinghai:
-"Xen should set RAM for page-table to RO after init_memory mapping."
+I haven't looked at this thoroughly, but I noticed a few things:
 
-In other words, don't do the magic 'mask_rw_pte' when set_pte is called.
-(and don't do the calls to make_lowmem_page_readonly when allocating
-the PTE table, nor PMD, nor PUD) - I think?
+On Wed, 2011-05-11 at 16:13 -0400, Mark Salter wrote:
+> From: Aurelien Jacquiot <a-jacquiot@ti.com>
+> 
+> This patch adds a network driver to support the ethernet interface found on
+> several Texas Instruments C64X+ based System on Chips. In particular, this
+> driver has been tested on the TMS320C6455, TMS320C6457, TMS320C6472, and
+> TMS320C6474 parts.
+[...]
+> --- /dev/null
+> +++ b/drivers/net/c6x_gemac.c
+[...]
+> +static int __init get_mac_addr_from_cmdline(char *str)
+> +{
+> +	const char *start = (const char *) str;
+> +	const char *end;
+> +	int count;
+> +
+> +	for (count = 0; count < 6; count++) {
+> +		config.enetaddr[count] = _hex_strtoul(start, &end);
+> +		if (end == start)
+> +			return 0;
+> +		if ((*end != ':') && (count != 5))
+> +			return 0;
+> +		start = end + 1;
+> +	}
+> +	return 1;
+> +}
+> +
+> +__setup("emac_addr=", get_mac_addr_from_cmdline);
+> +
+> +static int __init set_emac_shared(char *str)
+> +{
+> +	emac_shared = 1;
+> +	return 1;
+> +}
+> +
+> +__setup("emac_shared", set_emac_shared);
 
-But instead do:
- a). when we load the cr3? We could go through the whole pagetable and
-     set the RO as we need?
- b). when we are finished with the creation of a page table? So similary 
-     to the point above - don't set the RO on the pages until we have completed
-     the full creation of the page.
- c). when post_allocator_start is called?
- d). other ideas?
+These parameters should be provided by platform data.
 
-But I vaguelly recall that we are using the page table as we are adding in the
-entries. And that we are pinning them as well. Perhaps the trigger to scan the
-pagetable and set them to RO should be done .. at what point? When the PUD/PMD
-allocations are done? And when PUD/PMD are set?
+> +/*
+> + * Get the device statistic
+> + */
+> +static struct net_device_stats *emac_get_stats(struct net_device *dev)
+> +{
+> +	struct emac_private *ep = netdev_priv(dev);
+> +	unsigned int reg;
+> +	unsigned int dummy;
+> +	int i;
+> +
+> +	emac_set_stat(dev->stats.multicast,	    EMAC_RXMCASTFRAMES);
+> +	emac_set_stat(dev->stats.collisions,	    EMAC_TXCOLLISION);
+> +	emac_set_stat(dev->stats.rx_length_errors,  EMAC_RXOVERSIZED);
+> +	emac_set_stat(dev->stats.rx_length_errors,  EMAC_RXUNDERSIZED);
+> +	emac_set_stat(dev->stats.rx_crc_errors,     EMAC_RXCRCERRORS);
+> +	emac_set_stat(dev->stats.rx_frame_errors,   EMAC_RXALIGNCODEERRORS);
+> +	emac_set_stat(dev->stats.tx_carrier_errors, EMAC_TXCARRIERSLOSS);
+> +	emac_set_stat(dev->stats.tx_fifo_errors,    EMAC_TXUNDERRUN);
+> +	emac_set_stat(dev->stats.tx_window_errors,  EMAC_TXLATECOLL);
+> +
+> +	/* ACK statistic by write-to-decrement */
+> +	reg = EMAC_RXGOODFRAMES;
+> +	for (i = 0; i < EMAC_NUM_STATREGS; i++) {
+> +		dummy = emac_get_reg(reg);
+> +		emac_set_reg(reg, dummy);
+> +		reg += 4;
+> +	}
+
+This looks wrong.  Surely you should be decrementing stats by the values
+that were read above, not the 'dummy' value read later.
+
+> +	return &dev->stats;
+> +}
+> +
+> +/*
+> + * Receive packets
+> + */
+> +static int emac_rx(struct net_device *dev, struct emac_desc *desc_ack)
+> +{
+[...]
+> +			/* Give back old sk_buff */
+> +			netif_rx(skb_old);
+> +			dev->last_rx = jiffies;
+
+No need to set last_rx; the networking core does it.
+
+> +			/* Fill statistic */
+> +			dev->stats.rx_packets++;
+> +			dev->stats.rx_bytes += pkt_len;
+> +		} else {
+> +			printk(KERN_WARNING "%s: Memory squeeze, dropping packet.\n", dev->name);
+
+Should be rate-limited or controlled by message-level (see netif_info()
+and related macros in netdevice.h).
+
+[...]
+> +static int emac_start_xmit(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +	struct emac_private	  *ep =  netdev_priv(dev);
+> +	volatile struct emac_desc *desc;
+> +	volatile struct emac_desc *prev_desc = NULL;
+> +	ushort pkt_len = skb->len;
+> +	unsigned long flags;
+> +
+> +	if (ep->tx_full) {
+> +		printk(KERN_WARNING "%s: tx queue full\n", dev->name);
+
+Definitely don't log this by default.
+
+> +		dev->stats.tx_dropped++;
+
+No, the packet is not dropped in this case.
+
+> +		return NETDEV_TX_BUSY;
+> +	}
+> +
+> +	/* Pad short frame */
+> +	if (unlikely(pkt_len < ETH_ZLEN)) {
+> +		if (skb_padto(skb, ETH_ZLEN)) {
+> +			netif_wake_queue(dev);
+
+The queue is already awake!
+
+And in this case you *are* dropping the packet, so you could increment
+tx_dropped.
+
+> +			return NETDEV_TX_OK;
+> +		}
+> +		pkt_len = ETH_ZLEN;
+> +	}
+[...]
+> +static void emac_handle_host_interrupt(struct net_device *dev)
+> +{
+> +	struct emac_private *ep = netdev_priv(dev);
+> +	unsigned long	     status;
+> +
+> +	/* Handle host error */
+> +	status = emac_get_reg(EMAC_MACSTATUS);
+> +
+> +	/* Check if the problem occurs on our channel when we are slave */
+> +	if ((ep->slave)
+> +	    && (((status & EMAC_M_RXERRCH) >> EMAC_S_RXERRCH) != IDX_TO_CHAN(emac_idx))
+> +	    && (((status & EMAC_M_TXERRCH) >> EMAC_S_TXERRCH) != IDX_TO_CHAN(emac_idx)))
+> +		return;
+> +
+> +	if ((status & EMAC_M_RXERRCODE) == (EMAC_V_OWNERSHIP <<  EMAC_S_RXERRCODE)) {
+> +		printk(KERN_ERR "%s: EMAC rx ring full\n", dev->name);
+
+Should be rate-limited or controlled by message-level.
+
+> +		dev->stats.rx_fifo_errors++;
+> +	} else
+> +		printk(KERN_ERR "%s: EMAC fatal host error 0x%lx\n",
+> +		       dev->name, status);
+> +
+> +	DPRINTK(KERN_ERR "%s: Error head=%p desc=%p dirty=%p skb_tx_dirty=%ld count=%ld\n",
+> +		dev->name, ep->head_tx, ep->cur_tx,
+> +		ep->dirty_tx, ep->skb_tx_dirty, ep->count_tx);
+> +
+> +	if (!ep->slave) {
+> +		/* Reconfigure the device */
+> +		ep->fatal_error = 1;
+> +		emac_reconfigure_device(dev);
+> +	}
+> +}
+[...]
+> +#ifdef EMAC_HAS_ALE_SUPPORT
+[...]
+> +static void emac_set_rx_mode(struct net_device *dev)
+[...]
+> +		/* Set mcast from a list */
+> +		for (i = 0; i < dev->mc_count; i++, dmi = dmi->next) {
+> +			u8 *p_dmi = dmi->dmi_addr;
+
+This is the old multicast list format; the code won't even compile now.
+
+It needs to be updated like the !EMAC_HAS_ALE_SUPPORT version has been.
+
+[...]
+> +#ifdef EMAC_TIMER_TICK_MDIO
+> +/*
+> + * This function should be called for each device in the system on a
+> + * periodic basis of 100mS (10 times a second). It is used to check the
+> + * status of the EMAC and MDIO device.
+> + */
+> +static void emac_timer_tick(unsigned long data)
+
+That seems excessive!  It might be worth checking whether this takes
+significant CPU time, and increasing the period when all links are in a
+steady state.
+
+[...]
+> +static const struct ethtool_ops gemac_ethtool_ops = {
+> +};
+
+We (that is, netdev regulars) should make more of the default ethtool
+operations work without dev->ethtool_ops set, so you don't have to do
+this!
+
+[...]
+> +#ifdef EMAC_ARCH_HAS_MAC_ADDR
+> +	/* SoC or board hw has MAC address */
+> +	if (config.enetaddr[0] == 0 && config.enetaddr[1] == 0 &&
+> +	    config.enetaddr[2] == 0 && config.enetaddr[3] == 0 &&
+> +	    config.enetaddr[4] == 0 && config.enetaddr[5] == 0) {
+[...]
+
+is_zero_ether_addr(config.enetaddr)
+
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
