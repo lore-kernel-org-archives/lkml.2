@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab1EMAMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 20:12:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61940 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab1EMAMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 20:12:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,361,1301900400"; 
-   d="scan'208";a="642033942"
-Subject: Re: Perfromance drop on SCSI hard disk
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DCC4340.6000407@fusionio.com>
-References: <1305009600.21534.587.camel@debian>
-	 <4DCC4340.6000407@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 08:11:43 +0800
-Message-ID: <1305245503.21534.2090.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1757375Ab1EMAaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 20:30:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45858 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751034Ab1EMAaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 20:30:03 -0400
+MIME-Version: 1.0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 May 2011 17:29:07 -0700
+Message-ID: <BANLkTi=nc3WGaASQm1Pc9byshLOmLf2bXQ@mail.gmail.com>
+Subject: acl_permission_check: disgusting performance
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 04:29 +0800, Jens Axboe wrote:
-> On 2011-05-10 08:40, Alex,Shi wrote:
-> > commit c21e6beba8835d09bb80e34961 removed the REENTER flag and changed
-> > scsi_run_queue() to punt all requests on starved_list devices to
-> > kblockd. Yes, like Jens mentioned, the performance on slow SCSI disk was
-> > hurt here.  :) (Intel SSD isn't effected here)
-> > 
-> > In our testing on 12 SAS disk JBD, the fio write with sync ioengine drop
-> > about 30~40% throughput, fio randread/randwrite with aio ioengine drop
-> > about 20%/50% throughput. and fio mmap testing was hurt also. 
-> > 
-> > With the following debug patch, the performance can be totally recovered
-> > in our testing. But without REENTER flag here, in some corner case, like
-> > a device is keeping blocked and then unblocked repeatedly,
-> > __blk_run_queue() may recursively call scsi_run_queue() and then cause
-> > kernel stack overflow. 
-> > I don't know details of block device driver, just wondering why on scsi
-> > need the REENTER flag here. :) 
-> 
-> This is a problem and we should do something about it for 2.6.39. I knew
-> that there would be cases where the async offload would cause a
-> performance degredation, but not to the extent that you are reporting.
-> Must be hitting the pathological case.
-> 
-> I can think of two scenarios where it could potentially recurse:
-> 
-> - request_fn enter, end up requeuing IO. Run queue at the end. Rinse,
->   repeat.
-> - Running starved list from request_fn, two (or more) devices could
->   alternately recurse.
-> 
-> The first case should be fairly easy to handle. The second one is
-> already handled by the local list splice.
-> 
-> Looking at the code, is this a real scenario? Only potential recurse I
-> see is:
-> 
-> scsi_request_fn()
->         scsi_dispatch_cmd()
->                 scsi_queue_insert()
->                         __scsi_queue_insert()
->                                 scsi_run_queue()
-> 
-> Why are we even re-running the queue immediately on a BUSY condition?
-> Should only be needed if we have zero pending commands from this
-> particular queue, and for that particular case async run is just fine
-> since it's a rare condition (or performance would suck already).
+So since we now do pathname lookup so well, I've been doing profiles
+and looking at which parts are still problematic.
 
-Yeah, this is correct way to fix it. Let me try the patch on our
-machine. 
+And some of them are just because it's real work to look up filenames.
+So testing one of my favorite stupid loads ("do 'make' on a kernel
+that is basically already made"), I'm not at all upset when I see
+profiles that say
 
+    25.91%           make  make                          [.] 0x1e78
+     5.41%           make  [kernel.kallsyms]             [k] __d_lookup_rcu
+     4.45%           make  [kernel.kallsyms]             [k] link_path_walk
 
+although I do wonder what make is doing that makes it so slow.
+Whatever. The kernel part looks rather good.
+
+Except looking down, almost 2% of the time is spent in
+"acl_permission_check()"! That's just disgusting. The function should
+be instantaneous. It's a really trivial function. But it gets called a
+_lot_.
+
+Now part of it is that the code generated for it was just bad. We
+should inline the call to "current_user_ns()", because immediately
+afterwards we do "current_fsuid()", and a lot of it is shared (they
+both access "current->cred"). Easy enough (just use
+"_current_user_ns()" instead, to inline it). And let's not use
+"mode_t", use "unsigned int" and gcc generates better code.
+
+Fine. That gets us down a bit, so now it's not the third-hottest
+kernel function, now it's just the fifth-hottest one:
+
+     1.67%           make  [kernel.kallsyms]             [k] __strncpy_from_user
+     1.39%           make  [kernel.kallsyms]             [k] do_lookup
+     1.28%           make  [kernel.kallsyms]             [k]
+acl_permission_check
+
+which is still really quite depressing.
+
+The annotated profile tells the story:
+
+    7.36 :      ffffffff810bcd52:       65 48 8b 04 25 80 b5    mov
+%gs:0xb580,%rax
+    9.71 :      ffffffff810bcd67:       48 8b 80 18 03 00 00    mov
+0x318(%rax),%rax
+   15.34 :      ffffffff810bcd71:       48 8b 70 70             mov
+0x70(%rax),%rsi
+   30.57 :      ffffffff810bcd79:       48 81 7e 58 00 3b a4    cmpq
+$0xffffffff81a43b00,0x58(%rsi)
+
+Those four instructions are about two thirds of the cost of the
+function. The last two are about 50% of the cost.
+
+They are the accesses to "current", "->cred", "->user" and "->user_ns"
+respectively (the cmp with the big constant is that compare against
+"init_ns").
+
+Now, if we got rid of them, we wouldn't improve performance by 2/3rds
+on that function, because we do need the two first accesses for
+"fsuid" (which is the next check), and the third one (which is
+currently "cred->user" ends up doing the cache miss that we'd take for
+"cred->fsuid" anyway. So the first three costs are fairly inescapable.
+
+They are also cheaper, probably because those fields tend to be more
+often in the cache. So it really is that fourth one that hurts the
+most, as shown by it taking almost a third of the cycles of that
+function.
+
+And it all comes from that annoying commit e795b71799ff0 ("userns:
+userns: check user namespace for task->file uid equivalence checks"),
+and I bet nobody involved thought about how expensive that was.
+
+That "user_ns" is _really_ expensive to load. And the fact that it's
+after a chain of three other loads makes it all totally serialized,
+and makes things much more expensive.
+
+Could we perhaps have "user_ns" directly in the "struct cred"? Or
+could we avoid or short-circuit this check entirely somehow, since it
+always checks against "init_ns"?
+
+It's sad seeing that long chain of accesses and how nasty it gets (and
+interesting but perhaps not surprising how it also clearly gets colder
+from the cache the further away from "current" that it is).
+
+It's extra sad, considering that almost nobody gets any _advantage_
+from that stupid user_ns test. So it really is wasted time.
+
+                            Linus
