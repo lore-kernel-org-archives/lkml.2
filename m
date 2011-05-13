@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab1EMQyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 12:54:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50103 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759258Ab1EMQym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 12:54:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Raffaele Recalcati <lamiaposta71@gmail.com>
-Subject: Re: pm loss development
-Date: Fri, 13 May 2011 18:54:57 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org
-References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com> <201105122127.44484.rjw@sisk.pl> <BANLkTikZkRW6TWMcWyZC4_TdAWgjXDqvYA@mail.gmail.com>
-In-Reply-To: <BANLkTikZkRW6TWMcWyZC4_TdAWgjXDqvYA@mail.gmail.com>
+	id S1759042Ab1ENUeL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 16:34:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56223 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab1ENUeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 16:34:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 9/9] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+Date: Fri, 13 May 2011 18:55:09 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-parisc@vger.kernel.org,
+        linux-s390@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        Helge Deller <deller@gmx.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Chris Metcalf <cmetcalf@tilera.com>
+References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org> <1305244212-19183-10-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1305244212-19183-10-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105131854.57854.rjw@sisk.pl>
+Message-Id: <201105131855.10195.arnd@arndb.de>
+X-Provags-ID: V02:K0:g61RLMrGU1mKM4aHxupBlIjsa/KSkz0G0/YtTZ/pBsG
+ 4UQVA4wfVIiXoJUKXmAJ+ArOzyECG6Ub2k6pYOL9SClvrrrBca
+ MmBnOF10yA4VzLVuIWIR2TG1YKbL89+aRFWSJEiH3TxPE8dz00
+ 2Ykvqev/u/0vPux0a1xPZrbmm7QwwjJ9nvuzdxB8v29/gcMlnF
+ KnPMDqTQmepRRoNF+ByVw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 13, 2011, Raffaele Recalcati wrote:
-> Hi Rafael,
+On Friday 13 May 2011, Stephen Boyd wrote:
+> The help text for this config is duplicated across the x86,
+> parisc, and s390 Kconfig.debug files. Arnd Bergman noted that the
+> help text was slightly misleading and should be fixed to state
+> that enabling this option isn't a problem when using pre 4.4 gcc.
 > 
-> 2011/5/12 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Thursday, May 12, 2011, Raffaele Recalcati wrote:
-> >> What happen normally in runtime pm implementation is that every devices
-> >> are switched off and are enabled only when needed.
-> >> In our case instead we have a completely functional embedded system and,
-> >> when an asyncrhonous event appear, we have only some tens milliseconds
-> >> before the actual power failure takes place.
-> >> This patchset add a support in order to switch off not vital part of the system,
-> >> in order to allow the board to survive longer.
-> >> This allow the possibility to save important data.
-> >
-> > OK, so first, who decides what parts of the system are vital and what aren't?
+> To simplify the rewording, consolidate the text into
+> lib/Kconfig.debug and modify it there to be more explicit about
+> when you should say N to this config.
 > 
-> Take a quick look at Documentation/power/loss.txt  paragrpah "2.4
-> Power loss policies".
-> You can decide what can be powered off.
+> Also, make the text a bit more generic by stating that this
+> option enables compile time checks so we can cover architectures
+> which emit warnings vs. ones which emit errors. The details of
+> how an architecture decided to implement the checks isn't as
+> important as the concept of compile time checking of
+> copy_from_user() calls.
+> 
+> While we're doing this, remove all the copy_from_user_overflow()
+> code that's duplicated many times and place it into lib/ so that
+> any architecture supporting this option can get the function for
+> free.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: x86@kernel.org
+> Cc: linux-parisc@vger.kernel.org
+> Cc: linux-s390@vger.kernel.org
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-I read the patches.  My question was about the general idea of who should
-be responsible of making these decisions.
+Thanks for following up on this
 
-Thanks,
-Rafael
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+
