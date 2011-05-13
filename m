@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab1EMPqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:46:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33242 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab1EMPqS convert rfc822-to-8bit (ORCPT
+	id S1758951Ab1EMPqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:46:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52886 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932981Ab1EMPqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:46:18 -0400
+	Fri, 13 May 2011 11:46:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XSLUrMrhhgBRdAW05+OgP/C8dHCmQ6vTnYWGJMUzk5FV1XpqCVvZPzLvKyaXyCWPjc
-         opSCjpwShnD4QY6mVGJKOnv9SypiZlPylwLIp0p6XBwcoG9XcU1xN00HqQoxJX5xEivd
-         mrgSwLLe+E6e4pIi7Pl2H2r++rD8wXWedPalM=
-MIME-Version: 1.0
-In-Reply-To: <20110513150707.GA26389@linux-mips.org>
-References: <7aa38c32b7748a95e814e5bb0583f967@localhost>
-	<20110513150707.GA26389@linux-mips.org>
-Date: Fri, 13 May 2011 08:46:18 -0700
-Message-ID: <BANLkTikcyEzjOWt9pWToE=89dySSEYbw_g@mail.gmail.com>
-Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=Dh5JLuISsRMCdJWRCL7+Rz8Wbx1vgK9PkXu6pYVUbT/2D5AGh1jREPJYnrakNM6r+5
+         jX/gEaPFdITnVdpYOLzd+9NtRWbv5siZrsmUrPImqVc1dklgWRMjZz9aqgnEa2P9nbmW
+         C4gqu35beKLpQ/KoY5XVd88kNF57FlxTd1hVk=
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 7/9] ptrace: use bit_waitqueue for TRAPPING instead of wait_chldexit
+Date: Fri, 13 May 2011 17:46:18 +0200
+Message-Id: <1305301580-9924-8-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1305301580-9924-1-git-send-email-tj@kernel.org>
+References: <1305301580-9924-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 8:07 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
->> Reuse more of the same definitions for the non-RIXI and RIXI cases.  This
->> avoids having special cases for kernel_uses_smartmips_rixi cluttering up
->> the pgtable*.h files.
->>
->> On hardware that does not support RI/XI, EntryLo bits 31:30 / 63:62 will
->> remain unset and RI/XI permissions will not be enforced.
->
-> Nice idea but it breaks on 64-bit hardware running 32-bit kernels.  On
-> those the RI/XI bits written to c0_entrylo0/1 31:30 will be interpreted as
-> physical address bits 37:36.
+ptracer->signal->wait_chldexit was used to wait for TRAPPING; however,
+->wait_chldexit was already complicated with waker-side filtering
+without adding TRAPPING wait on top of it.  Also, it unnecessarily
+made TRAPPING clearing depend on the current ptrace relationship - if
+the ptracee is detached, wakeup is lost.
 
-Hmm, are you sure?  (Unfortunately I do not have a 64-bit machine to
-test it on.)
+There is no reason to use signal->wait_chldexit here.  We're just
+waiting for JOBCTL_TRAPPING bit to clear and given the relatively
+infrequent use of ptrace, bit_waitqueue can serve it perfectly.
 
-I did not touch David's existing build_update_entries(), which makes a
-point not to set the RI/XI bits when the RIXI feature is disabled:
+This patch makes JOBCTL_TRAPPING wait use bit_waitqueue instead of
+signal->wait_chldexit.
 
-        if (kernel_uses_smartmips_rixi) {
-                UASM_i_SRL(p, tmp, tmp, ilog2(_PAGE_NO_EXEC));
-                UASM_i_SRL(p, ptep, ptep, ilog2(_PAGE_NO_EXEC));
-                UASM_i_ROTR(p, tmp, tmp, ilog2(_PAGE_GLOBAL) -
-ilog2(_PAGE_NO_EXEC));
-                if (r4k_250MHZhwbug())
-                        UASM_i_MTC0(p, 0, C0_ENTRYLO0);
-                UASM_i_MTC0(p, tmp, C0_ENTRYLO0); /* load it */
-                UASM_i_ROTR(p, ptep, ptep, ilog2(_PAGE_GLOBAL) -
-ilog2(_PAGE_NO_EXEC));
-        } else {
-                UASM_i_SRL(p, tmp, tmp, ilog2(_PAGE_GLOBAL)); /*
-convert to entrylo0 */
-                if (r4k_250MHZhwbug())
-                        UASM_i_MTC0(p, 0, C0_ENTRYLO0);
-                UASM_i_MTC0(p, tmp, C0_ENTRYLO0); /* load it */
-                UASM_i_SRL(p, ptep, ptep, ilog2(_PAGE_GLOBAL)); /*
-convert to entrylo1 */
-                if (r45k_bvahwbug())
-                        uasm_i_mfc0(p, tmp, C0_INDEX);
-        }
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/ptrace.c |   10 ++++++++--
+ kernel/signal.c |    3 +--
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-If RIXI is enabled, it shifts the SW bits off the end of the register,
-then rotates the RI/XI bits into place.
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 5cd77a8..41fd45e 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -24,6 +24,12 @@
+ #include <linux/regset.h>
+ 
+ 
++static int ptrace_trapping_sleep_fn(void *flags)
++{
++	schedule();
++	return 0;
++}
++
+ /*
+  * ptrace a task: make the debugger its new parent and
+  * move it to the ptrace list.
+@@ -271,8 +277,8 @@ unlock_creds:
+ 	mutex_unlock(&task->signal->cred_guard_mutex);
+ out:
+ 	if (wait_trap)
+-		wait_event(current->signal->wait_chldexit,
+-			   !(task->jobctl & JOBCTL_TRAPPING));
++		wait_on_bit(&task->jobctl, ilog2(JOBCTL_TRAPPING),
++			    ptrace_trapping_sleep_fn, TASK_UNINTERRUPTIBLE);
+ 	return retval;
+ }
+ 
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 91e57d3..fff3036 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -239,8 +239,7 @@ static void task_clear_jobctl_trapping(struct task_struct *task)
+ {
+ 	if (unlikely(task->jobctl & JOBCTL_TRAPPING)) {
+ 		task->jobctl &= ~JOBCTL_TRAPPING;
+-		__wake_up_sync_key(&task->parent->signal->wait_chldexit,
+-				   TASK_UNINTERRUPTIBLE, 1, task);
++		wake_up_bit(&task->jobctl, ilog2(JOBCTL_TRAPPING));
+ 	}
+ }
+ 
+-- 
+1.7.1
 
-If RIXI is disabled, it shifts the SW bits + RI/XI bits off the end of
-the register.  It should not be setting bits 31:30 or 63:62, ever.
-
-(A side issue here is that ROTR is a MIPS R2 instruction, so we could
-never remove the old handler and use the RIXI version of the TLB
-handler on an R1 machine.)
-
-If setting EntryLo bits 31:30 for RI/XI is illegal on a 64-bit system
-running a 32-bit kernel, I suspect we will have a problem with the
-existing RIXI TLB update code, regardless of whether my changes are
-applied.
