@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203Ab1EMPqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:46:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52886 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759023Ab1EMPqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:46:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=KaN/HJC5AKhdA97YNtbLaqT+8OumQ7GrJ1JYDhgOMJpRsrrrafb7WIJPJ928xHYLbI
-         dZBPOJJij99ti9ISIERhj5DA3IONaa+10eXaMLSFtf9YlqBpsXg1at02lokJYFPlOKpO
-         p0jF9dDNpGvsxJ83bQaOgLYiqJ5AUbEpCsFRM=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 9/9] ptrace: make TRAPPING wait interruptible
-Date: Fri, 13 May 2011 17:46:20 +0200
-Message-Id: <1305301580-9924-10-git-send-email-tj@kernel.org>
+	id S1759534Ab1EMPst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:48:49 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:58359 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756567Ab1EMPsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 11:48:46 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, Andres More <more.andres@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/staging/vt6656/main_usb.c: Delete unnecessary call to usb_kill_urb
+Date: Fri, 13 May 2011 17:48:41 +0200
+Message-Id: <1305301721-21330-1-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1305301580-9924-1-git-send-email-tj@kernel.org>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With JOBCTL_TRAPPING waits moved to wait_task_stopped() and
-ptrace_check_attach(), and both using full syscall retries after wait,
-TRAPPING wait can switch to interruptible sleeps.
+Since in each case nothing has been done with the recently allocated urb,
+it is not necessary to kill it before freeing it.
 
-As all transitions are interlocked and all cancellation events
-(supposedly) clear TRAPPING, this doesn't change the actual behavior
-but it makes the TRAPPING wait mechanism much more forgiving when
-something goes wrong and allows using TRAPPING waits across freezing
-points.
+The semantic patch that fixes this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+// <smpl>
+@r exists@
+expression urb;
+statement S;
+position p1,p2;
+@@
+
+urb = usb_alloc_urb@p1(...);
+... when != urb
+if (urb == NULL) S
+... when != urb
+usb_kill_urb@p2(urb);
+
+@other exists@
+position r.p1,r.p2;
+@@
+
+... when != usb_alloc_urb@p1(...)
+usb_kill_urb@p2(...);
+
+@depends on !other exists@
+expression urb;
+position r.p1,r.p2;
+@@
+
+urb = usb_alloc_urb@p1(...);
+...
+(
+-usb_kill_urb@p2(urb);
++usb_free_urb(urb);
+... when != urb
+|
+-usb_kill_urb@p2(urb);
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- kernel/ptrace.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/staging/vt6656/main_usb.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 03349b5..6e79eab 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -27,7 +27,7 @@
- static int ptrace_trapping_sleep_fn(void *flags)
- {
- 	schedule();
--	return 0;
-+	return signal_pending(current);
- }
- 
- /**
-@@ -44,7 +44,11 @@ static int ptrace_trapping_sleep_fn(void *flags)
-  * to make sure no transition is in progress before proceeding.
-  *
-  * This function checks whether @child is TRAPPING and, if so, waits for
-- * the transition to complete.
-+ * the transition to complete.  Interruptible sleep is used for waiting and
-+ * %true will be returned regardless of why it is woken up.  On %true
-+ * return, callers should ensure that the whole operation is restarted
-+ * using the syscall restart mechanism so that operations like freezing or
-+ * killing don't get blocked by TRAPPING waits.
-  *
-  * CONTEXT:
-  * read_lock(&tasklist_lock) and spin_lock_irq(&child->sighand->siglock).
-@@ -66,7 +70,7 @@ bool ptrace_wait_trapping(struct task_struct *child)
- 	get_task_struct(child);
- 	read_unlock(&tasklist_lock);
- 	wait_on_bit(&child->jobctl, ilog2(JOBCTL_TRAPPING),
--		    ptrace_trapping_sleep_fn, TASK_UNINTERRUPTIBLE);
-+		    ptrace_trapping_sleep_fn, TASK_INTERRUPTIBLE);
- 	put_task_struct(child);
- 	return true;
- }
--- 
-1.7.1
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index 9a8eaf1..e18efd4 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -955,7 +955,6 @@ static BOOL device_alloc_bufs(PSDevice pDevice) {
+ 	pDevice->pInterruptURB = usb_alloc_urb(0, GFP_ATOMIC);
+ 	if (pDevice->pInterruptURB == NULL) {
+ 	    DBG_PRT(MSG_LEVEL_ERR,KERN_ERR"Failed to alloc int urb\n");
+-   	    usb_kill_urb(pDevice->pControlURB);
+ 	    usb_free_urb(pDevice->pControlURB);
+ 	    goto free_rx_tx;
+ 	}
+@@ -963,8 +962,6 @@ static BOOL device_alloc_bufs(PSDevice pDevice) {
+     pDevice->intBuf.pDataBuf = kmalloc(MAX_INTERRUPT_SIZE, GFP_KERNEL);
+ 	if (pDevice->intBuf.pDataBuf == NULL) {
+ 	    DBG_PRT(MSG_LEVEL_ERR,KERN_ERR"Failed to alloc int buf\n");
+-   	    usb_kill_urb(pDevice->pControlURB);
+-   	    usb_kill_urb(pDevice->pInterruptURB);
+ 	    usb_free_urb(pDevice->pControlURB);
+ 	    usb_free_urb(pDevice->pInterruptURB);
+ 	    goto free_rx_tx;
 
