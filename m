@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab1EMPhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:37:06 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:54369 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1EMPhF (ORCPT
+	id S1757974Ab1EMPk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:40:29 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37921 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab1EMPk1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:37:05 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DCD50BF.2030308@cam.ac.uk>
-Date: Fri, 13 May 2011 16:39:43 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Fri, 13 May 2011 11:40:27 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: =?utf-8?Q?Bj=C3=B6rn?= JACKE <bj@SerNet.DE>, "Ted Ts'o" <tytso@mit.edu>,
+        sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
+        sandeen@redhat.com, bfields@fieldses.org, jlayton@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <E1QKJAl-00DGc7-EB@intern.SerNet.DE>
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110228211145.GG28617@thunk.org> <E1QKJAl-00DGc7-EB@intern.SerNet.DE>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Fri, 13 May 2011 21:10:09 +0530
+Message-ID: <87zkmqobhi.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irq: export handle_simple_irq, irq_modify_status, irq_to_desc,
- irq_alloc_descs and irq_free_descs
-References: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk> <4DCA5A97.90704@cam.ac.uk> <4DCD3696.3090804@cam.ac.uk> <alpine.LFD.2.02.1105131712520.2799@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105131712520.2799@ionos>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/11 16:17, Thomas Gleixner wrote:
-> On Fri, 13 May 2011, Jonathan Cameron wrote:
+On Thu, 12 May 2011 00:16:13 +0200, Björn JACKE <bj@SerNet.DE> wrote:
+> Hi,
 > 
->> Hi Thomas.
->>
->> Just a quick request that you give a yes or no to this.
->>
->> Thanks and sorry for repeated pestering!
+> On 2011-02-28 at 16:11 -0500 Ted Ts'o sent off:
+> > What is the current status of this patch series?  I seem to remember
+> > that Christoph and Al Viro had some objections; have those been
+> > cleared yet?  If not, can you summarize what their objections are?
+> > 
+> > To be honest I haven't been paying super close attention to this patch
+> > series, and I'm curious what needs to happen with it one way or
+> > another.
 > 
-> Sorry for the delay.
->  
->>>>  /**
->>>>   *	irq_cpu_online - Invoke all irq_cpu_online functions.
->>>> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
->>>> index 2c039c9..5ac14e2 100644
->>>> --- a/kernel/irq/irqdesc.c
->>>> +++ b/kernel/irq/irqdesc.c
->>>> @@ -110,6 +110,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
->>>>  {
->>>>  	return radix_tree_lookup(&irq_desc_tree, irq);
->>>>  }
->>>> +EXPORT_SYMBOL_GPL(irq_to_desc);
-> 
-> I'm fine with that, just this one makes me a bit wary.
-It does feel a little fishy. For reference of others - it's required as
-generic_handle_irq is inline in the irqdesc.h and uses it.
-> I have a closer
-> look over the weekend.
-> 
-> Thanks,
-Thanks,
-> 
-> 	tglx
+> after the discussion of this path submission thread are there any major or
+> minor issues left that prevent these to go upstream? I'd really love to see
+> NFSv4 ACLs being available on Linux, too.
 > 
 
+I updated richaclv23 branch at 
+
+http://git.kernel.org/?p=linux/kernel/git/kvaneesh/linux-richacl.git;a=summary
+
+which is rebased against latest linus tree.  The changes pass richacl
+test against local file system. I am yet to test richacl on NFS
+client. Once i get the results i will repost the series again. 
+
+-aneesh
