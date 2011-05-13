@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab1EMLCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 07:02:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46876 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758344Ab1EMLC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 07:02:28 -0400
-Date: Fri, 13 May 2011 13:02:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 3/6] mm: memcg-aware global reclaim
-Message-ID: <20110513110226.GG25304@tiehlicka.suse.cz>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
- <1305212038-15445-4-git-send-email-hannes@cmpxchg.org>
- <20110513095308.GD25304@tiehlicka.suse.cz>
- <20110513102858.GO16531@cmpxchg.org>
+	id S1759007Ab1EMLDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 07:03:03 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45781 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758587Ab1EMLC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 07:02:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=ZKF3HI53bDk+nQR59SHTh7f3NTTAohk0SwGmU8ehU4PWv9CT5pMyHN2FR4IaqCFLAB
+         keBSbu1TZlLLjwzh8qDAxOJ1GT18SQtOYLFYnGAMQhzSXv9rfZBYq5qI4KouWfGXTbTF
+         1OD0Fk9pIZ+Jwev3wr8DbSuCPkRofrNiCKhHQ=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "John Stultz" <john.stultz@linaro.org>, "Jiri Slaby" <jirislaby@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "David Rientjes" <rientjes@google.com>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] checkpatch.pl: Add check for current->comm references
+References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
+ <1305241371-25276-4-git-send-email-john.stultz@linaro.org>
+ <4DCCD0C3.9090908@gmail.com>
+Date: Fri, 13 May 2011 13:02:56 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513102858.GO16531@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vve2a6hp3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <4DCCD0C3.9090908@gmail.com>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 13-05-11 12:28:58, Johannes Weiner wrote:
-> On Fri, May 13, 2011 at 11:53:08AM +0200, Michal Hocko wrote:
-> > On Thu 12-05-11 16:53:55, Johannes Weiner wrote:
-> > > A page charged to a memcg is linked to a lru list specific to that
-> > > memcg.  At the same time, traditional global reclaim is obvlivious to
-> > > memcgs, and all the pages are also linked to a global per-zone list.
-> > > 
-> > > This patch changes traditional global reclaim to iterate over all
-> > > existing memcgs, so that it no longer relies on the global list being
-> > > present.
-> > 
-> > At LSF we have discussed that we should keep a list of over-(soft)limit
-> > cgroups in a list which would be the first target for reclaiming (in
-> > round-robin fashion). If we are note able to reclaim enough from those
-> > (the list becomes empty) we should fallback to the all groups reclaim
-> > (what you did in this patchset).
-> 
-> This would be on top or instead of 6/6.  This, 3/6, is indepent of
-> soft limit reclaim.  It is mainly in preparation to remove the global
-> LRU.
+> On 05/13/2011 01:02 AM, John Stultz wrote:
+>> @@ -2868,6 +2868,10 @@ sub process {
+>>  			WARN("usage of NR_CPUS is often wrong - consider using  
+>> cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" .  
+>> $herecurr);
+>>  		}
+>>
+>> +# check for current->comm usage
+>> +		if ($line =~ /current->comm/) {
 
-OK.
+On Fri, 13 May 2011 08:33:39 +0200, Jiri Slaby wrote:
+> This should be something like \b(current|task|tsk|t)->comm\b to catch
+> also non-current comm accesses...
+
+Or \b(?:current|task|tsk|t)\s*->\s*comm\b.
+
+>> +			WARN("comm access needs to be protected. Use get_task_comm, or  
+>> printk's \%ptc formatting.\n" . $herecurr);
+>> +		}
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
