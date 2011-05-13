@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab1EMJOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:14:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62673 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932983Ab1EMJOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:14:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=lwDq+QGN6JjislWmKZMaQEUq/XMQRXJ3w37lI5R3aVbr7xQ+uzNgwnf9xeO/+P8K12
-         KMysPIDKJUhIS5M7Uj9enRLAR5M3P3t/NY8EIxx9jVN4du0Wtf3v6xWrZ1xZNEPt9O8T
-         Ng0O2eDeiSNGJdiGiQSjWjSIr4sALv3Rk8NDc=
-Subject: [PATCH] mfd: Fix off-by-one value range checking for
- tps65910_i2c_write
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Graeme Gregory <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 17:13:57 +0800
-Message-ID: <1305278037.2713.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S933017Ab1EMJOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:14:52 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:46288 "HELO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932701Ab1EMJOu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:14:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1305277666.2561.9.camel@twins>
+References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+	<BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
+	<1305273950.15080.7.camel@marge.simson.net>
+	<20110513082250.GB13647@elte.hu>
+	<1305276066.2561.1.camel@twins>
+	<20110513090537.GH13647@elte.hu>
+	<1305277666.2561.9.camel@twins>
+Date: Fri, 13 May 2011 11:14:47 +0200
+Message-ID: <BANLkTikxS9350zKqLEHXqeXCLXpQK=Cd9A@mail.gmail.com>
+Subject: Re: Sched_autogroup and niced processes
+From: Carl-Johan Kjellander <carl-johan@klarna.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If bytes == (TPS65910_MAX_REGISTER + 1), we have a buffer overflow when
-doing memcpy(&msg[1], src, bytes).
+On Fri, May 13, 2011 at 11:07 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
+>> Could we somehow automate this:
+>>
+>>   > echo 19 > /proc/'pid of seti@home'/autogroup
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps65910.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Tried this.
+echo 19 >/proc/23760/autogroup
+echo 1 > /proc/sys/kernel/sched_autogroup_enabled
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index bf649cf..e318248 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -71,7 +71,7 @@ static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
- 	u8 msg[TPS65910_MAX_REGISTER + 1];
- 	int ret;
- 
--	if (bytes > (TPS65910_MAX_REGISTER + 1))
-+	if (bytes > TPS65910_MAX_REGISTER)
- 		return -EINVAL;
- 
- 	msg[0] = reg;
--- 
-1.7.1
+time make -j12 #seti@home, autogroup, group reniced.
+real	3m9.274s
+user	11m3.020s
+sys	1m45.550s
 
+So 50% increase in compilation time.
 
+Will these autogroups remember the 19, the boinc manager starts 8
+processes and it will spawn more as time goes by and it finishes
+tasks.
 
+>> and split off nice 19 tasks into separate groups and lower the group's
+>> priority?
+>
+> Well I guess you can stack on all kinds of heuristics, do we want to?
+> I'd argue for not, keep is simple.
+>
+
+I'd again argue, I use nice 19 for stuff that I want to run on the
+spare cycles, I don't want them stealing time from my important work
+or surfing or movie viewing.
+
+/cjk
