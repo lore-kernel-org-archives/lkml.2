@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab1EMVhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 17:37:54 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36242 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab1EMVhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 17:37:52 -0400
-Date: Fri, 13 May 2011 22:36:40 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-Message-ID: <20110513213640.GB30539@n2100.arm.linux.org.uk>
-References: <20110513131437.8999e8eb.sfr@canb.auug.org.au> <20110513080634.GA13647@elte.hu> <20110513083738.GA19733@n2100.arm.linux.org.uk> <20110513092646.GK13647@elte.hu>
+	id S1757462Ab1EMVpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 17:45:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47285 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755258Ab1EMVpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 17:45:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,366,1301900400"; 
+   d="scan'208";a="435852496"
+Message-ID: <4DCDA663.2040202@intel.com>
+Date: Fri, 13 May 2011 14:45:07 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513092646.GK13647@elte.hu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        Christoph Hellwig <hch@lst.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        David Milburn <dmilburn@redhat.com>,
+        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        "Danecki, Jacek" <jacek.danecki@intel.com>,
+        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: [GIT PULL] isci merge candidate
+References: <1305317680.21099.83.camel@dwillia2-linux> <BANLkTim3igaB8XXQkDY6GEutWfbK-o840A@mail.gmail.com>
+In-Reply-To: <BANLkTim3igaB8XXQkDY6GEutWfbK-o840A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 11:26:46AM +0200, Ingo Molnar wrote:
-> Had you asked us before committing it one day after it was posted, or had you 
-> *noticed* that those files are not in your tree and are already modified in 
-> linux-next, you'd have gotten a response like:
+On 05/13/2011 01:34 PM, Linus Torvalds wrote:
+> On Fri, May 13, 2011 at 1:14 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
+>>
+>> [ Linus, only cc'ing you in case a new-driver merge exception can be
+>> entertained at this very late date.  James made clear he needed this in
+>> advance of rc7, and this still needs Christoph's ack, but I would be
+>> remiss not to send this after reaching this milestone...]
+>
+> So I can merge new drivers at any stage in the development cycle, but
+> I only do that for drivers with mass appeal.
+>
+> What's the likely user base of this?
 
-Please also don't read anything into the commit date - it merely shows
-when the last update happened.
+This storage controller is integrated into the chipset that will be the 
+basis for upcoming workstation / server platforms.
 
-My workflow for patch series involves keeping them in git right from the
-start.  So actually they've been in git since _before_ they were posted.
-In fact, the emails which I send out for any patch series are always
-generated from the git commits.
+> Why is it a SCSI driver rather than SATA? Why is it so f&*%ing big?
 
-So, all my patches live in git _first_ before being mailed out.
+It's a SAS (serial-attached-scsi) driver so it ties in to libsas rather 
+than libata (libsas itself ties in to libata for tunnelling SATA 
+protocol over SAS).  The size is attributable to the fact that all 
+protocol handling for non-fast path i/o is handled by software.  There 
+are still cleanups that can be made, but likely not on the on the same 
+order of what we have already done.
+
+> The size may be a massive improvement over what it has been, but if
+> this is some kind of replacement for the current AHCI situation, it's
+> still a massive step backwards.
+
+So it's not a replacement for AHCI and AHCI will still be included in 
+this chipset.  However, AHCI in this timeframe only gives you up to 
+4-ports at 3Gb/s and 2-ports at 6Gb/s direct attached SATA.  This 
+controller in comparison includes up to 8-ports 6Gb/s of SAS/SATA 
+connectivity allowing drives to optionally be connected through an 
+expander topology.
+
+> So what does that mean in practical terms:
+>
+>   "This driver supports the 6Gb/s SAS/SATA capabilities of the upcoming
+> Intel(R) C600 series chipset family"
+>
+> exactly? What's the market for that C600 series?
+
+Standard workstations and servers.
+
+> Does that chipset
+> also do some AHCI emulation capability (making this driver be a "if
+> you need full capabilties thing" etc) Yadda yadda.
+
+Yes.  We expect the majority of platforms to populate at least some of 
+the AHCI ports.  That being said populating zero AHCI ports is also a 
+valid configuration option and some platform vendors may take this route.
+
+> I don't want to merge 30k lines of driver that nobody will practically
+> speaking actually use.
+
+I will note that if a user is on a platform without AHCI they will be 
+missing ATAPI support as that was a feature of the isci driver that was 
+deferred while the cleanup/rewrite was happening.
+
+--
+Dan
