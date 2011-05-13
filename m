@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758360Ab1EMSzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:55:25 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34979 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab1EMSzX convert rfc822-to-8bit (ORCPT
+	id S1758677Ab1EMS5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:57:32 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:1189 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850Ab1EMS5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:55:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=P1AguGsWLA6a2XeVlojE8LT7ZuF+A28mmdRNxwBez2eiBo1YcaEt365dCrACcw4uzQ
-         TXe0mg9aOZDvNUlAgc/gbzqwK3zixA36MhID20UjLsu3oxESPoaHOr7LGK/RxEyTSHjp
-         kOp6DcW0AvOAN9+88QY1B0l75Rn5EG3WW8Xxo=
+	Fri, 13 May 2011 14:57:31 -0400
+Message-ID: <4DCD7F1A.3040904@caviumnetworks.com>
+Date: Fri, 13 May 2011 11:57:30 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <7vliya77xl.fsf@alter.siamese.dyndns.org>
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
- <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
- <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
- <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
- <4DCD79A0.7000500@kdbg.org> <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
- <7vliya77xl.fsf@alter.siamese.dyndns.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 13 May 2011 14:55:03 -0400
-X-Google-Sender-Auth: E-KDphPh0SXJPp5rjtGcrYpWuac
-Message-ID: <BANLkTi=dFhxWHHPiYi6P7Mn45J7dZXn=AQ@mail.gmail.com>
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
- right after logging in)
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Sixt <j6t@kdbg.org>,
-        Christian Couder <christian.couder@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Jayachandran C." <jayachandranc@netlogicmicro.com>
+CC: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
+References: <7aa38c32b7748a95e814e5bb0583f967@localhost> <20110513150707.GA26389@linux-mips.org> <BANLkTikcyEzjOWt9pWToE=89dySSEYbw_g@mail.gmail.com> <20110513155605.GA30674@linux-mips.org> <BANLkTinnALQV6dXkJ0AjaQ1=bTawYMMkuQ@mail.gmail.com> <20110513173633.GA14607@jayachandranc.netlogicmicro.com> <BANLkTim+z7TSCvNA2duA6LsUzNsiu9OQaQ@mail.gmail.com> <20110513184532.GC14607@jayachandranc.netlogicmicro.com>
+In-Reply-To: <20110513184532.GC14607@jayachandranc.netlogicmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 May 2011 18:57:30.0519 (UTC) FILETIME=[9C367A70:01CC119F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 2:48 PM, Junio C Hamano <gitster@pobox.com> wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
->
->> When you say that v2.6.38 is good, that means that everything that can
->> be reached from 2.6.38 is good.
+On 05/13/2011 11:45 AM, Jayachandran C. wrote:
+> On Fri, May 13, 2011 at 10:51:44AM -0700, Kevin Cernekee wrote:
+>> On Fri, May 13, 2011 at 10:36 AM, Jayachandran C.
+>> <jayachandranc@netlogicmicro.com>  wrote:
+>>> For 32-bit the config is nlm_xlr_defconfig in the source tree. Let me know if
+>>> you need any further info.
 >>
->> NOT AT ALL the same thing as "git bisect requires v2.6.38" would be.
->>
->> The "requires v2.6.38" would basically say that anything that doesn't
->> contain v2.6.38 is "off-limits". It's fine to call them "good", but
->> that's not the same thing as "git bisect good v2.6.38".
->>
->> Why?
->>
->> Think about it. It's the "reachable from v2.6.38" vs "cannot reach
->> v2.6.38" difference. That's a HUGE difference.
+>> Would you be able to dump out the TLB handlers in this configuration,
+>> per David's suggestion?
 >
-> Could you please clarify "off-limits"?
->
-> Do you mean "anything before v2.6.38 did not even have this feature, so
-> the result of testing a version in that range does not give us any
-> information"?  The feature didn't even exist, so a bug can never trigger,
-> and seeing "good" from such a version does not mean everything reachable
-> from it is good?  Upon seeing "bad" result from a version before v2.6.38,
-> what can we conclude?  The breakage cannot possibly come from the feature
-> that is being checked, so the procedure to check itself is busted?
->
+> The current linux-mips queue works for me, and I don't have the old source
+> or binaries with me anymore. You surely should be able build with
+> nlm_xlr_defconfig and see if the rixi is enabled in the build, if you want
+> any config register dump on the CPU, please let me know.
 
-In my case, if I'd given bisect a hint that commits that don't include
-v2.6.38 are unlikely to work for reasons unrelated to the bug, then
-there should still have been enough revisions left for bisect to tell
-me "the bug was introduced by the merge of the drm tree but I can't
-tell you more without testing off-limits revisions".  That would have
-avoided testing three or four revisions that just failed to boot.
+The problem is that we don't have your hardware to test anything on.
 
-In my particular case I think it would also have avoided an
-unnecessary set of tests to figure out why the networking merge broke
-my system when the networking merge did not, in fact, break my system.
- This is coincidence -- all of the commits that didn't have the change
-that fixed the bug the first time around also didn't contain v2.6.38,
-so I never would have tested them.
+Kevin's patches are a good cleanup, but we cannot use them if they break 
+things.  So the ideal situation would be for people maintaining the 
+failing ports to help figure out where they fail.
 
-This is maybe some further justification for a bisect mode that
-follows the --first-parent path as long as possible -- it might take
-one or two more kernel builds, but it avoids odd trips around the
-history that can hit random crap like that.  (Of course, it could lead
-to different random crap, but what can you do?)
-
---Andy
-
---Andy
-
->
->
+David Daney
