@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab1EMXZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 19:25:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26532 "EHLO mga03.intel.com"
+	id S1759705Ab1EMX0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:26:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59038 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758272Ab1EMXY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 19:24:57 -0400
+	id S1758358Ab1EMXYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 19:24:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.64,366,1301900400"; 
-   d="scan'208";a="435890991"
+   d="scan'208";a="2026751"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: libc-alpha@sourceware.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/5] Move max_threads variable declaration into include file
-Date: Fri, 13 May 2011 16:24:16 -0700
-Message-Id: <1305329059-2017-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 3/5] EXEC: Use define for stack to argument size limit
+Date: Fri, 13 May 2011 16:24:17 -0700
+Message-Id: <1305329059-2017-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
 References: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
@@ -24,56 +24,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Multiple files have a private extern for the max_threads variable
-defined in fork.c. Declare it in linux/sched.h and remove the
-special externs.
+Change the hardcoded 4 constant for the argument size limit in exec
+to a exported constant.
 
 Needed for followon patch.
 
+Open: better place for the constant?
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/sched.h |    1 +
- kernel/kmod.c         |    2 --
- kernel/sysctl.c       |    1 -
- 3 files changed, 1 insertions(+), 3 deletions(-)
+ fs/exec.c          |    2 +-
+ include/linux/fs.h |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 781abd1..34b487b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -134,6 +134,7 @@ extern void get_avenrun(unsigned long *loads, unsigned long offset, int shift);
+diff --git a/fs/exec.c b/fs/exec.c
+index 5e62d26..1707832 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -225,7 +225,7 @@ struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		 *    to work from.
+ 		 */
+ 		rlim = current->signal->rlim;
+-		if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur) / 4) {
++		if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur) / ARG_MAX_FACTOR) {
+ 			put_page(page);
+ 			return NULL;
+ 		}
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index dbd860a..fcd84a6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -33,6 +33,8 @@
+ #define SEEK_END	2	/* seek relative to end of file */
+ #define SEEK_MAX	SEEK_END
  
- extern unsigned long total_forks;
- extern int nr_threads;
-+extern int max_threads;
- DECLARE_PER_CPU(unsigned long, process_counts);
- extern int nr_processes(void);
- extern unsigned long nr_running(void);
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 9cd0591..3c12d13 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -39,8 +39,6 @@
- 
- #include <trace/events/module.h>
- 
--extern int max_threads;
--
- static struct workqueue_struct *khelper_wq;
- 
- #ifdef CONFIG_MODULES
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c0bb324..ece9b94 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -88,7 +88,6 @@
- /* External variables not in a header file. */
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
--extern int max_threads;
- extern int core_uses_pid;
- extern int suid_dumpable;
- extern char core_pattern[];
++#define ARG_MAX_FACTOR	4
++
+ struct fstrim_range {
+ 	__u64 start;
+ 	__u64 len;
 -- 
 1.7.4.4
 
