@@ -1,217 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab1EMGwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 02:52:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54670 "EHLO hera.kernel.org"
+	id S1756650Ab1EMGws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 02:52:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54688 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab1EMGwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 02:52:38 -0400
-Date: Fri, 13 May 2011 06:52:03 GMT
-From: tip-bot for Richard Weinberger <richard@nod.at>
-Message-ID: <tip-449a66fd1fa75d36dca917704827c40c8f416bca@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
-        mingo@redhat.com, richard@nod.at, lethal@linux-sh.org,
-        namhyung@gmail.com, ssp@redhat.com, ying.huang@intel.com,
-        fweisbec@gmail.com, robert.richter@amd.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, richard@nod.at, lethal@linux-sh.org,
-        namhyung@gmail.com, ssp@redhat.com, ying.huang@intel.com,
-        robert.richter@amd.com, fweisbec@gmail.com, akpm@linux-foundation.org,
-        oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <1305205872-10321-2-git-send-email-richard@nod.at>
-References: <1305205872-10321-2-git-send-email-richard@nod.at>
+	id S1756555Ab1EMGwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 02:52:45 -0400
+Date: Fri, 13 May 2011 06:52:33 GMT
+From: tip-bot for Cliff Wickman <cpw@sgi.com>
+Message-ID: <tip-77ed23f8d995a01cd8101d84351b567bf5177a30@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com>
+References: <E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86: Remove warning and warning_symbol from struct stacktrace_ops
-Git-Commit-ID: 449a66fd1fa75d36dca917704827c40c8f416bca
+Subject: [tip:x86/urgent] x86: Fix UV BAU for non-consecutive nasids
+Git-Commit-ID: 77ed23f8d995a01cd8101d84351b567bf5177a30
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 13 May 2011 06:52:05 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 13 May 2011 06:52:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  449a66fd1fa75d36dca917704827c40c8f416bca
-Gitweb:     http://git.kernel.org/tip/449a66fd1fa75d36dca917704827c40c8f416bca
-Author:     Richard Weinberger <richard@nod.at>
-AuthorDate: Thu, 12 May 2011 15:11:12 +0200
-Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-CommitDate: Thu, 12 May 2011 15:31:28 +0200
+Commit-ID:  77ed23f8d995a01cd8101d84351b567bf5177a30
+Gitweb:     http://git.kernel.org/tip/77ed23f8d995a01cd8101d84351b567bf5177a30
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Tue, 10 May 2011 08:26:43 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 12 May 2011 23:45:42 +0200
 
-x86: Remove warning and warning_symbol from struct stacktrace_ops
+x86: Fix UV BAU for non-consecutive nasids
 
-Both warning and warning_symbol are nowhere used.
-Let's get rid of them.
+This is a fix for the SGI Altix-UV Broadcast Assist Unit code,
+which is used for TLB flushing.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: Soeren Sandmann Pedersen <ssp@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: x86 <x86@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Link: http://lkml.kernel.org/r/1305205872-10321-2-git-send-email-richard@nod.at
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Certain hardware configurations (that customers are ordering)
+cause nasids (numa address space id's) to be non-consecutive.
+Specifically, once you have more than 4 blades in a IRU
+(Individual Rack Unit - or 1/2 rack) but less than the maximum
+of 16, the nasid numbering becomes non-consecutive.  This
+currently results in a 'catastrophic error' (CATERR) detected by
+the firmware during OS boot.  The BAU is generating an 'INTD'
+request that is targeting a non-existent nasid value. Such
+configurations may also occur when a blade is configured off
+because of hardware errors. (There is one UV hub per blade.)
+
+This patch is required to support such configurations.
+
+The problem with the tlb_uv.c code is that is using the
+consecutive hub numbers as indices to the BAU distribution bit
+map. These are simply the ordinal position of the hub or blade
+within its partition.  It should be using physical node numbers
+(pnodes), which correspond to the physical nasid values. Use of
+the hub number only works as long as the nasids in the partition
+are consecutive and increase with a stride of 1.
+
+This patch changes the index to be the pnode number, thus
+allowing nasids to be non-consecutive.
+It also provides a table in local memory for each cpu to
+translate target cpu number to target pnode and nasid.
+And it improves naming to properly reflect 'node' and 'uvhub'
+versus 'nasid'.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/E1QJmxX-0002Mz-Fk@eag09.americas.sgi.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/stacktrace.h |    3 ---
- arch/x86/kernel/cpu/perf_event.c  |   13 -------------
- arch/x86/kernel/dumpstack.c       |   16 ----------------
- arch/x86/kernel/stacktrace.c      |   13 -------------
- arch/x86/oprofile/backtrace.c     |   13 -------------
- 5 files changed, 0 insertions(+), 58 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   17 +++++--
+ arch/x86/platform/uv/tlb_uv.c    |   92 ++++++++++++++++++++++++++------------
+ 2 files changed, 76 insertions(+), 33 deletions(-)
 
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index d7e89c8..70bbe39 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -37,9 +37,6 @@ print_context_stack_bp(struct thread_info *tinfo,
- /* Generic stack tracer with callbacks */
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 3e094af..130f1ee 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -94,6 +94,8 @@
+ /* after this # consecutive successes, bump up the throttle if it was lowered */
+ #define COMPLETE_THRESHOLD 5
  
- struct stacktrace_ops {
--	void (*warning)(void *data, char *msg);
--	/* msg must contain %s for the symbol */
--	void (*warning_symbol)(void *data, char *msg, unsigned long symbol);
- 	void (*address)(void *data, unsigned long address, int reliable);
- 	/* On negative return stop dumping */
- 	int (*stack)(void *data, char *name);
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 0de6b2b..3a0338b 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1773,17 +1773,6 @@ static struct pmu pmu = {
-  * callchain support
++#define UV_LB_SUBNODEID 0x10
++
+ /*
+  * number of entries in the destination side payload queue
   */
- 
--static void
--backtrace_warning_symbol(void *data, char *msg, unsigned long symbol)
--{
--	/* Ignore warnings */
--}
--
--static void backtrace_warning(void *data, char *msg)
--{
--	/* Ignore warnings */
--}
--
- static int backtrace_stack(void *data, char *name)
- {
- 	return 0;
-@@ -1797,8 +1786,6 @@ static void backtrace_address(void *data, unsigned long addr, int reliable)
- }
- 
- static const struct stacktrace_ops backtrace_ops = {
--	.warning		= backtrace_warning,
--	.warning_symbol		= backtrace_warning_symbol,
- 	.stack			= backtrace_stack,
- 	.address		= backtrace_address,
- 	.walk_stack		= print_context_stack_bp,
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index e2a3f06..f478ff6 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -135,20 +135,6 @@ print_context_stack_bp(struct thread_info *tinfo,
- }
- EXPORT_SYMBOL_GPL(print_context_stack_bp);
- 
--
--static void
--print_trace_warning_symbol(void *data, char *msg, unsigned long symbol)
--{
--	printk(data);
--	print_symbol(msg, symbol);
--	printk("\n");
--}
--
--static void print_trace_warning(void *data, char *msg)
--{
--	printk("%s%s\n", (char *)data, msg);
--}
--
- static int print_trace_stack(void *data, char *name)
- {
- 	printk("%s <%s> ", (char *)data, name);
-@@ -166,8 +152,6 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
- }
- 
- static const struct stacktrace_ops print_trace_ops = {
--	.warning		= print_trace_warning,
--	.warning_symbol		= print_trace_warning_symbol,
- 	.stack			= print_trace_stack,
- 	.address		= print_trace_address,
- 	.walk_stack		= print_context_stack,
-diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
-index 6515733..55d9bc0 100644
---- a/arch/x86/kernel/stacktrace.c
-+++ b/arch/x86/kernel/stacktrace.c
-@@ -9,15 +9,6 @@
- #include <linux/uaccess.h>
- #include <asm/stacktrace.h>
- 
--static void save_stack_warning(void *data, char *msg)
--{
--}
--
--static void
--save_stack_warning_symbol(void *data, char *msg, unsigned long symbol)
--{
--}
--
- static int save_stack_stack(void *data, char *name)
- {
- 	return 0;
-@@ -53,16 +44,12 @@ save_stack_address_nosched(void *data, unsigned long addr, int reliable)
- }
- 
- static const struct stacktrace_ops save_stack_ops = {
--	.warning	= save_stack_warning,
--	.warning_symbol	= save_stack_warning_symbol,
- 	.stack		= save_stack_stack,
- 	.address	= save_stack_address,
- 	.walk_stack	= print_context_stack,
+@@ -124,7 +126,7 @@
+  * The distribution specification (32 bytes) is interpreted as a 256-bit
+  * distribution vector. Adjacent bits correspond to consecutive even numbered
+  * nodeIDs. The result of adding the index of a given bit to the 15-bit
+- * 'base_dest_nodeid' field of the header corresponds to the
++ * 'base_dest_nasid' field of the header corresponds to the
+  * destination nodeID associated with that specified bit.
+  */
+ struct bau_target_uvhubmask {
+@@ -176,7 +178,7 @@ struct bau_msg_payload {
+ struct bau_msg_header {
+ 	unsigned int dest_subnodeid:6;	/* must be 0x10, for the LB */
+ 	/* bits 5:0 */
+-	unsigned int base_dest_nodeid:15; /* nasid of the */
++	unsigned int base_dest_nasid:15; /* nasid of the */
+ 	/* bits 20:6 */			  /* first bit in uvhub map */
+ 	unsigned int command:8;	/* message type */
+ 	/* bits 28:21 */
+@@ -378,6 +380,10 @@ struct ptc_stats {
+ 	unsigned long d_rcanceled; /* number of messages canceled by resets */
  };
  
- static const struct stacktrace_ops save_stack_ops_nosched = {
--	.warning	= save_stack_warning,
--	.warning_symbol	= save_stack_warning_symbol,
- 	.stack		= save_stack_stack,
- 	.address	= save_stack_address_nosched,
- 	.walk_stack	= print_context_stack,
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 2d49d4e..a5b64ab 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -16,17 +16,6 @@
- #include <asm/stacktrace.h>
- #include <linux/compat.h>
++struct hub_and_pnode {
++	short uvhub;
++	short pnode;
++};
+ /*
+  * one per-cpu; to locate the software tables
+  */
+@@ -399,10 +405,12 @@ struct bau_control {
+ 	int baudisabled;
+ 	int set_bau_off;
+ 	short cpu;
++	short osnode;
+ 	short uvhub_cpu;
+ 	short uvhub;
+ 	short cpus_in_socket;
+ 	short cpus_in_uvhub;
++	short partition_base_pnode;
+ 	unsigned short message_number;
+ 	unsigned short uvhub_quiesce;
+ 	short socket_acknowledge_count[DEST_Q_SIZE];
+@@ -422,15 +430,16 @@ struct bau_control {
+ 	int congested_period;
+ 	cycles_t period_time;
+ 	long period_requests;
++	struct hub_and_pnode *target_hub_and_pnode;
+ };
  
--static void backtrace_warning_symbol(void *data, char *msg,
--				     unsigned long symbol)
--{
--	/* Ignore warnings */
--}
--
--static void backtrace_warning(void *data, char *msg)
--{
--	/* Ignore warnings */
--}
--
- static int backtrace_stack(void *data, char *name)
+ static inline int bau_uvhub_isset(int uvhub, struct bau_target_uvhubmask *dstp)
  {
- 	/* Yes, we want all stacks */
-@@ -42,8 +31,6 @@ static void backtrace_address(void *data, unsigned long addr, int reliable)
+ 	return constant_test_bit(uvhub, &dstp->bits[0]);
+ }
+-static inline void bau_uvhub_set(int uvhub, struct bau_target_uvhubmask *dstp)
++static inline void bau_uvhub_set(int pnode, struct bau_target_uvhubmask *dstp)
+ {
+-	__set_bit(uvhub, &dstp->bits[0]);
++	__set_bit(pnode, &dstp->bits[0]);
+ }
+ static inline void bau_uvhubs_clear(struct bau_target_uvhubmask *dstp,
+ 				    int nbits)
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index 7cb6424..c58e0ea 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -699,16 +699,17 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 					  struct mm_struct *mm,
+ 					  unsigned long va, unsigned int cpu)
+ {
+-	int tcpu;
+-	int uvhub;
+ 	int locals = 0;
+ 	int remotes = 0;
+ 	int hubs = 0;
++	int tcpu;
++	int tpnode;
+ 	struct bau_desc *bau_desc;
+ 	struct cpumask *flush_mask;
+ 	struct ptc_stats *stat;
+ 	struct bau_control *bcp;
+ 	struct bau_control *tbcp;
++	struct hub_and_pnode *hpp;
+ 
+ 	/* kernel was booted 'nobau' */
+ 	if (nobau)
+@@ -750,11 +751,18 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 	bau_desc += UV_ITEMS_PER_DESCRIPTOR * bcp->uvhub_cpu;
+ 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
+ 
+-	/* cpu statistics */
+ 	for_each_cpu(tcpu, flush_mask) {
+-		uvhub = uv_cpu_to_blade_id(tcpu);
+-		bau_uvhub_set(uvhub, &bau_desc->distribution);
+-		if (uvhub == bcp->uvhub)
++		/*
++		 * The distribution vector is a bit map of pnodes, relative
++		 * to the partition base pnode (and the partition base nasid
++		 * in the header).
++		 * Translate cpu to pnode and hub using an array stored
++		 * in local memory.
++		 */
++		hpp = &bcp->socket_master->target_hub_and_pnode[tcpu];
++		tpnode = hpp->pnode - bcp->partition_base_pnode;
++		bau_uvhub_set(tpnode, &bau_desc->distribution);
++		if (hpp->uvhub == bcp->uvhub)
+ 			locals++;
+ 		else
+ 			remotes++;
+@@ -855,7 +863,7 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
+  * an interrupt, but causes an error message to be returned to
+  * the sender.
+  */
+-static void uv_enable_timeouts(void)
++static void __init uv_enable_timeouts(void)
+ {
+ 	int uvhub;
+ 	int nuvhubs;
+@@ -1326,10 +1334,10 @@ static int __init uv_ptc_init(void)
  }
  
- static struct stacktrace_ops backtrace_ops = {
--	.warning	= backtrace_warning,
--	.warning_symbol	= backtrace_warning_symbol,
- 	.stack		= backtrace_stack,
- 	.address	= backtrace_address,
- 	.walk_stack	= print_context_stack,
+ /*
+- * initialize the sending side's sending buffers
++ * Initialize the sending side's sending buffers.
+  */
+ static void
+-uv_activation_descriptor_init(int node, int pnode)
++uv_activation_descriptor_init(int node, int pnode, int base_pnode)
+ {
+ 	int i;
+ 	int cpu;
+@@ -1352,11 +1360,11 @@ uv_activation_descriptor_init(int node, int pnode)
+ 	n = pa >> uv_nshift;
+ 	m = pa & uv_mmask;
+ 
++	/* the 14-bit pnode */
+ 	uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_DESCRIPTOR_BASE,
+ 			      (n << UV_DESC_BASE_PNODE_SHIFT | m));
+-
+ 	/*
+-	 * initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
++	 * Initializing all 8 (UV_ITEMS_PER_DESCRIPTOR) descriptors for each
+ 	 * cpu even though we only use the first one; one descriptor can
+ 	 * describe a broadcast to 256 uv hubs.
+ 	 */
+@@ -1365,12 +1373,13 @@ uv_activation_descriptor_init(int node, int pnode)
+ 		memset(bd2, 0, sizeof(struct bau_desc));
+ 		bd2->header.sw_ack_flag = 1;
+ 		/*
+-		 * base_dest_nodeid is the nasid of the first uvhub
+-		 * in the partition. The bit map will indicate uvhub numbers,
+-		 * which are 0-N in a partition. Pnodes are unique system-wide.
++		 * The base_dest_nasid set in the message header is the nasid
++		 * of the first uvhub in the partition. The bit map will
++		 * indicate destination pnode numbers relative to that base.
++		 * They may not be consecutive if nasid striding is being used.
+ 		 */
+-		bd2->header.base_dest_nodeid = UV_PNODE_TO_NASID(uv_partition_base_pnode);
+-		bd2->header.dest_subnodeid = 0x10; /* the LB */
++		bd2->header.base_dest_nasid = UV_PNODE_TO_NASID(base_pnode);
++		bd2->header.dest_subnodeid = UV_LB_SUBNODEID;
+ 		bd2->header.command = UV_NET_ENDPOINT_INTD;
+ 		bd2->header.int_both = 1;
+ 		/*
+@@ -1442,7 +1451,7 @@ uv_payload_queue_init(int node, int pnode)
+ /*
+  * Initialization of each UV hub's structures
+  */
+-static void __init uv_init_uvhub(int uvhub, int vector)
++static void __init uv_init_uvhub(int uvhub, int vector, int base_pnode)
+ {
+ 	int node;
+ 	int pnode;
+@@ -1450,11 +1459,11 @@ static void __init uv_init_uvhub(int uvhub, int vector)
+ 
+ 	node = uvhub_to_first_node(uvhub);
+ 	pnode = uv_blade_to_pnode(uvhub);
+-	uv_activation_descriptor_init(node, pnode);
++	uv_activation_descriptor_init(node, pnode, base_pnode);
+ 	uv_payload_queue_init(node, pnode);
+ 	/*
+-	 * the below initialization can't be in firmware because the
+-	 * messaging IRQ will be determined by the OS
++	 * The below initialization can't be in firmware because the
++	 * messaging IRQ will be determined by the OS.
+ 	 */
+ 	apicid = uvhub_to_first_apicid(uvhub) | uv_apicid_hibits;
+ 	uv_write_global_mmr64(pnode, UVH_BAU_DATA_CONFIG,
+@@ -1491,10 +1500,11 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static int __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs, int base_part_pnode)
+ {
+ 	int i;
+ 	int cpu;
++	int tcpu;
+ 	int pnode;
+ 	int uvhub;
+ 	int have_hmaster;
+@@ -1528,6 +1538,15 @@ static int __init uv_init_per_cpu(int nuvhubs)
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
+ 		pnode = uv_cpu_hub_info(cpu)->pnode;
++		if ((pnode - base_part_pnode) >= UV_DISTRIBUTION_SIZE) {
++			printk(KERN_EMERG
++				"cpu %d pnode %d-%d beyond %d; BAU disabled\n",
++				cpu, pnode, base_part_pnode,
++				UV_DISTRIBUTION_SIZE);
++			return 1;
++		}
++		bcp->osnode = cpu_to_node(cpu);
++		bcp->partition_base_pnode = uv_partition_base_pnode;
+ 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
+ 		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
+ 		bdp = &uvhub_descs[uvhub];
+@@ -1536,7 +1555,7 @@ static int __init uv_init_per_cpu(int nuvhubs)
+ 		bdp->pnode = pnode;
+ 		/* kludge: 'assuming' one node per socket, and assuming that
+ 		   disabling a socket just leaves a gap in node numbers */
+-		socket = (cpu_to_node(cpu) & 1);
++		socket = bcp->osnode & 1;
+ 		bdp->socket_mask |= (1 << socket);
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+@@ -1585,6 +1604,20 @@ static int __init uv_init_per_cpu(int nuvhubs)
+ nextsocket:
+ 			socket++;
+ 			socket_mask = (socket_mask >> 1);
++			/* each socket gets a local array of pnodes/hubs */
++			bcp = smaster;
++			bcp->target_hub_and_pnode = kmalloc_node(
++				sizeof(struct hub_and_pnode) *
++				num_possible_cpus(), GFP_KERNEL, bcp->osnode);
++			memset(bcp->target_hub_and_pnode, 0,
++				sizeof(struct hub_and_pnode) *
++				num_possible_cpus());
++			for_each_present_cpu(tcpu) {
++				bcp->target_hub_and_pnode[tcpu].pnode =
++					uv_cpu_hub_info(tcpu)->pnode;
++				bcp->target_hub_and_pnode[tcpu].uvhub =
++					uv_cpu_hub_info(tcpu)->numa_blade_id;
++			}
+ 		}
+ 	}
+ 	kfree(uvhub_descs);
+@@ -1637,21 +1670,22 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
+ 
+-	if (uv_init_per_cpu(nuvhubs)) {
+-		nobau = 1;
+-		return 0;
+-	}
+-
+ 	uv_partition_base_pnode = 0x7fffffff;
+-	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
++	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (uv_blade_nr_possible_cpus(uvhub) &&
+ 			(uv_blade_to_pnode(uvhub) < uv_partition_base_pnode))
+ 			uv_partition_base_pnode = uv_blade_to_pnode(uvhub);
++	}
++
++	if (uv_init_per_cpu(nuvhubs, uv_partition_base_pnode)) {
++		nobau = 1;
++		return 0;
++	}
+ 
+ 	vector = UV_BAU_MESSAGE;
+ 	for_each_possible_blade(uvhub)
+ 		if (uv_blade_nr_possible_cpus(uvhub))
+-			uv_init_uvhub(uvhub, vector);
++			uv_init_uvhub(uvhub, vector, uv_partition_base_pnode);
+ 
+ 	uv_enable_timeouts();
+ 	alloc_intr_gate(vector, uv_bau_message_intr1);
