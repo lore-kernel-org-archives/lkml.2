@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab1EMIHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 04:07:25 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56776 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757767Ab1EMIHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 04:07:09 -0400
-Date: Fri, 13 May 2011 10:06:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-Message-ID: <20110513080634.GA13647@elte.hu>
-References: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
+	id S1757933Ab1EMIF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 04:05:28 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:48618 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757804Ab1EMIFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 04:05:24 -0400
+Message-ID: <4DCCE6BF.8030109@ladisch.de>
+Date: Fri, 13 May 2011 10:07:27 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Simon Richter <Simon.Richter@hogyros.de>
+CC: Nick Cheng <nick.cheng@areca.com.tw>, linux-kernel@vger.kernel.org
+Subject: Re: PCI devices sharing IRQs
+References: <20110512081756.GB2206@salmiakki.hogyros.de>
+In-Reply-To: <20110512081756.GB2206@salmiakki.hogyros.de>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Simon Richter wrote:
+> most of the PCI slots appear to map to the same IRQ, and I'm wondering
+> if anything can be done about this.
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+The routing of PCI interrupts cannot be changed on any modern system.
 
-> Hi all,
-> 
-> Today's linux-next merge of the tip tree got a conflict in 
-> arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource: convert 
-> x86 to generic i8253 clocksource") from the arm tree and commit b01cc1b0eae0 
-> ("x86: Convert remaining x86 clocksources to clocksource_register_hz/khz") 
-> from the tip tree.
-> 
-> The former seems to supercede the latter, so I used the former.
+PCI-Express devices are required to support message-signaled interrupts
+(MSIs), which do not require separate hardware interrupt lines and are
+never shared.  So throw away those cheap Intel chips and use the good
+Realtek one instead.  ;-)
 
-Russell, how the heck did this commit:
+As for the RAID card, the arcmsr driver does not enable MSI.
+I don't know if this an oversight in the driver or a hardware bug.
+Please try the patch below.
 
- commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
- Author:     Russell King <rmk+kernel@arm.linux.org.uk>
- AuthorDate: Sun May 8 18:55:19 2011 +0100
- Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
- CommitDate: Tue May 10 08:20:54 2011 +0100
+(Nick, it looks as if there is an error path that doesn't free the
+requested interrupt.)
 
-    clocksource: convert x86 to generic i8253 clocksource
+> If there is anything I could try to change in order to give each card
+> its own IRQ (especially pulling the RAID card and the Ethernet
+> controller apart could possibly be worth something,
 
-which has such a clearly x86 diffstat:
+If these devices are on cards, you could try changing slots.
 
- arch/x86/Kconfig             |    1 +
- arch/x86/include/asm/i8253.h |    2 +
- arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
- 3 files changed, 4 insertions(+), 78 deletions(-)
+> as would handling IRQs on more than one core)
 
-end up in the ARM tree without an ack from an x86 maintainer??
+My AMD CPU automatically routes interrupts to an idle core ...
 
-Not only did it conflict with a 2 months old commit, but it also broke the 
-linux-next x86 build.
 
-I see the commit has an ack from John but that feedback is not visible in the 
-lkml thread of this patch nor did John really realize the conflict nor the 
-build breakage. The patch was still in the to-be-reviewed queue of our patches.
+Regards,
+Clemens
 
-Nor was it tested properly. The patch looks sane but your workflow sucks. 
-Please revert it and use a proper Git workflow to change arch/x86/ details ...
+--8<---------------------------------------------------------------->8--
+[SCSI] arcmsr: add MSI support
 
-Thanks,
+Try to enable MSI for Areca host adapters.  It might actually work.
 
-	Ingo
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -692,7 +692,10 @@ static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if(error){
+ 		goto RAID_controller_stop;
+ 	}
++	pci_enable_msi(pdev);
+-	error = request_irq(pdev->irq, arcmsr_do_interrupt, IRQF_SHARED, "arcmsr", acb);
++	error = request_irq(pdev->irq, arcmsr_do_interrupt,
++			    pci_dev_msi_enabled(pdev) ? 0 : IRQF_SHARED,
++			    "arcmsr", acb);
+ 	if(error){
+ 		goto scsi_host_remove;
+ 	}
+@@ -711,7 +714,9 @@ static int arcmsr_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		goto out_free_sysfs;
+ 	return 0;
+ out_free_sysfs:
++	/* FIXME: free_irq */
+ scsi_host_remove:
++	pci_disable_msi(pdev);
+ 	scsi_remove_host(host);
+ RAID_controller_stop:
+ 	arcmsr_stop_adapter_bgrb(acb);
+@@ -1050,6 +1055,7 @@ static void arcmsr_remove(struct pci_dev *pdev)
+ 		}
+ 	}
+ 	free_irq(pdev->irq, acb);
++	pci_disable_msi(pdev);
+ 	arcmsr_free_ccb_pool(acb);
+ 	arcmsr_free_hbb_mu(acb);
+ 	arcmsr_unmap_pciregion(acb);
