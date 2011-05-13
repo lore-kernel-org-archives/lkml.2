@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757201Ab1EMHPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 03:15:50 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:37015 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab1EMHPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 03:15:49 -0400
-Subject: Re: [PATCH v2] net: rfkill: add generic gpio rfkill driver
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: "olof@lixom.net" <olof@lixom.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1305235386.10961.13.camel@rklein-linux2>
-References: <1305159661-11982-1-git-send-email-rklein@nvidia.com>
-	 <1305189092.3461.10.camel@jlt3.sipsolutions.net>
-	 <1305224592.10961.10.camel@rklein-linux2>
-	 <1305225648.3461.37.camel@jlt3.sipsolutions.net>
-	 <1305226377.10961.12.camel@rklein-linux2>
-	 <1305226969.3461.38.camel@jlt3.sipsolutions.net>
-	 <1305235386.10961.13.camel@rklein-linux2>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 09:15:43 +0200
-Message-ID: <1305270943.3487.5.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1757198Ab1EMHSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 03:18:52 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37851 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757006Ab1EMHSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 03:18:51 -0400
+Date: Fri, 13 May 2011 09:18:34 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch 3/6] mm: memcg-aware global reclaim
+Message-ID: <20110513071834.GD18610@cmpxchg.org>
+References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
+ <1305212038-15445-4-git-send-email-hannes@cmpxchg.org>
+ <20110513090450.3c40d2ee.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513090450.3c40d2ee.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 14:23 -0700, Rhyland Klein wrote:
-> On Thu, 2011-05-12 at 12:02 -0700, Johannes Berg wrote:
-> > On Thu, 2011-05-12 at 11:52 -0700, Rhyland Klein wrote:
+On Fri, May 13, 2011 at 09:04:50AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 12 May 2011 16:53:55 +0200
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > A page charged to a memcg is linked to a lru list specific to that
+> > memcg.  At the same time, traditional global reclaim is obvlivious to
+> > memcgs, and all the pages are also linked to a global per-zone list.
 > > 
-> > > > If, on the other hand, rfkill decides that at the time of loading the
-> > > > driver wifi should be on, then the first change would be +1 and it'll
-> > > > flip between 0 and +1.
-> > > > 
-> > > > This seems like it'll cause issues at some point, so I think you should
-> > > > either allow the driver to set the initial state or hardcode one of
-> > > > these possibilities (so at least it's predictable)
+> > This patch changes traditional global reclaim to iterate over all
+> > existing memcgs, so that it no longer relies on the global list being
+> > present.
 > > 
-> > > I won't go negative, if you look, it only will disable clock if it knows
-> > > it has already enabled it. 
-> > 
-> > Ah, you're right, I misread the macros.
+> > This is one step forward in integrating memcg code better into the
+> > rest of memory management.  It is also a prerequisite to get rid of
+> > the global per-zone lru lists.
+> 
+> As I said, I don't want removing global reclaim until dirty_ratio support and
+> better softlimit algorithm, at least. Current my concern is dirty_ratio,
+> if you want to speed up, please help Greg and implement dirty_ratio first.
 
-> So the patch is good as is?
+As I said, I am not proposing this for integration now.  It was more
+like asking if people were okay with this direction before we put
+things in place that could be in the way of the long-term plan.
 
-I think so, yes.
+Note that 6/6 is an attempt to improve the soft limit algorithm.
 
-johannes
+> BTW, could you separete clean up code and your new logic ? 1st half of
+> codes seems to be just a clean up and seems nice. But , IIUC, someone
+> changed the arguments from chunk of params to be a flags....in some patch.
 
+Sorry again, I know that the series is pretty unorganized.
+
+> +	do {
+> +		mem_cgroup_hierarchy_walk(root, &mem);
+> +		sc->current_memcg = mem;
+> +		do_shrink_zone(priority, zone, sc);
+> +	} while (mem != root);
+> 
+> This move hierarchy walk from memcontrol.c to vmscan.c ?
+> 
+> About moving hierarchy walk, I may say okay...because my patch does this, too.
+> 
+> But....doesn't this reclaim too much memory if hierarchy is very deep ?
+> Could you add some 'quit' path ?
+
+Yes, I think I'll just reinstate the logic from
+mem_cgroup_select_victim() to remember the last child, and add an exit
+condition based on the number of reclaimed pages.
+
+This was also suggested by Rik in this thread already.
