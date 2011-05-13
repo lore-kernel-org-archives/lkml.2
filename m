@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab1EMDQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 23:16:32 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41354 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab1EMDQb (ORCPT
+	id S1754298Ab1EMDTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 23:19:15 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:51781 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750703Ab1EMDTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 23:16:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WrxeBvAYJpl4SJgAHYH8vtbLmemzOEqkfVn0/52z6tGpryHD22u3DSD4pBrLgw8AB1
-         uVqu4GJeqQVfJJUU1xy6NAvkBqs4J63XAXo+3kgFJalbLslezu9DVUR/6q9DtMoK3G3w
-         fGPHgLxRLKmFJvo+HbErBfozlOGXnkaVyIMaU=
+	Thu, 12 May 2011 23:19:14 -0400
+Message-ID: <4DCCA317.2030302@metafoo.de>
+Date: Thu, 12 May 2011 20:18:47 -0700
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
-References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
-	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
-Date: Fri, 13 May 2011 11:16:30 +0800
-Message-ID: <BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: "'Grant Likely'" <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        toshiharu-linux@dsn.okisemi.com
+Subject: Re: Question: GPIO driver how to get irq_base
+References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com> <4DCAE163.2050602@metafoo.de> <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com> <4DCC384B.1020202@metafoo.de> <CA2B589B92704A439D8DF3E2EAD9750D@hacdom.okisemi.com>
+In-Reply-To: <CA2B589B92704A439D8DF3E2EAD9750D@hacdom.okisemi.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2011 10:44, H. Peter Anvin <hpa@zytor.com> wrote:
-> Daniel J Blueman <daniel.blueman@gmail.com> wrote:
->> Rebooting on the Dell E5420 often hangs with the keyboard method, but is
->> reliable via the PCI method. Signed-off-by: Daniel J Blueman
->> <daniel.blueman@gmail.com> --- arch/x86/kernel/reboot.c | 8 ++++++++ 1 files
->> changed, 8 insertions(+), 0 deletions(-) diff --git
->> a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c index 08c44b0..b16032d
->> 100644 --- a/arch/x86/kernel/reboot.c +++ b/arch/x86/kernel/reboot.c @@
->> -411,6 +411,14 @@ static struct dmi_system_id __initdata
->> pci_reboot_dmi_table[] = { DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"), }, }, + {
->> + .callback = set_pci_reboot, + .ident = "Dell Latitude E5420", + .matches =
->> { + DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."), + DMI_MATCH(DMI_PRODUCT_NAME,
->> "Latitude E5420"), + }, + }, { } }; -- 1.7.4.1
+On 05/12/2011 07:40 PM, Tomoya MORINAGA wrote:
+> Hi  Lars,
+> 
+> On Friday, May 13, 2011 4:43 AM, Lars-Peter Clausen wrote:
+>> Is it already used at the time when you call irq_alloc_descs?
+> 
+> Since gpio driver with interrupt function must be integrated as built-in,
+> I don't know whether "18" is already used or NOT at that time.
+> If you have any information, let me know.
+> 
 
-> How does it work with ACPI?
+Well, you should be able to figure that out with some debug printks, shouldn't you?
 
-All other reboot methods including ACPI are unreliable and seem to
-demonstrate the same failure probability; PCI is the only reliable
-method alas.
-
-I guess the ACPI reboot method is the supported 'official' vector (and
-is what Windows uses [1]), so there must be some other constraints
-preventing it work as expected, unless the ACPI tables delivered to
-Linux are broken, would you say?
-
-Daniel
-
-[1] http://comments.gmane.org/gmane.linux.kernel/1122388
--- 
-Daniel J Blueman
+- Lars
