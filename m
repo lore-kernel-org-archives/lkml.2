@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab1EMKaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 06:30:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37307 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757363Ab1EMKaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 06:30:14 -0400
-Date: Fri, 13 May 2011 11:30:09 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110513103009.GD3569@suse.de>
-References: <alpine.DEB.2.00.1105120942050.24560@router.home>
- <1305213359.2575.46.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121024350.26013@router.home>
- <1305214993.2575.50.camel@mulgrave.site>
- <1305215742.27848.40.camel@jaguar>
- <1305225467.2575.66.camel@mulgrave.site>
- <1305229447.2575.71.camel@mulgrave.site>
- <1305230652.2575.72.camel@mulgrave.site>
- <1305237882.2575.100.camel@mulgrave.site>
- <20110512221506.GM16531@cmpxchg.org>
+	id S1758231Ab1EMK25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 06:28:57 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46303 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab1EMK2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 06:28:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DCD0845.10409@jp.fujitsu.com>
+Date: Fri, 13 May 2011 19:30:29 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110512221506.GM16531@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: CAI Qian <caiqian@redhat.com>, avagin@gmail.com,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 3/4] oom: oom-killer don't use permillage of system-ram
+ internally
+References: <20110509182110.167F.A69D9226@jp.fujitsu.com> <20110510171335.16A7.A69D9226@jp.fujitsu.com> <20110510171724.16B3.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1105101632290.12477@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1105101632290.12477@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 12:15:06AM +0200, Johannes Weiner wrote:
-> On Thu, May 12, 2011 at 05:04:41PM -0500, James Bottomley wrote:
-> > On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
-> > > Confirmed, I'm afraid ... I can trigger the problem with all three
-> > > patches under PREEMPT.  It's not a hang this time, it's just kswapd
-> > > taking 100% system time on 1 CPU and it won't calm down after I unload
-> > > the system.
-> > 
-> > Just on a "if you don't know what's wrong poke about and see" basis, I
-> > sliced out all the complex logic in sleeping_prematurely() and, as far
-> > as I can tell, it cures the problem behaviour.  I've loaded up the
-> > system, and taken the tar load generator through three runs without
-> > producing a spinning kswapd (this is PREEMPT).  I'll try with a
-> > non-PREEMPT kernel shortly.
-> > 
-> > What this seems to say is that there's a problem with the complex logic
-> > in sleeping_prematurely().  I'm pretty sure hacking up
-> > sleeping_prematurely() just to dump all the calculations is the wrong
-> > thing to do, but perhaps someone can see what the right thing is ...
-> 
-> I think I see the problem: the boolean logic of sleeping_prematurely()
-> is odd.  If it returns true, kswapd will keep running.  So if
-> pgdat_balanced() returns true, kswapd should go to sleep.
-> 
-> This?
-> 
+(2011/05/11 8:40), David Rientjes wrote:
+> On Tue, 10 May 2011, KOSAKI Motohiro wrote:
+>
+>> CAI Qian reported his kernel did hang-up if he ran fork intensive
+>> workload and then invoke oom-killer.
+>>
+>> The problem is, Current oom calculation uses 0-1000 normalized value
+>> (The unit is a permillage of system-ram). Its low precision make
+>> a lot of same oom score. IOW, in his case, all processes have<1
+>> oom score and internal integral calculation round it to 1. Thus
+>> oom-killer kill ineligible process. This regression is caused by
+>> commit a63d83f427 (oom: badness heuristic rewrite).
+>>
+>> The solution is, the internal calculation just use number of pages
+>> instead of permillage of system-ram. And convert it to permillage
+>> value at displaying time.
+>>
+>> This patch doesn't change any ABI (included  /proc/<pid>/oom_score_adj)
+>> even though current logic has a lot of my dislike thing.
+>>
+>
+> s/permillage/proportion/
+>
+> This is unacceptable, it does not allow users to tune oom_score_adj
+> appropriately based on the scores exported by /proc/pid/oom_score to
+> discount an amount of RAM from a thread's memory usage in systemwide,
+> memory controller, cpuset, or mempolicy contexts.  This is only possible
+> because the oom score is normalized.
 
-You're right.
+You misunderstand the code. The patch doesn't change oom_score.
+The patch change fs/proc too.
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2b701e0..092d773 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2261,7 +2261,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
->  	 * must be balanced
->  	 */
->  	if (order)
-> -		return pgdat_balanced(pgdat, balanced, classzone_idx);
-> +		return !pgdat_balanced(pgdat, balanced, classzone_idx);
->  	else
->  		return !all_zones_ok;
->  }
+>
+> What would be acceptable would be to increase the granularity of the score
+> to 10000 or 100000 to differentiate between threads using 0.01% or 0.001%
+> of RAM from each other, respectively.  The range of oom_score_adj would
+> remain the same, however, and be multiplied by 10 or 100, respectively,
+> when factored into the badness score baseline.  I don't believe userspace
+> cares to differentiate between more than 0.1% of available memory.
 
--- 
-Mel Gorman
-SUSE Labs
+Currently, SGI buy 16TB memory. 16TB x 0.1% = 1.6GB. I don't think your
+fork bomb process use bigger than 1.6GB. Thus your patch is unacceptable.
+
+So, please read the code again. or run it.
+
+> The other issue that this patch addresses is the bonus given to root
+> processes.  I agree that if a root process is using 4% of RAM that it
+> should not be equal to all other threads using 1%.  I do believe that a
+> root process using 60% of RAM should be equal priority to a thread using
+> 57%, however.  Perhaps a compromise would be to give root processes a
+> bonus of 1% for every 30% of RAM they consume?
+
+I think you are talking about patch [4/4], right? patch [3/4] and [4/4]
+are attacking another issue. big machine issue and root user issue.
+
+
