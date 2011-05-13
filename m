@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab1EMPUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:20:49 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53851 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758615Ab1EMPUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:20:47 -0400
-Date: Fri, 13 May 2011 17:20:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-Message-ID: <20110513152033.GB3854@elte.hu>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
- <20110513124523.GM13984@redhat.com>
- <20110513130011.GA6474@elte.hu>
- <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
+	id S1759351Ab1EMPVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:21:53 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26915 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756163Ab1EMPVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 11:21:51 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Fj9NskAVM1kB05MUsIuDOvVkoqZAVluS7gNLbKQo5kea0dC
+ Wrz56PH88MSdgCJaZhulpjeQ3ZLfvUNQZgz2gplZqEujI4F5RQaCUqVjkGvj
+ lb8vDGstbuahN0WUGZUC_ZFeKp.Po4vmD0ZTJHKTvlM6PmOUPt8_6k6y55i1
+ g00jR0CfU47bhNZmAgg9OG9I7eMps_w4lfo4pD1.7TpTr0Q3kGIDXiKSEg55
+ IRe9hEk_IGJpDzFAbp2.WD3PZiQgFQO28CG98LOCvjapSRcl9pUfpJW2.wbJ
+ WHYew2i9Xa5vID83zHiW1J6s8Cjf74RP6efi4t6uoG_8X7snSWHMrxt2H5gn
+ GXXuMNErLJErv3L.Gub2_mL5O
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 13 May 2011 10:21:46 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Reduce impact to overall system of SLUB using
+ high-order allocations V2
+In-Reply-To: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+Message-ID: <alpine.DEB.2.00.1105131009530.24193@router.home>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 13 May 2011, Mel Gorman wrote:
 
-* huang ying <huang.ying.caritas@gmail.com> wrote:
+> SLUB using high orders is the trigger but not the root cause as SLUB
+> has been using high orders for a while. The following four patches
+> aim to fix the problems in reclaim while reducing the cost for SLUB
+> using those high orders.
+>
+> Patch 1 corrects logic introduced by commit [1741c877: mm:
+> 	kswapd: keep kswapd awake for high-order allocations until
+> 	a percentage of the node is balanced] to allow kswapd to
+> 	go to sleep when balanced for high orders.
 
-> > What should be done instead is to add an event for unknown NMIs, which can 
-> > then be processed by the RAS daemon to implement policy.
-> >
-> > By using 'active' event filters it could even be set on a system to panic 
-> > the box by default.
-> 
-> If there is real fatal hardware error, maybe we have no luxury to go from NMI 
-> handler to user space RAS daemon to determine what to do. System may explode, 
-> bad data may go to disk before that.
+The above looks good.
 
-That is why i suggested:
+> Patch 2 prevents kswapd waking up in response to SLUBs speculative
+> 	use of high orders.
 
-  > > By using 'active' event filters it could even be set on a system to panic 
-  > > the box by default.
+Not sure if that is necessary since it seems that we triggered kswapd
+before? Why not continue to do it? Once kswapd has enough higher order
+pages kswapd should no longer be triggered right?
 
-event filters are evaluated in the kernel, so the panic could be instantaneous, 
-without the event having to reach user-space.
+> Patch 3 further reduces the cost by prevent SLUB entering direct
+> 	compaction or reclaim paths on the grounds that falling
+> 	back to order-0 should be cheaper.
 
-Thanks,
+Its cheaper for reclaim path true but more expensive in terms of SLUBs
+management costs of the data and it also increases the memory wasted. A
+higher order means denser packing of objects less page management
+overhead. Fallback is not for free. Reasonable effort should be made to
+allocate the page order requested.
 
-	Ingo
+> Patch 4 notes that even when kswapd is failing to keep up with
+> 	allocation requests, it should still go to sleep when its
+> 	quota has expired to prevent it spinning.
+
+Looks good too.
+
+Overall, it looks like the compaction logic and the modifications to
+reclaim introduced recently with the intend to increase the amount of
+physically contiguous memory is not working as expected.
+
+SLUBs chance of getting higher order pages should be *increasing* as a
+result of these changes. The above looks like the chances are decreasing
+now.
+
+This is a matter of future concern. The metadata management overhead
+in the kernel is continually increasing since memory sizes keep growing
+and we typically manage memory in 4k chunks. Through large allocation
+sizes we can reduce that management overhead but we can only do this if we
+have an effective way of defragmenting memory to get longer contiguous
+chunks that can be managed to a single page struct.
+
+Please make sure that compaction and related measures really work properly.
+
+The patches suggest that the recent modifications are not improving the
+situation.
+
