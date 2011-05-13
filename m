@@ -1,319 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933136Ab1EMSV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:21:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45081 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757053Ab1EMSVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:21:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,365,1301900400"; 
-   d="scan'208";a="435763895"
-Message-Id: <20110513181009.241952017@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Fri, 13 May 2011 11:04:54 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com,
-        yinghai@kernel.org
-Cc: linux-kernel@vger.kernel.org, gorcunov@openvz.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [patch 5/5] x86, x2apic: Move the common bits to x2apic.h
-References: <20110513180449.562138524@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=move_the_common_bits_of_physical_and_cluster_modes_to_x2apic.patch
+	id S1755804Ab1EMSHT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:07:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50425 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab1EMSHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:07:17 -0400
+Date: Fri, 13 May 2011 11:06:12 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: ocfs2-devel@oss.oracle.com, Randy Dunlap <rdunlap@xenotime.net>,
+        Mark Fasheh <mfasheh@suse.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch] ocfs2: remove the /sys/o2cb symlink
+Message-ID: <20110513180607.GA2349@noexit.corp.google.com>
+Mail-Followup-To: Amerigo Wang <amwang@redhat.com>,
+	ocfs2-devel@oss.oracle.com, Randy Dunlap <rdunlap@xenotime.net>,
+	Mark Fasheh <mfasheh@suse.com>, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1304256856-4744-1-git-send-email-amwang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304256856-4744-1-git-send-email-amwang@redhat.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subjct: x86, x2apic: Move the common bits to x2apic.h
+On Sun, May 01, 2011 at 09:34:16PM +0800, Amerigo Wang wrote:
+> It is obsoleted since Dec 2005.
 
-To eliminate code duplication.
+	Actually, we moved it in 2008.  Sunil, Mark, do we have new
+enough tools everywhere?  Looks like ocfs2-tools 1.4 has it.  I'm going
+to take this unless you object.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/x2apic.h         |   62 +++++++++++++++++++++++++++++
- arch/x86/kernel/apic/x2apic_cluster.c |   71 +---------------------------------
- arch/x86/kernel/apic/x2apic_phys.c    |   60 +---------------------------
- 3 files changed, 69 insertions(+), 124 deletions(-)
+Joel
 
-Index: linux-2.6-tip/arch/x86/include/asm/x2apic.h
-===================================================================
---- /dev/null
-+++ linux-2.6-tip/arch/x86/include/asm/x2apic.h
-@@ -0,0 +1,62 @@
-+/*
-+ * Common bits for X2APIC cluster/physical modes.
-+ */
-+
-+#ifndef _ASM_X86_X2APIC_H
-+#define _ASM_X86_X2APIC_H
-+
-+#include <asm/apic.h>
-+#include <asm/ipi.h>
-+#include <linux/cpumask.h>
-+
-+/*
-+ * Need to use more than cpu 0, because we need more vectors
-+ * when MSI-X are used.
-+ */
-+static const struct cpumask *x2apic_target_cpus(void)
-+{
-+	return cpu_online_mask;
-+}
-+
-+static int x2apic_apic_id_registered(void)
-+{
-+	return 1;
-+}
-+
-+/*
-+ * For now each logical cpu is in its own vector allocation domain.
-+ */
-+static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+{
-+	cpumask_clear(retmask);
-+	cpumask_set_cpu(cpu, retmask);
-+}
-+
-+static void
-+__x2apic_send_IPI_dest(unsigned int apicid, int vector, unsigned int dest)
-+{
-+	unsigned long cfg = __prepare_ICR(0, vector, dest);
-+	native_x2apic_icr_write(cfg, apicid);
-+}
-+
-+static unsigned int x2apic_get_apic_id(unsigned long id)
-+{
-+	return id;
-+}
-+
-+static unsigned long x2apic_set_apic_id(unsigned int id)
-+{
-+	return id;
-+}
-+
-+static int x2apic_phys_pkg_id(int initial_apicid, int index_msb)
-+{
-+	return initial_apicid >> index_msb;
-+}
-+
-+static void x2apic_send_IPI_self(int vector)
-+{
-+	apic_write(APIC_SELF_IPI, vector);
-+}
-+
-+#endif /* _ASM_X86_X2APIC_H */
-Index: linux-2.6-tip/arch/x86/kernel/apic/x2apic_cluster.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/x2apic_cluster.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -8,8 +8,7 @@
- #include <linux/cpu.h>
- 
- #include <asm/smp.h>
--#include <asm/apic.h>
--#include <asm/ipi.h>
-+#include <asm/x2apic.h>
- 
- static DEFINE_PER_CPU(u32, x86_cpu_to_logical_apicid);
- static DEFINE_PER_CPU(cpumask_var_t, cpus_in_cluster);
-@@ -20,37 +19,6 @@ static int x2apic_acpi_madt_oem_check(ch
- 	return x2apic_enabled();
- }
- 
--/*
-- * need to use more than cpu 0, because we need more vectors when
-- * MSI-X are used.
-- */
--static const struct cpumask *x2apic_target_cpus(void)
--{
--	return cpu_online_mask;
--}
--
--/*
-- * for now each logical cpu is in its own vector allocation domain.
-- */
--static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
--{
--	cpumask_clear(retmask);
--	cpumask_set_cpu(cpu, retmask);
--}
--
--static void
-- __x2apic_send_IPI_dest(unsigned int apicid, int vector, unsigned int dest)
--{
--	unsigned long cfg;
--
--	cfg = __prepare_ICR(0, vector, dest);
--
--	/*
--	 * send the IPI.
--	 */
--	native_x2apic_icr_write(cfg, apicid);
--}
--
- static inline u32 x2apic_cluster(int cpu)
- {
- 	return per_cpu(x86_cpu_to_logical_apicid, cpu) >> 16;
-@@ -128,11 +96,6 @@ static void x2apic_send_IPI_all(int vect
- 	__x2apic_send_IPI_mask(cpu_online_mask, vector, APIC_DEST_ALLINC);
- }
- 
--static int x2apic_apic_id_registered(void)
--{
--	return 1;
--}
--
- static unsigned int x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask)
- {
- 	/*
-@@ -165,32 +128,6 @@ x2apic_cpu_mask_to_apicid_and(const stru
- 	return per_cpu(x86_cpu_to_logical_apicid, cpu);
- }
- 
--static unsigned int x2apic_cluster_phys_get_apic_id(unsigned long x)
--{
--	unsigned int id;
--
--	id = x;
--	return id;
--}
--
--static unsigned long set_apic_id(unsigned int id)
--{
--	unsigned long x;
--
--	x = id;
--	return x;
--}
--
--static int x2apic_cluster_phys_pkg_id(int initial_apicid, int index_msb)
--{
--	return initial_apicid >> index_msb;
--}
--
--static void x2apic_send_IPI_self(int vector)
--{
--	apic_write(APIC_SELF_IPI, vector);
--}
--
- static void init_x2apic_ldr(void)
- {
- 	unsigned int this_cpu = smp_processor_id();
-@@ -298,11 +235,11 @@ struct apic apic_x2apic_cluster = {
- 	.setup_portio_remap		= NULL,
- 	.check_phys_apicid_present	= default_check_phys_apicid_present,
- 	.enable_apic_mode		= NULL,
--	.phys_pkg_id			= x2apic_cluster_phys_pkg_id,
-+	.phys_pkg_id			= x2apic_phys_pkg_id,
- 	.mps_oem_check			= NULL,
- 
--	.get_apic_id			= x2apic_cluster_phys_get_apic_id,
--	.set_apic_id			= set_apic_id,
-+	.get_apic_id			= x2apic_get_apic_id,
-+	.set_apic_id			= x2apic_set_apic_id,
- 	.apic_id_mask			= 0xFFFFFFFFu,
- 
- 	.cpu_mask_to_apicid		= x2apic_cpu_mask_to_apicid,
-Index: linux-2.6-tip/arch/x86/kernel/apic/x2apic_phys.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/x2apic_phys.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/x2apic_phys.c
-@@ -7,8 +7,7 @@
- #include <linux/dmar.h>
- 
- #include <asm/smp.h>
--#include <asm/apic.h>
--#include <asm/ipi.h>
-+#include <asm/x2apic.h>
- 
- int x2apic_phys;
- 
-@@ -27,34 +26,6 @@ static int x2apic_acpi_madt_oem_check(ch
- 		return 0;
- }
- 
--/*
-- * need to use more than cpu 0, because we need more vectors when
-- * MSI-X are used.
-- */
--static const struct cpumask *x2apic_target_cpus(void)
--{
--	return cpu_online_mask;
--}
--
--static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
--{
--	cpumask_clear(retmask);
--	cpumask_set_cpu(cpu, retmask);
--}
--
--static void __x2apic_send_IPI_dest(unsigned int apicid, int vector,
--				   unsigned int dest)
--{
--	unsigned long cfg;
--
--	cfg = __prepare_ICR(0, vector, dest);
--
--	/*
--	 * send the IPI.
--	 */
--	native_x2apic_icr_write(cfg, apicid);
--}
--
- static void
- __x2apic_send_IPI_mask(const struct cpumask *mask, int vector, int apic_dest)
- {
-@@ -97,11 +68,6 @@ static void x2apic_send_IPI_all(int vect
- 	__x2apic_send_IPI_mask(cpu_online_mask, vector, APIC_DEST_ALLINC);
- }
- 
--static int x2apic_apic_id_registered(void)
--{
--	return 1;
--}
--
- static unsigned int x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask)
- {
- 	/*
-@@ -134,26 +100,6 @@ x2apic_cpu_mask_to_apicid_and(const stru
- 	return per_cpu(x86_cpu_to_apicid, cpu);
- }
- 
--static unsigned int x2apic_phys_get_apic_id(unsigned long x)
--{
--	return x;
--}
--
--static unsigned long set_apic_id(unsigned int id)
--{
--	return id;
--}
--
--static int x2apic_phys_pkg_id(int initial_apicid, int index_msb)
--{
--	return initial_apicid >> index_msb;
--}
--
--static void x2apic_send_IPI_self(int vector)
--{
--	apic_write(APIC_SELF_IPI, vector);
--}
--
- static void init_x2apic_ldr(void)
- {
- }
-@@ -196,8 +142,8 @@ struct apic apic_x2apic_phys = {
- 	.phys_pkg_id			= x2apic_phys_pkg_id,
- 	.mps_oem_check			= NULL,
- 
--	.get_apic_id			= x2apic_phys_get_apic_id,
--	.set_apic_id			= set_apic_id,
-+	.get_apic_id			= x2apic_get_apic_id,
-+	.set_apic_id			= x2apic_set_apic_id,
- 	.apic_id_mask			= 0xFFFFFFFFu,
- 
- 	.cpu_mask_to_apicid		= x2apic_cpu_mask_to_apicid,
+> 
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> 
+> ---
+>  Documentation/ABI/obsolete/o2cb            |   11 -----------
+>  Documentation/ABI/removed/o2cb             |   10 ++++++++++
+>  Documentation/feature-removal-schedule.txt |   10 ----------
+>  fs/ocfs2/cluster/sys.c                     |    9 ---------
+>  4 files changed, 10 insertions(+), 30 deletions(-)
+> ---
+> diff --git a/Documentation/ABI/obsolete/o2cb b/Documentation/ABI/obsolete/o2cb
+> deleted file mode 100644
+> index 9c49d8e..0000000
+> --- a/Documentation/ABI/obsolete/o2cb
+> +++ /dev/null
+> @@ -1,11 +0,0 @@
+> -What:		/sys/o2cb symlink
+> -Date:		Dec 2005
+> -KernelVersion:	2.6.16
+> -Contact:	ocfs2-devel@oss.oracle.com
+> -Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink will
+> -		be removed when new versions of ocfs2-tools which know to look
+> -		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
+> -		software to look here, it should try /sys/fs/o2cb instead.
+> -		See Documentation/ABI/stable/o2cb for more information on usage.
+> -Users:		ocfs2-tools. It's sufficient to mail proposed changes to
+> -		ocfs2-devel@oss.oracle.com.
+> diff --git a/Documentation/ABI/removed/o2cb b/Documentation/ABI/removed/o2cb
+> new file mode 100644
+> index 0000000..7f5daa4
+> --- /dev/null
+> +++ b/Documentation/ABI/removed/o2cb
+> @@ -0,0 +1,10 @@
+> +What:		/sys/o2cb symlink
+> +Date:		May 2011
+> +KernelVersion:	2.6.40
+> +Contact:	ocfs2-devel@oss.oracle.com
+> +Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink is
+> +		removed when new versions of ocfs2-tools which know to look
+> +		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
+> +		software to look here, it should try /sys/fs/o2cb instead.
+> +Users:		ocfs2-tools. It's sufficient to mail proposed changes to
+> +		ocfs2-devel@oss.oracle.com.
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index 492e81d..5f3561e 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -273,16 +273,6 @@ Who:	Michael Buesch <mb@bu3sch.de>
+>  
+>  ---------------------------
+>  
+> -What:	/sys/o2cb symlink
+> -When:	January 2010
+> -Why:	/sys/fs/o2cb is the proper location for this information - /sys/o2cb
+> -	exists as a symlink for backwards compatibility for old versions of
+> -	ocfs2-tools. 2 years should be sufficient time to phase in new versions
+> -	which know to look in /sys/fs/o2cb.
+> -Who:	ocfs2-devel@oss.oracle.com
+> -
+> ----------------------------
+> -
+>  What:	Ability for non root users to shm_get hugetlb pages based on mlock
+>  	resource limits
+>  When:	2.6.31
+> diff --git a/fs/ocfs2/cluster/sys.c b/fs/ocfs2/cluster/sys.c
+> index bc702da..a4b0773 100644
+> --- a/fs/ocfs2/cluster/sys.c
+> +++ b/fs/ocfs2/cluster/sys.c
+> @@ -57,7 +57,6 @@ static struct kset *o2cb_kset;
+>  void o2cb_sys_shutdown(void)
+>  {
+>  	mlog_sys_shutdown();
+> -	sysfs_remove_link(NULL, "o2cb");
+>  	kset_unregister(o2cb_kset);
+>  }
+>  
+> @@ -69,14 +68,6 @@ int o2cb_sys_init(void)
+>  	if (!o2cb_kset)
+>  		return -ENOMEM;
+>  
+> -	/*
+> -	 * Create this symlink for backwards compatibility with old
+> -	 * versions of ocfs2-tools which look for things in /sys/o2cb.
+> -	 */
+> -	ret = sysfs_create_link(NULL, &o2cb_kset->kobj, "o2cb");
+> -	if (ret)
+> -		goto error;
+> -
+>  	ret = sysfs_create_group(&o2cb_kset->kobj, &o2cb_attr_group);
+>  	if (ret)
+>  		goto error;
 
+-- 
 
+"We will have to repent in this generation not merely for the
+ vitriolic words and actions of the bad people, but for the 
+ appalling silence of the good people."
+	- Rev. Dr. Martin Luther King, Jr.
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
