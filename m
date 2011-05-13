@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab1EMHeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 03:34:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21647 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756995Ab1EMHeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 03:34:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
-   d="scan'208";a="746668259"
-Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
-From: Shaohua Li <shaohua.li@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-In-Reply-To: <1305268456.2831.38.camel@edumazet-laptop>
-References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
-	 <20110511092848.GE1661@htj.dyndns.org>
-	 <1305168493.2373.15.camel@sli10-conroe>
-	 <20110512082159.GB1030@htj.dyndns.org>
-	 <1305190520.2373.18.camel@sli10-conroe>
-	 <20110512085922.GD1030@htj.dyndns.org>
-	 <1305190936.3795.1.camel@edumazet-laptop>
-	 <20110512090534.GE1030@htj.dyndns.org>
-	 <1305261477.2373.45.camel@sli10-conroe>
-	 <1305264007.2831.14.camel@edumazet-laptop>
-	 <20110513052859.GA11088@sli10-conroe.sh.intel.com>
-	 <1305268456.2831.38.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 15:33:57 +0800
-Message-ID: <1305272037.2375.0.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1758002Ab1EMIKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 04:10:23 -0400
+Received: from stonestorm.inifta.unlp.edu.ar ([163.10.21.140]:57224 "EHLO
+	stonestorm.inifta.unlp.edu.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757797Ab1EMIKU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 04:10:20 -0400
+X-Greylist: delayed 1948 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 04:10:19 EDT
+Message-ID: <20110513043604.643559e2k3boo7go@webmail.inifta.unlp.edu.ar>
+Date: Fri, 13 May 2011 04:36:04 -0300
+From: rhumana <rhumana@inifta.unlp.edu.ar>
+Reply-to: money_gramlimited@mspil.edu.cn
+To: undisclosed-recipients:;
+Subject: Re.funds
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 14:34 +0800, Eric Dumazet wrote:
-> Le vendredi 13 mai 2011 à 13:28 +0800, Shaohua Li a écrit :
-> > Hi,
-> > On Fri, May 13, 2011 at 01:20:06PM +0800, Eric Dumazet wrote:
-> > > Le vendredi 13 mai 2011 à 12:37 +0800, Shaohua Li a écrit :
-> > > > On Thu, 2011-05-12 at 17:05 +0800, Tejun Heo wrote:
-> > > > > Hello,
-> > > > > 
-> > > > > On Thu, May 12, 2011 at 11:02:15AM +0200, Eric Dumazet wrote:
-> > > > > > > I don't think @maxfuzzy is necessary there.  I wrote this before but
-> > > > > > > why can't we track the actual deviation instead of the number of
-> > > > > > > deviation events?
-> > > > > > 
-> > > > > > Thats roughly same thing (BATCH multiplicator factor apart)
-> > > > > > 
-> > > > > > Most percpu_counter users for a given percpu_counter object use a given
-> > > > > > BATCH, dont they ?
-> > > > > 
-> > > > > Well, @maxfuzzy is much harder than @batch.  It's way less intuitive.
-> > > > > Although I haven't really thought about it that much, I think it might
-> > > > > be possible to eliminate it.  Maybe I'm confused.  I'll take another
-> > > > > look later but if someone can think of something, please jump right
-> > > > > in.
-> > > > Hmm, looks Eric's approach doesn't work. because we want to remove lock
-> > > > in _add, checking seq in _sum still races with _add.
-> > > > 
-> > > 
-> > > Why ?
-> > > 
-> > > I'll code a patch, I believe it should work.
-> > I thought your proposal is:
-> > in _add
-> > {
-> > 	if (count >= batch || count <= -batch) {
-> > 		fbc->seq_count++;
-> >                atomic64_add(count, &fbc->count);
-> > -------->
-> >                 __this_cpu_write(*fbc->counters, 0);
-> > 	}
-> > }
-> > 
-> > in _sum
-> > {
-> > restart:
-> > 	oldseq = fbc->seqcount;
-> > 	smp_rmb();
-> > 	do_sum();
-> > 	smp_rmb()
-> > 	newseq = fbc->seqcount;
-> > 	if (newseq - oldseq >= maxfuzzy)
-> > 		goto restart;
-> > 	return ret;
-> > } 
-> > if _sum run between above line marked in _add, then the seqcount check
-> > doesn't work, we still have deviation Tejun pointed out.
-> > 
-> 
-> I see the point thanks, I'll think a bit more about it.
-> 
-> We currently serializes both _sum() and _add() with a spinlock.
-> 
-> My idea was OK if we still kept spinlock in _add(), but this obviously
-> is not the need.
-> 
-> Your goal is letting _add() run without spinlock, but can we agree
-> _sum() can run with a spinlock() like today [no more than one instance
-> of _sum() running per percpu_counter] ?
-locking _sum should be fine
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by the Malaysian
+Government and Mr. David Cameron the United Kingdom
+prime minister after the last G20 meeting that was
+held in Malaysia, making you one of the beneficiaries through
+an email natural simple ballot selection.
 
+He told Allan Davis to keep sending you $5,000 USD via Money Gram
+twice a week until the FULL payment of ($820,000.00 )
+is completed.
+
+MONEY TRANSFER REFERENCE:2116-3297
+
+SENDER'S NAME:Patrick Lee Chun
+AMOUNT: US$5000
+
+To track your funds forward money gram
+Transfer agent Mr Allan Davis
+
+Your Name.____________
+Phone .______________
+
+Contact Allan Davis for the funds clearance
+certificate (FCC) neccessary for the realise of your funds
+
+E-mail:money_gramlimited@mspil.edu.cn
+D/L: Tel:+601-635-44376
+
+You cannot pickup the money until the certificate is
+obtained by you.
+
+Regards
+Mr. Allan Davis.
+Tel: +601-635-44376
+
+Best Regards,
+Mr Allan Davis
+
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
