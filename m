@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab1EMPVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:21:53 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26915 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756163Ab1EMPVv (ORCPT
+	id S1756028Ab1EMPac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:30:32 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26631 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab1EMPa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:21:51 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Fj9NskAVM1kB05MUsIuDOvVkoqZAVluS7gNLbKQo5kea0dC
- Wrz56PH88MSdgCJaZhulpjeQ3ZLfvUNQZgz2gplZqEujI4F5RQaCUqVjkGvj
- lb8vDGstbuahN0WUGZUC_ZFeKp.Po4vmD0ZTJHKTvlM6PmOUPt8_6k6y55i1
- g00jR0CfU47bhNZmAgg9OG9I7eMps_w4lfo4pD1.7TpTr0Q3kGIDXiKSEg55
- IRe9hEk_IGJpDzFAbp2.WD3PZiQgFQO28CG98LOCvjapSRcl9pUfpJW2.wbJ
- WHYew2i9Xa5vID83zHiW1J6s8Cjf74RP6efi4t6uoG_8X7snSWHMrxt2H5gn
- GXXuMNErLJErv3L.Gub2_mL5O
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 13 May 2011 10:21:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Reduce impact to overall system of SLUB using
- high-order allocations V2
-In-Reply-To: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.DEB.2.00.1105131009530.24193@router.home>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 13 May 2011 11:30:29 -0400
+Date: Fri, 13 May 2011 11:30:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: yinghai@kernel.org, jeremy@goop.org, stefano.stabellini@eu.citrix.com,
+        hpa@zytor.com, hpa@linux.intel.com,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Xen MMU's requirement to pin pages RO and initial_memory_mapping.
+Message-ID: <20110513153010.GB16519@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4DCD4E8E.0061:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011, Mel Gorman wrote:
+aka, remove the hack added by git commit 609cfda586c7fe3e5d1a02c51edb587506294167
+(Merge branch 'stable/bug-fixes-for-rc5' of git://git.kernel.org/../xen)
 
-> SLUB using high orders is the trigger but not the root cause as SLUB
-> has been using high orders for a while. The following four patches
-> aim to fix the problems in reclaim while reducing the cost for SLUB
-> using those high orders.
->
-> Patch 1 corrects logic introduced by commit [1741c877: mm:
-> 	kswapd: keep kswapd awake for high-order allocations until
-> 	a percentage of the node is balanced] to allow kswapd to
-> 	go to sleep when balanced for high orders.
+One idea that is on the table was proposed by Yinghai:
+"Xen should set RAM for page-table to RO after init_memory mapping."
 
-The above looks good.
+In other words, don't do the magic 'mask_rw_pte' when set_pte is called.
+(and don't do the calls to make_lowmem_page_readonly when allocating
+the PTE table, nor PMD, nor PUD) - I think?
 
-> Patch 2 prevents kswapd waking up in response to SLUBs speculative
-> 	use of high orders.
+But instead do:
+ a). when we load the cr3? We could go through the whole pagetable and
+     set the RO as we need?
+ b). when we are finished with the creation of a page table? So similary 
+     to the point above - don't set the RO on the pages until we have completed
+     the full creation of the page.
+ c). when post_allocator_start is called?
+ d). other ideas?
 
-Not sure if that is necessary since it seems that we triggered kswapd
-before? Why not continue to do it? Once kswapd has enough higher order
-pages kswapd should no longer be triggered right?
-
-> Patch 3 further reduces the cost by prevent SLUB entering direct
-> 	compaction or reclaim paths on the grounds that falling
-> 	back to order-0 should be cheaper.
-
-Its cheaper for reclaim path true but more expensive in terms of SLUBs
-management costs of the data and it also increases the memory wasted. A
-higher order means denser packing of objects less page management
-overhead. Fallback is not for free. Reasonable effort should be made to
-allocate the page order requested.
-
-> Patch 4 notes that even when kswapd is failing to keep up with
-> 	allocation requests, it should still go to sleep when its
-> 	quota has expired to prevent it spinning.
-
-Looks good too.
-
-Overall, it looks like the compaction logic and the modifications to
-reclaim introduced recently with the intend to increase the amount of
-physically contiguous memory is not working as expected.
-
-SLUBs chance of getting higher order pages should be *increasing* as a
-result of these changes. The above looks like the chances are decreasing
-now.
-
-This is a matter of future concern. The metadata management overhead
-in the kernel is continually increasing since memory sizes keep growing
-and we typically manage memory in 4k chunks. Through large allocation
-sizes we can reduce that management overhead but we can only do this if we
-have an effective way of defragmenting memory to get longer contiguous
-chunks that can be managed to a single page struct.
-
-Please make sure that compaction and related measures really work properly.
-
-The patches suggest that the recent modifications are not improving the
-situation.
-
+But I vaguelly recall that we are using the page table as we are adding in the
+entries. And that we are pinning them as well. Perhaps the trigger to scan the
+pagetable and set them to RO should be done .. at what point? When the PUD/PMD
+allocations are done? And when PUD/PMD are set?
