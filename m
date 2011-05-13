@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab1EMHbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 03:31:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58392 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab1EMHbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 03:31:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DCCDEC5.3040201@jp.fujitsu.com>
-Date: Fri, 13 May 2011 16:33:25 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
- update tsk->rt.nr_cpus_allowed
-References: <20110428161149.GA15658@redhat.com>	<20110502194416.2D61.A69D9226@jp.fujitsu.com>	<20110502195657.2D68.A69D9226@jp.fujitsu.com>	<1305129929.2914.247.camel@laptop>	<4DCCC61F.80408@jp.fujitsu.com> <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
-In-Reply-To: <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757467Ab1EMHeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 03:34:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21647 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756995Ab1EMHeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 03:34:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
+   d="scan'208";a="746668259"
+Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
+From: Shaohua Li <shaohua.li@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+In-Reply-To: <1305268456.2831.38.camel@edumazet-laptop>
+References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
+	 <20110511092848.GE1661@htj.dyndns.org>
+	 <1305168493.2373.15.camel@sli10-conroe>
+	 <20110512082159.GB1030@htj.dyndns.org>
+	 <1305190520.2373.18.camel@sli10-conroe>
+	 <20110512085922.GD1030@htj.dyndns.org>
+	 <1305190936.3795.1.camel@edumazet-laptop>
+	 <20110512090534.GE1030@htj.dyndns.org>
+	 <1305261477.2373.45.camel@sli10-conroe>
+	 <1305264007.2831.14.camel@edumazet-laptop>
+	 <20110513052859.GA11088@sli10-conroe.sh.intel.com>
+	 <1305268456.2831.38.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 15:33:57 +0800
+Message-ID: <1305272037.2375.0.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
->>>> (3) schedule() makes fallback and cpuset_cpus_allowed_fallback
->>>>      change task->cpus_allowed
->>>
->>> I'm failing to see how this is happening, surely that kthread isn't
->>> actually running that early?
->>
->> If my understand correctly, current call graph is below.
->>
->> kernel_init()
->>         smp_init();
->>                 cpu_up()
->>                         ... cpu hotplug notification
->>                                 kthread_create()
->>         sched_init_smp();
->>
->>
->> So, cpu hotplug event is happen before sched_init_smp(). The old rule is,
->> all kthreads of using cpu-up notification have to use kthread_bind(). It
->> protected from sched load balance.
->>
->> but, now cpuset_cpus_allowed_fallback() forcedly change kthread's cpumask.
->> Why is this works? the point are two.
->>
->> - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
->> periodically.
->>   then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
->>   my debug print obseve following cpumask change occur at boot time.
->>      1) kthread_bind: bind cpu1
->>      2) cpuset_cpus_allowed_fallback: bind possible cpu
->>      3) rcu_cpu_kthread_should_stop: rebind cpu1
->> - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
->
-> Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
-> which is under hotplug event CPU_UP_PREPARE. Maybe it should be
-> under CPU_ONLINE.
-
-Hmm..
-
-I haven't catch your point. cpu_up() call both CPU_UP_PREPARE and CPU_ONLINE
-notification. Thus, CPU_ONLINE still be called before sched_init_smp().
-
-Am I missing something?
+On Fri, 2011-05-13 at 14:34 +0800, Eric Dumazet wrote:
+> Le vendredi 13 mai 2011 à 13:28 +0800, Shaohua Li a écrit :
+> > Hi,
+> > On Fri, May 13, 2011 at 01:20:06PM +0800, Eric Dumazet wrote:
+> > > Le vendredi 13 mai 2011 à 12:37 +0800, Shaohua Li a écrit :
+> > > > On Thu, 2011-05-12 at 17:05 +0800, Tejun Heo wrote:
+> > > > > Hello,
+> > > > > 
+> > > > > On Thu, May 12, 2011 at 11:02:15AM +0200, Eric Dumazet wrote:
+> > > > > > > I don't think @maxfuzzy is necessary there.  I wrote this before but
+> > > > > > > why can't we track the actual deviation instead of the number of
+> > > > > > > deviation events?
+> > > > > > 
+> > > > > > Thats roughly same thing (BATCH multiplicator factor apart)
+> > > > > > 
+> > > > > > Most percpu_counter users for a given percpu_counter object use a given
+> > > > > > BATCH, dont they ?
+> > > > > 
+> > > > > Well, @maxfuzzy is much harder than @batch.  It's way less intuitive.
+> > > > > Although I haven't really thought about it that much, I think it might
+> > > > > be possible to eliminate it.  Maybe I'm confused.  I'll take another
+> > > > > look later but if someone can think of something, please jump right
+> > > > > in.
+> > > > Hmm, looks Eric's approach doesn't work. because we want to remove lock
+> > > > in _add, checking seq in _sum still races with _add.
+> > > > 
+> > > 
+> > > Why ?
+> > > 
+> > > I'll code a patch, I believe it should work.
+> > I thought your proposal is:
+> > in _add
+> > {
+> > 	if (count >= batch || count <= -batch) {
+> > 		fbc->seq_count++;
+> >                atomic64_add(count, &fbc->count);
+> > -------->
+> >                 __this_cpu_write(*fbc->counters, 0);
+> > 	}
+> > }
+> > 
+> > in _sum
+> > {
+> > restart:
+> > 	oldseq = fbc->seqcount;
+> > 	smp_rmb();
+> > 	do_sum();
+> > 	smp_rmb()
+> > 	newseq = fbc->seqcount;
+> > 	if (newseq - oldseq >= maxfuzzy)
+> > 		goto restart;
+> > 	return ret;
+> > } 
+> > if _sum run between above line marked in _add, then the seqcount check
+> > doesn't work, we still have deviation Tejun pointed out.
+> > 
+> 
+> I see the point thanks, I'll think a bit more about it.
+> 
+> We currently serializes both _sum() and _add() with a spinlock.
+> 
+> My idea was OK if we still kept spinlock in _add(), but this obviously
+> is not the need.
+> 
+> Your goal is letting _add() run without spinlock, but can we agree
+> _sum() can run with a spinlock() like today [no more than one instance
+> of _sum() running per percpu_counter] ?
+locking _sum should be fine
 
 
