@@ -1,34 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758324Ab1EMJ1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:27:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37972 "EHLO mx3.mail.elte.hu"
+	id S1758449Ab1EMJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:29:41 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58697 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758032Ab1EMJ1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:27:12 -0400
-Date: Fri, 13 May 2011 11:26:46 +0200
+	id S1758123Ab1EMJ3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:29:40 -0400
+Date: Fri, 13 May 2011 11:29:33 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-Message-ID: <20110513092646.GK13647@elte.hu>
-References: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
- <20110513080634.GA13647@elte.hu>
- <20110513083738.GA19733@n2100.arm.linux.org.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        Carl-Johan Kjellander <carl-johan@klarna.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Sched_autogroup and niced processes
+Message-ID: <20110513092933.GL13647@elte.hu>
+References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+ <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
+ <1305273950.15080.7.camel@marge.simson.net>
+ <20110513082250.GB13647@elte.hu>
+ <1305276066.2561.1.camel@twins>
+ <20110513090537.GH13647@elte.hu>
+ <1305277666.2561.9.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110513083738.GA19733@n2100.arm.linux.org.uk>
+In-Reply-To: <1305277666.2561.9.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,63 +38,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> On Fri, May 13, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
+> On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
+> > Could we somehow automate this:
 > > 
-> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >   > echo 19 > /proc/'pid of seti@home'/autogroup
 > > 
-> > > Hi all,
-> > > 
-> > > Today's linux-next merge of the tip tree got a conflict in 
-> > > arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource: convert 
-> > > x86 to generic i8253 clocksource") from the arm tree and commit b01cc1b0eae0 
-> > > ("x86: Convert remaining x86 clocksources to clocksource_register_hz/khz") 
-> > > from the tip tree.
-> > > 
-> > > The former seems to supercede the latter, so I used the former.
-> > 
-> > Russell, how the heck did this commit:
-> > 
-> >  commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
-> >  Author:     Russell King <rmk+kernel@arm.linux.org.uk>
-> >  AuthorDate: Sun May 8 18:55:19 2011 +0100
-> >  Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
-> >  CommitDate: Tue May 10 08:20:54 2011 +0100
-> > 
-> >     clocksource: convert x86 to generic i8253 clocksource
-> > 
-> > which has such a clearly x86 diffstat:
-> > 
-> >  arch/x86/Kconfig             |    1 +
-> >  arch/x86/include/asm/i8253.h |    2 +
-> >  arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
-> >  3 files changed, 4 insertions(+), 78 deletions(-)
-> > 
-> > end up in the ARM tree without an ack from an x86 maintainer??
+> > and split off nice 19 tasks into separate groups and lower the group's 
+> > priority? 
 > 
-> The "no response" means two things: either that people are busy, [...]
+> Well I guess you can stack on all kinds of heuristics, do we want to?
 
-Had you asked us before committing it one day after it was posted, or had you 
-*noticed* that those files are not in your tree and are already modified in 
-linux-next, you'd have gotten a response like:
+Well have you seen my non-heuristic suggestion:
 
---------------->
+ | Another thing we could do is to lower the priority of a cgroup if it *only* 
+ | runs reniced tasks. I.e. track the 'maximum priority' of cgroups and 
+ | propagate that to their weight.
+ |
+ | This way renicing within cgroups will be more powerful and people do not have 
+ | to muck with cgroup details.
 
-Yes, the change looks good to me as well in principle. Thomas is busy this 
-week, he is on a conference.
-
-Guys if you want to do this outside of the x86 tree please test this series
-thoroughly on x86 as well before pushing it out anywhere permanent or pushing
-it into linux-next.
-
-Also note that there's also some pending changes in the x86 tree modifying
-arch/x86/kernel/i8253.c:
-
-  b01cc1b0eae0: x86: Convert remaining x86 clocksources to clocksource_register_hz/khz
-
-If you want to do any further change to this file you need to pull in this 
-change first or need to resolve the conflict in some other way.
+A cgroup assuming the highest priority of all tasks it contains is a pretty 
+natural definition and extension of priorities and also solves this usecase.
 
 Thanks,
 
