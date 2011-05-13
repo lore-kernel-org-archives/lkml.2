@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759446Ab1EMPRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:17:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45707 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757522Ab1EMPRb (ORCPT
+	id S1759412Ab1EMPTh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:19:37 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:32073
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757522Ab1EMPTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:17:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=PJolADvthk6LRcZxGOaoPMeevMdEc0utrXBW5+NnmQ3iF6ZsSaET+MNlxbMJt8+dQR
-         LE4Oxjy6CVjriONWohNjvBLEL6GviMyvm5gaRju7NbyybjosfgZ8ogL+xEazCsKiE96V
-         FrdMvBdGUTi4vNRv/JkQUsDLJmfrVpQLUqLmA=
-Message-ID: <4DCD4B85.3040702@gmail.com>
-Date: Fri, 13 May 2011 19:17:25 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Fri, 13 May 2011 11:19:35 -0400
+X-SpamScore: -23
+X-BigFish: VPS-23(zzbb2dK1433M9371O1432N98dKzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LL53WH-02-HMP-02
+X-M-MSG: 
+Date: Fri, 13 May 2011 17:19:23 +0200
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Chuck Ebbert <cebbert@redhat.com>
+CC: "Ostrovsky, Boris" <Boris.Ostrovsky@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: [PATCH] cpu, AMD: Fix another bug in the new errata checking code
+Message-ID: <20110513151921.GA878@escobedo.osrc.amd.com>
+References: <20110512195938.1728ab52@katamari>
+ <20110513102154.GB9270@escobedo.osrc.amd.com>
+ <4DCD2C3F.9070905@amd.com>
+ <20110513105928.6216ddc8@katamari>
 MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110513105928.6216ddc8@katamari>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2011 12:23 PM, Huang Ying wrote:
-> In general, unknown NMI is used by hardware and firmware to notify
-> fatal hardware errors to OS. So the Linux should treat unknown NMI as
-> hardware error and go panic upon unknown NMI for better error
-> containment.
+On Fri, May 13, 2011 at 10:59:28AM -0400, Chuck Ebbert wrote:
+> On Fri, 13 May 2011 09:03:59 -0400
+> Boris Ostrovsky <boris.ostrovsky@amd.com> wrote:
 > 
-> But there are some legacy machine which would randomly send unknown
-> NMIs for no good reason.  To support these machines, a white list
-> mechanism is provided to treat unknown NMI as hardware error only on
-> some known working system.
+> > On 05/13/2011 06:21 AM, Hans Rosenfeld wrote:
+> > > On Thu, May 12, 2011 at 07:59:38PM -0400, Chuck Ebbert wrote:
+> > > The revision guide states that family 0x10 model 6 stepping 2 has E400.
+> > > So I would expect that OSVW length is>= 2 and that OSVW status has bit
+> > > 1 set, or that OSVW length is<  2. This indicates that the workaround is
+> > > necessary, without any need to check the family-model-stepping ranges.
+> > >
+> > > It would also be correct if the BIOS disabled C1E and cleared the
+> > > corresponding OSVW status bit. Anything else would probably be a very
+> > > nasty BIOS bug.
+> > >
 > 
-> These systems are identified via the presentation of APEI HEST or
-> some PCI ID of the host bridge. The PCI ID of host bridge instead of
-> DMI ID is used, so that the checking can be done based on the platform
-> type instead of motherboard. This should be simpler and sufficient.
-> 
-> The method to identify the platforms is designed by Andi Kleen.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Don Zickus <dzickus@redhat.com>
-> ---
-...
+> > > Could you send me the contents of MSRs 0xc0010140, 0xc0010141 and
+> > > 0xc0010055?
+> > 
+> > Knowing whether any C state above C1 is declared could be useful too.
+> > 
+> rdmsr 0xc0010140 gives 2
 
-Hi Ying,
+This means that E400 is known ...
 
-just curious (regardless the concerns Don and Ingo have) -- if there still a need
-for such semi-unknown nmi handling maybe it's worth to register a *notifier* for it
-and we panic only when user *explicitly* specify how to treat this class of NMIs
-(via say "hest-nmi-panic" boot option or something like that). Maybe such partially
-modular scheme would be better? If only I don't miss anything.
+> rdmsr 0xc0010141 gives 0
+
+... and no workaround is necessary ...
+
+> rdmsr 0xc0010055 gives 0
+
+... because C1E is not enabled.
+
+> And ARAT is definitely set where it wasn't before these updates.
+
+I don't see how that could possibly make a difference if C1E is not even
+enabled. This is all very strange.
+
+
+Hans
+
 
 -- 
-            Cyrill
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+
