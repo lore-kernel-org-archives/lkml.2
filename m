@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab1EMXZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 19:25:30 -0400
-Received: from kroah.org ([198.145.64.141]:42910 "EHLO coco.kroah.org"
+	id S1758511Ab1EMXYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:24:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53040 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758836Ab1EMXZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 19:25:27 -0400
-Date: Fri, 13 May 2011 16:14:52 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] debugfs: Silence DEBUG_STRICT_USER_COPY_CHECKS=y
- warning
-Message-ID: <20110513231452.GA1803@kroah.com>
-References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
- <1305244212-19183-5-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305244212-19183-5-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758266Ab1EMXYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 19:24:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,366,1301900400"; 
+   d="scan'208";a="747037416"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: libc-alpha@sourceware.org
+Subject: Add a sysconf syscall
+Date: Fri, 13 May 2011 16:24:14 -0700
+Message-Id: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 04:50:07PM -0700, Stephen Boyd wrote:
-> Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
-> warning:
-> 
-> In file included from arch/x86/include/asm/uaccess.h:573,
->                  from include/linux/uaccess.h:5,
->                  from include/linux/highmem.h:7,
->                  from include/linux/pagemap.h:10,
->                  from fs/debugfs/file.c:18:
-> In function 'copy_from_user',
->     inlined from 'write_file_bool' at fs/debugfs/file.c:435:
-> arch/x86/include/asm/uaccess_64.h:65: warning: call to
-> 'copy_from_user_overflow' declared with attribute warning:
-> copy_from_user() buffer size is not provably correct
-> 
-> presumably due to buf_size being signed causing GCC to fail to
-> see that buf_size can't become negative.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  fs/debugfs/file.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-> index 89d394d..7ead5b8 100644
-> --- a/fs/debugfs/file.c
-> +++ b/fs/debugfs/file.c
-> @@ -428,7 +428,7 @@ static ssize_t write_file_bool(struct file *file, const char __user *user_buf,
->  			       size_t count, loff_t *ppos)
->  {
->  	char buf[32];
-> -	int buf_size;
-> +	size_t buf_size;
->  	u32 *val = file->private_data;
+We ran into some problems with programs querying then number
+of processors at startup through sysconf. This calls into /proc
+from glibc, which is quite slow and scales poorly if the program
+is frequently executed. This happens with programs using
+Sleepycat DB for example.
 
-What tree did you make this against?  It doesn't apply to the linux-next
-tree :(
+While there are worarounds -- like using sched_getaffinity --
+they don't have quite equivalent semantics.
 
-Anyway, I can hand edit it, not that big of a deal, but be more careful
-the next time around.
+This patchkit adds a sysconf() syscall to the kernel that allows
+to get this information much faster. It only implements a subset
+of sysconf() -- all the information the kernel knows usefully
+about.
 
-greg k-h
+Another advantage is that the kernel can in several cases offer
+more accurate information than glibc, which has to guess.
+
+The syscall is quite compat and not a significant burden.
+
+In addition I did a few cleanups first to export all the information
+needed by sysconf clearly from other subsystems.
+
+-Andi
+
