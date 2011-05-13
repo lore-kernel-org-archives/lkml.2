@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab1ENOtg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 10:49:36 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51969 "EHLO e1.ny.us.ibm.com"
+	id S1759603Ab1EMQpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 12:45:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758010Ab1ENOtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 10:49:33 -0400
-Date: Fri, 13 May 2011 09:38:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110513163801.GX2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4DCB8BCD.1080607@kernel.org>
- <4DCB8F7A.90603@kernel.org>
- <20110512092013.GJ2258@linux.vnet.ibm.com>
- <4DCC52FB.6030500@kernel.org>
- <4DCC894D.3070204@kernel.org>
- <20110513084253.GE13647@elte.hu>
- <20110513121906.GA3676@elte.hu>
- <20110513130414.GA6863@elte.hu>
- <20110513131218.GA7669@elte.hu>
- <20110513144059.GA32554@elte.hu>
+	id S1759198Ab1EMQpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 12:45:50 -0400
+Date: Fri, 13 May 2011 18:44:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] signal: trivial, fix the "timespec declared inside
+	parameter list" warning
+Message-ID: <20110513164435.GA22435@redhat.com>
+References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com> <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com> <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com> <20110426194904.GC8520@redhat.com> <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110513144059.GA32554@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 04:40:59PM +0200, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > > very clearly indicate that this is an RCU regression.
-> > 
-> > This might be the same one Yinghai found:
-> > 
-> >  e59fb3120bec: rcu: Decrease memory-barrier usage based on semi-formal proof
-> > 
-> > So with the config i sent it's definitely reproducible.
-> 
-> yes. And note that the system does not lock up, but boots up after a really 
-> long time - perhaps as a side-effect of very rare timer irqs driving forward 
-> the RCU state machine?
+Fix the compile warning, do_sigtimedwait(struct timespec *) in signal.h
+needs the forward declaration of timespec.
 
-In the interest of focusing on the code paths that are actually being
-executed...
+Reported-by: Mike Frysinger <vapier.adi@gmail.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-Are you guys seeing NMIs at about the time the slowdown occurs?
+ include/linux/signal.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-							Thanx, Paul
+--- sigprocmask/include/linux/signal.h~15_stw_warning	2011-05-12 20:44:43.000000000 +0200
++++ sigprocmask/include/linux/signal.h	2011-05-13 18:10:40.000000000 +0200
+@@ -242,6 +242,7 @@ extern int __group_send_sig_info(int, st
+ extern long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig,
+ 				 siginfo_t *info);
+ extern long do_sigpending(void __user *, unsigned long);
++struct timespec;
+ extern int do_sigtimedwait(const sigset_t *, siginfo_t *,
+ 				const struct timespec *);
+ extern int sigprocmask(int, sigset_t *, sigset_t *);
+
