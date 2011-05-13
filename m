@@ -1,110 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab1EMS0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:26:50 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:46156 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755731Ab1EMS0s (ORCPT
+	id S933156Ab1EMSZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:25:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44425 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932580Ab1EMSZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:26:48 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Subject: [PATCH] fm801: clean-up radio-related Kconfig
-Date: Fri, 13 May 2011 20:26:38 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-media@vger.kernel.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	Fri, 13 May 2011 14:25:46 -0400
+Date: Fri, 13 May 2011 19:27:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Chris@vger.kernel.org, Hudson@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Hudson <chudson@kionix.com>
+Subject: Re: [PATCH 1/1] input: Add support for Kionix KXTJ9 accelerometer
+Message-ID: <20110513192710.5b4791ca@lxorguk.ukuu.org.uk>
+In-Reply-To: <1305310406-9870-2-git-send-email-chudson@kionix.com>
+References: <1305310406-9870-1-git-send-email-chudson@kionix.com>
+	<1305310406-9870-2-git-send-email-chudson@kionix.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105132026.40643.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the weird SND_FM801_TEA575X_BOOL define in Kconfig to SND_FM801_RADIO
-and remove TEA575X_RADIO define from fm801.c.
-Also update help text to include all supported cards.
+> + * The following table lists the maximum appropriate poll interval for each
+> + * available output data rate.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Surely this can be static const
 
---- linux-2.6.39-rc2-/sound/pci/Kconfig	2011-05-13 19:36:27.000000000 +0200
-+++ linux-2.6.39-rc2/sound/pci/Kconfig	2011-05-13 19:23:00.000000000 +0200
-@@ -554,18 +554,18 @@ config SND_FM801
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called snd-fm801.
- 
--config SND_FM801_TEA575X_BOOL
-+config SND_FM801_RADIO
- 	bool "ForteMedia FM801 + TEA5757 tuner"
- 	depends on SND_FM801
- 	depends on VIDEO_V4L2=y || VIDEO_V4L2=SND_FM801
- 	help
- 	  Say Y here to include support for soundcards based on the ForteMedia
--	  FM801 chip with a TEA5757 tuner connected to GPIO1-3 pins (Media
--	  Forte SF256-PCS-02) into the snd-fm801 driver.
-+	  FM801 chip with a TEA5757 tuner (MediaForte SF256-PCS, SF256-PCP and
-+	  SF64-PCR) into the snd-fm801 driver.
- 
- config SND_TEA575X
- 	tristate
--	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO
-+	depends on SND_FM801_RADIO || SND_ES1968_RADIO
- 	default SND_FM801 || SND_ES1968
- 
- source "sound/pci/hda/Kconfig"
---- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-13 19:39:23.000000000 +0200
-+++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-13 19:22:20.000000000 +0200
-@@ -36,9 +36,8 @@
- 
- #include <asm/io.h>
- 
--#ifdef CONFIG_SND_FM801_TEA575X_BOOL
-+#ifdef CONFIG_SND_FM801_RADIO
- #include <sound/tea575x-tuner.h>
--#define TEA575X_RADIO 1
- #endif
- 
- MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
-@@ -196,7 +195,7 @@ struct fm801 {
- 	spinlock_t reg_lock;
- 	struct snd_info_entry *proc_entry;
- 
--#ifdef TEA575X_RADIO
-+#ifdef CONFIG_SND_FM801_RADIO
- 	struct snd_tea575x tea;
- #endif
- 
-@@ -715,7 +714,7 @@ static int __devinit snd_fm801_pcm(struc
-  *  TEA5757 radio
-  */
- 
--#ifdef TEA575X_RADIO
-+#ifdef CONFIG_SND_FM801_RADIO
- 
- /* GPIO to TEA575x maps */
- struct snd_fm801_tea575x_gpio {
-@@ -1150,7 +1149,7 @@ static int snd_fm801_free(struct fm801 *
- 	outw(cmdw, FM801_REG(chip, IRQ_MASK));
- 
-       __end_hw:
--#ifdef TEA575X_RADIO
-+#ifdef CONFIG_SND_FM801_RADIO
- 	snd_tea575x_exit(&chip->tea);
- #endif
- 	if (chip->irq >= 0)
-@@ -1229,7 +1228,7 @@ static int __devinit snd_fm801_create(st
- 
- 	snd_card_set_dev(card, &pci->dev);
- 
--#ifdef TEA575X_RADIO
-+#ifdef CONFIG_SND_FM801_RADIO
- 	chip->tea.private_data = chip;
- 	chip->tea.ops = &snd_fm801_tea_ops;
- 	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
+> + */
+> +struct {
+> +	unsigned int cutoff;
+> +	u8 mask;
+> +} kxtj9_odr_table[] = {
+> +	{
+
+> +static int kxtj9_i2c_read(struct kxtj9_data *tj9, u8 addr, u8 *data, int len)
+> +{
+> +	int err;
+> +
+> +	struct i2c_msg msgs[] = {
+> +		{
+> +		 .addr = tj9->client->addr,
+> +		 .flags = tj9->client->flags,
+> +		 .len = 1,
+> +		 .buf = &addr,
+> +		 },
+> +		{
+> +		 .addr = tj9->client->addr,
+> +		 .flags = tj9->client->flags | I2C_M_RD,
+> +		 .len = len,
+> +		 .buf = data,
+> +		 },
+> +	};
+> +	err = i2c_transfer(tj9->client->adapter, msgs, 2);
+> +
+> +	if (err != 2)
+> +		dev_err(&tj9->client->dev, "read transfer error\n");
+
+Just return ret and check it with < 0 meaning error
 
 
--- 
-Ondrej Zary
+> +static int kxtj9_i2c_write(struct kxtj9_data *tj9, u8 addr, u8 *data, int len)
+> +{
+> +	int err;
+> +	int i;
+> +	u8 buf[len + 1];
+> +
+> +	struct i2c_msg msgs[] = {
+> +		{
+> +		 .addr = tj9->client->addr,
+> +		 .flags = tj9->client->flags,
+> +		 .len = len + 1,
+> +		 .buf = buf,
+> +		 },
+> +	};
+> +
+> +	buf[0] = addr;
+> +	for (i = 0; i < len; i++)
+> +		buf[i + 1] = data[i];
+
+memcpy is quite useful and the kernel one inlines nicely
+
+
+> +int kxtj9_update_g_range(struct kxtj9_data *tj9, u8 new_g_range)
+> +{
+> +	int err;
+> +	u8 shift;
+> +	u8 buf;
+> +	u8 out;
+> +
+> +	switch (new_g_range) {
+> +	case KXTJ9_G_2G:
+> +		shift = SHIFT_ADJ_2G;
+> +		break;
+> +	case KXTJ9_G_4G:
+> +		shift = SHIFT_ADJ_4G;
+> +		break;
+> +	case KXTJ9_G_8G:
+> +		shift = SHIFT_ADJ_8G;
+> +		break;
+> +	default:
+> +		dev_err(&tj9->client->dev, "invalid g range request\n");
+> +		return -EINVAL;
+
+So a user can fill the system log ? not good
+
+> +	}
+> +
+> +	out = (tj9->resume[RES_CTRL_REG1] & 0xE7) | new_g_range;
+> +	if (shift != tj9->pdata->shift_adj) {
+> +		if (atomic_read(&tj9->enabled)) {
+> +			buf = 0;
+> +			err = kxtj9_i2c_write(tj9, CTRL_REG1, &buf, 1);
+> +			if (err < 0)
+> +				return err;
+> +			err = kxtj9_i2c_write(tj9, CTRL_REG1, &out, 1);
+> +			if (err < 0)
+> +				return err;
+> +		}
+
+You seem to have no locking on parallel actions and a rather meaningles
+atomic
+
+> +	}
+> +
+> +	tj9->resume[RES_CTRL_REG1] = out;
+> +	tj9->pdata->shift_adj = shift;
+
+and unlocked too
+
+In fact the locking seems to be utterly busted everywhere in the driver.
+
+
+
+> +static void kxtj9_device_power_off(struct kxtj9_data *tj9)
+> +{
+> +	int err;
+> +	u8 buf;
+> +
+> +	buf = tj9->resume[RES_CTRL_REG1] & PC1_OFF;
+> +	err = kxtj9_i2c_write(tj9, CTRL_REG1, &buf, 1);
+> +	if (err < 0)
+> +		dev_err(&tj9->client->dev, "soft power off failed\n");
+> +	disable_irq(tj9->irq);
+
+What if the IRQ is shared ?
+
+
+> +static irqreturn_t kxtj9_isr(int irq, void *dev)
+> +{
+> +	struct kxtj9_data *tj9 = dev;
+> +
+> +	disable_irq_nosync(irq);
+> +	schedule_work(&tj9->irq_work);
+> +
+> +	return IRQ_HANDLED;
+> +}
+
+Threaded irq will sort this lot out for you
+
+
+
+> +static ssize_t kxtj9_enable_store(struct device *dev,
+> +					struct device_attribute *attr,
+> +						const char *buf, size_t count)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct kxtj9_data *tj9 = i2c_get_clientdata(client);
+> +	int val = simple_strtoul(buf, NULL, 10);
+> +	if (val)
+> +		kxtj9_enable(tj9);
+> +	else
+> +		kxtj9_disable(tj9);
+
+You seem to have no locking on this either
+
+> +	return count;
+> +}
+
+> +static DEVICE_ATTR(delay, S_IRUGO|S_IWUSR, kxtj9_delay_show, kxtj9_delay_store);
+> +static DEVICE_ATTR(enable, S_IRUGO|S_IWUSR, kxtj9_enable_show,
+> +							kxtj9_enable_store);
+> +static DEVICE_ATTR(res, S_IRUGO|S_IWUSR, kxtj9_res_show, kxtj9_res_store);
+> +static DEVICE_ATTR(drdyenable, S_IRUGO|S_IWUSR, NULL, kxtj9_drdyenable_store);
+> +static DEVICE_ATTR(grange, S_IRUGO|S_IWUSR, kxtj9_grange_show,
+> +							kxtj9_grange_store);
+
+These should probably come from platform data
+
+
+> +static int __devinit kxtj9_probe(struct i2c_client *client,
+> +						const struct i2c_device_id *id)
+> +{
+> +	int err = -1;
+> +	struct kxtj9_data *tj9 = kzalloc(sizeof(*tj9), GFP_KERNEL);
+> +	if (tj9 == NULL) {
+> +		dev_err(&client->dev,
+> +			"failed to allocate memory for module data\n");
+> +		err = -ENOMEM;
+> +		goto err0;
+> +	}
+> +	if (client->dev.platform_data == NULL) {
+> +		dev_err(&client->dev, "platform data is NULL; exiting\n");
+> +		err = -ENODEV;
+> +		goto err0;
+
+Leaks memory
+
+> +	}
+> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+> +		dev_err(&client->dev, "client not i2c capable\n");
+> +		err = -ENODEV;
+
+Ditto
+
+
+> +	memcpy(tj9->pdata, client->dev.platform_data, sizeof(*tj9->pdata));
+> +	if (tj9->pdata->init) {
+> +		err = tj9->pdata->init();
+> +		if (err < 0)
+> +			goto err2;
+> +	}
+> +
+> +	tj9->irq = gpio_to_irq(tj9->pdata->gpio);
+
+What if it's not on a gpio. Probably better any gpio and irq conversion is
+done by the platform callback/init code
+
+
+And the sysfs nodes need documentation.
+
+
+Overall it looks like a lot of input drivers that get posted here
+
+- Nobody has considered locking between actions and sysfs (or multiple
+  sysfs actions in parallel)
+- Enable/disable is implemented in blissful ignorance of what happens if
+  a disable occurs during a sysfs or other action
+
+Most of the rest looks like it just needs a good polish.
