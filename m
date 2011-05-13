@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab1EMEw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 00:52:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39453 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab1EMEw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 00:52:26 -0400
-Date: Fri, 13 May 2011 14:52:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Ralf Baechle <ralf@linux-mips.org>
-Subject: linux-next: build failure after merge of the final tree (arm tree
- related)
-Message-Id: <20110513145221.88c3de87.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755328Ab1EME5y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 00:57:54 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:13685 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab1EME5x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 00:57:53 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
+Date: Fri, 13 May 2011 12:57:20 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532801B188BF@penmb01.corp.atmel.com>
+In-Reply-To: <20110512093433.GD1356@n2100.arm.linux.org.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)support
+Thread-Index: AcwQh9STmB77lsN2R7mYAAKQDf91JAAoEPvg
+References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com> <20110512093433.GD1356@n2100.arm.linux.org.uk>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Cc: <mchehab@redhat.com>, <linux-media@vger.kernel.org>,
+        "Haring, Lars" <Lars.Haring@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <g.liakhovetski@gmx.de>
+X-OriginalArrivalTime: 13 May 2011 04:57:25.0988 (UTC) FILETIME=[40C56A40:01CC112A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thursday, May 12, 2011 5:35 PM, Russell King wrote:
 
-After merging the final tree, today's linux-next build (i386 defconfig)
-failed like this:
+> A few more points...
 
-arch/x86/kernel/i8253.c: In function 'init_pit_clocksource':
-arch/x86/kernel/i8253.c:133: error: implicit declaration of function 'clocksource_pit_init'
+>> +static int __init atmel_isi_probe(struct platform_device *pdev)
 
-Caused by commit 3490f584b9ba ("clocksource: convert x86 to generic i8253 clocksource").
+> Should be __devinit otherwise you'll have section errors.
+Ok, will be fixed in V2 patch.
+>> +{
+>> +	unsigned int irq;
+>> +	struct atmel_isi *isi;
+>> +	struct clk *pclk;
+>> +	struct resource *regs;
+>> +	int ret;
+>> +	struct device *dev = &pdev->dev;
+>> +	struct isi_platform_data *pdata;
+>> +	struct soc_camera_host *soc_host;
+>> +
+>> +	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	if (!regs)
+>> +		return -ENXIO;
+>> +
+>> +	pclk = clk_get(&pdev->dev, "isi_clk");
+>> +	if (IS_ERR(pclk))
+>> +		return PTR_ERR(pclk);
+>> +
+>> +	clk_enable(pclk);
 
-I took a punt and added the following patch for today (also attempting to
-fix mips as well).
+> Return value of clk_enable() should be checked.
+Yes. I will add code to check the return value in V2 patch. 
+>> +
+>> +	isi = kzalloc(sizeof(struct atmel_isi), GFP_KERNEL);
+>> +	if (!isi) {
+>> +		ret = -ENOMEM;
+>> [...]
+>> +	isi_writel(isi, V2_CTRL, ISI_BIT(V2_DIS));
+>> +	/* Check if module disable */
+>> +	while (isi_readl(isi, V2_STATUS) & ISI_BIT(V2_DIS))
+>> +		cpu_relax();
+>> +
+>> +	irq = platform_get_irq(pdev, 0);
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 13 May 2011 14:48:36 +1000
-Subject: [PATCH] clocksource: fix up for generic i8253 conversions
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/mips/kernel/i8253.c |    3 ++-
- arch/x86/kernel/i8253.c  |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/mips/kernel/i8253.c b/arch/mips/kernel/i8253.c
-index e4660ba..227373e 100644
---- a/arch/mips/kernel/i8253.c
-+++ b/arch/mips/kernel/i8253.c
-@@ -10,6 +10,7 @@
- #include <linux/smp.h>
- #include <linux/spinlock.h>
- #include <linux/irq.h>
-+#include <linux/clocksource.h>
- 
- #include <asm/delay.h>
- #include <asm/i8253.h>
-@@ -130,6 +131,6 @@ static int __init init_pit_clocksource(void)
- 	if (num_possible_cpus() > 1) /* PIT does not scale! */
- 		return 0;
- 
--	return clocksource_pit_init();
-+	return clocksource_i8253_init();
- }
- arch_initcall(init_pit_clocksource);
-diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
-index a97aefc..21f121a 100644
---- a/arch/x86/kernel/i8253.c
-+++ b/arch/x86/kernel/i8253.c
-@@ -11,6 +11,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/io.h>
-+#include <linux/clocksource.h>
- 
- #include <asm/i8253.h>
- #include <asm/hpet.h>
-@@ -130,7 +131,7 @@ static int __init init_pit_clocksource(void)
- 	    pit_ce.mode != CLOCK_EVT_MODE_PERIODIC)
- 		return 0;
- 
--	return clocksource_pit_init();
-+	return clocksource_i8253_init();
- }
- arch_initcall(init_pit_clocksource);
- 
--- 
-1.7.5.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> This should also be checked.
+Ditto, thank you.
