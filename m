@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759140Ab1EMJuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:50:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36157 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758804Ab1EMJuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:50:06 -0400
-Date: Fri, 13 May 2011 10:49:58 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110513094958.GA3569@suse.de>
-References: <alpine.DEB.2.00.1105121024350.26013@router.home>
- <1305214993.2575.50.camel@mulgrave.site>
- <20110512154649.GB4559@redhat.com>
- <1305216023.2575.54.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121121120.26013@router.home>
- <1305217843.2575.57.camel@mulgrave.site>
- <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
- <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
- <alpine.DEB.2.00.1105121232110.28493@router.home>
- <20110512180018.GN11579@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110512180018.GN11579@random.random>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758390Ab1EMJ6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:58:43 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50858 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab1EMJ6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:58:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 13 May 2011 18:51:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [RFC][PATCH v7 09/14] cgroup: move CSS_ID_MAX to cgroup.h
+Message-Id: <20110513185152.56c41483.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1305276473-14780-10-git-send-email-gthelen@google.com>
+References: <1305276473-14780-1-git-send-email-gthelen@google.com>
+	<1305276473-14780-10-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 08:00:18PM +0200, Andrea Arcangeli wrote:
-> <SNIP>
->
-> BTW, it comes to mind in patch 2, SLUB should clear __GFP_REPEAT too
-> (not only __GFP_NOFAIL). Clearing __GFP_WAIT may be worth it or not
-> with COMPACTION=y, definitely good idea to clear __GFP_WAIT unless
-> lumpy is restricted to __GFP_REPEAT|__GFP_NOFAIL.
+On Fri, 13 May 2011 01:47:48 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-This is in V2 (unreleased, testing in progress and was running
-overnight). I noticed that clearing __GFP_REPEAT is required for
-reclaim/compaction if direct reclaimers from SLUB are to return false in
-should_continue_reclaim() and bail out from high-order allocation
-properly. As it is, there is a possibility for slub high-order direct
-reclaimers to loop in reclaim/compaction for a long time. This is
-only important when CONFIG_COMPACTION=y.
+> This allows users of css_id() to know the largest possible css_id value.
+> This knowledge can be used to build per-cgroup bitmaps.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
--- 
-Mel Gorman
-SUSE Labs
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Hmm, I think this can be merged to following bitmap patch.
+
+
