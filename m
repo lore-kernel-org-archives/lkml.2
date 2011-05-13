@@ -1,148 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758536Ab1EMArR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 20:47:17 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39047 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752789Ab1EMArQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 20:47:16 -0400
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <20110512221506.GM16531@cmpxchg.org>
-References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
-	 <alpine.DEB.2.00.1105120942050.24560@router.home>
-	 <1305213359.2575.46.camel@mulgrave.site>
-	 <alpine.DEB.2.00.1105121024350.26013@router.home>
-	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
-	 <1305225467.2575.66.camel@mulgrave.site>
-	 <1305229447.2575.71.camel@mulgrave.site>
-	 <1305230652.2575.72.camel@mulgrave.site>
-	 <1305237882.2575.100.camel@mulgrave.site>
-	 <20110512221506.GM16531@cmpxchg.org>
+	id S1758998Ab1EMAs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 20:48:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3267 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758258Ab1EMAs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 20:48:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,361,1301900400"; 
+   d="scan'208";a="1590809"
+Subject: Re: Perfromance drop on SCSI hard disk
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "Shi, Alex" <alex.shi@intel.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4DCC4340.6000407@fusionio.com>
+References: <1305009600.21534.587.camel@debian>
+	 <4DCC4340.6000407@fusionio.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 19:47:05 -0500
-Message-ID: <1305247626.2575.111.camel@mulgrave.site>
+Date: Fri, 13 May 2011 08:48:24 +0800
+Message-ID: <1305247704.2373.32.camel@sli10-conroe>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 00:15 +0200, Johannes Weiner wrote:
-> On Thu, May 12, 2011 at 05:04:41PM -0500, James Bottomley wrote:
-> > On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
-> > > Confirmed, I'm afraid ... I can trigger the problem with all three
-> > > patches under PREEMPT.  It's not a hang this time, it's just kswapd
-> > > taking 100% system time on 1 CPU and it won't calm down after I unload
-> > > the system.
+On Fri, 2011-05-13 at 04:29 +0800, Jens Axboe wrote:
+> On 2011-05-10 08:40, Alex,Shi wrote:
+> > commit c21e6beba8835d09bb80e34961 removed the REENTER flag and changed
+> > scsi_run_queue() to punt all requests on starved_list devices to
+> > kblockd. Yes, like Jens mentioned, the performance on slow SCSI disk was
+> > hurt here.  :) (Intel SSD isn't effected here)
 > > 
-> > Just on a "if you don't know what's wrong poke about and see" basis, I
-> > sliced out all the complex logic in sleeping_prematurely() and, as far
-> > as I can tell, it cures the problem behaviour.  I've loaded up the
-> > system, and taken the tar load generator through three runs without
-> > producing a spinning kswapd (this is PREEMPT).  I'll try with a
-> > non-PREEMPT kernel shortly.
+> > In our testing on 12 SAS disk JBD, the fio write with sync ioengine drop
+> > about 30~40% throughput, fio randread/randwrite with aio ioengine drop
+> > about 20%/50% throughput. and fio mmap testing was hurt also. 
 > > 
-> > What this seems to say is that there's a problem with the complex logic
-> > in sleeping_prematurely().  I'm pretty sure hacking up
-> > sleeping_prematurely() just to dump all the calculations is the wrong
-> > thing to do, but perhaps someone can see what the right thing is ...
+> > With the following debug patch, the performance can be totally recovered
+> > in our testing. But without REENTER flag here, in some corner case, like
+> > a device is keeping blocked and then unblocked repeatedly,
+> > __blk_run_queue() may recursively call scsi_run_queue() and then cause
+> > kernel stack overflow. 
+> > I don't know details of block device driver, just wondering why on scsi
+> > need the REENTER flag here. :) 
 > 
-> I think I see the problem: the boolean logic of sleeping_prematurely()
-> is odd.  If it returns true, kswapd will keep running.  So if
-> pgdat_balanced() returns true, kswapd should go to sleep.
+> This is a problem and we should do something about it for 2.6.39. I knew
+> that there would be cases where the async offload would cause a
+> performance degredation, but not to the extent that you are reporting.
+> Must be hitting the pathological case.
+async offload is expected to increase context switch. But the real root
+cause of the issue is fairness issue. Please see my previous email.
+
+> I can think of two scenarios where it could potentially recurse:
 > 
-> This?
+> - request_fn enter, end up requeuing IO. Run queue at the end. Rinse,
+>   repeat.
+> - Running starved list from request_fn, two (or more) devices could
+>   alternately recurse.
+> 
+> The first case should be fairly easy to handle. The second one is
+> already handled by the local list splice.
+this isn't true to me. if you unlock host_lock in scsi_run_queue, other
+cpus can add sdev to the starved device list again. In the recursive
+call of scsi_run_queue, the starved device list might not be empty. So
+the local list_splice doesn't help.
 
-I was going to say this was a winner, but on the third untar run on
-non-PREEMPT, I hit the kswapd livelock.  It's got much farther than
-previous attempts, which all hang on the first run, but I think the
-essential problem is still (at least on this machine) that
-sleeping_prematurely() is doing too much work for the wakeup storm that
-allocators are causing.
+> 
+> Looking at the code, is this a real scenario? Only potential recurse I
+> see is:
+> 
+> scsi_request_fn()
+>         scsi_dispatch_cmd()
+>                 scsi_queue_insert()
+>                         __scsi_queue_insert()
+>                                 scsi_run_queue()
+> 
+> Why are we even re-running the queue immediately on a BUSY condition?
+> Should only be needed if we have zero pending commands from this
+> particular queue, and for that particular case async run is just fine
+> since it's a rare condition (or performance would suck already).
+> 
+> And it should only really be needed for the 'q' being passed in, not the
+> others. Something like the below.
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 0bac91e..0b01c1f 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -74,7 +74,7 @@ struct kmem_cache *scsi_sdb_cache;
+>   */
+>  #define SCSI_QUEUE_DELAY	3
+>  
+> -static void scsi_run_queue(struct request_queue *q);
+> +static void scsi_run_queue_async(struct request_queue *q);
+>  
+>  /*
+>   * Function:	scsi_unprep_request()
+> @@ -161,7 +161,7 @@ static int __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+>  	blk_requeue_request(q, cmd->request);
+>  	spin_unlock_irqrestore(q->queue_lock, flags);
+>  
+> -	scsi_run_queue(q);
+> +	scsi_run_queue_async(q);
+so you could still recursivly run into starved list. Do you want to put
+the whole __scsi_run_queue into workqueue?
 
-Something that ratelimits the amount of time we spend in the watermark
-calculations, like the below (which incorporates your pgdat fix) seems
-to be much more stable (I've not run it for three full runs yet, but
-kswapd CPU time is way lower so far).
-
-The heuristic here is that if we're making the calculation more than ten
-times in 1/10 of a second, stop and sleep anyway.
-
-James
-
----
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0665520..545250c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2249,12 +2249,32 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- {
- 	int i;
- 	unsigned long balanced = 0;
--	bool all_zones_ok = true;
-+	bool all_zones_ok = true, ret;
-+	static int returned_true = 0;
-+	static unsigned long prev_jiffies = 0;
-+	
- 
- 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
- 	if (remaining)
- 		return true;
- 
-+	/* rate limit our entry to the watermark calculations */
-+	if (time_after(prev_jiffies + HZ/10, jiffies)) {
-+		/* previously returned false, do so again */
-+		if (returned_true == 0)
-+			return false;
-+		/* or we've done the true calculation too many times */
-+		if (returned_true++ > 10)
-+			return false;
-+
-+		return true;
-+	} else {
-+		/* haven't been here for a while, reset the true count */
-+		returned_true = 0;
-+	}
-+
-+	prev_jiffies = jiffies;
-+
- 	/* Check the watermark levels */
- 	for (i = 0; i < pgdat->nr_zones; i++) {
- 		struct zone *zone = pgdat->node_zones + i;
-@@ -2286,9 +2306,16 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 	 * must be balanced
- 	 */
- 	if (order)
--		return pgdat_balanced(pgdat, balanced, classzone_idx);
-+		ret = !pgdat_balanced(pgdat, balanced, classzone_idx);
-+	else
-+		ret = !all_zones_ok;
-+
-+	if (ret)
-+		returned_true++;
- 	else
--		return !all_zones_ok;
-+		returned_true = 0;
-+
-+	return ret;
- }
- 
- /*
-
+Thanks,
+Shaohua
 
