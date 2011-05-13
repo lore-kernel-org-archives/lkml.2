@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095Ab1EMNgc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:36:32 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:45406 "HELO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933081Ab1EMNgb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:36:31 -0400
+	id S933108Ab1EMNik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:38:40 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:42386 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933082Ab1EMNii convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 09:38:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=au0tGK3suA6GbaLza2V2Ku/nb4zR9V7AGG6X+H7P2Ds8J1I6oTJXCqrVhfAN8puUax
+         kzax88xS1odGR1MgZBUQdzRLNxNk1ItoBGiGq0XA7t4QRv6KrRUfT5gKpsh4fKijrDQi
+         DS+JViR8PnKK2gBsPAJy9B6amGoIk0txD0yAg=
 MIME-Version: 1.0
-In-Reply-To: <1305292406.27263.20.camel@marge.simson.net>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	<BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-	<1305273950.15080.7.camel@marge.simson.net>
-	<20110513082250.GB13647@elte.hu>
-	<1305276066.2561.1.camel@twins>
-	<20110513090537.GH13647@elte.hu>
-	<1305277666.2561.9.camel@twins>
-	<20110513092933.GL13647@elte.hu>
-	<1305279990.2466.4.camel@twins>
-	<20110513100411.GA21022@elte.hu>
-	<1305292406.27263.20.camel@marge.simson.net>
-Date: Fri, 13 May 2011 15:36:28 +0200
-Message-ID: <BANLkTimvehoQkiiX5EuPB0ozVKoPk3tAbg@mail.gmail.com>
-Subject: Re: Sched_autogroup and niced processes
-From: Carl-Johan Kjellander <carl-johan@klarna.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com> <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 13 May 2011 09:38:18 -0400
+X-Google-Sender-Auth: -tgTD_W66QvVrbTuV8la9oj1zAs
+Message-ID: <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Christian Couder <christian.couder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, git@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shuang He <shuang.he@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 3:13 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Fri, 2011-05-13 at 12:04 +0200, Ingo Molnar wrote:
+On Fri, May 13, 2011 at 4:20 AM, Christian Couder
+<christian.couder@gmail.com> wrote:
+> On Thu, May 12, 2011 at 7:15 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>
+>> OK, this sucks.  In the course of bisecting this, I've hit two other
+>> apparently unrelated bugs that prevent my from testing large numbers
+>> of kernels.  Do I have two questions:
+>>
+>> 1. Anyone have any ideas from looking at the log?
+>>
+>> It looks like most of what's left is network code, so cc netdev.
+>>
+>> 2.  The !&$#@ bisection is skipping all over the place.  I've seen
+>> 2.6.37 versions and all manner of -rc's out of order.  Linus, and
+>> other people who like pontificating about git bisection: is there any
+>> way to get the bisection to follow Linus' tree?  I think that if
+>> bisect could be persuaded to consider only changes that are reached by
+>> following only the *first* merge parent all the way from the bad
+>> revision to the good revision, then the bisection would build versions
+>> that were at least good enough for Linus to pull and might have fewer
+>> bisection-killing bugs.
+>>
+>> (This isn't a new idea [1], and git rev-list --bisect --first-parent
+>> isn't so bad except that it doesn't bisect.)
 >
->> Still, the other important problem is that we still seem to have a bug, even
->> with the cgroup set to low prio seti@home is sucking up CPU resources ...
+> Did you forget to put the reference [1] in your email? Was it this one
+> you were thinking about:
 >
-> I don't see how. Â Other than the expected nice 19 overrun when nice 0
-> group blocks, it works fine on my little Q6600 box.
+> http://thread.gmane.org/gmane.comp.version-control.git/165433/
 
-Dunno if I've done it correct, but I've set 19 to the boinc manager
-autogroup and some of
-the seti@home clients, but the clients of course keep changing.
+No, it was this:
 
-boinc     1172  0.1  0.0  81896 13408 ?        SN   May09   7:00
-/usr/bin/boinc --check_all_logins --redirectio --dir /var/lib/boi
-boinc    18983 82.6  0.3  98172 65224 ?        RNl  08:10 364:28  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc    19162 83.0  0.4  98836 65948 ?        RNl  08:16 360:32  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc    20295 84.6  0.3  98356 65468 ?        RNl  08:57 332:42  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc    22980 82.5  0.3  97880 64992 ?        RNl  09:32 295:55  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc    23760 81.6  0.3  98064 65168 ?        RNl  09:59 270:25  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc      634 83.1  0.3  98224 65276 ?        RNl  11:02 223:24  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc    31758 83.5  0.4  99116 65736 ?        RNl  11:33 198:48  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhanced
-boinc     5931 81.4  0.3  98456 65464 ?        RNl  14:06  68:55  \_
-../../projects/setiathome.berkeley.edu/setiathome_enhan
+http://stackoverflow.com/questions/5638211/how-do-you-get-git-bisect-to-ignore-merged-branches
 
-But when I build on Intel(R) Core(TM) i7 CPU         870  @ 2.93GHz,
-it's still a lot slower.
+--Andy
 
-time make -j12
-real	2m58.437s
-user	10m58.010s
-sys	1m45.610s
-
-I can try the same thing at home on my Q6600 machine if I upgrade it,
-cause of course the Core i7 doesn't actually have 8 cores, they are
-just hyperthreaded. It might be a factor.
-
-Or am doing something horribly wrong when I try to set the autogroup to 19?
-
-/cjk
+>
+> ?
+>
+> Thanks,
+> Christian.
+>
