@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab1EMIF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 04:05:58 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:38939 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757804Ab1EMIFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 04:05:55 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/x8vBKv4nxnknkJj/vBBTMkAjJKypdApBN12D8dr
-	I2hSyy1Kw4RMBs
-Subject: Re: Sched_autogroup and niced processes
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Carl-Johan Kjellander <carl-johan@klarna.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 10:05:50 +0200
-Message-ID: <1305273950.15080.7.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1757955Ab1EMIHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 04:07:25 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56776 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757767Ab1EMIHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 04:07:09 -0400
+Date: Fri, 13 May 2011 10:06:34 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Jacob Pan <jacob.jun.pan@intel.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris McDermott <lcm@us.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the tip tree with the arm tree
+Message-ID: <20110513080634.GA13647@elte.hu>
+References: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 15:53 +0800, Yong Zhang wrote:
-> Cc'ing more people.
+
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi all,
 > 
-> On Fri, May 13, 2011 at 3:39 PM, Carl-Johan Kjellander
-> <carl-johan@klarna.com> wrote:
-> > I've been running seti@home niced to 19 in the background since 1999
-> > without any problems. No noticeable effect even when playing a movie
-> > or a game. But since 2.6.38 the new fix-all-problems automatic
-> > grouping has been messing a bit with me. These are some timed compiles
-> > on my 8 cores.
-
-Heh, it's not a fix-all-problems thingy, and was never intended to be.
-It's also not enabled by default.
-
-> > time make -j12 # with seti@home running
-> > real    4m16.753s
-> > user    10m33.770s
-> > sys     1m39.710s
-> >
-> > time make -j12 # without seti@home running
-> > real    2m12.480s
-> > user    10m11.580s
-> > sys     1m39.980s
-> >
-> > echo 0 > /proc/sys/kernel/sched_autogroup_enabled
-> > time make -j12 # no autogroup, seti@home running again
-> > real    2m33.276s
-> > user    10m37.540s
-> > sys     1m43.190s
-> >
-> > All compiles already had all files cached in RAM.
-> >
-> > Now I can take the 10% performance hit, but not the 100% hit of
-> > running stuff super niced in the background. Processes niced to 19
-> > should only use spare cycles and not take up half of the cores even
-> > with autogroup. I would really like to run autogroup since it is a
-> > neat idea, but it can't mess up running niced processes in the
-> > background which have been working fine for 12 years.
+> Today's linux-next merge of the tip tree got a conflict in 
+> arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource: convert 
+> x86 to generic i8253 clocksource") from the arm tree and commit b01cc1b0eae0 
+> ("x86: Convert remaining x86 clocksources to clocksource_register_hz/khz") 
+> from the tip tree.
 > 
-> Then how about change the nice value of seti@home->autogroup?
-> echo 19 > /proc/'pid of seti@home'/autogroup
+> The former seems to supercede the latter, so I used the former.
 
-Yup.  Overhead and whatnot is the dark side of group scheduling.  The
-thing to do is to turn group scheduling off if you don't like what it
-does for/to you.
+Russell, how the heck did this commit:
 
-	-Mike
+ commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
+ Author:     Russell King <rmk+kernel@arm.linux.org.uk>
+ AuthorDate: Sun May 8 18:55:19 2011 +0100
+ Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
+ CommitDate: Tue May 10 08:20:54 2011 +0100
 
+    clocksource: convert x86 to generic i8253 clocksource
+
+which has such a clearly x86 diffstat:
+
+ arch/x86/Kconfig             |    1 +
+ arch/x86/include/asm/i8253.h |    2 +
+ arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
+ 3 files changed, 4 insertions(+), 78 deletions(-)
+
+end up in the ARM tree without an ack from an x86 maintainer??
+
+Not only did it conflict with a 2 months old commit, but it also broke the 
+linux-next x86 build.
+
+I see the commit has an ack from John but that feedback is not visible in the 
+lkml thread of this patch nor did John really realize the conflict nor the 
+build breakage. The patch was still in the to-be-reviewed queue of our patches.
+
+Nor was it tested properly. The patch looks sane but your workflow sucks. 
+Please revert it and use a proper Git workflow to change arch/x86/ details ...
+
+Thanks,
+
+	Ingo
