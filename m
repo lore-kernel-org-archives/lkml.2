@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab1EMAaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 20:30:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45858 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751034Ab1EMAaD (ORCPT
+	id S1759014Ab1EMA3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 20:29:40 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:45354 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758935Ab1EMA3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 20:30:03 -0400
+	Thu, 12 May 2011 20:29:39 -0400
+X-AuditID: b753bd60-a32c7ba000003bac-89-4dcc7b704b04
+X-AuditID: b753bd60-a32c7ba000003bac-89-4dcc7b704b04
+Message-ID: <4DCC7B6E.9000909@hitachi.com>
+Date: Fri, 13 May 2011 09:29:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 May 2011 17:29:07 -0700
-Message-ID: <BANLkTi=nc3WGaASQm1Pc9byshLOmLf2bXQ@mail.gmail.com>
-Subject: acl_permission_check: disgusting performance
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 5/9] kprobes: Silence DEBUG_STRICT_USER_COPY_CHECKS=y
+ warning
+References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org> <1305244212-19183-6-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1305244212-19183-6-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So since we now do pathname lookup so well, I've been doing profiles
-and looking at which parts are still problematic.
+(2011/05/13 8:50), Stephen Boyd wrote:
+> Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
+> warning:
+> 
+> In file included from arch/x86/include/asm/uaccess.h:573,
+>                  from kernel/kprobes.c:55:
+> In function 'copy_from_user',
+>     inlined from 'write_enabled_file_bool' at
+>     kernel/kprobes.c:2191:
+> arch/x86/include/asm/uaccess_64.h:65:
+> warning: call to 'copy_from_user_overflow' declared with
+> attribute warning: copy_from_user() buffer size is not provably
+> correct
+> 
+> presumably due to buf_size being signed causing GCC to fail to
+> see that buf_size can't become negative.
 
-And some of them are just because it's real work to look up filenames.
-So testing one of my favorite stupid loads ("do 'make' on a kernel
-that is basically already made"), I'm not at all upset when I see
-profiles that say
+Good catch! At least, since the "count" is size_t, buf_size
+should be size_t too.
 
-    25.91%           make  make                          [.] 0x1e78
-     5.41%           make  [kernel.kallsyms]             [k] __d_lookup_rcu
-     4.45%           make  [kernel.kallsyms]             [k] link_path_walk
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-although I do wonder what make is doing that makes it so slow.
-Whatever. The kernel part looks rather good.
+Thank you!
 
-Except looking down, almost 2% of the time is spent in
-"acl_permission_check()"! That's just disgusting. The function should
-be instantaneous. It's a really trivial function. But it gets called a
-_lot_.
+> 
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  kernel/kprobes.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 7798181..1938187 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -2185,7 +2185,7 @@ static ssize_t write_enabled_file_bool(struct file *file,
+>  	       const char __user *user_buf, size_t count, loff_t *ppos)
+>  {
+>  	char buf[32];
+> -	int buf_size;
+> +	size_t buf_size;
+>  
+>  	buf_size = min(count, (sizeof(buf)-1));
+>  	if (copy_from_user(buf, user_buf, buf_size))
 
-Now part of it is that the code generated for it was just bad. We
-should inline the call to "current_user_ns()", because immediately
-afterwards we do "current_fsuid()", and a lot of it is shared (they
-both access "current->cred"). Easy enough (just use
-"_current_user_ns()" instead, to inline it). And let's not use
-"mode_t", use "unsigned int" and gcc generates better code.
 
-Fine. That gets us down a bit, so now it's not the third-hottest
-kernel function, now it's just the fifth-hottest one:
-
-     1.67%           make  [kernel.kallsyms]             [k] __strncpy_from_user
-     1.39%           make  [kernel.kallsyms]             [k] do_lookup
-     1.28%           make  [kernel.kallsyms]             [k]
-acl_permission_check
-
-which is still really quite depressing.
-
-The annotated profile tells the story:
-
-    7.36 :      ffffffff810bcd52:       65 48 8b 04 25 80 b5    mov
-%gs:0xb580,%rax
-    9.71 :      ffffffff810bcd67:       48 8b 80 18 03 00 00    mov
-0x318(%rax),%rax
-   15.34 :      ffffffff810bcd71:       48 8b 70 70             mov
-0x70(%rax),%rsi
-   30.57 :      ffffffff810bcd79:       48 81 7e 58 00 3b a4    cmpq
-$0xffffffff81a43b00,0x58(%rsi)
-
-Those four instructions are about two thirds of the cost of the
-function. The last two are about 50% of the cost.
-
-They are the accesses to "current", "->cred", "->user" and "->user_ns"
-respectively (the cmp with the big constant is that compare against
-"init_ns").
-
-Now, if we got rid of them, we wouldn't improve performance by 2/3rds
-on that function, because we do need the two first accesses for
-"fsuid" (which is the next check), and the third one (which is
-currently "cred->user" ends up doing the cache miss that we'd take for
-"cred->fsuid" anyway. So the first three costs are fairly inescapable.
-
-They are also cheaper, probably because those fields tend to be more
-often in the cache. So it really is that fourth one that hurts the
-most, as shown by it taking almost a third of the cycles of that
-function.
-
-And it all comes from that annoying commit e795b71799ff0 ("userns:
-userns: check user namespace for task->file uid equivalence checks"),
-and I bet nobody involved thought about how expensive that was.
-
-That "user_ns" is _really_ expensive to load. And the fact that it's
-after a chain of three other loads makes it all totally serialized,
-and makes things much more expensive.
-
-Could we perhaps have "user_ns" directly in the "struct cred"? Or
-could we avoid or short-circuit this check entirely somehow, since it
-always checks against "init_ns"?
-
-It's sad seeing that long chain of accesses and how nasty it gets (and
-interesting but perhaps not surprising how it also clearly gets colder
-from the cache the further away from "current" that it is).
-
-It's extra sad, considering that almost nobody gets any _advantage_
-from that stupid user_ns test. So it really is wasted time.
-
-                            Linus
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
