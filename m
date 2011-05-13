@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab1EMUCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 16:02:17 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:55452 "EHLO
+	id S1759019Ab1EMUNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 16:13:23 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48755 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab1EMUCP (ORCPT
+	with ESMTP id S1756179Ab1EMUNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 16:02:15 -0400
-Date: Fri, 13 May 2011 16:01:38 -0400 (EDT)
-Message-Id: <20110513.160138.1477780250019480052.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: lkml@techboom.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: kernel BUG at net/ipv4/tcp_output.c:1006!
+	Fri, 13 May 2011 16:13:21 -0400
+Date: Fri, 13 May 2011 16:08:44 -0400 (EDT)
+Message-Id: <20110513.160844.521810878044428093.davem@davemloft.net>
+To: segoon@openwall.com
+Cc: solar@openwall.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        peak@argo.troja.mff.cuni.cz, kees.cook@canonical.com,
+        dan.j.rosenberg@gmail.com, eugene@redhat.com, nelhage@ksplice.com,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net
+Subject: Re: [PATCH v3] net: ipv4: add IPPROTO_ICMP socket kind
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1305316058.3120.6.camel@edumazet-laptop>
-References: <1305307633.3866.61.camel@edumazet-laptop>
-	<4DCD86C0.9030904@techboom.com>
-	<1305316058.3120.6.camel@edumazet-laptop>
+In-Reply-To: <20110513200100.GA3875@albatros>
+References: <20110510.121550.112583080.davem@davemloft.net>
+	<20110513200100.GA3875@albatros>
 X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 May 2011 13:01:43 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 May 2011 13:08:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 13 May 2011 21:47:38 +0200
+From: Vasiliy Kulikov <segoon@openwall.com>
+Date: Sat, 14 May 2011 00:01:00 +0400
 
-> I suspect we should push commit 2fceec13375e5d98 (tcp: len check is
-> unnecessarily devastating, change to WARN_ON) to stable if not already
-> done...
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=2fceec13375e5d98
-> 
-> David, is this commit in your stable queue ?
+> This patch adds IPPROTO_ICMP socket kind.
 
-No, but now it is.
+Applied, thanks for following through on all the review feedback.
+
