@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab1EMUfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 16:35:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55886 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759155Ab1EMUfh (ORCPT
+	id S1759148Ab1EMX5A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:57:00 -0400
+Received: from srv3.conectsul.com.br ([186.208.191.210]:33101 "HELO
+	conectsul.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758537Ab1EMX47 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 16:35:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=QZm+sBJ3IHB5iA6MosNo7Jd2HQt6E+L9hRV5v140BnXwwUveTRB/+MG5etim+Qbz7X
-         C4rYuodN/o5jYZg8HOVrnzto3csSiWJsFwBsL5RSc4vUPsrNQx6myW0rwttKTI5oV1i8
-         Ls4NcyY6HLH4PCKYxJEU1vK+pjRs2HwjKtQ1o=
-Message-ID: <4DCD960E.3020504@gmail.com>
-Date: Fri, 13 May 2011 22:35:26 +0200
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Fri, 13 May 2011 19:56:59 -0400
+X-Greylist: delayed 7251 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 19:56:58 EDT
+X-Virus-Checked: Checked by ClamAV on conectsul.com.br
+Message-ID: <20110513173735.118478jfnmd7hsow@srv3.conectsul.com.br>
+Date: Fri, 13 May 2011 17:37:35 -0300
+From: Account Owner <info@micro.co.uk>
+Reply-to: account201188@live.com
+To: undisclosed-recipients:;
+Subject: Dear Account Owner
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: Josh Wu <josh.wu@atmel.com>, mchehab@redhat.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, lars.haring@atmel.com
-Subject: Re: [PATCH] [media] at91: add Atmel Image Sensor Interface (ISI)
- support
-References: <1305186138-5656-1-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1105130956090.26356@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1105130956090.26356@axis700.grange>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2011 03:50 PM, Guennadi Liakhovetski wrote:
-> On Thu, 12 May 2011, Josh Wu wrote:
-> 
->> This patch is to enable Atmel Image Sensor Interface (ISI) driver support.
->> - Using soc-camera framework with videobuf2 dma-contig allocator
->> - Supporting video streaming of YUV packed format
->> - Tested on AT91SAM9M10G45-EK with OV2640
->>
->> Signed-off-by: Josh Wu<josh.wu@atmel.com>
->> ---
-...
->> diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
->> index a10e4c3..f734a65 100644
->> --- a/drivers/media/video/Makefile
->> +++ b/drivers/media/video/Makefile
->> @@ -166,6 +166,7 @@ obj-$(CONFIG_VIDEO_SH_MOBILE_CSI2)	+= sh_mobile_csi2.o
->>   obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
->>   obj-$(CONFIG_VIDEO_OMAP1)		+= omap1_camera.o
->>   obj-$(CONFIG_VIDEO_SAMSUNG_S5P_FIMC) 	+= s5p-fimc/
-> 
-> [OT] hm, wow, who has decided to put a generic V4L driver (set) in the
-> Makefile together with other soc-camera drivers? It has to be converted now;)
 
-In fact I've already converted that driver, but soc-camera wasn't unfortunately
-my choice, just the media controller ;-) I'll probably move the entry when 
-preparing upstream patches, it just doesn't feel safe here;)
 
-> 
->> +obj-$(CONFIG_VIDEO_ATMEL_ISI)		+= atmel-isi.o
->>
->>   obj-$(CONFIG_ARCH_DAVINCI)		+= davinci/
+-- 
+Dear Account Owner,
 
---
-Regards,
-Sylwester Nawrocki
+This message is from Tecla Internet messaging center to all our  
+account owners (webmail). We are currently upgrading our data base and  
+e-mail center for this year 2011. We are deleting all unused account  
+to create more space for new one and to prevent spam mails. To prevent  
+your account from closing you will have to update it below so that we  
+will know that it's a present used account.
+
+Warning!!! E-mail owner that refuses to update his or her Email,within  
+48hrs of receiving this warning will lose his or her E-mail  
+permanently. You are required to send us the below information via  
+email below. CONFIRM YOUR E-MAIL IDENTITY BELOW:
+
+First Name:____________________________
+Last Name:_____________________________
+E-mail Username:________________________
+E-mail Password:_______________________
+
+Click on reply and send us the above details.
+
+Warning!!!
+
+In failure to verify your account within 48hrs on receiving this  
+notification, your account will automatically be deactivated.
+Thank you for using webmail Account. Warning Code: QATO8B52AXV
+
+Kind Regards,
+Thanks for your co-operation.
+Copyright ©
+
+
