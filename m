@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab1EMUoi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 16:44:38 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52169 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758906Ab1EMUoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 16:44:37 -0400
-Date: Fri, 13 May 2011 17:45:11 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: chris@chris-wilson.co.uk
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Wavering Arrandale output
-Message-ID: <20110513204511.GA2187@joana>
-Mail-Followup-To: chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
+	id S1759340Ab1EMUqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 16:46:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758906Ab1EMUqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 16:46:00 -0400
+Date: Fri, 13 May 2011 17:45:30 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Wim Heirman <wim@heirman.net>
+Cc: Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Brice Goglin <Brice.Goglin@inria.fr>
+Subject: Re: perf-stat per thread results
+Message-ID: <20110513204530.GF8950@ghostprotocols.net>
+References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com> <4DCD4FC5.8020608@gmail.com> <20110513154410.GA6373@elte.hu> <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Em Fri, May 13, 2011 at 10:32:58PM +0200, Wim Heirman escreveu:
+> > It's supposed to do that if --stat is specified, and it used to work - see this
+> > commit:
 
-Bug #28306 is going to complete his first birthday at the end of this month,
-it is nagging around for a long time and I have many interest in fix this.
+> >  8d51327090ac: perf report: Fix and improve the displaying of per-thread event counters
 
-So I tested your patch in duplicated bug #36599 and it doesn't work, but I
-managed to add some printks(see diff) there to help debug.
+> > and the output there:
+> >
+> >     #  PID   TID  cache-misses  cache-references
+> >       4658  4659        495581           3238779
+> >       4658  4662        498246           3236823
+> >       4658  4663        499531           3243162
 
-[    1.033866] [drm:intel_crtc_mode_set] *ERROR* 1. use_ssc 1
-[    1.033868] [drm:intel_crtc_mode_set] *ERROR* encoder->type 4
-[    1.033869] [drm:intel_crtc_mode_set] *ERROR* 2. use_ssc 1
-[    1.034120] [drm:intel_crtc_mode_set] *ERROR* is_lvds 1
-[    1.034121] [drm:intel_crtc_mode_set] *ERROR* has_edp_encoder
-(null)
-[    1.191465] [drm:intel_crtc_mode_set] *ERROR* 1. use_ssc 1
-[    1.191466] [drm:intel_crtc_mode_set] *ERROR* encoder->type 4
-[    1.191468] [drm:intel_crtc_mode_set] *ERROR* encoder->type 1
-[    1.191469] [drm:intel_crtc_mode_set] *ERROR* 2. use_ssc 0
-[    1.191720] [drm:intel_crtc_mode_set] *ERROR* is_lvds 0
-[    1.191721] [drm:intel_crtc_mode_set] *ERROR* has_edp_encoder
-(null)
+> > which appears to be roughly what Wim is asking for, AFAICT.
 
-It seems your patch has no effect once has_edp_encoder is null. Can you please
-look into this? I can provide any test you may want, just send me the patches.
-;)
+> Thanks, this is exactly what I'm looking for. In 2.6.32 (Ubuntu 10.04)
+> it works, although if I use --pid rather than the -- <command> variant
+> the first thread seams to be missing. In 2.6.38 (Ubuntu 11.04) the
+> first thread is missing in both use cases, and I get one column per
+> processor (which in itself is fine).
 
-Regards,
+Can you try after applying the patches in this message:
 
-[0] https://bugs.freedesktop.org/show_bug.cgi?id=28306
-[1] https://bugs.freedesktop.org/show_bug.cgi?id=36599
+http://marc.info/?l=linux-kernel&m=130385067430510&w=2
 
+and report your results?
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index c38a001..a3c53cb 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4744,26 +4744,37 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
-        if (HAS_PCH_SPLIT(dev)) {
-                bool use_ssc = intel_panel_use_ssc(dev_priv);
- 
-+               DRM_ERROR("1. use_ssc %d", use_ssc);
-+
-                /* Are any non-SSC outputs enabled? */
-                list_for_each_entry(encoder, &mode_config->encoder_list, base.head) {
-                        if (encoder->base.crtc == NULL)
-                                continue;
- 
--                       if (encoder->type == INTEL_OUTPUT_ANALOG)
-+                       DRM_ERROR("encoder->type %d", encoder->type);
-+                       if (encoder->type == INTEL_OUTPUT_ANALOG) {
-                                use_ssc = false;
-+                               break;
-+                       }
-                }
- 
-+               DRM_ERROR("2. use_ssc %d", use_ssc);
-+
-                temp = I915_READ(PCH_DREF_CONTROL);
-                /* Always enable nonspread source */
-                temp &= ~DREF_NONSPREAD_SOURCE_MASK;
-                temp |= DREF_NONSPREAD_SOURCE_ENABLE;
-                temp &= ~DREF_SSC_SOURCE_MASK;
--               temp |= DREF_SSC_SOURCE_ENABLE;
-+               if (use_ssc)
-+                       temp |= DREF_SSC_SOURCE_ENABLE;
-                I915_WRITE(PCH_DREF_CONTROL, temp);
- 
-                POSTING_READ(PCH_DREF_CONTROL);
-                udelay(200);
- 
-+               DRM_ERROR("is_lvds %d", is_lvds);
-+               DRM_ERROR("has_edp_encoder %p", has_edp_encoder);
-+
-                if (has_edp_encoder) {
-                        if (use_ssc) {
-                                temp |= DREF_SSC1_ENABLE;
-@@ -4775,6 +4786,8 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
-                        temp &= ~DREF_CPU_SOURCE_OUTPUT_MASK;
- 
-                        /* Enable CPU source on CPU attached eDP */
-+                       DRM_ERROR("!intel_encoder_is_pch_edp(&has_edp_encoder->base) %d",
-+                               !intel_encoder_is_pch_edp(&has_edp_encoder->base));
-                        if (!intel_encoder_is_pch_edp(&has_edp_encoder->base)) {
-                                if (use_ssc)
+If it fixes the problems you're experiencing, please provide a:
 
+Tested-by: Wim Heirman <wim@heirman.net>
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+So that I can add when sending them to Ingo.
+
+Thanks,
+
+- Arnaldo
