@@ -1,107 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758868Ab1EMK4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 06:56:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46736 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758492Ab1EMKz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 06:55:59 -0400
-Date: Fri, 13 May 2011 11:55:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110513105551.GE3569@suse.de>
-References: <1305213359.2575.46.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121024350.26013@router.home>
- <1305214993.2575.50.camel@mulgrave.site>
- <1305215742.27848.40.camel@jaguar>
- <1305225467.2575.66.camel@mulgrave.site>
- <1305229447.2575.71.camel@mulgrave.site>
- <1305230652.2575.72.camel@mulgrave.site>
- <1305237882.2575.100.camel@mulgrave.site>
- <20110512221506.GM16531@cmpxchg.org>
- <1305247626.2575.111.camel@mulgrave.site>
+	id S1758835Ab1EMKzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 06:55:44 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:57965 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758492Ab1EMKzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 06:55:43 -0400
+Message-ID: <EAA964D5CCD94B4A9544B294E0CF5099@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Arnd Bergmann" <arnd@arndb.de>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>
+References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201105102344.58598.arnd@arndb.de> <82D549BB195345A1A189D569952B387C@subhasishg> <201105112203.54838.arnd@arndb.de>
+In-Reply-To: <201105112203.54838.arnd@arndb.de>
+Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver.
+Date: Fri, 13 May 2011 16:25:56 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1305247626.2575.111.camel@mulgrave.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 07:47:05PM -0500, James Bottomley wrote:
-> On Fri, 2011-05-13 at 00:15 +0200, Johannes Weiner wrote:
-> > On Thu, May 12, 2011 at 05:04:41PM -0500, James Bottomley wrote:
-> > > On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
-> > > > Confirmed, I'm afraid ... I can trigger the problem with all three
-> > > > patches under PREEMPT.  It's not a hang this time, it's just kswapd
-> > > > taking 100% system time on 1 CPU and it won't calm down after I unload
-> > > > the system.
-> > > 
-> > > Just on a "if you don't know what's wrong poke about and see" basis, I
-> > > sliced out all the complex logic in sleeping_prematurely() and, as far
-> > > as I can tell, it cures the problem behaviour.  I've loaded up the
-> > > system, and taken the tar load generator through three runs without
-> > > producing a spinning kswapd (this is PREEMPT).  I'll try with a
-> > > non-PREEMPT kernel shortly.
-> > > 
-> > > What this seems to say is that there's a problem with the complex logic
-> > > in sleeping_prematurely().  I'm pretty sure hacking up
-> > > sleeping_prematurely() just to dump all the calculations is the wrong
-> > > thing to do, but perhaps someone can see what the right thing is ...
-> > 
-> > I think I see the problem: the boolean logic of sleeping_prematurely()
-> > is odd.  If it returns true, kswapd will keep running.  So if
-> > pgdat_balanced() returns true, kswapd should go to sleep.
-> > 
-> > This?
-> 
-> I was going to say this was a winner, but on the third untar run on
-> non-PREEMPT, I hit the kswapd livelock.  It's got much farther than
-> previous attempts, which all hang on the first run, but I think the
-> essential problem is still (at least on this machine) that
-> sleeping_prematurely() is doing too much work for the wakeup storm that
-> allocators are causing.
-> 
-> Something that ratelimits the amount of time we spend in the watermark
-> calculations, like the below (which incorporates your pgdat fix) seems
-> to be much more stable (I've not run it for three full runs yet, but
-> kswapd CPU time is way lower so far).
-> 
-> The heuristic here is that if we're making the calculation more than ten
-> times in 1/10 of a second, stop and sleep anyway.
-> 
+>>
+>> Ok, thanks for the clarification.
+>> Instead of passing the device name, will it be ok to pass the mfd_id.
+>> The benefit will be that I can use the ID directly as an array
+>> index for the mfd_cell entries.
+>
+> I think a device name would be clearer here, especially in order
+> to avoid conflicts when the list gets extended in different ways
+> depending on which kernel runs.
+>
+> We had a little discussion at the Linaro Developer Summit about your
+> driver and mfd drivers in general. There was a general feeling among
+> some people (including me) that by the point you dynamically create
+> the subdevices, MFD is probably not the right abstraction any more,
+> as it does not provide any service that you need.
+>
+> Instead, maybe you can simply call platform_device_register
+> at that stage to create the children and not use MFD at all.
+>
+> Samuel, can you comment on this as well? Do you still see pruss
+> as an MFD driver when the uses are completely dynamic and determined
+> by the firmware loaded into it?
+>
 
-Is that heuristic not basically the same as this?
+Hi Arnd,
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index af24d1e..4d24828 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 	unsigned long balanced = 0;
- 	bool all_zones_ok = true;
+But in that case, where do I fit my driver.
+It's a microcontroller inside of a processor, guess that's unique for Linux.
+Will a misc device be a better choice.
+
+In that case I can remove the MFD cell from the board_file and add an array
+of platform_device for the UART & CAN.
+
+Regarding device register, I will have to implement something similar to
+mfd_add_devices and mark the dev->parent.
+
+Did I miss something or will that be fine.
+
+
+
  
-+	/* If kswapd has been running too long, just sleep */
-+	if (need_resched())
-+		return false;
-+
- 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
- 	if (remaining)
- 		return true;
 
--- 
-Mel Gorman
-SUSE Labs
