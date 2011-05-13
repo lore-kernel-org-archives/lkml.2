@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182Ab1EMS2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:28:55 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54776 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056Ab1EMS2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:28:53 -0400
-Subject: Re: [PATCH 3/3] checkpatch.pl: Add check for current->comm
- references
-From: John Stultz <john.stultz@linaro.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-In-Reply-To: <4DCD1271.3070808@jp.fujitsu.com>
-References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
-	 <1305241371-25276-4-git-send-email-john.stultz@linaro.org>
-	 <4DCD1271.3070808@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 11:28:41 -0700
-Message-ID: <1305311321.2680.35.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757683Ab1EMSry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:47:54 -0400
+Received: from rattlesnake3.caregroup.org ([134.174.104.37]:37414 "EHLO
+	sr48koolua.caregroup.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757479Ab1EMSrv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:47:51 -0400
+X-Greylist: delayed 1074 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 14:47:51 EDT
+From: <jwillner@bidmc.harvard.edu>
+Date: Fri, 13 May 2011 14:29:12 -0400
+Subject: Call Now Tel.+234 705-930-5797  For Claims
+Thread-Topic: Call Now Tel.+234 705-930-5797  For Claims
+Thread-Index: AQHMEZuorKupUCUFBEOPXH7WNM+OEg==
+Message-ID: <5740B346D307144181E3757F198992EC94EC2B89@EVS4CCR.its.caregroup.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 20:13 +0900, KOSAKI Motohiro wrote:
-> >   scripts/checkpatch.pl |    4 ++++
-> >   1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > index d867081..9d2eab5 100755
-> > --- a/scripts/checkpatch.pl
-> > +++ b/scripts/checkpatch.pl
-> > @@ -2868,6 +2868,10 @@ sub process {
-> >   			WARN("usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
-> >   		}
-> > 
-> > +# check for current->comm usage
-> > +		if ($line =~ /current->comm/) {
-> > +			WARN("comm access needs to be protected. Use get_task_comm, or printk's \%ptc formatting.\n" . $herecurr);
-> 
-> I think we should convert all of task->comm usage. not only current. At least, you plan to remove task_lock() from
-> %ptc patch later.
+Dear Western Union Customer,
+You have been awarded with the sum of $50,000 USD by our office, as one of our customers who use Western Union in their daily business 
+transaction. This award was been selected through the internet, where your e-mail address was indicated and notified. Please provide 
+Mr.Steven Page with the following details listed below so that your fund will be remited to you through Western Union.
 
-Yea, I'll be updating the patch to try to catch more then just
-current->comm.
+1. Name:______
+2. Address________
+3. Country:_______
+4. Phone Number____
+5. Occupation:________
+6. Sex:_________________
+7. Age___________________
 
-thanks
--john
+Mr.Steven Page
+E-mail: wu.afric1@w.cn 
 
-
+As soon as these details are received and verified, your fund will 
+be transferred to you. Thank you, for using western union. 
+  © 2001-2011 Western Union Holdings, Inc. All Rights Reserved.
