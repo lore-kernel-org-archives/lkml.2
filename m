@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab1EMNXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:23:36 -0400
-Received: from p15132773.pureserver.info ([217.160.209.225]:39810 "EHLO
-	smtp.chost.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932909Ab1EMNXf (ORCPT
+	id S932985Ab1EMNRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:17:16 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54413 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758889Ab1EMNRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:23:35 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 09:23:35 EDT
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        devel <devel@lists.laptop.org>, John@xo15-sascha.sascha.silbe.org,
-        W.Linville@xo15-sascha.sascha.silbe.org, <linville@tuxdriver.com>,
-        libertas-dev <libertas-dev@lists.infradead.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add libertas_disablemesh module parameter to disable mesh interface
-To: Dan Williams <dcbw@redhat.com>
-In-reply-to: <1305169898.8054.19.camel@dcbw.foobar.com>
-References: <1305118354-17337-1-git-send-email-silbe@activitycentral.com> <1305169898.8054.19.camel@dcbw.foobar.com>
-Date: Fri, 13 May 2011 15:16:31 +0200
-Message-Id: <1305290935-sup-4547@xo15-sascha.sascha.silbe.org>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	Fri, 13 May 2011 09:17:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QZ/Rabg6L64x3rpNFSF1MWQsB2jHUOAaOz+dxU4SONyMLvUuTEvp/68yPN3gtn3ESm
+         etPgLaUjL6EnYbIcnV23QRHcpbaEjSOwxW0Dv5ZpwCzWUCOSTQcfh8dTEwaIwmAT4LHf
+         liyJ/X56PKr01N9MvYmTQz7emIGLR22G7VRhA=
 MIME-Version: 1.0
-From: Sascha Silbe <silbe@activitycentral.com>
-Content-Type: multipart/signed; boundary="=-1305292607-266040-1562-3202-9-="; protocol="application/pgp-signature"
+In-Reply-To: <20110513124523.GM13984@redhat.com>
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
+	<20110513124523.GM13984@redhat.com>
+Date: Fri, 13 May 2011 21:17:13 +0800
+Message-ID: <BANLkTimoqYZMs15H8wRqEEe=UyBJtAwipw@mail.gmail.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Don,
 
---=-1305292607-266040-1562-3202-9-=
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 13, 2011 at 8:45 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Fri, May 13, 2011 at 04:23:38PM +0800, Huang Ying wrote:
+>> In general, unknown NMI is used by hardware and firmware to notify
+>> fatal hardware errors to OS. So the Linux should treat unknown NMI as
+>> hardware error and go panic upon unknown NMI for better error
+>> containment.
+>
+> I have a couple of concerns about this patch.  One I don't think BIOSes
+> are ready for this.  I have Intel Westmere boxes that say they have a
+> valid HEST, GHES, and EINJ table, but when I inject an error there is no
+> GHES record.  This leaves me with an unknown NMI and panic.  Yeah, it is a
+> BIOS bug I guess, but I think vendors are going to be slow fixing all this
+> stuff (my Nehalem box is in even worse shape with this stuff).
 
-Excerpts from Dan Williams's message of Thu May 12 05:11:36 +0200 2011:
-> On Wed, 2011-05-11 at 14:52 +0200, Sascha Silbe wrote:
-> > This allows individual users and deployments to disable mesh support =
-at
-> > runtime, i.e. without having to build and maintain a custom kernel.
+Although there is no GHES record, I think the Westmere box behavior is
+acceptable, an unknown NMI is used by BIOS to notify hardware error,
+this is what we want to deal with in this patch.
 
-> Does the mesh interface somehow cause problems, even when nothing is
-> using it?
+> Also, is there any known issues with x86_64 platforms with bad NMIs?  RHEL
+> has had unknown NMI's panic on x86_64 since x86_64 first came out, I don't
+> recall any exceptions we had to add to handle 'quirky' hardware.
+>
+> Then for the i686 case, because the 'quirky' hardware is so old, can't we
+> just leave it a kernel config option to switch between using a 'printk'
+> vs. a 'panic'?  Or even a kernel command line option.
+>
+> I figure these 'quirky' hardware machines are more the exception nowdays,
+> do we really need to add code to whitelist machines?
+>
+> Granted I am not familiar enough with the quirky hardware (in fact I don't
+> think I have seen any mainly because I haven't been around long enough).
+> Most cases I see when trolling through the fedora bugzilla list for
+> unknown NMIs, is just bad firmware or acpi power configurations.
+>
+> Just wondering if we could just simplify the patch somehow with better
+> assumptions.
 
-Some people suspect it does, but there's no hard data showing that. But
-then the problems are often hard to reproduce in the first place, so
-proving a correlation with mesh is even harder.
+So there is still unknown NMIs on real hardware now. I am afraid turn
+on panic on unknown NMI by default may be not acceptable for someone.
 
-The hardware based mesh support is based on an outdated draft of
-802.11s and not interoperable with any other device AFAIK. For most
-users Ad-hoc networks are the better option. Disabling mesh support as
-low-level as possible makes it less likely that any remains are causing
-trouble. With at least four layers (firmware, kernel, NM, Sugar)
-involved in managing connectivity and one of the (firmware) being closed
-source, I prefer to simplify things by eliminating three layers for
-functionality we don't intend to use. It makes debugging (and
-blaming ;) ) a lot easier.
-
-In the field, mesh support is currently disabled using
-/sys/class/net/eth0/lbs_mesh. However, it comes back after resume
-(possibly only if powercycled) and needs to be disabled again by
-post-resume hacks. Race conditions with NM are possible.
-
-A user space option would be to teach NM to disable mesh support (at
-runtime - we don't want to ship a custom NM package). I'd expect the
-patch to be much more invasive than the one posted for libertas.
-
-Sascha
-
--- =
-
-http://sascha.silbe.org/
-http://www.infra-silbe.de/
-
---=-1305292607-266040-1562-3202-9-=
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.1.0beta1 (GNU/Linux)
-
-iQEcBAEBCgAGBQJNzS8vAAoJELpz82VMF3Da94UH/Rluny57CQsZHDC+3ykgWRnc
-+1LkVmBqZBDElLmRCsoPU2qPje2V6Hs+f17/GSHiYS3xVRCG7jgkFv5d27ix2b+L
-s6sSk4up44PZD39uLsquDZjgXlOKLHbISRsClbzh0C8d65o5LweJTot67q1lY3Qu
-Q3jheEgkoFzLwePxiGRqKW0i5o0pGCPlPcS7fzn2kyhPxOD/f6FPncGSv9o9iPdB
-UAoSr+QvbQWtCAuOjOzdJsOPWInNr566jhpchi0i9UUChdTs4MjH9SKSVh15qaOg
-XCYhXngwJqfMXbpr5++SF2SMd32Vk62uLNId9XxTf1GKuTOoebf2a5DzGZ89sqs=
-=C+AO
------END PGP SIGNATURE-----
-
---=-1305292607-266040-1562-3202-9-=--
+Best Regards,
+Huang Ying
