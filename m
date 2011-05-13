@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab1EMPJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:09:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39992 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab1EMPJN convert rfc822-to-8bit (ORCPT
+	id S1759427Ab1EMPL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:11:26 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:42535 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755838Ab1EMPLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:09:13 -0400
+	Fri, 13 May 2011 11:11:25 -0400
+To: linux-kernel@vger.kernel.org, chirag.kantharia@hp.com,
+        iss_storagedev@hp.com
+Subject: [PATCH resend] cpqarray: use pci_dev->revision
+Content-Disposition: inline
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Organization: MontaVista Software Inc.
+Date: Fri, 13 May 2011 19:09:56 +0400
 MIME-Version: 1.0
-X-Originating-IP: [81.245.76.63]
-In-Reply-To: <20110513144830.GB32688@elte.hu>
-References: <1305297838-4015-1-git-send-email-j-pihet@ti.com>
-	<20110513144830.GB32688@elte.hu>
-Date: Fri, 13 May 2011 17:09:12 +0200
-Message-ID: <BANLkTikkd9bNRLF1iDAz9Jwrnon3A=j44g@mail.gmail.com>
-Subject: Re: [PATCH] perf: export power_start and power_end tracepoints
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
-        Jean Pihet <j-pihet@ti.com>, linux-omap@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105131909.56428.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding l-o and linux-pm MLs. The original post is at
-http://www.spinics.net/lists/kernel/msg1186554.html
+This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
+converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
+drivers to use pci_device->revision).
 
-On Fri, May 13, 2011 at 4:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * jean.pihet@newoldbits.com <jean.pihet@newoldbits.com> wrote:
->
->> From: Jean Pihet <j-pihet@ti.com>
->>
->> If used in a module both tracepoints need to be exported by the
->> kernel.
->
-> but it's not used by any module in the kernel AFAICS, so why is this needed?
-Not currently, that is why the error went unnoticed. I think it is
-better to fix it now than later.
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-I am working on a plan to clean-up and isolate the OMAP PM code from
-the core code and to provide the PM functionality as a module. This
-effort is part of the 'remove the crazy ARM churn' from the kernel.
+---
+The patch is against the recent Linus' tree.
+It wasn't merged in 2.6.39 time, I hope it can be merged to 2.6.40...
 
-Thanks,
-Jean
+ drivers/block/cpqarray.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
-> Thanks,
->
->        Ingo
->
+Index: linux-2.6/drivers/block/cpqarray.c
+===================================================================
+--- linux-2.6.orig/drivers/block/cpqarray.c
++++ linux-2.6/drivers/block/cpqarray.c
+@@ -620,6 +620,7 @@ static int cpqarray_pci_init(ctlr_info_t
+ 	}
+ 	vendor_id = pdev->vendor;
+ 	device_id = pdev->device;
++	revision  = pdev->revision;
+ 	irq = pdev->irq;
+ 
+ 	for(i=0; i<6; i++)
+@@ -632,7 +633,6 @@ static int cpqarray_pci_init(ctlr_info_t
+ 	}
+ 
+ 	pci_read_config_word(pdev, PCI_COMMAND, &command);
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+ 	pci_read_config_byte(pdev, PCI_CACHE_LINE_SIZE, &cache_line_size);
+ 	pci_read_config_byte(pdev, PCI_LATENCY_TIMER, &latency_timer);
+ 
