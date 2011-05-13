@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab1EMOEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:04:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44348 "EHLO mx1.suse.de"
+	id S1758656Ab1EMODc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:03:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53063 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756991Ab1EMODb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:03:31 -0400
+	id S1750815Ab1EMODa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:03:30 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
@@ -18,101 +18,41 @@ Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-ext4 <linux-ext4@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/4] Reduce impact to overall system of SLUB using high-order allocations V2
-Date: Fri, 13 May 2011 15:03:20 +0100
-Message-Id: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/4] mm: vmscan: Correct use of pgdat_balanced in sleeping_prematurely
+Date: Fri, 13 May 2011 15:03:21 +0100
+Message-Id: <1305295404-12129-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V1
-  o kswapd should sleep if need_resched
-  o Remove __GFP_REPEAT from GFP flags when speculatively using high
-    orders so direct/compaction exits earlier
-  o Remove __GFP_NORETRY for correctness
-  o Correct logic in sleeping_prematurely
-  o Leave SLUB using the default slub_max_order
+Johannes Weiner poined out that the logic in commit [1741c877: mm:
+kswapd: keep kswapd awake for high-order allocations until a percentage
+of the node is balanced] is backwards. Instead of allowing kswapd to go
+to sleep when balancing for high order allocations, it keeps it kswapd
+running uselessly.
 
-There are a few reports of people experiencing hangs when copying
-large amounts of data with kswapd using a large amount of CPU which
-appear to be due to recent reclaim changes.
+From-but-was-not-signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Will-sign-off-after-Johannes: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-SLUB using high orders is the trigger but not the root cause as SLUB
-has been using high orders for a while. The following four patches
-aim to fix the problems in reclaim while reducing the cost for SLUB
-using those high orders.
-
-Patch 1 corrects logic introduced by commit [1741c877: mm:
-	kswapd: keep kswapd awake for high-order allocations until
-	a percentage of the node is balanced] to allow kswapd to
-	go to sleep when balanced for high orders.
-
-Patch 2 prevents kswapd waking up in response to SLUBs speculative
-	use of high orders.
-
-Patch 3 further reduces the cost by prevent SLUB entering direct
-	compaction or reclaim paths on the grounds that falling
-	back to order-0 should be cheaper.
-
-Patch 4 notes that even when kswapd is failing to keep up with
-	allocation requests, it should still go to sleep when its
-	quota has expired to prevent it spinning.
-
-My own data on this is not great. I haven't really been able to
-reproduce the same problem locally.
-
-The test case is simple. "download tar" wgets a large tar file and
-stores it locally. "unpack" is expanding it (15 times physical RAM
-in this case) and "delete source dirs" is the tarfile being deleted
-again. I also experimented with having the tar copied numerous times
-and into deeper directories to increase the size but the results were
-not particularly interesting so I left it as one tar.
-
-In the background, applications are being launched to time to vaguely
-simulate activity on the desktop and to measure how long it takes
-applications to start.
-
-Test server, 4 CPU threads, x86_64, 2G of RAM, no PREEMPT, no COMPACTION, X running
-LARGE COPY AND UNTAR
-                      vanilla       fixprematurely  kswapd-nowwake slub-noexstep  kswapdsleep
-download tar           95 ( 0.00%)   94 ( 1.06%)   94 ( 1.06%)   94 ( 1.06%)   94 ( 1.06%)
-unpack tar            654 ( 0.00%)  649 ( 0.77%)  655 (-0.15%)  589 (11.04%)  598 ( 9.36%)
-copy source files       0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)
-delete source dirs    327 ( 0.00%)  334 (-2.10%)  318 ( 2.83%)  325 ( 0.62%)  320 ( 2.19%)
-MMTests Statistics: duration
-User/Sys Time Running Test (seconds)        1139.7   1142.55   1149.78   1109.32   1113.26
-Total Elapsed Time (seconds)               1341.59   1342.45   1324.90   1271.02   1247.35
-
-MMTests Statistics: application launch
-evolution-wait30     mean     34.92   34.96   34.92   34.92   35.08
-gnome-terminal-find  mean      7.96    7.96    8.76    7.80    7.96
-iceweasel-table      mean      7.93    7.81    7.73    7.65    7.88
-
-evolution-wait30     stddev    0.96    1.22    1.27    1.20    1.15
-gnome-terminal-find  stddev    3.02    3.09    3.51    2.99    3.02
-iceweasel-table      stddev    1.05    0.90    1.09    1.11    1.11
-
-Having SLUB avoid expensive steps in reclaim improves performance
-by quite a bit with the overall test completing 1.5 minutes
-faster. Application launch times were not really affected but it's
-not something my test machine was suffering from in the first place
-so it's not really conclusive. The kswapd patches also did not appear
-to help but again, the test machine wasn't suffering that problem.
-
-These patches are against 2.6.39-rc7. Again, testing would be
-appreciated.
-
- Documentation/vm/slub.txt |    2 +-
- mm/page_alloc.c           |    3 ++-
- mm/slub.c                 |    5 +++--
- 3 files changed, 6 insertions(+), 4 deletions(-)
-
- mm/page_alloc.c |    3 ++-
- mm/slub.c       |    3 ++-
- mm/vmscan.c     |    6 +++++-
- 3 files changed, 9 insertions(+), 3 deletions(-)
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f6b435c..af24d1e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2286,7 +2286,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+ 	 * must be balanced
+ 	 */
+ 	if (order)
+-		return pgdat_balanced(pgdat, balanced, classzone_idx);
++		return !pgdat_balanced(pgdat, balanced, classzone_idx);
+ 	else
+ 		return !all_zones_ok;
+ }
 -- 
 1.7.3.4
 
