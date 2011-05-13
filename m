@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab1EMR1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 13:27:20 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63249 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089Ab1EMR1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 13:27:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OEAzhdtmKz0uGrMj3FRzK/6qtZg76HMf7tPTMLk+DwGFt4RBFNGfesLrgMVeIBX7Vo
-         rAa19x8CUBzA7TuKTkH1pnt2qRQHlDDpxYsDlK4XTV0S5QJE9SuaZxp4yL1HzYwWtSEa
-         yRFbjd0dPdj++qoYuK3Hymk2itsRHYCmx/Ebw=
-Subject: Re: kernel BUG at net/ipv4/tcp_output.c:1006!
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: TB <lkml@techboom.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <4DCD6658.3020901@techboom.com>
-References: <4DCD6658.3020901@techboom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 19:27:13 +0200
-Message-ID: <1305307633.3866.61.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S933160Ab1EMR1r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 13:27:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41564 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932999Ab1EMR1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 13:27:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,365,1301900400"; 
+   d="scan'208";a="642379092"
+Date: Fri, 13 May 2011 19:27:41 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd/ab8500-core: provide enumerators for chip cuts
+Message-ID: <20110513172740.GR8970@sortiz-mobl>
+References: <1304808885-12690-1-git-send-email-linus.walleij@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304808885-12690-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 13 mai 2011 à 13:11 -0400, TB a écrit :
-> This is the 2.6.38.5 kernel with the patch in
-> [PATCH] tcp_cubic: limit delayed_ack ratio to prevent divide error
-> 
-> Had this crash a few days ago, but never got any response to subsequent
-> emails. Another server crashed today with a network related backtrace,
-> but netconsole did not work.
+Hi Linus,
 
-I understand you are anxious, but sending this message to lkml will
-hardly find more people to look at this problem.
+On Sun, May 08, 2011 at 12:54:45AM +0200, Linus Walleij wrote:
+> Since functionality in MFD cells may need to be adjusted according to
+> chip revision, let's enumerate them and keep track of them.
+All 3 patches applied, thanks.
 
-You sent your messages two days ago on netdev, thats not like its one or
-two months.
+Cheers,
+Samuel.
 
-Please send us full disassembly of tcp_fragment (from vmlinux file)
-
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
