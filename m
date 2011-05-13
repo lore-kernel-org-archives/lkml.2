@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759293Ab1EMNHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:07:35 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:53573 "EHLO serv04.lahn.de"
+	id S1759158Ab1EMMkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 08:40:41 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39110 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759242Ab1EMNHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:07:33 -0400
-X-Greylist: delayed 1750 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 09:07:33 EDT
-Date: Fri, 13 May 2011 14:37:58 +0200
-From: "Michael Leun" <lkml20100708@newton.leun.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: AHCI driver problem on ICH (Re: AHCI driver problem on SB700/SB800
- w/ Acer Ferrari One)
-Message-ID: <20110513143758.33f68a77@xenia.leun.net>
-In-Reply-To: <201105120025.34531.rjw@sisk.pl>
-References: <201105120025.34531.rjw@sisk.pl>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759028Ab1EMMki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 08:40:38 -0400
+Date: Fri, 13 May 2011 14:40:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jack Steiner <steiner@sgi.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, UV: Reformat uv_mmrs.h - no code changes
+Message-ID: <20110513124029.GB3924@elte.hu>
+References: <20110512133308.GA17113@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512133308.GA17113@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 00:25:34 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> There seems to be a problem on my Acer box which is related to DIPM
-> and switching the power source.  Namely, when I detach the AC adapter
-> from the machine, the disk (which is an Intel SSD) freezes for a
-> while and something like this appears in dmesg:
-[...]
+* Jack Steiner <steiner@sgi.com> wrote:
 
-Since updating to 2.6.39-rc7 (from 2.6.38.x) I have similar problems
-with two notebooks using Intel ICH:
+> No code changes.  Reformat file to eliminate errors caught
+> by checkpatch.pl
+> 
+> Signed-off-by: Jack Steiner <steiner@sgi.com>
+> 
+> ---
+>  arch/x86/include/asm/uv/uv_mmrs.h | 1147 ++++++++++++++++++--------------------
+>  1 file changed, 573 insertions(+), 574 deletions(-)
 
-Acer PTZ1825
-00:1f.2 SATA controller: Intel Corporation ICH9M/M-E SATA AHCI
-Controller (rev 03) (prog-if 01 [AHCI 1.0]) Subsystem: Acer
-Incorporated [ALI] Device 0300 Flags: bus master, 66MHz, medium devsel,
-latency 0, IRQ 42 I/O ports at 30e8 [size=8]
-        I/O ports at 30fc [size=4]
-        I/O ports at 30e0 [size=8]
-        I/O ports at 30f8 [size=4]
-        I/O ports at 3020 [size=32]
-        Memory at d4504000 (32-bit, non-prefetchable) [size=2K]
-        Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
-        Capabilities: [70] Power Management version 3
-        Capabilities: [a8] SATA HBA v1.0
-        Capabilities: [b0] PCI Advanced Features
-        Kernel driver in use: ahci
+Firstly, the patch does not apply to -tip cleanly.
 
+Secondly, and more importantly, you are only addressing checkpatch errors but 
+you are not looking at the end result! The goal is to make the code nicer to 
+look at.
 
-Dell Latitude E6510
-00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series Chipset
-6 port SATA AHCI Cont roller (rev 05) (prog-if 01 [AHCI 1.0])
-        Subsystem: Dell Device 040b
-        Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 41
-        I/O ports at 8090 [size=8]
-        I/O ports at 8080 [size=4]
-        I/O ports at 8070 [size=8]
-        I/O ports at 8060 [size=4]
-        I/O ports at 8020 [size=32]
-        Memory at e9640000 (32-bit, non-prefetchable) [size=2K]
-        Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [70] Power Management version 3
-        Capabilities: [a8] SATA HBA v1.0
-        Capabilities: [b0] PCI Advanced Features
-        Kernel driver in use: ahci
+ Good example: uvh_event_occurred0_u, uvh_lb_bau_intd_software_acknowledge_u
+  Bad example: uvh_bau_data_config_u and most of the other definitions!
 
-Patch not tried yet (do not know / not looked into yet where to change
-for this chipset).
+There's a couple of other problems as well.
 
-Seems to be a 2.6.39-rcX regression?
+Why the heck is this symbol:
 
+  #define UVH_LB_BAU_MISC_CONTROL_INTD_SOFT_ACK_TIMEOUT_PERIOD_SHFT 16
 
--- 
-MfG,
+56 characters long?! Was there possibly no way to make it even longer?
 
-Michael Leun
+And of course, once used, this symbol craps up the code in 
+arch/x86/platform/uv/tlb_uv.c ...
 
+Using BAU_MISC_ACK_PERIOD_SHIFT would be like 3 times shorter, and still as 
+obvious. Or if these are the result of some Verilog tooling dependency then 
+please keep these tucked away in the .h and use some sensible symbol instead, 
+never pollute the .c file with the insanely long symbol names!
+
+Also, if you look at the line of definitions you will see the same kind of 
+ugliness you can see at uvh_bau_data_config_u et al.
+
+And then i have not even started about enable_programmed_initial_priority 
+structure fields.
+
+Thanks,
+
+	Ingo
