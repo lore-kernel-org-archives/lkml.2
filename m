@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527Ab1EMPwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:52:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47689 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab1EMPwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:52:34 -0400
-Date: Fri, 13 May 2011 16:52:29 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Reduce impact to overall system of SLUB using
- high-order allocations V2
-Message-ID: <20110513155229.GJ3569@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
- <1305299984.2611.37.camel@mulgrave.site>
+	id S1759465Ab1EMPy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:54:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48239 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab1EMPyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 11:54:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=pMPRAhkZt9tHCZKU9vIDgpw7deDfHCxRag9kHXE8fmj9v116Ib4YrIF67Wt3SdIuPL
+         3gvkQdnTHXvgWUM/fD1Q==
+Message-ID: <4DCD542A.4010904@google.com>
+Date: Fri, 13 May 2011 08:54:18 -0700
+From: David Decotigny <decot@google.com>
+Reply-To: david@decotigny.fr
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1305299984.2611.37.camel@mulgrave.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: netdev@vger.kernel.org
+CC: Florian Weimer <fweimer@bfk.de>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
+Subject: dl2k/stmmac patches (was Re: [PATCH 2/2] net/dl2k: Don't reconfigure
+ link @100Mbps when disabling autoneg @1Gbps)
+References: <1304986748-15809-1-git-send-email-decot@google.com>	<1304986748-15809-3-git-send-email-decot@google.com> <82y62dk1qz.fsf@mid.bfk.de>
+In-Reply-To: <82y62dk1qz.fsf@mid.bfk.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 10:19:44AM -0500, James Bottomley wrote:
-> On Fri, 2011-05-13 at 15:03 +0100, Mel Gorman wrote:
-> > Changelog since V1
-> >   o kswapd should sleep if need_resched
-> >   o Remove __GFP_REPEAT from GFP flags when speculatively using high
-> >     orders so direct/compaction exits earlier
-> >   o Remove __GFP_NORETRY for correctness
-> >   o Correct logic in sleeping_prematurely
-> >   o Leave SLUB using the default slub_max_order
-> > 
-> > There are a few reports of people experiencing hangs when copying
-> > large amounts of data with kswapd using a large amount of CPU which
-> > appear to be due to recent reclaim changes.
-> > 
-> > SLUB using high orders is the trigger but not the root cause as SLUB
-> > has been using high orders for a while. The following four patches
-> > aim to fix the problems in reclaim while reducing the cost for SLUB
-> > using those high orders.
-> > 
-> > Patch 1 corrects logic introduced by commit [1741c877: mm:
-> > 	kswapd: keep kswapd awake for high-order allocations until
-> > 	a percentage of the node is balanced] to allow kswapd to
-> > 	go to sleep when balanced for high orders.
-> > 
-> > Patch 2 prevents kswapd waking up in response to SLUBs speculative
-> > 	use of high orders.
-> > 
-> > Patch 3 further reduces the cost by prevent SLUB entering direct
-> > 	compaction or reclaim paths on the grounds that falling
-> > 	back to order-0 should be cheaper.
-> > 
-> > Patch 4 notes that even when kswapd is failing to keep up with
-> > 	allocation requests, it should still go to sleep when its
-> > 	quota has expired to prevent it spinning.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+
+Hi all,
+
+An update on the patch series I posted earlier (dl2k/stmmac autoneg
+minor changes: see my posts on 05/09/11 17:19 PST)...
+
+I'd suggest dropping the patch concerning dl2k, as I don't have any way
+to claim it's any good at all (though I'm pretty confident it doesn't
+make things any worse).
+
+However, for the other patch of the same series (stmmac), please
+consider for inclusion the new version prepared by Giuseppe instead of
+my initial patch, for his version readily integrates my patch and has
+been tested on real hardware:
+  stmmac: don't go through ethtool to start auto-negotiation
+  stmmac: fix autoneg in set_pauseparam
+
+Regards,
+Thank you!
+
+On 05/11/11 02:47, Florian Weimer wrote:
+> * David Decotigny:
 > 
-> This all works fine for me ... three untar runs and no kswapd hangs or
-> pegging the CPU at 99% ... in fact, kswapd rarely gets over 20%
+>> Tested: module compiling, NOT tested on real hardware.
+> 
+> To my knowledge, dl2k is broken.  Some sort of synchronization
+> primitives are missing.  Under load, the NIC's notion of ring buffer
+> status diverges from the host's view. 8-(
 > 
 
-Good stuff, thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-> This isn't as good as the kswapd sleeping_prematurely() throttling
-> patch. For total CPU time on a three 90GB untar run, it's about 64s of
-> CPU time with your patch rather than 6s, but that's vastly better than
-> the 15 minutes of CPU time kswapd was taking even under PREEMPT.
-> 
-
-The throttling patch is unfortunately a bit hand-wavy based on number of
-times it's entered and time passed. It'll be even harder to debug
-problems related to this in the future particularly as it's using global
-information (a static) for kswapd (per-node which could be worse in the
-future depending on what memcg do).
-
-However, as you are testing against stable, can you also apply this
-patch? [2876592f: mm: vmscan: stop reclaim/compaction earlier due to
-insufficient progress if !__GFP_REPEAT]. It makes a difference as to
-when reclaimers give up on high-orders and go to sleep.
-
--- 
-Mel Gorman
-SUSE Labs
+iEYEARECAAYFAk3NVCYACgkQld7vhusVrCHUEACggeKyCmoEHy9AzYec/aW8cDjU
+GyAAoIiESxUAFWuKBmCOA31X/V0fvC+Y
+=6hXY
+-----END PGP SIGNATURE-----
