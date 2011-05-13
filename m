@@ -1,144 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab1EMSHT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:07:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50425 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab1EMSHR (ORCPT
+	id S1753745Ab1EMSJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:09:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54657 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1EMSJn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:07:17 -0400
-Date: Fri, 13 May 2011 11:06:12 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: ocfs2-devel@oss.oracle.com, Randy Dunlap <rdunlap@xenotime.net>,
-        Mark Fasheh <mfasheh@suse.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch] ocfs2: remove the /sys/o2cb symlink
-Message-ID: <20110513180607.GA2349@noexit.corp.google.com>
-Mail-Followup-To: Amerigo Wang <amwang@redhat.com>,
-	ocfs2-devel@oss.oracle.com, Randy Dunlap <rdunlap@xenotime.net>,
-	Mark Fasheh <mfasheh@suse.com>, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1304256856-4744-1-git-send-email-amwang@redhat.com>
+	Fri, 13 May 2011 14:09:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=IZMmBtfLZ/01Jarpjwbjn5/VMiw3w5aEpnAwIbo3dGIaK8VpmkFza8/gtQJJKzdkw9
+         0WasJ0Hb80Y3ALadRliKOaOM/tVa0Kkp0EIXdqafs7uK+bm8+WRswnPlcvCHncvhjEk9
+         8SNGbvqKIHjz0y67ldW8jI8sB5ETZGmblz5qs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304256856-4744-1-git-send-email-amwang@redhat.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110513164435.GA22435@redhat.com>
+References: <20110418134421.GA15951@redhat.com> <BANLkTimO2FL3548rxa9NEoVLFbZU7mzG7g@mail.gmail.com>
+ <20110418173224.GA27918@redhat.com> <BANLkTikkYapz+qiJ0skx9ykz7TT9vmTVQw@mail.gmail.com>
+ <20110423175901.GA484@redhat.com> <20110426194822.GA8520@redhat.com>
+ <20110426194904.GC8520@redhat.com> <BANLkTikhJkFtJUwUJ3stT=juKKuo+6xT7g@mail.gmail.com>
+ <20110513164435.GA22435@redhat.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 13 May 2011 14:09:22 -0400
+Message-ID: <BANLkTimGjunaA4Fzdo6dc5=cKTc_g90j5Q@mail.gmail.com>
+Subject: Re: [PATCH] signal: trivial, fix the "timespec declared inside
+ parameter list" warning
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Nikita V. Youshchenko" <nyoushchenko@mvista.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 01, 2011 at 09:34:16PM +0800, Amerigo Wang wrote:
-> It is obsoleted since Dec 2005.
+On Fri, May 13, 2011 at 12:44, Oleg Nesterov wrote:
+> --- sigprocmask/include/linux/signal.h~15_stw_warning   2011-05-12 20:44:43.000000000 +0200
+> +++ sigprocmask/include/linux/signal.h  2011-05-13 18:10:40.000000000 +0200
+> @@ -242,6 +242,7 @@ extern int __group_send_sig_info(int, st
+>  extern long do_rt_tgsigqueueinfo(pid_t tgid, pid_t pid, int sig,
+>                                 siginfo_t *info);
+>  extern long do_sigpending(void __user *, unsigned long);
+> +struct timespec;
+>  extern int do_sigtimedwait(const sigset_t *, siginfo_t *,
+>                                const struct timespec *);
+>  extern int sigprocmask(int, sigset_t *, sigset_t *);
 
-	Actually, we moved it in 2008.  Sunil, Mark, do we have new
-enough tools everywhere?  Looks like ocfs2-tools 1.4 has it.  I'm going
-to take this unless you object.
-
-Joel
-
-> 
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
-> ---
->  Documentation/ABI/obsolete/o2cb            |   11 -----------
->  Documentation/ABI/removed/o2cb             |   10 ++++++++++
->  Documentation/feature-removal-schedule.txt |   10 ----------
->  fs/ocfs2/cluster/sys.c                     |    9 ---------
->  4 files changed, 10 insertions(+), 30 deletions(-)
-> ---
-> diff --git a/Documentation/ABI/obsolete/o2cb b/Documentation/ABI/obsolete/o2cb
-> deleted file mode 100644
-> index 9c49d8e..0000000
-> --- a/Documentation/ABI/obsolete/o2cb
-> +++ /dev/null
-> @@ -1,11 +0,0 @@
-> -What:		/sys/o2cb symlink
-> -Date:		Dec 2005
-> -KernelVersion:	2.6.16
-> -Contact:	ocfs2-devel@oss.oracle.com
-> -Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink will
-> -		be removed when new versions of ocfs2-tools which know to look
-> -		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
-> -		software to look here, it should try /sys/fs/o2cb instead.
-> -		See Documentation/ABI/stable/o2cb for more information on usage.
-> -Users:		ocfs2-tools. It's sufficient to mail proposed changes to
-> -		ocfs2-devel@oss.oracle.com.
-> diff --git a/Documentation/ABI/removed/o2cb b/Documentation/ABI/removed/o2cb
-> new file mode 100644
-> index 0000000..7f5daa4
-> --- /dev/null
-> +++ b/Documentation/ABI/removed/o2cb
-> @@ -0,0 +1,10 @@
-> +What:		/sys/o2cb symlink
-> +Date:		May 2011
-> +KernelVersion:	2.6.40
-> +Contact:	ocfs2-devel@oss.oracle.com
-> +Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink is
-> +		removed when new versions of ocfs2-tools which know to look
-> +		in /sys/fs/o2cb are sufficiently prevalent. Don't code new
-> +		software to look here, it should try /sys/fs/o2cb instead.
-> +Users:		ocfs2-tools. It's sufficient to mail proposed changes to
-> +		ocfs2-devel@oss.oracle.com.
-> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-> index 492e81d..5f3561e 100644
-> --- a/Documentation/feature-removal-schedule.txt
-> +++ b/Documentation/feature-removal-schedule.txt
-> @@ -273,16 +273,6 @@ Who:	Michael Buesch <mb@bu3sch.de>
->  
->  ---------------------------
->  
-> -What:	/sys/o2cb symlink
-> -When:	January 2010
-> -Why:	/sys/fs/o2cb is the proper location for this information - /sys/o2cb
-> -	exists as a symlink for backwards compatibility for old versions of
-> -	ocfs2-tools. 2 years should be sufficient time to phase in new versions
-> -	which know to look in /sys/fs/o2cb.
-> -Who:	ocfs2-devel@oss.oracle.com
-> -
-> ----------------------------
-> -
->  What:	Ability for non root users to shm_get hugetlb pages based on mlock
->  	resource limits
->  When:	2.6.31
-> diff --git a/fs/ocfs2/cluster/sys.c b/fs/ocfs2/cluster/sys.c
-> index bc702da..a4b0773 100644
-> --- a/fs/ocfs2/cluster/sys.c
-> +++ b/fs/ocfs2/cluster/sys.c
-> @@ -57,7 +57,6 @@ static struct kset *o2cb_kset;
->  void o2cb_sys_shutdown(void)
->  {
->  	mlog_sys_shutdown();
-> -	sysfs_remove_link(NULL, "o2cb");
->  	kset_unregister(o2cb_kset);
->  }
->  
-> @@ -69,14 +68,6 @@ int o2cb_sys_init(void)
->  	if (!o2cb_kset)
->  		return -ENOMEM;
->  
-> -	/*
-> -	 * Create this symlink for backwards compatibility with old
-> -	 * versions of ocfs2-tools which look for things in /sys/o2cb.
-> -	 */
-> -	ret = sysfs_create_link(NULL, &o2cb_kset->kobj, "o2cb");
-> -	if (ret)
-> -		goto error;
-> -
->  	ret = sysfs_create_group(&o2cb_kset->kobj, &o2cb_attr_group);
->  	if (ret)
->  		goto error;
-
--- 
-
-"We will have to repent in this generation not merely for the
- vitriolic words and actions of the bad people, but for the 
- appalling silence of the good people."
-	- Rev. Dr. Martin Luther King, Jr.
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+seems like you'd want to stick this higher up in the file (like after
+the includes or at the top of the prototype block) so that in the
+future, you dont have to move it if someone adds a new func before it.
+-mike
