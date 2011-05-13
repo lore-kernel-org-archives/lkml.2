@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab1EMFLL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 01:11:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36385 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab1EMFLJ (ORCPT
+	id S1755720Ab1EMFRJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 01:17:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49685 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab1EMFRH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 01:11:09 -0400
+	Fri, 13 May 2011 01:17:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=bXHOEjSd2/cnST07jfoyvBaLdg9JiU3o73DVoqO3N781MRHaetoFfqXNYozDIqy5Bh
-         DzkOwTCPZcgFIxkMc0tjcFpQBarycHQIOKsefcUYAVxvbQMgmcV7q+FNxY1IGc2lkLKI
-         dBp0geP810gy09B0sS0++YypB2XgSZLBkQ89g=
-Subject: Re: [PATCH net-next V3] net: af_packet: Untangle packet_snd by
- adding vpacket_snd
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-In-Reply-To: <b174c9df4b7c39b4e951f1f309a4fd9086179c3c.1305242549.git.joe@perches.com>
-References: <20110512.175959.1343349350164758016.davem@davemloft.net>
-	 <b174c9df4b7c39b4e951f1f309a4fd9086179c3c.1305242549.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 07:11:02 +0200
-Message-ID: <1305263462.2831.11.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=iWIAJI7nneZntCGPkW/E3HVYzUcRATKa5AcXFlUhK6c9fhPQJAdwIy1tksQ+jf2TM3
+         wfO0k8pz/Z1WjfmYF+BboXB09f/pMYWGqgn+fnMNWm1FFbhudhT68NGBvJxy5fyMq5z/
+         5yxC7BHGCvqOI6HcNEjx8CeDCXVyFLJE+Byf8=
+MIME-Version: 1.0
+In-Reply-To: <20110512.170254.1553444447781324461.davem@davemloft.net>
+References: <1305227500-15595-1-git-send-email-geert@linux-m68k.org>
+	<20110512.170254.1553444447781324461.davem@davemloft.net>
+Date: Fri, 13 May 2011 07:17:04 +0200
+X-Google-Sender-Auth: eYgfTugOQRG8_dLArPUhZT2PvK8
+Message-ID: <BANLkTi=y6_0NtZSyMovjV7wfbH5i_caEhw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Fix 8390 regressions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, ysato@users.sourceforge.jp, linux@arm.linux.org.uk,
+        fthain@telegraphics.com.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 12 mai 2011 à 16:25 -0700, Joe Perches a écrit :
-> The current packet_snd handles both vlan and non-vlan frames
-> with initialization of a struct virtio_net_hdr that is unused
-> by non-vlan frames.
-> 
-> Create a new vpacket_snd that uses this virtio_net_hdr and
-> remove it and the vlan and gso logic from packet_snd.
-> 
+On Thu, May 12, 2011 at 23:02, David Miller <davem@davemloft.net> wrote:
+> From: Geert Uytterhoeven <geert@linux-m68k.org>
+> Date: Thu, 12 May 2011 19:11:37 +0000
+>
+>> These patches fix regressions in 3 8390-based network drivers:
+>>  [1/3] zorro8390: Fix regression caused during net_device_ops conversion
+>>  [2/3] hydra: Fix regression caused during net_device_ops conversion
+>>  [3/3] ne-h8300: Fix regression caused during net_device_ops conversion
+>>
+>> The first one, for zorro8390, has been tested.
+>> The second one, for hydra, has been compile-tested only.
+>>
+>> Based on commits 8cfd9e923be54ef66ce174a93f4592b444b96407 ("[ARM] RiscPC: Fix
+>> etherh oops") and 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390: fix
+>> regression caused during net_device_ops conversion"), and the patch for
+>> zorro8390, we have good reasons to believe hydra and ne-h8300 are affected
+>> as well, as they all include lib8390.c.
+>> Hence patches for those are also included, although I could not test them.
+>
+> All applied, thanks Geert, and I made the "From: " removals you requested.
 
-1) I find this kind of patches a real pain, frankly.
+Thanks a lot!
 
-When I have to look around code and commits to find bugs and bugs
-origins, I'll have to fully check this kind of patch, and this slow down
-the process a _lot_, because I have no idea if "Joe Perches" actually
-tested the patch, or if its yet another "code beautifier" process in the
-wild.
+Gr{oetje,eeting}s,
 
-You should have shooted when/before commit bfd5f4a3 (packet: Add
-GSO/csum offload support) was accepted.
+                        Geert
 
-2) You did not CCed Sridhar Samudrala <sri@us.ibm.com>, the author of
-above commit. I dont think David will take the time to test your patch.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-3) You add some non codingstyle artifacts. I am afraid it makes me
-nervous for patches bringing no real values but shuffling the code and
-making maintainers life more difficult.
-
-
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
