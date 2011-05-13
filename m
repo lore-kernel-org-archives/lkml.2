@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab1EMAFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 20:05:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58108 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab1EMAFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 20:05:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,361,1301900400"; 
-   d="scan'208";a="1573748"
-Subject: Re: [PATCH 2/9] iwlwifi: Silence DEBUG_STRICT_USER_COPY_CHECKS=y
- warning
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <1305244212-19183-3-git-send-email-sboyd@codeaurora.org>
-References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
-	 <1305244212-19183-3-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 May 2011 17:02:36 -0700
-Message-ID: <1305244956.3589.1.camel@wwguy-ubuntu>
+	id S932998Ab1EMALf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 20:11:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43747 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab1EMALd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 20:11:33 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 13 May 2011 09:04:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch 3/6] mm: memcg-aware global reclaim
+Message-Id: <20110513090450.3c40d2ee.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1305212038-15445-4-git-send-email-hannes@cmpxchg.org>
+References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
+	<1305212038-15445-4-git-send-email-hannes@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-12 at 16:50 -0700, Stephen Boyd wrote:
-> Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
-> warning:
-> 
-> In file included from arch/x86/include/asm/uaccess.h:573,
->                  from include/net/checksum.h:25,
->                  from include/linux/skbuff.h:28,
->                  from drivers/net/wireless/iwlwifi/iwl-agn-rs.c:28:
-> In function 'copy_from_user',
->     inlined from 'rs_sta_dbgfs_scale_table_write' at
->     drivers/net/wireless/iwlwifi/iwl-agn-rs.c:3099:
-> arch/x86/include/asm/uaccess_64.h:65:
-> warning: call to 'copy_from_user_overflow' declared with
-> attribute warning: copy_from_user() buffer size is not provably
-> correct
-> 
-> presumably due to buf_size being signed causing GCC to fail to
-> see that buf_size can't become negative.
-> 
-> Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> ---
->  drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-Thank you
+On Thu, 12 May 2011 16:53:55 +0200
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Wey
+> A page charged to a memcg is linked to a lru list specific to that
+> memcg.  At the same time, traditional global reclaim is obvlivious to
+> memcgs, and all the pages are also linked to a global per-zone list.
+> 
+> This patch changes traditional global reclaim to iterate over all
+> existing memcgs, so that it no longer relies on the global list being
+> present.
+> 
+> This is one step forward in integrating memcg code better into the
+> rest of memory management.  It is also a prerequisite to get rid of
+> the global per-zone lru lists.
+> 
+
+
+As I said, I don't want removing global reclaim until dirty_ratio support and
+better softlimit algorithm, at least. Current my concern is dirty_ratio,
+if you want to speed up, please help Greg and implement dirty_ratio first.
+
+BTW, could you separete clean up code and your new logic ? 1st half of
+codes seems to be just a clean up and seems nice. But , IIUC, someone
+changed the arguments from chunk of params to be a flags....in some patch.
+...
+commit 75822b4495b62e8721e9b88e3cf9e653a0c85b73
+Author: Balbir Singh <balbir@linux.vnet.ibm.com>
+Date:   Wed Sep 23 15:56:38 2009 -0700
+
+    memory controller: soft limit refactor reclaim flags
+
+    Refactor mem_cgroup_hierarchical_reclaim()
+
+    Refactor the arguments passed to mem_cgroup_hierarchical_reclaim() into
+    flags, so that new parameters don't have to be passed as we make the
+    reclaim routine more flexible
+
+...
+
+Balbir ?  Both are ok to me, please ask him.
+
+
+And hmm...
+
++	do {
++		mem_cgroup_hierarchy_walk(root, &mem);
++		sc->current_memcg = mem;
++		do_shrink_zone(priority, zone, sc);
++	} while (mem != root);
+
+This move hierarchy walk from memcontrol.c to vmscan.c ?
+
+About moving hierarchy walk, I may say okay...because my patch does this, too.
+
+But....doesn't this reclaim too much memory if hierarchy is very deep ?
+Could you add some 'quit' path ?
+
+
+Thanks,
+-Kame
 
