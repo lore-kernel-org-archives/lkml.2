@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab1EMTh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 15:37:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38269 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab1EMTh1 (ORCPT
+	id S1757092Ab1EMTmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 15:42:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34943 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab1EMTmi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 15:37:27 -0400
+	Fri, 13 May 2011 15:42:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KQKgerSSTmi766lTGYbbufIRPQxp1N79T5UyYcaycJI077R5ygK00/IP22iXCgwTrH
-         2uit6WE1/SKPT7UHG11oFU5oS4fe9lqHUtSU+OPQ9dzz6AUhu6lhW295KYJwbfPD58NT
-         8eounCWz2+HYcpMjT4kA4vkw9b9nCmDbSBmeU=
-Date: Fri, 13 May 2011 23:37:18 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, arnd@arndb.de,
-        nico@fluxnic.net, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCHv3 0/7] gpio: extend basic_mmio_gpio for different
- controllers
-Message-ID: <20110513193718.GA5803@oksana.dev.rtsoft.ru>
-References: <1302520914-22816-1-git-send-email-jamie@jamieiles.com>
- <20110503210950.GA2866@ponder.secretlab.ca>
- <BANLkTi=5Ad7_9_fVMCcJ7MfM5Ns8q9qqsQ@mail.gmail.com>
- <20110503215211.GA8491@oksana.dev.rtsoft.ru>
- <20110503220408.GA6978@pulham.picochip.com>
- <20110503223415.GA14024@oksana.dev.rtsoft.ru>
- <20110504110939.GB13514@pulham.picochip.com>
- <20110504113131.GA639@oksana.dev.rtsoft.ru>
- <20110504143757.GB15967@pulham.picochip.com>
- <20110504150234.GA32670@oksana.dev.rtsoft.ru>
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=BVI+mg8SKScSPJzE68lQP/s5VehLbK1w6O0ly8eUOp+1XlcQbPjShhrxGgintgpisV
+         sMK9IcO43EUiQz6rF4j+gVqS0E8452JjbzhpYOUnjl7ykPo3ul4xkmNM+nL9jK65xAwq
+         cqA9eGtsU3PtbIGLBp6ArY0myeqTI+KmFUMcM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110504150234.GA32670@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 13 May 2011 16:42:36 -0300
+Message-ID: <BANLkTik03b2CWwfVpN3atNfVZbDe=Wz3qw@mail.gmail.com>
+Subject: PROBLEM: unable to enumerate USB device on port 6 (3 kernel test)
+From: =?ISO-8859-1?Q?Franco_Gast=F3n_Pellegrini?= 
+	<francogpellegrini@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 04, 2011 at 07:02:34PM +0400, Anton Vorontsov wrote:
-> On Wed, May 04, 2011 at 03:37:57PM +0100, Jamie Iles wrote:
-> [...]
-> > +	err = bgpio_init(bgc, dev, sz, dat, set, clr, dirout, dirin, be);
-> > +	if (err)
-> > +		return err;
-> > +
-> > +	if (pdata) {
-> > +		bgc->gc.base = pdata->base;
-> > +		if (pdata->ngpio > 0)
-> > +			bgc->gc.ngpio = pdata->ngpio;
-> > +	}
-> > +
-> > +	platform_set_drvdata(pdev, bgc);
-> > +
-> > +	return 0;
-> 
-> return gpio_chip_add(&bgc->gc)? Or bgpio_chip_add(bgc);
-> 
-> Otherwise this looks great. Feel free to add my
-> 
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+I tested the kernels:
 
-What happened w/ this patch? Jamie, would you resend it so that
-Grant could apply it?
+2.6.38-8-generic
+2.6.39-0-generic (kernel-ppa/ppa)
 
-Thanks,
+In all I have the same problem, except 2.6.35 and earlier versions,
+where no error occurs.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+I inform you that on my laptop is connected only integrated SD card
+reader (ACER 5520 with nForce 610M mother).
+
+
+---------- Forwarded message ----------
+From: Franco Gastón Pellegrini <francogpellegrini@gmail.com>
+Date: 2011/5/3
+Subject: PROBLEM: unable to enumerate USB device on port 6
+To: linux-kernel@vger.kernel.org
+
+
+Kernel version: 2.6.38-8-generic #42-Ubuntu SMP Mon Apr 11 03:31:24
+UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+
+hi,
+I have an ACER 5520, with ubuntu 11.04 and all my TTY repeats
+indefinitly (every 1/3 seconds) the mesages:
+
+.....
+May 1 18:34:27 franco-Aspire-5520 kernel: [ 888.350128] hub 1-0:1.0:
+unable to enumerate USB device on port 6
+May 1 18:34:27 franco-Aspire-5520 kernel: [ 888.610230] hub 3-0:1.0:
+unable to enumerate USB device on port 6
+May 1 18:34:27 franco-Aspire-5520 kernel: [ 888.890098] hub 1-0:1.0:
+unable to enumerate USB device on port 6
+May 1 18:34:28 franco-Aspire-5520 kernel: [ 889.150111] hub 3-0:1.0:
+unable to enumerate USB device on port 6
+....
+
+i cant use any TTY, how can i fix it? any kernel before do this for me.
+
+PD: what info do you need to complete my report?
+
+Excuse my english
