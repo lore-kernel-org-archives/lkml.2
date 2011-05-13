@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab1EMDTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 23:19:15 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:51781 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750703Ab1EMDTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 23:19:14 -0400
-Message-ID: <4DCCA317.2030302@metafoo.de>
-Date: Thu, 12 May 2011 20:18:47 -0700
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	id S1754667Ab1EMDgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 23:36:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9393 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753641Ab1EMDgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 23:36:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
+   d="scan'208";a="435375345"
+Date: Fri, 13 May 2011 11:36:05 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/17] writeback: introduce
+ writeback_control.inodes_cleaned
+Message-ID: <20110513033605.GC8016@localhost>
+References: <20110512135706.937596128@intel.com>
+ <20110512140031.025181367@intel.com>
+ <20110512224420.GJ19446@dastard>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "'Grant Likely'" <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        toshiharu-linux@dsn.okisemi.com
-Subject: Re: Question: GPIO driver how to get irq_base
-References: <F9B588C24C5F470494D57D4EFFB14C6B@hacdom.okisemi.com> <4DAFE62A.105@metafoo.de> <20110421134524.GA32725@ponder.secretlab.ca> <4DB03A4B.9040807@metafoo.de> <20110421142422.GC32725@ponder.secretlab.ca> <4C95BE12C2D7458E9D2B54E7C30F712F@hacdom.okisemi.com> <4DB2A6A2.90803@metafoo.de> <614E530848124206BD1A074548078FA8@hacdom.okisemi.com> <FF5A4B77828A4F1AA77531640E8B37FF@hacdom.okisemi.com> <4DCAE163.2050602@metafoo.de> <CCD653B68482426EA47A12055C9E19E5@hacdom.okisemi.com> <4DCC384B.1020202@metafoo.de> <CA2B589B92704A439D8DF3E2EAD9750D@hacdom.okisemi.com>
-In-Reply-To: <CA2B589B92704A439D8DF3E2EAD9750D@hacdom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512224420.GJ19446@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2011 07:40 PM, Tomoya MORINAGA wrote:
-> Hi  Lars,
+On Fri, May 13, 2011 at 06:44:20AM +0800, Dave Chinner wrote:
+> On Thu, May 12, 2011 at 09:57:09PM +0800, Wu Fengguang wrote:
+> > The flusher works on dirty inodes in batches, and may quit prematurely
+> > if the batch of inodes happen to be metadata-only dirtied: in this case
+> > wbc->nr_to_write won't be decreased at all, which stands for "no pages
+> > written" but also mis-interpreted as "no progress".
+> > 
+> > So introduce writeback_control.inodes_cleaned to count the inodes get
+> > cleaned.  A non-zero value means there are some progress on writeback,
+> > in which case more writeback can be tried.
 > 
-> On Friday, May 13, 2011 4:43 AM, Lars-Peter Clausen wrote:
->> Is it already used at the time when you call irq_alloc_descs?
-> 
-> Since gpio driver with interrupt function must be integrated as built-in,
-> I don't know whether "18" is already used or NOT at that time.
-> If you have any information, let me know.
-> 
+> Why introduce a new field for this?
 
-Well, you should be able to figure that out with some debug printks, shouldn't you?
+Yeah sorry, but this is an intermediate field that will be removed in
+patch 14.
 
-- Lars
+> Just decrement nr_to_write for every write_inode() call made in
+> writeback_single_inode()....
+
+There are two problems
+
+- nr_to_write has always been "# of pages written" and writeback_sb_inodes()
+  is actually making use of it to do page accounting in work->nr_pages.
+
+- write_inode() does not always succeed, and its return value is not
+  reliable on every filesystem.. (I actually tried this approach in v1
+  and found sync(1) hang on NFS)
+
+Thanks,
+Fengguang
