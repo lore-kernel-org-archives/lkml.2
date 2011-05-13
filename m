@@ -1,203 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab1EMNTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:19:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34628 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758889Ab1EMNTH (ORCPT
+	id S933001Ab1EMNUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:20:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43414 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758889Ab1EMNUF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:19:07 -0400
-X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=wom5GMh1gUkA:10 a=2uYajzE4MAAA:10 a=Rj1_iGo3bfgA:10 a=8nJEP1OIZ-IA:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=Z4Rwk6OoAAAA:8 a=hBqU3vQJAAAA:8 a=DfNHnWVPAAAA:8 a=A-nnX2b7w39jumF6f24A:9 a=iEv6xozrljRjjomWRz4A:7 a=wPNLvfGTeEIA:10 a=jbrJJM5MRmoA:10 a=4gZ4WExUoD4A:10 a=lBRciGGoxdUA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.123.158.191
-Date: Fri, 13 May 2011 08:19:04 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: acl_permission_check: disgusting performance
-Message-ID: <20110513131904.GA2519@mail.hallyn.com>
-References: <BANLkTi=nc3WGaASQm1Pc9byshLOmLf2bXQ@mail.gmail.com>
- <20110513025013.GA13209@mail.hallyn.com>
- <20110513040214.GA25270@mail.hallyn.com>
- <BANLkTim3cy8Jf3URYTW+cbr3nrdWVbsmGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTim3cy8Jf3URYTW+cbr3nrdWVbsmGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 May 2011 09:20:05 -0400
+Subject: Re: [PATCH 2/2] x86: Make the x86-64 stacktrace code safely
+ callable from scheduler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110513124800.GA1840@nowhere>
+References: <1305232326-9804-1-git-send-email-fweisbec@gmail.com>
+	 <1305232326-9804-3-git-send-email-fweisbec@gmail.com>
+	 <1305283706.22280.40.camel@frodo>  <20110513124800.GA1840@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 13 May 2011 15:19:58 +0200
+Message-ID: <1305292798.2466.29.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Linus Torvalds (torvalds@linux-foundation.org):
-> On Thu, May 12, 2011 at 9:02 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> >
-> > I wonder how much this would help:  (only compile-tested)
+On Fri, 2011-05-13 at 14:48 +0200, Frederic Weisbecker wrote:
+> I haven't observed any deadlock. trace events disable preemption and
+> other tracers do too (my changelog was buggy).
 > 
-> So it should help a lot, but it breaks when CONFIG_USER_NS isn't even
-> set (the case that Eric fixed.
+> I just worried about potential other users, like a WARN_ON in the
+> scheduler or so.
 > 
-> So instead, do this:
+> My worry is the following scenario:
 > 
->  (a) get rid of the "_current_user_ns()" thing. There is no reason to
-> have it, if it's directly off "current->cred", then it's cheaper to
-> inline it than have a function just for two pointer indirections.
+> schedule() {
+>         acquire(rq)
+>                                                         set_tsk_need_resched
+>         WARN_ON() {
+>                 stack_trace() {
+>                         preempt_enable() {
+>                                 preempt_schedule() {
 
-Unfortunately that was not there as an optimization but because it
-gets around a circular dependency between cred.h and capability.h.
-Ideally we would keep capability.h from having to know about struct
-cred.
+Would never happen, because rq->lock is a spinlock which holds another
+preempt count so preempt_enable() would never schedule.
 
-The two simplest solutions are to uninline nsown_capable() into
-capability.c, and to move it from capability.h to cred.h, with the
-expectation that all callers of nsown_capable() #include cred.h
-(which they do).  I'm uninlining it here, hoping that the compiler
-will inline it for us.
+>                                         acquire(rq)
+>                                 }
+>                         }
+>                 }
+>         }
+> }
 
-From: Serge E. Hallyn <serge.hallyn@canonical.com>
-Date: Fri, 13 May 2011 04:27:54 +0100
-Subject: [PATCH 1/1] Cache user_ns in struct cred (v2)
 
-If !CONFIG_USERNS, have current_user_ns() defined to (&init_user_ns).
 
-Get rid of _current_user_ns.  This requires nsown_capable() to be
-defined in capability.c rather than as static inline in capability.h,
-so do that.
+> I don't know if it happens that one set TIF_NEED_RESCHED remotely,
 
-Request_key needs init_user_ns defined at current_user_ns if
-!CONFIG_USERNS, so forward-declare that in cred.h if !CONFIG_USERNS
-at current_user_ns() define.
+Yes
 
-Compile-tested with and without CONFIG_USERNS.
+> or if TIF_NEED_RESCHED can be set when we hold the rq,
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
----
- include/linux/capability.h |   13 +------------
- include/linux/cred.h       |   10 ++++++++--
- kernel/capability.c        |   12 ++++++++++++
- kernel/cred.c              |   12 ++++++------
- 4 files changed, 27 insertions(+), 20 deletions(-)
+Yes
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 16ee8b4..d4675af 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -546,18 +546,7 @@ extern bool has_capability_noaudit(struct task_struct *t, int cap);
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
- extern bool task_ns_capable(struct task_struct *t, int cap);
--
--/**
-- * nsown_capable - Check superior capability to one's own user_ns
-- * @cap: The capability in question
-- *
-- * Return true if the current task has the given superior capability
-- * targeted at its own user namespace.
-- */
--static inline bool nsown_capable(int cap)
--{
--	return ns_capable(current_user_ns(), cap);
--}
-+extern bool nsown_capable(int cap);
- 
- /* audit system wants to get cap info from files as well */
- extern int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data *cpu_caps);
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index 9aeeb0b..be16b61 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -146,6 +146,7 @@ struct cred {
- 	void		*security;	/* subjective LSM security */
- #endif
- 	struct user_struct *user;	/* real user ID subscription */
-+	struct user_namespace *user_ns; /* cached user->user_ns */
- 	struct group_info *group_info;	/* supplementary groups for euid/fsgid */
- 	struct rcu_head	rcu;		/* RCU deletion hook */
- };
-@@ -354,10 +355,15 @@ static inline void put_cred(const struct cred *_cred)
- #define current_fsgid() 	(current_cred_xxx(fsgid))
- #define current_cap()		(current_cred_xxx(cap_effective))
- #define current_user()		(current_cred_xxx(user))
--#define _current_user_ns()	(current_cred_xxx(user)->user_ns)
- #define current_security()	(current_cred_xxx(security))
- 
--extern struct user_namespace *current_user_ns(void);
-+#ifdef CONFIG_USER_NS
-+#define current_user_ns() (current_cred_xxx(user_ns))
-+#else
-+extern struct user_namespace init_user_ns;
-+#define current_user_ns() (&init_user_ns)
-+#endif
-+
- 
- #define current_uid_gid(_uid, _gid)		\
- do {						\
-diff --git a/kernel/capability.c b/kernel/capability.c
-index bf0c734..32a80e0 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -399,3 +399,15 @@ bool task_ns_capable(struct task_struct *t, int cap)
- 	return ns_capable(task_cred_xxx(t, user)->user_ns, cap);
- }
- EXPORT_SYMBOL(task_ns_capable);
-+
-+/**
-+ * nsown_capable - Check superior capability to one's own user_ns
-+ * @cap: The capability in question
-+ *
-+ * Return true if the current task has the given superior capability
-+ * targeted at its own user namespace.
-+ */
-+bool nsown_capable(int cap)
-+{
-+	return ns_capable(current_user_ns(), cap);
-+}
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 5557b55..8093c16 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -54,6 +54,7 @@ struct cred init_cred = {
- 	.cap_effective		= CAP_INIT_EFF_SET,
- 	.cap_bset		= CAP_INIT_BSET,
- 	.user			= INIT_USER,
-+	.user_ns		= &init_user_ns,
- 	.group_info		= &init_groups,
- #ifdef CONFIG_KEYS
- 	.tgcred			= &init_tgcred,
-@@ -410,6 +411,11 @@ int copy_creds(struct task_struct *p, unsigned long clone_flags)
- 			goto error_put;
- 	}
- 
-+	/* cache user_ns in cred.  Doesn't need a refcount because it will
-+	 * stay pinned by cred->user
-+	 */
-+	new->user_ns = new->user->user_ns;
-+
- #ifdef CONFIG_KEYS
- 	/* new threads get their own thread keyrings if their parent already
- 	 * had one */
-@@ -741,12 +747,6 @@ int set_create_files_as(struct cred *new, struct inode *inode)
- }
- EXPORT_SYMBOL(set_create_files_as);
- 
--struct user_namespace *current_user_ns(void)
--{
--	return _current_user_ns();
--}
--EXPORT_SYMBOL(current_user_ns);
--
- #ifdef CONFIG_DEBUG_CREDENTIALS
- 
- bool creds_are_invalid(const struct cred *cred)
--- 
-1.7.0.4
+>  and then we
+> can be followed by a WARN_ON, ...
 
+Not quite sure, but possible.
+
+> So I preferred to be careful. 
+
+Still not quite seeing how all things could go bang.
