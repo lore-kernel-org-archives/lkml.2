@@ -1,217 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab1EMGmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 02:42:50 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:40748 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab1EMGmt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 02:42:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XBTffYsOuXC5FF+ufI3wmVgGPDsp+HIgIUcBxY+eC0QsRUFpRFrQ7LwgJCLQdQ1UtK
-         SGFT+2pAXS4Ycuzi9sLDuZz8xr/EFA9J/BGMjOzHP9yLssKnywHOqEWuWltO6hzzGVLr
-         ZS5PBO8SFBQacabYOEFzydgiozSOmM0zsk5gY=
+	id S1756494Ab1EMGwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 02:52:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54670 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab1EMGwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 02:52:38 -0400
+Date: Fri, 13 May 2011 06:52:03 GMT
+From: tip-bot for Richard Weinberger <richard@nod.at>
+Message-ID: <tip-449a66fd1fa75d36dca917704827c40c8f416bca@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
+        mingo@redhat.com, richard@nod.at, lethal@linux-sh.org,
+        namhyung@gmail.com, ssp@redhat.com, ying.huang@intel.com,
+        fweisbec@gmail.com, robert.richter@amd.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, richard@nod.at, lethal@linux-sh.org,
+        namhyung@gmail.com, ssp@redhat.com, ying.huang@intel.com,
+        robert.richter@amd.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        oleg@redhat.com, tglx@linutronix.de
+In-Reply-To: <1305205872-10321-2-git-send-email-richard@nod.at>
+References: <1305205872-10321-2-git-send-email-richard@nod.at>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86: Remove warning and warning_symbol from struct stacktrace_ops
+Git-Commit-ID: 449a66fd1fa75d36dca917704827c40c8f416bca
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <4DCCC61F.80408@jp.fujitsu.com>
-References: <20110428161149.GA15658@redhat.com>
-	<20110502194416.2D61.A69D9226@jp.fujitsu.com>
-	<20110502195657.2D68.A69D9226@jp.fujitsu.com>
-	<1305129929.2914.247.camel@laptop>
-	<4DCCC61F.80408@jp.fujitsu.com>
-Date: Fri, 13 May 2011 14:42:48 +0800
-Message-ID: <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
- update tsk->rt.nr_cpus_allowed
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 13 May 2011 06:52:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 1:48 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> Hi
->
->> On Mon, 2011-05-02 at 19:55 +0900, KOSAKI Motohiro wrote:
->>>
->>> The rule is, we have to update tsk->rt.nr_cpus_allowed too if we change
->>> tsk->cpus_allowed. Otherwise RT scheduler may confuse.
->>>
->>> This patch fixes it.
->>>
->>> btw, system_state checking is very important. current boot sequence is
->>> (1) smp_init
->>> (ie secondary cpus up and created cpu bound kthreads). (2)
->>> sched_init_smp().
->>> Then following bad scenario can be happen,
->>>
->>> (1) cpuup call notifier(CPU_UP_PREPARE)
->>> (2) A cpu notifier consumer create FIFO kthread
->>> (3) It call kthread_bind()
->>>    ... but, now secondary cpu haven't ONLINE
->>
->> isn't
->
-> thanks, correction.
->
->>
->>> (3) schedule() makes fallback and cpuset_cpus_allowed_fallback
->>>     change task->cpus_allowed
->>
->> I'm failing to see how this is happening, surely that kthread isn't
->> actually running that early?
->
-> If my understand correctly, current call graph is below.
->
-> kernel_init()
->        smp_init();
->                cpu_up()
->                        ... cpu hotplug notification
->                                kthread_create()
->        sched_init_smp();
->
->
-> So, cpu hotplug event is happen before sched_init_smp(). The old rule is,
-> all kthreads of using cpu-up notification have to use kthread_bind(). It
-> protected from sched load balance.
->
-> but, now cpuset_cpus_allowed_fallback() forcedly change kthread's cpumask.
-> Why is this works? the point are two.
->
-> - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
-> periodically.
->  then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
->  my debug print obseve following cpumask change occur at boot time.
->     1) kthread_bind: bind cpu1
->     2) cpuset_cpus_allowed_fallback: bind possible cpu
->     3) rcu_cpu_kthread_should_stop: rebind cpu1
-> - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
+Commit-ID:  449a66fd1fa75d36dca917704827c40c8f416bca
+Gitweb:     http://git.kernel.org/tip/449a66fd1fa75d36dca917704827c40c8f416bca
+Author:     Richard Weinberger <richard@nod.at>
+AuthorDate: Thu, 12 May 2011 15:11:12 +0200
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Thu, 12 May 2011 15:31:28 +0200
 
-Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
-which is under hotplug event CPU_UP_PREPARE. Maybe it should be
-under CPU_ONLINE.
+x86: Remove warning and warning_symbol from struct stacktrace_ops
 
-Thanks,
-Yong
+Both warning and warning_symbol are nowhere used.
+Let's get rid of them.
 
->
->
->>
->>> (4) find_lowest_rq() touch local_cpu_mask if task->rt.nr_cpus_allowed !=
->>> 1,
->>>     but it haven't been initialized.
->>>
->>> RCU folks plan to introduce such FIFO kthread and our testing hitted the
->>> above issue. Then this patch also protect it.
->>
->> I'm fairly sure it doesn't, normal cpu-hotplug doesn't poke at
->> system_state.
->
-> If my understand correctly. it's pure scheduler issue. because
->
-> - rcuc keep the old rule (ie an early spawned kthread have to call
-> kthread_bind)
-> - cpuset_cpus_allowed_fallback() is called from scheduler internal
-> - crash is happen in find_lowest_rq(). (following line)
->
->
-> static int find_lowest_rq(struct task_struct *task)
-> {
->  (snip)
->        if (cpumask_test_cpu(cpu, lowest_mask))   // HERE
->
->
-> IOW, I think cpuset_cpus_allowed_fallback() should NOT be changed
-> tsk->cpus_allowed until to finish sched_init_smp().
->
-> Do you have an any alternative idea for this?
->
->
->>> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->>> Cc: Oleg Nesterov<oleg@redhat.com>
->>> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
->>> Cc: Ingo Molnar<mingo@elte.hu>
->>> ---
->>>  include/linux/cpuset.h |    1 +
->>>  kernel/cpuset.c        |    1 +
->>>  kernel/sched.c         |    4 ++++
->>>  3 files changed, 6 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
->>> index f20eb8f..42dcbdc 100644
->>> --- a/include/linux/cpuset.h
->>> +++ b/include/linux/cpuset.h
->>> @@ -147,6 +147,7 @@ static inline void cpuset_cpus_allowed(struct
->>> task_struct *p,
->>>  static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
->>>  {
->>>        cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
->>> +       p->rt.nr_cpus_allowed = cpumask_weight(&p->cpus_allowed);
->>>        return cpumask_any(cpu_active_mask);
->>>  }
->>>
->>> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
->>> index 1ceeb04..6e5bbe8 100644
->>> --- a/kernel/cpuset.c
->>> +++ b/kernel/cpuset.c
->>> @@ -2220,6 +2220,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct
->>> *tsk)
->>>                cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
->>>                cpu = cpumask_any(cpu_active_mask);
->>>        }
->>> +       tsk->rt.nr_cpus_allowed = cpumask_weight(&tsk->cpus_allowed);
->>>
->>>        return cpu;
->>>  }
->>
->> I don't really see the point of doing this separately from your second
->> patch, please fold them.
->
-> Ok. Will do.
->
->>
->>> diff --git a/kernel/sched.c b/kernel/sched.c
->>> index fd4625f..bfcd219 100644
->>> --- a/kernel/sched.c
->>> +++ b/kernel/sched.c
->>> @@ -2352,6 +2352,10 @@ static int select_fallback_rq(int cpu, struct
->>> task_struct *p)
->>>        if (dest_cpu<  nr_cpu_ids)
->>>                return dest_cpu;
->>>
->>> +       /* Don't worry. It's temporary mismatch. */
->>> +       if (system_state<  SYSTEM_RUNNING)
->>> +               return cpu;
->>> +
->>>        /* No more Mr. Nice Guy. */
->>>        dest_cpu = cpuset_cpus_allowed_fallback(p);
->>>        /*
->>
->> Like explained, I don't believe this actually fixes your problem (its
->> also disgusting).
->
-> If anybody have an alternative idea, I have no reason to refuse it.
->
-> Thanks.
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Huang Ying <ying.huang@intel.com>
+Cc: Soeren Sandmann Pedersen <ssp@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: x86 <x86@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Link: http://lkml.kernel.org/r/1305205872-10321-2-git-send-email-richard@nod.at
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/include/asm/stacktrace.h |    3 ---
+ arch/x86/kernel/cpu/perf_event.c  |   13 -------------
+ arch/x86/kernel/dumpstack.c       |   16 ----------------
+ arch/x86/kernel/stacktrace.c      |   13 -------------
+ arch/x86/oprofile/backtrace.c     |   13 -------------
+ 5 files changed, 0 insertions(+), 58 deletions(-)
 
-
-
--- 
-Only stand for myself
+diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
+index d7e89c8..70bbe39 100644
+--- a/arch/x86/include/asm/stacktrace.h
++++ b/arch/x86/include/asm/stacktrace.h
+@@ -37,9 +37,6 @@ print_context_stack_bp(struct thread_info *tinfo,
+ /* Generic stack tracer with callbacks */
+ 
+ struct stacktrace_ops {
+-	void (*warning)(void *data, char *msg);
+-	/* msg must contain %s for the symbol */
+-	void (*warning_symbol)(void *data, char *msg, unsigned long symbol);
+ 	void (*address)(void *data, unsigned long address, int reliable);
+ 	/* On negative return stop dumping */
+ 	int (*stack)(void *data, char *name);
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 0de6b2b..3a0338b 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1773,17 +1773,6 @@ static struct pmu pmu = {
+  * callchain support
+  */
+ 
+-static void
+-backtrace_warning_symbol(void *data, char *msg, unsigned long symbol)
+-{
+-	/* Ignore warnings */
+-}
+-
+-static void backtrace_warning(void *data, char *msg)
+-{
+-	/* Ignore warnings */
+-}
+-
+ static int backtrace_stack(void *data, char *name)
+ {
+ 	return 0;
+@@ -1797,8 +1786,6 @@ static void backtrace_address(void *data, unsigned long addr, int reliable)
+ }
+ 
+ static const struct stacktrace_ops backtrace_ops = {
+-	.warning		= backtrace_warning,
+-	.warning_symbol		= backtrace_warning_symbol,
+ 	.stack			= backtrace_stack,
+ 	.address		= backtrace_address,
+ 	.walk_stack		= print_context_stack_bp,
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index e2a3f06..f478ff6 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -135,20 +135,6 @@ print_context_stack_bp(struct thread_info *tinfo,
+ }
+ EXPORT_SYMBOL_GPL(print_context_stack_bp);
+ 
+-
+-static void
+-print_trace_warning_symbol(void *data, char *msg, unsigned long symbol)
+-{
+-	printk(data);
+-	print_symbol(msg, symbol);
+-	printk("\n");
+-}
+-
+-static void print_trace_warning(void *data, char *msg)
+-{
+-	printk("%s%s\n", (char *)data, msg);
+-}
+-
+ static int print_trace_stack(void *data, char *name)
+ {
+ 	printk("%s <%s> ", (char *)data, name);
+@@ -166,8 +152,6 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
+ }
+ 
+ static const struct stacktrace_ops print_trace_ops = {
+-	.warning		= print_trace_warning,
+-	.warning_symbol		= print_trace_warning_symbol,
+ 	.stack			= print_trace_stack,
+ 	.address		= print_trace_address,
+ 	.walk_stack		= print_context_stack,
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index 6515733..55d9bc0 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -9,15 +9,6 @@
+ #include <linux/uaccess.h>
+ #include <asm/stacktrace.h>
+ 
+-static void save_stack_warning(void *data, char *msg)
+-{
+-}
+-
+-static void
+-save_stack_warning_symbol(void *data, char *msg, unsigned long symbol)
+-{
+-}
+-
+ static int save_stack_stack(void *data, char *name)
+ {
+ 	return 0;
+@@ -53,16 +44,12 @@ save_stack_address_nosched(void *data, unsigned long addr, int reliable)
+ }
+ 
+ static const struct stacktrace_ops save_stack_ops = {
+-	.warning	= save_stack_warning,
+-	.warning_symbol	= save_stack_warning_symbol,
+ 	.stack		= save_stack_stack,
+ 	.address	= save_stack_address,
+ 	.walk_stack	= print_context_stack,
+ };
+ 
+ static const struct stacktrace_ops save_stack_ops_nosched = {
+-	.warning	= save_stack_warning,
+-	.warning_symbol	= save_stack_warning_symbol,
+ 	.stack		= save_stack_stack,
+ 	.address	= save_stack_address_nosched,
+ 	.walk_stack	= print_context_stack,
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index 2d49d4e..a5b64ab 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -16,17 +16,6 @@
+ #include <asm/stacktrace.h>
+ #include <linux/compat.h>
+ 
+-static void backtrace_warning_symbol(void *data, char *msg,
+-				     unsigned long symbol)
+-{
+-	/* Ignore warnings */
+-}
+-
+-static void backtrace_warning(void *data, char *msg)
+-{
+-	/* Ignore warnings */
+-}
+-
+ static int backtrace_stack(void *data, char *name)
+ {
+ 	/* Yes, we want all stacks */
+@@ -42,8 +31,6 @@ static void backtrace_address(void *data, unsigned long addr, int reliable)
+ }
+ 
+ static struct stacktrace_ops backtrace_ops = {
+-	.warning	= backtrace_warning,
+-	.warning_symbol	= backtrace_warning_symbol,
+ 	.stack		= backtrace_stack,
+ 	.address	= backtrace_address,
+ 	.walk_stack	= print_context_stack,
