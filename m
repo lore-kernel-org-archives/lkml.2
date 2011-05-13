@@ -1,111 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab1EMPq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:46:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47953 "EHLO
+	id S1759522Ab1EMPsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:48:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52886 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab1EMPqZ (ORCPT
+	with ESMTP id S932409Ab1EMPq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:46:25 -0400
+	Fri, 13 May 2011 11:46:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=h3Da8kReXkl20nr6PqwpuIR5TxFrZUSNpApE4iHeElmSwYM+WINhDJtElMO9yma/ya
-         QfdqtiuazbotZ0EBCUFMWcQIuud9ZqlsgQanhEZOy9lCcgpDK2reokSvc+/Fae50jSZi
-         G5WAr0lEgj6bjX09nRCl/Bl8qBIvaNpDwnkVM=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=PsZtEbbeiOtSzTqRQpGAZ5xvDJIi6M5b9dgyb1/yCNSuVhW8+3g2ILRnzIDXNnZ1Vc
+         TNSqZzPnVCrVWmLfenUusJRDE1VvMJOW8PrkhQ7wOb0NyXLvwWW9dZ+Ex/vX/PV9JBzK
+         AIafemom7zVgXCLZOgzlxhUcYwLsb+mOxqQlU=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: [PATCHSET ptrace] ptrace: prepare for PTRACE_SEIZE/INTERRUPT
-Date: Fri, 13 May 2011 17:46:11 +0200
-Message-Id: <1305301580-9924-1-git-send-email-tj@kernel.org>
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/9] job control: reorganize wait_task_stopped()
+Date: Fri, 13 May 2011 17:46:12 +0200
+Message-Id: <1305301580-9924-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1305301580-9924-1-git-send-email-tj@kernel.org>
+References: <1305301580-9924-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+wait_task_stopped() tested task_stopped_code() without acquiring
+siglock and, if stop condition existed, called wait_task_stopped() and
+directly returned the result.  This patch moves the initial
+task_stopped_code() testing into wait_task_stopped() and make
+wait_consider_task() fall through to wait_task_continue() on 0 return.
 
-This patchset is extension of preparation patches extracted from
-"ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification"
-patchset[1].
+This is for the following two reasons.
 
-Trivial and reviewed ones are collected at the beginning so that they
-can be applied to the ptrace tree.  The latter half concentrates on
-improving TRAPPING handling without actually implementing any new
-ptrace request.
+* Because the initial task_stopped_code() test is done without
+  acquiring siglock, it may race against SIGCONT generation.  The
+  stopped condition might have been replaced by continued state by the
+  time wait_task_stopped() acquired siglock.  This may lead to
+  unexpected failure of WNOHANG waits.
 
-This patchset makes the following changes to TRAPPING wait.
+  This reorganization addresses this single race case but there are
+  other cases - TASK_RUNNING -> TASK_STOPPED transition and EXIT_*
+  transitions.
 
-* TRAPPING is cleared when an action which requires cancellation
-  happens and the fallback clearing at the end of do_signal_stop() is
-  removed.  This doesn't require adding any extra callsite to
-  clear_trapping() explicitly.  Jobctl flag clearing automatically
-  handles cancellation of TRAPPING.
+* Scheduled ptrace updates require changes to the initial test which
+  would fit better inside wait_task_stopped().
 
-* Instead of signal->wait_chldexit, bit waitqueue is used.  This
-  removes the unnecessary complexity and dependency on parent/child
-  hierarchy of TRAPPING wait.  Note that this removes the wrong wait
-  queue bug Oleg pointed out in wait_trapping().
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/exit.c |   30 +++++++++++++++++++++++-------
+ 1 files changed, 23 insertions(+), 7 deletions(-)
 
-* TRAPPING wait is moved from PTRACE_ATTACH to wait_task_stopped() and
-  ptrace_check_attach().  In both cases, TRAPPING uses
-  restart_syscall() to retry.  This simplifies the code and combined
-  with the next change makes TRAPPING much safer.
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 5cbc83e..3383793 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1377,11 +1377,23 @@ static int *task_stopped_code(struct task_struct *p, bool ptrace)
+ 	return NULL;
+ }
+ 
+-/*
+- * Handle sys_wait4 work for one task in state TASK_STOPPED.  We hold
+- * read_lock(&tasklist_lock) on entry.  If we return zero, we still hold
+- * the lock and this task is uninteresting.  If we return nonzero, we have
+- * released the lock and the system call should return.
++/**
++ * wait_task_stopped - Wait for %TASK_STOPPED or %TASK_TRACED
++ * @wo: wait options
++ * @ptrace: is the wait for ptrace
++ * @p: task to wait for
++ *
++ * Handle sys_wait4() work for %p in state %TASK_STOPPED or %TASK_TRACED.
++ *
++ * CONTEXT:
++ * read_lock(&tasklist_lock), which is released if return value is
++ * non-zero.  Also, grabs and releases @p->sighand->siglock.
++ *
++ * RETURNS:
++ * 0 if wait condition didn't exist and search for other wait conditions
++ * should continue.  Non-zero return, -errno on failure and @p's pid on
++ * success, implies that tasklist_lock is released and wait condition
++ * search should terminate.
+  */
+ static int wait_task_stopped(struct wait_opts *wo,
+ 				int ptrace, struct task_struct *p)
+@@ -1397,6 +1409,9 @@ static int wait_task_stopped(struct wait_opts *wo,
+ 	if (!ptrace && !(wo->wo_flags & WUNTRACED))
+ 		return 0;
+ 
++	if (!task_stopped_code(p, ptrace))
++		return 0;
++
+ 	exit_code = 0;
+ 	spin_lock_irq(&p->sighand->siglock);
+ 
+@@ -1607,8 +1622,9 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 	 * Wait for stopped.  Depending on @ptrace, different stopped state
+ 	 * is used and the two don't interact with each other.
+ 	 */
+-	if (task_stopped_code(p, ptrace))
+-		return wait_task_stopped(wo, ptrace, p);
++	ret = wait_task_stopped(wo, ptrace, p);
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * Wait for continued.  There's only one continued state and the
+-- 
+1.7.1
 
-* TRAPPING now uses interruptible sleep.  This makes it way safer even
-  if we get something wrong - at least, the tracer can be easily
-  killed no matter what.  Also, this makes TRAPPING wait behave just
-  like other syscall retries and mixing TRAPPING waits with freezing
-  becomes much easier.
-
-Other than making the transient TASK_RUNNING during TRAPPING visible
-through /proc and using automatically restarted interruptible sleep,
-this patchset doesn't make userland visible changes.
-
-This patchset contains the following nine patches.
-
-  0001-job-control-reorganize-wait_task_stopped.patch
-  0002-job-control-rename-signal-group_stop-and-flags-to-jo.patch
-  0003-ptrace-ptrace_check_attach-rename-kill-to-ignore_sta.patch
-  0004-ptrace-relocate-set_current_state-TASK_TRACED-in-ptr.patch
-  0005-job-control-introduce-JOBCTL_PENDING_MASK-and-task_c.patch
-  0006-job-control-make-task_clear_jobctl_pending-clear-TRA.patch
-  0007-ptrace-use-bit_waitqueue-for-TRAPPING-instead-of-wai.patch
-  0008-ptrace-move-JOBCTL_TRAPPING-wait-to-wait-2-and-ptrac.patch
-  0009-ptrace-make-TRAPPING-wait-interruptible.patch
-
-0001-0004 are reviewed or mostly trivial prep patches.
-
-0005-0006 move clearing of TRAPPING to the actions requiring it.
-
-0007 makes TRAPPING wait use bit waitqueue.
-
-0008-0009 moves TRAPPING wait to wait(2) and ptrace_check_attach() and
-makes it interruptible.
-
-This patchset is on top of the current ptrace branch[2] - 40ae717d1e
-"ptrace: fix signal->wait_chldexit usage in
-task_clear_group_stop_trapping()" and is availble in the following git
-branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ptrace-seize-prep
-
-diffstat follows.
-
- fs/exec.c              |    2 
- include/linux/ptrace.h |    3 -
- include/linux/sched.h  |   19 ++++--
- kernel/exit.c          |   46 +++++++++++++---
- kernel/ptrace.c        |   92 ++++++++++++++++++++++++++++-----
- kernel/signal.c        |  134 +++++++++++++++++++++++++------------------------
- 6 files changed, 200 insertions(+), 96 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1136930
-[2] git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
