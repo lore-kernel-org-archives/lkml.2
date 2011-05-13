@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab1EMVbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 17:31:15 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:48006 "EHLO slimlogic.co.uk"
+	id S1758245Ab1EMVao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 17:30:44 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:47998 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758192Ab1EMVay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 17:30:54 -0400
+	id S1757296Ab1EMVaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 17:30:39 -0400
 MIME-Version: 1.0
-Date: Fri, 13 May 2011 16:30:30 -0500
-Message-ID: <BANLkTikgGezRkNu=7KY_o7k=_+qo-yHy8w@mail.gmail.com>
-Subject: [PATCHv3 2/4] tps65912: irq: add interrupt controller
+Date: Fri, 13 May 2011 16:30:37 -0500
+Message-ID: <BANLkTi=beVntMt-CA3LDb75kYv5BwD0+1g@mail.gmail.com>
+Subject: [PATCHv3 3/4] tps65912: gpio: add gpio driver
 From: Margarita Olaya <magi@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        sameo@linux.intel.com
+        grant.likely@secretlab.ca
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This module controls the interrupt handling for the tps65912.
-The interrupt sources can be the following:
-
-- GPIO
-- PWRON signal
-- PWRHOLD signal
-- Temperature detection
+TPS65912 has five GPIOs that can be configured for different
+purposes.
 
 Signed-off-by: Margarita Olaya Cabrera <magi@slimlogic.co.uk>
 ---
- drivers/mfd/Makefile         |    2 +-
- drivers/mfd/tps65912-irq.c   |  225 ++++++++++++++++++++++++++++++++++++++++++
- drivers/mfd/tps65912.c       |   29 +++++-
- include/linux/mfd/tps65912.h |    5 +
- 4 files changed, 259 insertions(+), 2 deletions(-)
- create mode 100644 drivers/mfd/tps65912-irq.c
+ drivers/gpio/Kconfig         |    6 ++
+ drivers/gpio/Makefile        |    1 +
+ drivers/gpio/tps65912-gpio.c |  159 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65912.h |    1 +
+ 4 files changed, 167 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/tps65912-gpio.c
 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index d727e66..74dc2ce 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -35,7 +35,7 @@ obj-$(CONFIG_MFD_WM8994)	+= wm8994-core.o wm8994-irq.o
- obj-$(CONFIG_TPS6105X)		+= tps6105x.o
- obj-$(CONFIG_TPS65010)		+= tps65010.o
- obj-$(CONFIG_TPS6507X)		+= tps6507x.o
--obj-$(CONFIG_MFD_TPS65912)      += tps65912.o
-+obj-$(CONFIG_MFD_TPS65912)      += tps65912.o tps65912-irq.o
- obj-$(CONFIG_MENELAUS)		+= menelaus.o
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index d3b2953..08bed4e 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -247,6 +247,12 @@ config GPIO_TWL4030
+ 	  Say yes here to access the GPIO signals of various multi-function
+ 	  power management chips from Texas Instruments.
 
- obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
-diff --git a/drivers/mfd/tps65912-irq.c b/drivers/mfd/tps65912-irq.c
++config GPIO_TPS65912
++	tristate "TI TPS65912 GPIO"
++	depends on MFD_TPS65912
++	help
++	  This driver supports TPS65912 gpio chip
++
+ config GPIO_WM831X
+ 	tristate "WM831x GPIOs"
+ 	depends on MFD_WM831X
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index becef59..f03ccc4 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_GPIO_STMPE)	+= stmpe-gpio.o
+ obj-$(CONFIG_GPIO_TC3589X)	+= tc3589x-gpio.o
+ obj-$(CONFIG_GPIO_TIMBERDALE)	+= timbgpio.o
+ obj-$(CONFIG_GPIO_TWL4030)	+= twl4030-gpio.o
++obj-$(CONFIG_GPIO_TPS65912)	+= tps65912-gpio.o
+ obj-$(CONFIG_GPIO_UCB1400)	+= ucb1400_gpio.o
+ obj-$(CONFIG_GPIO_XILINX)	+= xilinx_gpio.o
+ obj-$(CONFIG_GPIO_CS5535)	+= cs5535-gpio.o
+diff --git a/drivers/gpio/tps65912-gpio.c b/drivers/gpio/tps65912-gpio.c
 new file mode 100644
-index 0000000..500ebfe
+index 0000000..2be15a2
 --- /dev/null
-+++ b/drivers/mfd/tps65912-irq.c
-@@ -0,0 +1,225 @@
++++ b/drivers/gpio/tps65912-gpio.c
+@@ -0,0 +1,159 @@
 +/*
-+ * tps65912-irq.c  --  TI TPS6591x
++ * tps65912-gpio.c  --	TI TPS6591x
 + *
 + * Copyright 2011 Texas Instruments Inc.
 + *
@@ -73,324 +84,159 @@ index 0000000..500ebfe
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/bug.h>
-+#include <linux/device.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
++#include <linux/errno.h>
 +#include <linux/gpio.h>
++#include <linux/mfd/core.h>
++#include <linux/platform_device.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
 +#include <linux/mfd/tps65912.h>
 +
-+static inline int irq_to_tps65912_irq(struct tps65912 *tps65912,
-+							int irq)
-+{
-+	return irq - tps65912->irq_base;
-+}
-+
-+/*
-+ * This is a threaded IRQ handler so can access I2C/SPI.  Since the
-+ * IRQ handler explicitly clears the IRQ it handles the IRQ line
-+ * will be reasserted and the physical IRQ will be handled again if
-+ * another interrupt is asserted while we run - in the normal course
-+ * of events this is a rare occurrence so we save I2C/SPI reads. We're
-+ * also assuming that it's rare to get lots of interrupts firing
-+ * simultaneously so try to minimise I/O.
-+ */
-+static irqreturn_t tps65912_irq(int irq, void *irq_data)
-+{
-+	struct tps65912 *tps65912 = irq_data;
-+	u32 irq_sts;
-+	u32 irq_mask;
-+	u8 reg;
-+	int i;
-+
-+
-+	tps65912->read(tps65912, TPS65912_INT_STS, 1, &reg);
-+	irq_sts = reg;
-+	tps65912->read(tps65912, TPS65912_INT_STS2, 1, &reg);
-+	irq_sts |= reg << 8;
-+	tps65912->read(tps65912, TPS65912_INT_STS3, 1, &reg);
-+	irq_sts |= reg << 16;
-+	tps65912->read(tps65912, TPS65912_INT_STS4, 1, &reg);
-+	irq_sts |= reg << 24;
-+
-+	tps65912->read(tps65912, TPS65912_INT_MSK, 1, &reg);
-+	irq_mask = reg;
-+	tps65912->read(tps65912, TPS65912_INT_MSK2, 1, &reg);
-+	irq_mask |= reg << 8;
-+	tps65912->read(tps65912, TPS65912_INT_MSK3, 1, &reg);
-+	irq_mask |= reg << 16;
-+	tps65912->read(tps65912, TPS65912_INT_MSK4, 1, &reg);
-+	irq_mask |= reg << 24;
-+
-+	irq_sts &= ~irq_mask;
-+	if (!irq_sts)
-+		return IRQ_NONE;
-+
-+	for (i = 0; i < tps65912->irq_num; i++) {
-+		if (!(irq_sts & (1 << i)))
-+			continue;
-+
-+		handle_nested_irq(tps65912->irq_base + i);
-+	}
-+
-+	/* Write the STS register back to clear IRQs we handled */
-+	reg = irq_sts & 0xFF;
-+	irq_sts >>= 8;
-+	if (reg)
-+		tps65912->write(tps65912, TPS65912_INT_STS, 1, &reg);
-+	reg = irq_sts & 0xFF;
-+	irq_sts >>= 8;
-+	if (reg)
-+		tps65912->write(tps65912, TPS65912_INT_STS2, 1, &reg);
-+	reg = irq_sts & 0xFF;
-+	irq_sts >>= 8;
-+	if (reg)
-+		tps65912->write(tps65912, TPS65912_INT_STS3, 1, &reg);
-+	reg = irq_sts & 0xFF;
-+	if (reg)
-+		tps65912->write(tps65912, TPS65912_INT_STS4, 1, &reg);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void tps65912_irq_lock(struct irq_data *data)
-+{
-+	struct tps65912 *tps65912 = irq_data_get_irq_chip_data(data);
-+
-+	mutex_lock(&tps65912->irq_lock);
-+}
-+
-+static void tps65912_irq_sync_unlock(struct irq_data *data)
-+{
-+	struct tps65912 *tps65912 = irq_data_get_irq_chip_data(data);
-+	u32 reg_mask;
-+	u8 reg;
-+
-+	tps65912->read(tps65912, TPS65912_INT_MSK, 1, &reg);
-+	reg_mask = reg;
-+	tps65912->read(tps65912, TPS65912_INT_MSK2, 1, &reg);
-+	reg_mask |= reg << 8;
-+	tps65912->read(tps65912, TPS65912_INT_MSK3, 1, &reg);
-+	reg_mask |= reg << 16;
-+	tps65912->read(tps65912, TPS65912_INT_MSK4, 1, &reg);
-+	reg_mask |= reg << 24;
-+
-+	if (tps65912->irq_mask != reg_mask) {
-+		reg = tps65912->irq_mask & 0xFF;
-+		tps65912->write(tps65912, TPS65912_INT_MSK, 1, &reg);
-+		reg = tps65912->irq_mask >> 8 & 0xFF;
-+		tps65912->write(tps65912, TPS65912_INT_MSK2, 1, &reg);
-+		reg = tps65912->irq_mask >> 16 & 0xFF;
-+		tps65912->write(tps65912, TPS65912_INT_MSK3, 1, &reg);
-+		reg = tps65912->irq_mask >> 24 & 0xFF;
-+		tps65912->write(tps65912, TPS65912_INT_MSK4, 1, &reg);
-+	}
-+
-+	mutex_unlock(&tps65912->irq_lock);
-+}
-+
-+static void tps65912_irq_enable(struct irq_data *data)
-+{
-+	struct tps65912 *tps65912 = irq_data_get_irq_chip_data(data);
-+
-+	tps65912->irq_mask &= ~(1 << irq_to_tps65912_irq(tps65912, data->irq));
-+}
-+
-+static void tps65912_irq_disable(struct irq_data *data)
-+{
-+	struct tps65912 *tps65912 = irq_data_get_irq_chip_data(data);
-+
-+	tps65912->irq_mask |= (1 << irq_to_tps65912_irq(tps65912, data->irq));
-+}
-+
-+static struct irq_chip tps65912_irq_chip = {
-+	.name = "tps65912",
-+	.irq_bus_lock = tps65912_irq_lock,
-+	.irq_bus_sync_unlock = tps65912_irq_sync_unlock,
-+	.irq_disable = tps65912_irq_disable,
-+	.irq_enable = tps65912_irq_enable,
++struct tps65912_gpio_data {
++	struct tps65912 *tps65912;
++	struct gpio_chip gpio_chip;
 +};
 +
-+int tps65912_irq_init(struct tps65912 *tps65912, int irq,
-+			    struct tps65912_platform_data *pdata)
++static int tps65912_gpio_get(struct gpio_chip *gc, unsigned offset)
 +{
-+	int ret, cur_irq;
-+	int flags = IRQF_ONESHOT;
-+	u8 reg;
++	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++	int val;
 +
-+	if (!irq) {
-+		dev_warn(tps65912->dev, "No interrupt support, no core IRQ\n");
-+		return 0;
++	val = tps65912_reg_read(tps65912, TPS65912_GPIO1 + offset);
++
++	if (val & GPIO_STS_MASK)
++		return 1;
++
++	return 0;
++}
++
++static void tps65912_gpio_set(struct gpio_chip *gc, unsigned offset,
++			      int value)
++{
++	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++
++	if (value)
++		tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
++							GPIO_SET_MASK);
++	else
++		tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
++								GPIO_SET_MASK);
++}
++
++static int tps65912_gpio_output(struct gpio_chip *gc, unsigned offset,
++				int value)
++{
++	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++
++	/* Set the initial value */
++	tps65912_gpio_set(gc, offset, value);
++
++	return tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
++								GPIO_CFG_MASK);
++}
++
++static int tps65912_gpio_input(struct gpio_chip *gc, unsigned offset)
++{
++	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++
++	return tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
++								GPIO_CFG_MASK);
++
++}
++
++static struct gpio_chip template_chip = {
++	.label			= "tps65912",
++	.owner			= THIS_MODULE,
++	.direction_input	= tps65912_gpio_input,
++	.direction_output	= tps65912_gpio_output,
++	.get			= tps65912_gpio_get,
++	.set			= tps65912_gpio_set,
++	.can_sleep		= 1,
++};
++
++static int __devinit tps65912_gpio_probe(struct platform_device *pdev)
++{
++	struct tps65912 *tps65912 = dev_get_drvdata(pdev->dev.parent);
++	struct tps65912_board *pdata = tps65912->dev->platform_data;
++	struct tps65912_gpio_data *tps65912_gpio;
++	int ret;
++
++	tps65912_gpio = kzalloc(sizeof(*tps65912_gpio), GFP_KERNEL);
++	if (tps65912_gpio == NULL)
++		return -ENOMEM;
++
++	tps65912_gpio->tps65912 = tps65912;
++	tps65912_gpio->gpio_chip = template_chip;
++	tps65912_gpio->gpio_chip.ngpio = 5;
++	tps65912_gpio->gpio_chip.dev = &pdev->dev;
++	if (pdata && pdata->gpio_base)
++		tps65912_gpio->gpio_chip.base = pdata->gpio_base;
++	else
++		tps65912_gpio->gpio_chip.base = -1;
++
++	ret = gpiochip_add(&tps65912_gpio->gpio_chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to register gpiochip, %d\n", ret);
++		goto err;
 +	}
 +
-+	if (!pdata || !pdata->irq_base) {
-+		dev_warn(tps65912->dev, "No interrupt support, no IRQ base\n");
-+		return 0;
-+	}
++	platform_set_drvdata(pdev, tps65912_gpio);
 +
-+	/* Clear unattended interrupts */
-+	tps65912->read(tps65912, TPS65912_INT_STS, 1, &reg);
-+	tps65912->write(tps65912, TPS65912_INT_STS, 1, &reg);
-+	tps65912->read(tps65912, TPS65912_INT_STS2, 1, &reg);
-+	tps65912->write(tps65912, TPS65912_INT_STS2, 1, &reg);
-+	tps65912->read(tps65912, TPS65912_INT_STS3, 1, &reg);
-+	tps65912->write(tps65912, TPS65912_INT_STS3, 1, &reg);
-+	tps65912->read(tps65912, TPS65912_INT_STS4, 1, &reg);
-+	tps65912->write(tps65912, TPS65912_INT_STS4, 1, &reg);
++	return ret;
 +
-+	/* Mask top level interrupts */
-+	tps65912->irq_mask = 0xFFFFFFFF;
++err:
++	kfree(tps65912_gpio);
++	return ret;
++}
 +
-+	mutex_init(&tps65912->irq_lock);
-+	tps65912->chip_irq = irq;
-+	tps65912->irq_base = pdata->irq_base;
++static int __devexit tps65912_gpio_remove(struct platform_device *pdev)
++{
++	struct tps65912_gpio_data  *tps65912_gpio = platform_get_drvdata(pdev);
++	int ret;
 +
-+	tps65912->irq_num = TPS65912_NUM_IRQ;
-+
-+	/* Register with genirq */
-+	for (cur_irq = tps65912->irq_base;
-+	     cur_irq < tps65912->irq_num + tps65912->irq_base;
-+	     cur_irq++) {
-+		irq_set_chip_data(cur_irq, tps65912);
-+		irq_set_chip_and_handler(cur_irq, &tps65912_irq_chip,
-+					 handle_edge_irq);
-+		irq_set_nested_thread(cur_irq, 1);
-+		/* ARM needs us to explicitly flag the IRQ as valid
-+		 * and will set them noprobe when we do so. */
-+#ifdef CONFIG_ARM
-+		set_irq_flags(cur_irq, IRQF_VALID);
-+#else
-+		irq_set_noprobe(cur_irq);
-+#endif
-+	}
-+
-+	ret = request_threaded_irq(irq, NULL, tps65912_irq, flags,
-+				   "tps65912", tps65912);
-+
-+	irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW);
-+	if (ret != 0)
-+		dev_err(tps65912->dev, "Failed to request IRQ: %d\n", ret);
++	ret = gpiochip_remove(&tps65912_gpio->gpio_chip);
++	if (ret == 0)
++		kfree(tps65912_gpio);
 +
 +	return ret;
 +}
 +
-+int tps65912_irq_exit(struct tps65912 *tps65912)
++static struct platform_driver tps65912_gpio_driver = {
++	.driver = {
++		.name = "tps65912-gpio",
++		.owner = THIS_MODULE,
++	},
++	.probe = tps65912_gpio_probe,
++	.remove = __devexit_p(tps65912_gpio_remove),
++};
++
++static int __init tps65912_gpio_init(void)
 +{
-+	free_irq(tps65912->chip_irq, tps65912);
-+	return 0;
++	return platform_driver_register(&tps65912_gpio_driver);
 +}
++subsys_initcall(tps65912_gpio_init);
 +
-diff --git a/drivers/mfd/tps65912.c b/drivers/mfd/tps65912.c
-index cd6c061..5b2ee63 100644
---- a/drivers/mfd/tps65912.c
-+++ b/drivers/mfd/tps65912.c
-@@ -90,12 +90,20 @@ static int tps65912_i2c_probe(struct i2c_client *i2c,
- {
- 	struct tps65912 *tps65912;
- 	struct tps65912_board *pmic_plat_data;
-+	struct tps65912_platform_data *init_data;
- 	int dcdc_avs, value, ret = 0;
-
- 	pmic_plat_data = dev_get_platdata(&i2c->dev);
- 	if(!pmic_plat_data)
- 		return -ENODEV;
-
-+	init_data = kzalloc(sizeof(struct tps65912_platform_data), GFP_KERNEL);
-+	if (init_data == NULL)
-+		return -ENOMEM;
++static void __exit tps65912_gpio_exit(void)
++{
++	platform_driver_unregister(&tps65912_gpio_driver);
++}
++module_exit(tps65912_gpio_exit);
 +
-+	init_data->irq = pmic_plat_data->irq;
-+	init_data->irq_base = pmic_plat_data->irq;
-+
- 	tps65912 = kzalloc(sizeof(struct tps65912), GFP_KERNEL);
- 	if (tps65912 == NULL)
- 		return -ENOMEM;
-@@ -123,9 +131,14 @@ static int tps65912_i2c_probe(struct i2c_client *i2c,
- 	if (ret < 0)
- 		goto err;
-
-+	ret = tps65912_irq_init(tps65912, init_data->irq, init_data);
-+	if (ret < 0)
-+		goto err;
-+
- 	return ret;
-
- err:
-+	kfree(init_data);
- 	mfd_remove_devices(tps65912->dev);
- 	kfree(tps65912);
- 	return ret;
-@@ -221,13 +234,22 @@ static int tps65912_spi_read(struct tps65912
-*tps65912, u8 addr,
- static int __devinit tps65912_spi_probe(struct spi_device *spi)
- {
- 	struct tps65912 *tps65912;
--	struct tps65912_board *pmic_plat_data;	
-+	struct tps65912_board *pmic_plat_data;
-+	struct tps65912_platform_data *init_data;
- 	int dcdc_avs, value, ret = 0;
-
- 	pmic_plat_data = dev_get_platdata(&i2c->dev);
- 	if(!pmic_plat_data)
- 		return -ENODEV;
-
-+	init_data = kzalloc(sizeof(struct tps65912_platform_data),
-+								GFP_KERNEL);
-+	if (init_data == NULL)
-+		return -ENOMEM;
-+
-+	init_data->irq = pmic_plat_data->irq;
-+	init_data->irq_base = pmic_plat_data->irq;
-+
- 	tps65912 = kzalloc(sizeof(struct tps65912), GFP_KERNEL);
- 	if (tps65912 == NULL)
- 		return -ENOMEM;
-@@ -255,9 +277,14 @@ static int __devinit tps65912_spi_probe(struct
-spi_device *spi)
- 	if (ret < 0)
- 		goto err;
-
-+	ret = tps65912_irq_init(tps65912, init_data->irq, init_data);
-+	if (ret < 0)
-+		goto err;
-+
- 	return ret;
-
- err:
-+	kfree(init_data);
- 	mfd_remove_devices(tps65912->dev);
- 	kfree(tps65912);
- 	return ret;
++MODULE_AUTHOR("Margarita Olaya Cabrera <magi@slimlogic.co.uk>");
++MODULE_DESCRIPTION("GPIO interface for TPS65912 PMICs");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:tps65912-gpio");
 diff --git a/include/linux/mfd/tps65912.h b/include/linux/mfd/tps65912.h
-index e2e2de2..74a97ed 100644
+index 74a97ed..ef85ad5 100644
 --- a/include/linux/mfd/tps65912.h
 +++ b/include/linux/mfd/tps65912.h
-@@ -273,6 +273,8 @@ struct tps65912_board {
- 	int is_dcdc2_avs;
- 	int is_dcdc3_avs;
+@@ -275,6 +275,7 @@ struct tps65912_board {
  	int is_dcdc4_avs;
-+	int irq;
-+	int irq_base;
+ 	int irq;
+ 	int irq_base;
++	int gpio_base;
  	struct regulator_init_data *tps65912_pmic_init_data;
  };
 
-@@ -310,6 +312,7 @@ struct tps65912 {
- };
-
- struct tps65912_platform_data {
-+	int irq;
- 	int irq_base;
- };
-
-@@ -319,5 +322,7 @@ int tps65912_set_bits(struct tps65912 *tps65912,
-u8 reg, u8 mask);
- int tps65912_clear_bits(struct tps65912 *tps65912, u8 reg, u8 mask);
- int tps65912_reg_read(struct tps65912 *tps65912, u8 reg);
- int tps65912_reg_write(struct tps65912 *tps65912, u8 reg, u8 val);
-+int tps65912_irq_init(struct tps65912 *tps65912, int irq,
-+			struct tps65912_platform_data *pdata);
-
- #endif /*  __LINUX_MFD_TPS65912_H */
 -- 
 1.7.0.4
