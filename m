@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab1EML6q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 07:58:46 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:38537
+	id S1758361Ab1EMMBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 08:01:33 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:13345
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751692Ab1EML6p (ORCPT
+	by vger.kernel.org with ESMTP id S1750998Ab1EMMBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 07:58:45 -0400
+	Fri, 13 May 2011 08:01:31 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h63h)
 X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
 From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Thiago Farina <tfransosi@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Date: Fri, 13 May 2011 17:27:51 +0530
-Subject: [PATCHv2 -next] BACKLIGHT: Backlight module for DA9052 PMIC driver
-Thread-Topic: [PATCHv2 -next] BACKLIGHT: Backlight module for DA9052 PMIC
- driver
-Thread-Index: AcwRZPxWBVjpsNhyQUCBvNEwcenyHg==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC62210@KCINPUNHJCMS01.kpit.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <Dajun.Chen@diasemi.com>
+Date: Fri, 13 May 2011 17:29:29 +0530
+Subject: [PATCHv3 -next] MFD: MFD module of DA9052 PMIC driver
+Thread-Topic: [PATCHv3 -next] MFD: MFD module of DA9052 PMIC driver
+Thread-Index: AcwRZTbLkJ5M+XZ8T2SXdChJ5H/RWw==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC62219@KCINPUNHJCMS01.kpit.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -34,16 +33,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4DBx3rO013318
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4DC1mS8013330
 
-Hi Richard,
-
-Backlight Driver for Dialog Semiconductor DA9052 PMICs.
+Hi Mark,
+MFD Driver for Dialog Semiconductor DA9052 PMICs.
 
 Changes made since last submission:
-. did some code format changes
+. moved read_events to irq file
+. logic modified for the chip method bus_sync_unlock
 
-Signed-off-by: Dajun Chen <dchen@diasemi.com>
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 ---
 diff -Naur linux-next-20110421.orig/drivers/input/misc/da9052_onkey.c linux-next-20110421/drivers/input/misc/da9052_onkey.c
 --- linux-next-20110421.orig/drivers/input/misc/da9052_onkey.c  1970-01-01 05:00:00.000000000 +0500
