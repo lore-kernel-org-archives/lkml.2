@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab1EMJdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:33:12 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38894 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758684Ab1EMJdJ (ORCPT
+	id S1759051Ab1EMJsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:48:11 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56853 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758552Ab1EMJsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:33:09 -0400
+	Fri, 13 May 2011 05:48:09 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DCCFB37.9040001@jp.fujitsu.com>
-Date: Fri, 13 May 2011 18:34:47 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
- update tsk->rt.nr_cpus_allowed
-References: <20110428161149.GA15658@redhat.com>	<20110502194416.2D61.A69D9226@jp.fujitsu.com>	<20110502195657.2D68.A69D9226@jp.fujitsu.com>	<1305129929.2914.247.camel@laptop>	<4DCCC61F.80408@jp.fujitsu.com>	<BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>	<4DCCDEC5.3040201@jp.fujitsu.com> <BANLkTik38FinwfSJr5eS40-v6te6-3PR1w@mail.gmail.com>
-In-Reply-To: <BANLkTik38FinwfSJr5eS40-v6te6-3PR1w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Date: Fri, 13 May 2011 18:41:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [RFC][PATCH v7 08/14] writeback: add memcg fields to
+ writeback_control
+Message-Id: <20110513184120.0f9444bc.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1305276473-14780-9-git-send-email-gthelen@google.com>
+References: <1305276473-14780-1-git-send-email-gthelen@google.com>
+	<1305276473-14780-9-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/13 16:43), Yong Zhang wrote:
-> On Fri, May 13, 2011 at 3:33 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com>  wrote:
->> Hello,
->>
->>>>>> (3) schedule() makes fallback and cpuset_cpus_allowed_fallback
->>>>>>      change task->cpus_allowed
->>>>>
->>>>> I'm failing to see how this is happening, surely that kthread isn't
->>>>> actually running that early?
->>>>
->>>> If my understand correctly, current call graph is below.
->>>>
->>>> kernel_init()
->>>>         smp_init();
->>>>                 cpu_up()
->>>>                         ... cpu hotplug notification
->>>>                                 kthread_create()
->>>>         sched_init_smp();
->>>>
->>>>
->>>> So, cpu hotplug event is happen before sched_init_smp(). The old rule is,
->>>> all kthreads of using cpu-up notification have to use kthread_bind(). It
->>>> protected from sched load balance.
->>>>
->>>> but, now cpuset_cpus_allowed_fallback() forcedly change kthread's
->>>> cpumask.
->>>> Why is this works? the point are two.
->>>>
->>>> - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
->>>> periodically.
->>>>   then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
->>>>   my debug print obseve following cpumask change occur at boot time.
->>>>      1) kthread_bind: bind cpu1
->>>>      2) cpuset_cpus_allowed_fallback: bind possible cpu
->>>>      3) rcu_cpu_kthread_should_stop: rebind cpu1
->>>> - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
->>>
->>> Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
->>> which is under hotplug event CPU_UP_PREPARE. Maybe it should be
->>> under CPU_ONLINE.
->>
->> Hmm..
->>
->> I haven't catch your point. cpu_up() call both CPU_UP_PREPARE and CPU_ONLINE
->> notification. Thus, CPU_ONLINE still be called before sched_init_smp().
->
-> The difference is that CPU_ONLINE will set cpu_online_mask and cpu_active_mask,
-> so wake_up_process()->ttwu()->select_task_rq() will not go back to
-> cpuset_cpus_allowed_fallback().
+On Fri, 13 May 2011 01:47:47 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-Right. Thank you. Now I got your point!
+> Add writeback_control fields to differentiate between bdi-wide and
+> per-cgroup writeback.  Cgroup writeback is also able to differentiate
+> between writing inodes isolated to a particular cgroup and inodes shared
+> by multiple cgroups.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-> But the comments for rcu_cpu_kthread_should_stop() shot me, since
-> rcu_spawn_one_cpu_kthread() must be called under CPU_UP_PREPARE
-> for some reason.
->
-> Maybe we should find a more suitable way for your issue :)
-
-ok, I'll try to read and understand rcu-kthread design and find it out.
+Personally, I want to see new flags with their usage in a patch...
 
 
+> ---
+>  include/linux/writeback.h |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index d10d133..4f5c0d2 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -47,6 +47,8 @@ struct writeback_control {
+>  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+>  	unsigned range_cyclic:1;	/* range_start is cyclic */
+>  	unsigned more_io:1;		/* more io to be dispatched */
+> +	unsigned for_cgroup:1;		/* enable cgroup writeback */
+> +	unsigned shared_inodes:1;	/* write inodes spanning cgroups */
+>  };
+
+
+If shared_inode is really rare case...we don't need to have this shared_inodes
+flag and do writeback shared_inode always.....No ?
+
+Thanks,
+-Kame
 
