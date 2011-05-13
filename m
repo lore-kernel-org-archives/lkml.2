@@ -1,59 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517Ab1EMJBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:01:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47533 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932201Ab1EMJBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:01:45 -0400
-Date: Fri, 13 May 2011 11:01:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-Message-ID: <20110513090129.GG13647@elte.hu>
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
- <BANLkTi==OatTqfDbnAmHQA0t2DmokEd-CA@mail.gmail.com>
- <BANLkTik7wQc05OQTHThBbrFhKx2pM1Tx+A@mail.gmail.com>
- <BANLkTimjHiaZ+b03FLb1LX=ycv=cAVyJZw@mail.gmail.com>
- <20110512213542.GB17596@elte.hu>
- <BANLkTikPmq=NOt-9t0odVVnrRshM=MsnJw@mail.gmail.com>
- <20110512215023.GA20939@elte.hu>
- <20110512220715.GA7451@redhat.com>
- <BANLkTi=EfPMQ4Z7+_SrKAeOYHfDC6t9vyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=EfPMQ4Z7+_SrKAeOYHfDC6t9vyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S932978Ab1EMJK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:10:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53786 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab1EMJK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:10:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 13 May 2011 18:04:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ying Han <yinghan@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <jweiner@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: [RFC][PATCH 0/7] memcg async reclaim
+Message-Id: <20110513180409.7feea2f9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <BANLkTinFesh5cpdk16dWygoWJeH8QU0hTw@mail.gmail.com>
+References: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110511182844.d128c995.akpm@linux-foundation.org>
+	<20110512103503.717f4a96.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110511205110.354fa05e.akpm@linux-foundation.org>
+	<20110512132237.813a7c7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110512171725.d367980f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110513120318.63ff7d0e.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTinFesh5cpdk16dWygoWJeH8QU0hTw@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 12 May 2011 22:10:30 -0700
+Ying Han <yinghan@google.com> wrote:
 
-* Stephane Eranian <eranian@google.com> wrote:
+> On Thu, May 12, 2011 at 8:03 PM, KAMEZAWA Hiroyuki <
+> kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Thu, 12 May 2011 17:17:25 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >
+> > > On Thu, 12 May 2011 13:22:37 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > I'll check what codes in vmscan.c or /mm affects memcg and post a
+> > > required fix in step by step. I think I found some..
+> > >
+> >
+> > After some tests, I doubt that 'automatic' one is unnecessary until
+> > memcg's dirty_ratio is supported. And as Andrew pointed out,
+> > total cpu consumption is unchanged and I don't have workloads which
+> > shows me meaningful speed up.
+> >
+> 
+> The total cpu consumption is one way to measure the background reclaim,
+> another thing I would like to measure is a histogram of page fault latency
+> for a heavy page allocation application. I would expect with background
+> reclaim, we will get less variation on the page fault latency than w/o it.
+> 
+> Sorry i haven't got chance to run some tests to back it up. I will try to
+> get some data.
+> 
 
-> Good point about System.map! Even if /proc/kallsyms contains zero addresses, 
-> I can still get them from /boot/System.map which is readable by everyone, I 
-> think. It does not contain the modules addresses, but you have the core 
-> functions, unless I am somehow mistaken.
+My posted set needs some tweaks and fixes. I'll post re-tuned one in the
+next week. (But I'll be busy until Wednesday.)
 
-Yes. I pointed out this and some other details a couple of months ago, for a 
-similarly motivated /proc/kallsyms obfuscation patch:
+> 
+> > But I guess...with dirty_ratio, amount of dirty pages in memcg is
+> > limited and background reclaim can work enough without noise of
+> > write_page() while applications are throttled by dirty_ratio.
+> >
+> 
+> Definitely. I have run into the issue while debugging the soft_limit
+> reclaim. The background reclaim became very inefficient if we have dirty
+> pages greater than the soft_limit. Talking w/ Greg about it regarding his
+> per-memcg dirty page limit effort, we should consider setting the dirty
+> ratio which not allowing the dirty pages greater the reclaim watermarks
+> (here is the soft_limit).
+> 
 
-  http://lkml.org/lkml/2010/11/4/113
-  http://lkml.org/lkml/2010/11/4/145
+I think I got some positive result...in some situation.
+
+On 8cpu, 24GB RAM system, under 300MB memcg, run 2 programs
+  Program 1)  while true; do cat ./test/1G > /dev/null;done
+              This fills memcg with clean file cache.
+  Program 2)  malloc(200MB) and page-fault, free it in 200 times.
+
+And measure Program2's time.
+
+Case 1) running only Program2
+
+real    0m17.086s
+user    0m0.057s
+sys     0m17.257s
+
+
+Case 2) running Program 1 and 2 without async reclaim.
+
+[kamezawa@bluextal test]$ time ./catch_and_release  > /dev/null
+
+real    0m26.182s
+user    0m0.115s
+sys     0m19.075s
+[kamezawa@bluextal test]$ time ./catch_and_release  > /dev/null
+
+real    0m23.155s
+user    0m0.096s
+sys     0m18.175s
+[kamezawa@bluextal test]$ time ./catch_and_release  > /dev/null
+
+real    0m24.667s
+user    0m0.108s
+sys     0m18.804s
+
+
+Case 3) running Program 1 and 2 with async reclaim of 8MB to limit.
+
+
+[kamezawa@bluextal test]$ time ./catch_and_release  > /dev/null
+
+real    0m21.438s
+user    0m0.083s
+sys     0m17.864s
+[kamezawa@bluextal test]$ time ./catch_and_release  > /dev/null
+
+real    0m23.010s
+user    0m0.079s
+sys     0m17.819s
+[kamezawa@bluextal test]$ time ./catch_and_release  > /dev/null
+
+real    0m19.596s
+user    0m0.108s
+sys     0m18.053s
+
+
+If my test is correct, there are some meaningful positive effect.
+But I doubt there may be case with negative result case. 
+
+I wonder to see posivie value, application shouldn't do 'write' ;)
+Anyway, I'll make a try in the next week, again.
 
 Thanks,
+-Kame
 
-	Ingo
+
+
+
+
+
