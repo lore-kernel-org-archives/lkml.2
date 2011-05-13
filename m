@@ -1,598 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab1EMMnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 08:43:49 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:43103 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759150Ab1EMMnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 08:43:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6344"; a="91005192"
-From: Mohan Pallaka <mpallaka@codeaurora.org>
-To: dmitry.torokhov@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.intradead.org, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, rmk@dyn-67.arm.linux.org.uk,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mohan Pallaka <mpallaka@codeaurora.org>
-Subject: [PATCH 2/2] input: misc: Add support for isa1200 chip
-Date: Fri, 13 May 2011 18:13:22 +0530
-Message-Id: <1305290602-29859-3-git-send-email-mpallaka@codeaurora.org>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1305290602-29859-1-git-send-email-mpallaka@codeaurora.org>
-References: <1305290602-29859-1-git-send-email-mpallaka@codeaurora.org>
+	id S1759216Ab1EMMpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 08:45:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758600Ab1EMMpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 08:45:45 -0400
+Date: Fri, 13 May 2011 08:45:23 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+Message-ID: <20110513124523.GM13984@redhat.com>
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+On Fri, May 13, 2011 at 04:23:38PM +0800, Huang Ying wrote:
+> In general, unknown NMI is used by hardware and firmware to notify
+> fatal hardware errors to OS. So the Linux should treat unknown NMI as
+> hardware error and go panic upon unknown NMI for better error
+> containment.
 
-isa1200 chip can be used to generate vibrations to indicate
-silent alerts, providing gaming haptic actions or vibrations
-in response to touches. It can operate in two modes, pwm
-generation and pwm input mode. Pwm generation mode requires
-external clock and pwm input mode needs the pwm signal to be
-given as input to the chip.
+I have a couple of concerns about this patch.  One I don't think BIOSes
+are ready for this.  I have Intel Westmere boxes that say they have a
+valid HEST, GHES, and EINJ table, but when I inject an error there is no
+GHES record.  This leaves me with an unknown NMI and panic.  Yeah, it is a
+BIOS bug I guess, but I think vendors are going to be slow fixing all this
+stuff (my Nehalem box is in even worse shape with this stuff).
 
-This patch has been derived based on Kyungmin Park's haptic
-framework patches at http://lkml.org/lkml/2009/10/7/50 . Park's
-isa1200 driver registers to the haptic class, which is also
-introduced as part of the same patch series, and userspace will
-operate the vibrator through exported sysfs entries. This version
-supports only pwm input mode.
+Also, is there any known issues with x86_64 platforms with bad NMIs?  RHEL
+has had unknown NMI's panic on x86_64 since x86_64 first came out, I don't
+recall any exceptions we had to add to handle 'quirky' hardware.
 
-This derived patch converts the driver from haptic framework to
-the Linux supported force feeback framework. It also supports the
-chip operation in both pwm input and generation modes.
+Then for the i686 case, because the 'quirky' hardware is so old, can't we
+just leave it a kernel config option to switch between using a 'printk'
+vs. a 'panic'?  Or even a kernel command line option.
 
-Change-Id: If253c71e833e629431a35864e33824d8d6dadb35
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Mohan Pallaka <mpallaka@codeaurora.org>
----
- drivers/input/misc/Kconfig    |   12 +
- drivers/input/misc/Makefile   |    1 +
- drivers/input/misc/isa1200.c  |  442 +++++++++++++++++++++++++++++++++++++++++
- include/linux/input/isa1200.h |   46 +++++
- 4 files changed, 501 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/misc/isa1200.c
- create mode 100644 include/linux/input/isa1200.h
+I figure these 'quirky' hardware machines are more the exception nowdays,
+do we really need to add code to whitelist machines?
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index f9cf088..9fd762d 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -302,6 +302,18 @@ config HP_SDC_RTC
- 	  Say Y here if you want to support the built-in real time clock
- 	  of the HP SDC controller.
- 
-+config INPUT_ISA1200
-+	tristate "ISA1200 haptic support"
-+	depends on I2C
-+	select INPUT_FF_MEMLESS
-+	help
-+	  ISA1200 is a high performance enhanced haptic chip.
-+	  Say Y here if you want to support ISA1200 connected via I2C,
-+	  and select N if you are unsure.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called isa1200.
-+
- config INPUT_PCF50633_PMU
- 	tristate "PCF50633 PMU events"
- 	depends on MFD_PCF50633
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index e3f7984..47f74f7 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -23,6 +23,7 @@ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
- obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
- obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
- obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
-+obj-$(CONFIG_INPUT_ISA1200)		+= isa1200.o
- obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
- obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
- obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
-diff --git a/drivers/input/misc/isa1200.c b/drivers/input/misc/isa1200.c
-new file mode 100644
-index 0000000..0f5448a
---- /dev/null
-+++ b/drivers/input/misc/isa1200.c
-@@ -0,0 +1,442 @@
-+/*
-+ *  Copyright (C) 2009 Samsung Electronics
-+ *  Kyungmin Park <kyungmin.park@samsung.com>
-+ *
-+ *  Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#define pr_fmt(fmt) "%s: " fmt, __func__
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <linux/workqueue.h>
-+#include <linux/delay.h>
-+#include <linux/pwm.h>
-+#include <linux/input.h>
-+#include <linux/slab.h>
-+#include <linux/pm.h>
-+#include <linux/input/isa1200.h>
-+
-+#define ISA1200_HCTRL0			0x30
-+#define HCTRL0_MODE_CTRL_BIT		(3)
-+#define HCTRL0_OVERDRIVE_HIGH_BIT	(5)
-+#define HCTRL0_OVERDRIVE_EN_BIT		(6)
-+#define HCTRL0_HAP_EN			(7)
-+#define HCTRL0_RESET			0x01
-+#define HCTRL1_RESET			0x4B
-+
-+#define ISA1200_HCTRL1			0x31
-+#define HCTRL1_SMART_ENABLE_BIT		(3)
-+#define HCTRL1_ERM_BIT			(5)
-+#define HCTRL1_EXT_CLK_ENABLE_BIT	(7)
-+
-+#define ISA1200_HCTRL5			0x35
-+#define HCTRL5_VIB_STRT			0xD5
-+#define HCTRL5_VIB_STOP			0x6B
-+
-+#define DIVIDER_128			(128)
-+#define DIVIDER_1024			(1024)
-+#define DIVIDE_SHIFTER_128		(7)
-+
-+#define FREQ_22400			(22400)
-+#define FREQ_172600			(172600)
-+
-+#define POR_DELAY_USEC			(250)
-+
-+struct isa1200_chip {
-+	const struct isa1200_platform_data *pdata;
-+	struct i2c_client *client;
-+	struct input_dev *input_device;
-+	struct pwm_device *pwm;
-+	unsigned int period_ns;
-+	unsigned int state;
-+	struct work_struct work;
-+};
-+
-+static void isa1200_vib_set(struct isa1200_chip *haptic, bool enable)
-+{
-+	int rc;
-+
-+	if (enable) {
-+		if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE) {
-+			rc = pwm_config(haptic->pwm,
-+				(haptic->period_ns * haptic->pdata->duty) / 100,
-+				haptic->period_ns);
-+			if (rc < 0)
-+				pr_err("pwm_config fail\n");
-+			rc = pwm_enable(haptic->pwm);
-+			if (rc < 0)
-+				pr_err("pwm_enable fail\n");
-+		} else if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
-+			rc = i2c_smbus_write_byte_data(haptic->client,
-+						ISA1200_HCTRL5,
-+						HCTRL5_VIB_STRT);
-+			if (rc < 0)
-+				pr_err("start vibration fail\n");
-+		}
-+	} else {
-+		if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE)
-+			pwm_disable(haptic->pwm);
-+		else if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
-+			rc = i2c_smbus_write_byte_data(haptic->client,
-+						ISA1200_HCTRL5,
-+						HCTRL5_VIB_STOP);
-+			if (rc < 0)
-+				pr_err("stop vibration fail\n");
-+		}
-+	}
-+}
-+
-+static int isa1200_setup(struct i2c_client *client)
-+{
-+	struct isa1200_chip *haptic = i2c_get_clientdata(client);
-+	int value, temp, rc;
-+
-+	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio)
-+		gpio_set_value_cansleep(haptic->pdata->hap_len_gpio, 1);
-+
-+	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 0);
-+	udelay(POR_DELAY_USEC);
-+	gpio_set_value_cansleep(haptic->pdata->hap_en_gpio, 1);
-+
-+	value =	(haptic->pdata->smart_en << HCTRL1_SMART_ENABLE_BIT) |
-+		(haptic->pdata->is_erm << HCTRL1_ERM_BIT) |
-+		(haptic->pdata->ext_clk_en << HCTRL1_EXT_CLK_ENABLE_BIT);
-+
-+	rc = i2c_smbus_write_byte_data(client, ISA1200_HCTRL1, value);
-+	if (rc < 0) {
-+		pr_err("i2c write failure\n");
-+		return rc;
-+	}
-+
-+	if (haptic->pdata->mode_ctrl == PWM_GEN_MODE) {
-+		temp = haptic->pdata->pwm_fd.pwm_div;
-+		if (temp < DIVIDER_128 || temp > DIVIDER_1024 ||
-+					temp % DIVIDER_128) {
-+			pr_err("Invalid divisor\n");
-+			rc = -EINVAL;
-+			goto reset_hctrl1;
-+		}
-+		value = ((temp >> DIVIDE_SHIFTER_128) - 1);
-+	} else if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE) {
-+		temp = haptic->pdata->pwm_fd.pwm_freq;
-+		if (temp < FREQ_22400 || temp > FREQ_172600 ||
-+					temp % FREQ_22400) {
-+			pr_err("Invalid frequency\n");
-+			rc = -EINVAL;
-+			goto reset_hctrl1;
-+		}
-+		value = ((temp / FREQ_22400) - 1);
-+		haptic->period_ns = NSEC_PER_SEC / temp;
-+	}
-+	value |= (haptic->pdata->mode_ctrl << HCTRL0_MODE_CTRL_BIT) |
-+		(haptic->pdata->overdrive_high << HCTRL0_OVERDRIVE_HIGH_BIT) |
-+		(haptic->pdata->overdrive_en << HCTRL0_OVERDRIVE_EN_BIT) |
-+		(haptic->pdata->chip_en << HCTRL0_HAP_EN);
-+
-+	rc = i2c_smbus_write_byte_data(client, ISA1200_HCTRL0, value);
-+	if (rc < 0) {
-+		pr_err("i2c write failure\n");
-+		goto reset_hctrl1;
-+	}
-+
-+	return 0;
-+
-+reset_hctrl1:
-+	i2c_smbus_write_byte_data(client, ISA1200_HCTRL1,
-+				HCTRL1_RESET);
-+	return rc;
-+}
-+
-+static void isa1200_worker(struct work_struct *work)
-+{
-+	struct isa1200_chip *haptic;
-+
-+	haptic = container_of(work, struct isa1200_chip, work);
-+	isa1200_vib_set(haptic, !!haptic->state);
-+}
-+
-+static int isa1200_play_effect(struct input_dev *dev, void *data,
-+				struct ff_effect *effect)
-+{
-+	struct isa1200_chip *haptic = input_get_drvdata(dev);
-+
-+	/* support basic vibration */
-+	haptic->state = effect->u.rumble.strong_magnitude >> 8;
-+	if (!haptic->state)
-+		haptic->state = effect->u.rumble.weak_magnitude >> 9;
-+
-+	schedule_work(&haptic->work);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int isa1200_suspend(struct device *dev)
-+{
-+	struct isa1200_chip *haptic = dev_get_drvdata(dev);
-+	int rc;
-+
-+	cancel_work_sync(&haptic->work);
-+	/* turn-off current vibration */
-+	isa1200_vib_set(haptic, false);
-+
-+	if (haptic->pdata->power_on) {
-+		rc = haptic->pdata->power_on(false);
-+		if (rc) {
-+			pr_err("power-down failed\n");
-+			return rc;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int isa1200_resume(struct device *dev)
-+{
-+	struct isa1200_chip *haptic = dev_get_drvdata(dev);
-+	int rc;
-+
-+	if (haptic->pdata->power_on) {
-+		rc = haptic->pdata->power_on(true);
-+		if (rc) {
-+			pr_err("power-up failed\n");
-+			return rc;
-+		}
-+	}
-+
-+	isa1200_setup(haptic->client);
-+	return 0;
-+}
-+#else
-+#define isa1200_suspend		NULL
-+#define isa1200_resume		NULL
-+#endif
-+
-+static int __devinit isa1200_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct isa1200_chip *haptic;
-+	int rc;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+			I2C_FUNC_SMBUS_BYTE_DATA)) {
-+		pr_err("i2c is not supported\n");
-+		return -EIO;
-+	}
-+
-+	if (!client->dev.platform_data) {
-+		pr_err("pdata is not avaiable\n");
-+		return -EINVAL;
-+	}
-+
-+	haptic = kzalloc(sizeof(struct isa1200_chip), GFP_KERNEL);
-+	if (!haptic) {
-+		pr_err("no memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	haptic->pdata = client->dev.platform_data;
-+	haptic->client = client;
-+
-+	i2c_set_clientdata(client, haptic);
-+
-+	/* device setup */
-+	if (haptic->pdata->dev_setup) {
-+		rc = haptic->pdata->dev_setup(true);
-+		if (rc < 0) {
-+			pr_err("setup failed!\n");
-+			goto err_mem_alloc;
-+		}
-+	}
-+
-+	/* power on */
-+	if (haptic->pdata->power_on) {
-+		rc = haptic->pdata->power_on(true);
-+		if (rc < 0) {
-+			pr_err("power failed\n");
-+			goto err_setup;
-+		}
-+	}
-+
-+	/* request gpio */
-+	rc = gpio_is_valid(haptic->pdata->hap_en_gpio);
-+	if (rc) {
-+		rc = gpio_request(haptic->pdata->hap_en_gpio, "haptic_gpio");
-+		if (rc) {
-+			pr_err("gpio %d request failed\n",
-+					haptic->pdata->hap_en_gpio);
-+			goto err_power_on;
-+		}
-+	} else {
-+		pr_err("Invalid gpio %d\n",
-+					haptic->pdata->hap_en_gpio);
-+		goto err_power_on;
-+	}
-+
-+	rc = gpio_direction_output(haptic->pdata->hap_en_gpio, 0);
-+	if (rc) {
-+		pr_err("gpio %d set direction failed\n",
-+					haptic->pdata->hap_en_gpio);
-+		goto err_hap_en_gpio_free;
-+	}
-+
-+	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio) {
-+		rc = gpio_request(haptic->pdata->hap_len_gpio,
-+					"haptic_len_gpio");
-+		if (rc) {
-+			pr_err("gpio %d request failed\n",
-+					haptic->pdata->hap_len_gpio);
-+			goto err_hap_en_gpio_free;
-+		}
-+	}
-+
-+	/* setup registers */
-+	rc = isa1200_setup(haptic->client);
-+	if (rc < 0) {
-+		pr_err("setup fail %d\n", rc);
-+		goto err_ldo_en_gpio_free;
-+	}
-+
-+	if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE) {
-+		haptic->pwm = pwm_request(haptic->pdata->pwm_ch_id,
-+				haptic->client->driver->id_table->name);
-+		if (IS_ERR(haptic->pwm)) {
-+			pr_err("pwm request failed\n");
-+			rc = PTR_ERR(haptic->pwm);
-+			goto err_reset_hctrl0;
-+		}
-+	}
-+
-+	/* init workqeueue */
-+	INIT_WORK(&haptic->work, isa1200_worker);
-+
-+	haptic->input_device = input_allocate_device();
-+	if (!haptic->input_device) {
-+		pr_err("input device alloc failed\n");
-+		rc = -ENOMEM;
-+		goto err_pwm_free ;
-+	}
-+
-+	input_set_drvdata(haptic->input_device, haptic);
-+	haptic->input_device->name = haptic->pdata->name ? :
-+					"isa1200-haptic-device";
-+
-+	haptic->input_device->dev.parent = &client->dev;
-+	haptic->input_device->id.bustype = BUS_I2C;
-+
-+	input_set_capability(haptic->input_device, EV_FF, FF_RUMBLE);
-+
-+	rc = input_ff_create_memless(haptic->input_device, NULL,
-+					isa1200_play_effect);
-+	if (rc < 0) {
-+		pr_err("unable to register with ff\n");
-+		goto err_free_dev;
-+	}
-+
-+	rc = input_register_device(haptic->input_device);
-+	if (rc < 0) {
-+		pr_err("unable to register input device\n");
-+		goto err_ff_destroy;
-+	}
-+	return 0;
-+
-+err_ff_destroy:
-+	input_ff_destroy(haptic->input_device);
-+err_free_dev:
-+	input_free_device(haptic->input_device);
-+err_pwm_free:
-+	if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE)
-+		pwm_free(haptic->pwm);
-+err_reset_hctrl0:
-+	i2c_smbus_write_byte_data(haptic->client, ISA1200_HCTRL0,
-+					HCTRL0_RESET);
-+err_ldo_en_gpio_free:
-+	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio)
-+		gpio_free(haptic->pdata->hap_len_gpio);
-+err_hap_en_gpio_free:
-+	gpio_free(haptic->pdata->hap_en_gpio);
-+err_power_on:
-+	if (haptic->pdata->power_on)
-+		haptic->pdata->power_on(false);
-+err_setup:
-+	if (haptic->pdata->dev_setup)
-+		haptic->pdata->dev_setup(false);
-+err_mem_alloc:
-+	kfree(haptic);
-+	return rc;
-+}
-+
-+static int __devexit isa1200_remove(struct i2c_client *client)
-+{
-+	struct isa1200_chip *haptic = i2c_get_clientdata(client);
-+
-+	cancel_work_sync(&haptic->work);
-+	/* turn-off current vibration */
-+	isa1200_vib_set(haptic, false);
-+
-+	if (haptic->pdata->mode_ctrl == PWM_INPUT_MODE)
-+		pwm_free(haptic->pwm);
-+
-+	if (haptic->pdata->hap_en_gpio != haptic->pdata->hap_len_gpio)
-+		gpio_free(haptic->pdata->hap_len_gpio);
-+	gpio_free(haptic->pdata->hap_en_gpio);
-+
-+	/* reset hardware registers */
-+	i2c_smbus_write_byte_data(haptic->client, ISA1200_HCTRL0,
-+				HCTRL0_RESET);
-+	i2c_smbus_write_byte_data(haptic->client, ISA1200_HCTRL1,
-+				HCTRL1_RESET);
-+
-+	if (haptic->pdata->dev_setup)
-+		haptic->pdata->dev_setup(false);
-+
-+	/* power-off the chip */
-+	if (haptic->pdata->power_on)
-+		haptic->pdata->power_on(false);
-+
-+	input_unregister_device(haptic->input_device);
-+	kfree(haptic);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id isa1200_id_table[] = {
-+	{"isa1200", 0},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(i2c, isa1200_id_table);
-+
-+static SIMPLE_DEV_PM_OPS(isa1200_pm_ops, isa1200_suspend, isa1200_resume);
-+
-+static struct i2c_driver isa1200_driver = {
-+	.driver = {
-+		.name = "isa1200",
-+		.owner = THIS_MODULE,
-+		.pm = &isa1200_pm_ops,
-+	},
-+	.probe = isa1200_probe,
-+	.remove = __devexit_p(isa1200_remove),
-+	.id_table = isa1200_id_table,
-+};
-+
-+static int __init isa1200_init(void)
-+{
-+	return i2c_add_driver(&isa1200_driver);
-+}
-+module_init(isa1200_init);
-+
-+static void __exit isa1200_exit(void)
-+{
-+	i2c_del_driver(&isa1200_driver);
-+}
-+module_exit(isa1200_exit);
-+
-+MODULE_DESCRIPTION("isa1200 based vibrator chip driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Kyungmin Park <kyungmin.park@samsung.com>");
-+MODULE_AUTHOR("Mohan Pallaka <mpallaka@codeaurora.org>");
-diff --git a/include/linux/input/isa1200.h b/include/linux/input/isa1200.h
-new file mode 100644
-index 0000000..a1b43d5
---- /dev/null
-+++ b/include/linux/input/isa1200.h
-@@ -0,0 +1,46 @@
-+/*
-+ *  Copyright (C) 2009 Samsung Electronics
-+ *  Kyungmin Park <kyungmin.park@samsung.com>
-+ *
-+ *  Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __LINUX_ISA1200_H
-+#define __LINUX_ISA1200_H
-+
-+enum mode_control {
-+	POWER_DOWN_MODE = 0,
-+	PWM_INPUT_MODE,
-+	PWM_GEN_MODE,
-+	WAVE_GEN_MODE
-+};
-+
-+union pwm_div_freq {
-+	unsigned int pwm_div; /* PWM gen mode */
-+	unsigned int pwm_freq; /* PWM input mode */
-+};
-+
-+struct isa1200_platform_data {
-+	const char *name;
-+	unsigned int pwm_ch_id; /* pwm channel id */
-+	unsigned int max_timeout;
-+	unsigned int hap_en_gpio;
-+	unsigned int hap_len_gpio; /* GPIO to enable the internal LDO */
-+	bool overdrive_high; /* high/low overdrive */
-+	bool overdrive_en; /* enable/disable overdrive */
-+	enum mode_control mode_ctrl; /* input/generation/wave */
-+	union pwm_div_freq pwm_fd;
-+	bool smart_en; /* smart mode enable/disable */
-+	bool is_erm;
-+	bool ext_clk_en;
-+	unsigned int chip_en;
-+	unsigned int duty;
-+	int (*power_on)(bool on);
-+	int (*dev_setup)(bool on);
-+};
-+
-+#endif /* __LINUX_ISA1200_H */
+Granted I am not familiar enough with the quirky hardware (in fact I don't
+think I have seen any mainly because I haven't been around long enough).
+Most cases I see when trolling through the fedora bugzilla list for
+unknown NMIs, is just bad firmware or acpi power configurations.
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Just wondering if we could just simplify the patch somehow with better
+assumptions.
+
+Cheers,
+Don
+
+> 
+> But there are some legacy machine which would randomly send unknown
+> NMIs for no good reason.  To support these machines, a white list
+> mechanism is provided to treat unknown NMI as hardware error only on
+> some known working system.
+> 
+> These systems are identified via the presentation of APEI HEST or
+> some PCI ID of the host bridge. The PCI ID of host bridge instead of
+> DMI ID is used, so that the checking can be done based on the platform
+> type instead of motherboard. This should be simpler and sufficient.
+> 
+> The method to identify the platforms is designed by Andi Kleen.
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/include/asm/nmi.h |    1 
+>  arch/x86/kernel/Makefile   |    2 +
+>  arch/x86/kernel/hwerr.c    |   61 +++++++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/traps.c    |   31 +++++++++++++++++-----
+>  drivers/acpi/apei/hest.c   |    8 +++++
+>  5 files changed, 96 insertions(+), 7 deletions(-)
+>  create mode 100644 arch/x86/kernel/hwerr.c
+> 
+> --- a/arch/x86/include/asm/nmi.h
+> +++ b/arch/x86/include/asm/nmi.h
+> @@ -17,6 +17,7 @@ struct ctl_table;
+>  extern int proc_nmi_enabled(struct ctl_table *, int ,
+>  			void __user *, size_t *, loff_t *);
+>  extern int unknown_nmi_panic;
+> +extern void set_unknown_nmi_as_hwerr(void);
+>  
+>  void arch_trigger_all_cpu_backtrace(void);
+>  #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -112,6 +112,8 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION)
+>  obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+>  obj-$(CONFIG_OF)			+= devicetree.o
+>  
+> +obj-y					+= hwerr.o
+> +
+>  ###
+>  # 64 bit specific files
+>  ifeq ($(CONFIG_X86_64),y)
+> --- /dev/null
+> +++ b/arch/x86/kernel/hwerr.c
+> @@ -0,0 +1,61 @@
+> +/*
+> + * Hardware error architecture dependent processing
+> + *
+> + * Copyright 2010,2011 Intel Corp.
+> + *   Author: Huang Ying <ying.huang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/pci.h>
+> +#include <linux/init.h>
+> +#include <linux/nmi.h>
+> +
+> +/*
+> + * In general, unknown NMI is used by hardware and firmware to notify
+> + * fatal hardware errors to OS. So the Linux should treat unknown NMI
+> + * as hardware error and go panic upon unknown NMI for better error
+> + * containment.
+> + *
+> + * But there are some legacy machine which would randomly send unknown
+> + * NMIs for no good reason.  To support these systems, a white list
+> + * mechanism is used to treat unknown NMI as hardware error only on
+> + * some known working system.
+> + *
+> + * The PCI ID of host bridge instead of DMI ID is used, so that the
+> + * checking can be done based on the platform instead of motherboard.
+> + * This should be simpler and sufficient.
+> + */
+> +static const
+> +struct pci_device_id unknown_nmi_as_hwerr_platform[] __initdata = {
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x3406) },
+> +	{ 0, }
+> +};
+> +
+> +int __init check_unknown_nmi_as_hwerr(void)
+> +{
+> +	struct pci_dev *dev = NULL;
+> +
+> +	for_each_pci_dev(dev) {
+> +		if (pci_match_id(unknown_nmi_as_hwerr_platform, dev)) {
+> +			pr_info("System has working NMI, will treat unknown NMI as hardware error!\n");
+> +			set_unknown_nmi_as_hwerr();
+> +			break;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +late_initcall(check_unknown_nmi_as_hwerr);
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
+>  
+>  static int ignore_nmis;
+>  
+> +static int unknown_nmi_as_hwerr;
+> +
+>  int unknown_nmi_panic;
+>  /*
+>   * Prevent NMI reason port (0x61) being accessed simultaneously, can
+> @@ -368,12 +370,18 @@ io_check_error(unsigned char reason, str
+>  	outb(reason, NMI_REASON_PORT);
+>  }
+>  
+> +void set_unknown_nmi_as_hwerr(void)
+> +{
+> +	unknown_nmi_as_hwerr = 1;
+> +}
+> +
+>  static notrace __kprobes void
+>  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+>  {
+>  	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
+>  			NOTIFY_STOP)
+>  		return;
+> +
+>  #ifdef CONFIG_MCA
+>  	/*
+>  	 * Might actually be able to figure out what the guilty party
+> @@ -384,14 +392,23 @@ unknown_nmi_error(unsigned char reason,
+>  		return;
+>  	}
+>  #endif
+> -	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+> -		 reason, smp_processor_id());
+> -
+> -	pr_emerg("Do you have a strange power saving mode enabled?\n");
+> -	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+> -		panic("NMI: Not continuing");
+> +	/*
+> +	 * On modern systems, unknown NMI means fatal hardware error, but
+> +	 * this may be not true on some legacy system.
+> +	 */
+> +	if (unknown_nmi_as_hwerr) {
+> +		panic("NMI for hardware error without error record: Not continuing\n"
+> +		      "Please check BIOS/BMC log for further information.");
+> +	} else {
+> +		pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+> +			 reason, smp_processor_id());
+> +
+> +		pr_emerg("Do you have a strange power saving mode enabled?\n");
+> +		if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+> +			panic("NMI: Not continuing");
+>  
+> -	pr_emerg("Dazed and confused, but trying to continue\n");
+> +		pr_emerg("Dazed and confused, but trying to continue\n");
+> +	}
+>  }
+>  
+>  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+> --- a/drivers/acpi/apei/hest.c
+> +++ b/drivers/acpi/apei/hest.c
+> @@ -35,6 +35,7 @@
+>  #include <linux/highmem.h>
+>  #include <linux/io.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/nmi.h>
+>  #include <acpi/apei.h>
+>  
+>  #include "apei-internal.h"
+> @@ -225,6 +226,13 @@ void __init acpi_hest_init(void)
+>  	if (rc)
+>  		goto err;
+>  
+> +	/*
+> +	 * System has proper HEST should treat unknown NMI as fatal
+> +	 * hardware error notification
+> +	 */
+> +	pr_info(HEST_PFX "HEST is valid, will treat unknown NMI as hardware error!\n");
+> +	set_unknown_nmi_as_hwerr();
+> +
+>  	rc = hest_ghes_dev_register(ghes_count);
+>  	if (!rc) {
+>  		pr_info(HEST_PFX "Table parsing has been initialized.\n");
