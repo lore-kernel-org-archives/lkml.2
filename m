@@ -1,88 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab1EMKEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 06:04:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34506 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755989Ab1EMKEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 06:04:21 -0400
-Date: Fri, 13 May 2011 12:04:11 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
-        Carl-Johan Kjellander <carl-johan@klarna.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Sched_autogroup and niced processes
-Message-ID: <20110513100411.GA21022@elte.hu>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
- <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
- <1305273950.15080.7.camel@marge.simson.net>
- <20110513082250.GB13647@elte.hu>
- <1305276066.2561.1.camel@twins>
- <20110513090537.GH13647@elte.hu>
- <1305277666.2561.9.camel@twins>
- <20110513092933.GL13647@elte.hu>
- <1305279990.2466.4.camel@twins>
+	id S933031Ab1EMKEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 06:04:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54418 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932970Ab1EMKEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 06:04:33 -0400
+Date: Fri, 13 May 2011 12:04:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jacob Pan <jacob.jun.pan@intel.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris McDermott <lcm@us.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the tip tree with the arm tree
+In-Reply-To: <20110513092646.GK13647@elte.hu>
+Message-ID: <alpine.LFD.2.02.1105131203090.2831@ionos>
+References: <20110513131437.8999e8eb.sfr@canb.auug.org.au> <20110513080634.GA13647@elte.hu> <20110513083738.GA19733@n2100.arm.linux.org.uk> <20110513092646.GK13647@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305279990.2466.4.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Fri, 2011-05-13 at 11:29 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
-> > > > Could we somehow automate this:
-> > > > 
-> > > >   > echo 19 > /proc/'pid of seti@home'/autogroup
-> > > > 
-> > > > and split off nice 19 tasks into separate groups and lower the group's 
-> > > > priority? 
+On Fri, 13 May 2011, Ingo Molnar wrote:
+> * Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> 
+> > On Fri, May 13, 2011 at 10:06:34AM +0200, Ingo Molnar wrote:
 > > > 
-> > > Well I guess you can stack on all kinds of heuristics, do we want to?
+> > > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > Today's linux-next merge of the tip tree got a conflict in 
+> > > > arch/x86/kernel/i8253.c between commit 3490f584b9ba ("clocksource: convert 
+> > > > x86 to generic i8253 clocksource") from the arm tree and commit b01cc1b0eae0 
+> > > > ("x86: Convert remaining x86 clocksources to clocksource_register_hz/khz") 
+> > > > from the tip tree.
+> > > > 
+> > > > The former seems to supercede the latter, so I used the former.
+> > > 
+> > > Russell, how the heck did this commit:
+> > > 
+> > >  commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
+> > >  Author:     Russell King <rmk+kernel@arm.linux.org.uk>
+> > >  AuthorDate: Sun May 8 18:55:19 2011 +0100
+> > >  Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
+> > >  CommitDate: Tue May 10 08:20:54 2011 +0100
+> > > 
+> > >     clocksource: convert x86 to generic i8253 clocksource
+> > > 
+> > > which has such a clearly x86 diffstat:
+> > > 
+> > >  arch/x86/Kconfig             |    1 +
+> > >  arch/x86/include/asm/i8253.h |    2 +
+> > >  arch/x86/kernel/i8253.c      |   79 +-----------------------------------------
+> > >  3 files changed, 4 insertions(+), 78 deletions(-)
+> > > 
+> > > end up in the ARM tree without an ack from an x86 maintainer??
 > > 
-> > Well have you seen my non-heuristic suggestion:
-> > 
-> >  | Another thing we could do is to lower the priority of a cgroup if it *only* 
-> >  | runs reniced tasks. I.e. track the 'maximum priority' of cgroups and 
-> >  | propagate that to their weight.
-> >  |
-> >  | This way renicing within cgroups will be more powerful and people do not have 
-> >  | to muck with cgroup details.
-> > 
-> > A cgroup assuming the highest priority of all tasks it contains is a pretty 
-> > natural definition and extension of priorities and also solves this usecase.
+> > The "no response" means two things: either that people are busy, [...]
 > 
-> Well, that a heuristic in my book, and it totally destroys the independence 
-> of groups from tasks (resulting in O(n) task nice behaviour).
+> Had you asked us before committing it one day after it was posted, or had you 
+> *noticed* that those files are not in your tree and are already modified in 
+> linux-next, you'd have gotten a response like:
 > 
-> I really don't see why we should do this, if people don't want what it does, 
-> don't use it. If you want something else, you can do all these things from 
-> userspace to suit your exact needs.
+> --------------->
 > 
-> We have enough knobs to set things up as you want them, no need to make 
-> things more complicated.
+> Yes, the change looks good to me as well in principle. Thomas is busy this 
+> week, he is on a conference.
 
-Ok, i guess you are right, propagating priorities does break the clean 
-hieararchy we have currently.
+I saw it and missed it to reply, sorry.
+ 
+> Guys if you want to do this outside of the x86 tree please test this series
+> thoroughly on x86 as well before pushing it out anywhere permanent or pushing
+> it into linux-next.
+> 
+> Also note that there's also some pending changes in the x86 tree modifying
+> arch/x86/kernel/i8253.c:
+> 
+>   b01cc1b0eae0: x86: Convert remaining x86 clocksources to clocksource_register_hz/khz
+> 
+> If you want to do any further change to this file you need to pull in this 
+> change first or need to resolve the conflict in some other way.
 
-Still, the other important problem is that we still seem to have a bug, even 
-with the cgroup set to low prio seti@home is sucking up CPU resources ...
+If it makes things easier I can pull it through the tip/timers/.... as
+well. Just let me know.
 
 Thanks,
 
-	Ingo
+	tglx
