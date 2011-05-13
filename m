@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab1EMXke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 19:40:34 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45036 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758472Ab1EMXkd (ORCPT
+	id S1758877Ab1EMXl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:41:28 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34343 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758402Ab1EMXl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 19:40:33 -0400
-Subject: Re: [PATCH-v3 13/14] iscsi-target: Add misc utility and debug logic
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Arne Redlich <arne.redlich@googlemail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andy Grover <agrover@redhat.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Svec <martin.svec@zoner.cz>
-In-Reply-To: <BANLkTikMdAUjT=G+DHaJwDOXuh532uN8nw@mail.gmail.com>
-References: <1305184041-32189-1-git-send-email-nab@linux-iscsi.org>
-	 <1305184041-32189-14-git-send-email-nab@linux-iscsi.org>
-	 <BANLkTikMdAUjT=G+DHaJwDOXuh532uN8nw@mail.gmail.com>
-Content-Type: text/plain
-Date: Fri, 13 May 2011 16:32:25 -0700
-Message-Id: <1305329545.7102.53.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 13 May 2011 19:41:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to;
+        b=gGpEE0g3akNdt7GFD1Jk/Med1ew7/gJcFjod6qpDgHjJXjrs/EG2dFd0Gfk7GTWy2u
+         jf0Vb97F68aOXc3N3C+Q2kp1noXiQpWNaA5TD8SMtwSCSf+LSDAHBmUD5jwIP3i3oA50
+         MU3/wsyIATAN3aqJ3Hzw+vdhjY4IrBfA+Hna0=
+From: mfmooney@gmail.com
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH v3] package: Makefile: fix perf target bug
+Date: Fri, 13 May 2011 16:41:12 -0700
+Message-Id: <b07e7ecdce48bc90a2cf83e8867494dae7cd174f.1305329845.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.7.5.1
+In-Reply-To: <4DCD8CE4.4090404@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 21:30 +0200, Arne Redlich wrote:
-> 2011/5/12 Nicholas A. Bellinger <nab@linux-iscsi.org>:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> >
-> > This file adds iscsi_target_util.[c,h] code containing a number
-> > of miscellaneous utility functions for iscsi_target_mod.
-> >
-> > It also contains iscsi_debug.h macros for CONFIG_ISCSI_TARGET_DEBUG
-> >
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> 
-> <snip>
-> 
-> > diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-> > new file mode 100644
-> > index 0000000..af1c5c44
-> > --- /dev/null
-> > +++ b/drivers/target/iscsi/iscsi_target_util.c
-> 
-> <snip>
-> 
-> > +
-> > +struct iscsi_r2t *iscsit_get_r2t_for_eos(
-> > +       struct iscsi_cmd *cmd,
-> > +       u32 offset,
-> > +       u32 length)
-> > +{
-> > +       struct iscsi_r2t *r2t;
-> > +
-> > +       spin_lock_bh(&cmd->r2t_lock);
-> > +       list_for_each_entry(r2t, &cmd->cmd_r2t_list, r2t_list) {
-> > +               if ((r2t->offset <= offset) &&
-> > +                   (r2t->offset + r2t->xfer_len) >= (offset + length))
-> > +                       break;
-> > +       }
-> > +       spin_unlock_bh(&cmd->r2t_lock);
-> > +
-> > +       if (!r2t) {
-> > +               printk(KERN_ERR "Unable to locate R2T for Offset: %u, Length:"
-> > +                               " %u\n", offset, length);
-> > +               return NULL;
-> > +       }
-> > +
-> > +       return r2t;
-> > +}
-> > +
-> 
-> Nicholas,
-> 
-> This lookup pattern (repeated several times throughout the patch)
-> looks seriously flawed to me as r2t will never be NULL.
-> 
+From: matt mooney <mfm@muteddisk.com>
 
-Ugh..
+Specify --git-dir when building perf targets to allow out-of-tree
+builds using O=<build-dir>.
 
-Unfortuately this breakage was introduced during the v4 conversion of
-iscsi-target to use struct list_head instead of the legacy raw ->next
-pointers for list walking in about 10 different locations..
+The shell command in `git archive' had to be modified to allow proper
+file name expansion of the files listed in MANIFEST.
 
-I have pushed the following commit into lio-core-2.6.git to address the
-cases where a bogus NULL check of *pos after list_for_each_entry()
-exists:
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ scripts/package/Makefile |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-iscsi-target: Fix incorrect list_for_each_entry() NULL checks
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=af66a1368ec3256ba44656490688364084fa893d
-
-Please review the changes in lio-core-2.6.git/lio-4.1 and let me know if
-you see any more of these cases that need to be fixed, or have any
-additional review comments.
-
-So with that, I will go ahead and re-spin a proper PATCH-v4 series over
-the weekend for James to merge with this patch, and hopefully one
-additional v4.1 specific bugfix that is currently be investigated by
-Martin.
-
-Seriously, thanks for catching this one Arne..
-
-Best Regards,
-
---nab
+diff --git a/scripts/package/Makefile b/scripts/package/Makefile
+index 1b7eaea..03df8ee 100644
+--- a/scripts/package/Makefile
++++ b/scripts/package/Makefile
+@@ -118,10 +118,12 @@ perf-tar=perf-$(KERNELVERSION)
+ 
+ quiet_cmd_perf_tar = TAR
+       cmd_perf_tar = \
+-git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
+-	$$(cat $(srctree)/tools/perf/MANIFEST) -o $(perf-tar).tar;  \
++git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
++	HEAD^{tree} $$(cd $(srctree);                               \
++		       echo $$(cat $(srctree)/tools/perf/MANIFEST)) \
++	-o $(perf-tar).tar;                                         \
+ mkdir -p $(perf-tar);                                               \
+-git rev-parse HEAD > $(perf-tar)/HEAD;                              \
++git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
+ tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
+ rm -r $(perf-tar);                                                  \
+ $(if $(findstring tar-src,$@),,                                     \
+-- 
+1.7.4.4
 
