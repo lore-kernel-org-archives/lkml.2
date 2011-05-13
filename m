@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab1EMNjh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:39:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52877 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933092Ab1EMNjf convert rfc822-to-8bit (ORCPT
+	id S933129Ab1EMNp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:45:29 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:53606 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933083Ab1EMNp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:39:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=g8smaR+x9vmYW3WJSZxpg//lDRMp99nMqYsat5AXonzeUkGi4YkefvBOTuDaRPIuhl
-         NDwM0VkflDLxT1niqALV1fxjjZtLAczDlfzT5kULskOPkJWxH9kTPGwh68rhPZrNVouN
-         NgD5Hvues8lvHGoY2JFOyzOCmr6Wt4qrolEqw=
+	Fri, 13 May 2011 09:45:28 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DCD3696.3090804@cam.ac.uk>
+Date: Fri, 13 May 2011 14:48:06 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com> <BANLkTi=YDZa+BRaG90vJsjrT9VxgySrDRQ@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 13 May 2011 09:39:14 -0400
-X-Google-Sender-Auth: v-59R5pg1k7NOho4jAexC06Mqxk
-Message-ID: <BANLkTinoGfj1NUzTveSH0vgwZczCaFr8HA@mail.gmail.com>
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
- right after logging in)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, git@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH] irq: export handle_simple_irq, irq_modify_status, irq_to_desc,
+ irq_alloc_descs and irq_free_descs
+References: <1304525890-11915-1-git-send-email-jic23@cam.ac.uk> <4DCA5A97.90704@cam.ac.uk>
+In-Reply-To: <4DCA5A97.90704@cam.ac.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[resend because the Android gmail client apparently generates HTML
-emails even for plain text]
+Hi Thomas.
 
-On Thu, May 12, 2011 at 1:37 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, May 12, 2011 at 10:15 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+Just a quick request that you give a yes or no to this.
+
+Thanks and sorry for repeated pestering!
+
+Jonathan
+> Hi Thomas/All,
+> 
+> Any feedback on this patch?  We have a lot of code dependent on this and
+> with the merge window approaching would like to know if this will be going
+> in or not.
+> 
+> Thanks and sorry for pestering!
+> 
+> Jonathan
+> 
+> On 05/04/11 17:18, Jonathan Cameron wrote:
+>> V2: add irq_alloc_descs and irq_free_descs for dynamic pool allocation.
 >>
->> OK, this sucks.  In the course of bisecting this, I've hit two other
->> apparently unrelated bugs that prevent my from testing large numbers
->> of kernels.  Do I have two questions:
+>> This is to allow their use in IIO. We have complete control of
+>> both the irq_chip creation and requesting of irqs so would like
+>> to be able to build as a module. That requires these exports.
 >>
->> 1. Anyone have any ideas from looking at the log?
->
-> Nope, that doesn't look very helpful.
->
->> 2.  The !&$#@ bisection is skipping all over the place.  I've seen
->> 2.6.37 versions and all manner of -rc's out of order.
->
-> That's the _point_ of bisection. It jumps around. You can start off
-> trying to pick points on my development tree, but I only have a
-> hundred merges or so. You're going to start delving into the actual
-> development versions very quickly. And if you don't do it early,
-> bisection is going to be much much slower, because it's not going to
-> pick half-way points.
->
-> So bisection works so well exactly because it picks points that are
-> far away from each other, and you should just totally ignore the
-> version number. It's meaningless. Looking at it just confuses you.
-> Don't do it.
->
+>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+>> ---
+>>  kernel/irq/chip.c    |    2 ++
+>>  kernel/irq/irqdesc.c |    3 +++
+>>  2 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+>> index 4af1e2b..ad409d3 100644
+>> --- a/kernel/irq/chip.c
+>> +++ b/kernel/irq/chip.c
+>> @@ -310,6 +310,7 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
+>>  out_unlock:
+>>  	raw_spin_unlock(&desc->lock);
+>>  }
+>> +EXPORT_SYMBOL_GPL(handle_simple_irq);
+>>  
+>>  /**
+>>   *	handle_level_irq - Level type irq handler
+>> @@ -612,6 +613,7 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+>>  
+>>  	irq_put_desc_unlock(desc, flags);
+>>  }
+>> +EXPORT_SYMBOL_GPL(irq_modify_status);
+>>  
+>>  /**
+>>   *	irq_cpu_online - Invoke all irq_cpu_online functions.
+>> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+>> index 2c039c9..5ac14e2 100644
+>> --- a/kernel/irq/irqdesc.c
+>> +++ b/kernel/irq/irqdesc.c
+>> @@ -110,6 +110,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
+>>  {
+>>  	return radix_tree_lookup(&irq_desc_tree, irq);
+>>  }
+>> +EXPORT_SYMBOL_GPL(irq_to_desc);
+>>  
+>>  static void delete_irq_desc(unsigned int irq)
+>>  {
+>> @@ -311,6 +312,7 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+>>  	bitmap_clear(allocated_irqs, from, cnt);
+>>  	mutex_unlock(&sparse_irq_lock);
+>>  }
+>> +EXPORT_SYMBOL_GPL(irq_free_descs);
+>>  
+>>  /**
+>>   * irq_alloc_descs - allocate and initialize a range of irq descriptors
+>> @@ -351,6 +353,7 @@ err:
+>>  	mutex_unlock(&sparse_irq_lock);
+>>  	return ret;
+>>  }
+>> +EXPORT_SYMBOL_GPL(irq_alloc_descs);
+>>  
+>>  /**
+>>   * irq_reserve_irqs - mark irqs allocated
+> 
 
-I actually had better results looking at the version number, saying
-"blech", and running git merge v2.6.38.  (git bisect good gets a
-little confused if I feed it the merge result, but I can just lie.)
-
-Anyway, I must have made a mistake somewhere.  The regression is in
-drm (presumably i915) and it has a new thread now.
-
---Andy
