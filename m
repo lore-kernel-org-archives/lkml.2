@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab1EMWl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 18:41:59 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50626 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013Ab1EMWl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 18:41:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH] PM: Remove CONFIG_PM_VERBOSE
-Date: Sat, 14 May 2011 00:42:03 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+	id S1758318Ab1EMXCg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 19:02:36 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:42900 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab1EMXCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 19:02:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rdy5wQYT9fX8UvlJVtB0t+Vzko8eCTYZb7/cHC4Zo/5iDtwt5WYhijqQyc+nZMy87H
+         MH0n/lvkikJbEbnvfdJCBn5UmCpSEL6QKawnXBuy/N7lQsNJP1Jm3E0198b2DYBWcqTn
+         SVFb67ovwOaSM4Kqy2jT2QqvDtk9j8r8Dh/Gw=
+Message-ID: <4DCDB886.7090909@gmail.com>
+Date: Fri, 13 May 2011 17:02:30 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110421 Fedora/3.1.9-2.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Wim Heirman <wim@heirman.net>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Brice Goglin <Brice.Goglin@inria.fr>
+Subject: Re: perf-stat per thread results
+References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com> <4DCD4FC5.8020608@gmail.com> <20110513154410.GA6373@elte.hu> <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com>
+In-Reply-To: <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105140042.04064.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Now that we have CONFIG_DYNAMIC_DEBUG there is no need for yet
-another flag causing dev_dbg() and pr_debug() statements in the
-core PM code to produce output.  Moreover, CONFIG_PM_VERBOSE
-causes so much output to be generated that it's not really useful
-and almost no one sets it.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=23182
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/sh/configs/apsh4ad0a_defconfig |    1 -
- arch/sh/configs/sdk7786_defconfig   |    1 -
- drivers/base/power/Makefile         |    3 +--
- kernel/power/Kconfig                |    6 ------
- 4 files changed, 1 insertion(+), 10 deletions(-)
+On 05/13/11 14:32, Wim Heirman wrote:
+> Hi,
+> 
+>> It's supposed to do that if --stat is specified, and it used to work - see this
+>> commit:
+>>
+>>  8d51327090ac: perf report: Fix and improve the displaying of per-thread event counters
+>>
+>> and the output there:
+>>
+>>     #  PID   TID  cache-misses  cache-references
+>>       4658  4659        495581           3238779
+>>       4658  4662        498246           3236823
+>>       4658  4663        499531           3243162
+>>
+>> which appears to be roughly what Wim is asking for, AFAICT.
+> 
+> Thanks, this is exactly what I'm looking for. In 2.6.32 (Ubuntu 10.04)
+> it works, although if I use --pid rather than the -- <command> variant
+> the first thread seams to be missing. In 2.6.38 (Ubuntu 11.04) the
+> first thread is missing in both use cases, and I get one column per
+> processor (which in itself is fine).
+> 
+> Regards,
+> Wim
 
-Index: linux-2.6/arch/sh/configs/apsh4ad0a_defconfig
-===================================================================
---- linux-2.6.orig/arch/sh/configs/apsh4ad0a_defconfig
-+++ linux-2.6/arch/sh/configs/apsh4ad0a_defconfig
-@@ -48,7 +48,6 @@ CONFIG_PREEMPT=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- CONFIG_PM_DEBUG=y
--CONFIG_PM_VERBOSE=y
- CONFIG_PM_RUNTIME=y
- CONFIG_CPU_IDLE=y
- CONFIG_NET=y
-Index: linux-2.6/arch/sh/configs/sdk7786_defconfig
-===================================================================
---- linux-2.6.orig/arch/sh/configs/sdk7786_defconfig
-+++ linux-2.6/arch/sh/configs/sdk7786_defconfig
-@@ -83,7 +83,6 @@ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- CONFIG_PM_DEBUG=y
--CONFIG_PM_VERBOSE=y
- CONFIG_PM_RUNTIME=y
- CONFIG_CPU_IDLE=y
- CONFIG_NET=y
-Index: linux-2.6/drivers/base/power/Makefile
-===================================================================
---- linux-2.6.orig/drivers/base/power/Makefile
-+++ linux-2.6/drivers/base/power/Makefile
-@@ -5,5 +5,4 @@ obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
- obj-$(CONFIG_PM_OPP)	+= opp.o
- obj-$(CONFIG_HAVE_CLK)	+= clock_ops.o
- 
--ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
--ccflags-$(CONFIG_PM_VERBOSE)   += -DDEBUG
-+ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
-\ No newline at end of file
-Index: linux-2.6/kernel/power/Kconfig
-===================================================================
---- linux-2.6.orig/kernel/power/Kconfig
-+++ linux-2.6/kernel/power/Kconfig
-@@ -125,12 +125,6 @@ config PM_DEBUG
- 	code. This is helpful when debugging and reporting PM bugs, like
- 	suspend support.
- 
--config PM_VERBOSE
--	bool "Verbose Power Management debugging"
--	depends on PM_DEBUG
--	---help---
--	This option enables verbose messages from the Power Management code.
--
- config PM_ADVANCED_DEBUG
- 	bool "Extra PM attributes in sysfs for low-level debugging/testing"
- 	depends on PM_DEBUG
+Hmm.... my mileage varies using latest kernel
+(446cc6345d3de6571bdd0840f48aca441488a28d)
+
+$ /tmp/build-perf/perf record --stat -fo /tmp/perf.data -p $(pidof rsyslogd)
+^C[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.007 MB /tmp/perf.data (~308 samples) ]
+
+$ /tmp/build-perf/perf report -T -i /tmp/perf.data
+# Events: 6  cycles
+#
+# Overhead   Command      Shared Object                      Symbol
+# ........  ........  .................  ..........................
+#
+    97.61%  rsyslogd  libc-2.13.so       [.] __libc_disable_asynccancel
+     2.39%  rsyslogd  [kernel.kallsyms]  [k] native_write_msr_safe
+
+
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+# PID  TID
+
+
+ie., I do not get the counter values. Specifying the counter with -e
+(e.g., -e branch-misses) does not help -- still no counter output.
+
+David
