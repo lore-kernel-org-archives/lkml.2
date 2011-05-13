@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228Ab1EMEIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 00:08:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56613 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab1EMEIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 00:08:32 -0400
-Date: Fri, 13 May 2011 14:08:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Max Vozeler <max@hinterhof.net>, matt mooney <mfm@muteddisk.com>
-Subject: linux-next: manual merge of the staging tree with Linus' tree
-Message-Id: <20110513140821.bfef61a3.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1751385Ab1EMEM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 00:12:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48567 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052Ab1EMEMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 00:12:20 -0400
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <1305247626.2575.111.camel@mulgrave.site>
+References: <1305127773-10570-4-git-send-email-mgorman@suse.de>
+	 <alpine.DEB.2.00.1105120942050.24560@router.home>
+	 <1305213359.2575.46.camel@mulgrave.site>
+	 <alpine.DEB.2.00.1105121024350.26013@router.home>
+	 <1305214993.2575.50.camel@mulgrave.site> <1305215742.27848.40.camel@jaguar>
+	 <1305225467.2575.66.camel@mulgrave.site>
+	 <1305229447.2575.71.camel@mulgrave.site>
+	 <1305230652.2575.72.camel@mulgrave.site>
+	 <1305237882.2575.100.camel@mulgrave.site>
+	 <20110512221506.GM16531@cmpxchg.org>
+	 <1305247626.2575.111.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 23:12:15 -0500
+Message-ID: <1305259935.2575.113.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__13_May_2011_14_08_21_+1000_TEfptzbUDc_shKjZ"
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_May_2011_14_08_21_+1000_TEfptzbUDc_shKjZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-05-12 at 19:47 -0500, James Bottomley wrote:
+> On Fri, 2011-05-13 at 00:15 +0200, Johannes Weiner wrote:
+> > On Thu, May 12, 2011 at 05:04:41PM -0500, James Bottomley wrote:
+> > > On Thu, 2011-05-12 at 15:04 -0500, James Bottomley wrote:
+> > > > Confirmed, I'm afraid ... I can trigger the problem with all three
+> > > > patches under PREEMPT.  It's not a hang this time, it's just kswapd
+> > > > taking 100% system time on 1 CPU and it won't calm down after I unload
+> > > > the system.
+> > > 
+> > > Just on a "if you don't know what's wrong poke about and see" basis, I
+> > > sliced out all the complex logic in sleeping_prematurely() and, as far
+> > > as I can tell, it cures the problem behaviour.  I've loaded up the
+> > > system, and taken the tar load generator through three runs without
+> > > producing a spinning kswapd (this is PREEMPT).  I'll try with a
+> > > non-PREEMPT kernel shortly.
+> > > 
+> > > What this seems to say is that there's a problem with the complex logic
+> > > in sleeping_prematurely().  I'm pretty sure hacking up
+> > > sleeping_prematurely() just to dump all the calculations is the wrong
+> > > thing to do, but perhaps someone can see what the right thing is ...
+> > 
+> > I think I see the problem: the boolean logic of sleeping_prematurely()
+> > is odd.  If it returns true, kswapd will keep running.  So if
+> > pgdat_balanced() returns true, kswapd should go to sleep.
+> > 
+> > This?
+> 
+> I was going to say this was a winner, but on the third untar run on
+> non-PREEMPT, I hit the kswapd livelock.  It's got much farther than
+> previous attempts, which all hang on the first run, but I think the
+> essential problem is still (at least on this machine) that
+> sleeping_prematurely() is doing too much work for the wakeup storm that
+> allocators are causing.
+> 
+> Something that ratelimits the amount of time we spend in the watermark
+> calculations, like the below (which incorporates your pgdat fix) seems
+> to be much more stable (I've not run it for three full runs yet, but
+> kswapd CPU time is way lower so far).
 
-Hi Greg,
+I've hammered it for several hours now with multiple loads; I can't seem
+to break it (famous last words, of course).
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/usbip/vhci_sysfs.c between commit d1b2e95ab016 ("staging:
-usbip: vhci: fix oops on subsequent attach") from Linus' tree and commit
-7aaacb43ed97 ("staging: usbip: fix header includes") from the staging
-tree.
+James
 
-The latter superceded the former for the conflict in the includes.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__13_May_2011_14_08_21_+1000_TEfptzbUDc_shKjZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNzK61AAoJEDMEi1NhKgbsRH4IAIhyn/S7o53YHkpfZVQdJPUJ
-AEaH/OEE3unpto5MAYlIIwIUKKHKQrqFYe7x8dQrLXZL8XWO8AlbK5wqUWwqHbB6
-hDYT6GqZtLPYoFV2uWTIZ1AjjVFnlnXpUEZ0ueHBB8F/WzZi81VQxVDrq4huHqGW
-4WYtkY5djal/xBePP/gtctWXZJnjf8MyLlIU6NyVFlfU0KjuyZZ0bXsDADsoWZ6A
-Lo89poPogVAjXm5ntVyse6ICWFkEgw6Zoxk9K3JZekcWEC1r9xrafzcJsBqI0Ohv
-ctuFG4RdgpvvYwXV+u8Y7f+QDrxzKvqcYBuK1Fd5GslyKWk02iZulEu1z5YV2nQ=
-=OqW1
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_May_2011_14_08_21_+1000_TEfptzbUDc_shKjZ--
