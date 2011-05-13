@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325Ab1EMODg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:03:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53088 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758985Ab1EMODd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:03:33 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/4] mm: vmscan: If kswapd has been running too long, allow it to sleep
-Date: Fri, 13 May 2011 15:03:24 +0100
-Message-Id: <1305295404-12129-5-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+	id S1759307Ab1EMOG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:06:29 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:58849 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756178Ab1EMOG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:06:27 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX185WIs19AQ5oJN3epqenUpPRw1mlfBXDMX1ENCD3I
+	xqk07BgEXqT8JK
+Subject: Re: Sched_autogroup and niced processes
+From: Mike Galbraith <efault@gmx.de>
+To: Carl-Johan Kjellander <carl-johan@klarna.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTimvehoQkiiX5EuPB0ozVKoPk3tAbg@mail.gmail.com>
+References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
+	 <1305273950.15080.7.camel@marge.simson.net>
+	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
+	 <20110513090537.GH13647@elte.hu> <1305277666.2561.9.camel@twins>
+	 <20110513092933.GL13647@elte.hu> <1305279990.2466.4.camel@twins>
+	 <20110513100411.GA21022@elte.hu>
+	 <1305292406.27263.20.camel@marge.simson.net>
+	 <BANLkTimvehoQkiiX5EuPB0ozVKoPk3tAbg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 16:06:23 +0200
+Message-ID: <1305295583.27263.36.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under constant allocation pressure, kswapd can be in the situation where
-sleeping_prematurely() will always return true even if kswapd has been
-running a long time. Check if kswapd needs to be scheduled.
+On Fri, 2011-05-13 at 15:36 +0200, Carl-Johan Kjellander wrote:
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/vmscan.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> I can try the same thing at home on my Q6600 machine if I upgrade it,
+> cause of course the Core i7 doesn't actually have 8 cores, they are
+> just hyperthreaded. It might be a factor.
+> 
+> Or am doing something horribly wrong when I try to set the autogroup to 19?
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index af24d1e..4d24828 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 	unsigned long balanced = 0;
- 	bool all_zones_ok = true;
- 
-+	/* If kswapd has been running too long, just sleep */
-+	if (need_resched())
-+		return false;
-+
- 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
- 	if (remaining)
- 		return true;
--- 
-1.7.3.4
+You seemingly haven't niced the parent's group, else new clients would
+behave themselves.
+
+cat /proc/pid/NN/autogroup will show nice level for group of pid NN.
+
+(Watch out you don't nice down something like kdeinit;)
+
+	-Mike
 
