@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab1EMPay (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:30:54 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56938 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932345Ab1EMPav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:30:51 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, Alon Ziv <alon-git@nolaviz.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Martin Jansen <martin.jansen@opticon.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/usb/serial/opticon.c: Release resources on kmalloc failure
-Date: Fri, 13 May 2011 17:30:46 +0200
-Message-Id: <1305300646-10382-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1755753Ab1EMPfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:35:38 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:65066 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab1EMPfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 11:35:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=xl+pOsupDSvbIw78TkmI+br/gJAo3WxFxwnNZhUq30qxcpp7/57yYwvaQunlm7vDru
+         F/mkVas7uiN1Y0GZdjzOwVx/4VutQQx5rcms+CqDQVjSkuVW/6QO7bifZy+t+64B2ypT
+         3hzNLTtrvEDM71e2kDSAdyAoJ9CgZG8k+Y09c=
+Message-ID: <4DCD4FC5.8020608@gmail.com>
+Date: Fri, 13 May 2011 09:35:33 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110421 Fedora/3.1.9-2.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Wim Heirman <wim@heirman.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: perf-stat per thread results
+References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com>
+In-Reply-To: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
 
-Several resources have been allocated before this kmalloc failure, and thus
-they should be released in this error handling code, as done in nearby
-error handling code.
 
-The semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
+On 05/13/11 09:14, Wim Heirman wrote:
+> Hi all,
+> 
+> I'm using perf-stat to look at hardware performance counters for a
+> parallel program. Is there a way to get counter values for each thread
+> individually, rather than aggregated for the whole process? I know I
+> can attach to a specific thread using --tid=, but due to the time
+> required to find the tid and attach/detach this isn't accurate for
+> short-running programs.
 
-// <smpl>
-@r exists@
-local idexpression urb;
-statement S;
-position p1,p2;
-@@
+perf-stat requires changes to dump counters per thread; it currently
+sums all threads into a single value.
 
-urb = usb_alloc_urb@p1(...);
-... when != urb
-if (urb == NULL) S
-... when != urb
-(
-return <+...urb...+>;
-|
-return@p2 ...;
-)
+> Or, alternatively, can I use perf record --stat and get an exact count
+> for each performance counter?
 
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
+perf-record does not read values from hardware counters.
 
-cocci.print_main("",p1)
-cocci.print_secs("",p2)
-// </smpl>
+David
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
 
----
- drivers/usb/serial/opticon.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
-index 1b5633f..96423f3 100644
---- a/drivers/usb/serial/opticon.c
-+++ b/drivers/usb/serial/opticon.c
-@@ -289,8 +289,11 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
- 	/* The conncected devices do not have a bulk write endpoint,
- 	 * to transmit data to de barcode device the control endpoint is used */
- 	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
--	if (!dr)
--		return -ENOMEM;
-+	if (!dr) {
-+		dev_err(&port->dev, "out of memory\n");
-+		count = -ENOMEM;
-+		goto error;
-+	}
- 
- 	dr->bRequestType = USB_TYPE_VENDOR | USB_RECIP_INTERFACE | USB_DIR_OUT;
- 	dr->bRequest = 0x01;
-
+> 
+> Thanks,
+> Wim Heirman
+> Ghent University, Belgium
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
