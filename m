@@ -1,125 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759477Ab1EMPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 11:47:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47953 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab1EMPqe (ORCPT
+	id S932345Ab1EMPqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 11:46:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33242 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab1EMPqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 11:46:34 -0400
+	Fri, 13 May 2011 11:46:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=r38tpgjxbbVU8sIRO/LTnLjgviQQRyxevT1tARoDk/YqtA6YaxyIWvgwu7dk6Odu7H
-         faFxlKYeMq6zlMDUc7UmTx8hSgo1TisCFz5aMl/efeLoIkef+6PZ4WuAgfG+sOWcCtn7
-         NizzC6KLVXZaHj1bqbxg7Z7tYhLLQFrq84DC4=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/9] job control: make task_clear_jobctl_pending() clear TRAPPING automatically
-Date: Fri, 13 May 2011 17:46:17 +0200
-Message-Id: <1305301580-9924-7-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1305301580-9924-1-git-send-email-tj@kernel.org>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XSLUrMrhhgBRdAW05+OgP/C8dHCmQ6vTnYWGJMUzk5FV1XpqCVvZPzLvKyaXyCWPjc
+         opSCjpwShnD4QY6mVGJKOnv9SypiZlPylwLIp0p6XBwcoG9XcU1xN00HqQoxJX5xEivd
+         mrgSwLLe+E6e4pIi7Pl2H2r++rD8wXWedPalM=
+MIME-Version: 1.0
+In-Reply-To: <20110513150707.GA26389@linux-mips.org>
+References: <7aa38c32b7748a95e814e5bb0583f967@localhost>
+	<20110513150707.GA26389@linux-mips.org>
+Date: Fri, 13 May 2011 08:46:18 -0700
+Message-ID: <BANLkTikcyEzjOWt9pWToE=89dySSEYbw_g@mail.gmail.com>
+Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-JOBCTL_TRAPPING indicates that ptracer is waiting for tracee to
-(re)transit into TRACED.  task_clear_jobctl_pending() must be called
-when either tracee enters TRACED or the transition is cancelled for
-some reason.  The former is achieved by explicitly calling
-task_clear_jobctl_pending() in ptrace_stop() and the latter by calling
-it at the end of do_signal_stop().
+On Fri, May 13, 2011 at 8:07 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
+>> Reuse more of the same definitions for the non-RIXI and RIXI cases.  This
+>> avoids having special cases for kernel_uses_smartmips_rixi cluttering up
+>> the pgtable*.h files.
+>>
+>> On hardware that does not support RI/XI, EntryLo bits 31:30 / 63:62 will
+>> remain unset and RI/XI permissions will not be enforced.
+>
+> Nice idea but it breaks on 64-bit hardware running 32-bit kernels.  On
+> those the RI/XI bits written to c0_entrylo0/1 31:30 will be interpreted as
+> physical address bits 37:36.
 
-Calling task_clear_jobctl_trapping() at the end of do_signal_stop()
-limits the scope TRAPPING can be used and is fragile in that seemingly
-unrelated changes to tracee's control flow can lead to stuck TRAPPING.
+Hmm, are you sure?  (Unfortunately I do not have a 64-bit machine to
+test it on.)
 
-We already have task_clear_jobctl_pending() calls on those cancelling
-events to clear JOBCTL_STOP_PENDING.  Cancellations can be handled by
-making those call sites use JOBCTL_PENDING_MASK instead and updating
-task_clear_jobctl_pending() such that task_clear_jobctl_trapping() is
-called automatically if no stop/trap is pending.
+I did not touch David's existing build_update_entries(), which makes a
+point not to set the RI/XI bits when the RIXI feature is disabled:
 
-This patch makes the above changes and removes the fallback
-task_clear_jobctl_trapping() call from do_signal_stop().
+        if (kernel_uses_smartmips_rixi) {
+                UASM_i_SRL(p, tmp, tmp, ilog2(_PAGE_NO_EXEC));
+                UASM_i_SRL(p, ptep, ptep, ilog2(_PAGE_NO_EXEC));
+                UASM_i_ROTR(p, tmp, tmp, ilog2(_PAGE_GLOBAL) -
+ilog2(_PAGE_NO_EXEC));
+                if (r4k_250MHZhwbug())
+                        UASM_i_MTC0(p, 0, C0_ENTRYLO0);
+                UASM_i_MTC0(p, tmp, C0_ENTRYLO0); /* load it */
+                UASM_i_ROTR(p, ptep, ptep, ilog2(_PAGE_GLOBAL) -
+ilog2(_PAGE_NO_EXEC));
+        } else {
+                UASM_i_SRL(p, tmp, tmp, ilog2(_PAGE_GLOBAL)); /*
+convert to entrylo0 */
+                if (r4k_250MHZhwbug())
+                        UASM_i_MTC0(p, 0, C0_ENTRYLO0);
+                UASM_i_MTC0(p, tmp, C0_ENTRYLO0); /* load it */
+                UASM_i_SRL(p, ptep, ptep, ilog2(_PAGE_GLOBAL)); /*
+convert to entrylo1 */
+                if (r45k_bvahwbug())
+                        uasm_i_mfc0(p, tmp, C0_INDEX);
+        }
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/exec.c       |    2 +-
- kernel/signal.c |   13 ++++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+If RIXI is enabled, it shifts the SW bits off the end of the register,
+then rotates the RI/XI bits into place.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index c654664..6ef8958 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1659,7 +1659,7 @@ static int zap_process(struct task_struct *start, int exit_code)
- 
- 	t = start;
- 	do {
--		task_clear_jobctl_pending(t, JOBCTL_STOP_PENDING);
-+		task_clear_jobctl_pending(t, JOBCTL_PENDING_MASK);
- 		if (t != current && t->mm) {
- 			sigaddset(&t->pending.signal, SIGKILL);
- 			signal_wake_up(t, 1);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index e67eaa0..91e57d3 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -253,6 +253,9 @@ static void task_clear_jobctl_trapping(struct task_struct *task)
-  * %JOBCTL_PENDING_MASK.  If %JOBCTL_STOP_PENDING is being cleared, other
-  * STOP bits are cleared together.
-  *
-+ * If clearing of @mask leaves no stop or trap pending, this function calls
-+ * task_clear_jobctl_trapping().
-+ *
-  * CONTEXT:
-  * Must be called with @task->sighand->siglock held.
-  */
-@@ -264,6 +267,9 @@ void task_clear_jobctl_pending(struct task_struct *task, unsigned int mask)
- 		mask |= JOBCTL_STOP_CONSUME | JOBCTL_STOP_DEQUEUED;
- 
- 	task->jobctl &= ~mask;
-+
-+	if (!(task->jobctl & JOBCTL_PENDING_MASK))
-+		task_clear_jobctl_trapping(task);
- }
- 
- /**
-@@ -933,7 +939,7 @@ static void complete_signal(int sig, struct task_struct *p, int group)
- 			signal->group_stop_count = 0;
- 			t = p;
- 			do {
--				task_clear_jobctl_pending(t, JOBCTL_STOP_PENDING);
-+				task_clear_jobctl_pending(t, JOBCTL_PENDING_MASK);
- 				sigaddset(&t->pending.signal, SIGKILL);
- 				signal_wake_up(t, 1);
- 			} while_each_thread(p, t);
-@@ -1168,7 +1174,7 @@ int zap_other_threads(struct task_struct *p)
- 	p->signal->group_stop_count = 0;
- 
- 	while_each_thread(p, t) {
--		task_clear_jobctl_pending(t, JOBCTL_STOP_PENDING);
-+		task_clear_jobctl_pending(t, JOBCTL_PENDING_MASK);
- 		count++;
- 
- 		/* Don't bother with already dead threads */
-@@ -1964,9 +1970,6 @@ retry:
- 		goto retry;
- 	}
- 
--	/* PTRACE_ATTACH might have raced with task killing, clear trapping */
--	task_clear_jobctl_trapping(current);
--
- 	spin_unlock_irq(&current->sighand->siglock);
- 
- 	tracehook_finish_jctl();
--- 
-1.7.1
+If RIXI is disabled, it shifts the SW bits + RI/XI bits off the end of
+the register.  It should not be setting bits 31:30 or 63:62, ever.
 
+(A side issue here is that ROTR is a MIPS R2 instruction, so we could
+never remove the old handler and use the RIXI version of the TLB
+handler on an R1 machine.)
+
+If setting EntryLo bits 31:30 for RI/XI is illegal on a 64-bit system
+running a 32-bit kernel, I suspect we will have a problem with the
+existing RIXI TLB update code, regardless of whether my changes are
+applied.
