@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759629Ab1EMQqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 12:46:18 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56944 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759198Ab1EMQqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 12:46:14 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Tony Lindgren <tony@atomide.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch/arm/mach-omap1/dma.c: Invert calls to platform_device_put and platform_device_del
-Date: Fri, 13 May 2011 18:46:10 +0200
-Message-Id: <1305305170-16922-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1759646Ab1EMQqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 12:46:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42143 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759635Ab1EMQqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 12:46:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ZxDExrrlNhtN2ojWtZRBzkYDyZoH5f7d8G4O8bkCMtxlfeoHi3/0gSp5g1eAIQvttu
+         b+9iKThFHU8D78iqc9z3LbMouZAdxy/3r7dd4cjJH0LWx2MCn015ddvnjkVIt+hLjqmW
+         rdXJ0JkMnQPyadhmHneKsCvZPpybFQJH1Ejs4=
+Subject: Re: [patch V2] percpu_counter: scalability works
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+In-Reply-To: <1305304532.3866.54.camel@edumazet-laptop>
+References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
+	 <20110511092848.GE1661@htj.dyndns.org>
+	 <1305168493.2373.15.camel@sli10-conroe>
+	 <20110512082159.GB1030@htj.dyndns.org>
+	 <1305190520.2373.18.camel@sli10-conroe>
+	 <20110512085922.GD1030@htj.dyndns.org>
+	 <1305190936.3795.1.camel@edumazet-laptop>
+	 <20110512090534.GE1030@htj.dyndns.org>
+	 <1305261477.2373.45.camel@sli10-conroe>
+	 <1305264007.2831.14.camel@edumazet-laptop>
+	 <20110513052859.GA11088@sli10-conroe.sh.intel.com>
+	 <1305268456.2831.38.camel@edumazet-laptop>
+	 <1305298300.3866.22.camel@edumazet-laptop>
+	 <1305301151.3866.39.camel@edumazet-laptop>
+	 <1305304532.3866.54.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 18:46:30 +0200
+Message-ID: <1305305190.3866.57.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Le vendredi 13 mai 2011 à 18:35 +0200, Eric Dumazet a écrit :
 
-Platform_device_del should be called before platform_device_put, as
-platform_device_put can delete the structure.
+If you want to try this patch, please note I missed in
+__percpu_counter_init() :
 
-Additionally, improve the error handling code for the call to ioremap, so
-that it calls platform_device_put.
+fbc->sum_cnt = 0; 
 
-The semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
 
-// <smpl>
-@@
-expression e1,e2;
-@@
+>  int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+>  			  struct lock_class_key *key)
+>  {
+> -	spin_lock_init(&fbc->lock);
+> -	lockdep_set_class(&fbc->lock, key);
+> -	fbc->count = amount;
+> +	struct percpu_counter_rw *pcrw; 
+> +
+> +	pcrw = kzalloc(sizeof(*pcrw), GFP_KERNEL);
+> +	if (!pcrw)
+> +		return -ENOMEM;
+> +	atomic64_set(&pcrw->count, amount);
+> +
+>  	fbc->counters = alloc_percpu(s32);
+> -	if (!fbc->counters)
+> +	if (!fbc->counters) {
+> +		kfree(pcrw);
+>  		return -ENOMEM;
+> +	}
+> +	fbc->pcrw = pcrw;
 
-*platform_device_put(e1);
-... when != e1 = e2
-*platform_device_del(e1);
-// </smpl>
+	fbc->sum_cnt = 0;
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+>  
+>  	debug_percpu_counter_activate(fbc);
+>  
 
----
-Is an ioremap needed also?  Not clear, because dma_base i a global variable.
 
- arch/arm/mach-omap1/dma.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/dma.c b/arch/arm/mach-omap1/dma.c
-index d855934..f5a5220 100644
---- a/arch/arm/mach-omap1/dma.c
-+++ b/arch/arm/mach-omap1/dma.c
-@@ -284,14 +284,15 @@ static int __init omap1_system_dma_init(void)
- 	dma_base = ioremap(res[0].start, resource_size(&res[0]));
- 	if (!dma_base) {
- 		pr_err("%s: Unable to ioremap\n", __func__);
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto exit_device_put;
- 	}
- 
- 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
- 	if (ret) {
- 		dev_err(&pdev->dev, "%s: Unable to add resources for %s%d\n",
- 			__func__, pdev->name, pdev->id);
--		goto exit_device_del;
-+		goto exit_device_put;
- 	}
- 
- 	p = kzalloc(sizeof(struct omap_system_dma_plat_info), GFP_KERNEL);
-@@ -299,7 +300,7 @@ static int __init omap1_system_dma_init(void)
- 		dev_err(&pdev->dev, "%s: Unable to allocate 'p' for %s\n",
- 			__func__, pdev->name);
- 		ret = -ENOMEM;
--		goto exit_device_put;
-+		goto exit_device_del;
- 	}
- 
- 	d = kzalloc(sizeof(struct omap_dma_dev_attr), GFP_KERNEL);
-@@ -380,10 +381,10 @@ exit_release_d:
- 	kfree(d);
- exit_release_p:
- 	kfree(p);
--exit_device_put:
--	platform_device_put(pdev);
- exit_device_del:
- 	platform_device_del(pdev);
-+exit_device_put:
-+	platform_device_put(pdev);
- 
- 	return ret;
- }
 
