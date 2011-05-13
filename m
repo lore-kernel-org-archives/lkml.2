@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab1EMJHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:07:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41281 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab1EMJHw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:07:52 -0400
-Subject: Re: Sched_autogroup and niced processes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
-        Carl-Johan Kjellander <carl-johan@klarna.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110513090537.GH13647@elte.hu>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-	 <1305273950.15080.7.camel@marge.simson.net>
-	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
-	 <20110513090537.GH13647@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 13 May 2011 11:07:46 +0200
-Message-ID: <1305277666.2561.9.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932920Ab1EMJIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:08:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932201Ab1EMJIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:08:40 -0400
+Date: Fri, 13 May 2011 11:08:26 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: [PATCH 1/9] iwlegacy: Silence DEBUG_STRICT_USER_COPY_CHECKS=y
+ warning
+Message-ID: <20110513090825.GB2206@redhat.com>
+References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
+ <1305244212-19183-2-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305244212-19183-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
-> Could we somehow automate this:
+On Thu, May 12, 2011 at 04:50:04PM -0700, Stephen Boyd wrote:
+> Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
+> warning:
 > 
->   > echo 19 > /proc/'pid of seti@home'/autogroup
+> In file included from arch/x86/include/asm/uaccess.h:573,
+>                  from include/net/checksum.h:25,
+>                  from include/linux/skbuff.h:28,
+>                  from drivers/net/wireless/iwlegacy/iwl-4965-rs.c:28:
+> In function 'copy_from_user',
+>     inlined from 'iwl4965_rs_sta_dbgfs_scale_table_write' at
+>     drivers/net/wireless/iwlegacy/iwl-4965-rs.c:2616:
+> arch/x86/include/asm/uaccess_64.h:65:
+> warning: call to 'copy_from_user_overflow' declared with
+> attribute warning: copy_from_user() buffer size is not provably
+> correct
 > 
-> and split off nice 19 tasks into separate groups and lower the group's 
-> priority? 
+> presumably due to buf_size being signed causing GCC to fail to
+> see that buf_size can't become negative.
+> 
+> Cc: Johannes Berg <johannes.berg@intel.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/net/wireless/iwlegacy/iwl-4965-rs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+> index 31ac672..cc4751c 100644
+> --- a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+> +++ b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+> @@ -2604,7 +2604,7 @@ static ssize_t iwl4965_rs_sta_dbgfs_scale_table_write(struct file *file,
+>  	struct iwl_lq_sta *lq_sta = file->private_data;
+>  	struct iwl_priv *priv;
+>  	char buf[64];
+> -	int buf_size;
+> +	size_t buf_size;
 
-Well I guess you can stack on all kinds of heuristics, do we want to?
-I'd argue for not, keep is simple.
+ACK, but we have more of that, perhaps you would like to fix them all.
+If you don't want to, I'll do it. Note this can be easily done by:
+
+sed -i 's/int buf_size;/size_t buf_size;/g' drivers/net/wireless/iwlegacy/*.[ch]
+
+Stanislaw
