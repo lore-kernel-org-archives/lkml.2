@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab1EMIKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 04:10:23 -0400
-Received: from stonestorm.inifta.unlp.edu.ar ([163.10.21.140]:57224 "EHLO
-	stonestorm.inifta.unlp.edu.ar" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757797Ab1EMIKU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 04:10:20 -0400
-X-Greylist: delayed 1948 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 04:10:19 EDT
-Message-ID: <20110513043604.643559e2k3boo7go@webmail.inifta.unlp.edu.ar>
-Date: Fri, 13 May 2011 04:36:04 -0300
-From: rhumana <rhumana@inifta.unlp.edu.ar>
-Reply-to: money_gramlimited@mspil.edu.cn
-To: undisclosed-recipients:;
-Subject: Re.funds
+	id S1757542Ab1EMHjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 03:39:14 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:54735 "HELO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757105Ab1EMHjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 03:39:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+Date: Fri, 13 May 2011 09:39:08 +0200
+Message-ID: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+Subject: Sched_autogroup and niced processes
+From: Carl-Johan Kjellander <carl-johan@klarna.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My associate has helped me to send your first payment
-of $7,500 USD to you as instructed by the Malaysian
-Government and Mr. David Cameron the United Kingdom
-prime minister after the last G20 meeting that was
-held in Malaysia, making you one of the beneficiaries through
-an email natural simple ballot selection.
+I've been running seti@home niced to 19 in the background since 1999
+without any problems. No noticeable effect even when playing a movie
+or a game. But since 2.6.38 the new fix-all-problems automatic
+grouping has been messing a bit with me. These are some timed compiles
+on my 8 cores.
 
-He told Allan Davis to keep sending you $5,000 USD via Money Gram
-twice a week until the FULL payment of ($820,000.00 )
-is completed.
+time make -j12 # with seti@home running
+real	4m16.753s
+user	10m33.770s
+sys	1m39.710s
 
-MONEY TRANSFER REFERENCE:2116-3297
+time make -j12 # without seti@home running
+real	2m12.480s
+user	10m11.580s
+sys	1m39.980s
 
-SENDER'S NAME:Patrick Lee Chun
-AMOUNT: US$5000
+echo 0 > /proc/sys/kernel/sched_autogroup_enabled
+time make -j12 # no autogroup, seti@home running again
+real	2m33.276s
+user	10m37.540s
+sys	1m43.190s
 
-To track your funds forward money gram
-Transfer agent Mr Allan Davis
+All compiles already had all files cached in RAM.
 
-Your Name.____________
-Phone .______________
+Now I can take the 10% performance hit, but not the 100% hit of
+running stuff super niced in the background. Processes niced to 19
+should only use spare cycles and not take up half of the cores even
+with autogroup. I would really like to run autogroup since it is a
+neat idea, but it can't mess up running niced processes in the
+background which have been working fine for 12 years.
 
-Contact Allan Davis for the funds clearance
-certificate (FCC) neccessary for the realise of your funds
-
-E-mail:money_gramlimited@mspil.edu.cn
-D/L: Tel:+601-635-44376
-
-You cannot pickup the money until the certificate is
-obtained by you.
-
-Regards
-Mr. Allan Davis.
-Tel: +601-635-44376
-
-Best Regards,
-Mr Allan Davis
-
-
-
-
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+/Carl-Johan Kjellander
