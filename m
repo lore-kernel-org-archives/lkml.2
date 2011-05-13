@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760Ab1EMV1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 17:27:45 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:46965 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759733Ab1EMV1l (ORCPT
+	id S1759782Ab1EMV1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 17:27:50 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:52948 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759756Ab1EMV1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 17:27:41 -0400
+	Fri, 13 May 2011 17:27:46 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Luciano Coelho <coelho@ti.com>
 Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>
-Subject: [RFC/PATCH 12/13] net: wireless: wl12xx: mark some symbols static
-Date: Sat, 14 May 2011 00:26:29 +0300
-Message-Id: <1305321990-22041-13-git-send-email-balbi@ti.com>
+Subject: [RFC/PATCH 13/13] net: wl12xx: main: drop unneded plat_dev
+Date: Sat, 14 May 2011 00:26:30 +0300
+Message-Id: <1305321990-22041-14-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.4.1.343.ga91df
 In-Reply-To: <1305321990-22041-1-git-send-email-balbi@ti.com>
 References: <1305321990-22041-1-git-send-email-balbi@ti.com>
@@ -22,116 +22,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-after re-factoring a bunch of symbols are only
-used inside main.c which allows us to mark
-them as static.
+now that useless plat_dev is unnecessary,
+we can remove it.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/net/wireless/wl12xx/io.h   |    7 -------
- drivers/net/wireless/wl12xx/main.c |   18 ++++++------------
- 2 files changed, 6 insertions(+), 19 deletions(-)
+ drivers/net/wireless/wl12xx/main.c   |   48 +++-------------------------------
+ drivers/net/wireless/wl12xx/wl12xx.h |    1 -
+ 2 files changed, 4 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/net/wireless/wl12xx/io.h b/drivers/net/wireless/wl12xx/io.h
-index 2bb2295..34ead79 100644
---- a/drivers/net/wireless/wl12xx/io.h
-+++ b/drivers/net/wireless/wl12xx/io.h
-@@ -157,11 +157,4 @@ int wl1271_set_partition(struct wl1271 *wl,
- 
- /* Functions from wl1271_main.c */
- 
--int wl1271_register_hw(struct wl1271 *wl);
--void wl1271_unregister_hw(struct wl1271 *wl);
--int wl1271_init_ieee80211(struct wl1271 *wl);
--struct ieee80211_hw *wl1271_alloc_hw(void);
--int wl1271_free_hw(struct wl1271 *wl);
--irqreturn_t wl1271_irq(int irq, void *data);
--
- #endif
 diff --git a/drivers/net/wireless/wl12xx/main.c b/drivers/net/wireless/wl12xx/main.c
-index 628f7a3..d3c056d 100644
+index d3c056d..55cedcd 100644
 --- a/drivers/net/wireless/wl12xx/main.c
 +++ b/drivers/net/wireless/wl12xx/main.c
-@@ -661,7 +661,7 @@ static void wl1271_netstack_work(struct work_struct *work)
+@@ -315,21 +315,6 @@ static void __wl1271_op_remove_interface(struct wl1271 *wl);
+ static void wl1271_free_ap_keys(struct wl1271 *wl);
  
- #define WL1271_IRQ_MAX_LOOPS 256
  
--irqreturn_t wl1271_irq(int irq, void *cookie)
-+static irqreturn_t wl1271_irq(int irq, void *cookie)
- {
- 	int ret;
- 	u32 intr;
-@@ -776,7 +776,6 @@ out:
+-static void wl1271_device_release(struct device *dev)
+-{
+-
+-}
+-
+-static struct platform_device wl1271_device = {
+-	.name           = "wl1271",
+-	.id             = -1,
+-
+-	/* device model insists to have a release function */
+-	.dev            = {
+-		.release = wl1271_device_release,
+-	},
+-};
+-
+ static LIST_HEAD(wl_list);
  
- 	return IRQ_HANDLED;
- }
--EXPORT_SYMBOL_GPL(wl1271_irq);
- 
- static int wl1271_fetch_firmware(struct wl1271 *wl)
- {
-@@ -3265,7 +3264,7 @@ static ssize_t wl1271_sysfs_show_hw_pg_ver(struct device *dev,
- static DEVICE_ATTR(hw_pg_ver, S_IRUGO | S_IWUSR,
- 		   wl1271_sysfs_show_hw_pg_ver, NULL);
- 
--int wl1271_register_hw(struct wl1271 *wl)
-+static int wl1271_register_hw(struct wl1271 *wl)
- {
- 	int ret;
- 
-@@ -3302,9 +3301,8 @@ int wl1271_register_hw(struct wl1271 *wl)
- 
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(wl1271_register_hw);
- 
--void wl1271_unregister_hw(struct wl1271 *wl)
-+static void wl1271_unregister_hw(struct wl1271 *wl)
- {
- 	if (wl->state == WL1271_STATE_PLT)
- 		__wl1271_plt_stop(wl);
-@@ -3314,9 +3312,8 @@ void wl1271_unregister_hw(struct wl1271 *wl)
- 	wl->mac80211_registered = false;
- 
- }
--EXPORT_SYMBOL_GPL(wl1271_unregister_hw);
- 
--int wl1271_init_ieee80211(struct wl1271 *wl)
-+static int wl1271_init_ieee80211(struct wl1271 *wl)
- {
- 	static const u32 cipher_suites[] = {
- 		WLAN_CIPHER_SUITE_WEP40,
-@@ -3386,11 +3383,10 @@ int wl1271_init_ieee80211(struct wl1271 *wl)
- 
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(wl1271_init_ieee80211);
- 
- #define WL1271_DEFAULT_CHANNEL 0
- 
--struct ieee80211_hw *wl1271_alloc_hw(void)
-+static struct ieee80211_hw *wl1271_alloc_hw(void)
+ static int wl1271_dev_notify(struct notifier_block *me, unsigned long what,
+@@ -3389,7 +3374,6 @@ static int wl1271_init_ieee80211(struct wl1271 *wl)
+ static struct ieee80211_hw *wl1271_alloc_hw(void)
  {
  	struct ieee80211_hw *hw;
- 	struct platform_device *plat_dev = NULL;
-@@ -3523,9 +3519,8 @@ err_hw_alloc:
+-	struct platform_device *plat_dev = NULL;
+ 	struct wl1271 *wl;
+ 	int i, j, ret;
+ 	unsigned int order;
+@@ -3401,20 +3385,12 @@ static struct ieee80211_hw *wl1271_alloc_hw(void)
+ 		goto err_hw_alloc;
+ 	}
  
- 	return ERR_PTR(ret);
- }
--EXPORT_SYMBOL_GPL(wl1271_alloc_hw);
+-	plat_dev = kmemdup(&wl1271_device, sizeof(wl1271_device), GFP_KERNEL);
+-	if (!plat_dev) {
+-		wl1271_error("could not allocate platform_device");
+-		ret = -ENOMEM;
+-		goto err_plat_alloc;
+-	}
+-
+ 	wl = hw->priv;
+ 	memset(wl, 0, sizeof(*wl));
  
--int wl1271_free_hw(struct wl1271 *wl)
-+static int wl1271_free_hw(struct wl1271 *wl)
+ 	INIT_LIST_HEAD(&wl->list);
+ 
+ 	wl->hw = hw;
+-	wl->plat_dev = plat_dev;
+ 
+ 	for (i = 0; i < NUM_TX_QUEUES; i++)
+ 		skb_queue_head_init(&wl->tx_queue[i]);
+@@ -3475,23 +3451,15 @@ static struct ieee80211_hw *wl1271_alloc_hw(void)
+ 		goto err_hw;
+ 	}
+ 
+-	/* Register platform device */
+-	ret = platform_device_register(wl->plat_dev);
+-	if (ret) {
+-		wl1271_error("couldn't register platform device");
+-		goto err_aggr;
+-	}
+-	dev_set_drvdata(&wl->plat_dev->dev, wl);
+-
+ 	/* Create sysfs file to control bt coex state */
+-	ret = device_create_file(&wl->plat_dev->dev, &dev_attr_bt_coex_state);
++	ret = device_create_file(wl->dev, &dev_attr_bt_coex_state);
+ 	if (ret < 0) {
+ 		wl1271_error("failed to create sysfs file bt_coex_state");
+-		goto err_platform;
++		goto err_aggr;
+ 	}
+ 
+ 	/* Create sysfs file to get HW PG version */
+-	ret = device_create_file(&wl->plat_dev->dev, &dev_attr_hw_pg_ver);
++	ret = device_create_file(wl->dev, &dev_attr_hw_pg_ver);
+ 	if (ret < 0) {
+ 		wl1271_error("failed to create sysfs file hw_pg_ver");
+ 		goto err_bt_coex_state;
+@@ -3500,19 +3468,13 @@ static struct ieee80211_hw *wl1271_alloc_hw(void)
+ 	return hw;
+ 
+ err_bt_coex_state:
+-	device_remove_file(&wl->plat_dev->dev, &dev_attr_bt_coex_state);
+-
+-err_platform:
+-	platform_device_unregister(wl->plat_dev);
++	device_remove_file(wl->dev, &dev_attr_bt_coex_state);
+ 
+ err_aggr:
+ 	free_pages((unsigned long)wl->aggr_buf, order);
+ 
+ err_hw:
+ 	wl1271_debugfs_exit(wl);
+-	kfree(plat_dev);
+-
+-err_plat_alloc:
+ 	ieee80211_free_hw(hw);
+ 
+ err_hw_alloc:
+@@ -3522,10 +3484,8 @@ err_hw_alloc:
+ 
+ static int wl1271_free_hw(struct wl1271 *wl)
  {
- 	platform_device_unregister(wl->plat_dev);
+-	platform_device_unregister(wl->plat_dev);
  	free_pages((unsigned long)wl->aggr_buf,
-@@ -3546,7 +3541,6 @@ int wl1271_free_hw(struct wl1271 *wl)
+ 			get_order(WL1271_AGGR_BUFFER_SIZE));
+-	kfree(wl->plat_dev);
  
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(wl1271_free_hw);
+ 	wl1271_debugfs_exit(wl);
  
- static irqreturn_t wl12xx_hardirq(int irq, void *_wl)
- {
+diff --git a/drivers/net/wireless/wl12xx/wl12xx.h b/drivers/net/wireless/wl12xx/wl12xx.h
+index eb3d3fc..279bd82 100644
+--- a/drivers/net/wireless/wl12xx/wl12xx.h
++++ b/drivers/net/wireless/wl12xx/wl12xx.h
+@@ -339,7 +339,6 @@ struct wl1271_link {
+ };
+ 
+ struct wl1271 {
+-	struct platform_device *plat_dev;
+ 	struct ieee80211_hw *hw;
+ 	bool mac80211_registered;
+ 
 -- 
 1.7.4.1.343.ga91df
 
