@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab1EMLx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 07:53:26 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:7536
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751692Ab1EMLxX (ORCPT
+	id S1757960Ab1EMLz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 07:55:28 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:26955
+	"EHLO CH1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754869Ab1EMLz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 07:53:23 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zz936eKc8kzz1202hzz8275bh84d07hz32i2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
+	Fri, 13 May 2011 07:55:27 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zz936eK1102Kc8kzz1202hzz8275bh84d07hz32i2a8h668h839h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
 From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Date: Fri, 13 May 2011 17:22:28 +0530
-Subject: [PATCHv2 -next] LEDS: LED module of DA9052 PMIC driver
-Thread-Topic: [PATCHv2 -next] LEDS: LED module of DA9052 PMIC driver
-Thread-Index: AcwRZDuLHNmR94ZkRJmyuM3T/7f0Ug==
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC621FA@KCINPUNHJCMS01.kpit.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <Dajun.Chen2@diasemi.com>
+Date: Fri, 13 May 2011 17:24:32 +0530
+Subject: [PATCHv2 -next] INPUT/MISC/ONKEY: OnKey module of DA9052 PMICs
+ driver
+Thread-Topic: [PATCHv2 -next] INPUT/MISC/ONKEY: OnKey module of DA9052 PMICs
+ driver
+Thread-Index: AcwRZIXqi2AdrugMQPydB52TcFiFYA==
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D151BC62202@KCINPUNHJCMS01.kpit.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -34,16 +34,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4DBrYhY013296
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4DBtlxa013305
 
-Hi Andrew,
+Hi Dmitry,
 
-LED Driver for Dialog Semiconductor DA9052 PMICs.
+ONKEY Driver for Dialog Semiconductor DA9052 PMICs.
 
 Changes made since last submission:
-. added patches as a merger plan for LED
+. used msecs_to_jiffies to take care of delay for different values of HZ
 
-Signed-off-by: Dajun Chen <dchen@diasemi.com>
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 ---
 diff -Naur linux-next-20110421.orig/drivers/input/misc/da9052_onkey.c linux-next-20110421/drivers/input/misc/da9052_onkey.c
 --- linux-next-20110421.orig/drivers/input/misc/da9052_onkey.c  1970-01-01 05:00:00.000000000 +0500
@@ -3583,7 +3583,6 @@ diff -Naur linux-next-20110421.orig/include/linux/mfd/da9052/wdt.h linux-next-20
 +void start_strobing(struct work_struct *work);
 +/* Create a handler for the scheduling start_strobing function */
 +#endif
-
 
 Regards,
 Ashish
