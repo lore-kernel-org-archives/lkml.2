@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1EME1X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 00:27:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44940 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752526Ab1EME1U convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 00:27:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110513040214.GA25270@mail.hallyn.com>
-References: <BANLkTi=nc3WGaASQm1Pc9byshLOmLf2bXQ@mail.gmail.com>
- <20110513025013.GA13209@mail.hallyn.com> <20110513040214.GA25270@mail.hallyn.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 May 2011 21:26:28 -0700
-Message-ID: <BANLkTim3cy8Jf3URYTW+cbr3nrdWVbsmGw@mail.gmail.com>
-Subject: Re: acl_permission_check: disgusting performance
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753641Ab1EMEiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 00:38:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1507 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab1EMEh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 00:37:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,362,1301900400"; 
+   d="scan'208";a="1656618"
+Subject: Re: [patch v2 0/5] percpu_counter: bug fix and enhancement
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+In-Reply-To: <20110512090534.GE1030@htj.dyndns.org>
+References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
+	 <20110511092848.GE1661@htj.dyndns.org>
+	 <1305168493.2373.15.camel@sli10-conroe>
+	 <20110512082159.GB1030@htj.dyndns.org>
+	 <1305190520.2373.18.camel@sli10-conroe>
+	 <20110512085922.GD1030@htj.dyndns.org>
+	 <1305190936.3795.1.camel@edumazet-laptop>
+	 <20110512090534.GE1030@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 12:37:57 +0800
+Message-ID: <1305261477.2373.45.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 9:02 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
->
-> I wonder how much this would help:  (only compile-tested)
+On Thu, 2011-05-12 at 17:05 +0800, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, May 12, 2011 at 11:02:15AM +0200, Eric Dumazet wrote:
+> > > I don't think @maxfuzzy is necessary there.  I wrote this before but
+> > > why can't we track the actual deviation instead of the number of
+> > > deviation events?
+> > 
+> > Thats roughly same thing (BATCH multiplicator factor apart)
+> > 
+> > Most percpu_counter users for a given percpu_counter object use a given
+> > BATCH, dont they ?
+> 
+> Well, @maxfuzzy is much harder than @batch.  It's way less intuitive.
+> Although I haven't really thought about it that much, I think it might
+> be possible to eliminate it.  Maybe I'm confused.  I'll take another
+> look later but if someone can think of something, please jump right
+> in.
+Hmm, looks Eric's approach doesn't work. because we want to remove lock
+in _add, checking seq in _sum still races with _add.
 
-So it should help a lot, but it breaks when CONFIG_USER_NS isn't even
-set (the case that Eric fixed.
+can we do something like this:
+void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
+{
+        s64 count;
 
-So instead, do this:
+        preempt_disable();
+        count = __this_cpu_read(*fbc->counters) + amount;
+        if (count >= batch || count <= -batch) {
+                while (1) {
+                        atomic_inc(&fbc->add_start);
+                        if (atomic_read(&fbc->sum_start) != 0)
+                                atomic_dec(&fbc->add_start);
+                        else
+                                break;
+                        while (atomic_read(&fbc->sum_start) != 0)
+                                cpu_relax();
+                }
 
- (a) get rid of the "_current_user_ns()" thing. There is no reason to
-have it, if it's directly off "current->cred", then it's cheaper to
-inline it than have a function just for two pointer indirections.
+                atomic64_add(count, &fbc->count);
+                __this_cpu_write(*fbc->counters, 0);
+                atomic_dec(&fbc->add_start);
+        } else {
+                __this_cpu_write(*fbc->counters, count);
+        }
+        preempt_enable();
+}
 
- (b) do
+s64 __percpu_counter_sum(struct percpu_counter *fbc)
+{
+        s64 ret = 0;
+        int cpu;
+        int old_seq;
+        s64 old_count;
 
-  #ifdef CONFIG_USER_NS
-    #define current_user_ns() (&init_user_ns)
-  #else
-    #define current_user_ns() (current_cred_xxx(user_ns))
-  #endif
+        atomic_inc(&fbc->sum_start);
+        while (atomic_read(&fbc->add_start) != 0)
+                cpu_relax();
 
- (c) and then the rest of your patch (to actually initialize and set
-"cred->user_ns") should be fine. But don't touch
-acl_permission_check() at all - once you've fixed current_user_ns() to
-DTRT, acl_permission_check will be ok.
+        old_count = atomic64_read(&fbc->count);
 
-Ok?
+        for_each_online_cpu(cpu) {
+                s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+                ret += *pcount;
+        }
+        ret += atomic64_read(&fbc->count);
+        atomic_dec(&fbc->sum_start);
+        return ret;
+}
+if _add finds _sum is in progress, it gives up and and wait _sum. if
+_sum finds _add is in progress, it waits _add to give up or end. We let
+_add waits _sum here, because _sum is seldom called. If _sum waits _add,
+_sum might run a dead loop. Maybe we need a spinlock to protect
+concurrent _sum too. Anything wrong here?
 
-Then the compiler will do the right thing: in acl_permission_check()
-it will see that current_user_ns() and "current_fsuid()" share 90% of
-the code, and will CSE the "current_cred()" part (or, if
-CONFIG_USER_NS isn't set, it will see a constant comparison of
-&init_user_ns with itself, and generate no code for hat case). There's
-no reason for you to do it for it, and when  you do it by hand you get
-the !CONFIG_USER_NS case wrong.
-
-Hmm? That should fix all the horrible code generation issues in
-acl_permission_check. When CONFIG_USER_NS isn't set, it will generate
-no code at all, and when it _is_ set, it will just generate two loads
-from current->cred (one for user_ns, one for fsuid), which is about as
-good as it gets.
-
-                              Linus
