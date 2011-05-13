@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab1EMShz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:37:55 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:29847 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab1EMShy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:37:54 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-160.messagelabs.com!1305311867!13663289!15
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.32]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/gpio/Kconfig: remove redundant depends on GPIOLIB
-Date: Fri, 13 May 2011 11:37:28 -0700
-User-Agent: KMail/1.9.9
-CC: <grant.likely@secretlab.ca>
+	id S1756154Ab1EMSml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:42:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53495 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753061Ab1EMSmj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:42:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201105131137.28730.hartleys@visionengravers.com>
+In-Reply-To: <4DCD79A0.7000500@kdbg.org>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+ <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+ <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
+ <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
+ <4DCD79A0.7000500@kdbg.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 May 2011 11:41:46 -0700
+Message-ID: <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Johannes Sixt <j6t@kdbg.org>
+Cc: Andrew Lutomirski <luto@mit.edu>,
+        Christian Couder <christian.couder@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since all the drivers are in a 'if GPIOLIB/endif block', the depends on GPIOLIB
-is redundant so remove them.
+On Fri, May 13, 2011 at 11:34 AM, Johannes Sixt <j6t@kdbg.org> wrote:
+> Am 13.05.2011 19:54, schrieb Linus Torvalds:
+>> For example, in your case, since you had certain requirements of
+>> support that simply didn't exist earlier, something like
+>>
+>>    git bisect requires v2.6.38
+>>
+>> would have been really useful - telling git bisect that any commit
+>> that cannot reach that required commit is not even worth testing.
+>
+> You can already have this with
+>
+>   git bisect good v2.6.38
+>
+> It sounds a bit unintuitive, but with a slight mind-twist it can even be
+> regarded as correct in a mathematical sense: when the precondition is
+> false, the result is true. ;-)
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
+No. That's not the same thing AT ALL.
 
----
+When you say that v2.6.38 is good, that means that everything that can
+be reached from 2.6.38 is good.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index b7fac15..fe12959 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -77,7 +77,6 @@ config GPIO_BASIC_MMIO
- 
- config GPIO_IT8761E
- 	tristate "IT8761E GPIO support"
--	depends on GPIOLIB
- 	help
- 	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
- 
-@@ -101,7 +100,7 @@ config GPIO_VR41XX
- 
- config GPIO_SCH
- 	tristate "Intel SCH/TunnelCreek GPIO"
--	depends on GPIOLIB && PCI && X86
-+	depends on PCI && X86
- 	select MFD_CORE
- 	select LPC_SCH
- 	help
-@@ -121,7 +120,7 @@ config GPIO_SCH
- 
- config GPIO_U300
- 	bool "ST-Ericsson U300 COH 901 335/571 GPIO"
--	depends on GPIOLIB && ARCH_U300
-+	depends on ARCH_U300
- 	help
- 	  Say yes here to support GPIO interface on ST-Ericsson U300.
- 	  The names of the two IP block variants supported are
-@@ -130,7 +129,7 @@ config GPIO_U300
- 
- config GPIO_NOMADIK
- 	bool "ST-Ericsson Nomadik GPIO"
--	depends on GPIOLIB && (ARCH_U8500 || ARCH_NOMADIK)
-+	depends on ARCH_U8500 || ARCH_NOMADIK
- 	help
- 	  Say yes here to support GPIO interface for ST-Ericsson Nomadik.
- 	  This is found in the Nomadik NHK8815, DB8500, DB5500 SoCs
-@@ -138,7 +137,7 @@ config GPIO_NOMADIK
- 
- config GPIO_VX855
- 	tristate "VIA VX855/VX875 GPIO"
--	depends on GPIOLIB && MFD_SUPPORT && PCI
-+	depends on MFD_SUPPORT && PCI
- 	select MFD_CORE
- 	select MFD_VX855
- 	help
-@@ -364,13 +363,13 @@ config GPIO_ML_IOH
- 
- config GPIO_TIMBERDALE
- 	bool "Support for timberdale GPIO IP"
--	depends on MFD_TIMBERDALE && GPIOLIB && HAS_IOMEM
-+	depends on MFD_TIMBERDALE && HAS_IOMEM
- 	---help---
- 	Add support for the GPIO IP in the timberdale FPGA.
- 
- config GPIO_RDC321X
- 	tristate "RDC R-321x GPIO support"
--	depends on PCI && GPIOLIB
-+	depends on PCI
- 	select MFD_SUPPORT
- 	select MFD_CORE
- 	select MFD_RDC321X
+NOT AT ALL the same thing as "git bisect requires v2.6.38" would be.
+
+The "requires v2.6.38" would basically say that anything that doesn't
+contain v2.6.38 is "off-limits". It's fine to call them "good", but
+that's not the same thing as "git bisect good v2.6.38".
+
+Why?
+
+Think about it. It's the "reachable from v2.6.38" vs "cannot reach
+v2.6.38" difference. That's a HUGE difference.
+
+                       Linus
