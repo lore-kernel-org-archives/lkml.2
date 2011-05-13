@@ -1,138 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166Ab1EMBq3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 21:46:29 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61476 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759131Ab1EMBq1 (ORCPT
+	id S1751479Ab1EMCho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 22:37:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43390 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab1EMChn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 21:46:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=SFHYs9+dKFFzh/CfGcQI2evVBKPOdzWaaU/aY0/Rd1jzvUjp1Ukpz9uqemXikUqNdb
-         nr1knJnER7cFTzf2cZU+GpYW4GIHMPBPJbwjmcTspHTBsKrACrPFPtBgk0ZQCklgvxyL
-         IiHsk8IpRRBT7Z4VMVKXyNfyZU/FeiuYFG2jI=
-From: Weiping Pan <panweiping3@gmail.com>
-Cc: Weiping Pan <panweiping3@gmail.com>,
-        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
-	[GENERAL],commit_signer:162/198=82%),
-        Eric Dumazet <eric.dumazet@gmail.com> (commit_signer:55/198=28%),
-        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl> (commit_signer:15/198=8%),
-        Tom Herbert <therbert@google.com> (commit_signer:15/198=8%),
-        Ben Hutchings <bhutchings@solarflare.com> (commit_signer:13/198=7%),
-        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH net-next] net:set valid name before calling ndo_init()
-Date: Fri, 13 May 2011 09:46:56 +0800
-Message-Id: <1305251217-4254-1-git-send-email-panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 12 May 2011 22:37:43 -0400
+Message-ID: <4DCC996D.6050908@landley.net>
+Date: Thu, 12 May 2011 21:37:33 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Don't understand comment in arch/x86/boot/compressed/misc.c
+References: <4DCB1044.6030505@landley.net> <m1wrhwixpp.fsf@fess.ebiederm.org>
+In-Reply-To: <m1wrhwixpp.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 1c5cae815d19 (net: call dev_alloc_name from register_netdevice),
-a bug of bonding was invloved, see example 1 and 2.
+On 05/11/2011 07:12 PM, Eric W. Biederman wrote:
+> Rob Landley <rob@landley.net> writes:
+> 
+>> It talks about when decompression in place is safe to do:
+>>
+>>  * Getting to provable safe in place decompression is hard.
+>>  * Worst case behaviours need to be analyzed.
+>> ...
+>>  * The buffer for decompression in place is the length of the
+>>  * uncompressed data, plus a small amount extra to keep the algorithm safe.
+>>  * The compressed data is placed at the end of the buffer.  The output
+>>  * pointer is placed at the start of the buffer and the input pointer
+>>  * is placed where the compressed data starts.  Problems will occur
+>>  * when the output pointer overruns the input pointer.
+>>  *
+>>  * The output pointer can only overrun the input pointer if the input
+>>  * pointer is moving faster than the output pointer.  A condition only
+>>  * triggered by data whose compressed form is larger than the uncompressed
+>>  * form.
+>>
+>> You have an output pointer at a lower address catching up to an input
+>> pointer at a higher address.  If the input pointer is moving FASTER
+>> than the output pointer, wouldn't the gap between them grow rather
+>> than shrink?
+> 
+> The wording might be clearer but the basic concept in context seems
+> fine.  The entire section is talking about how many bytes more than the
+> uncompressed size of the data do you need to guarantee you won't overrun
+> your compressed data.
+> 
+> For gzip that is a smidge over a single compressed block.
+> 
+> In the worst case you have to assume that none of your blocks
+> actually compressed.
+> 
+> So an input pointer going faster than an output pointer is a problem
+> if you try to limit yourself to exactly the area of memory that the
+> decompressed data lives in.  In that case the input point will
+> run off the end.
 
-In register_netdevice(), the name of net_device is not valid until
-dev_get_valid_name() is called. But dev->netdev_ops->ndo_init(that is
-bond_init) is called before dev_get_valid_name(),
-and it uses the invalid name of net_device.
+That's not a question of output catching up with intput and overwriting 
+it, that's a question of making sure that your buffer is large enough 
+to contain the whole of the input data, and that your input pointer 
+didn't start before your output pointer.
 
-I think register_netdevice() should make sure that the name of net_device is
-valid before calling ndo_init().
+That's starting conditions, not something that happens during 
+operation.  When you allocate your buffer you can't just blindly take 
+output size but have to take max(input_size,output_size) for the size 
+of the buffer you're working with.
 
-example 1:
-modprobe bonding
-ls  /proc/net/bonding/bond%d
+When you say:
 
-ps -eLf
-root      3398     2  3398  0    1 21:34 ?        00:00:00 [bond%d]
+ * The output pointer can only overrun the input pointer if the input
+ * pointer is moving faster than the output pointer.
 
-example 2:
-modprobe bonding max_bonds=3
+Input pointer starts after your output pointer, and input moves faster 
+than output, how do they cross?  (Except for the address space wrapping 
+which isn't relevant here.)  I don't understand the explanation.
 
-[  170.100292] bonding: Ethernet Channel Bonding Driver: v3.7.1 (April 27, 2011)
-[  170.101090] bonding: Warning: either miimon or arp_interval and arp_ip_target module parameters must be specified, otherwise bonding will not detect link failures! see bonding.txt for details.
-[  170.102469] ------------[ cut here ]------------
-[  170.103150] WARNING: at /home/pwp/net-next-2.6/fs/proc/generic.c:586 proc_register+0x126/0x157()
-[  170.104075] Hardware name: VirtualBox
-[  170.105065] proc_dir_entry 'bonding/bond%d' already registered
-[  170.105613] Modules linked in: bonding(+) sunrpc ipv6 uinput microcode ppdev parport_pc parport joydev e1000 pcspkr i2c_piix4 i2c_core [last unloaded: bonding]
-[  170.108397] Pid: 3457, comm: modprobe Not tainted 2.6.39-rc2+ #14
-[  170.108935] Call Trace:
-[  170.109382]  [<c0438f3b>] warn_slowpath_common+0x6a/0x7f
-[  170.109911]  [<c051a42a>] ? proc_register+0x126/0x157
-[  170.110329]  [<c0438fc3>] warn_slowpath_fmt+0x2b/0x2f
-[  170.110846]  [<c051a42a>] proc_register+0x126/0x157
-[  170.111870]  [<c051a4dd>] proc_create_data+0x82/0x98
-[  170.112335]  [<f94e6af6>] bond_create_proc_entry+0x3f/0x73 [bonding]
-[  170.112905]  [<f94dd806>] bond_init+0x77/0xa5 [bonding]
-[  170.113319]  [<c0721ac6>] register_netdevice+0x8c/0x1d3
-[  170.113848]  [<f94e0e30>] bond_create+0x6c/0x90 [bonding]
-[  170.114322]  [<f94f4763>] bonding_init+0x763/0x7b1 [bonding]
-[  170.114879]  [<c0401240>] do_one_initcall+0x76/0x122
-[  170.115317]  [<f94f4000>] ? 0xf94f3fff
-[  170.115799]  [<c0463f1e>] sys_init_module+0x1286/0x140d
-[  170.116879]  [<c07c6d9f>] sysenter_do_call+0x12/0x28
-[  170.117404] ---[ end trace 64e4fac3ae5fff1a ]---
-[  170.117924] bond%d: Warning: failed to register to debugfs
-[  170.128728] ------------[ cut here ]------------
-[  170.129360] WARNING: at /home/pwp/net-next-2.6/fs/proc/generic.c:586 proc_register+0x126/0x157()
-[  170.130323] Hardware name: VirtualBox
-[  170.130797] proc_dir_entry 'bonding/bond%d' already registered
-[  170.131315] Modules linked in: bonding(+) sunrpc ipv6 uinput microcode ppdev parport_pc parport joydev e1000 pcspkr i2c_piix4 i2c_core [last unloaded: bonding]
-[  170.133731] Pid: 3457, comm: modprobe Tainted: G        W   2.6.39-rc2+ #14
-[  170.134308] Call Trace:
-[  170.134743]  [<c0438f3b>] warn_slowpath_common+0x6a/0x7f
-[  170.135305]  [<c051a42a>] ? proc_register+0x126/0x157
-[  170.135820]  [<c0438fc3>] warn_slowpath_fmt+0x2b/0x2f
-[  170.137168]  [<c051a42a>] proc_register+0x126/0x157
-[  170.137700]  [<c051a4dd>] proc_create_data+0x82/0x98
-[  170.138174]  [<f94e6af6>] bond_create_proc_entry+0x3f/0x73 [bonding]
-[  170.138745]  [<f94dd806>] bond_init+0x77/0xa5 [bonding]
-[  170.139278]  [<c0721ac6>] register_netdevice+0x8c/0x1d3
-[  170.139828]  [<f94e0e30>] bond_create+0x6c/0x90 [bonding]
-[  170.140361]  [<f94f4763>] bonding_init+0x763/0x7b1 [bonding]
-[  170.140927]  [<c0401240>] do_one_initcall+0x76/0x122
-[  170.141494]  [<f94f4000>] ? 0xf94f3fff
-[  170.141975]  [<c0463f1e>] sys_init_module+0x1286/0x140d
-[  170.142463]  [<c07c6d9f>] sysenter_do_call+0x12/0x28
-[  170.142974] ---[ end trace 64e4fac3ae5fff1b ]---
-[  170.144949] bond%d: Warning: failed to register to debugfs
+>> The concern seems to be about COMPRESSING in place, rather than
+>> decompressing...?
+> 
+> No.  In theory there is some data that when compressed will grow.  In
+> the best case that data will grow only by a single bit.
 
-Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+Claude Shannon did a paper on this in 1948 proving every compression 
+technique must have some input that will wind up larger, but when that 
+happens it still means that at decompression time the decompressor 
+would consume input faster than output.
+
+> In case a picture will help.
+> 
+>   Decompressed data goes here       Compressed data comes from here
+>   |                                 |
+> 0 v->                               v->
+> +---------------------------------------+-----+------------+
+> |                                       |extra|decompressor|
+> +---------------------------------------+-----+------------+
+
+Wouldn't your "extra" gap be _before_ the compressed data?  You align 
+the compressed data with the _end_ of the buffer, so the gap is before 
+not after...
+
+> The question is how large that extra chunk needs to be.  This matters
+> either when nothing compresses (the worst case for extra space) or
+> especially when you get a chunk of blocks at the end that don't
+> compress (a plausible but almost worst case scenario).
+
+When _nothing_ compresses then output starts before input and stays 
+there, which has been my point.  In fact to hit the pathological case 
+of a block actually expanding, none of the component run lookups can 
+have accomplished anything, it's gotta be _all_ literals, so I'm not 
+sure input can actually advance faster than output even temporarily 
+during the block decompression enough to actually corrupt the data.  
+(Remember, the "copy this previous run" stuff is done against the 
+_uncompressed_ data.  I admit it's been ~15 years since I rewrote 
+info-zip's deflate in Java 1.0, but I _think_ I remember how it works.)
+
+In that case, your padding is just making sure that the buffer is big 
+enough to hold the (larger than input) compressed data, it if could 
+catch up it would be achieving compression.
+
+Ah, but I see: in the case that data at the _start_ compresses but data 
+at the _end_ doesn't, it's possible for output to advance upon input 
+before you run out of input.  The question is can it advance enough to 
+catch up, and if so under what circumstances?  If the "actually gets 
+compression" case is safe (where the compressed data is right-aligned), 
+and the "nothing compresses" case is safe (where the buffer is big 
+enough to hold the whole input), what would be an example of a 
+combination of the two that wouldn't be?
+
+Hmmm...
+
+It sounds to me like your pathological case is compressing a chunk of 
+/dev/zero followed by a chunk of /dev/urandom.  Compress a decent sized 
+chunk of /dev/random and measure the amount of expansion (say 100 
+bytes), then re-compress it with 100 bytes of /dev/zero stuck on the 
+beginning, and maybe decompressing that would eat into the data.  A 
+case where the size of the input file and the size of the output file 
+match so the expansion gets hidden, and thus mere right-alignment isn't 
+sufficient.
+
+Ok, _that_ might screw up an in-place decompression.  It wouldn't 
+happen with real world data, and your extra bytes are probablly 
+overkill to protect against this anyway, but what's there works, so...
+
+Just trying to understand it. :)
+
+> Things have changed a bit since I wrote that analysis.  The computation
+> of the worst case space has moved to mkpiggy.c, support for other
+> compression methods have been added, and we now have a mini ELF loader
+> in misc.c which adds an extra step to everything.  But the overall
+> concepts remain valid.
+
+Typos:
+
+From: Rob Landley <rob@landley.net>
+
+Typo fixes.
+
+Signed-off-by: Rob Landley <rob@landley.net>
 ---
- net/core/dev.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index ea23353..3ed09f8 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5437,6 +5437,10 @@ int register_netdevice(struct net_device *dev)
- 
- 	dev->iflink = -1;
- 
-+	ret = dev_get_valid_name(dev, dev->name);
-+	if (ret < 0)
-+		goto out;
-+
- 	/* Init, if this function is available */
- 	if (dev->netdev_ops->ndo_init) {
- 		ret = dev->netdev_ops->ndo_init(dev);
-@@ -5447,10 +5451,6 @@ int register_netdevice(struct net_device *dev)
- 		}
- 	}
- 
--	ret = dev_get_valid_name(dev, dev->name);
--	if (ret < 0)
--		goto err_uninit;
--
- 	dev->ifindex = dev_new_index(net);
- 	if (dev->iflink == -1)
- 		dev->iflink = dev->ifindex;
--- 
-1.7.4.4
+ arch/x86/boot/compressed/misc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 3a19d04..b66f083 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -69,16 +69,16 @@
+  * of 5 bytes per 32767 bytes.
+  *
+  * The worst case internal to a compressed block is very hard to figure.
+- * The worst case can at least be boundined by having one bit that represents
++ * The worst case can at least be bounded by having one bit that represents
+  * 32764 bytes and then all of the rest of the bytes representing the very
+  * very last byte.
+  *
+  * All of which is enough to compute an amount of extra data that is required
+  * to be safe.  To avoid problems at the block level allocating 5 extra bytes
+- * per 32767 bytes of data is sufficient.  To avoind problems internal to a
++ * per 32767 bytes of data is sufficient.  To avoid problems internal to a
+  * block adding an extra 32767 bytes (the worst case uncompressed block size)
+  * is sufficient, to ensure that in the worst case the decompressed data for
+- * block will stop the byte before the compressed data for a block begins.
++ * a block will stop the byte before the compressed data for the block begins.
+  * To avoid problems with the compressed data's meta information an extra 18
+  * bytes are needed.  Leading to the formula:
+  *
+@@ -86,7 +86,7 @@
+  *
+  * Adding 8 bytes per 32K is a bit excessive but much easier to calculate.
+  * Adding 32768 instead of 32767 just makes for round numbers.
+- * Adding the decompressor_size is necessary as it musht live after all
++ * Adding the decompressor_size is necessary as it must live after all
+  * of the data as well.  Last I measured the decompressor is about 14K.
+  * 10K of actual data and 4K of bss.
+  *
 
