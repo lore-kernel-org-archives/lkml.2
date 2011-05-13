@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291Ab1EMNNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:13:33 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:59036 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758584Ab1EMNNc (ORCPT
+	id S933039Ab1EMNXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:23:36 -0400
+Received: from p15132773.pureserver.info ([217.160.209.225]:39810 "EHLO
+	smtp.chost.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932909Ab1EMNXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:13:32 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/Oo1tVtyLOB1v2+TT0A3TeAwpnnPkG9EyRRe67fI
-	8Fx0aDEqKMuMTi
-Subject: Re: Sched_autogroup and niced processes
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Carl-Johan Kjellander <carl-johan@klarna.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110513100411.GA21022@elte.hu>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-	 <1305273950.15080.7.camel@marge.simson.net>
-	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
-	 <20110513090537.GH13647@elte.hu> <1305277666.2561.9.camel@twins>
-	 <20110513092933.GL13647@elte.hu> <1305279990.2466.4.camel@twins>
-	 <20110513100411.GA21022@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 15:13:26 +0200
-Message-ID: <1305292406.27263.20.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Fri, 13 May 2011 09:23:35 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 09:23:35 EDT
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        devel <devel@lists.laptop.org>, John@xo15-sascha.sascha.silbe.org,
+        W.Linville@xo15-sascha.sascha.silbe.org, <linville@tuxdriver.com>,
+        libertas-dev <libertas-dev@lists.infradead.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add libertas_disablemesh module parameter to disable mesh interface
+To: Dan Williams <dcbw@redhat.com>
+In-reply-to: <1305169898.8054.19.camel@dcbw.foobar.com>
+References: <1305118354-17337-1-git-send-email-silbe@activitycentral.com> <1305169898.8054.19.camel@dcbw.foobar.com>
+Date: Fri, 13 May 2011 15:16:31 +0200
+Message-Id: <1305290935-sup-4547@xo15-sascha.sascha.silbe.org>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Sascha Silbe <silbe@activitycentral.com>
+Content-Type: multipart/signed; boundary="=-1305292607-266040-1562-3202-9-="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 12:04 +0200, Ingo Molnar wrote:
 
-> Still, the other important problem is that we still seem to have a bug, even 
-> with the cgroup set to low prio seti@home is sucking up CPU resources ...
+--=-1305292607-266040-1562-3202-9-=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I don't see how.  Other than the expected nice 19 overrun when nice 0
-group blocks, it works fine on my little Q6600 box.
+Excerpts from Dan Williams's message of Thu May 12 05:11:36 +0200 2011:
+> On Wed, 2011-05-11 at 14:52 +0200, Sascha Silbe wrote:
+> > This allows individual users and deployments to disable mesh support =
+at
+> > runtime, i.e. without having to build and maintain a custom kernel.
 
-time make -j4 vmlinux (cache hot)
+> Does the mesh interface somehow cause problems, even when nothing is
+> using it?
 
-real    2m22.996s  
-user    7m6.887s
-sys     0m48.999s
+Some people suspect it does, but there's no hard data showing that. But
+then the problems are often hard to reproduce in the first place, so
+proving a correlation with mesh is even harder.
 
-echo 0 > sched_autogroup_enabled
+The hardware based mesh support is based on an outdated draft of
+802.11s and not interoperable with any other device AFAIK. For most
+users Ad-hoc networks are the better option. Disabling mesh support as
+low-level as possible makes it less likely that any remains are causing
+trouble. With at least four layers (firmware, kernel, NM, Sugar)
+involved in managing connectivity and one of the (firmware) being closed
+source, I prefer to simplify things by eliminating three layers for
+functionality we don't intend to use. It makes debugging (and
+blaming ;) ) a lot easier.
 
-time make -j4 vmlinux
+In the field, mesh support is currently disabled using
+/sys/class/net/eth0/lbs_mesh. However, it comes back after resume
+(possibly only if powercycled) and needs to be disabled again by
+post-resume hacks. Race conditions with NM are possible.
 
-real    2m17.052s        (darn, no free lunch)
-user    7m5.483s
-sys     0m49.415s
+A user space option would be to teach NM to disable mesh support (at
+runtime - we don't want to ship a custom NM package). I'd expect the
+patch to be much more invasive than the one posted for libertas.
 
-echo 1 > sched_autogroup_enabled
+Sascha
 
-simultaneous massive_intr 8 9999 in nice 19 autogroup and
-time make -j4 vmlinux in a nice 0 autogroup
+-- =
 
-real    2m30.863s
-user    7m5.363s
-sys     0m47.359s
+http://sascha.silbe.org/
+http://www.infra-silbe.de/
 
-142.996/150.863 = .947  (a tad low)
+--=-1305292607-266040-1562-3202-9-=
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
 
-repeat with 2 kbuild tasks/core to cut nice 0 group's idle time
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.1.0beta1 (GNU/Linux)
 
-time make -j8 vmlinux
+iQEcBAEBCgAGBQJNzS8vAAoJELpz82VMF3Da94UH/Rluny57CQsZHDC+3ykgWRnc
++1LkVmBqZBDElLmRCsoPU2qPje2V6Hs+f17/GSHiYS3xVRCG7jgkFv5d27ix2b+L
+s6sSk4up44PZD39uLsquDZjgXlOKLHbISRsClbzh0C8d65o5LweJTot67q1lY3Qu
+Q3jheEgkoFzLwePxiGRqKW0i5o0pGCPlPcS7fzn2kyhPxOD/f6FPncGSv9o9iPdB
+UAoSr+QvbQWtCAuOjOzdJsOPWInNr566jhpchi0i9UUChdTs4MjH9SKSVh15qaOg
+XCYhXngwJqfMXbpr5++SF2SMd32Vk62uLNId9XxTf1GKuTOoebf2a5DzGZ89sqs=
+=C+AO
+-----END PGP SIGNATURE-----
 
-real    2m24.925s
-user    7m16.327s
-sys     0m50.807s
-
-142.996/144.925 = .986  (all better)
-
-	-Mike
-
+--=-1305292607-266040-1562-3202-9-=--
