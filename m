@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034Ab1EMOlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 10:41:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1579 "EHLO mx1.redhat.com"
+	id S1759358Ab1EMOlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 10:41:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51728 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752272Ab1EMOlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 10:41:01 -0400
-Subject: Re: [PATCH 01/16] fix default __strnlen_user macro
-From: Mark Salter <msalter@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110513135501.GA747@localhost.ucw.cz>
-References: <1305144843-5058-1-git-send-email-msalter@redhat.com>
-	 <1305144843-5058-2-git-send-email-msalter@redhat.com>
-	 <20110513135501.GA747@localhost.ucw.cz>
-Content-Type: text/plain
-Organization: Red Hat, Inc
-Date: Fri, 13 May 2011 10:40:57 -0400
-Message-Id: <1305297657.15167.130.camel@redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759039Ab1EMOlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 10:41:10 -0400
+Date: Fri, 13 May 2011 16:40:59 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110513144059.GA32554@elte.hu>
+References: <20110512060344.GB3191@elte.hu>
+ <4DCB8BCD.1080607@kernel.org>
+ <4DCB8F7A.90603@kernel.org>
+ <20110512092013.GJ2258@linux.vnet.ibm.com>
+ <4DCC52FB.6030500@kernel.org>
+ <4DCC894D.3070204@kernel.org>
+ <20110513084253.GE13647@elte.hu>
+ <20110513121906.GA3676@elte.hu>
+ <20110513130414.GA6863@elte.hu>
+ <20110513131218.GA7669@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513131218.GA7669@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 13:55 +0000, Pavel Machek wrote:
-> > The existing __strnlen_user macro simply resolved to strnlen. However, the
-> > count returned by strnlen_user should include the NULL byte. This patch
-> > fixes the __strnlen_user macro to include the NULL byte in the count.
+
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> > very clearly indicate that this is an RCU regression.
 > 
-> Are you sure? Having strnlen and _foo_strnlen with different return
-> values seems very very dangerous.
+> This might be the same one Yinghai found:
 > 
+>  e59fb3120bec: rcu: Decrease memory-barrier usage based on semi-formal proof
+> 
+> So with the config i sent it's definitely reproducible.
 
-Yes. I am sure based on comments and usage elsewhere in the kernel.
-That difference certainly through me off track as I tried to figure out
-why my kernels failed to mount roots when I switched to the generic
-uaccess.h.
+yes. And note that the system does not lock up, but boots up after a really 
+long time - perhaps as a side-effect of very rare timer irqs driving forward 
+the RCU state machine?
 
---Mark
+Thanks,
 
-
+	Ingo
