@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab1EMDKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 23:10:06 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60681 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab1EMDKB (ORCPT
+	id S1753508Ab1EMDEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 23:04:23 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59921 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab1EMDEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 23:10:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 13 May 2011 12:03:18 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH 0/7] memcg async reclaim
-Message-Id: <20110513120318.63ff7d0e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110512171725.d367980f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110510190216.f4eefef7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110511182844.d128c995.akpm@linux-foundation.org>
-	<20110512103503.717f4a96.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110511205110.354fa05e.akpm@linux-foundation.org>
-	<20110512132237.813a7c7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110512171725.d367980f.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 12 May 2011 23:04:21 -0400
+Date: Thu, 12 May 2011 23:04:05 -0400 (EDT)
+Message-Id: <20110512.230405.532264333967231887.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110513114139.b1ed88ae.sfr@canb.auug.org.au>
+References: <20110513114139.b1ed88ae.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 May 2011 20:04:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 May 2011 17:17:25 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 13 May 2011 11:41:39 +1000
 
-> On Thu, 12 May 2011 13:22:37 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> I'll check what codes in vmscan.c or /mm affects memcg and post a
-> required fix in step by step. I think I found some..
+> After merging the net tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced this warning:
 > 
+> net/ipv4/ip_forward.c: In function 'ip_forward':
+> net/ipv4/ip_forward.c:87: warning: 'iph' may be used uninitialized in this function
+> 
+> Introduced by commit def57687e957 ("ipv4: Elide use of rt->rt_dst in
+> ip_forward()").  It may be a false positive, but it is not obvious how
+> iph is assigned before being used.
 
-After some tests, I doubt that 'automatic' one is unnecessary until
-memcg's dirty_ratio is supported. And as Andrew pointed out,
-total cpu consumption is unchanged and I don't have workloads which
-shows me meaningful speed up.
-But I guess...with dirty_ratio, amount of dirty pages in memcg is
-limited and background reclaim can work enough without noise of
-write_page() while applications are throttled by dirty_ratio.
+My compiler didn't warn, (and I just double checked this) which is
+weird.  Sigh.
 
-Hmm, I'll study for a while but it seems better to start active soft limit,
-(or some threshold users can set) first. 
+Thanks, here is the fix I'll push:
 
-Anyway, this work makes me to see vmscan.c carefully and I think I can
-post some patches for fix, tunes.
+--------------------
+ipv4: Fix 'iph' use before set.
 
-Thanks,
--Kame
+I swear none of my compilers warned about this, yet it is so
+obvious.
+
+> net/ipv4/ip_forward.c: In function 'ip_forward':
+> net/ipv4/ip_forward.c:87: warning: 'iph' may be used uninitialized in this function
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/ipv4/ip_forward.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
+index fcbc0c8..3b34d1c 100644
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -84,7 +84,7 @@ int ip_forward(struct sk_buff *skb)
+ 
+ 	rt = skb_rtable(skb);
+ 
+-	if (opt->is_strictroute && iph->daddr != rt->rt_gateway)
++	if (opt->is_strictroute && ip_hdr(skb)->daddr != rt->rt_gateway)
+ 		goto sr_failed;
+ 
+ 	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
+-- 
+1.7.4.4
 
