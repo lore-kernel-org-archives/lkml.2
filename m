@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab1EMNf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:35:26 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:51524 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab1EMNfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:35:25 -0400
-Date: Fri, 13 May 2011 15:35:20 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: question about drivers/isdn/hisax/st5481_init.c
-In-Reply-To: <1305292826.4065.443.camel@localhost>
-Message-ID: <Pine.LNX.4.64.1105131535070.20447@pc-004.diku.dk>
-References: <Pine.LNX.4.64.1105130748060.9190@ask.diku.dk>
- <1305292826.4065.443.camel@localhost>
+	id S933095Ab1EMNgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:36:32 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:45406 "HELO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933081Ab1EMNgb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 09:36:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1305292406.27263.20.camel@marge.simson.net>
+References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
+	<BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
+	<1305273950.15080.7.camel@marge.simson.net>
+	<20110513082250.GB13647@elte.hu>
+	<1305276066.2561.1.camel@twins>
+	<20110513090537.GH13647@elte.hu>
+	<1305277666.2561.9.camel@twins>
+	<20110513092933.GL13647@elte.hu>
+	<1305279990.2466.4.camel@twins>
+	<20110513100411.GA21022@elte.hu>
+	<1305292406.27263.20.camel@marge.simson.net>
+Date: Fri, 13 May 2011 15:36:28 +0200
+Message-ID: <BANLkTimvehoQkiiX5EuPB0ozVKoPk3tAbg@mail.gmail.com>
+Subject: Re: Sched_autogroup and niced processes
+From: Carl-Johan Kjellander <carl-johan@klarna.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011, Ben Hutchings wrote:
+On Fri, May 13, 2011 at 3:13 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Fri, 2011-05-13 at 12:04 +0200, Ingo Molnar wrote:
+>
+>> Still, the other important problem is that we still seem to have a bug, even
+>> with the cgroup set to low prio seti@home is sucking up CPU resources ...
+>
+> I don't see how.  Other than the expected nice 19 overrun when nice 0
+> group blocks, it works fine on my little Q6600 box.
 
-> On Fri, 2011-05-13 at 07:53 +0200, Julia Lawall wrote:
-> > The function probe_st5481 allocates an adapter value using kzalloc, adds 
-> > it to adapter_list, and then performs various initialization operations, 
-> > which may fail.  adapter_list is a static variable that is never otherwise 
-> > referenced in the file.  There is a list_del that removes the adapter from 
-> > the list in the function disconnect_st5481.  The presence of the adapter 
-> > on the list makes it possibly unsafe to free adapter in the failure cases.
-> > 
-> > Could the list just be removed, if it is not being used anywhere?
-> > 
-> > Or if the list should be kept because it is useful or it is planned to be 
-> > useful in the future, could the insertion into the list be moved to the 
-> > end of the function, after the potentially failing operations, so that 
-> > adapter can be freed when a failure occurs?
-> 
-> Some older drivers have these device lists hanging around from before
-> the device model has implemented.  If the list isn't being used now then
-> it's probably fine to remove.
+Dunno if I've done it correct, but I've set 19 to the boinc manager
+autogroup and some of
+the seti@home clients, but the clients of course keep changing.
 
-OK, I'll propose a patch in that direction.  Thanks.
+boinc     1172  0.1  0.0  81896 13408 ?        SN   May09   7:00
+/usr/bin/boinc --check_all_logins --redirectio --dir /var/lib/boi
+boinc    18983 82.6  0.3  98172 65224 ?        RNl  08:10 364:28  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc    19162 83.0  0.4  98836 65948 ?        RNl  08:16 360:32  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc    20295 84.6  0.3  98356 65468 ?        RNl  08:57 332:42  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc    22980 82.5  0.3  97880 64992 ?        RNl  09:32 295:55  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc    23760 81.6  0.3  98064 65168 ?        RNl  09:59 270:25  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc      634 83.1  0.3  98224 65276 ?        RNl  11:02 223:24  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc    31758 83.5  0.4  99116 65736 ?        RNl  11:33 198:48  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhanced
+boinc     5931 81.4  0.3  98456 65464 ?        RNl  14:06  68:55  \_
+../../projects/setiathome.berkeley.edu/setiathome_enhan
 
-julia
+But when I build on Intel(R) Core(TM) i7 CPU         870  @ 2.93GHz,
+it's still a lot slower.
+
+time make -j12
+real	2m58.437s
+user	10m58.010s
+sys	1m45.610s
+
+I can try the same thing at home on my Q6600 machine if I upgrade it,
+cause of course the Core i7 doesn't actually have 8 cores, they are
+just hyperthreaded. It might be a factor.
+
+Or am doing something horribly wrong when I try to set the autogroup to 19?
+
+/cjk
