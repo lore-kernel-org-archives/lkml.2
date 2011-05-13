@@ -1,79 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab1EMNRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:17:16 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54413 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758889Ab1EMNRO convert rfc822-to-8bit (ORCPT
+	id S1759317Ab1EMNTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:19:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34628 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758889Ab1EMNTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:17:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QZ/Rabg6L64x3rpNFSF1MWQsB2jHUOAaOz+dxU4SONyMLvUuTEvp/68yPN3gtn3ESm
-         etPgLaUjL6EnYbIcnV23QRHcpbaEjSOwxW0Dv5ZpwCzWUCOSTQcfh8dTEwaIwmAT4LHf
-         liyJ/X56PKr01N9MvYmTQz7emIGLR22G7VRhA=
+	Fri, 13 May 2011 09:19:07 -0400
+X-Authority-Analysis: v=1.1 cv=NmbQexcdgr4rtO3OwYGrP5Q3rTMpacrTPhuaXkv4uP8= c=1 sm=0 a=wom5GMh1gUkA:10 a=2uYajzE4MAAA:10 a=Rj1_iGo3bfgA:10 a=8nJEP1OIZ-IA:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=Z4Rwk6OoAAAA:8 a=hBqU3vQJAAAA:8 a=DfNHnWVPAAAA:8 a=A-nnX2b7w39jumF6f24A:9 a=iEv6xozrljRjjomWRz4A:7 a=wPNLvfGTeEIA:10 a=jbrJJM5MRmoA:10 a=4gZ4WExUoD4A:10 a=lBRciGGoxdUA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.158.191
+Date: Fri, 13 May 2011 08:19:04 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: acl_permission_check: disgusting performance
+Message-ID: <20110513131904.GA2519@mail.hallyn.com>
+References: <BANLkTi=nc3WGaASQm1Pc9byshLOmLf2bXQ@mail.gmail.com>
+ <20110513025013.GA13209@mail.hallyn.com>
+ <20110513040214.GA25270@mail.hallyn.com>
+ <BANLkTim3cy8Jf3URYTW+cbr3nrdWVbsmGw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110513124523.GM13984@redhat.com>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
-	<20110513124523.GM13984@redhat.com>
-Date: Fri, 13 May 2011 21:17:13 +0800
-Message-ID: <BANLkTimoqYZMs15H8wRqEEe=UyBJtAwipw@mail.gmail.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTim3cy8Jf3URYTW+cbr3nrdWVbsmGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don,
+Quoting Linus Torvalds (torvalds@linux-foundation.org):
+> On Thu, May 12, 2011 at 9:02 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> >
+> > I wonder how much this would help: �(only compile-tested)
+> 
+> So it should help a lot, but it breaks when CONFIG_USER_NS isn't even
+> set (the case that Eric fixed.
+> 
+> So instead, do this:
+> 
+>  (a) get rid of the "_current_user_ns()" thing. There is no reason to
+> have it, if it's directly off "current->cred", then it's cheaper to
+> inline it than have a function just for two pointer indirections.
 
-On Fri, May 13, 2011 at 8:45 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Fri, May 13, 2011 at 04:23:38PM +0800, Huang Ying wrote:
->> In general, unknown NMI is used by hardware and firmware to notify
->> fatal hardware errors to OS. So the Linux should treat unknown NMI as
->> hardware error and go panic upon unknown NMI for better error
->> containment.
->
-> I have a couple of concerns about this patch.  One I don't think BIOSes
-> are ready for this.  I have Intel Westmere boxes that say they have a
-> valid HEST, GHES, and EINJ table, but when I inject an error there is no
-> GHES record.  This leaves me with an unknown NMI and panic.  Yeah, it is a
-> BIOS bug I guess, but I think vendors are going to be slow fixing all this
-> stuff (my Nehalem box is in even worse shape with this stuff).
+Unfortunately that was not there as an optimization but because it
+gets around a circular dependency between cred.h and capability.h.
+Ideally we would keep capability.h from having to know about struct
+cred.
 
-Although there is no GHES record, I think the Westmere box behavior is
-acceptable, an unknown NMI is used by BIOS to notify hardware error,
-this is what we want to deal with in this patch.
+The two simplest solutions are to uninline nsown_capable() into
+capability.c, and to move it from capability.h to cred.h, with the
+expectation that all callers of nsown_capable() #include cred.h
+(which they do).  I'm uninlining it here, hoping that the compiler
+will inline it for us.
 
-> Also, is there any known issues with x86_64 platforms with bad NMIs?  RHEL
-> has had unknown NMI's panic on x86_64 since x86_64 first came out, I don't
-> recall any exceptions we had to add to handle 'quirky' hardware.
->
-> Then for the i686 case, because the 'quirky' hardware is so old, can't we
-> just leave it a kernel config option to switch between using a 'printk'
-> vs. a 'panic'?  Or even a kernel command line option.
->
-> I figure these 'quirky' hardware machines are more the exception nowdays,
-> do we really need to add code to whitelist machines?
->
-> Granted I am not familiar enough with the quirky hardware (in fact I don't
-> think I have seen any mainly because I haven't been around long enough).
-> Most cases I see when trolling through the fedora bugzilla list for
-> unknown NMIs, is just bad firmware or acpi power configurations.
->
-> Just wondering if we could just simplify the patch somehow with better
-> assumptions.
+From: Serge E. Hallyn <serge.hallyn@canonical.com>
+Date: Fri, 13 May 2011 04:27:54 +0100
+Subject: [PATCH 1/1] Cache user_ns in struct cred (v2)
 
-So there is still unknown NMIs on real hardware now. I am afraid turn
-on panic on unknown NMI by default may be not acceptable for someone.
+If !CONFIG_USERNS, have current_user_ns() defined to (&init_user_ns).
 
-Best Regards,
-Huang Ying
+Get rid of _current_user_ns.  This requires nsown_capable() to be
+defined in capability.c rather than as static inline in capability.h,
+so do that.
+
+Request_key needs init_user_ns defined at current_user_ns if
+!CONFIG_USERNS, so forward-declare that in cred.h if !CONFIG_USERNS
+at current_user_ns() define.
+
+Compile-tested with and without CONFIG_USERNS.
+
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ include/linux/capability.h |   13 +------------
+ include/linux/cred.h       |   10 ++++++++--
+ kernel/capability.c        |   12 ++++++++++++
+ kernel/cred.c              |   12 ++++++------
+ 4 files changed, 27 insertions(+), 20 deletions(-)
+
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 16ee8b4..d4675af 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -546,18 +546,7 @@ extern bool has_capability_noaudit(struct task_struct *t, int cap);
+ extern bool capable(int cap);
+ extern bool ns_capable(struct user_namespace *ns, int cap);
+ extern bool task_ns_capable(struct task_struct *t, int cap);
+-
+-/**
+- * nsown_capable - Check superior capability to one's own user_ns
+- * @cap: The capability in question
+- *
+- * Return true if the current task has the given superior capability
+- * targeted at its own user namespace.
+- */
+-static inline bool nsown_capable(int cap)
+-{
+-	return ns_capable(current_user_ns(), cap);
+-}
++extern bool nsown_capable(int cap);
+ 
+ /* audit system wants to get cap info from files as well */
+ extern int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data *cpu_caps);
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 9aeeb0b..be16b61 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -146,6 +146,7 @@ struct cred {
+ 	void		*security;	/* subjective LSM security */
+ #endif
+ 	struct user_struct *user;	/* real user ID subscription */
++	struct user_namespace *user_ns; /* cached user->user_ns */
+ 	struct group_info *group_info;	/* supplementary groups for euid/fsgid */
+ 	struct rcu_head	rcu;		/* RCU deletion hook */
+ };
+@@ -354,10 +355,15 @@ static inline void put_cred(const struct cred *_cred)
+ #define current_fsgid() 	(current_cred_xxx(fsgid))
+ #define current_cap()		(current_cred_xxx(cap_effective))
+ #define current_user()		(current_cred_xxx(user))
+-#define _current_user_ns()	(current_cred_xxx(user)->user_ns)
+ #define current_security()	(current_cred_xxx(security))
+ 
+-extern struct user_namespace *current_user_ns(void);
++#ifdef CONFIG_USER_NS
++#define current_user_ns() (current_cred_xxx(user_ns))
++#else
++extern struct user_namespace init_user_ns;
++#define current_user_ns() (&init_user_ns)
++#endif
++
+ 
+ #define current_uid_gid(_uid, _gid)		\
+ do {						\
+diff --git a/kernel/capability.c b/kernel/capability.c
+index bf0c734..32a80e0 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -399,3 +399,15 @@ bool task_ns_capable(struct task_struct *t, int cap)
+ 	return ns_capable(task_cred_xxx(t, user)->user_ns, cap);
+ }
+ EXPORT_SYMBOL(task_ns_capable);
++
++/**
++ * nsown_capable - Check superior capability to one's own user_ns
++ * @cap: The capability in question
++ *
++ * Return true if the current task has the given superior capability
++ * targeted at its own user namespace.
++ */
++bool nsown_capable(int cap)
++{
++	return ns_capable(current_user_ns(), cap);
++}
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 5557b55..8093c16 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -54,6 +54,7 @@ struct cred init_cred = {
+ 	.cap_effective		= CAP_INIT_EFF_SET,
+ 	.cap_bset		= CAP_INIT_BSET,
+ 	.user			= INIT_USER,
++	.user_ns		= &init_user_ns,
+ 	.group_info		= &init_groups,
+ #ifdef CONFIG_KEYS
+ 	.tgcred			= &init_tgcred,
+@@ -410,6 +411,11 @@ int copy_creds(struct task_struct *p, unsigned long clone_flags)
+ 			goto error_put;
+ 	}
+ 
++	/* cache user_ns in cred.  Doesn't need a refcount because it will
++	 * stay pinned by cred->user
++	 */
++	new->user_ns = new->user->user_ns;
++
+ #ifdef CONFIG_KEYS
+ 	/* new threads get their own thread keyrings if their parent already
+ 	 * had one */
+@@ -741,12 +747,6 @@ int set_create_files_as(struct cred *new, struct inode *inode)
+ }
+ EXPORT_SYMBOL(set_create_files_as);
+ 
+-struct user_namespace *current_user_ns(void)
+-{
+-	return _current_user_ns();
+-}
+-EXPORT_SYMBOL(current_user_ns);
+-
+ #ifdef CONFIG_DEBUG_CREDENTIALS
+ 
+ bool creds_are_invalid(const struct cred *cred)
+-- 
+1.7.0.4
+
