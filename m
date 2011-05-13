@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab1EMJOw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:14:52 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:46288 "HELO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932701Ab1EMJOu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:14:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1305277666.2561.9.camel@twins>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	<BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-	<1305273950.15080.7.camel@marge.simson.net>
-	<20110513082250.GB13647@elte.hu>
-	<1305276066.2561.1.camel@twins>
-	<20110513090537.GH13647@elte.hu>
-	<1305277666.2561.9.camel@twins>
-Date: Fri, 13 May 2011 11:14:47 +0200
-Message-ID: <BANLkTikxS9350zKqLEHXqeXCLXpQK=Cd9A@mail.gmail.com>
-Subject: Re: Sched_autogroup and niced processes
-From: Carl-Johan Kjellander <carl-johan@klarna.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+	id S1758267Ab1EMJUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:20:10 -0400
+Received: from lo.gmane.org ([80.91.229.12]:48804 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758078Ab1EMJUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:20:09 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Frederik Himpe <fhimpe@telenet.be>
+Subject: patch from intel-drm-staging for 2.6.39
+Date: Fri, 13 May 2011 09:19:53 +0000 (UTC)
+Message-ID: <iqit3p$oka$1@dough.gmane.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: artipc9.vub.ac.be
+User-Agent: Pan/0.133 (House of Butterflies)
+Cc: dri-devel@lists.freedesktop.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 11:07 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2011-05-13 at 11:05 +0200, Ingo Molnar wrote:
->> Could we somehow automate this:
->>
->>   > echo 19 > /proc/'pid of seti@home'/autogroup
+This commit from intel-drm-staging fixes an oops for me when docking my 
+system. Can it be added to 2.6.39?
 
-Tried this.
-echo 19 >/proc/23760/autogroup
-echo 1 > /proc/sys/kernel/sched_autogroup_enabled
+commit c60001b9921a869c7dc916e72a22c5805cc562ae
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Apr 22 10:47:08 2011 +0100
 
-time make -j12 #seti@home, autogroup, group reniced.
-real	3m9.274s
-user	11m3.020s
-sys	1m45.550s
+    drm: Take lock around probes for drm_fb_helper_hotplug_event
 
-So 50% increase in compilation time.
+-- 
+Frederik Himpe
 
-Will these autogroups remember the 19, the boinc manager starts 8
-processes and it will spawn more as time goes by and it finishes
-tasks.
-
->> and split off nice 19 tasks into separate groups and lower the group's
->> priority?
->
-> Well I guess you can stack on all kinds of heuristics, do we want to?
-> I'd argue for not, keep is simple.
->
-
-I'd again argue, I use nice 19 for stuff that I want to run on the
-spare cycles, I don't want them stealing time from my important work
-or surfing or movie viewing.
-
-/cjk
