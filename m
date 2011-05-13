@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758996Ab1EMAAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 May 2011 20:00:07 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:12635 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758917Ab1EMAAD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 May 2011 20:00:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dE2NlUqhWNRE4FiGuTa1UtidXe5zWUJvLet49wnAYfj6lwWFbUt06nj4PbBMnfubKx
-         ThEgvjYkYQJ5HTKDF5lg==
-MIME-Version: 1.0
-In-Reply-To: <4DCBFFF2.3030804@redhat.com>
-References: <1305207413.18715.3.camel@gondor.retis>
-	<4DCBF904.6040104@redhat.com>
-	<BANLkTi=BnRCJ4S32S=+zNNOSTxmZsR6Jrg@mail.gmail.com>
-	<4DCBFFF2.3030804@redhat.com>
-Date: Thu, 12 May 2011 16:59:58 -0700
-Message-ID: <BANLkTi=sbHRqgFfX3cV6XHPUKig3n-tkDA@mail.gmail.com>
-Subject: Re: [PATCH] kvm: log directly from the guest to the host kvm buffer
-From: Eric Northup <digitaleric@google.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, kvm@vger.kernel.org,
-        joro@8bytes.org, agraf@suse.de, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Fabio Checconi <fchecconi@gmail.com>,
-        Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S932668Ab1EMAFD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 May 2011 20:05:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16377 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759014Ab1EMAFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 May 2011 20:05:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,361,1301900400"; 
+   d="scan'208";a="746527069"
+Subject: Re: [PATCH 1/9] iwlegacy: Silence DEBUG_STRICT_USER_COPY_CHECKS=y
+ warning
+From: wwguy <wey-yi.w.guy@intel.com>
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>
+In-Reply-To: <1305244212-19183-2-git-send-email-sboyd@codeaurora.org>
+References: <1305244212-19183-1-git-send-email-sboyd@codeaurora.org>
+	 <1305244212-19183-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 May 2011 17:01:42 -0700
+Message-ID: <1305244903.3589.0.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 8:42 AM, Avi Kivity <avi@redhat.com> wrote:
->
-> On 05/12/2011 06:39 PM, Dhaval Giani wrote:
->>
->> >
->> >  I think that one hypercall per trace is too expensive.  Tracing is meant to
->> >  be lightweight!  I think the guest can log to a buffer, which is flushed on
->> >  overflow or when a vmexit occurs.  That gives us automatic serialization
->> >  between a vcpu and the cpu it runs on, but not between a vcpu and a
->> >  different host cpu.
->> >
->>
->> hmm. So, basically, log all of these events, and then send them to the
->> host either on an exit, or when your buffer fills up. There is one
->> problem with approach though. One of the reasons I wanted this
->> approach was beacuse i wanted to co-relate the guest and the host
->> times. (which is why I kept is synchronous). I lose out that
->> information with what you say. However I see your point about the
->> overhead. I will think about this a bit more.
->
-> You might use kvmclock to get a zero-exit (but not zero-cost) time which can be correlated.
->
-> Another option is to use xadd on a shared memory area to have a global counter incremented.  However that can be slow on large machines, and is hard to do securely with multiple guests.
+On Thu, 2011-05-12 at 16:50 -0700, Stephen Boyd wrote:
+> Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following
+> warning:
+> 
+> In file included from arch/x86/include/asm/uaccess.h:573,
+>                  from include/net/checksum.h:25,
+>                  from include/linux/skbuff.h:28,
+>                  from drivers/net/wireless/iwlegacy/iwl-4965-rs.c:28:
+> In function 'copy_from_user',
+>     inlined from 'iwl4965_rs_sta_dbgfs_scale_table_write' at
+>     drivers/net/wireless/iwlegacy/iwl-4965-rs.c:2616:
+> arch/x86/include/asm/uaccess_64.h:65:
+> warning: call to 'copy_from_user_overflow' declared with
+> attribute warning: copy_from_user() buffer size is not provably
+> correct
+> 
+> presumably due to buf_size being signed causing GCC to fail to
+> see that buf_size can't become negative.
+> 
+> Cc: Johannes Berg <johannes.berg@intel.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/net/wireless/iwlegacy/iwl-4965-rs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+Stanislaw Gruszka <sgruszka@redhat.com> is the maintainer for iwlegacy
 
-If the guest puts guest TSC into the buffer with each event, KVM can
-convert guest->host time when it drains the buffers on the next
-vmexit.  That's enough information to do an offline correlation of
-guest and host events.
+Thanks
+Wey
+
+
+
