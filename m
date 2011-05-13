@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab1EMJXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 05:23:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35502 "EHLO mx1.suse.de"
+	id S1758406Ab1EMJ2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 05:28:54 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:46591 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757935Ab1EMJXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 05:23:12 -0400
-Date: Fri, 13 May 2011 11:23:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>,
+	id S1758079Ab1EMJ2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 05:28:53 -0400
+Date: Fri, 13 May 2011 12:23:48 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Greg KH <greg@kroah.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 1/6] memcg: remove unused retry signal from reclaim
-Message-ID: <20110513092308.GC25304@tiehlicka.suse.cz>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
- <1305212038-15445-2-git-send-email-hannes@cmpxchg.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sysfs: remove "last sysfs file:" line from the oops
+	messages
+Message-ID: <20110513092347.GA10696@esdhcp04044.research.nokia.com>
+References: <20110512230102.GA19069@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305212038-15445-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110512230102.GA19069@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-05-11 16:53:53, Johannes Weiner wrote:
-> If the memcg reclaim code detects the target memcg below its limit it
-> exits and returns a guaranteed non-zero value so that the charge is
-> retried.
+On 12/05/11 16:01 -0700, ext Greg KH wrote:
+> ---------------
+> I'm going to queue this up for the .40 kernel merge window, any
+> objections?
+> ---------------
 > 
-> Nowadays, the charge side checks the memcg limit itself and does not
-> rely on this non-zero return value trick.
+> From: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> This patch removes it.  The reclaim code will now always return the
-> true number of pages it reclaimed on its own.
+> On some arches (x86, sh, arm, unicore, powerpc) the oops message would
+> print out the last sysfs file accessed.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> This was very useful in finding a number of sysfs and driver core bugs
+> in the 2.5 and early 2.6 development days, but it has been a number of
+> years since this file has actually helped in debugging anything that
+> couldn't also be trivially determined from the stack traceback.
+> 
+> So it's time to delete the line.  This is good as we need all the space
+> we can get for oops messages at times on consoles.
+> 
+> Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Makes sense
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Worksforme.
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 010f916..bf5ab87 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1503,7 +1503,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
->  			if (!res_counter_soft_limit_excess(&root_mem->res))
->  				return total;
->  		} else if (mem_cgroup_margin(root_mem))
-> -			return 1 + total;
-> +			return total;
->  	}
->  	return total;
->  }
-> -- 
-> 1.7.5.1
-> 
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Cheers,
+Phil
