@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab1EMSeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 14:34:13 -0400
-Received: from bsmtp4.bon.at ([195.3.86.186]:38244 "EHLO bsmtp.bon.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750746Ab1EMSeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 14:34:11 -0400
-X-Greylist: delayed 85155 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 14:34:11 EDT
-Message-ID: <4DCD79A0.7000500@kdbg.org>
-Date: Fri, 13 May 2011 20:34:08 +0200
-From: Johannes Sixt <j6t@kdbg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1752331Ab1EMSfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 14:35:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab1EMSfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 14:35:43 -0400
+Date: Fri, 13 May 2011 20:34:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 10/11] ptrace: move JOBCTL_TRAPPING wait to wait(2) and
+	ptrace_check_attach()
+Message-ID: <20110513183416.GA31415@redhat.com>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org> <1304869745-1073-11-git-send-email-tj@kernel.org> <20110511164947.GA26383@redhat.com> <20110511195333.GE24245@mtj.dyndns.org> <20110512155910.GD18599@redhat.com> <20110512160709.GL1030@htj.dyndns.org> <20110512182006.GA25850@redhat.com> <20110513091311.GC6500@htj.dyndns.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Lutomirski <luto@mit.edu>,
-        Christian Couder <christian.couder@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
-Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up
- hard right after logging in)
-References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com> <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com> <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com> <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
-In-Reply-To: <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513091311.GC6500@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.05.2011 19:54, schrieb Linus Torvalds:
-> For example, in your case, since you had certain requirements of
-> support that simply didn't exist earlier, something like
-> 
->    git bisect requires v2.6.38
-> 
-> would have been really useful - telling git bisect that any commit
-> that cannot reach that required commit is not even worth testing.
+On 05/13, Tejun Heo wrote:
+>
+> On Thu, May 12, 2011 at 08:20:06PM +0200, Oleg Nesterov wrote:
+> > Now about GROUP_STOP_TRAPPING. To simplify the discussion, lets
+> > forget about this series,
+> >
+> > ...
+> >
+> > Problem: TRAPPING can be set outside of do_signal_stop() paths, and
+> > I think we should avoid this as much as possible.
+>
+> For PTRACE_DETACH, this was true but it isn't true for notification
+> re-traps.  Notification re-traps happen iff JOBCTL_TRAPPED
 
-You can already have this with
+Yes I see, and task_clear_jobctl_trapping() was moved into
+get_signal_to_deliver().
 
-   git bisect good v2.6.38
+So, if we return to this series then "outside of do_signal_stop()" is
+not accurate.
 
-It sounds a bit unintuitive, but with a slight mind-twist it can even be
-regarded as correct in a mathematical sense: when the precondition is
-false, the result is true. ;-)
+> > (I am ignoring the problem this patch addresses temporary, I think
+> >  we can fix it a bit differently).
+>
+> Just leaving it alone also is an option.  We can just mandate
+> ptrace(2) users to always perform sleeping wait(2) after PTRACE_SEIZE.
+> If it can be fixed easily, sure.  If not, let's leave it alone.
 
--- Hannes
+Let's leave it alone in this thread, unless I missed something this is
+simple. Or I missed something and it is not that simple ;)
+
+> > Say, the thread group was stopped, the tracer PTRACE_CONT's T1, it calls
+> > sys_execve() and reports the trap from syscall_trace_enter().
+> >
+> > The tracer does ptrace(T1, DETACH) + ptrace(T1, SEIZE) and hangs forever.
+> >
+> > Once again, this is only one example. coredump, vfork, probably something
+> > else. In short: I think that TRAPPING-outside-of-do_signal_stop is the
+> > can of worms.
+>
+> Yeap, fully agreed.  We need something different for detach case;
+> however, for re-trap, tracee is known to be in signal delivery path
+> and should be okay, I think.  Right?
+
+I think this is right, but there were so many issues, that is why I
+suggested to ignore this series temporary. And, to be honest, because
+I was a bit confused, somehow I thought you are going to add more
+TRAPPING's.
+
+So, we agree that we can only set TRAPPING iff we know what the tracee
+should do "really soon". Great.
+
+I have other concerns, but I noticed you have already sent V2. Let's
+continue there.
+
+Oleg.
+
