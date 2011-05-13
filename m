@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab1EMNYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:24:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43406 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1EMNYi convert rfc822-to-8bit (ORCPT
+	id S933058Ab1EMN0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:26:47 -0400
+Received: from p15132773.pureserver.info ([217.160.209.225]:36373 "EHLO
+	smtp.chost.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932345Ab1EMN0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:24:38 -0400
-Subject: Re: Sched_autogroup and niced processes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Yong Zhang <yong.zhang0@gmail.com>,
-        Carl-Johan Kjellander <carl-johan@klarna.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1305292406.27263.20.camel@marge.simson.net>
-References: <BANLkTimCpH3Nn2XnOJUKnK=dMObj1r8KEg@mail.gmail.com>
-	 <BANLkTi=ckPK3BV07n=hmwOeqFUs3mrazFQ@mail.gmail.com>
-	 <1305273950.15080.7.camel@marge.simson.net>
-	 <20110513082250.GB13647@elte.hu> <1305276066.2561.1.camel@twins>
-	 <20110513090537.GH13647@elte.hu> <1305277666.2561.9.camel@twins>
-	 <20110513092933.GL13647@elte.hu> <1305279990.2466.4.camel@twins>
-	 <20110513100411.GA21022@elte.hu>
-	 <1305292406.27263.20.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 13 May 2011 15:24:30 +0200
-Message-ID: <1305293070.2466.32.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 13 May 2011 09:26:46 -0400
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        devel <devel@lists.laptop.org>, Dan Williams <dcbw@redhat.com>,
+        John@xo15-sascha.sascha.silbe.org,
+        W.Linville@xo15-sascha.sascha.silbe.org, <linville@tuxdriver.com>,
+        libertas-dev <libertas-dev@lists.infradead.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add libertas_disablemesh module parameter to disable mesh interface
+To: Randy Dunlap <rdunlap@xenotime.net>
+In-reply-to: <20110511100030.cad34893.rdunlap@xenotime.net>
+References: <1305118354-17337-1-git-send-email-silbe@activitycentral.com> <20110511100030.cad34893.rdunlap@xenotime.net>
+Date: Fri, 13 May 2011 15:26:24 +0200
+Message-Id: <1305292756-sup-4842@xo15-sascha.sascha.silbe.org>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Sascha Silbe <silbe@activitycentral.com>
+Content-Type: multipart/signed; boundary="=-1305293197-557392-1562-4935-18-="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 15:13 +0200, Mike Galbraith wrote:
-> 
-> > Still, the other important problem is that we still seem to have a bug, even 
-> > with the cgroup set to low prio seti@home is sucking up CPU resources ...
-> 
-> I don't see how.  
 
-Agreed, with two groups, a spinner each, and then setting the group
-weight low yields things like:
+--=-1305293197-557392-1562-4935-18-=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
- 1927 root      20   0  105m  672  192 R 98.1  0.0   0:20.50 bash  
- 1933 root      20   0  105m  656  180 R  2.0  0.0   0:07.29 bash  
+Excerpts from Randy Dunlap's message of Wed May 11 19:00:30 +0200 2011:
+> On Wed, 11 May 2011 14:52:34 +0200 Sascha Silbe wrote:
+> =
 
-So all just seems to work as advertised.
+> > This allows individual users and deployments to disable mesh support =
+at
+> > runtime, i.e. without having to build and maintain a custom kernel.
+> =
+
+> I guess a user could want to do this on a per-driver basis, but ISTM th=
+at
+> it would be better to be something like a sysctl that applies to all (w=
+ireless)
+> drivers.
+
+AFAIK libertas is the only driver with a mesh implementation based on an
+outdated 802.11s draft. To clarify, we could rename the parameter to
+lbs_disable_olpcmesh (or just disable_olpcmesh).
+Disabling 802.11s (latest draft) based mesh support is a separate
+matter.
+
+Sascha
+
+-- =
+
+http://sascha.silbe.org/
+http://www.infra-silbe.de/
+
+--=-1305293197-557392-1562-4935-18-=
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.1.0beta1 (GNU/Linux)
+
+iQEcBAEBCgAGBQJNzTGAAAoJELpz82VMF3DaJHYH+gMFPvB8brmrYbDVbteoIl+5
+aUQ43A9MxtJKDFXr/51azfBFxAVu7JSxhHA+I1U/lY3xjubqyslOObZ7sOnEh9iP
+lAP1nyjNNLNqZblwu5uPh7Z81Kz7cl4RLF4Li7dHc9Xq7Ewy/o6TQeOCPhHt/QAm
+eBlNEWXIbZSc5yRYD7HfTp+3enDKE6I/Wmj+bB+vL6mOq23yisx5E93tifZaNeNx
+etFGiOq35kUBZUjm7ibYcDgx+kDN01IbKynodHSFE4PPC64nmYRv02amR+bpl2QF
+67j4YNZCnAsqHdWcivHHfJ1j11c35TTmX4tQqOSu02qSfoWTxvoJxvMJjIhRd9o=
+=SSLj
+-----END PGP SIGNATURE-----
+
+--=-1305293197-557392-1562-4935-18-=--
