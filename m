@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab1EMTFr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 15:05:47 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2413 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab1EMTFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 15:05:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 13 May 2011 12:03:41 -0700
-Subject: Re: [PATCH v2] net: rfkill: add generic gpio rfkill driver
-From: Rhyland Klein <rklein@nvidia.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: "olof@lixom.net" <olof@lixom.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-In-Reply-To: <1305270943.3487.5.camel@jlt3.sipsolutions.net>
-References: <1305159661-11982-1-git-send-email-rklein@nvidia.com>
-	 <1305189092.3461.10.camel@jlt3.sipsolutions.net>
-	 <1305224592.10961.10.camel@rklein-linux2>
-	 <1305225648.3461.37.camel@jlt3.sipsolutions.net>
-	 <1305226377.10961.12.camel@rklein-linux2>
-	 <1305226969.3461.38.camel@jlt3.sipsolutions.net>
-	 <1305235386.10961.13.camel@rklein-linux2>
-	 <1305270943.3487.5.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 May 2011 12:02:54 -0700
-Message-ID: <1305313374.10961.23.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752957Ab1EMTTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 15:19:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55883 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751095Ab1EMTS7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 15:18:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <7vliya77xl.fsf@alter.siamese.dyndns.org>
+References: <BANLkTi=kb_m-CfrpnD8qQTVYLGaDdgy_tg@mail.gmail.com>
+ <BANLkTikMeyRTOB9q4PEAYWnZRZfk3wg=kQ@mail.gmail.com> <BANLkTi=dL+KyQ3Bm58_Uj4LP9WSpbzAfJA@mail.gmail.com>
+ <BANLkTi=NdVUUZ=_bACzyeMGS3JWs0EMbWA@mail.gmail.com> <BANLkTimE2GkkhcFZtNrYZASWp0LDhUx=GQ@mail.gmail.com>
+ <BANLkTinyzBnksHk_rt8K2pmg90q5WyZX3w@mail.gmail.com> <BANLkTinVT=9+-HhwXcyLBwrnhX9F9Qz3ww@mail.gmail.com>
+ <4DCD79A0.7000500@kdbg.org> <BANLkTi=smoaARKyzWxFjid-E7qehmyAX8w@mail.gmail.com>
+ <7vliya77xl.fsf@alter.siamese.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 May 2011 12:18:03 -0700
+Message-ID: <BANLkTinGOHX-fNuQqZr50nvUC4BTymwBNg@mail.gmail.com>
+Subject: Re: AAARGH bisection is hard (Re: [2.6.39 regression] X locks up hard
+ right after logging in)
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Johannes Sixt <j6t@kdbg.org>, Andrew Lutomirski <luto@mit.edu>,
+        Christian Couder <christian.couder@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        git@vger.kernel.org, Shuang He <shuang.he@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 00:15 -0700, Johannes Berg wrote:
-> On Thu, 2011-05-12 at 14:23 -0700, Rhyland Klein wrote:
-> > On Thu, 2011-05-12 at 12:02 -0700, Johannes Berg wrote:
-> > > On Thu, 2011-05-12 at 11:52 -0700, Rhyland Klein wrote:
-> > > 
-> > > > > If, on the other hand, rfkill decides that at the time of loading the
-> > > > > driver wifi should be on, then the first change would be +1 and it'll
-> > > > > flip between 0 and +1.
-> > > > > 
-> > > > > This seems like it'll cause issues at some point, so I think you should
-> > > > > either allow the driver to set the initial state or hardcode one of
-> > > > > these possibilities (so at least it's predictable)
-> > > 
-> > > > I won't go negative, if you look, it only will disable clock if it knows
-> > > > it has already enabled it. 
-> > > 
-> > > Ah, you're right, I misread the macros.
-> 
-> > So the patch is good as is?
-> 
-> I think so, yes.
-> 
-> johannes
-> 
+On Fri, May 13, 2011 at 11:48 AM, Junio C Hamano <gitster@pobox.com> wrote:
+>
+> Could you please clarify "off-limits"?
+>
+> Do you mean "anything before v2.6.38 did not even have this feature, so
+> the result of testing a version in that range does not give us any
+> information"?
 
-John, Johannes suggested you are able to pull in this patch?
+Well, I think it's useful in two cases.
 
-rhyland
+It's useful for the "before this version, the test we're doing doesn't
+even make sense and cannot succeed" sense.
 
+That doesn't have to be about hardware support, it could be any
+feature. For example, in git, say that you noticed that
+--dirstat-by-file stopped working at some point. You know it was good
+when you merged it, so you'd do
+
+  git bisect start
+  git bisect good ac9666f84a59
+
+but you'd also go "that's also when I introduced the *test* for it, so
+I'll need to require that":
+
+  git bisect requires ac9666f84a59
+
+and then you can start it all off:
+
+  git bisect bad
+  git bisect run sh -c "make test"
+
+or whatever.
+
+Because you don't want to go into the merges that were based on code
+that didn't even _have_ that feature.
+
+Ok, so that's a made-up and contrieved example (it would make more
+sense for when you add a whole new flag, and your test-script is
+testign that new functionality), but it kind of explains the notion:
+it will not bother to run bisect on code that simply isn't _relevant_
+for the issue you are bisecting.
+
+> Upon seeing "bad" result from a version before v2.6.38, what can we conclude?
+
+The point would be that such versions aren't even _testable_. So the
+whole "seeing 'bad'" concept is a NULL concept. It's like the above
+"new command line flag to 'git'" example: it's not that those commits
+might not have broken something, but those commits are crazy to test.
+
+If it turns out that a merge brought in the breakage, we'd have to do
+a totally new kind of test thing. But from a bisect standpoint, it's
+already very interesting if the end result is "hey, you merged that
+code that didn't even _support_ the feature we're testing, and that
+broke it". That gives quite a bit of information, and opens up new
+avenues for testing.
+
+For example, at that point, we might decide that "Oh, ok, now I will
+need to re-run the bisect for everthing that came in in that merge,
+but I will do a new merge at that point to see which commit it is that
+doesn't play nice with the new feature".
+
+> The breakage cannot possibly come from the feature
+> that is being checked, so the procedure to check itself is busted?
+
+Right.
+
+HOWEVER.
+
+There's another reason to say "require version XYZ", and that's
+essentially a "I want to do a (quicker) high-level bisect". Especially
+the way the kernel merge window is done, it might be that versions
+prior to v2.6.38 work perfectly _fine_, but what you want to do is to
+quickly bisect down to which subsystem caused breakage.
+
+A good way to do that would be to just say "requires v2.6.38", and
+suddenly the actual set of commits that we're going to bisect is going
+to be *much* smaller. We're basically throwing away all the individual
+commits that were merged in the merge window, and saying something
+that approximates to "we are only interested in the merge points".
+
+Why would we do that? Just to get a quicker "this is the problematic
+subsystem". So the "requires xyz" might be quite useful for that
+reason too.
+
+                 Linus
