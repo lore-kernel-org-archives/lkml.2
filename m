@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab1EMGYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 02:24:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35168 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab1EMGYS convert rfc822-to-8bit (ORCPT
+	id S1755677Ab1EMGbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 02:31:32 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:36981 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753627Ab1EMGba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 02:24:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YQKBGCYCnEpOSQZCpgLYj+UY1HxDopc4Juvmew25FcxbZ6dBxBpN59srt+kEN0Nvmz
-         Wun71PMWLxo4rrL3DK5Ipp7DVLIfLzAHmfDf4G4Dr/Nk/Iz+uadiInfJlNvneTUlWtKw
-         E4ie3SfQ/NEP3BsKrlAzHJ0rRdUAMbHRPKbkk=
+	Fri, 13 May 2011 02:31:30 -0400
+Message-ID: <4DCCD025.4090100@st.com>
+Date: Fri, 13 May 2011 08:31:01 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110513061252.GV28888@outflux.net>
-References: <BANLkTim8mAzZbdOhBodaOFKM5esP-Q+K7g@mail.gmail.com>
-	<20110512.140630.1779004012724490077.davem@davemloft.net>
-	<20110512183741.GA22269@redhat.com>
-	<20110512.150132.1679483014638599288.davem@davemloft.net>
-	<BANLkTimUko9Y-spdzQFDEvZBjaKSaJrHBw@mail.gmail.com>
-	<20110513061252.GV28888@outflux.net>
-Date: Fri, 13 May 2011 09:24:17 +0300
-X-Google-Sender-Auth: 4MWrxHoR27fHZZ6dA0ziJZHkm_Y
-Message-ID: <BANLkTim39AFWkNHi6BOpdoOqzJTX1e96gg@mail.gmail.com>
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-From: Pekka Enberg <penberg@kernel.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: David Miller <davem@davemloft.net>, davej@redhat.com, eranian@google.com,
-        acme@redhat.com, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
+To: David Decotigny <decot@google.com>
+Cc: Giuseppe CAVALLARO <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] net/stmmac: don't go through ethtool to start autonegociation
+References: <1304986748-15809-1-git-send-email-decot@google.com> <1304986748-15809-2-git-send-email-decot@google.com> <4DC941D4.8030409@st.com>
+In-Reply-To: <4DC941D4.8030409@st.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
-
-On Fri, May 13, 2011 at 9:12 AM, Kees Cook <kees.cook@canonical.com> wrote:
-> Hi Pekka,
->
-> On Thu, May 12, 2011 at 10:58:53PM +0300, Pekka Enberg wrote:
->> On Thu, May 12, 2011 at 10:01 PM, David Miller <davem@davemloft.net> wrote:
->> > From: Dave Jones <davej@redhat.com>
->> > Date: Thu, 12 May 2011 14:37:41 -0400
->> >
->> >> On Thu, May 12, 2011 at 02:06:30PM -0400, David Miller wrote:
->> >>  > I hate this too, and I think it's absolutely rediculous.
->> >>  >
->> >>  > Also, like you, I lost an entire afternoon trying to figure out why
->> >>  > this started happening.
->> >>  >
->> >>  > I wish we could revert this change.
->> >>
->> >> At least it can be permanently disabled..
->> >>
->> >> echo kernel.kptr_restrict = 0 >> /etc/sysctl.conf
->> >
->> > Regardless, what to do about all of the "perf is broken" reports?
+On 5/10/2011 3:47 PM, Giuseppe CAVALLARO wrote:
+> On 5/10/2011 2:19 AM, David Decotigny wrote:
+>> The driver used to call phy's ethtool configuration routine to start
+>> autonegociation. This change has it call directly phy's routine to
+>> start autonegociation.
 >>
->> Lets revert the commit 9f36e2c448007b54851e7e4fa48da97d1477a175
->> ("printk: use %pK for /proc/kallsyms and /proc/modules"), please! I
->> too have been wondering what's going on with perf reporting insane
->> symbols and this should definitely not be enabled by default.
->
-> No, reverting that is not the answer. If perf has a problem with the
-> kptr_restrict feature, it should just disable it in /proc/sys when it
-> runs and restore it when finished. Since our defaults should be secure
-> for the average user (who does not use perf), it's fine the way it
-> is. Anyone using perf can adjust this for their use-case (that is why
-> there is a /proc/sys tunable).
+>> IMPORTANT: initial version was hiding phy_start_aneg() return value,
+>>            this patch returns it (<0 upon error).
+>>
+>> Tested: module compiles, NOT tested on real hardware.
+>> Signed-off-by: David Decotigny <decot@google.com>
+> 
+> Sorry for the delay, I'm doing some tests with the stmmac on a "real"
+> HW. I'll come back asap.
 
-No, it's the other way around. See commit
-411f05f123cbd7f8aa1edcae86970755a6e2a9d9 ("vsprintf: Turn
-kptr_restrict off by default") in Linus' tree for details.
 
-                        Pekka
+Hello.
+
+I've tested the patch and, as discussed with David, I have sent it again
+plus a new fix in the stmmac_set_pauseparam I have done while testing
+ethtool -A|-a on my ST box.
+
+Best Regards,
+Peppe
+
+> 
+> Regards
+> Peppe
+> 
+>> ---
+>>  drivers/net/stmmac/stmmac_ethtool.c |   13 ++-----------
+>>  1 files changed, 2 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/net/stmmac/stmmac_ethtool.c b/drivers/net/stmmac/stmmac_ethtool.c
+>> index 6f5aaeb..9c05cf0 100644
+>> --- a/drivers/net/stmmac/stmmac_ethtool.c
+>> +++ b/drivers/net/stmmac/stmmac_ethtool.c
+>> @@ -236,17 +236,8 @@ stmmac_set_pauseparam(struct net_device *netdev,
+>>  	priv->flow_ctrl = new_pause;
+>>  
+>>  	if (phy->autoneg) {
+>> -		if (netif_running(netdev)) {
+>> -			struct ethtool_cmd cmd = { .cmd = ETHTOOL_SSET };
+>> -			/* auto-negotiation automatically restarted */
+>> -			cmd.supported = phy->supported;
+>> -			cmd.advertising = phy->advertising;
+>> -			cmd.autoneg = phy->autoneg;
+>> -			ethtool_cmd_speed_set(&cmd, phy->speed);
+>> -			cmd.duplex = phy->duplex;
+>> -			cmd.phy_address = phy->addr;
+>> -			ret = phy_ethtool_sset(phy, &cmd);
+>> -		}
+>> +		if (netif_running(netdev))
+>> +			ret = phy_start_aneg(phy);
+>>  	} else
+>>  		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
+>>  					 priv->flow_ctrl, priv->pause);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
