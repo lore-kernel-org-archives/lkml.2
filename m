@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759094Ab1EMMej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 08:34:39 -0400
-Received: from 8bytes.org ([88.198.83.132]:50402 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758865Ab1EMMei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 08:34:38 -0400
-Date: Fri, 13 May 2011 14:34:34 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
-Message-ID: <20110513123434.GK8707@8bytes.org>
-References: <1305129333-7456-1-git-send-email-avi@redhat.com> <20110512093309.GD8707@8bytes.org> <4DCBACC7.8080000@siemens.com> <20110512131130.GG8707@8bytes.org> <4DCBE13A.2050204@redhat.com> <20110512142449.GI8707@8bytes.org> <4DCBF0B7.7080102@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DCBF0B7.7080102@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759174Ab1EMMeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 08:34:50 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:50959 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759129Ab1EMMes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 08:34:48 -0400
+Subject: Re: [PATCH] regulator: max8997: remove useless code
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>, myungjoo.ham@gmail.com
+In-Reply-To: <1305167868-9080-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1305167868-9080-1-git-send-email-myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 May 2011 13:34:43 +0100
+Message-ID: <1305290083.3202.5.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 05:37:43PM +0300, Avi Kivity wrote:
-> On 05/12/2011 05:24 PM, Joerg Roedel wrote:
+On Thu, 2011-05-12 at 11:37 +0900, MyungJoo Ham wrote:
+> From: Jonghwan Choi <jhbird.choi@samsung.com>
+> 
+> fix unreachable code.
+> 
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  drivers/regulator/max8997.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+> index 77e0cfb..b1c1444 100644
+> --- a/drivers/regulator/max8997.c
+> +++ b/drivers/regulator/max8997.c
+> @@ -267,7 +267,6 @@ static int max8997_get_enable_register(struct regulator_dev *rdev,
+>  	default:
+>  		/* Not controllable or not exists */
+>  		return -EINVAL;
+> -		break;
+>  	}
+>  
+>  	return 0;
 
-> One thing we could do is paravirtualize at a lower level, introduce a  
-> hypercall for batch MSR reads and writes.  So we can use the existing  
-> PMU semantics and code, just optimize the switch.  This is similar to  
-> what Xen did with lazy cpu updates, and what kvm did for paravirt  
-> pagetable writes.
 
-In general a good idea. For MSR writes this isn't trivial as well. MSR
-reads and writes can cause a #GP, this needs to be represented in this
-interface. Can we allow that a batched MSR write changes the operation
-mode of the vcpu and so on.
-Or we limit this interface to the PMU MSRs, then we are pretty much at
-a paravirt-pmu.
+Applied.
 
-
-> I've considered something similar for mmio - use hypercalls for ordinary  
-> mmio to avoid calling into the emulator - but virtio uses pio which  
-> isn't emulated and we don't have massive consumers of mmio (except  
-> perhaps hpet).
->
-> (and we can have a cpuid bit that advertises whether we recommend to use  
-> this feature for PMU MSRs; if/when we get hardware support, we turn it 
-> off)
-
-A cpuid-bit that indicates which pmu is prefered is certainly a good
-idea.
-
-	Joerg
+Liam
 
