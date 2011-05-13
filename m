@@ -1,67 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab1EMNEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 09:04:25 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49809 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759122Ab1EMNEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 09:04:24 -0400
-Date: Fri, 13 May 2011 15:04:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110513130414.GA6863@elte.hu>
-References: <4DCAFFD8.2080605@kernel.org>
- <4DCB157F.20202@kernel.org>
- <20110512060344.GB3191@elte.hu>
- <4DCB8BCD.1080607@kernel.org>
- <4DCB8F7A.90603@kernel.org>
- <20110512092013.GJ2258@linux.vnet.ibm.com>
- <4DCC52FB.6030500@kernel.org>
- <4DCC894D.3070204@kernel.org>
- <20110513084253.GE13647@elte.hu>
- <20110513121906.GA3676@elte.hu>
+	id S1759281Ab1EMNGF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 09:06:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47728 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759149Ab1EMNGD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 09:06:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SBvYQmIX9lhCm9AxiNJSsgjeNjhYaadwS8rt8QUVth5R3zzBdh4c8koSssYrK7916G
+         aYzET2VKJiZFVO1UoMuhHJnbxH5jNgSdZtbRhX+JXt4f3vRtf1QDcx+LPetOes+x1ry0
+         EI3ndgXSh0x1DaDbUbP07ANSSzFbHomlhDtpo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513121906.GA3676@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1305122055.2914.220.camel@laptop>
+References: <BANLkTi=qPWxRAa6+dT3ohEP6Z=0v+e4EXA@mail.gmail.com>
+	<1305016329.2914.22.camel@laptop>
+	<BANLkTin5iNMt2autv3TJpCvTQUoKsSzhTA@mail.gmail.com>
+	<1305122055.2914.220.camel@laptop>
+Date: Fri, 13 May 2011 21:06:01 +0800
+Message-ID: <BANLkTinbZmE8=DE9q_QVQMKwG3h69cewng@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix constructing the span cpu mask of sched domain
+From: Hillf Danton <dhillf@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 11, 2011 at 9:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-05-11 at 21:26 +0800, Hillf Danton wrote:
+>> Your work for rewriting NUMA support, published at
+>>          http://marc.info/?l=linux-kernel&m=130218515520540
+>> is patched by changing how level is computed and by changing how it is
+>> used to build the mask.
+>>
+>> When computing, some valid levels are lost in your work.
+>>
+>> When building mask, nodes are selected only if they have same distance,
+>> thus nodes of less distance are also masked out since the computation of
+>> level now is tough.
+>>
+>> Without MUNA hardware, I did not test the patch:(
+>
+> I do have a (tiny) NUMA box (2 nodes) but that actually booted with the
+> old code too, Andreas Hermann from AMD (CC'ed) is usually willing to
+> test such patches on somewhat larger systems. Please send a full patch
+> against tip/master for him to apply.
+>
+>
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Hi Peter
 
-> btw., i'm seeing a boot hang too, with the attached config:
-> 
-> PM: Adding info for platform:serial8250
-> serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-> device: 'ttyS0': device_add
-> PM: Adding info for No Bus:ttyS0
-> INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=6002 jiffies)
-> INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=24034 jiffies)
-> INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=42066 jiffies)
-> INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=6002 jiffies)
-> INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 1, t=24034 jiffies)
-> 
-> (and the stall warnings go on forever)
+In your original work, there is also a mismatch between how level is computed
+and how it is used to build the cpu mask.
 
-I started bisecting this, and the two relevant endpoints:
+When computing level, distance is computed with node_distance(0, j),
+instead of node_distance(i, j), and I do not think it is typo since the printk
+also uses distance(0,%d).
 
-  bad: 11c476f: net,rcu: convert call_rcu(prl_entry_destroy_rcu) to kfree
- good: 0ee5623f: Linux 2.6.39-rc6
+When building cpu mask, however, distance is computed according to
+for_each_possible_cpu(j) and node_distance(cpu_to_node(j), k).
 
-very clearly indicate that this is an RCU regression.
+Thus I concern there may be distances not covered by the level, see below.
 
-Thanks,
+If test result from Andreas is positive,
+      I over concern,
+else
+      please take the mismatch into your consideration.
 
-	Ingo
+
+thanks
+Hillf
+---
+
+--- numa_by_peter.c	2011-05-11 20:22:10.000000000 +0800
++++ numa_by_hillf.c	2011-05-13 20:36:46.000000000 +0800
+@@ -1,6 +1,5 @@
+ static void sched_init_numa(void)
+ {
+-	int next_distance, curr_distance = node_distance(0, 0);
+ 	struct sched_domain_topology_level *tl;
+ 	int level = 0;
+ 	int i, j, k;
+@@ -11,21 +10,29 @@ static void sched_init_numa(void)
+ 	if (!sched_domains_numa_distance)
+ 		return;
+
+-	next_distance = curr_distance;
+-	for (i = 0; i < nr_node_ids; i++) {
+-		for (j = 0; j < nr_node_ids; j++) {
+-			int distance = node_distance(0, j);
+-			printk("distance(0,%d): %d\n", j, distance);
+-			if (distance > curr_distance &&
+-					(distance < next_distance ||
+-					 next_distance == curr_distance))
+-				next_distance = distance;
++	for (j = 0; j < nr_node_ids; j++) {
++		int distance = node_distance(0, j);
++		printk("distance(0,%d): %d\n", j, distance);
++		for (i = 0; i < level; i++) {
++			/* check if already exist */
++			if (distance == sched_domains_numa_distance[i])
++				goto next_node;
++			/* sort and insert it */
++			if (distance < sched_domains_numa_distance[i])
++				break;
+ 		}
+-		if (next_distance != curr_distance) {
+-			sched_domains_numa_distance[level++] = next_distance;
++		if (i == level) {
++			sched_domains_numa_distance[level++] = distance;
+ 			sched_domains_numa_levels = level;
+-			curr_distance = next_distance;
+-		} else break;
++			continue;
++		}
++		for (k = level -1; k >= i; k--)
++			sched_domains_numa_distance[k+1] =
++			sched_domains_numa_distance[k];
++		sched_domains_numa_distance[i] = distance;
++		sched_domains_numa_levels = ++level;
++next_node:
++		;
+ 	}
+
+ 	sched_domains_numa_masks = kzalloc(sizeof(void *) * level, GFP_KERNEL);
+@@ -44,8 +51,9 @@ static void sched_init_numa(void)
+ 			struct cpumask *mask =
+ 				per_cpu_ptr(sched_domains_numa_masks[i], j);
+
++			cpumask_clear(mask);
+ 			for (k = 0; k < nr_node_ids; k++) {
+-				if (node_distance(cpu_to_node(j), k) >
++				if (node_distance(cpu_to_node(j), k) !=
+ 						sched_domains_numa_distance[i])
+ 					continue;
+
+@@ -57,6 +65,17 @@ static void sched_init_numa(void)
+ 		}
+ 	}
+
++	for (j = 0; j < nr_node_ids; j++)
++		for (k = 0; k < nr_node_ids; k++) {
++			int distance = node_distance(j, k);
++			for (i = 0; i < level; i++)
++				if (distance == sched_domains_numa_distance[i])
++					goto covered;
++			printk("distance(%d,%d): %d not covered by level\n",
++				j, k, distance);
++		covered:
++			;
++		}
+ 	tl = kzalloc((ARRAY_SIZE(default_topology) + level) *
+ 			sizeof(struct sched_domain_topology_level), GFP_KERNEL);
+ 	if (!tl)
