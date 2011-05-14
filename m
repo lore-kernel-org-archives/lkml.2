@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab1ENCIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 22:08:39 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41799 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab1ENCIh (ORCPT
+	id S1758004Ab1ENCXw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 22:23:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41968 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab1ENCXv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 22:08:37 -0400
+	Fri, 13 May 2011 22:23:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=saY5gCzzvZ9C3HRD2PDvCRMldpWrX1ZuYSbseIyOmPqJFeb8LR+wlBPzsFGffWj4ch
-         ki2YqNBhDWf/SQGsh9G9dAAOoV5I7GYCjS7s29jjVkbcbpd6p6YWONX2RHH3gxFRKUdH
-         ql53RrQJtpE6g9EE9ctQ9fn3hc3AjsFQMTEJo=
-Message-ID: <4DCDE422.6060808@gmail.com>
-Date: Fri, 13 May 2011 20:08:34 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=JT4qOxWrompo3MdglRt8wyliw+8fWTqXWVT/sMFZMDUampSwUg1DnPqB8cOKIk3yAh
+         Ervo4B4dlC0mxKf/HtmSw+3bNEEsPuwtGdi2tTPgdbzRFRBNTtopwSEly9eswplVXRmo
+         YXGD1f6z9LlY2QSJ77du+hQKl8eoRuYvtetIU=
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Tejun Heo <tj@kernel.org>, Michael Leun <lkml20100708@newton.leun.net>,
-        linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, jipeng2005@gmail.com
-Subject: Re: AHCI driver problem on ICH (Re: AHCI driver problem on SB700/SB800
- w/ Acer Ferrari One)
-References: <201105120025.34531.rjw@sisk.pl> <BANLkTimqxmbpP1-+HxhPQS-YoLTh=bHd1Q@mail.gmail.com> <201105132222.11582.rjw@sisk.pl> <201105132244.29605.rjw@sisk.pl>
-In-Reply-To: <201105132244.29605.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1305329059-2017-6-git-send-email-andi@firstfloor.org>
+References: <1305329059-2017-1-git-send-email-andi@firstfloor.org> <1305329059-2017-6-git-send-email-andi@firstfloor.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 13 May 2011 22:23:30 -0400
+Message-ID: <BANLkTimKjtns7oFNMTLbnbyAkKi679ui5A@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Hook up sysconf syscall for all architectures
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2011 02:44 PM, Rafael J. Wysocki wrote:
-> On Friday, May 13, 2011, Rafael J. Wysocki wrote:
->> On Friday, May 13, 2011, Tejun Heo wrote:
->>> Hello,
->>>
->>> Can you guys please take a look at bug#34692?  It seems to be the same problem.
->>>
->>>    https://bugzilla.kernel.org/show_bug.cgi?id=34692
->>
->> Yes, same issue.
->>
->>> The offending commit seems to be 270dac35c2.  Does reverting it
->>> resolves the problem for you guys too?
->>
->> Yes, it does.
->
-> Would you object if I asked Linus to revert that commit?
+On Fri, May 13, 2011 at 19:24, Andi Kleen wrote:
+>  arch/blackfin/include/asm/unistd.h     |    3 ++-
+>  arch/blackfin/mach-common/entry.S      |    1 +
 
-Think that's likely the best solution for now. I'm guessing there's some 
-case where link power management trips up the check that was added. Most 
-or all existing released controllers don't need it so I think Jian could 
-likely try again after 2.6.39.
+i wish more people would wire up new syscalls for arches ;)
+
+i dont recall off the top of my head acking any other pending new
+syscall which would cause a conflict, so:
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+
+i generally wait for syscalls to hit mainline before i wire them up myself
+-mike
