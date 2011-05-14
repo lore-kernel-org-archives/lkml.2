@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1ENQea (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 12:34:30 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51032 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab1ENQe3 (ORCPT
+	id S1758683Ab1ENQfV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 12:35:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57283 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758482Ab1ENQfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 12:34:29 -0400
-Date: Sat, 14 May 2011 18:34:24 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        libc-alpha@sourceware.org, Andi Kleen <ak@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/5] Add a sysconf syscall
-Message-ID: <20110514163424.GU6008@one.firstfloor.org>
-References: <1305329059-2017-1-git-send-email-andi@firstfloor.org> <1305329059-2017-5-git-send-email-andi@firstfloor.org> <20110514065752.GA8827@elte.hu>
-Mime-Version: 1.0
+	Sat, 14 May 2011 12:35:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=b90J1V9mUkcFgY0EZlWGsqPa2sWDvJP5ambF3ygGROG8Yl9QCmhwf9LVIBR99MJFf1
+         VUE57shJbSMTqya4oNRKWuwbC8SbJEGpg9rsuSAo0LiuoDaErwV64TlA7AvDFbAEJl0V
+         K6k469nQZbOIjrtrTdTQtkiyvX0DBNqtij15Q=
+Date: Sat, 14 May 2011 09:35:13 -0700
+From: mark gross <markgross@thegnar.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] pm loss development
+Message-ID: <20110514163513.GB8292@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+ <201105122127.44484.rjw@sisk.pl>
+ <BANLkTikZkRW6TWMcWyZC4_TdAWgjXDqvYA@mail.gmail.com>
+ <201105131854.57854.rjw@sisk.pl>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110514065752.GA8827@elte.hu>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <201105131854.57854.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What glibc does (opening /proc/stat) is rather stupid, but i think your syscall 
+On Fri, May 13, 2011 at 06:54:57PM +0200, Rafael J. Wysocki wrote:
+> On Friday, May 13, 2011, Raffaele Recalcati wrote:
+> > Hi Rafael,
+> > 
+> > 2011/5/12 Rafael J. Wysocki <rjw@sisk.pl>:
+> > > On Thursday, May 12, 2011, Raffaele Recalcati wrote:
+> > >> What happen normally in runtime pm implementation is that every devices
+> > >> are switched off and are enabled only when needed.
+> > >> In our case instead we have a completely functional embedded system and,
+> > >> when an asyncrhonous event appear, we have only some tens milliseconds
+> > >> before the actual power failure takes place.
+> > >> This patchset add a support in order to switch off not vital part of the system,
+> > >> in order to allow the board to survive longer.
+> > >> This allow the possibility to save important data.
+> > >
+> > > OK, so first, who decides what parts of the system are vital and what aren't?
+> > 
+> > Take a quick look at Documentation/power/loss.txt  paragrpah "2.4
+> > Power loss policies".
+> > You can decide what can be powered off.
+> 
+> I read the patches.  My question was about the general idea of who should
+> be responsible of making these decisions.
 
-I don't think it has any other choice today. So if anything is "stupid"
-it is the kernel for not providing efficient interfaces for this.
+I would expect the system integrator would based on the application the
+device is getting deployed into.
 
-> Note that these are mostly constant or semi-constant values that are updated 
-> very rarely:
+A generic opportunistic policy for peripherals that are stateless and can
+be trivially power gated off/on from an ISR could be a default but, for
+peripherals that need to do some processing (like waiting on an eMMC DMA
+to complete) can take time to power down into a safe state.
 
-That's not true. Most of them are dynamic. Take a look at the patch.
-Also several of those have changed recently.
-
-> If glibc is stupid and reads /proc/stat to receive something it could cache or 
-> mmap() itself then hey, did you consider fixing glibc or creating a sane libc? 
-Caching doesn't help when you have a workload that exec()s a lot.
-Also some of these values can change at runtime.
-
-> If we *really* want to offer kernel help for these values even then your 
-> solution is still wrong: then the proper solution would be to define a standard 
-> *data* structure and map it as a vsyscall *data* page - essentially a 
-> kernel-guaranteed data mmap(), with no extra syscall needed!
-
-That's quite complicted because several of those are dynamically computed
-based on other values. Sometimes they are also not tied to the mm_struct -- like
-the vsyscall is. For example some of the rlimits are per task, not VM.
-Basically your proposal doesn't interact well with clone().
-
-Even if we ignored that semantic problem it would need another writable page 
-per task because the values cannot be shared.
-
-Also I never liked the idea of having more writable pages per task,
-It increases the memory footprint of a single process more. Given a 4K
-page is not a lot, but lots of 4K pages add up. Some workloads like
-to have lots of small processes and I think that's a valuable use
-case Linux should stay lean and efficient at.
-
-[OK in theory one could do COW for the page and share it but that would
-get really complicated]
-
-I also don't think it's THAT performance critical to justify the vsyscall. 
-The simple syscall is already orders of magnitude faster than /proc, and 
-seems to solve the performance problems we've seen completely. 
-
-It's also simple and straight forward and simple to userstand and maintain.
-I doubt any of that would apply to a vsyscall solution.
-
-I don't think the additional effort for a vsyscall would be worth
-it at this point, unless there's some concrete example that would
-justify it. Even then it wouldn't work for some of the values.
-
-Also a vsyscall doesn't help on non x86 anyways.
-
-As for efficiency: I thought about doing a batched interface where
-the user could pass in an array of values to fill in. But at least for the 
-workloads I looked at the application usually calls sysconf() where
-the array size would be always 1. And that's the standard interface.
-This might be still worth doing, but I would like to see a concrete
-use case first.
-
-> That could have other uses as well in the future.
-
-Hmm for what?
-
-Note we already have a fast mechanism to pass some thing to glibc
-in the aux vector. 
+--mark
 
 > 
-> That way it would much faster than your current code btw.
-> 
-> So unless there are some compelling arguments in favor of sys_sysconf() that i 
-> missed, i have to NAK this:
-
-Well see above for lots of reasons you missed. They are understandable
-mistakes for someone who first looks at the problem though. I'll 
-attempt to improve the documentation next time.
-
--Andi
+> Thanks,
+> Rafael
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
