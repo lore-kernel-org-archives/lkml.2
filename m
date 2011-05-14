@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab1ENUWB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 16:22:01 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61790 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab1ENUV7 convert rfc822-to-8bit (ORCPT
+	id S1758833Ab1ENUYv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 16:24:51 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:45472 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754152Ab1ENUYu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 16:21:59 -0400
+	Sat, 14 May 2011 16:24:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MG1fmzmT1AiOQLOelFeDSB+4NwucTngnczXWmoZVxDHamCcpDNyGVAGSVtxlCsaSNE
-         LtdB4uO1i8voQI9C8Yh0tuzp3fS5a813WvKfKIqVWwvMVGPWEfmX9Bp1LR0OQfEX7fPp
-         aClhtOc0IIh0bZt0qXriAOXr1ZzqZvu0EG/pY=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=i9eE+rK5XUb7XtV5l/+RGC/CjE8heBK2By8bAHSlhbakRafBWwLf6ZEQ9gj2KLnAfd
+         OwAesApJnDZtn3/GRo5RHxOrd93sK1rbnJzvD65GJu0yxxCraG8GrCLLtYJjGU74pHHl
+         IhU18VgMYh5wP52UxAU3re4kOYco1JEcQRBhk=
 MIME-Version: 1.0
-In-Reply-To: <201105131854.57854.rjw@sisk.pl>
-References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
-	<201105122127.44484.rjw@sisk.pl>
-	<BANLkTikZkRW6TWMcWyZC4_TdAWgjXDqvYA@mail.gmail.com>
-	<201105131854.57854.rjw@sisk.pl>
-Date: Sat, 14 May 2011 22:21:57 +0200
-Message-ID: <BANLkTi=0T_jmEju+cP8zG8EC0ns-mwKHYw@mail.gmail.com>
-Subject: Re: pm loss development
-From: Raffaele Recalcati <lamiaposta71@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <BANLkTimoJsi64AWxn8Y_AZ+B1+nM=M1NgA@mail.gmail.com>
+References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com>
+ <4DCD4FC5.8020608@gmail.com> <20110513154410.GA6373@elte.hu>
+ <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com> <20110513204530.GF8950@ghostprotocols.net>
+ <BANLkTimoJsi64AWxn8Y_AZ+B1+nM=M1NgA@mail.gmail.com>
+From: Wim Heirman <wim@heirman.net>
+Date: Sat, 14 May 2011 22:24:27 +0200
+X-Google-Sender-Auth: nv7zDou4tIsrwtpnSjVhJd-fteA
+Message-ID: <BANLkTinPkKBFGy-OO=CYrLoA8yAwq=LE=Q@mail.gmail.com>
+Subject: Re: perf-stat per thread results
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Brice Goglin <Brice.Goglin@inria.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I read the patches. Â My question was about the general idea of who should
-> be responsible of making these decisions.
+On 14 May 2011 14:45, Wim Heirman <wim@heirman.net> wrote:
+> On 13 May 2011 22:45, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+>> Em Fri, May 13, 2011 at 10:32:58PM +0200, Wim Heirman escreveu:
+>>> > It's supposed to do that if --stat is specified, and it used to work - see this
+>>> > commit:
+>>
+>>> >  8d51327090ac: perf report: Fix and improve the displaying of per-thread event counters
+>>
+>>> > and the output there:
+>>> >
+>>> >     #  PID   TID  cache-misses  cache-references
+>>> >       4658  4659        495581           3238779
+>>> >       4658  4662        498246           3236823
+>>> >       4658  4663        499531           3243162
+>>
+>>> > which appears to be roughly what Wim is asking for, AFAICT.
+>>
+>>> Thanks, this is exactly what I'm looking for. In 2.6.32 (Ubuntu 10.04)
+>>> it works, although if I use --pid rather than the -- <command> variant
+>>> the first thread seams to be missing. In 2.6.38 (Ubuntu 11.04) the
+>>> first thread is missing in both use cases, and I get one column per
+>>> processor (which in itself is fine).
+>>
+>> Can you try after applying the patches in this message:
+>>
+>> http://marc.info/?l=linux-kernel&m=130385067430510&w=2
+>>
+>> and report your results?
+>
+> Sorry, no improvement.
+>
+> $ ./perf record -e cycles --stat -- ./fft -p4 -m24 && ./perf report
+> --thread | tail
+> [ perf record: Woken up 5 times to write data ]
+> [ perf record: Captured and wrote 1.198 MB perf.data (~52331 samples) ]
+> # PID  TID   cpu-clock
+>  954  958  8067423322
+>  954  957  6761317556
+>  954  956  6006327147
+>
+> $ ls /proc/$(pidof fft)/task
+> 954  956  957  958
 
-The best  should be, I think, to have some guidelines and than the
-possibility to choose the best policy for each situation.
-In my board I needed to shutdown video in capture and demodulator
-circuit, so I have implemented vpfe capture switch off, that does
-stream_off to all its v4l2 subdevices (a pal decoder and a video
-demodulator).
-So I can save 30mA, and it allows to my board to survive longer.
-I need to do some tests and have some data with and without PM loss.
+Looks like perf-report --thread is reading PERF_RECORD_READ events
+from perf.data. But these are only emitted by the kernel for child
+threads: in kernel/events/core.c, the only call to
+perf_event_read_event() is in sync_child_event().
+Should perf-record then be adapted to do something like perf-stat does
+and use __perf_evsel__read to read the parent counter's final values
+and add them to perf.data ? That way perf-report can subtract all
+children from the final value and get the main thread's counter
+values.
 
-Bye,
-raffaele
--- 
-www.opensurf.it
+Regards,
+Wim
