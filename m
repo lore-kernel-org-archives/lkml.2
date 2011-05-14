@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758991Ab1ENVQW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 17:16:22 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:14453 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab1ENVQT (ORCPT
+	id S1754749Ab1ENWX5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 18:23:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48815 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751707Ab1ENWX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 17:16:19 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: torvalds@linux-foundation.org
-Cc: hans-christian.egtvedt@atmel.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@avr32linux.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH .39-final] avr32: add some more at91 to cpu.h definition
-Date: Sun, 15 May 2011 00:23:32 +0200
-Message-Id: <1305411812-25508-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <4DC3EA35.5030709@atmel.com>
-References: <4DC3EA35.5030709@atmel.com>
+	Sat, 14 May 2011 18:23:56 -0400
+Date: Sat, 14 May 2011 15:23:57 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, johnpol@2ka.mipt.ru,
+        a.zummo@towertech.it, dmitry.torokhov@gmail.com,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        lrg@slimlogic.co.uk
+Subject: Re: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control +
+ DS1WM chip
+Message-ID: <20110514222356.GC21792@opensource.wolfsonmicro.com>
+References: <1303135451-26362-7-git-send-email-haojian.zhuang@marvell.com>
+ <20110426094836.GD2659@sortiz-mobl>
+ <BANLkTinpFBfOEOR6Ox1ufEHZo3qwRq8zhA@mail.gmail.com>
+ <20110514194017.GF30539@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110514194017.GF30539@n2100.arm.linux.org.uk>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somme common drivers will need those at91 cpu_is_xxx() definitions.
-Those definitions are already in Linus' tree so if we want to use them
-in common drivers, we will need them in AVR32 cpu.h file.
+On Sat, May 14, 2011 at 08:40:17PM +0100, Russell King - ARM Linux wrote:
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
----
-Linus,
+> As I also said, this issue was talked about in a session at the Linaro
+> conference, and it will be interesting to hear what the result of that
+> session was.  At the moment, I'm entirely out of the loop on many things
+> that were discussed there (except for a message from tglx.)
 
-AVR32 and AT91 were waiting for more fixes to add to a pull request for you.
-But it seems that we do not have more patches that can go to .39-final.
-So, maybe you can take this trivial patch. It shall allow all definitions to be
-available for both architectures into the same kernel revision.
+Everything should have had some live noted minutes linked off this site:
 
-Thanks, best regards.
+   http://summit.ubuntu.com/uds-o/
 
- arch/avr32/mach-at32ap/include/mach/cpu.h |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+probably everything interesting is on this page:
 
-diff --git a/arch/avr32/mach-at32ap/include/mach/cpu.h b/arch/avr32/mach-at32ap/include/mach/cpu.h
-index 9c96a13..8181293 100644
---- a/arch/avr32/mach-at32ap/include/mach/cpu.h
-+++ b/arch/avr32/mach-at32ap/include/mach/cpu.h
-@@ -31,8 +31,20 @@
- #define cpu_is_at91sam9263()	(0)
- #define cpu_is_at91sam9rl()	(0)
- #define cpu_is_at91cap9()	(0)
-+#define cpu_is_at91cap9_revB()	(0)
-+#define cpu_is_at91cap9_revC()	(0)
- #define cpu_is_at91sam9g10()	(0)
-+#define cpu_is_at91sam9g20()	(0)
- #define cpu_is_at91sam9g45()	(0)
- #define cpu_is_at91sam9g45es()	(0)
-+#define cpu_is_at91sam9m10()	(0)
-+#define cpu_is_at91sam9g46()	(0)
-+#define cpu_is_at91sam9m11()	(0)
-+#define cpu_is_at91sam9x5()	(0)
-+#define cpu_is_at91sam9g15()	(0)
-+#define cpu_is_at91sam9g35()	(0)
-+#define cpu_is_at91sam9x35()	(0)
-+#define cpu_is_at91sam9g25()	(0)
-+#define cpu_is_at91sam9x25()	(0)
- 
- #endif /* __ASM_ARCH_CPU_H */
--- 
-1.7.3
+   http://summit.ubuntu.com/uds-o/track/linaro-kernel/
 
+(in etherpad, you want the icon that looks a bit like a notepad on the
+left of the box in the talk).  They won't always be accurate as they
+were done live and not 100% reviewed but might be helpful.
+
+Several people had actions to bring things to the list so I'd expect to
+see some more digested mails hitting in the next week or two.
