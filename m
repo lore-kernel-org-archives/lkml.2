@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab1ENSxU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 14:53:20 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33001 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab1ENSxT convert rfc822-to-8bit (ORCPT
+	id S1758334Ab1ENSvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 14:51:47 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:37476 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab1ENSvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 14:53:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=XsprwV6fUiRe0S1XsejFA+shI9N1FySLo97jhyZkBrCVwjSKFftnSVAMEw9kOeUqbb
-         j4M0jDAMR38hmYoVcFLX71M1aOUW6N7FgiPRb7XGewS7O7Fi4wCfvACHcIW96G54X7vH
-         pHE1CfMGk/1/TfFBBmKnPLOfTpPf3BMpuLhBw=
+	Sat, 14 May 2011 14:51:46 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] pm loss development
+Date: Sat, 14 May 2011 20:53:34 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Raffaele Recalcati <lamiaposta71@gmail.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com> <201105122127.44484.rjw@sisk.pl>
+In-Reply-To: <201105122127.44484.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <4DCEC068.3050301@gmail.com>
-References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com>
- <4DCD4FC5.8020608@gmail.com> <20110513154410.GA6373@elte.hu>
- <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com> <4DCDB886.7090909@gmail.com>
- <BANLkTimBDwnYCTCEJspPoTKjAv0GXRzb6Q@mail.gmail.com> <4DCEC068.3050301@gmail.com>
-From: Wim Heirman <wim@heirman.net>
-Date: Sat, 14 May 2011 20:52:57 +0200
-X-Google-Sender-Auth: M_A_DSMUBceLjnTob5RmTTx_1C0
-Message-ID: <BANLkTimZFpFedMR01rHtnmiRVffEw2FTeQ@mail.gmail.com>
-Subject: Re: perf-stat per thread results
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Brice Goglin <Brice.Goglin@inria.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105142053.34920.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/14 David Ahern <dsahern@gmail.com>:
-> On 05/14/11 06:49, Wim Heirman wrote:
->>> Hmm.... my mileage varies using latest kernel
->>> (446cc6345d3de6571bdd0840f48aca441488a28d)
->>>
->>> $ /tmp/build-perf/perf record --stat -fo /tmp/perf.data -p $(pidof rsyslogd)
->>> ^C[ perf record: Woken up 1 times to write data ]
->>> [ perf record: Captured and wrote 0.007 MB /tmp/perf.data (~308 samples) ]
->>>
->>> $ /tmp/build-perf/perf report -T -i /tmp/perf.data
->>> # Events: 6  cycles
->>> #
->>> # Overhead   Command      Shared Object                      Symbol
->>> # ........  ........  .................  ..........................
->>> #
->>>    97.61%  rsyslogd  libc-2.13.so       [.] __libc_disable_asynccancel
->>>     2.39%  rsyslogd  [kernel.kallsyms]  [k] native_write_msr_safe
->>>
->>>
->>> #
->>> # (For a higher level overview, try: perf report --sort comm,dso)
->>> #
->>> # PID  TID
->>>
->>>
->>> ie., I do not get the counter values. Specifying the counter with -e
->>> (e.g., -e branch-misses) does not help -- still no counter output.
->>
->> Is rsyslogd multithreaded? (Or at least, do the non-main threads
->> execute any work during your perf-record measurement) If not, then
->> what you see is consistent with what I'm getting, i.e. everything but
->> the main thread is reported.
->
-> It is multithreaded, but my point is that I do not get counter output at
-> the end -- the PID/TID table is empty. I do not get counters for single
-> threaded processes nor for commands run by perf record -- e.g.,
-> /tmp/build-perf/perf record --stat -e instructions -fo /tmp/perf.data --
-> sleep 1
+Am Donnerstag, 12. Mai 2011, 21:27:44 schrieb Rafael J. Wysocki:
+> On Thursday, May 12, 2011, Raffaele Recalcati wrote:
+> > What happen normally in runtime pm implementation is that every devices
+> > are switched off and are enabled only when needed.
+> > In our case instead we have a completely functional embedded system and,
+> > when an asyncrhonous event appear, we have only some tens milliseconds
+> > before the actual power failure takes place.
+> > This patchset add a support in order to switch off not vital part of the system,
+> > in order to allow the board to survive longer.
+> > This allow the possibility to save important data.
+> 
+> OK, so first, who decides what parts of the system are vital and what aren't?
 
-My guess was that none of the threads got scheduled while you did your
-perf-record run (rsyslogd usually isn't exactly very CPU intensive).
-And the main thread isn't ever reported, at least that's the bug I'm
-seeing. Can you try with a compute-intensive, multi-threaded program?
+If you know that power is failing in a few miliseconds, only stuff that can lead to data
+corruption is vital. In that timeframe you can't even flush buffers.
 
-Wim.
+	Regards
+		Oliver
