@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758987Ab1ENDDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 23:03:04 -0400
-Received: from nm9.bullet.mail.bf1.yahoo.com ([98.139.212.168]:39426 "HELO
-	nm9.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757248Ab1ENDDD (ORCPT
+	id S1750911Ab1ENELw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 00:11:52 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35216 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab1ENELs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 23:03:03 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 May 2011 23:03:03 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 995091.64082.bm@omp1050.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=oVG+nQzTs+BaDPrHW3Mmz2Fgpe2CPwZz/CHj0MZTgIIkzspGYAKGsTnHM3y18cxpmdwBhF6YNFaLobN1MpxEDgnK9LVZqWd+nTEWGfCm6orGPRmAbWdwKi06U2Srb1BCXhAfLEWvthXNDPqPimc0GI0yPnyA4+j4NxzZpwHK0f4=;
-Message-ID: <367853.39582.qm@web130121.mail.mud.yahoo.com>
-X-YMail-OSG: yu8qs.MVM1kcn5wlB0dGvxKdPuNtd3o8BrkZha5WFR1w_wX
- GGT0twhx4WfTa2olAL_4CfoxoDGCeQiZkR9tyc9btUXGpYkjbz2in7VrizEC
- 5vIWCtDgl362RLwMN4Ttp8MC9j85xbDYxqbjZixiwq1oAfQvmmOYe4GeBrP7
- Jjs78GPQrXJRsPSvvObAePaXDzLXM9Jm1EsZ.5eEgtPi24tq2RBILRQ464dA
- K6o6ZQFVRfUjzaPLiJ4M4LRxQA2IbK8LxV.decEhBjoLsyGOVBGXbDdUtRQQ
- 43NH1RlDR3AYH_DrYiXYPHCGRvptr.zSBiNuFIlE1joV.tmChedLbZUjo2qX
- LRsXGrbIj27ERMHCIGw7S.syjUb2OHqpQuxpa3jcA2sPkUEs93bI7DUz.PJE
- NtVVfLZQ2IGrq
-X-Mailer: YahooMailClassic/14.0.1 YahooMailWebService/0.8.111.303096
-Date: Fri, 13 May 2011 19:57:20 -0700 (PDT)
-From: Alex Davis <alex14641@yahoo.com>
-Subject: Possible coding issue in udf??
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-MIME-Version: 1.0
+	Sat, 14 May 2011 00:11:48 -0400
+Date: Sat, 14 May 2011 06:11:46 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+Message-ID: <20110514041146.GT6008@one.firstfloor.org>
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com> <20110513124523.GM13984@redhat.com> <BANLkTimoqYZMs15H8wRqEEe=UyBJtAwipw@mail.gmail.com> <20110513135154.GB31888@redhat.com> <BANLkTiktuq3vMXKOdChm03SF6V4c2GhDVw@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTiktuq3vMXKOdChm03SF6V4c2GhDVw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fs/udf/inode.c, line 1455, linux 2.6.35, there is the following code:
+> IMHO, Linux is not X, so Linux kernel will not push all policy to user
+> space.  And for fatal hardware error processing, there may be no
+> opportunity for user space to run.
 
-	udfperms = ((inode->i_mode & S_IRWXO)) |
-		   ((inode->i_mode & S_IRWXG) << 2) |
-		   ((inode->i_mode & S_IRWXU) << 4);
+s/may/is/
 
-Shouldn't we be shifting by 3 bits? i.e:
-	udfperms = ((inode->i_mode & S_IRWXO)) |
-		   ((inode->i_mode & S_IRWXG) << 3) |
-		   ((inode->i_mode & S_IRWXU) << 6);
+Everyone who claims something else doesn't like your data :-)
 
-The S_I.. constants are all defined in include/linux/stat.h as 3-bit values.
-
-I will send a patch if needed.
-
-I code, therefore I am
+-Andi
