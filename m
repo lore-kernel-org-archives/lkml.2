@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab1ENUqw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 16:46:52 -0400
-Received: from 1wt.eu ([62.212.114.60]:36209 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab1ENUqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 16:46:51 -0400
-Date: Sat, 14 May 2011 22:45:36 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Randy Dunlap <rdunlap@xenotime.net>, Greg KH <greg@kroah.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Apollon Oikonomopoulos <apoikos@gmail.com>, chronidev@gmail.com
-Subject: Re: 2.6.32.21 - uptime related crashes?
-Message-ID: <20110514204536.GA16496@1wt.eu>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz> <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz> <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr> <20110430201436.GF10529@1wt.eu> <20110514190423.GA2264@nik-comp.lan>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758912Ab1ENUvL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 16:51:11 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:59094 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754614Ab1ENUvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 16:51:10 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH v2] fm801: clean-up radio-related Kconfig
+Date: Sat, 14 May 2011 22:51:01 +0200
+User-Agent: KMail/1.9.10
+Cc: alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org
+References: <201105132026.40643.linux@rainbow-software.org> <s5hiptd4nrp.wl%tiwai@suse.de>
+In-Reply-To: <s5hiptd4nrp.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20110514190423.GA2264@nik-comp.lan>
-User-Agent: Mutt/1.4.2.3i
+Message-Id: <201105142251.03823.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove TEA575X_RADIO define from fm801.c.
+Also update Kconfig help text to include all supported cards.
 
-On Sat, May 14, 2011 at 09:04:23PM +0200, Nikola Ciprich wrote:
-> Hello gentlemans,
-> Nicolas, thanks for further report, it contradicts my theory that problem occured somewhere during 2.6.32.16.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Well, I'd like to be sure what kernel we're talking about. Nicolas said
-"2.6.32.8 Debian Kernel", but I suspect it's "2.6.32-8something" instead.
-Nicolas, could you please report the exact version as indicated by "uname -a" ?
+--- linux-2.6.39-rc2-/sound/pci/Kconfig	2011-05-14 22:22:11.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/Kconfig	2011-05-14 22:24:29.000000000 +0200
+@@ -560,8 +560,8 @@ config SND_FM801_TEA575X_BOOL
+ 	depends on VIDEO_V4L2=y || VIDEO_V4L2=SND_FM801
+ 	help
+ 	  Say Y here to include support for soundcards based on the ForteMedia
+-	  FM801 chip with a TEA5757 tuner connected to GPIO1-3 pins (Media
+-	  Forte SF256-PCS-02) into the snd-fm801 driver.
++	  FM801 chip with a TEA5757 tuner (MediaForte SF256-PCS, SF256-PCP and
++	  SF64-PCR) into the snd-fm801 driver.
+ 
+ config SND_TEA575X
+ 	tristate
+--- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-14 22:22:11.000000000 +0200
++++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-14 22:26:01.000000000 +0200
+@@ -38,7 +38,6 @@
+ 
+ #ifdef CONFIG_SND_FM801_TEA575X_BOOL
+ #include <sound/tea575x-tuner.h>
+-#define TEA575X_RADIO 1
+ #endif
+ 
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
+@@ -196,7 +195,7 @@ struct fm801 {
+ 	spinlock_t reg_lock;
+ 	struct snd_info_entry *proc_entry;
+ 
+-#ifdef TEA575X_RADIO
++#ifdef CONFIG_SND_FM801_TEA575X_BOOL
+ 	struct snd_tea575x tea;
+ #endif
+ 
+@@ -715,7 +714,7 @@ static int __devinit snd_fm801_pcm(struc
+  *  TEA5757 radio
+  */
+ 
+-#ifdef TEA575X_RADIO
++#ifdef CONFIG_SND_FM801_TEA575X_BOOL
+ 
+ /* GPIO to TEA575x maps */
+ struct snd_fm801_tea575x_gpio {
+@@ -1150,7 +1149,7 @@ static int snd_fm801_free(struct fm801 *
+ 	outw(cmdw, FM801_REG(chip, IRQ_MASK));
+ 
+       __end_hw:
+-#ifdef TEA575X_RADIO
++#ifdef CONFIG_SND_FM801_TEA575X_BOOL
+ 	snd_tea575x_exit(&chip->tea);
+ #endif
+ 	if (chip->irq >= 0)
+@@ -1229,7 +1228,7 @@ static int __devinit snd_fm801_create(st
+ 
+ 	snd_card_set_dev(card, &pci->dev);
+ 
+-#ifdef TEA575X_RADIO
++#ifdef CONFIG_SND_FM801_TEA575X_BOOL
+ 	chip->tea.private_data = chip;
+ 	chip->tea.ops = &snd_fm801_tea_ops;
+ 	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
 
-> Now I think I know why several of my other machines running 2.6.32.x for long time didn't crashed:
-> 
-> I checked bugzilla entry for (I believe the same) problem here:
-> https://bugzilla.kernel.org/show_bug.cgi?id=16991
-> and Peter Zijlstra asked there, whether reporters systems were running some RT tasks. Then I realised that all of my four crashed boxes were pacemaker/corosync clusters and pacemaker uses lots of RT priority tasks. So I believe this is important, and might be reason why other machines seem to be running rock solid - they are not running any RT tasks.
-> It also might help with hunting this bug. Is somebody of You also running some RT priority tasks on inflicted systems, or problem also occured without it?
 
-No, our customer who had two of these boxes crash at the same time was
-not running any RT task to the best of my knowledge.
-
-Cheers,
-Willy
-
+-- 
+Ondrej Zary
