@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab1ENJur (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 05:50:47 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:43555 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab1ENJuq convert rfc822-to-8bit (ORCPT
+	id S1753371Ab1ENJxs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 05:53:48 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:56740 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751860Ab1ENJxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 05:50:46 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Marcin =?utf-8?q?Ga=C5=82czy=C5=84ski?= <marcin@galczynski.pl>
-Subject: Re: USB driver "option" proposed patch to support Huawei E353 hardware
-Date: Sat, 14 May 2011 11:52:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <BAD23DF0CF2645B1A237F4CA7D0B6C70@int.nthmedia.pl>
-In-Reply-To: <BAD23DF0CF2645B1A237F4CA7D0B6C70@int.nthmedia.pl>
+	Sat, 14 May 2011 05:53:47 -0400
+X-Sasl-enc: RN+Zvw8cvDFr9B7dd2/xf3PtoF7a7a2R6Ge3YYLvknnX 1305366826
+Message-ID: <4DCE512B.50701@fastmail.fm>
+Date: Sat, 14 May 2011 10:53:47 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105141152.35272.oliver@neukum.org>
+To: Margarita Olaya <magi@slimlogic.co.uk>
+CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com
+Subject: Re: [PATCHv2 1/4] mfd: tps65912: Add new mfd device
+References: <BANLkTikWhA2OQABA1QYUrLdasbmH8yusNg@mail.gmail.com>	<4DCC3901.9090200@fastmail.fm> <BANLkTi=X23M+8_qDc5N25dVSfnuwWAPXUQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=X23M+8_qDc5N25dVSfnuwWAPXUQ@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 14. Mai 2011, 02:44:10 schrieb Marcin Gałczyński:
-> Hi,
-> 
-> I am sharing patch to the devices/usb/serial/option.c. This allows operation 
-> of Huawei E353 broadband modem using the “option” driver. The patch simply 
-> adds new constant with proper product ID and an entry to usb_device_id. I 
-> worked on the fresh driver file downloaded from GIT. Tested on Dell inspiron 
-> 1764 (i3 core cpu) and brand new Huawei E353 modem, Fedora 15 beta.
-> 
-> Looking at the type of change, i doubt it has potential to introduce 
-> problems in other parts of kernel or the driver itself.
-> 
-> I am not an active kernel developer, thus i would not be joining the list... 
-> for now. If You’d like to reach me, please respond directly.
+On 13/05/2011 21:53, Margarita Olaya wrote:
+>>> +static int tps65912_spi_read(struct tps65912 *tps65912, u8 addr,
+>>> +                                                     int bytes, void *dest)
+>>> +{
+>>> +     struct spi_device *spi = tps65912->spi_device;
+>>> +
+>>> +     unsigned long spi_data = 0 << 23 | addr << 15;
+>>
+>> Is the 0 << 23 meant to be 1 << 23? Like the write function.
+>>
+> No, It should be zero, I will remove.
 
-Hi,
+Is it a read vs write bit?
 
-the patch looks good, but please resend it to linux-usb@vger.kernel.org
-and add a Signed-off-by: line with your name and mail.
+You don't have to remove it but a comment explaining that bit 23 is the
+read bit would help.
 
-	Regards
-		Oliver
+> 
+>>> +     struct spi_transfer xfer;
+>>> +     struct spi_message msg;
+>>> +     int ret;
+>>> +     u8 *data = (u8 *) dest;
+>> Shouldn't need to cast a void *
+>>
+>>> +     u32 tx_buf = 0, rx_buf = 0;
+>> These are initialized below.
+>>
+>>> +     tx_buf = spi_data;
+>>> +     rx_buf = 0;
+>>> +
+>>> +     xfer.tx_buf     = &tx_buf;
+>>> +     xfer.rx_buf     = &rx_buf;
+>>> +     xfer.len        = sizeof(unsigned long);
+>>> +     xfer.bits_per_word = 24;
+>>> +
+>>> +     spi_message_init(&msg);
+>>> +     spi_message_add_tail(&xfer, &msg);
+>>> +
+>>> +     if (spi == NULL)
+>>> +             return 0;
+>>> +
+>>> +     ret = spi_sync(spi, &msg);
+>>> +     if (ret == 0)
+>>> +             *data = (u8) (rx_buf & 0xFF);
+>>> +     return ret;
+>>> +}
+>>> +
+>> The spi read/write functions both ignore the bytes argument and only
+>> transfer one byte, whereas the i2c versions appear to read/write
+>> multiple bytes. Which one is correct?
+>>
+> Both are correct, I'm passing bytes argument to spi read/write to make
+> it compatible with the declaration of tps65912_read/write functions
+> pointer.
+> 
+
+But if anyone ever calls the tps65912_read/write functions with bytes !=
+1 then this will fail, but only on the SPI case.
+
+If they are only ever called with bytes == 1 then you can simply remove
+the bytes argument.
+
+Thanks,
+
+Jack
