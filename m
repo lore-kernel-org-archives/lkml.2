@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab1ENANh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 20:13:37 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:57284 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758423Ab1ENANg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 20:13:36 -0400
-Subject: Re: [PATCH-v2 0/4] Bugfixes for .39-rc8
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Kiran Patil <kiran.patil@intel.com>,
-        "Love, Robert W" <robert.w.love@intel.com>
-In-Reply-To: <1305088535-27486-1-git-send-email-nab@linux-iscsi.org>
-References: <1305088535-27486-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain
-Date: Fri, 13 May 2011 17:05:29 -0700
-Message-Id: <1305331529.7102.61.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1759746Ab1ENARf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 20:17:35 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:51442 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759236Ab1ENARd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 May 2011 20:17:33 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ipc: Add missing sys_ni entries for ipc/compat.c functions
+Date: Fri, 13 May 2011 17:07:28 -0700
+Message-Id: <cb0939f54999dd3754808f2c5fc1cf0f@localhost>
+User-Agent: vim 7.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-10 at 21:35 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Hi James and Co,
-> 
-> This series is resend of four patches that should be considered critical
-> target core bugfixes for .39 that have been under stress testing in a
-> couple of different labs recently using lio-core-2.6.git/lio-4.1 (.39-rcX)
-> and /lio-4.0 (.38.3) branch code.
-> 
-> These are all important bugfixes that are required to run with in-flight
-> .40 HW target drivers in the upstream LIO tree.  This includes fixes for
-> the main transport_do_task_sg_chain() Data I/O mapping logic, and
-> task->task_sg[] shutdown path from MSI-X interrupt context.  These bugfixes
-> apply for all of the following HW fabric drivers:
-> 
->    tcm_fc(openfcoe) w/ ddp offload, tcm_qla2xxx, ib_srpt and ibmvscsis.
-> 
-> These patches address issues that are able to easily produce OOPsen with
-> small backstore max_sectors values.  Please review+apply for .39 and
-> also queue into stable@kernel.org for .38.
->
-> The series is also available here for a direct pull:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-rc-fixes
-> 
+When building with:
 
-Hi James,
+CONFIG_64BIT=y
+CONFIG_MIPS32_COMPAT=y
+CONFIG_COMPAT=y
+CONFIG_MIPS32_O32=y
+CONFIG_MIPS32_N32=y
+CONFIG_SYSVIPC is not set
+(and implicitly: CONFIG_SYSVIPC_COMPAT is not set)
 
-Ping on getting these bugfixes merged into .39-final and .38 stable..? 
+the final link fails with unresolved symbols for:
 
-The tcm_fc(openfcoe) HW offload also in the queue for .40 from Kiran &
-Co depends upon these fixes.
+compat_sys_semctl, compat_sys_msgsnd, compat_sys_msgrcv,
+compat_sys_shmctl, compat_sys_msgctl, compat_sys_semtimedop
 
-Thanks,
+The fix is to add cond_syscall declarations for all syscalls in
+ipc/compat.c
 
---nab
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ kernel/sys_ni.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-> and has been made against the following scsi-rc-fixes-2.6.git HEAD:
-> 
-> commit c055f5b2614b4f758ae6cc86733f31fa4c2c5844
-> Author: James Bottomley <James.Bottomley@suse.de>
-> Date:   Sun May 1 09:42:07 2011 -0500
-> 
->     [SCSI] fix oops in scsi_run_queue()
-> 
-> Thanks!
-> 
-> --nab
-> 
-> Nicholas Bellinger (4):
->   target: Fix multi task->task_sg[] chaining logic bug
->   target: Fix interrupt context bug with stats_lock and
->     core_tmr_alloc_req
->   target: Fix bug with task_sg chained transport_free_dev_tasks release
->   target: Fix task->task_execute_queue=1 clear bug + LUN_RESET OOPs
-> 
->  drivers/target/target_core_device.c    |    4 +-
->  drivers/target/target_core_tmr.c       |    7 +++--
->  drivers/target/target_core_transport.c |   46 +++++++++++++++++++++++--------
->  include/target/target_core_base.h      |    1 +
->  include/target/target_core_transport.h |    1 +
->  5 files changed, 42 insertions(+), 17 deletions(-)
-> 
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 25cc41c..1140c12 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -69,15 +69,22 @@ cond_syscall(compat_sys_epoll_pwait);
+ cond_syscall(sys_semget);
+ cond_syscall(sys_semop);
+ cond_syscall(sys_semtimedop);
++cond_syscall(compat_sys_semtimedop);
+ cond_syscall(sys_semctl);
++cond_syscall(compat_sys_semctl);
+ cond_syscall(sys_msgget);
+ cond_syscall(sys_msgsnd);
++cond_syscall(compat_sys_msgsnd);
+ cond_syscall(sys_msgrcv);
++cond_syscall(compat_sys_msgrcv);
+ cond_syscall(sys_msgctl);
++cond_syscall(compat_sys_msgctl);
+ cond_syscall(sys_shmget);
+ cond_syscall(sys_shmat);
++cond_syscall(compat_sys_shmat);
+ cond_syscall(sys_shmdt);
+ cond_syscall(sys_shmctl);
++cond_syscall(compat_sys_shmctl);
+ cond_syscall(sys_mq_open);
+ cond_syscall(sys_mq_unlink);
+ cond_syscall(sys_mq_timedsend);
+-- 
+1.7.5
 
