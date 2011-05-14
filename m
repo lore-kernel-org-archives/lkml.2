@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab1ENTlL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 15:41:11 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41988 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab1ENTlI (ORCPT
+	id S1758821Ab1ENTm2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 15:42:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51127 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab1ENTm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 15:41:08 -0400
-Date: Sat, 14 May 2011 20:40:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, johnpol@2ka.mipt.ru,
-        a.zummo@towertech.it, broonie@opensource.wolfsonmicro.com,
-        dmitry.torokhov@gmail.com, Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        lrg@slimlogic.co.uk
-Subject: Re: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control +
-	DS1WM chip
-Message-ID: <20110514194017.GF30539@n2100.arm.linux.org.uk>
-References: <1303135451-26362-7-git-send-email-haojian.zhuang@marvell.com> <20110426094836.GD2659@sortiz-mobl> <BANLkTinpFBfOEOR6Ox1ufEHZo3qwRq8zhA@mail.gmail.com>
+	Sat, 14 May 2011 15:42:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FgAJtmlVNlluUVypf64OZn0MlPMksdywGMpmNRgONqRZzPH95J8gHuYaO3M31mGRLD
+         X4/vJb4OkArHlzCuzy7wzEWDVzDfudy/Ac/W0olMQqc96chSlq+GcLaVJLudBjVEmHoQ
+         BvRZDuat4nKil83fOAZJ0Gn/zHx6jG3eDra9o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinpFBfOEOR6Ox1ufEHZo3qwRq8zhA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.00.1105040522250.4503@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1105040522250.4503@localhost6.localdomain6>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Sat, 14 May 2011 13:41:55 -0600
+Message-ID: <BANLkTikzWDa8SbULd45_ReDzweR6pnZsQA@mail.gmail.com>
+Subject: Re: [PATCH] PC8736X: Correct dev_dbg() message showing major number.
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 14, 2011 at 10:21:25PM +0800, Haojian Zhuang wrote:
-> But the key issue is that there's no common structure for clkdev. Now
-> clkdev is only designed for deeply machine depend.
-> 
-> >From my view is that we need a common structure for clkdev.
+On Wed, May 4, 2011 at 3:26 AM, Robert P. J. Day <rpjday@crashcourse.ca> wrote:
+>
+> Currently, the debugging info is incorrect, as a successful call to
+> either register_chrdev_region() or alloc_chrdev_region() returns
+> simply zero, which appears to be what the following code would print.
+> Skip the checking, just print the value of "major", which should be
+> correct.
+>
+> Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
+>
+> ---
 
-You mean struct clk.
 
-As I said on our call on Thursday, everyone knows this, and it's
-something that has been worked on for the last year.  Concensus had
-been reached and everyone had settled on a proposal, and just when
-we were almost ready to merge it, the concensus fell apart again.
+NAK.  'dynamic' is not always correct
 
-As a result of that, a common struct clk has been delayed - it's not
-going to be in place for 2.6.40 (three months) but maybe we can reach
-concensus again for the .41 merge window.
+> +       dev_dbg(&pdev->dev, "got dynamic major %d\n", major);
 
-As I also said, this issue was talked about in a session at the Linaro
-conference, and it will be interesting to hear what the result of that
-session was.  At the moment, I'm entirely out of the loop on many things
-that were discussed there (except for a message from tglx.)
+Ive got patches to replace register|alloc _chrdev_region
+which may require merge conflict resolution.
+Id prefer to hold off til theyre reviewed, accepted.
+
+Actually, shouldnt conflict - rc<0 code is in between.
+If you want to rework it, I'll ack it.
+
+thanks.
