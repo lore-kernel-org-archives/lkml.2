@@ -1,87 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab1EODZN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 23:25:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41683 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab1EODZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 23:25:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=I+24EFZxD6qsgDFK4pg1BCFKxEgmR/Kb9tyS3/GGz7xO4rdP5XFfZbIcGX8hp43qdz
-         UzlGwC9D8jykAkAMomrMSNLrbFxFe9VsQBfAlLoMseoPaVzFV8U+qnNvOJcZUjWHbiLJ
-         Ue+n8Hp4FoEKCNfwzZwAfnVBdBUmaHrSrZmVo=
-Subject: [PATCH 3/3] printk loglevels modified to match the scenario
-From: anish <anish198519851985@gmail.com>
-To: greg@kroah.com, teddy.wang@siliconmotion.com.cn
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 May 2011 23:25:11 +0530
-Message-ID: <1305395711.7400.18.camel@anish-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758010Ab1ENSOb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 14:14:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51982 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755285Ab1ENSO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 14:14:28 -0400
+Message-ID: <4DCEC4EB.2050107@zytor.com>
+Date: Sat, 14 May 2011 11:07:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
+        Julia Lawall <julia@diku.dk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: incompatible struct pci_root_info?
+References: <4DCEB5BB.1080202@freemail.hu>
+In-Reply-To: <4DCEB5BB.1080202@freemail.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KERN_ERR should be used in place of KERN_INFO in the case of
-error scenarios.
-Signed-off-by: anish kumar<anish198519851985@gmail.com>
+On 05/14/2011 10:02 AM, Németh Márton wrote:
+> 
+> As far as I know it is OK to have different types on different architectures
+> with the same name. Is there any reason behind having two struct pci_root_info
+> delcaration in arch/x86?
+> 
 
----
-drivers/staging/sm7xx/smtcfb.c |    8 ++++----
-1 files changed, 4 insertions(+), 4 deletions(-)
+It looks like a namespace collision; the same name being used for that
+is really two different types.
 
-diff --git a/drivers/staging/sm7xx/smtcfb.c
-b/drivers/staging/sm7xx/smtcfb.c
-index d1dd387..c8caf54 100644
---- a/drivers/staging/sm7xx/smtcfb.c
-+++ b/drivers/staging/sm7xx/smtcfb.c
-@@ -753,7 +753,7 @@ static int smtc_map_smem(struct smtcfb_info *sfb,
-sfb->fb.screen_base = smtc_VRAMBaseAddress;
+	-hpa
 
-if (!sfb->fb.screen_base) {
-- printk(KERN_INFO "%s: unable to map screen memory\n",
-+ printk(KERN_ERR "%s: unable to map screen memory\n",
-sfb->fb.fix.id);
-return -ENOMEM;
-}
-@@ -908,7 +908,7 @@ static int __devinit smtcfb_pci_probe(struct pci_dev
-*pdev,
-}
-#endif
-if (!smtc_RegBaseAddress) {
-- printk(KERN_INFO
-+ printk(KERN_ERR
-"%s: unable to map memory mapped IO\n",
-sfb->fb.fix.id);
-err = -ENOMEM;
-@@ -943,7 +943,7 @@ static int __devinit smtcfb_pci_probe(struct pci_dev
-*pdev,
-smtc_seqw(0x6b, 0x02);
-break;
-default:
-- printk(KERN_INFO
-+ printk(KERN_ERR
-"No valid Silicon Motion display chip was detected!\n");
-
-goto failed_fb;
-@@ -976,7 +976,7 @@ static int __devinit smtcfb_pci_probe(struct pci_dev
-*pdev,
-return 0;
-
-  failed:
-- printk(KERN_INFO "Silicon Motion, Inc.  primary display init fail\n");
-+ printk(KERN_ERR "Silicon Motion, Inc.  primary display init fail\n");
-
-smtc_unmap_smem(sfb);
-smtc_unmap_mmio(sfb);
 -- 
-1.7.0.4
-
-
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
