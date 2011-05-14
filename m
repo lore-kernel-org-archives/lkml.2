@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab1ENRG1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 13:06:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42803 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab1ENRGZ (ORCPT
+	id S1753587Ab1ENRWr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 13:22:47 -0400
+Received: from nm6-vm1.access.bullet.mail.mud.yahoo.com ([66.94.237.159]:29201
+	"HELO nm6-vm1.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751488Ab1ENRWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 13:06:25 -0400
-Date: Sat, 14 May 2011 13:06:14 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Suchanek <hramrach@centrum.cz>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, Eric Paris <eparis@redhat.com>,
-        James Morris <jmorris@namei.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v2] tmpfs: implement generic xattr support
-Message-ID: <20110514170614.GP16221@bombadil.infradead.org>
-References: <871v02lujw.fsf@tucsk.pomaz.szeredi.hu>
+	Sat, 14 May 2011 13:22:46 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 693466.68812.bm@omp1007.access.mail.mud.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:To:MIME-Version:Content-Type;
+  b=5gs3Nf07opbVdlLY7IBwXczNp25qKZzozcUbZMQP2dZC7KYrdI0HwMjYd0BXHF0LOw10PwknEi8juT71MAT0td3dpLLKPdQPdiqOH7IbPEY/0yEEGokTQu1thSvzX5WmlUjH21YZWNWuqwrSv+ZazDiArQW+KDJo2IjhltLwSUA=;
+Message-ID: <444019.97997.qm@web82905.mail.mud.yahoo.com>
+X-YMail-OSG: _k_w5lcVM1lqu4YeBLG7m_jzQIFvh7okCjflQXq9VH9.cFF
+ x9gNBZFoE32h7j6.yVBYAMbAvzvLUThcw6qcL_RLIm.Memli6.BwtffirMdk
+ 4c2ZBs9CcjG3lRYhdMJOb57NKFXO7bQE0v9wxRZYVm53snS.hwjAboqfYjtR
+ IleEioVS5V7LPCd.7X6.IJFQYFKpMSX4PB15m3naFIQ2VC2OySmjeT.6he6f
+ yi59SewLK8uhuTTenFuPL2F6z9P3mpg0KY_1FWWCu5WW0O6x6FXqnqgiiqH5
+ YKpOcTGnq__uMyWom_e6O1wCTqsDfPjvGkftzuY3GAYfmqkgM35DzdK7sO2h
+ 1LoKZ2BGwNgEjfRd2CvMLlecf5ZuekrEFGB8LRt0iOGiBIRilxIqS.UZp2lp
+ 3rgZE_A.vjHkICyVaXZjLQBuw.Xky4aTiE2y._dGb1Prh1FMFp31brk64g2h
+ JVfTxhvy.NoPOEW1UVwp2Ucmcj3COnPX_0C8PTxzcWFS1W_V1l7QAp.FC.q9
+ Hl4Nf3dIkyegqBY5YDDFZxtd_55N5BTJleCEwJfZsVqW6xTim5H7zjDTtWY8
+ 9NHxmeNi8kVyXL44FJ3G0oLwdoishO5EZp8qnzT67tqP40hYG2cfP31by_6l
+ LG7zzfxFZ.NC9vo5IfstuPQXZYA3uNCsJO4DKAFJaG_gVIa8uGeGhHqi_Fko
+ vDNvSPPuBzRo-
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.111.303096
+Date: Sat, 14 May 2011 10:22:45 -0700 (PDT)
+From: "Douglas J. Flint." <caddod2@sbcglobal.net>
+Reply-To: dglsjflint5@hotmail.com
+To: undisclosed recipients:;
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871v02lujw.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 01:16:35PM +0200, Miklos Szeredi wrote:
-> [This update addresses comments from Hugh and Andrew]
-> 
 
-I just pulled this patch into Fedora rawhide so that I can beat on it
-with tmpfs backed buildroots. I'll let you know if any issues arise.
+Attn,
 
---Kyle
+This proposal is addressed directly to you as a private obligation required of
+you and should be treated as utmost secrete. I got your details from my private
+search after a careful review.
+
+I am Mr.Douglas J. Flint the Group Chairman of HSBC Holdings plc. I have a
+confidential brief for you, I am asking for your partnership in re- profiling
+some funds. please get back to me for more information, if you are interested.
+
+You can read more about my biography on this link below.
+http://www.hsbc.com/1/PA_1_1_S5/content/assets/newsroom/media_kit/biogs/110201_douglas_flint.pdf
+
+Regards,
+Douglas J. Flint.
+Group Chairman of HSBC Holdings plc.
