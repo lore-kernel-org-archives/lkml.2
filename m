@@ -1,118 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758428Ab1ENQO6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 12:14:58 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59460 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753297Ab1ENQOz (ORCPT
+	id S1758397Ab1ENQYd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 12:24:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36922 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab1ENQYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 12:14:55 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=PqrPsm1L/AIBW9M9mfGj9qipvGH2iA4aw450Dy5zXGlC5UD/1s2bv31E6Kp/PjGlUW6e6qZxm5xkCGX2qG+4srXuPZMC4y7ITjeHFQ3/bMu8MCZ53ULYGm2v5n1toUWm;
-Date: Sat, 14 May 2011 09:14:52 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Tiago Vignatti <tiago.vignatti@nokia.com>, linux-doc@vger.kernel.org,
+	Sat, 14 May 2011 12:24:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=THZoLJmRw6cbFJfzg582c49hcqyR0KK4NONakZbDSm4qRzPyGgCSTC3e8Q9uvq0ge7
+         31plez7XgTuKJKk1LFMF7aAFeCBqXqSCjqae5sof7jrzL6iL6RB38MzMmefPYLobFXcY
+         E6kvxbgZuu0nAtS7jtEZcILO+8bRAkuiefNQA=
+Date: Sat, 14 May 2011 09:24:24 -0700
+From: mark gross <markgross@thegnar.org>
+To: Raffaele Recalcati <lamiaposta71@gmail.com>
+Cc: linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: vgaarbiter: fix typos v2
-Message-Id: <20110514091452.4172ecc1.rdunlap@xenotime.net>
-In-Reply-To: <20110514125152.20518a22@absol.kitzblitz>
-References: <20101201023457.739373c7@absol.kitzblitz>
-	<20101201164141.abc97309.rdunlap@xenotime.net>
-	<20101206092544.68cb5036@jbarnes-desktop>
-	<20101206093353.18a5a411.rdunlap@xenotime.net>
-	<20110514125152.20518a22@absol.kitzblitz>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Subject: Re: [linux-pm] pm loss development
+Message-ID: <20110514162423.GA8292@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 May 2011 12:51:52 +0200 Nicolas Kaiser wrote:
+On Thu, May 12, 2011 at 07:11:01PM +0200, Raffaele Recalcati wrote:
+> What happen normally in runtime pm implementation is that every devices
+> are switched off and are enabled only when needed.
+> In our case instead we have a completely functional embedded system and,
+> when an asyncrhonous event appear, we have only some tens milliseconds
+> before the actual power failure takes place.
 
-> Fixed typos.
+Very interesting!  I've been worried about a similar failure on battery
+driven devices that can experience significant voltage droops when
+battery gets old, or low, and we turn on the flashlight led, vibrator
+and make the screen bright while a high volume ring tone gets played.
+
+I think 10ms is a bit unrealistic.  I think its more like 300uSec before
+you hit brown out.
+
+> This patchset add a support in order to switch off not vital part of the system,
+> in order to allow the board to survive longer.
+> This allow the possibility to save important data.
 > 
-> v2: Incorporated changes by Randy Dunlap.
+> The implementation has been written by Davide Ciminaghi.
+> My work instead was about analyzing different previuos implementation,
+> a first completely custom one, a second using runtime pm, arriving
+> finally to that one.
 > 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> ---
-> * Randy Dunlap <rdunlap@xenotime.net>:
-> > On Mon, 6 Dec 2010 09:25:44 -0800 Jesse Barnes wrote:
+> I have tested PM loss in our DaVinci dm365 basi board and I write here below a
+> piece of code showing a possible usage.
 > 
-> > > Randy, I assume you'll pick this up once you receive a version you're
-> > > ok with?
-> > 
-> > I wasn't sure who would, but I can do that.
+> -------------------
 > 
-> Sorry for the delay. I completely forgot about this patch.
-
-Applied, thanks.
-
-
->  Documentation/vgaarbiter.txt |   20 +++++++++-----------
->  1 files changed, 9 insertions(+), 11 deletions(-)
+> static int powerfail_status;
 > 
-> diff --git a/Documentation/vgaarbiter.txt b/Documentation/vgaarbiter.txt
-> index 43a9b06..4710230 100644
-> --- a/Documentation/vgaarbiter.txt
-> +++ b/Documentation/vgaarbiter.txt
-> @@ -14,11 +14,10 @@ the legacy VGA arbitration task (besides other bus management tasks) when more
->  than one legacy device co-exists on the same machine. But the problem happens
->  when these devices are trying to be accessed by different userspace clients
->  (e.g. two server in parallel). Their address assignments conflict. Moreover,
-> -ideally, being an userspace application, it is not the role of the the X
-> -server to control bus resources. Therefore an arbitration scheme outside of
-> -the X server is needed to control the sharing of these resources. This
-> -document introduces the operation of the VGA arbiter implemented for Linux
-> -kernel.
-> +ideally, being a userspace application, it is not the role of the X server to
-> +control bus resources. Therefore an arbitration scheme outside of the X server
-> +is needed to control the sharing of these resources. This document introduces
-> +the operation of the VGA arbiter implemented for the Linux kernel.
->  
->  ----------------------------------------------------------------------------
->  
-> @@ -39,7 +38,7 @@ I.1 vgaarb
->  The vgaarb is a module of the Linux Kernel. When it is initially loaded, it
->  scans all PCI devices and adds the VGA ones inside the arbitration. The
->  arbiter then enables/disables the decoding on different devices of the VGA
-> -legacy instructions. Device which do not want/need to use the arbiter may
-> +legacy instructions. Devices which do not want/need to use the arbiter may
->  explicitly tell it by calling vga_set_legacy_decoding().
->  
->  The kernel exports a char device interface (/dev/vga_arbiter) to the clients,
-> @@ -95,8 +94,8 @@ In the case of devices hot-{un,}plugged, there is a hook - pci_notify() - to
->  notify them being added/removed in the system and automatically added/removed
->  in the arbiter.
->  
-> -There's also a in-kernel API of the arbiter in the case of DRM, vgacon and
-> -others which may use the arbiter.
-> +There is also an in-kernel API of the arbiter in case DRM, vgacon, or other
-> +drivers want to use it.
->  
->  
->  I.2 libpciaccess
-> @@ -117,9 +116,8 @@ Besides it, in pci_system were added:
->      struct pci_device *vga_default_dev;
->  
->  
-> -The vga_count is usually need to keep informed how many cards are being
-> -arbitrated, so for instance if there's only one then it can totally escape the
-> -scheme.
-> +The vga_count is used to track how many cards are being arbitrated, so for
-> +instance, if there is only one card, then it can completely escape arbitration.
->  
->  
->  These functions below acquire VGA resources for the given card and mark those
-> -- 
+> static irqreturn_t basi_powerfail_stop(int irq, void *dev_id);
+> 
+> static irqreturn_t basi_powerfail_quick_check_start(int irq, void *dev_id)
+> {
+>         basi_mask_irq_gpio0(IRQ_DM365_GPIO0_2);
+>         basi_unmask_irq_gpio0(IRQ_DM365_GPIO0_0);
+> 
+>         /* PowerFail situation - START: power is going away */
+>         return IRQ_WAKE_THREAD;
+> }
+> 
+> static irqreturn_t basi_powerfail_start(int irq, void *dev_id)
+> {
+>         if (powerfail_status)
+>                 return IRQ_HANDLED;
+>         powerfail_status = 1;
+>         pm_loss_power_changed(SYS_PWR_FAILING);
+>         return IRQ_HANDLED;
+> }
+> 
+> 
+> static irqreturn_t basi_powerfail_quick_check_stop(int irq, void *dev_id)
+> {
+>         basi_mask_irq_gpio0(IRQ_DM365_GPIO0_0);
+>         basi_unmask_irq_gpio0(IRQ_DM365_GPIO0_2);
+> 
+>         /* PowerFail situation - STOP: power is coming back */
+>         return IRQ_WAKE_THREAD;
+> }
+> 
+> static irqreturn_t basi_powerfail_stop(int irq, void *dev_id)
+> {
+>         if (!powerfail_status)
+>                 return IRQ_HANDLED;
+>         powerfail_status = 0;
+>         pm_loss_power_changed(SYS_PWR_GOOD);
+>         return IRQ_HANDLED;
+> }
+> 
+> enum basi_pwrfail_prio {
+>         BASI_PWR_FAIL_PRIO_0,
+>         BASI_PWR_FAIL_MIN_PRIO = BASI_PWR_FAIL_PRIO_0,
+>         BASI_PWR_FAIL_PRIO_1,
+>         BASI_PWR_FAIL_PRIO_2,
+>         BASI_PWR_FAIL_PRIO_3,
+>         BASI_PWR_FAIL_MAX_PRIO = BASI_PWR_FAIL_PRIO_3,
+> };
+> 
+> struct pm_loss_default_policy_item basi_pm_loss_policy_items[] = {
+>         {
+>                 .bus_name = "mmc",
+>                 .bus_priority = BASI_PWR_FAIL_PRIO_1,
+>         },
+>         {
+>                 .bus_name = "platform",
+>                 .bus_priority = BASI_PWR_FAIL_PRIO_2,
+>         },
+> };
+> 
+> #define BASI_POLICY_NAME "basi-default"
+> 
+> struct pm_loss_default_policy_table basi_pm_loss_policy_table = {
+>         .name = BASI_POLICY_NAME,
+>         .items = basi_pm_loss_policy_items,
+>         .nitems = ARRAY_SIZE(basi_pm_loss_policy_items),
+> };
+> 
+> static void basi_powerfail_configure(void)
+> {
+>         int stat;
+>         struct pm_loss_policy *p;
+>         stat = request_threaded_irq(IRQ_DM365_GPIO0_2,
+Is this some comparator device that tugs on this gpio when the voltage
+drops or goes to 0?  Is threaded irq fast enough?
 
+Could we consider something that includes a hot path ISR based
+notification call back to do stuff like blink off devices that don't
+need to save state;  backlights, vibrators, flashlight LEDs, audio
+output drivers <-- I'm not sure about audio HW, and then a slower path
+for other things that can be put into lower power states?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+the all-clear notification that power is good again should be on a
+slower path I would assume.
+
+--mark
+
+>                                     basi_powerfail_quick_check_start,
+>                                     basi_powerfail_start,
+>                                     0,
+>                                     "pwrfail-on", NULL);
+>         if (stat < 0)
+>                 printk(KERN_ERR "request_threaded_irq for IRQ%d (pwrfail-on) "
+>                        "failed\n", IRQ_DM365_GPIO0_2);
+>         stat = request_threaded_irq(IRQ_DM365_GPIO0_0,
+>                                     basi_powerfail_quick_check_stop,
+>                                     basi_powerfail_stop, 0,
+>                                     "pwrfail-off", NULL);
+>         if (stat < 0)
+>                 printk(KERN_ERR "request_threaded_irq for IRQ%d (pwrfail-off) "
+>                        "failed\n", IRQ_DM365_GPIO0_0);
+>         basi_mask_irq_gpio0(IRQ_DM365_GPIO0_0);
+>         p = pm_loss_setup_default_policy(&basi_pm_loss_policy_table);
+> 
+>         if (!p)
+>                 printk(KERN_ERR "Could not register pwr change policy\n");
+> 
+>         if (pm_loss_set_policy(BASI_POLICY_NAME) < 0)
+>                 printk(KERN_ERR "Could not set %s power loss policy\n",
+>                        BASI_POLICY_NAME);
+> }
+> 
+> int platform_pm_loss_power_changed(struct device *dev,
+>                                    enum sys_power_state s)
+> {
+>         int ret = 0;
+> 
+>         /* Calling platform bus pm_loss functions */
+>         pr_debug_pm_loss("platform_pm_loss_power_changed(%d)\n", s);
+> 
+>         if (dev->driver && dev->driver->pm &&
+>                 dev->driver->pm->power_changed)
+>                 ret = dev->driver->pm->power_changed(dev, s);
+>         return ret;
+> }
+> 
+> 
+> 
+> 
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
