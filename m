@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037Ab1ENFPJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 01:15:09 -0400
-Received: from mx1.netlogicmicro.com ([12.203.210.36]:4529 "EHLO
-	orion5.netlogicmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750815Ab1ENFPG (ORCPT
+	id S1751929Ab1ENGSS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 02:18:18 -0400
+Received: from mail15c25.carrierzone.com ([64.29.147.25]:44779 "EHLO
+	mail15c25.carrierzone.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab1ENGSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 01:15:06 -0400
-X-TM-IMSS-Message-ID: <52f81fd00004d258@netlogicmicro.com>
-Date: Sat, 14 May 2011 10:43:04 +0530
-From: "Jayachandran C." <jayachandranc@netlogicmicro.com>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
-Message-ID: <20110514051303.GE14607@jayachandranc.netlogicmicro.com>
-References: <7aa38c32b7748a95e814e5bb0583f967@localhost>
- <20110513150707.GA26389@linux-mips.org>
- <BANLkTikcyEzjOWt9pWToE=89dySSEYbw_g@mail.gmail.com>
- <20110513155605.GA30674@linux-mips.org>
- <BANLkTinnALQV6dXkJ0AjaQ1=bTawYMMkuQ@mail.gmail.com>
- <20110513173633.GA14607@jayachandranc.netlogicmicro.com>
- <BANLkTim+z7TSCvNA2duA6LsUzNsiu9OQaQ@mail.gmail.com>
- <20110513184532.GC14607@jayachandranc.netlogicmicro.com>
- <BANLkTi=CJPuhO7OjCv5UF_ABQMb-bFe-2A@mail.gmail.com>
+	Sat, 14 May 2011 02:18:17 -0400
+X-Greylist: delayed 1862 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 May 2011 02:18:16 EDT
+X-Authenticated-User: stephen
+Message-Id: <201105140545.p4E5jWxH013770@mail15c25.carrierzone.com>
+Reply-To: <claims.012@hotmail.com>
+From: "draw" <con@telus.net>
+Subject: 
+Date: Sat, 14 May 2011 11:15:56 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=CJPuhO7OjCv5UF_ABQMb-bFe-2A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 14 May 2011 05:11:59.0540 (UTC) FILETIME=[73DC9F40:01CC11F5]
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 110513-1, 05/13/2011), Outbound message
+X-Antivirus-Status: Clean
+To: undisclosed-recipients:;
+X-CSC: 0
+X-CHA: v=1.1 cv=oDmC8uwHkQUCMVXXmHdwOSyKwz3ZwxrMx955+otxYf4= c=1 sm=1
+		a=Dyoqhi_TatcA:10 a=LGgl8L9ij00A:10 a=uW8YVH2J-QMA:10 a=WHsXhg87phMA:10
+		a=Cfj4BQAnxiAA:10 a=/7zSUQhS4/0Os+Bssd+wqA==:17 a=L4f0T-RIGjzVM-LCb_YA:9
+		a=Ft8UYL4EG9YA:10 a=B8Do-y8hmnF1bSXC:21 a=AnU4I-nakHBzM2xK:21
+		a=/7zSUQhS4/0Os+Bssd+wqA==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 03:06:35PM -0700, Kevin Cernekee wrote:
-> On Fri, May 13, 2011 at 11:45 AM, Jayachandran C.
-> <jayachandranc@netlogicmicro.com> wrote:
-> > The current linux-mips queue works for me, and I don't have the old source
-> > or binaries with me anymore. You surely should be able build with
-> > nlm_xlr_defconfig and see if the rixi is enabled in the build, if you want
-> > any config register dump on the CPU, please let me know.
-> 
-> I was able to locate an old MIPS R5000 based system and get linux-mips
-> queue running on it.  Here are the settings:
-> 
-> CONFIG_ARCH_DMA_ADDR_T_64BIT=y
-> CONFIG_64BIT_PHYS_ADDR=y
-> CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
-> CONFIG_PHYS_ADDR_T_64BIT=y
-> CONFIG_SYS_SUPPORTS_32BIT_KERNEL=y
-> CONFIG_CPU_SUPPORTS_32BIT_KERNEL=y
-> CONFIG_SYS_SUPPORTS_64BIT_KERNEL=y
-> CONFIG_CPU_SUPPORTS_64BIT_KERNEL=y
-> CONFIG_32BIT=y
-> # CONFIG_64BIT is not set
-> CONFIG_SMP=y
-> 
-> This was intended to mimic the XLR configuration: 32-bit kernel on a
-> 64-bit CPU with 64-bit physical addressing, SMP (albeit with 1 CPU),
-> no RI/XI.
-> 
-> After applying all 4 of my page cleanup patches, the system still
-> booted and ran normally.
-> 
-> Userspace is glibc with a bash shell (also tried uClibc w/bash, same
-> result).  Since the reported assertion appeared to be in bash.
-> 
-> Jayachandran - how do you think we should debug this?  It seems like
-> the problem only shows up on XLR.  Since this is a relatively new
-> platform, is it possible that something else might be broken still?
+Kindly provide your details(Name, Address, Sex, Age, mobile) to our claims dept by clicking reply to for your 1000,000.00GBP claims which your email  id won for you.
 
-Can you send me the patchset which works on top of queue with any
-debugging you want enabled?  I can try that and send you the results.
-
-It is also possible that something is broken with the XLR platform code,
-it is currently almost straight r4k...
-
-Thanks,
-JC.
+Regards,
+microlotto desk
