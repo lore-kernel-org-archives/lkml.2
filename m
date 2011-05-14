@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab1ENWX5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 18:23:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48815 "EHLO
+	id S1755344Ab1ENW3p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 18:29:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46245 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751707Ab1ENWX4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751707Ab1ENW3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 18:23:56 -0400
-Date: Sat, 14 May 2011 15:23:57 -0700
+	Sat, 14 May 2011 18:29:42 -0400
+Date: Sat, 14 May 2011 15:29:45 -0700
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, johnpol@2ka.mipt.ru,
-        a.zummo@towertech.it, dmitry.torokhov@gmail.com,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-kernel@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        lrg@slimlogic.co.uk
-Subject: Re: [PATCH 06/14] mfd: pxa-w1: MFD driver for PXA 1wire control +
- DS1WM chip
-Message-ID: <20110514222356.GC21792@opensource.wolfsonmicro.com>
-References: <1303135451-26362-7-git-send-email-haojian.zhuang@marvell.com>
- <20110426094836.GD2659@sortiz-mobl>
- <BANLkTinpFBfOEOR6Ox1ufEHZo3qwRq8zhA@mail.gmail.com>
- <20110514194017.GF30539@n2100.arm.linux.org.uk>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        linux-kernel@vger.kernel.org, lrg@ti.com,
+        Graeme Gregory <gg@slimlogic.co.uk>, grant.likely@secretlab.ca
+Subject: Re: [PATCHv2 5/5] TPS65911: Comparator: Add comparator driver
+Message-ID: <20110514222944.GD21792@opensource.wolfsonmicro.com>
+References: <A9ADABDA-9D43-44CC-92D8-113C42AA5EE0@slimlogic.co.uk>
+ <20110513165931.GK8970@sortiz-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110514194017.GF30539@n2100.arm.linux.org.uk>
+In-Reply-To: <20110513165931.GK8970@sortiz-mobl>
 X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 14, 2011 at 08:40:17PM +0100, Russell King - ARM Linux wrote:
+On Fri, May 13, 2011 at 06:59:32PM +0200, Samuel Ortiz wrote:
+> On Wed, May 04, 2011 at 07:21:46PM -0500, Jorge Eduardo Candelaria wrote:
 
-> As I also said, this issue was talked about in a session at the Linaro
-> conference, and it will be interesting to hear what the result of that
-> session was.  At the moment, I'm entirely out of the loop on many things
-> that were discussed there (except for a message from tglx.)
+> > +config TPS65911_COMPARATOR
+> > +	tristate "TPS65911 Comparator"
+> > +	depends on MFD_TPS65910
+> > +	help
+> > +	  if you say yes here you get support for the TPS65910 comparator
+> > +	  module.
 
-Everything should have had some live noted minutes linked off this site:
+> I still don't know what it compares and why I would want to enable that.
 
-   http://summit.ubuntu.com/uds-o/
+It'll be comparing two voltages - it's quite a common feature for PMICs
+with auxadcs.  I think I said in one of my previous reviews that it
+probably shouldn't be user visible in Kconfig as some other driver will
+need to be written to call it so that driver could just select the
+symbol.
 
-probably everything interesting is on this page:
+> This driver really looks like it could belong to drivers/regulator.
 
-   http://summit.ubuntu.com/uds-o/track/linaro-kernel/
-
-(in etherpad, you want the icon that looks a bit like a notepad on the
-left of the box in the talk).  They won't always be accurate as they
-were done live and not 100% reviewed but might be helpful.
-
-Several people had actions to bring things to the list so I'd expect to
-see some more digested mails hitting in the next week or two.
+It's measuring rather than producing.
