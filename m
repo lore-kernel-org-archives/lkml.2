@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055Ab1ENVAU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 17:00:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52738 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754794Ab1ENVAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 17:00:17 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Randy Dunlap <rdunlap@xenotime.net>, Greg KH <greg@kroah.com>,
-        Apollon Oikonomopoulos <apoikos@gmail.com>, chronidev@gmail.com
-In-Reply-To: <20110514204536.GA16496@1wt.eu>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-	 <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz>
-	 <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
-	 <20110430201436.GF10529@1wt.eu> <20110514190423.GA2264@nik-comp.lan>
-	 <20110514204536.GA16496@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-o/Id6A680A5jTXD8JWg4"
-Date: Sat, 14 May 2011 21:59:53 +0100
-Message-ID: <1305406793.4065.466.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: 2.6.32.21 - uptime related crashes?
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1759141Ab1ENVeC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 17:34:02 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55624 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754540Ab1ENVd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 17:33:58 -0400
+Message-ID: <4DCEF5B1.3050706@cn.fujitsu.com>
+Date: Sun, 15 May 2011 05:35:45 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 1/7] KVM: MMU: optimize pte write path if don't have protected
+ sp
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-15 05:34:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-15 05:34:08,
+	Serialize complete at 2011-05-15 05:34:08
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Simply return from kvm_mmu_pte_write path if no shadow page is
+write-protected, then we can avoid to walk all shadow pages and hold
+mmu-lock
 
---=-o/Id6A680A5jTXD8JWg4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |    9 +++++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-On Sat, 2011-05-14 at 22:45 +0200, Willy Tarreau wrote:
-> Hi,
->=20
-> On Sat, May 14, 2011 at 09:04:23PM +0200, Nikola Ciprich wrote:
-> > Hello gentlemans,
-> > Nicolas, thanks for further report, it contradicts my theory that probl=
-em occured somewhere during 2.6.32.16.
->=20
-> Well, I'd like to be sure what kernel we're talking about. Nicolas said
-> "2.6.32.8 Debian Kernel", but I suspect it's "2.6.32-8something" instead.
-> Nicolas, could you please report the exact version as indicated by "uname=
- -a" ?
-[...]
-
-Actually you need to use 'cat /proc/version' (or dpkg) to get the full
-version.
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-o/Id6A680A5jTXD8JWg4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATc7tQ+e/yOyVhhEJAQrJdA/+JHRru6s3el6/Bwa0TabO0PRxs8koKu/o
-rSdfiq1LqL++E4YMdBfcsDgZZ1301ZcZ6Kom158dC6woXLo/NFvc/T+NQ1HJOrTm
-dbmHZ9b9z38Qk9BLzBHBxDUafZzOPFftwmqYHE0HpdXmmDlIpWuN9ucmtA6cLVTW
-COpV5qC3RZViXPoEMajzpemLB2ympsegJKJZv+F7OBU07iypBjGt7EDT+XO4qhFm
-YNFq8/Z5duboMGNPh1IORsCqVl2YRZn8WeuK613zED0UFutR4Xo2UsrkGFsmyu2A
-xFqvtRylflM4jkNTWJl5W22Ra7E3GNmym/Vf0IQwuioptpQuw/Y63KXHy01Oiapg
-gUs2FLwArR/b70Y/no3aBNtjKPqs6BsPdccNGATD6ZCA8MQ8tFC6SyYWl1drofPD
-QNKcezosK6AY58FQJ0/ciQQ6TqMv4S/NnVxjb4DmCb61eBbOgBoBnghTMNi9U1T7
-127GJLYIXHv6OOLH+ZNBF/FPlqB0niGWr6WWifotKCY7lxpZLHnW3VBiyfPXAGvA
-FPSDUDbrHUHpC8Dj8e/3JWXm7Mg5206STZ+86g52j8nkKPlXbfZKm8Z5XjBBfuw1
-X6Xm8SLph+cibEXj7zDhcnbVuPDRBMMQGsz9d4noPuZfuEkBSEFq4xV4zLvYd7h0
-jP1IZ/5Q2Hg=
-=Qaux
------END PGP SIGNATURE-----
-
---=-o/Id6A680A5jTXD8JWg4--
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index d2ac8e2..d2e5fb8 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -442,6 +442,7 @@ struct kvm_arch {
+ 	unsigned int n_requested_mmu_pages;
+ 	unsigned int n_max_mmu_pages;
+ 	atomic_t invlpg_counter;
++	atomic_t indirect_shadow_pages;
+ 	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+ 	/*
+ 	 * Hash table of struct kvm_mmu_page.
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 2841805..971e2d2 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -498,6 +498,7 @@ static void account_shadowed(struct kvm *kvm, gfn_t gfn)
+ 		linfo = lpage_info_slot(gfn, slot, i);
+ 		linfo->write_count += 1;
+ 	}
++	atomic_inc(&kvm->arch.indirect_shadow_pages);
+ }
+ 
+ static void unaccount_shadowed(struct kvm *kvm, gfn_t gfn)
+@@ -513,6 +514,7 @@ static void unaccount_shadowed(struct kvm *kvm, gfn_t gfn)
+ 		linfo->write_count -= 1;
+ 		WARN_ON(linfo->write_count < 0);
+ 	}
++	atomic_dec(&kvm->arch.indirect_shadow_pages);
+ }
+ 
+ static int has_wrprotected_page(struct kvm *kvm,
+@@ -3233,6 +3235,13 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	int level, npte, invlpg_counter, r, flooded = 0;
+ 	bool remote_flush, local_flush, zap_page;
+ 
++	/*
++	 * If we don't have indirect shadow pages, it means no page is
++	 * write-protected, so we can exit simply.
++	 */
++	if (!atomic_read(&vcpu->kvm->arch.indirect_shadow_pages))
++		return;
++
+ 	zap_page = remote_flush = local_flush = false;
+ 	offset = offset_in_page(gpa);
+ 
+-- 
+1.7.4.4
