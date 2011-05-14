@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab1ENK6t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 06:58:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35082 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab1ENK46 (ORCPT
+	id S1756543Ab1ENLMc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 07:12:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58398 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755593Ab1ENLMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 06:56:58 -0400
+	Sat, 14 May 2011 07:12:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fnnTM2cYmghaUQlrYLFfq6B00KlUhNBS3Z8oJAhwmVfOKshdEfValMZCFcXyUgvDLI
-         4jJJpby9oigM6AweKRZYRjNqkmTYGrw1Qji0j63AEbNK4sXKqXfUoD5w7t1Z29BRSG1p
-         OyIdZUKdxC9glCZMvYVwucqSmG7/3ayQSON9E=
-Date: Sat, 14 May 2011 12:56:53 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 09/11] job control: reorganize wait_task_stopped()
-Message-ID: <20110514105653.GC23665@htj.dyndns.org>
-References: <1304869745-1073-10-git-send-email-tj@kernel.org>
- <20110511154854.GB23688@redhat.com>
- <20110511192902.GC24245@mtj.dyndns.org>
- <20110512154247.GC18599@redhat.com>
- <20110512160253.GK1030@htj.dyndns.org>
- <20110512172506.GA23033@redhat.com>
- <20110512173228.GO1030@htj.dyndns.org>
- <20110512183326.GA26042@redhat.com>
- <20110513084611.GB6500@htj.dyndns.org>
- <20110513172117.GA30243@redhat.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=C2y//lb4KllNb7mOBjjqPxUTRS9BY4JGNN1vBdQwJwRnPTo+Pw20Dj0ukSlDvHH8d7
+         R8w6Hb1gznWHyqMSxgFbyMqznYKB2zV5TIDG26uBbr5ltYH1XjlWK8rFGOA9y6RKhAGP
+         G7JGBI+0GlAI77kDwa5YXGGC1GPSbalJDiGgc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513172117.GA30243@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305311276.2680.34.camel@work-vm>
+References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
+ <1305241371-25276-2-git-send-email-john.stultz@linaro.org>
+ <4DCD1256.4070808@jp.fujitsu.com> <1305311276.2680.34.camel@work-vm>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Sat, 14 May 2011 20:12:10 +0900
+X-Google-Sender-Auth: y8ctBkaLOSTeX0vrcGxcvPAr7nA
+Message-ID: <BANLkTin_MitzRUkWToj055AuAPdMC9msXQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect
+ task->comm access
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+>> Can you please explain why we should use seqlock? That said,
+>> we didn't use seqlock for /proc items. because, plenty seqlock
+>> write may makes readers busy wait. Then, if we don't have another
+>> protection, we give the local DoS attack way to attackers.
+>
+> So you're saying that heavy write contention can cause reader
+> starvation?
 
-On Fri, May 13, 2011 at 07:21:17PM +0200, Oleg Nesterov wrote:
-> We already checked ->exit_state != ZOMBIE, and we are holding tasklist.
-> The child can't exit. I mean, it can't change its ->exit_state.
-> 
-> However, SIGKILL can clear SIGNAL_STOP_STOPPED, and we can "miss" it.
-> But this looks correct, the child is no longer stopped but it is still
-> not dead. So I think in this case wait(WNOHANG | WEXITED | WSTOPPED)
-> can fail, notabug.
+Yes.
 
-Hmmm... I don't know.
+>> task->comm is used for very fundamentally. then, I doubt we can
+>> assume write is enough rare. Why can't we use normal spinlock?
+>
+> I think writes are likely to be fairly rare. Tasks can only name
+> themselves or sibling threads, so I'm not sure I see the risk here.
 
-> OTOH, perhaps SIGKILL should set SIGNAL_STOP_CONTINUED in this case?
-> And keep it if it was already set.
-
-I'd rather avoid that.  First of all, it's an extreme corner case and
-I think introducing an extra state transition there is more likely to
-cause trouble than helping anything.  It might be theoretically
-correct but there's no reason to introduce that at this point.  If at
-all possible, I think it would be better to make it either see STOPPED
-or EXIT.
+reader starvation may cause another task's starvation if reader have
+an another lock.
+And, "only sibling" don't make any security gurantee as I said past.
 
 Thanks.
-
--- 
-tejun
