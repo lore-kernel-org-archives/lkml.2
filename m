@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab1ENTm2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 15:42:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51127 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab1ENTm1 convert rfc822-to-8bit (ORCPT
+	id S1758744Ab1ENTx0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 15:53:26 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:57730 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab1ENTxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 15:42:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=FgAJtmlVNlluUVypf64OZn0MlPMksdywGMpmNRgONqRZzPH95J8gHuYaO3M31mGRLD
-         X4/vJb4OkArHlzCuzy7wzEWDVzDfudy/Ac/W0olMQqc96chSlq+GcLaVJLudBjVEmHoQ
-         BvRZDuat4nKil83fOAZJ0Gn/zHx6jG3eDra9o=
+	Sat, 14 May 2011 15:53:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=JDBoVoQeKoEWfz7IVXiqcuOWGX0z/UM6eBUbxFXPal6jsW7u
+	r4xFlBD4BJHG8qExVkxYKhe2BomFtwlVGpGZsNc/pyoOQZlCUg2pl7m3nK1Rw8lw
+	HjQAJNXY0nS8zWil+pxHKmr9Z2cASliObgagXrezdddtd00XDJWVvYiSVag=
+Date: Sat, 14 May 2011 12:54:21 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph/rbd fixes for 2.6.39
+Message-ID: <Pine.LNX.4.64.1105141253040.17928@cobra.newdream.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105040522250.4503@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1105040522250.4503@localhost6.localdomain6>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Sat, 14 May 2011 13:41:55 -0600
-Message-ID: <BANLkTikzWDa8SbULd45_ReDzweR6pnZsQA@mail.gmail.com>
-Subject: Re: [PATCH] PC8736X: Correct dev_dbg() message showing major number.
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 4, 2011 at 3:26 AM, Robert P. J. Day <rpjday@crashcourse.ca> wrote:
->
-> Currently, the debugging info is incorrect, as a successful call to
-> either register_chrdev_region() or alloc_chrdev_region() returns
-> simply zero, which appears to be what the following code would print.
-> Skip the checking, just print the value of "major", which should be
-> correct.
->
-> Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
->
-> ---
+Hi Linus,
+
+Please pull a couple last minute rbd fixes from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+
+The first is a simple memory leak.  The second is, unfortunately, a bit 
+more involved.  There was a problem with the way we were doing the 
+completions for split bios (spanning object boundaries) and the fix is 
+non-trivial.  It's a bit big for -rc7, but OTOH the bug it fixes is pretty 
+easy to trigger with an appropriate read workload.
+
+Thanks!
+sage
 
 
-NAK.  'dynamic' is not always correct
+Sage Weil (1):
+      rbd: fix leak of ops struct
 
-> +       dev_dbg(&pdev->dev, "got dynamic major %d\n", major);
+Yehuda Sadeh (1):
+      rbd: fix split bio handling
 
-Ive got patches to replace register|alloc _chrdev_region
-which may require merge conflict resolution.
-Id prefer to hold off til theyre reviewed, accepted.
+ drivers/block/rbd.c |  177 +++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 156 insertions(+), 21 deletions(-)
 
-Actually, shouldnt conflict - rc<0 code is in between.
-If you want to rework it, I'll ack it.
-
-thanks.
