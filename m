@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab1ENK65 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 06:58:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63142 "EHLO
+	id S1756590Ab1ENK6w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 06:58:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57264 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab1ENK4R (ORCPT
+	with ESMTP id S1755128Ab1ENK4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 06:56:17 -0400
+	Sat, 14 May 2011 06:56:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ne6+wiW1YoywNrfm1HFEOKy+kvCcsVGq+9sC1AzPnvp/fWsikd7IBo5sdOCERn7B7Y
-         GVbT7UIcnRrmaWx5j3wz6C6BbwWZf3lCNi+5Z3m5nPIu9Unf0p4+vfCiFQVoxW6kR2Vm
-         h/UwEuzmjJQC0ViKU49noTtsahv8GjI57bYio=
+        b=GFhn4KCaIjzj44NQNa+L++RoeZZN4qSAIDzFsoAsZLOt7f9fdc9ogj9nmqdOsM1Ybl
+         4czD8Vula286Affbv5lE7ij69YpdRZ9JwYAG+DE1FOdeDpeoyFBQ7RPK+g2dbn5CAsLt
+         eO7lZU1fXXxmQoYfGw1QmpsPonaMEqryJLWmg=
 From: matt mooney <mfmooney@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 06/14] staging: usbip: userspace: update module name references
-Date: Sat, 14 May 2011 03:55:12 -0700
-Message-Id: <fae379ec39548b632db6580ddb26625000ea91fa.1305369176.git.mfm@muteddisk.com>
+Subject: [PATCH 07/14] staging: usbip: userspace: configure.ac: major overhaul
+Date: Sat, 14 May 2011 03:55:13 -0700
+Message-Id: <3a05a20d3023b05611bc149c23a7eca2c58b5e7b.1305369176.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1305369175.git.mfm@muteddisk.com>
 References: <cover.1305369175.git.mfm@muteddisk.com>
@@ -28,139 +28,203 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: matt mooney <mfm@muteddisk.com>
 
-Change all references to the kernel modules to correspond with the new
-names.
+All parameters have been quoted; and autoscan was rerun so new
+headers, types, and functions were added. The deprecated macros
+AM_CONFIG_HEADER and AM_PROG_LIBTOOL were changed to
+AC_CONFIG_HEADERS and LT_INIT, respectively. The AS_HELP_STRING
+macro is used to avoid arbitrary spacing for proper help menu
+alignment, and AS_CASE to avoid quoting issues. And finally, the
+macros were realigned to allow mere mortals the ability to read them.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/staging/usbip/userspace/README             |   16 ++++++++--------
- .../usbip/userspace/doc/usbip_bind_driver.8        |    2 +-
- drivers/staging/usbip/userspace/doc/usbipd.8       |    2 +-
- .../staging/usbip/userspace/libsrc/stub_driver.c   |    4 ++--
- .../staging/usbip/userspace/libsrc/vhci_driver.c   |    2 +-
- 5 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/staging/usbip/userspace/configure.ac |  144 +++++++++++++-------------
+ 1 files changed, 74 insertions(+), 70 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/README b/drivers/staging/usbip/userspace/README
-index b0df5cb..2ee84b9 100644
---- a/drivers/staging/usbip/userspace/README
-+++ b/drivers/staging/usbip/userspace/README
-@@ -34,8 +34,8 @@
- [Usage]
-     server:# (Attach your USB device physically.)
+diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
+index 144655e..0b71329 100644
+--- a/drivers/staging/usbip/userspace/configure.ac
++++ b/drivers/staging/usbip/userspace/configure.ac
+@@ -1,105 +1,109 @@
+-#                                               -*- Autoconf -*-
+-# Process this file with autoconf to produce a configure script.
++dnl Process this file with autoconf to produce a configure script.
  
--    server:# insmod usbip_common_mod.ko
--    server:# insmod usbip.ko
-+    server:# insmod usbip-core.ko
-+    server:# insmod usbip-host.ko
-         - It was formerly named as stub.ko.
+ AC_PREREQ(2.59)
+-AC_REVISION($Id$)
+-AC_INIT(usbip, 0.1.8, usbip-devel@lists.sourceforge.net)
+-AC_DEFINE(USBIP_VERSION, 0x000106, Numeric version number)
++AC_INIT([usbip], [0.1.8], [usbip-devel@lists.sourceforge.net])
++AC_DEFINE([USBIP_VERSION], [0x000106], [numeric version number])
++
++AC_CONFIG_SRCDIR([src/usbipd.c])
++AC_CONFIG_HEADERS([config.h])
  
-     server:# usbipd -D
-@@ -45,13 +45,13 @@
-         - List driver assignments for usb devices.
+-AC_CONFIG_SRCDIR([config.h.in])
+ AM_INIT_AUTOMAKE([foreign])
++LT_INIT
  
-     server:# usbip_bind_driver --usbip 1-2
--        - Bind usbip.ko to the device of busid 1-2.
-+        - Bind usbip-host.ko to the device of busid 1-2.
-         - A usb device 1-2 is now exportable to other hosts!
-         - Use 'usbip_bind_driver --other 1-2' when you want to shutdown exporting
-           and use the device locally.
+ # Silent build for automake >= 1.11
+ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
  
+-AM_CONFIG_HEADER(config.h)
+-
+-
+ AC_SUBST([EXTRA_CFLAGS])
  
--    client:# insmod usbip_common_mod.ko
-+    client:# insmod usbip-core.ko
-     client:# insmod vhci-hcd.ko
-         - It was formerly named as vhci.ko.
+-AC_PROG_LIBTOOL
+-
+ # Checks for programs.
+ AC_PROG_CC
+ AC_PROG_INSTALL
+-
+-# Checks for libraries.
++AC_PROG_MAKE_SET
  
-@@ -72,8 +72,8 @@
- --------------------------------------------------------------------------------------------------------
- - SERVER SIDE (physically attach your USB devices to this host) ----------------------------------------
- --------------------------------------------------------------------------------------------------------
--trois:# insmod (somewhere)/usbip_common_mod.ko
--trois:# insmod (somewhere)/usbip.ko
-+trois:# insmod (somewhere)/usbip-core.ko
-+trois:# insmod (somewhere)/usbip-host.ko
- trois:# usbipd -D
+ # Checks for header files.
+ AC_HEADER_DIRENT
+ AC_HEADER_STDC
+-AC_CHECK_HEADERS([fcntl.h netdb.h stdint.h stdlib.h string.h strings.h sys/socket.h syslog.h unistd.h])
++AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h dnl
++		  string.h strings.h sys/socket.h syslog.h unistd.h])
  
- --------------------------------------------------------------------------------------------------------
-@@ -132,7 +132,7 @@ Iterate the above operation for other devices if you like.
- First, let's list available remote devices which are marked as exportable in
- the server host.
+ # Checks for typedefs, structures, and compiler characteristics.
+-AC_C_CONST
++AC_TYPE_INT32_T
+ AC_TYPE_SIZE_T
++AC_TYPE_SSIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT8_T
  
--   deux:# insmod (somewhere)/usbip_common_mod.ko
-+   deux:# insmod (somewhere)/usbip-core.ko
-    deux:# insmod (somewhere)/vhci_hcd.ko
+ # Checks for library functions.
+-AC_FUNC_MALLOC
+ AC_FUNC_REALLOC
+-AC_CHECK_FUNCS([bzero memset strchr strerror strstr strtoul])
+-
+-AC_CHECK_HEADER(sysfs/libsysfs.h,
+-	[AC_CHECK_LIB(sysfs, sysfs_open_directory_list,
+-		[LIBS="$LIBS -lsysfs"],
+-		[AC_MSG_ERROR([Missing sysfs2 library!])])],
+-	[AC_MSG_ERROR([Missing /usr/include/sysfs/libsysfs.h])])
++AC_CHECK_FUNCS([bzero memset mkdir regcomp socket strchr strerror strstr dnl
++		strtoul])
  
-    deux:# usbip --list 10.0.0.3
-@@ -200,7 +200,7 @@ Detach the imported device.
- [Check List]
-     - See Debug Tips in the project wiki.
-         - http://usbip.wiki.sourceforge.net/how-to-debug-usbip
--    - usbip.ko must be bound to the target device.
-+    - usbip-host.ko must be bound to the target device.
-         - See /proc/bus/usb/devices and find "Driver=..." lines of the device.
-     - Shutdown firewall.
-         - usbip now uses TCP port 3240.
-diff --git a/drivers/staging/usbip/userspace/doc/usbip_bind_driver.8 b/drivers/staging/usbip/userspace/doc/usbip_bind_driver.8
-index b91df9b..d43bbd6 100644
---- a/drivers/staging/usbip/userspace/doc/usbip_bind_driver.8
-+++ b/drivers/staging/usbip/userspace/doc/usbip_bind_driver.8
-@@ -31,7 +31,7 @@ Print usb devices and their drivers in parseable mode
-         - List driver assignments for usb devices.
++AC_CHECK_HEADER([sysfs/libsysfs.h],
++		[AC_CHECK_LIB([sysfs], [sysfs_open_directory_list],
++			      [LIBS="$LIBS -lsysfs"],
++			      [AC_MSG_ERROR([Missing sysfs2 library!])])],
++		[AC_MSG_ERROR([Missing /usr/include/sysfs/libsysfs.h])])
  
-     server:# usbip_bind_driver --usbip 1-2
--        - Bind usbip.ko to the device of busid 1-2.
-+        - Bind usbip-host.ko to the device of busid 1-2.
-         - A usb device 1-2 is now exportable to other hosts!
+-# get from stunnel
+-dnl Check for libwrap library.
++# Checks for libwrap library.
+ AC_MSG_CHECKING([whether to use the libwrap (TCP wrappers) library])
+-
+-AC_ARG_WITH(tcp-wrappers,
+-[  --with-tcp-wrappers     Use the libwrap (TCP wrappers) library ],
+-[saved_LIBS="$LIBS"
+- if test "$withval" = "yes"; then
+-      AC_MSG_RESULT([yes])
+-      AC_MSG_CHECKING([for hosts_access in -lwrap])
+-      LIBS="-lwrap $LIBS"
+-      AC_TRY_LINK(
+-	[int hosts_access(); int allow_severity, deny_severity;],
+-	[hosts_access()],
+-	[AC_MSG_RESULT([yes]); AC_DEFINE(HAVE_LIBWRAP, 1, use tcp wrapper) wrap_LIB="-lwrap"],
+-	[AC_MSG_RESULT([not found]); exit 1])
+- else
+- 	     AC_MSG_RESULT([no])
+- fi
+- LIBS="$saved_LIBS"],
+-[AC_MSG_RESULT([(default)])
+- AC_MSG_CHECKING([for hosts_access in -lwrap])
+- saved_LIBS="$LIBS"
+- LIBS="-lwrap $saved_LIBS"
+- AC_TRY_LINK(
+-	[int hosts_access(); int allow_severity, deny_severity;],
+- 	[hosts_access()],
+- 	[AC_MSG_RESULT([yes]); AC_DEFINE(HAVE_LIBWRAP, 1, use tcp wrapper)],
+- 	[AC_MSG_RESULT([no]); LIBS="$saved_LIBS"])
+-])
+-
+-
+-
++AC_ARG_WITH([tcp-wrappers],
++	    [AS_HELP_STRING([--with-tcp-wrappers],
++			    [use the libwrap (TCP wrappers) library])],
++	    dnl [ACTION-IF-GIVEN]
++	    [saved_LIBS="$LIBS"
++	     if test "$withval" = "yes"; then
++		     AC_MSG_RESULT([yes])
++		     AC_MSG_CHECKING([for hosts_access in -lwrap])
++		     LIBS="-lwrap $LIBS"
++		     AC_TRY_LINK(
++		       [int hosts_access(); int allow_severity, deny_severity;],
++		       [hosts_access()],
++		       [AC_MSG_RESULT([yes]);
++			AC_DEFINE([HAVE_LIBWRAP], [1],
++				  [use tcp wrapper]) wrap_LIB="-lwrap"],
++		       [AC_MSG_RESULT([not found]); exit 1])
++	     else
++		     AC_MSG_RESULT([no])
++	     fi
++	     LIBS="$saved_LIBS"],
++	    dnl [ACTION-IF-NOT-GIVEN]
++	    [AC_MSG_RESULT([(default)])
++	     AC_MSG_CHECKING([for hosts_access in -lwrap])
++	     saved_LIBS="$LIBS"
++	     LIBS="-lwrap $saved_LIBS"
++	     AC_TRY_LINK(
++	       [int hosts_access(); int allow_severity, deny_severity;],
++	       [hosts_access()],
++	       [AC_MSG_RESULT([yes]);
++		AC_DEFINE([HAVE_LIBWRAP], [1], [use tcp wrapper])],
++	       [AC_MSG_RESULT([no]); LIBS="$saved_LIBS"])])
++
++# Sets directory containing usb.ids.
+ USBIDS_DIR='${datadir}/usbip'
+-AC_ARG_WITH(usbids-dir, [  --with-usbids-dir=DIR   where usb.ids is found (default ${datadir}/usbip)], [USBIDS_DIR=$withval])
+-AC_SUBST(USBIDS_DIR)
++AC_ARG_WITH([usbids-dir],
++	    [AS_HELP_STRING([--with-usbids-dir=DIR],
++	       [where usb.ids is found (default ${datadir}/usbip)])],
++	    [USBIDS_DIR=$withval])
++AC_SUBST([USBIDS_DIR])
  
-     server:# usbip_bind_driver --other 1-2
-diff --git a/drivers/staging/usbip/userspace/doc/usbipd.8 b/drivers/staging/usbip/userspace/doc/usbipd.8
-index 3c39520..006559f 100644
---- a/drivers/staging/usbip/userspace/doc/usbipd.8
-+++ b/drivers/staging/usbip/userspace/doc/usbipd.8
-@@ -52,7 +52,7 @@ USB/IP client can connect and use exported devices.
-         - List driver assignments for usb devices.
+ dnl FIXME: when disabled, empty directry is created
+ usbids=install
+-AC_ARG_ENABLE(usbids-install,
+-[  --enable-usbids-install     install usb.ids (default)],
+-[case "${enableval}" in
+- yes) usbids=install ;;
+- no)  usbids=notinstall ;;
+- *)   AC_MSG_ERROR(bad value ${enableval} for --enable-usbids-install) ;;
+- esac])
+-AM_CONDITIONAL(INSTALL_USBIDS, test x$usbids = xinstall)
+-
+-
++AC_ARG_ENABLE([usbids-install],
++	      [AS_HELP_STRING([--enable-usbids-install],
++			      [install usb.ids (default)])],
++	      [AS_CASE([$enableval],
++		       [yes], [usbids=install],
++		       [no], [usbids=notinstall],
++		       [AC_MSG_ERROR(
++			  [bad value ${enableval} for --enable-usbids-install])]
++		      )])
++AM_CONDITIONAL([INSTALL_USBIDS], [test x$usbids = xinstall])
  
-     server:# usbip_bind_driver --usbip 1-2
--        - Bind usbip.ko to the device of busid 1-2.
-+        - Bind usbip-host.ko to the device of busid 1-2.
-         - A usb device 1-2 is now exportable to other hosts!
-         - Use 'usbip_bind_driver --other 1-2' when you want to shutdown exporting and use the device locally.
+ GLIB2_REQUIRED=2.6.0
+-PKG_CHECK_MODULES(PACKAGE, glib-2.0 >= $GLIB2_REQUIRED)
+-AC_SUBST(PACKAGE_CFLAGS)
+-AC_SUBST(PACKAGE_LIBS)
++PKG_CHECK_MODULES([PACKAGE], [glib-2.0 >= $GLIB2_REQUIRED])
++AC_SUBST([PACKAGE_CFLAGS])
++AC_SUBST([PACKAGE_LIBS])
  
-diff --git a/drivers/staging/usbip/userspace/libsrc/stub_driver.c b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
-index d4d6936..a1ac067 100644
---- a/drivers/staging/usbip/userspace/libsrc/stub_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/stub_driver.c
-@@ -34,7 +34,7 @@ static struct sysfs_driver *open_sysfs_stub_driver(void)
- 
- 	stub_driver = sysfs_open_driver_path(stub_driver_path);
- 	if (!stub_driver) {
--		err("usbip_common_mod.ko and usbip.ko must be loaded");
-+		err("usbip-core.ko and usbip-host.ko must be loaded");
- 		return NULL;
- 	}
- 
-@@ -199,7 +199,7 @@ static int refresh_exported_devices(void)
- 
- 	suinf_list = sysfs_get_driver_devices(stub_driver->sysfs_driver);
- 	if (!suinf_list) {
--		printf("Bind usbip.ko to a usb device to be exportable!\n");
-+		printf("Bind usbip-host.ko to a usb device to be exportable!\n");
- 		goto bye;
- 	}
- 
-diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-index 5e54810..db43f8d 100644
---- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-@@ -282,7 +282,7 @@ static int get_hc_busid(char *sysfs_mntpath, char *hc_busid)
-         sdriver = sysfs_open_driver_path(sdriver_path);
-         if (!sdriver) {
- 		info("%s is not found", sdriver_path);
--                info("load usbip_common_mod.ko and vhci-hcd.ko !");
-+                info("load usbip-core.ko and vhci-hcd.ko !");
-                 return -1;
-         }
- 
+ AC_CONFIG_FILES([Makefile libsrc/Makefile src/Makefile])
+ AC_OUTPUT
 -- 
 1.7.5.1
 
