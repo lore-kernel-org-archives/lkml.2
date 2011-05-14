@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab1ENLMc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 07:12:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58398 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab1ENLMb (ORCPT
+	id S1757118Ab1ENLRi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 07:17:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53312 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756119Ab1ENLRh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 07:12:31 -0400
+	Sat, 14 May 2011 07:17:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=C2y//lb4KllNb7mOBjjqPxUTRS9BY4JGNN1vBdQwJwRnPTo+Pw20Dj0ukSlDvHH8d7
-         R8w6Hb1gznWHyqMSxgFbyMqznYKB2zV5TIDG26uBbr5ltYH1XjlWK8rFGOA9y6RKhAGP
-         G7JGBI+0GlAI77kDwa5YXGGC1GPSbalJDiGgc=
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=R6URZCzNObMKi/ygprbxEPbYMP/hbZFkdSoi4W2SjLx372bcsisE/Mz/SLq21HfQxC
+         PUHkeitgGbI7Uth0Q+RKDDHeeouMAStGbX7l3vilAMkMP+EcKJi4J5IQ3Cn75iMylJm0
+         URYnHD/xqB8xFJqoeFXfx8kJgvV1y1YFBCUQI=
 MIME-Version: 1.0
-In-Reply-To: <1305311276.2680.34.camel@work-vm>
-References: <1305241371-25276-1-git-send-email-john.stultz@linaro.org>
- <1305241371-25276-2-git-send-email-john.stultz@linaro.org>
- <4DCD1256.4070808@jp.fujitsu.com> <1305311276.2680.34.camel@work-vm>
+In-Reply-To: <1305306135.2466.173.camel@twins>
+References: <20110428161149.GA15658@redhat.com> <20110502194416.2D61.A69D9226@jp.fujitsu.com>
+ <20110502195657.2D68.A69D9226@jp.fujitsu.com> <1305129929.2914.247.camel@laptop>
+ <4DCCC61F.80408@jp.fujitsu.com> <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
+ <1305306135.2466.173.camel@twins>
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Sat, 14 May 2011 20:12:10 +0900
-X-Google-Sender-Auth: y8ctBkaLOSTeX0vrcGxcvPAr7nA
-Message-ID: <BANLkTin_MitzRUkWToj055AuAPdMC9msXQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect
- task->comm access
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Date: Sat, 14 May 2011 20:17:16 +0900
+X-Google-Sender-Auth: EWio0_knV7EXOd7TfELmxsS6AJ8
+Message-ID: <BANLkTi=u1RMS3BHBir1o2WWJcfXm0jhkQQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
+ update tsk->rt.nr_cpus_allowed
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Can you please explain why we should use seqlock? That said,
->> we didn't use seqlock for /proc items. because, plenty seqlock
->> write may makes readers busy wait. Then, if we don't have another
->> protection, we give the local DoS attack way to attackers.
+2011/5/14 Peter Zijlstra <a.p.zijlstra@chello.nl>:
+> On Fri, 2011-05-13 at 14:42 +0800, Yong Zhang wrote:
+>> > - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
+>> > periodically.
+>> >  then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
+>> >  my debug print obseve following cpumask change occur at boot time.
+>> >     1) kthread_bind: bind cpu1
+>> >     2) cpuset_cpus_allowed_fallback: bind possible cpu
+>> >     3) rcu_cpu_kthread_should_stop: rebind cpu1
+>> > - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
+>>
+>> Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
+>> which is under hotplug event CPU_UP_PREPARE. Maybe it should be
+>> under CPU_ONLINE.
 >
-> So you're saying that heavy write contention can cause reader
-> starvation?
-
-Yes.
-
->> task->comm is used for very fundamentally. then, I doubt we can
->> assume write is enough rare. Why can't we use normal spinlock?
+> IIRC I talked to Paul about this a while back and ONLINE is too late,
+> however STARTING should work. At the time he couldn't quite get that to
+> work, but the above situation is indeed the root cause of our problems.
 >
-> I think writes are likely to be fairly rare. Tasks can only name
-> themselves or sibling threads, so I'm not sure I see the risk here.
+> We shouldn't try to run a cpu affine thread before the cpu in question
+> is actually able to run stuff.
+>
+> I did me a little hackery and with the below patch my kernel still
+> boots...
+>
+> Would that sort your issue?
 
-reader starvation may cause another task's starvation if reader have
-an another lock.
-And, "only sibling" don't make any security gurantee as I said past.
+Great!!
+Unfortunately, I can't test this until next wednesday. but I'll do it
+as far as possible soon.
 
 Thanks.
