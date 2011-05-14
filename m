@@ -1,114 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab1ENTKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 15:10:08 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:50586 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab1ENTKG convert rfc822-to-8bit (ORCPT
+	id S1758764Ab1ENTQB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 15:16:01 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:43554 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab1ENTP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 15:10:06 -0400
+	Sat, 14 May 2011 15:15:59 -0400
 From: Oliver Neukum <oliver@neukum.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>, hare@suse.de
-Subject: Re: [PATCH] scsi/sd: fix suspend with USB-connected Android phone (one line)
-Date: Sat, 14 May 2011 21:11:52 +0200
+To: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH] input: Add wiichuck driver
+Date: Sat, 14 May 2011 21:17:50 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Charles Hannum <root@ihack.net>,
-        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-scsi" <linux-scsi@vger.kernel.org>, linux-usb@vger.kernel.org
-References: <BANLkTi=XNyR8GD43GGnMag+=JmhUd_5HtA@mail.gmail.com> <201105122203.13671.rjw@sisk.pl> <1305232563.2575.85.camel@mulgrave.site>
-In-Reply-To: <1305232563.2575.85.camel@mulgrave.site>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+References: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
+In-Reply-To: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105142111.53266.oliver@neukum.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105142117.50529.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 12. Mai 2011, 22:36:03 schrieb James Bottomley:
+Am Donnerstag, 12. Mai 2011, 06:29:44 schrieb Grant Likely:
+> +static void wiichuck_poll(struct input_polled_dev *poll_dev)
+> +{
+> +       struct wiichuck_device *wiichuck = poll_dev->private;
+> +       struct i2c_client *i2c = wiichuck->i2c_client;
+> +       static uint8_t cmd_byte = 0;
+> +       struct i2c_msg cmd_msg =
+> +               { .addr = i2c->addr, .len = 1, .buf = &cmd_byte };
+> +       uint8_t b[6];
+> +       struct i2c_msg data_msg =
+> +               { .addr = i2c->addr, .flags = I2C_M_RD, .len = 6, .buf = b };
 
-> Instinct tells me the correct set of fixes is to add a sync cache from
-> release (so we automatically sync on last close, which is usually when
-> an ordered remove happens), keep the one on shutdown, just in case the
-> system goes down with stuff still mounted and print a nasty message on
-> suspend for a write back device that's been removed.
-> 
-> I also think we shouldn't abort the suspend if the disk doesn't respond
-> correctly to start/stop ... the power is going to be disconnected
-> anyway, so it's no issue if the disk spins for a second or so longer.
-> 
-> The problem this is going to cause is double sync on shutdown (once when
-> final unmount closes the device and once on shutdown) ... do people
-> agree that's a price worth paying?
-> 
-> Something like this?
 
-Hi,
-
-it seems to me that the error codes should really be evaluated a bit better.
-How about this?
+Do you need these buffers to be capable of DMA?
 
 	Regards
 		Oliver
-
->From 2ab03ae46d6dc126a51ee9cd38206fbdc8bf6a34 Mon Sep 17 00:00:00 2001
-From: Oliver Neukum <oliver@neukum.org>
-Date: Mon, 25 Oct 2010 12:25:26 +0200
-Subject: [PATCH 2/5] SCSI:sd:error handling in sd_sync_cache()
-
-The SCSI commands sd_sync_cache() uses may fail.
-These errors needs to be evaluated to return correct
-error codes. This fixes system suspension while a device
-removal is being handled.
-
-Signed-off-by: Oliver NEukum <oneukum@suse.de>
----
- drivers/scsi/sd.c |   28 ++++++++++++++++++++++++----
- 1 files changed, 24 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index fcba7d2..5ed75bf 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1104,11 +1104,31 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- 		sd_print_result(sdkp, res);
- 		if (driver_byte(res) & DRIVER_SENSE)
- 			sd_print_sense_hdr(sdkp, &sshdr);
--	}
- 
--	if (res)
--		return -EIO;
--	return 0;
-+		/* we need to evaluate the error return  */
-+		if ((scsi_sense_valid(&sshdr) &&
-+			/* 0x3a is medium not present */
-+			sshdr.asc == 0x3a))
-+			/* this is no error here */
-+			return 0;
-+
-+		switch (host_byte(res)) {
-+		/* ignore errors due to racing a disconnection */
-+		case DID_BAD_TARGET:
-+		case DID_NO_CONNECT:	
-+			return 0;
-+		/* signal the upper layer it might try again */
-+		case DID_BUS_BUSY:
-+		case DID_IMM_RETRY:
-+		case DID_REQUEUE:
-+		case DID_SOFT_ERROR:
-+			return -EBUSY;
-+		default:
-+			return -EIO;
-+		}
-+	} else {
-+		return 0;
-+	}
- }
- 
- static void sd_rescan(struct device *dev)
--- 
-1.7.1
-
-
