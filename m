@@ -1,72 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab1ENLRi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 07:17:38 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53312 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119Ab1ENLRh convert rfc822-to-8bit (ORCPT
+	id S1757359Ab1ENMQa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 08:16:30 -0400
+Received: from nm20-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.39]:33188 "HELO
+	nm20-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757168Ab1ENMQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 07:17:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=R6URZCzNObMKi/ygprbxEPbYMP/hbZFkdSoi4W2SjLx372bcsisE/Mz/SLq21HfQxC
-         PUHkeitgGbI7Uth0Q+RKDDHeeouMAStGbX7l3vilAMkMP+EcKJi4J5IQ3Cn75iMylJm0
-         URYnHD/xqB8xFJqoeFXfx8kJgvV1y1YFBCUQI=
+	Sat, 14 May 2011 08:16:26 -0400
+X-Yahoo-Newman-Id: 826232.42014.bm@omp1035.mail.bf1.yahoo.com
+Cc: recipient list not shown:;
+Message-ID: <696548.86959.qm@smtp101.biz.mail.bf1.yahoo.com>
+X-Yahoo-SMTP: 28motZCswBAG51D5R6cAAdoOHVBTfQhOFw--
+X-YMail-OSG: 1.SuwlEVM1k8haPFNg.oSZI0LoflAE7RTZjFKAOkARzhJCh
+ bDeA2FH8tWT7cVTKNE0OGamfbVGI.H0z6.MM5Ic.antAQIgUYdsTPYgD8hqM
+ bc4WodEqUg7ct17yRDFCtksd1zD2FnCD46TD2H57BDFc0zqVoC_3J7EBMXjL
+ gMGBqzOM265tZgDRCnXTehCkssCD0rV7pW0LiGSIY.GsogCRmgfQnbchLRH0
+ EbECa38QCfJ94faAZGHG..eRsn_7yudFbxmViwWNC0IxPCIXq0BHt65W6tuz
+ hEy.MwS0GKSAuJnEAHXi1L9nbK4QVrszwgpncyzFgCYRZHRvCt31v86ya4kd
+ ITy0Rmt5kV9opXYnvQlg6lXsC8Ztiu4k7CbWfb7BIWuhzZ2GtdPWg6oSJQXf
+ QJRXYbqhEOR49oXyU_f_sDeRAVO_KRI5d7tTic3c1wA_DbiKxabTS8h6ybjI
+ kMdwsdin.fQrL7P4blG15a2cMnRyZVC6cCs.odcfjjJ1R1zkEU1H3601kJ67
+ q2w_TcsBy1djx.oatdds_cNS0JASN5fBOE8P3vC3P.4um5I13oLVRi8IL0R2
+ CGEPBwPrRins7pDb.Iu.a1sN_PAEHy3St5nQ3f8bCz8Z_9i0U67e4Zk3MuLM
+ SMkH8sbWufYkPNBOm0JZx3Jyo1ySb0LPW2zZO_tfM.cgR4qJmd28zIyF4XkN
+ V9fYclQhvEmXH33prtWvDmMGCXyAL1UXJn2_F9qh3aP3esaRlq5N3F.3pLsl
+ mP.l8yWI7OL1iUonFO6WqEDkt948C2XtadHPxXqM50QnN.jeK00XQtWZPAwj
+ cgQH4uFkc2R6s4fJwqxjypUN6qu57xkRgW8EnF137e_wr8Q9KU_oMO3vg4Cc
+ zgD1.aKM3RJK1dPUaGYViN2rvQaVpluku9BqlVzvxL3SUk_lNrjav47aXqee
+ FOqBS.CbRq_mQRLGrdz.d8j5376cH8hJXEzTozjySPC0zuuify9fxRb0zcJF
+ SddRg6x6LgCaCniX88xiH3AJs424dIz8UHstHxxFPGHemFM_rldwejgjn88m
+ c5Jttzdnj0xr39SwB_0qKpKNmUhMYfwbeGDveo6VfI2q2Q7HzTY1l_ysR50C
+ xKHjBZa2c.tlVPj8IzRwoPxeQZKAAWdGcdm1.3vjJKQJyJ11XAx2ho8NwYAf
+ dN5IuwT1daBcmJ1X0rNdtb6inYEzgFxbh.j26K1m5f0j5ESScugqVnqSB4jW
+ SvGGlSgliJUjt3aKZoAdgVrL4yQYZdb.pK1dMrjHriAP91lttcnUNi03TgXh
+ DlG72BOoWDffBXr7U9qI.lcpYBKYj5.H6PjWGNiF7VJbT4dcDwaejR9f7yPx
+ 5tXU_Kn2RHMDY19Opxof5g8k.BpKiI.VBC1whJGR_Jitix7emQ2bBXP4jBah
+ y4nvFD.bUQITVQh77XtFQ.km1nNYkCN0tkN.R0L_DAL1grWEoIiNf_kJM7HT
+ istDGnUqiiz9dqwfSOsQRokVPHMpSvdBQ51ZWsnq0zYtdSbQFmS5fZbZeJre
+ ERuwrppODfXF_55Lkpl.EHvqaWvxJn2R4KfqUprC4aiIjHGQ7vR1VmmPQwbY
+ kxag4PuhweapOhBmD_MD1AMQtHkyqT9MdUlAcgd5iXx9qa9Nz4K.ITx4AB9h
+ OzDIJD.FZKPFwuyCt1evCISw_BYpW5beDq9T6i3wJ.SPK.nMvWN1K1A6yw4u
+ 3sR8i4ZJFCMEcZA0q550JMHXudfmFXPAB1Z7GlDvqdOWdcb5pUDXRk.RTVLc
+ tu6KLTWdJkrxf327MuOBeujoO3gE.ebWM8jAz8sDNcr7XuKv5wJcakIE75Mh
+ 5NLaQw1zgrL7dpqoKCNtpEwYJpYRqepHK8dnGkNg5MFpA9r4cRssNSgY6dCt
+ P20yN_kyl95CuYCt_fOA9vU8gwH0hgsmTopCxrgKrZDYwYAdp2rY0ujB7mvN
+ _tohWAi3wOxXLUVAefDTM7yAH9RHf6gf9rUi706EJ7rdh9g90JBh0bto4HHU
+ _S3W2UGLALOTKAHDiFSrT_ar5Kw2d2ethDMMscKPe9yY4u3enmydtdBa0xDo
+ ZjWatbi6N4c0BrKtZIUMAfDG42_xFrOOIobNg2C6hA1WxxNGgb7PulQslmmX
+ 8OhORZ2y9ndnQYkB2XVihpoOZiCslwK3NlIHaG8joVRiMg9daL8UF9iirRPX
+ i6b212YHz40xg2E6TUc9PRWWNy04ndcin.QIofkhSu6nUUYd46DL2vVJKBiE
+ jA9xEXAQAlnEG4SziNhx6OuQCQKD2BtcaM_oSZvalKJ1ApKO1tE8ahK9ua6d
+ IgpoSSTjyM5tc3VoWzUk_z6B4oTYp_oYe4aweNI3UKjYMxDYQqDwWxHtznPE
+ IKCPkfInXzGRlbF6vncP2szFwoC9ecbHmGV.ezfBIkefAV9G6Zy57au4Tq6F
+ r6YDAYHzA.6f9.R7gMmTBixctLXv.xFly1DfnEj0uldUQbKEOVw7P.Z8_4Ee
+ 7_AW_N76WhMk0Uo5nTYNBEutHOEvTCTO6yj2J0EQp0kglx_x9u8TIx8euYi5
+ H_SFccrZFhhTvJtcs9__H2.lO5E_Iw7KllGphDw8x.wGFkGoUbifDHLEVj6X
+ 0kaKq6LJikQqnS7teIVve4qnZXA6oyC1R0Wt.IWiod3ZRUti4G9VVfGNQ3TL
+ c3vtmyKeft0V1LfbPBtqQmy.xffML7aFEjP9TStgFzSBr_LcDkAB_KuJOd5f
+ krrtUeoVBt1ehh1Rhc9sPFxyt6HhLnyW1gz6c.ybex5Nc0DXVtDkGExjGE81
+ dpjSuIT5CQDcH8UKHNMG.aItur16UpETU0GFYMAZvw6mgn2Av0kXu_kGaVtu
+ Ht88o_eqXbrvGdsY1I_icWvddGNO8ACTPEeSRI4nOaYQI13vAM_5.ZusuJYK
+ fcxo4TqKVCQWkGJDyLvNdMTeHRx2FcQO2P1.gIFZzfi7vtA4tiUlH_Zv3fzD
+ LCEVvHrvaZbmT.R757SHW.XTWmRRofUbrsPZwcSYCH.TwFRyw58ZbmrmOqwh
+ oOSqxHGKSvd.QIMrqeL0x9eb.6biPF.GxZuQOW9kmpOuxYv8mcs256YtXZQw
+ QLw9Ej0nvd0rnV6qVverEjMxwidBEiOfGKiziwPJqPGJIHWtyIL5yNJnfq6.
+ aPx2KMfWmunLPZcfBQyqdD0KT4tW9aEGYNJz17TZOQd3vyDJMKGtE5Cxi5I5
+ x9e4jvNKT07ryga4bdb0GO7I.6PtFoG3EenQ656Qu2CY1oYzz5p4aSzQ0bN6
+ St.5.aJafhH3U1RsHK_j_6KuuohyfZEKP56ddpV.XBtIA7WjCAJg52uF9IT0
+ NZCxxPwGPb4jNOSo91kPo_JwsZroWT6xUKU8EW8Dv.YXbbV46RzlYzTuW0hI
+ HKD.rFMuDA2O9s8M9cw4E1chhAk35fsFdrKIWs5B80M8B8TecXxhnSWRn4g7
+ DfMCJrA1OykEniNQtnKuYTZrnuGynLRQvGV1MtrM8VD9InzN7V39unRFs7SH
+ mzEbRaUGCj1g_tyShWCQnAiTTInNNn.eNOR8KnWyaVkUVrod2s5aQ39a2W3x
+ hY0zTn.2KgBNqihU68ZQ8g1U4Z13E6.cuipwzfvnVqYjsVDc6zJdzi8I7JUm
+ LYt5Odj0vXO2oX87eLFGTdpWGDbHaPKug4Gq7zzVbRUOZnZjmS45OwTV1_tp
+ HLLdcP4CG8kH5fQI.z5eihr3.KBSb7OaKceiBMnpJBwfBs7TIquGIw4_bL7G
+ E3kRe8ovBPJYDvHBNv3gJGU4aYGOLUazTK1QGG2Bh9JhEPOKOsQg_.ELmgc4
+ XMijvUuoNZFiXwJwYIy3gNDjB4_YS9ez1aHg2hMncYSjICUic_gBR2o7QTg0
+ LCkajOChvfYpds6ZAO7AZi3FhY8pP0zqfWxrNojEHRhe2gVpZC3WYEZlN6dV
+ 9zkK_CW9RXaB3fW1tlv4b4Q8LuOCIYn6GbyRHlYteOOe6A4IPGxSB9iOFf.c
+ ahbBb80aGOBAc2A2cxvicQp18lmLQbJ3BDU0eCGADUwl_uR2wqgrsFFcD9JQ
+ 2ID3Xi99QNN9IbZMEhCfYpn2TMzZqHLoc9s_1ewRNzeFdVEo7iv_3p2IBTjc
+ 9dQm0RVYIgK25XXO64t4X6WT_OvJye5cydEoTY4ZW0uuZyLHrm9mvulKG9xc
+ IT7yVwyN81UShXXfiHr33Xfj7h4fy74wWEVEEghQhbFOgR0r3gsWJwwRjuvN
+ vehM5rB83M0Tpc3W8oveTPd1oTsV9dP4y9CCv7OAq5ex0ZaMQ06QGtfu22OJ
+ Td2xFWNBlcf6dN_wUu92LFBPPwdyHlbq8.Xv_EV3oOKC.39zklrsLDIcnq2P
+ tSkcxz2foQY_nJLAouhxd9enKxKgRcZmWkZd56lRkb09KGtDlmD.B9JAyCoj
+ pQsFOww1O0En_D_6fNvNjzytmbgRKEFHbDbpwA4ehByNYQcXZVRI6gTERRcx
+ PWg5BTRXQd_gHdPDasu0TuAR6fQh6KdA0AI_687FGsjtP0c3OEL8NiVZTpO_
+ XfST2IIiZKjcWnD5VZRRXf2IdSOrkc9o57Sg6kyXCJsdYUCTnca4VLSpPnDm
+ YPSlgX.M8S.zSZamXRq0VWUiE3sQZvlJOZvHYOjU_F8gLsT5VxZJgddCbiTt
+ CMvrYFzjc4zDO4VKxvxy2BlZHAn1ZwWbnTcLqrdBf3YBeSe.zu2kZ28YUjyU
+ ADlvG8N0W5oy_1sPHsbXQA06YmMcz1cC_v3nq1kJC2AWgJ_Pr5CHuirnjXr4
+ Ppm1KFaCEVRjIioRfRGaZs0mnoCa_BntReU9rjp6Nb4zcQIoMkgS2halQvZf
+ _jFLuz50Dks0upUBN86m5wNYQhUyR5cKqaNt5CaNv.ymfTOKIz17XtJBxwXw
+ x0L7L9TtHW.qBO4eCkv_8Hrmb2eqQ5W9HijAbrnhYtI8hwIITScIJNpoAaER
+ Uh342c9JhPehd8PgmM8yZiUNAnPnvemgCHmnzThLD5.fSW_N3Bz_1_E7sXJL
+ s1vSVT6xJCWz5lZkL3167iY6eEAI2WG4hF7OcuEK8vjG0gpJkpgs9FVr9ekd
+ aY_S0cTzFnpmfPUlm0b__6XueBxQqmFwwv45ZaA--
+X-Yahoo-Newman-Property: ymail-5
+Reply-To: <albarzulkifly@destinetguide.info>
+From: "Barrister Albar Zulkifly." <albarzulkiflytu@gmail.com>
+Subject: Very Convidential...
+Date: Sat, 14 May 2011 20:16:19 +0800
 MIME-Version: 1.0
-In-Reply-To: <1305306135.2466.173.camel@twins>
-References: <20110428161149.GA15658@redhat.com> <20110502194416.2D61.A69D9226@jp.fujitsu.com>
- <20110502195657.2D68.A69D9226@jp.fujitsu.com> <1305129929.2914.247.camel@laptop>
- <4DCCC61F.80408@jp.fujitsu.com> <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
- <1305306135.2466.173.camel@twins>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Sat, 14 May 2011 20:17:16 +0900
-X-Google-Sender-Auth: EWio0_knV7EXOd7TfELmxsS6AJ8
-Message-ID: <BANLkTi=u1RMS3BHBir1o2WWJcfXm0jhkQQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
- update tsk->rt.nr_cpus_allowed
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/14 Peter Zijlstra <a.p.zijlstra@chello.nl>:
-> On Fri, 2011-05-13 at 14:42 +0800, Yong Zhang wrote:
->> > - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
->> > periodically.
->> >  then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
->> >  my debug print obseve following cpumask change occur at boot time.
->> >     1) kthread_bind: bind cpu1
->> >     2) cpuset_cpus_allowed_fallback: bind possible cpu
->> >     3) rcu_cpu_kthread_should_stop: rebind cpu1
->> > - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
->>
->> Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
->> which is under hotplug event CPU_UP_PREPARE. Maybe it should be
->> under CPU_ONLINE.
->
-> IIRC I talked to Paul about this a while back and ONLINE is too late,
-> however STARTING should work. At the time he couldn't quite get that to
-> work, but the above situation is indeed the root cause of our problems.
->
-> We shouldn't try to run a cpu affine thread before the cpu in question
-> is actually able to run stuff.
->
-> I did me a little hackery and with the below patch my kernel still
-> boots...
->
-> Would that sort your issue?
-
-Great!!
-Unfortunately, I can't test this until next wednesday. but I'll do it
-as far as possible soon.
-
-Thanks.
+Albar Zulkifly & Yap,
+16th Floor,Bangunan
+Arab-Malaysia
+55,Jalan Raja Chulan
+Kuala Lumpur,Malaysia.
+Good Day!
+I am Barrister Albar Zulkifly.A deceased client of mine bears exactly the same last name as yours. Please,get back to me for an important discussion regarding how to claim 
+my deceased client's funds.And for your information your name was picked horoscopically.
+Regards.
