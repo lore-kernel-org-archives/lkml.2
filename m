@@ -1,95 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab1ENUYv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 16:24:51 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45472 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab1ENUYu convert rfc822-to-8bit (ORCPT
+	id S1758882Ab1ENUZK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 16:25:10 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55695 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754152Ab1ENUZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 16:24:50 -0400
+	Sat, 14 May 2011 16:25:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=i9eE+rK5XUb7XtV5l/+RGC/CjE8heBK2By8bAHSlhbakRafBWwLf6ZEQ9gj2KLnAfd
-         OwAesApJnDZtn3/GRo5RHxOrd93sK1rbnJzvD65GJu0yxxCraG8GrCLLtYJjGU74pHHl
-         IhU18VgMYh5wP52UxAU3re4kOYco1JEcQRBhk=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=c0uGbDzSCPaHGWR0+5qZXhzew2HsK2os4fgm9yNYrhZe8dBVNUIcp2jC8Iz6s9L/o6
+         ITTylbYGmXEbAnil7n0Q==
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimoJsi64AWxn8Y_AZ+B1+nM=M1NgA@mail.gmail.com>
-References: <BANLkTimTOTz4qNwYPa6Ey7=QRjOhQHWt-Q@mail.gmail.com>
- <4DCD4FC5.8020608@gmail.com> <20110513154410.GA6373@elte.hu>
- <BANLkTi=UKJ2Ztkcui_+8UHF16b_8mTvpnA@mail.gmail.com> <20110513204530.GF8950@ghostprotocols.net>
- <BANLkTimoJsi64AWxn8Y_AZ+B1+nM=M1NgA@mail.gmail.com>
-From: Wim Heirman <wim@heirman.net>
-Date: Sat, 14 May 2011 22:24:27 +0200
-X-Google-Sender-Auth: nv7zDou4tIsrwtpnSjVhJd-fteA
-Message-ID: <BANLkTinPkKBFGy-OO=CYrLoA8yAwq=LE=Q@mail.gmail.com>
-Subject: Re: perf-stat per thread results
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Brice Goglin <Brice.Goglin@inria.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <871v02lujw.fsf@tucsk.pomaz.szeredi.hu>
+References: <871v02lujw.fsf@tucsk.pomaz.szeredi.hu>
+Date: Sat, 14 May 2011 13:24:57 -0700
+Message-ID: <BANLkTikVWes5LAV9Gj7GfH=rCrc3EtYx4g@mail.gmail.com>
+Subject: Re: [PATCH v2] tmpfs: implement generic xattr support
+From: Hugh Dickins <hughd@google.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Suchanek <hramrach@centrum.cz>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, Eric Paris <eparis@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 May 2011 14:45, Wim Heirman <wim@heirman.net> wrote:
-> On 13 May 2011 22:45, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
->> Em Fri, May 13, 2011 at 10:32:58PM +0200, Wim Heirman escreveu:
->>> > It's supposed to do that if --stat is specified, and it used to work - see this
->>> > commit:
->>
->>> >  8d51327090ac: perf report: Fix and improve the displaying of per-thread event counters
->>
->>> > and the output there:
->>> >
->>> >     #  PID   TID  cache-misses  cache-references
->>> >       4658  4659        495581           3238779
->>> >       4658  4662        498246           3236823
->>> >       4658  4663        499531           3243162
->>
->>> > which appears to be roughly what Wim is asking for, AFAICT.
->>
->>> Thanks, this is exactly what I'm looking for. In 2.6.32 (Ubuntu 10.04)
->>> it works, although if I use --pid rather than the -- <command> variant
->>> the first thread seams to be missing. In 2.6.38 (Ubuntu 11.04) the
->>> first thread is missing in both use cases, and I get one column per
->>> processor (which in itself is fine).
->>
->> Can you try after applying the patches in this message:
->>
->> http://marc.info/?l=linux-kernel&m=130385067430510&w=2
->>
->> and report your results?
->
-> Sorry, no improvement.
->
-> $ ./perf record -e cycles --stat -- ./fft -p4 -m24 && ./perf report
-> --thread | tail
-> [ perf record: Woken up 5 times to write data ]
-> [ perf record: Captured and wrote 1.198 MB perf.data (~52331 samples) ]
-> # PID  TID   cpu-clock
->  954  958  8067423322
->  954  957  6761317556
->  954  956  6006327147
->
-> $ ls /proc/$(pidof fft)/task
-> 954  956  957  958
+On Fri, May 13, 2011 at 4:16 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> [This update addresses comments from Hugh and Andrew]
 
-Looks like perf-report --thread is reading PERF_RECORD_READ events
-from perf.data. But these are only emitted by the kernel for child
-threads: in kernel/events/core.c, the only call to
-perf_event_read_event() is in sync_child_event().
-Should perf-record then be adapted to do something like perf-stat does
-and use __perf_evsel__read to read the parent counter's final values
-and add them to perf.data ? That way perf-report can subtract all
-children from the final value and get the main thread's counter
-values.
-
-Regards,
-Wim
+Acked-by: Hugh Dickins <hughd@google.com>
