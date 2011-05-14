@@ -1,77 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759778Ab1ENAsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 May 2011 20:48:10 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35776 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab1ENAsH convert rfc822-to-8bit (ORCPT
+	id S1759812Ab1ENAzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 May 2011 20:55:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61267 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758862Ab1ENAzW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 May 2011 20:48:07 -0400
+	Fri, 13 May 2011 20:55:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=iTTtsKCTzOLT+3bv3J9Iy4dVfIyAm3e9W3FuUo8nME/S+rXGi7DNrdaKImr5Ne57lq
-         h2vlqVJTMkt7sFFLFo+Ju/BCu8H26cTkAqkHoljz5ACWolAEKX7qWKfSOXU04gtBPHZt
-         JBHt4QvhT4+b0gACsuhPnNXWHKbHSNlDxETqg=
+        b=V1pLm2NdGIotDC/i8OXbE6nAc8f7TSBv6DJFvUfac2wpeG4ed1mWFkqpin9TDgX5CT
+         AtDCYzdu4nfCXDeGiAWA==
 MIME-Version: 1.0
-In-Reply-To: <4DCD4B85.3040702@gmail.com>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
-	<4DCD4B85.3040702@gmail.com>
-Date: Sat, 14 May 2011 08:47:10 +0800
-Message-ID: <BANLkTim_7A8fSHnWta7jiWOW33Y8fS=t7A@mail.gmail.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110513182534.bebd904e.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1305276473-14780-1-git-send-email-gthelen@google.com> <20110513182534.bebd904e.kamezawa.hiroyu@jp.fujitsu.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Fri, 13 May 2011 17:54:58 -0700
+Message-ID: <BANLkTi=VwDK2G1j3D6vFAf7DEfsknn9oqg@mail.gmail.com>
+Subject: Re: [RFC][PATCH v7 00/14] memcg: per cgroup dirty page accounting
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 11:17 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On 05/13/2011 12:23 PM, Huang Ying wrote:
->> In general, unknown NMI is used by hardware and firmware to notify
->> fatal hardware errors to OS. So the Linux should treat unknown NMI as
->> hardware error and go panic upon unknown NMI for better error
->> containment.
->>
->> But there are some legacy machine which would randomly send unknown
->> NMIs for no good reason. Â To support these machines, a white list
->> mechanism is provided to treat unknown NMI as hardware error only on
->> some known working system.
->>
->> These systems are identified via the presentation of APEI HEST or
->> some PCI ID of the host bridge. The PCI ID of host bridge instead of
->> DMI ID is used, so that the checking can be done based on the platform
->> type instead of motherboard. This should be simpler and sufficient.
->>
->> The method to identify the platforms is designed by Andi Kleen.
->>
->> Signed-off-by: Huang Ying <ying.huang@intel.com>
->> Cc: Andi Kleen <ak@linux.intel.com>
->> Cc: Don Zickus <dzickus@redhat.com>
->> ---
-> ...
+On Fri, May 13, 2011 at 2:25 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Fri, 13 May 2011 01:47:39 -0700
+> Greg Thelen <gthelen@google.com> wrote:
 >
-> Hi Ying,
+>> This patch series provides the ability for each cgroup to have independent dirty
+>> page usage limits.  Limiting dirty memory fixes the max amount of dirty (hard to
+>> reclaim) page cache used by a cgroup.  This allows for better per cgroup memory
+>> isolation and fewer ooms within a single cgroup.
+>>
+>> Having per cgroup dirty memory limits is not very interesting unless writeback
+>> is cgroup aware.  There is not much isolation if cgroups have to writeback data
+>> from other cgroups to get below their dirty memory threshold.
+>>
+>> Per-memcg dirty limits are provided to support isolation and thus cross cgroup
+>> inode sharing is not a priority.  This allows the code be simpler.
+>>
+>> To add cgroup awareness to writeback, this series adds a memcg field to the
+>> inode to allow writeback to isolate inodes for a particular cgroup.  When an
+>> inode is marked dirty, i_memcg is set to the current cgroup.  When inode pages
+>> are marked dirty the i_memcg field compared against the page's cgroup.  If they
+>> differ, then the inode is marked as shared by setting i_memcg to a special
+>> shared value (zero).
+>>
+>> Previous discussions suggested that a per-bdi per-memcg b_dirty list was a good
+>> way to assoicate inodes with a cgroup without having to add a field to struct
+>> inode.  I prototyped this approach but found that it involved more complex
+>> writeback changes and had at least one major shortcoming: detection of when an
+>> inode becomes shared by multiple cgroups.  While such sharing is not expected to
+>> be common, the system should gracefully handle it.
+>>
+>> balance_dirty_pages() calls mem_cgroup_balance_dirty_pages(), which checks the
+>> dirty usage vs dirty thresholds for the current cgroup and its parents.  If any
+>> over-limit cgroups are found, they are marked in a global over-limit bitmap
+>> (indexed by cgroup id) and the bdi flusher is awoke.
+>>
+>> The bdi flusher uses wb_check_background_flush() to check for any memcg over
+>> their dirty limit.  When performing per-memcg background writeback,
+>> move_expired_inodes() walks per bdi b_dirty list using each inode's i_memcg and
+>> the global over-limit memcg bitmap to determine if the inode should be written.
+>>
+>> If mem_cgroup_balance_dirty_pages() is unable to get below the dirty page
+>> threshold writing per-memcg inodes, then downshifts to also writing shared
+>> inodes (i_memcg=0).
+>>
+>> I know that there is some significant writeback changes associated with the
+>> IO-less balance_dirty_pages() effort.  I am not trying to derail that, so this
+>> patch series is merely an RFC to get feedback on the design.  There are probably
+>> some subtle races in these patches.  I have done moderate functional testing of
+>> the newly proposed features.
+>>
+>> Here is an example of the memcg-oom that is avoided with this patch series:
+>>       # mkdir /dev/cgroup/memory/x
+>>       # echo 100M > /dev/cgroup/memory/x/memory.limit_in_bytes
+>>       # echo $$ > /dev/cgroup/memory/x/tasks
+>>       # dd if=/dev/zero of=/data/f1 bs=1k count=1M &
+>>         # dd if=/dev/zero of=/data/f2 bs=1k count=1M &
+>>         # wait
+>>       [1]-  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
+>>       [2]+  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
+>>
+>> Known limitations:
+>>       If a dirty limit is lowered a cgroup may be over its limit.
+>>
 >
-> just curious (regardless the concerns Don and Ingo have) -- if there still a need
-> for such semi-unknown nmi handling maybe it's worth to register a *notifier* for it
-> and we panic only when user *explicitly* specify how to treat this class of NMIs
-> (via say "hest-nmi-panic" boot option or something like that). Maybe such partially
-> modular scheme would be better? If only I don't miss anything.
+>
+> Thank you, I think this should be merged earlier than all other works. Without this,
+> I think all memory reclaim changes of memcg will do something wrong.
+>
+> I'll do a brief review today but I'll be busy until Wednesday, sorry.
 
-Hi, Cyrill,
+Thank you.
 
-IMHO, Pushing all policy to user is not good too.  How many users
-understand unknown NMI and hardware error clearly?  It is better if we
-can determine what is the right behavior.
+> In general, I agree with inode->i_mapping->i_memcg, simple 2bytes field and
+> ignoring a special case of shared inode between memcg.
 
-Best Regards,
-Huang Ying
+These proposed patches do not optimize for sharing, but the patches do
+attempt to handle sharing to ensure forward progress.  The sharing
+case I have in mind is where an inode is transferred between memcg
+(e.g. if cgroup_a appends to a log file and then cgroup_b appends to
+the same file).  While such cases are thought to be somewhat rare for
+isolated memcg workloads, they will happen sometimes.  In these
+situations I want to make sure that the memcg that is charged for
+dirty pages of a shared inode is able to make forward progress to
+write dirty pages to drop below the cgroup dirty memory threshold.
+
+The patches try to perform well for cgroups that operate on non-shared
+inodes.  If a cgroup has no shared inodes, then that cgroup should not
+be punished if other cgroups have shared inodes.
+
+Currently the patches perform the following:
+1) when exceeding background limit, wake bdi flusher to write any
+inodes of over-limit cgroups.
+2) when exceeding foreground limit, write dirty inodes of the
+over-limit cgroup.  This will change when integrated with IO-less
+balance_dirty_pages().  If unable to make forward progress, also write
+shared inodes.
+
+One could argue that step (2) should always consider writing shared
+inodes, but I wanted to avoid burdening cgroups that had no shared
+inodes with the responsibility of writing dirty shared inodes.
+
+> BTW, IIUC, i_memcg is resetted always when mark_inode_dirty() sets new I_DIRTY to
+> the flags, right ?
+
+Yes.
+
+> Thanks,
+> -Kame
+
+One small bug in this patch series is that per memcg background
+writeback does not write shared inode pages.  In the (potentially
+common) case where the system dirty memory usage is below the system
+background dirty threshold but at least one cgroup is over its
+background dirty limit, then per memcg background writeback is queued
+for any over-background-threshold cgroups.  In this case background
+writeback should be allowed to writeback shared inodes.  The hope is
+that writing such inodes has good chance of cleaning the inodes so
+they can transition from shared to non-shared.  Such a transition is
+good because then the inode will remain unshared until it is written
+by multiple cgroup.  This is easy to fix if
+wb_check_background_flush() sets shared_inodes=1.  I will include this
+change in the next version of these patches.
