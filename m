@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1ENEOq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 00:14:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45395 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab1ENEOp convert rfc822-to-8bit (ORCPT
+	id S1751037Ab1ENFPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 01:15:09 -0400
+Received: from mx1.netlogicmicro.com ([12.203.210.36]:4529 "EHLO
+	orion5.netlogicmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750815Ab1ENFPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 00:14:45 -0400
+	Sat, 14 May 2011 01:15:06 -0400
+X-TM-IMSS-Message-ID: <52f81fd00004d258@netlogicmicro.com>
+Date: Sat, 14 May 2011 10:43:04 +0530
+From: "Jayachandran C." <jayachandranc@netlogicmicro.com>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] MIPS: Replace _PAGE_READ with _PAGE_NO_READ
+Message-ID: <20110514051303.GE14607@jayachandranc.netlogicmicro.com>
+References: <7aa38c32b7748a95e814e5bb0583f967@localhost>
+ <20110513150707.GA26389@linux-mips.org>
+ <BANLkTikcyEzjOWt9pWToE=89dySSEYbw_g@mail.gmail.com>
+ <20110513155605.GA30674@linux-mips.org>
+ <BANLkTinnALQV6dXkJ0AjaQ1=bTawYMMkuQ@mail.gmail.com>
+ <20110513173633.GA14607@jayachandranc.netlogicmicro.com>
+ <BANLkTim+z7TSCvNA2duA6LsUzNsiu9OQaQ@mail.gmail.com>
+ <20110513184532.GC14607@jayachandranc.netlogicmicro.com>
+ <BANLkTi=CJPuhO7OjCv5UF_ABQMb-bFe-2A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1105120940490.28229@xanadu.home>
-References: <BANLkTi=yCmxgv1fQKRJSZK3FkkRwjS2r=Q@mail.gmail.com>
- <20110511211438.GM5315@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1105120940490.28229@xanadu.home>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 14 May 2011 06:14:24 +0200
-X-Google-Sender-Auth: _wYJ2Pzy8Yv4nIkiHd-es7YY8ck
-Message-ID: <BANLkTi=V337ojovBwiTA9Lnt0OMj0SGTRQ@mail.gmail.com>
-Subject: Re: [PATCH v6 0/5] Basic ARM devicetree support
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=CJPuhO7OjCv5UF_ABQMb-bFe-2A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 14 May 2011 05:11:59.0540 (UTC) FILETIME=[73DC9F40:01CC11F5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 9:47 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Wed, 11 May 2011, Russell King - ARM Linux wrote:
->
->> On Wed, May 11, 2011 at 10:44:49PM +0200, Grant Likely wrote:
->> > Right now it merges cleanly with linux-next and the resulting tree
->> > builds and boots at least on qemu.  Unless you really object, I'm
->> > going to ask Stephen to add the following branch to the /end/ of the
->> > list of trees for linux-next so it can easily be dropped it if it
->> > causes any problems.
->>
->> As far as the set of five patches looks fine to me, I don't have any
->> objections against them.  So I think we can merge them for .40.
+On Fri, May 13, 2011 at 03:06:35PM -0700, Kevin Cernekee wrote:
+> On Fri, May 13, 2011 at 11:45 AM, Jayachandran C.
+> <jayachandranc@netlogicmicro.com> wrote:
+> > The current linux-mips queue works for me, and I don't have the old source
+> > or binaries with me anymore. You surely should be able build with
+> > nlm_xlr_defconfig and see if the rixi is enabled in the build, if you want
+> > any config register dump on the CPU, please let me know.
+> 
+> I was able to locate an old MIPS R5000 based system and get linux-mips
+> queue running on it.  Here are the settings:
+> 
+> CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+> CONFIG_64BIT_PHYS_ADDR=y
+> CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+> CONFIG_PHYS_ADDR_T_64BIT=y
+> CONFIG_SYS_SUPPORTS_32BIT_KERNEL=y
+> CONFIG_CPU_SUPPORTS_32BIT_KERNEL=y
+> CONFIG_SYS_SUPPORTS_64BIT_KERNEL=y
+> CONFIG_CPU_SUPPORTS_64BIT_KERNEL=y
+> CONFIG_32BIT=y
+> # CONFIG_64BIT is not set
+> CONFIG_SMP=y
+> 
+> This was intended to mimic the XLR configuration: 32-bit kernel on a
+> 64-bit CPU with 64-bit physical addressing, SMP (albeit with 1 CPU),
+> no RI/XI.
+> 
+> After applying all 4 of my page cleanup patches, the system still
+> booted and ran normally.
+> 
+> Userspace is glibc with a bash shell (also tried uClibc w/bash, same
+> result).  Since the reported assertion appeared to be in bash.
+> 
+> Jayachandran - how do you think we should debug this?  It seems like
+> the problem only shows up on XLR.  Since this is a relatively new
+> platform, is it possible that something else might be broken still?
 
-Yay!  Thanks Russell!
+Can you send me the patchset which works on top of queue with any
+debugging you want enabled?  I can try that and send you the results.
 
->> What I've always worried about is the platform stuff, and that's
->> something I'm going to continue worrying about because I don't think
->> we have sufficient review capacity to ensure that we don't end up
->> with lots of stupidities.
+It is also possible that something is broken with the XLR platform code,
+it is currently almost straight r4k...
 
-Understood, and I agree to a point, but I'm cautiously optimistic that
-the review process we talked about heavily this week will be able to
-push back on bad bindings to prevent a lot of these problems.  It also
-helps that we we can cut over to device tree in board ports in stages
-without needing a change-everything-flag-day.  Devices can be
-converted one by one, which will limit the volume of stuff that needs
-to be reviewed at one time.
-
-> DT is certainly not a silver bullet.  Good judgement will be needed as
-> to what is put in DT and how it is represented.  I don't think that it
-> would make things worse than they are now though.
-
-+1
-
-> I also do have some concerns about some aspects of DT which I've
-> expressed several times in the past.  However I don't think holding back
-> those patches any longer is a solution though.
->
-> So consider this as a ACK from my part to merge those patches now.  This
-> will get the ball rolling.
-
-Thanks Nicolas.
-
-g.
+Thanks,
+JC.
