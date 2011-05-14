@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab1ENGSS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 02:18:18 -0400
-Received: from mail15c25.carrierzone.com ([64.29.147.25]:44779 "EHLO
-	mail15c25.carrierzone.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1ENGSR (ORCPT
+	id S1751496Ab1ENFtN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 01:49:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:54872 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab1ENFtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 02:18:17 -0400
-X-Greylist: delayed 1862 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 May 2011 02:18:16 EDT
-X-Authenticated-User: stephen
-Message-Id: <201105140545.p4E5jWxH013770@mail15c25.carrierzone.com>
-Reply-To: <claims.012@hotmail.com>
-From: "draw" <con@telus.net>
-Subject: 
-Date: Sat, 14 May 2011 11:15:56 +0530
+	Sat, 14 May 2011 01:49:09 -0400
+Message-ID: <4DCE17AB.4090002@linux.vnet.ibm.com>
+Date: Sat, 14 May 2011 13:48:27 +0800
+From: Cheng Xu <chengxu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Paul Mckenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: rt_rq runtime leakage bug fix
+References: <4DCA3C0C.3080901@linux.vnet.ibm.com> <1305105711.2914.205.camel@laptop>  <4DCAC79A.7050505@linux.vnet.ibm.com> <1305195150.2914.268.camel@laptop>
+In-Reply-To: <1305195150.2914.268.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110513-1, 05/13/2011), Outbound message
-X-Antivirus-Status: Clean
-To: undisclosed-recipients:;
-X-CSC: 0
-X-CHA: v=1.1 cv=oDmC8uwHkQUCMVXXmHdwOSyKwz3ZwxrMx955+otxYf4= c=1 sm=1
-		a=Dyoqhi_TatcA:10 a=LGgl8L9ij00A:10 a=uW8YVH2J-QMA:10 a=WHsXhg87phMA:10
-		a=Cfj4BQAnxiAA:10 a=/7zSUQhS4/0Os+Bssd+wqA==:17 a=L4f0T-RIGjzVM-LCb_YA:9
-		a=Ft8UYL4EG9YA:10 a=B8Do-y8hmnF1bSXC:21 a=AnU4I-nakHBzM2xK:21
-		a=/7zSUQhS4/0Os+Bssd+wqA==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kindly provide your details(Name, Address, Sex, Age, mobile) to our claims dept by clicking reply to for your 1000,000.00GBP claims which your email  id won for you.
+On 2011-5-12 18:12, Peter Zijlstra wrote:
+> 
+> it would be nice to know why the , operator version
+> doesn't work though, since that looks to be the more conventional way to
+> write it.
+> 
 
-Regards,
-microlotto desk
+I did some investigation, it looks that, 
+
+1 #define for_each_rt_rq(rt_rq, iter, rq)                                   \
+2	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list),  \
+3	     rt_rq = iter->rt_rq[cpu_of(rq)]; &iter->list != &task_groups;  \
+4	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list),   \
+5	     rt_rq = iter->rt_rq[cpu_of(rq)])
+
+in for loop, when task_groups (as sentinel node of the doubly linked circular list) is reached after the final iteration, a fake iter (of struct task_group *) is calculated at line 4 via container_of(&task_groups, struct task_group, list). By "fake", as we know, it is just an address, with &iter->list == &task_groups, but not pointing to a true struct task_group object. Accessing other members of fake iter might be the cause of page fault. 
+
+In my JS22 blade, cpu_of(rq)=1 and fake iter->rt_rq happens to be 0x100000000, value of another global variable near task_groups. Kernel tries to take it plus 8 as address, to retrieve iter->rt_rq[1]. and then page fault happens at address 0x100000008. 
