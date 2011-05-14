@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab1ENIp2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 04:45:28 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54895 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1ENIpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 04:45:25 -0400
-Date: Sat, 14 May 2011 10:44:50 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf: Carve out cgroup-related code
-Message-ID: <20110514084450.GA2073@aftab>
-References: <20110511121135.GA25865@aftab>
- <1305121600.2914.214.camel@laptop>
- <20110511140208.GD25827@aftab>
- <20110511141342.GA19053@elte.hu>
- <20110511143149.GA26548@aftab>
- <20110511152156.GA21707@elte.hu>
- <20110511170912.GA27362@aftab>
- <1305190277.2914.259.camel@laptop>
- <20110512101839.GA17731@aftab>
- <20110512143148.GB7410@nowhere>
+	id S1754604Ab1ENItx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 04:49:53 -0400
+Received: from verein.lst.de ([213.95.11.211]:43675 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754043Ab1ENItu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 04:49:50 -0400
+Date: Sat, 14 May 2011 10:49:49 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: James.Bottomley@hansenpartnership.com, Christoph Hellwig <hch@lst.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jiang <dave.jiang@intel.com>, David Milburn <dmilburn@redhat.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>,
+        Ed Nadolski <edmund.nadolski@intel.com>,
+        Jacek Danecki <jacek.danecki@intel.com>,
+        Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: [GIT PULL] isci merge candidate
+Message-ID: <20110514084949.GA23984@lst.de>
+References: <1305317680.21099.83.camel@dwillia2-linux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110512143148.GB7410@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305317680.21099.83.camel@dwillia2-linux>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 10:31:52AM -0400, Frederic Weisbecker wrote:
-> > Ok, I won't be able to redo the patches before Mo. due to travel. Also,
-> > I think that you should do the splitting, as I suggested so at the
-> > beginning!
-> 
-> I can take it if you want. I'm currently splitting the buffer
-> part so I can try to relay the rest as well :)
+On Fri, May 13, 2011 at 01:14:40PM -0700, Dan Williams wrote:
+> The isci driver team has now completed the major rework items addressed
+> in the review on linux-scsi (including removal of state handlers,
+> merging lldd and 'core', cleaning up the source code layout).
 
-Hey Frederic,
+I've looked over the driver a bit and I'm quite impressed with what
+you're archived in the short time since taking over the driver from
+whoever came up with the mess that it was initially.
 
-yeah, sure, go ahead.
+I don't think you're quite done yet with the todo list that was given
+to you yet.  One thing that springs to mind is wrappers in timers.c,
+which are not just ugly, but in case of isci_task_execute_tmf is plain
+wrong as the implementation assumes all timers have the same lifetime
+rules as the isci_host.  You'll need to at least replace that last usage
+with a direct wait_for_completion_timeout, and even better get rid
+of it entirely.
 
-I can take over your preso at LinuxTag instead, if you'd like :)
+Also not quite done yet, although I'm happy with postponing that for now
+is the unification of the various data structures from the different
+layers of the original driver, e.g. isci_phy vs scic_sds_phy,
+isci_port vs scic_sds_port, isci_remote_device vs scic_sds_remote_device
+and isci_request vs scic_sds_request.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+And of course there's a lot of room for additional further cleanups
+that should be able to shave off another couple thousands of lines, but
+these never were on the plate for the initial merge anyway.
