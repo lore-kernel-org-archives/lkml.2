@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1ENIey (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 04:34:54 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40022 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1ENIeu (ORCPT
+	id S1754302Ab1ENIp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 04:45:28 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54895 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab1ENIpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 04:34:50 -0400
-Subject: Re: [PATCH 0/4] Reduce impact to overall system of SLUB using
- high-order allocations V2
-From: Colin Ian King <colin.king@ubuntu.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 May 2011 10:34:33 +0200
-Message-ID: <1305362073.1969.4.camel@hpmini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sat, 14 May 2011 04:45:25 -0400
+Date: Sat, 14 May 2011 10:44:50 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] perf: Carve out cgroup-related code
+Message-ID: <20110514084450.GA2073@aftab>
+References: <20110511121135.GA25865@aftab>
+ <1305121600.2914.214.camel@laptop>
+ <20110511140208.GD25827@aftab>
+ <20110511141342.GA19053@elte.hu>
+ <20110511143149.GA26548@aftab>
+ <20110511152156.GA21707@elte.hu>
+ <20110511170912.GA27362@aftab>
+ <1305190277.2914.259.camel@laptop>
+ <20110512101839.GA17731@aftab>
+ <20110512143148.GB7410@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512143148.GB7410@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 15:03 +0100, Mel Gorman wrote:
-> Changelog since V1
->   o kswapd should sleep if need_resched
->   o Remove __GFP_REPEAT from GFP flags when speculatively using high
->     orders so direct/compaction exits earlier
->   o Remove __GFP_NORETRY for correctness
->   o Correct logic in sleeping_prematurely
->   o Leave SLUB using the default slub_max_order
+On Thu, May 12, 2011 at 10:31:52AM -0400, Frederic Weisbecker wrote:
+> > Ok, I won't be able to redo the patches before Mo. due to travel. Also,
+> > I think that you should do the splitting, as I suggested so at the
+> > beginning!
 > 
-> There are a few reports of people experiencing hangs when copying
-> large amounts of data with kswapd using a large amount of CPU which
-> appear to be due to recent reclaim changes.
-> 
-> SLUB using high orders is the trigger but not the root cause as SLUB
-> has been using high orders for a while. The following four patches
-> aim to fix the problems in reclaim while reducing the cost for SLUB
-> using those high orders.
-> 
-> Patch 1 corrects logic introduced by commit [1741c877: mm:
-> 	kswapd: keep kswapd awake for high-order allocations until
-> 	a percentage of the node is balanced] to allow kswapd to
-> 	go to sleep when balanced for high orders.
-> 
-> Patch 2 prevents kswapd waking up in response to SLUBs speculative
-> 	use of high orders.
-> 
-> Patch 3 further reduces the cost by prevent SLUB entering direct
-> 	compaction or reclaim paths on the grounds that falling
-> 	back to order-0 should be cheaper.
-> 
-> Patch 4 notes that even when kswapd is failing to keep up with
-> 	allocation requests, it should still go to sleep when its
-> 	quota has expired to prevent it spinning.
-> 
-> My own data on this is not great. I haven't really been able to
-> reproduce the same problem locally.
-> 
-> The test case is simple. "download tar" wgets a large tar file and
-> stores it locally. "unpack" is expanding it (15 times physical RAM
-> in this case) and "delete source dirs" is the tarfile being deleted
-> again. I also experimented with having the tar copied numerous times
-> and into deeper directories to increase the size but the results were
-> not particularly interesting so I left it as one tar.
-> 
-> In the background, applications are being launched to time to vaguely
-> simulate activity on the desktop and to measure how long it takes
-> applications to start.
-> 
-> Test server, 4 CPU threads, x86_64, 2G of RAM, no PREEMPT, no COMPACTION, X running
-> LARGE COPY AND UNTAR
->                       vanilla       fixprematurely  kswapd-nowwake slub-noexstep  kswapdsleep
-> download tar           95 ( 0.00%)   94 ( 1.06%)   94 ( 1.06%)   94 ( 1.06%)   94 ( 1.06%)
-> unpack tar            654 ( 0.00%)  649 ( 0.77%)  655 (-0.15%)  589 (11.04%)  598 ( 9.36%)
-> copy source files       0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)
-> delete source dirs    327 ( 0.00%)  334 (-2.10%)  318 ( 2.83%)  325 ( 0.62%)  320 ( 2.19%)
-> MMTests Statistics: duration
-> User/Sys Time Running Test (seconds)        1139.7   1142.55   1149.78   1109.32   1113.26
-> Total Elapsed Time (seconds)               1341.59   1342.45   1324.90   1271.02   1247.35
-> 
-> MMTests Statistics: application launch
-> evolution-wait30     mean     34.92   34.96   34.92   34.92   35.08
-> gnome-terminal-find  mean      7.96    7.96    8.76    7.80    7.96
-> iceweasel-table      mean      7.93    7.81    7.73    7.65    7.88
-> 
-> evolution-wait30     stddev    0.96    1.22    1.27    1.20    1.15
-> gnome-terminal-find  stddev    3.02    3.09    3.51    2.99    3.02
-> iceweasel-table      stddev    1.05    0.90    1.09    1.11    1.11
-> 
-> Having SLUB avoid expensive steps in reclaim improves performance
-> by quite a bit with the overall test completing 1.5 minutes
-> faster. Application launch times were not really affected but it's
-> not something my test machine was suffering from in the first place
-> so it's not really conclusive. The kswapd patches also did not appear
-> to help but again, the test machine wasn't suffering that problem.
-> 
-> These patches are against 2.6.39-rc7. Again, testing would be
-> appreciated.
+> I can take it if you want. I'm currently splitting the buffer
+> part so I can try to relay the rest as well :)
 
-These patches solve the problem for me.  I've been soak testing the file
-copy test
-for 3.5 hours with nearly 400 test cycles and observed no lockups at all
-- rock solid. From my observations from the output from vmstat the
-system is behaving sanely.
-Thanks for finding a solution - much appreciated!
+Hey Frederic,
 
-> 
->  Documentation/vm/slub.txt |    2 +-
->  mm/page_alloc.c           |    3 ++-
->  mm/slub.c                 |    5 +++--
->  3 files changed, 6 insertions(+), 4 deletions(-)
-> 
->  mm/page_alloc.c |    3 ++-
->  mm/slub.c       |    3 ++-
->  mm/vmscan.c     |    6 +++++-
->  3 files changed, 9 insertions(+), 3 deletions(-)
-> 
+yeah, sure, go ahead.
 
+I can take over your preso at LinuxTag instead, if you'd like :)
 
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
