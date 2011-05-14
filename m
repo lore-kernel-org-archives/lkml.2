@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab1ENK6w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 06:58:52 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57264 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128Ab1ENK4S (ORCPT
+	id S1756791Ab1ENK5l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 06:57:41 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:52496 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755483Ab1ENK4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 06:56:18 -0400
+	Sat, 14 May 2011 06:56:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GFhn4KCaIjzj44NQNa+L++RoeZZN4qSAIDzFsoAsZLOt7f9fdc9ogj9nmqdOsM1Ybl
-         4czD8Vula286Affbv5lE7ij69YpdRZ9JwYAG+DE1FOdeDpeoyFBQ7RPK+g2dbn5CAsLt
-         eO7lZU1fXXxmQoYfGw1QmpsPonaMEqryJLWmg=
+        b=DJhd1eD963VTjkffBbTakdEVHVuBSLwRQ8+zHtRhctlMm4yJk1MkvlMDkbpbXiW4+S
+         Q9sJbPOYMJ113xz3DRQEiTRLAfG6Mbs2FvWoJ4Ue7hKLXWRRy1HydoCkKHuvJWjxnsMA
+         3jbdOeDmirPwND5zyBTByrokmDRsut2JAN9s4=
 From: matt mooney <mfmooney@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/14] staging: usbip: userspace: configure.ac: major overhaul
-Date: Sat, 14 May 2011 03:55:13 -0700
-Message-Id: <3a05a20d3023b05611bc149c23a7eca2c58b5e7b.1305369176.git.mfm@muteddisk.com>
+Subject: [PATCH 08/14] staging: usbip: userspace: cleanup makefiles
+Date: Sat, 14 May 2011 03:55:14 -0700
+Message-Id: <1507919be2602128c61fc9a76820da2c0dd91a49.1305369176.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1305369175.git.mfm@muteddisk.com>
 References: <cover.1305369175.git.mfm@muteddisk.com>
@@ -28,203 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: matt mooney <mfm@muteddisk.com>
 
-All parameters have been quoted; and autoscan was rerun so new
-headers, types, and functions were added. The deprecated macros
-AM_CONFIG_HEADER and AM_PROG_LIBTOOL were changed to
-AC_CONFIG_HEADERS and LT_INIT, respectively. The AS_HELP_STRING
-macro is used to avoid arbitrary spacing for proper help menu
-alignment, and AS_CASE to avoid quoting issues. And finally, the
-macros were realigned to allow mere mortals the ability to read them.
+Remove unneeded comments; change deprecated flag INCLUDE to
+AM_CPPFLAGS and put -D option in *_CPPFLAGS; and use "simply
+expanded variables" in assignments.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/staging/usbip/userspace/configure.ac |  144 +++++++++++++-------------
- 1 files changed, 74 insertions(+), 70 deletions(-)
+ drivers/staging/usbip/userspace/Makefile.am        |    8 +++---
+ drivers/staging/usbip/userspace/libsrc/Makefile.am |   15 ++++-------
+ drivers/staging/usbip/userspace/src/Makefile.am    |   25 ++++++-------------
+ 3 files changed, 18 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
-index 144655e..0b71329 100644
---- a/drivers/staging/usbip/userspace/configure.ac
-+++ b/drivers/staging/usbip/userspace/configure.ac
-@@ -1,105 +1,109 @@
--#                                               -*- Autoconf -*-
--# Process this file with autoconf to produce a configure script.
-+dnl Process this file with autoconf to produce a configure script.
+diff --git a/drivers/staging/usbip/userspace/Makefile.am b/drivers/staging/usbip/userspace/Makefile.am
+index 3be3060..83f51b8 100644
+--- a/drivers/staging/usbip/userspace/Makefile.am
++++ b/drivers/staging/usbip/userspace/Makefile.am
+@@ -1,11 +1,11 @@
+-SUBDIRS = libsrc src
+-includedir=@includedir@/usbip
++SUBDIRS := libsrc src
++includedir := @includedir@/usbip
+ include_HEADERS := $(addprefix libsrc/, \
+ 		     usbip.h usbip_common.h vhci_driver.h stub_driver.h)
  
- AC_PREREQ(2.59)
--AC_REVISION($Id$)
--AC_INIT(usbip, 0.1.8, usbip-devel@lists.sourceforge.net)
--AC_DEFINE(USBIP_VERSION, 0x000106, Numeric version number)
-+AC_INIT([usbip], [0.1.8], [usbip-devel@lists.sourceforge.net])
-+AC_DEFINE([USBIP_VERSION], [0x000106], [numeric version number])
-+
-+AC_CONFIG_SRCDIR([src/usbipd.c])
-+AC_CONFIG_HEADERS([config.h])
+ dist_man_MANS := $(addprefix doc/, usbip.8 usbipd.8 usbip_bind_driver.8)
  
--AC_CONFIG_SRCDIR([config.h.in])
- AM_INIT_AUTOMAKE([foreign])
-+LT_INIT
+ if INSTALL_USBIDS
+-pkgdata_DATA = usb.ids
+-EXTRA_DIST = $(pkgdata_DATA)
++pkgdata_DATA := usb.ids
++EXTRA_DIST := $(pkgdata_DATA)
+ endif
+diff --git a/drivers/staging/usbip/userspace/libsrc/Makefile.am b/drivers/staging/usbip/userspace/libsrc/Makefile.am
+index 10b919d..ed83666 100644
+--- a/drivers/staging/usbip/userspace/libsrc/Makefile.am
++++ b/drivers/staging/usbip/userspace/libsrc/Makefile.am
+@@ -1,10 +1,7 @@
+-# AM_CFLAGS = -Wall -std=gnu99
+-lib_LTLIBRARIES = libusbip.la
+-libusbip_la_SOURCES = names.c names.h stub_driver.c stub_driver.h usbip.h usbip_common.c usbip_common.h vhci_driver.c vhci_driver.h
+-#libusbip_la_SOURCES = names.c names.h stub_driver.c usbip_common.c vhci_driver.c
+-#INCLUDES = -I../include
+-#AM_CPPFLAGS = -I../include -Wall -std=gnu99
+-libusbip_la_LDFLAGS = -version-info 0:1:0
+-EXTRA_CFLAGS = @EXTRA_CFLAGS@
+-libusbip_la_CFLAGS = -Wall -W -Wstrict-prototypes -std=gnu99 $(EXTRA_CFLAGS) -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
++libusbip_la_CPPFLAGS := -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
++libusbip_la_CFLAGS   := @EXTRA_CFLAGS@ -Wall -W -Wstrict-prototypes -std=gnu99
++libusbip_la_LDFLAGS  := -version-info 0:1:0
  
- # Silent build for automake >= 1.11
- m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
++lib_LTLIBRARIES := libusbip.la
++libusbip_la_SOURCES := names.c names.h stub_driver.c stub_driver.h usbip.h \
++		       usbip_common.c usbip_common.h vhci_driver.c vhci_driver.h
+diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
+index 3717fc5..a2f0ab2 100644
+--- a/drivers/staging/usbip/userspace/src/Makefile.am
++++ b/drivers/staging/usbip/userspace/src/Makefile.am
+@@ -1,19 +1,10 @@
+-# $Id$
++AM_CPPFLAGS := -I$(top_srcdir)/libsrc -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
++AM_CFLAGS   := @EXTRA_CFLAGS@ -Wall -W -Wstrict-prototypes -std=gnu99 @PACKAGE_CFLAGS@
++LDADD       := $(top_srcdir)/libsrc/libusbip.la @PACKAGE_LIBS@
  
--AM_CONFIG_HEADER(config.h)
+-sbin_PROGRAMS = usbip usbipd usbip_bind_driver
 -
+-usbip_SOURCES = usbip.c usbip_network.c usbip_network.h
+-usbipd_SOURCES = usbipd.c usbip_network.c usbip_network.h
+-usbip_bind_driver_SOURCES = bind-driver.c \
+-		utils.c utils.h \
+-		usbip_network.h usbip_network.c
 -
- AC_SUBST([EXTRA_CFLAGS])
+-#usbip_bind_driver_CFLAGS = -Wall -W -Wstrict-prototypes @PACKAGE_CFLAGS@
+-#usbip_bind_driver_LDADD = @PACKAGE_LIBS@
+-
+-#AM_CPPFLAGS = -I../include -Wall -std=gnu99
+-INCLUDES = -I$(top_srcdir)/libsrc
+-LDADD = ../libsrc/libusbip.la @PACKAGE_LIBS@
+-EXTRA_CFLAGS = @EXTRA_CFLAGS@
+-AM_CFLAGS = -Wall -W -Wstrict-prototypes -std=gnu99 $(EXTRA_CFLAGS) @PACKAGE_CFLAGS@ -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
++sbin_PROGRAMS := usbip usbipd usbip_bind_driver
  
--AC_PROG_LIBTOOL
--
- # Checks for programs.
- AC_PROG_CC
- AC_PROG_INSTALL
--
--# Checks for libraries.
-+AC_PROG_MAKE_SET
- 
- # Checks for header files.
- AC_HEADER_DIRENT
- AC_HEADER_STDC
--AC_CHECK_HEADERS([fcntl.h netdb.h stdint.h stdlib.h string.h strings.h sys/socket.h syslog.h unistd.h])
-+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h dnl
-+		  string.h strings.h sys/socket.h syslog.h unistd.h])
- 
- # Checks for typedefs, structures, and compiler characteristics.
--AC_C_CONST
-+AC_TYPE_INT32_T
- AC_TYPE_SIZE_T
-+AC_TYPE_SSIZE_T
-+AC_TYPE_UINT16_T
-+AC_TYPE_UINT32_T
-+AC_TYPE_UINT8_T
- 
- # Checks for library functions.
--AC_FUNC_MALLOC
- AC_FUNC_REALLOC
--AC_CHECK_FUNCS([bzero memset strchr strerror strstr strtoul])
--
--AC_CHECK_HEADER(sysfs/libsysfs.h,
--	[AC_CHECK_LIB(sysfs, sysfs_open_directory_list,
--		[LIBS="$LIBS -lsysfs"],
--		[AC_MSG_ERROR([Missing sysfs2 library!])])],
--	[AC_MSG_ERROR([Missing /usr/include/sysfs/libsysfs.h])])
-+AC_CHECK_FUNCS([bzero memset mkdir regcomp socket strchr strerror strstr dnl
-+		strtoul])
- 
-+AC_CHECK_HEADER([sysfs/libsysfs.h],
-+		[AC_CHECK_LIB([sysfs], [sysfs_open_directory_list],
-+			      [LIBS="$LIBS -lsysfs"],
-+			      [AC_MSG_ERROR([Missing sysfs2 library!])])],
-+		[AC_MSG_ERROR([Missing /usr/include/sysfs/libsysfs.h])])
- 
--# get from stunnel
--dnl Check for libwrap library.
-+# Checks for libwrap library.
- AC_MSG_CHECKING([whether to use the libwrap (TCP wrappers) library])
--
--AC_ARG_WITH(tcp-wrappers,
--[  --with-tcp-wrappers     Use the libwrap (TCP wrappers) library ],
--[saved_LIBS="$LIBS"
-- if test "$withval" = "yes"; then
--      AC_MSG_RESULT([yes])
--      AC_MSG_CHECKING([for hosts_access in -lwrap])
--      LIBS="-lwrap $LIBS"
--      AC_TRY_LINK(
--	[int hosts_access(); int allow_severity, deny_severity;],
--	[hosts_access()],
--	[AC_MSG_RESULT([yes]); AC_DEFINE(HAVE_LIBWRAP, 1, use tcp wrapper) wrap_LIB="-lwrap"],
--	[AC_MSG_RESULT([not found]); exit 1])
-- else
-- 	     AC_MSG_RESULT([no])
-- fi
-- LIBS="$saved_LIBS"],
--[AC_MSG_RESULT([(default)])
-- AC_MSG_CHECKING([for hosts_access in -lwrap])
-- saved_LIBS="$LIBS"
-- LIBS="-lwrap $saved_LIBS"
-- AC_TRY_LINK(
--	[int hosts_access(); int allow_severity, deny_severity;],
-- 	[hosts_access()],
-- 	[AC_MSG_RESULT([yes]); AC_DEFINE(HAVE_LIBWRAP, 1, use tcp wrapper)],
-- 	[AC_MSG_RESULT([no]); LIBS="$saved_LIBS"])
--])
--
--
--
-+AC_ARG_WITH([tcp-wrappers],
-+	    [AS_HELP_STRING([--with-tcp-wrappers],
-+			    [use the libwrap (TCP wrappers) library])],
-+	    dnl [ACTION-IF-GIVEN]
-+	    [saved_LIBS="$LIBS"
-+	     if test "$withval" = "yes"; then
-+		     AC_MSG_RESULT([yes])
-+		     AC_MSG_CHECKING([for hosts_access in -lwrap])
-+		     LIBS="-lwrap $LIBS"
-+		     AC_TRY_LINK(
-+		       [int hosts_access(); int allow_severity, deny_severity;],
-+		       [hosts_access()],
-+		       [AC_MSG_RESULT([yes]);
-+			AC_DEFINE([HAVE_LIBWRAP], [1],
-+				  [use tcp wrapper]) wrap_LIB="-lwrap"],
-+		       [AC_MSG_RESULT([not found]); exit 1])
-+	     else
-+		     AC_MSG_RESULT([no])
-+	     fi
-+	     LIBS="$saved_LIBS"],
-+	    dnl [ACTION-IF-NOT-GIVEN]
-+	    [AC_MSG_RESULT([(default)])
-+	     AC_MSG_CHECKING([for hosts_access in -lwrap])
-+	     saved_LIBS="$LIBS"
-+	     LIBS="-lwrap $saved_LIBS"
-+	     AC_TRY_LINK(
-+	       [int hosts_access(); int allow_severity, deny_severity;],
-+	       [hosts_access()],
-+	       [AC_MSG_RESULT([yes]);
-+		AC_DEFINE([HAVE_LIBWRAP], [1], [use tcp wrapper])],
-+	       [AC_MSG_RESULT([no]); LIBS="$saved_LIBS"])])
-+
-+# Sets directory containing usb.ids.
- USBIDS_DIR='${datadir}/usbip'
--AC_ARG_WITH(usbids-dir, [  --with-usbids-dir=DIR   where usb.ids is found (default ${datadir}/usbip)], [USBIDS_DIR=$withval])
--AC_SUBST(USBIDS_DIR)
-+AC_ARG_WITH([usbids-dir],
-+	    [AS_HELP_STRING([--with-usbids-dir=DIR],
-+	       [where usb.ids is found (default ${datadir}/usbip)])],
-+	    [USBIDS_DIR=$withval])
-+AC_SUBST([USBIDS_DIR])
- 
- dnl FIXME: when disabled, empty directry is created
- usbids=install
--AC_ARG_ENABLE(usbids-install,
--[  --enable-usbids-install     install usb.ids (default)],
--[case "${enableval}" in
-- yes) usbids=install ;;
-- no)  usbids=notinstall ;;
-- *)   AC_MSG_ERROR(bad value ${enableval} for --enable-usbids-install) ;;
-- esac])
--AM_CONDITIONAL(INSTALL_USBIDS, test x$usbids = xinstall)
--
--
-+AC_ARG_ENABLE([usbids-install],
-+	      [AS_HELP_STRING([--enable-usbids-install],
-+			      [install usb.ids (default)])],
-+	      [AS_CASE([$enableval],
-+		       [yes], [usbids=install],
-+		       [no], [usbids=notinstall],
-+		       [AC_MSG_ERROR(
-+			  [bad value ${enableval} for --enable-usbids-install])]
-+		      )])
-+AM_CONDITIONAL([INSTALL_USBIDS], [test x$usbids = xinstall])
- 
- GLIB2_REQUIRED=2.6.0
--PKG_CHECK_MODULES(PACKAGE, glib-2.0 >= $GLIB2_REQUIRED)
--AC_SUBST(PACKAGE_CFLAGS)
--AC_SUBST(PACKAGE_LIBS)
-+PKG_CHECK_MODULES([PACKAGE], [glib-2.0 >= $GLIB2_REQUIRED])
-+AC_SUBST([PACKAGE_CFLAGS])
-+AC_SUBST([PACKAGE_LIBS])
- 
- AC_CONFIG_FILES([Makefile libsrc/Makefile src/Makefile])
- AC_OUTPUT
++usbip_SOURCES := usbip.c usbip_network.c usbip_network.h
++usbipd_SOURCES := usbipd.c usbip_network.c usbip_network.h
++usbip_bind_driver_SOURCES := bind-driver.c utils.c utils.h \
++			     usbip_network.h usbip_network.c
 -- 
 1.7.5.1
 
