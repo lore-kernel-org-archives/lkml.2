@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab1ENJre (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 05:47:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50092 "EHLO mx2.suse.de"
+	id S1753061Ab1ENJsA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 05:48:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50098 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab1ENJra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 05:47:30 -0400
-Date: Sat, 14 May 2011 11:47:22 +0200
-Message-ID: <s5hiptd4nrp.wl%tiwai@suse.de>
+	id S1750887Ab1ENJr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 May 2011 05:47:57 -0400
+Date: Sat, 14 May 2011 11:47:56 +0200
+Message-ID: <s5hhb8x4nqr.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Ondrej Zary <linux@rainbow-software.org>
 Cc: alsa-devel@alsa-project.org,
         Kernel development list <linux-kernel@vger.kernel.org>,
         linux-media@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] fm801: clean-up radio-related Kconfig
-In-Reply-To: <201105132026.40643.linux@rainbow-software.org>
-References: <201105132026.40643.linux@rainbow-software.org>
+Subject: Re: [alsa-devel] [PATCH 1/3] tea575x: remove freq_fixup from struct
+In-Reply-To: <201105122217.58872.linux@rainbow-software.org>
+References: <201105122217.58872.linux@rainbow-software.org>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,100 +25,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 13 May 2011 20:26:38 +0200,
+At Thu, 12 May 2011 22:17:56 +0200,
 Ondrej Zary wrote:
 > 
-> Change the weird SND_FM801_TEA575X_BOOL define in Kconfig to SND_FM801_RADIO
-> and remove TEA575X_RADIO define from fm801.c.
+> freq_fixup is a constant, no need to hold it in struct snd_tea575x and set in
+> each driver.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Well, this config is used over years, and if it's about only renaming,
-it won't be worth enough.
+Thanks, applied all three patches.
 
-Removing TEA575X_RADIO in fm801.c is fine, though.
-
-
-thanks,
 
 Takashi
 
-> Also update help text to include all supported cards.
-> 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> 
-> --- linux-2.6.39-rc2-/sound/pci/Kconfig	2011-05-13 19:36:27.000000000 +0200
-> +++ linux-2.6.39-rc2/sound/pci/Kconfig	2011-05-13 19:23:00.000000000 +0200
-> @@ -554,18 +554,18 @@ config SND_FM801
->  	  To compile this driver as a module, choose M here: the module
->  	  will be called snd-fm801.
+> --- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-10 22:31:40.000000000 +0200
+> +++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-12 21:00:50.000000000 +0200
+> @@ -26,6 +26,8 @@
+>  #include <media/v4l2-dev.h>
+>  #include <media/v4l2-ioctl.h>
 >  
-> -config SND_FM801_TEA575X_BOOL
-> +config SND_FM801_RADIO
->  	bool "ForteMedia FM801 + TEA5757 tuner"
->  	depends on SND_FM801
->  	depends on VIDEO_V4L2=y || VIDEO_V4L2=SND_FM801
->  	help
->  	  Say Y here to include support for soundcards based on the ForteMedia
-> -	  FM801 chip with a TEA5757 tuner connected to GPIO1-3 pins (Media
-> -	  Forte SF256-PCS-02) into the snd-fm801 driver.
-> +	  FM801 chip with a TEA5757 tuner (MediaForte SF256-PCS, SF256-PCP and
-> +	  SF64-PCR) into the snd-fm801 driver.
+> +#define TEA575X_FMIF	10700
+> +
+>  #define TEA575X_DATA	(1 << 0)
+>  #define TEA575X_CLK	(1 << 1)
+>  #define TEA575X_WREN	(1 << 2)
+> @@ -46,7 +48,6 @@ struct snd_tea575x {
+>  	bool mute;			/* Device is muted? */
+>  	bool stereo;			/* receiving stereo */
+>  	bool tuned;			/* tuned to a station */
+> -	unsigned int freq_fixup;	/* crystal onboard */
+>  	unsigned int val;		/* hw value */
+>  	unsigned long freq;		/* frequency */
+>  	unsigned long in_use;		/* set if the device is in use */
+> --- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-10 22:31:40.000000000 +0200
+> +++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-12 21:00:37.000000000 +0200
+> @@ -141,9 +141,9 @@ static void snd_tea575x_get_freq(struct
+>  	freq /= 10;
+>  	/* crystal fixup */
+>  	if (tea->tea5759)
+> -		freq += tea->freq_fixup;
+> +		freq += TEA575X_FMIF;
+>  	else
+> -		freq -= tea->freq_fixup;
+> +		freq -= TEA575X_FMIF;
 >  
->  config SND_TEA575X
->  	tristate
-> -	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO
-> +	depends on SND_FM801_RADIO || SND_ES1968_RADIO
->  	default SND_FM801 || SND_ES1968
+>  	tea->freq = freq * 16;		/* from kHz */
+>  }
+> @@ -156,9 +156,9 @@ static void snd_tea575x_set_freq(struct
+>  	freq /= 16;		/* to kHz */
+>  	/* crystal fixup */
+>  	if (tea->tea5759)
+> -		freq -= tea->freq_fixup;
+> +		freq -= TEA575X_FMIF;
+>  	else
+> -		freq += tea->freq_fixup;
+> +		freq += TEA575X_FMIF;
+>  	/* freq /= 12.5 */
+>  	freq *= 10;
+>  	freq /= 125;
+> --- linux-2.6.39-rc2-/sound/pci/es1968.c	2011-05-10 22:31:43.000000000 +0200
+> +++ linux-2.6.39-rc2/sound/pci/es1968.c	2011-05-10 23:47:32.000000000 +0200
+> @@ -2794,7 +2794,6 @@ static int __devinit snd_es1968_create(s
 >  
->  source "sound/pci/hda/Kconfig"
-> --- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-13 19:39:23.000000000 +0200
-> +++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-13 19:22:20.000000000 +0200
-> @@ -36,9 +36,8 @@
+>  #ifdef CONFIG_SND_ES1968_RADIO
+>  	chip->tea.card = card;
+> -	chip->tea.freq_fixup = 10700;
+>  	chip->tea.private_data = chip;
+>  	chip->tea.ops = &snd_es1968_tea_ops;
+>  	if (!snd_tea575x_init(&chip->tea))
+> --- linux-2.6.39-rc2-/sound/pci/fm801.c	2011-05-10 23:24:39.000000000 +0200
+> +++ linux-2.6.39-rc2/sound/pci/fm801.c	2011-05-10 23:47:43.000000000 +0200
+> @@ -1231,7 +1231,6 @@ static int __devinit snd_fm801_create(st
 >  
->  #include <asm/io.h>
->  
-> -#ifdef CONFIG_SND_FM801_TEA575X_BOOL
-> +#ifdef CONFIG_SND_FM801_RADIO
->  #include <sound/tea575x-tuner.h>
-> -#define TEA575X_RADIO 1
->  #endif
->  
->  MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
-> @@ -196,7 +195,7 @@ struct fm801 {
->  	spinlock_t reg_lock;
->  	struct snd_info_entry *proc_entry;
->  
-> -#ifdef TEA575X_RADIO
-> +#ifdef CONFIG_SND_FM801_RADIO
->  	struct snd_tea575x tea;
->  #endif
->  
-> @@ -715,7 +714,7 @@ static int __devinit snd_fm801_pcm(struc
->   *  TEA5757 radio
->   */
->  
-> -#ifdef TEA575X_RADIO
-> +#ifdef CONFIG_SND_FM801_RADIO
->  
->  /* GPIO to TEA575x maps */
->  struct snd_fm801_tea575x_gpio {
-> @@ -1150,7 +1149,7 @@ static int snd_fm801_free(struct fm801 *
->  	outw(cmdw, FM801_REG(chip, IRQ_MASK));
->  
->        __end_hw:
-> -#ifdef TEA575X_RADIO
-> +#ifdef CONFIG_SND_FM801_RADIO
->  	snd_tea575x_exit(&chip->tea);
->  #endif
->  	if (chip->irq >= 0)
-> @@ -1229,7 +1228,7 @@ static int __devinit snd_fm801_create(st
->  
->  	snd_card_set_dev(card, &pci->dev);
->  
-> -#ifdef TEA575X_RADIO
-> +#ifdef CONFIG_SND_FM801_RADIO
+>  #ifdef TEA575X_RADIO
+>  	chip->tea.card = card;
+> -	chip->tea.freq_fixup = 10700;
 >  	chip->tea.private_data = chip;
 >  	chip->tea.ops = &snd_fm801_tea_ops;
->  	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
+>  	if ((tea575x_tuner & TUNER_TYPE_MASK) > 0 &&
 > 
 > 
 > -- 
