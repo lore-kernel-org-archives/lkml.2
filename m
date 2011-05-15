@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760311Ab1EOQ4e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 12:56:34 -0400
-Received: from to5email.gprs.rogers.com ([74.198.8.2]:45232 "EHLO
-	to5email1.gprs.rogers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760193Ab1EOQ4d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 12:56:33 -0400
-X-Greylist: delayed 1036 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 May 2011 12:56:32 EDT
-References: <367853.39582.qm@web130121.mail.mud.yahoo.com> <m2k4dsnghx.fsf@firstfloor.org>
-In-Reply-To: <m2k4dsnghx.fsf@firstfloor.org>
-Mime-Version: 1.0 (iPhone Mail 8J2)
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <AA3F896F-8054-4981-8D43-A48A76C0087E@dilger.ca>
-Content-Transfer-Encoding: 8BIT
-Cc: Alex Davis <alex14641@yahoo.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-X-Mailer: iPhone Mail (8J2)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: Possible coding issue in udf??
-Date: Sun, 15 May 2011 10:32:11 -0600
-To: Andi Kleen <andi@firstfloor.org>
+	id S1756390Ab1EOQct (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 12:32:49 -0400
+Received: from kroah.org ([198.145.64.141]:41475 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161Ab1EOQcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 12:32:48 -0400
+Date: Sun, 15 May 2011 09:32:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>,
+        devel@driverdev.osuosl.org,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v6] Add ST-Ericsson CG2900 driver
+Message-ID: <20110515163257.GE1315@kroah.com>
+References: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+ <BANLkTinAtUQ8H1DQpqXxX_U4mLO617L3Eg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinAtUQ8H1DQpqXxX_U4mLO617L3Eg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-15, at 9:14 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> Alex Davis <alex14641@yahoo.com> writes:
->> In fs/udf/inode.c, line 1455, linux 2.6.35, there is the following code:
->> 
->>    udfperms = ((inode->i_mode & S_IRWXO)) |
->>           ((inode->i_mode & S_IRWXG) << 2) |
->>           ((inode->i_mode & S_IRWXU) << 4);
->> 
->> Shouldn't we be shifting by 3 bits? i.e:
->>    udfperms = ((inode->i_mode & S_IRWXO)) |
->>           ((inode->i_mode & S_IRWXG) << 3) |
->>           ((inode->i_mode & S_IRWXU) << 6);
->> 
->> The S_I.. constants are all defined in include/linux/stat.h as 3-bit values.
->> 
->> I will send a patch if needed.
+On Sun, May 15, 2011 at 12:20:51PM +0200, Linus Walleij wrote:
+> 2011/5/10 Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>:
 > 
-> I  would suggest you test it first. Put in a UDF disk that triggers
-> this case (verify with a printk). Check in ls -l if the 
-> permissions are correct or wrong.
+> > Patch created on next-20110510.
+> > Compared to v5 this patch has the following update:
+> >  - Updated driver after changes to MFD interfaces in linux-next (from mfd_data
+> >   to platform_data).
+> >  - Changed platform specific file dependencies (included correct nomadik file).
+> 
+> Sorry I don't know if all this will work, it's due to all the churn created by
+> the current push to get stuff out of the ARM tree so not much to do.
+> 
+> The Nomadik GPIO file was moved in next but I will take that code move
+> out today, because the GPIO maintainer has told me he couldn't
+> provide feedback on these patches in time for me to finalize the change
+> for kernel 2.6.40. Thus it won't go into 2.6.40 and I must remove it
+> from next.
+> 
+> The MFD changes will *probably* happen, if you're thinking about the
+> PRCMU movement etc.
+> 
+> To merge into the staging tree right now, you need to base it off
+> Gregs staging tree, which is where it'll be merged:
+> http://git.kernel.org/?p=linux/kernel/git/gregkh/staging-2.6.git;a=summary
+> 
+> Sorry about all the confusion, I think it's actually nobodys fault,
+> it's just reflecting the fact that embedded drivers with deep
+> platform dependencies are *really* *hard* to manage in staging.
 
-Typically I would agree. In this case ir looks like the existing code doesn't make sense, because it will be overlapping the R and X bits from the adjacent U, G, and O masks. 
+That's why you should only use staging as a last resort, not as your
+primary way of getting code into the kernel, especially for stuff with
+a constantly changing in-kernel interface like you have pointed out
+here.
 
-Cheers, Andreas
+Just do the "real work" first and get it merged the real way if at all
+possible.
+
+best of luck,
+
+greg k-h
