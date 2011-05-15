@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab1EPDzO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 23:55:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42363 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755639Ab1EPDyq (ORCPT
+	id S1756330Ab1EPDzM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 23:55:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39592 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755915Ab1EPDyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 23:54:46 -0400
-Date: Sun, 15 May 2011 15:17:39 -0600
+	Sun, 15 May 2011 23:54:47 -0400
+Date: Sun, 15 May 2011 15:20:44 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: simon@mungewell.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [RFC PATCH] input: Add wiichuck driver
-Message-ID: <20110515211739.GA30725@angua.secretlab.ca>
-References: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
- <0bcda95e38da7ce6fd696075f6d61baf.squirrel@host171.canaca.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Liam Girdwood <lrg@ti.com>, "grant@secretlab.ca" <grant@secretlab.ca>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCHv5 2/4] TPS65910: GPIO: Add GPIO driver
+Message-ID: <20110515212044.GB30725@angua.secretlab.ca>
+References: <2CAE1D41-48DC-457F-8FF3-E45B17AC3E0F@slimlogic.co.uk>
+ <4DBAD7E8.8090703@ti.com>
+ <20110429220651.GG7497@ponder.secretlab.ca>
+ <20110513184153.GZ8970@sortiz-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0bcda95e38da7ce6fd696075f6d61baf.squirrel@host171.canaca.com>
+In-Reply-To: <20110513184153.GZ8970@sortiz-mobl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 02:24:59AM -0400, simon@mungewell.org wrote:
-> > This patch adds a driver for the Nintendo Nunchuck (wiimote accessory)
-> > attached to an i2c bus via something like a wiichuck adapter board
-> > from Sparkfun.
-> >
+On Fri, May 13, 2011 at 08:41:54PM +0200, Samuel Ortiz wrote:
+> Hi Grant,
 > 
-> I have not tested your driver, will try to find some time next week.
-> 
-> There are also a handful of devices which can be connected as such:
-> http://www.wiibrew.org/wiki/Wiimote/Extension_Controllers
-> 
-> You might want to consider the possibility that the Nunchuck/Others are
-> connected via a MotionPlus, in which case the data is interleaved with
-> Gyro data.
-> 
-> Simon.
-> 
-> PS. If you're really cheap you can (ab)use the I2C DDC link of the VGA
-> port to connect devices.... it's what I do :-)
+> On Fri, Apr 29, 2011 at 04:06:51PM -0600, Grant Likely wrote:
+> > On Fri, Apr 29, 2011 at 04:23:20PM +0100, Liam Girdwood wrote:
+> > > On 27/04/11 16:51, Jorge Eduardo Candelaria wrote:
+> > > > From: Graeme Gregory <gg@slimlogic.co.uk>
+> > > > 
+> > > > TPS65910 has one configurable GPIO that can be used for several
+> > > > purposes. Subsequent versions of the TPS chip support more than
+> > > > one GPIO.
+> > > > 
+> > > > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > > > Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+> > > > ---
+> > > >  drivers/mfd/Makefile         |    2 +-
+> > > >  drivers/mfd/tps65910-gpio.c  |   91 ++++++++++++++++++++++++++++++++++++++++++
+> > > >  drivers/mfd/tps65910.c       |    7 +++
+> > > >  include/linux/mfd/tps65910.h |    2 +
+> > > >  4 files changed, 101 insertions(+), 1 deletions(-)
+> > > >  create mode 100644 drivers/mfd/tps65910-gpio.c
+> > > > 
+> > > 
+> > > Grant, if you are happy with this I can take all via regulator.
+> > 
+> > Yes, I'm okay with it.
+> Would you be ok with moving this one to drivers/gpio/ ? And in general, moving
+> most of the GPIO drivers under drivers/mfd/ back to drivers/gpio/ ?
+> David didn't want to take the basic MFD related GPIO drivers, that's why we
+> have several of them under mfd.
 
-Heh.  I've actually got it wired up to the i2c bus on a BeagleBoard from TI.
-
-I've got a new version of the driver which I'll post when I get back
-home and have a chance to properly test it.  I've implemented Nunchuck
-and Classic Controller support so I could play with implementing
-multiple protocols in a clean way (even though I don't actually have a
-classic controller yet).  Motion Plus should be straight forward to
-add, but I'll probably leave that as an exercise for somebody else.
+Yes, move them to GPIO.  That is where they belong.
 
 g.
 
+> 
+> Cheers,
+> Samuel.
+> 
+> -- 
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
