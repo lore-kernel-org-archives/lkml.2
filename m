@@ -1,50 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab1EOXfr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 19:35:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53511 "EHLO ogre.sisk.pl"
+	id S1753074Ab1EOXhO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 19:37:14 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:22975 "EHLO mail.df.lth.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab1EOXfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 19:35:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [Bug #33242] Lockdep splat in autofs with 2.6.39-rc2
-Date: Mon, 16 May 2011 01:36:13 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <So1vU2GC7XM.A.5wB.44vzNB@chimera> <HA8urZ3ZRcP.A.TvC.O6vzNB@chimera> <20110515232509.GA11642@elliptictech.com>
-In-Reply-To: <20110515232509.GA11642@elliptictech.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105160136.14177.rjw@sisk.pl>
+	id S1752413Ab1EOXhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 19:37:13 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>, Dave Jones <davej@redhat.com>
+Subject: [PATCH 00/13] Ux500 PRCMU into MFD v3
+Date: Mon, 16 May 2011 01:37:04 +0200
+Message-Id: <1305502624-32418-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 16, 2011, Nick Bowler wrote:
-> On 2011-05-15 00:18 +0200, Rafael J. Wysocki wrote:
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.38.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=33242
-> > Subject		: Lockdep splat in autofs with 2.6.39-rc2
-> > Submitter	: Nick Bowler <nbowler@elliptictech.com>
-> > Date		: 2011-04-07 19:44 (38 days old)
-> > Message-ID	: <20110407194403.GA29404@elliptictech.com>
-> > References	: http://marc.info/?l=linux-kernel&m=130220545614682&w=2
-> 
-> This one is tough to reproduce, but I imagine that it's still present in
-> mainline because I haven't heard anything about it since I was asked to
-> test the patch here:
-> 
->   http://permalink.gmane.org/gmane.linux.kernel/1129741
+From: Linus Walleij <linus.walleij@stericsson.com>
 
-Thanks for the update.
+This moves the DB8500 PRCMU core driver from the
+arch/arm/mach-ux500/ dir to MFD, updates it, adds the missing
+DB5500 PRCMU driver, updates some dependent register files etc,
+and also updates the CPUfreq driver that use the PRCMU and moves
+it to drivers/cpufreq as discussed recently.
 
-Rafael
+The PRCMU driver does not do anything but mediate calls to
+sub-drivers really, and later parts of the patch set breaks
+out the CPUfreq and on-chip regulators to their own respective
+subsystems.
+
+We cannot avoid doing some updates to the mach-ux500/* files in
+the process, but I think this turns out on the positive side
+anyway, removing some 500+ lines and 6 whole files from arch/arm/*
+and a much more appealing architecture.
+
+All but the last two patches have been pushed to -next for
+testing. Target is 2.6.40 indeed.
+
+12/13 collides with cpufreq movement and need to be merged after
+the cpufreq tree in the merge window.
+
+13/13 collides with changes in the regulator tree and also use
+the mfd_data per cell, so will need adjusting in the merge window
+as well.
+
+Comments/ACKs/etc requested.
+
+
+Bengt Jonsson (1):
+  mach-ux500: voltage domain regulators for DB8500
+
+Linus Walleij (10):
+  mach-ux500: update the DB8500 register file
+  mach-ux500: update the DB5500 register file
+  mach-ux500: update ASIC version detection
+  mach-ux500: rename PRCMU driver per SoC
+  mach-ux500: make PRCMU base address dynamic
+  mach-ux500: move the DB8500 PRCMU driver to MFD
+  mfd: add DB5500 PRCMU driver
+  mach-ux500: move CPUfreq driver to cpufreq subsystem
+  cpufreq: update DB8500 cpufreq driver
+  cpufreq: make DB8500 cpufreq driver compile
+
+Mattias Nilsson (1):
+  mfd: update DB8500 PRCMU driver
+
+Rabin Vincent (1):
+  mach-ux500: update SoC and board IRQ handling
+
+ arch/arm/mach-ux500/Kconfig                        |    3 +
+ arch/arm/mach-ux500/Makefile                       |    4 +-
+ arch/arm/mach-ux500/cpu-db5500.c                   |    2 +
+ arch/arm/mach-ux500/cpu-db8500.c                   |    7 +
+ arch/arm/mach-ux500/cpu.c                          |    7 +-
+ arch/arm/mach-ux500/cpufreq.c                      |  211 --
+ arch/arm/mach-ux500/include/mach/db5500-regs.h     |   20 +-
+ arch/arm/mach-ux500/include/mach/db8500-regs.h     |   37 +-
+ arch/arm/mach-ux500/include/mach/hardware.h        |    1 +
+ arch/arm/mach-ux500/include/mach/id.h              |   20 +
+ .../mach-ux500/include/mach/irqs-board-mop500.h    |    5 +
+ .../arm/mach-ux500/include/mach/irqs-board-u5500.h |   21 +
+ arch/arm/mach-ux500/include/mach/irqs-db5500.h     |   27 +
+ arch/arm/mach-ux500/include/mach/irqs-db8500.h     |   54 +
+ arch/arm/mach-ux500/include/mach/irqs.h            |   46 +-
+ arch/arm/mach-ux500/include/mach/prcmu-defs.h      |   30 -
+ arch/arm/mach-ux500/include/mach/prcmu-regs.h      |   96 -
+ arch/arm/mach-ux500/include/mach/prcmu.h           |   28 -
+ arch/arm/mach-ux500/prcmu.c                        |  394 ----
+ drivers/cpufreq/Makefile                           |    1 +
+ drivers/cpufreq/db8500-cpufreq.c                   |  169 ++
+ drivers/mfd/Kconfig                                |   22 +-
+ drivers/mfd/Makefile                               |    5 +-
+ drivers/mfd/ab8500-i2c.c                           |    3 +-
+ drivers/mfd/db5500-prcmu-regs.h                    |  115 ++
+ drivers/mfd/db5500-prcmu.c                         |  448 +++++
+ drivers/mfd/db8500-prcmu-regs.h                    |  166 ++
+ drivers/mfd/db8500-prcmu.c                         | 2069 ++++++++++++++++++++
+ drivers/regulator/Kconfig                          |    7 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/db8500-prcmu.c                   |  560 ++++++
+ include/linux/mfd/db5500-prcmu.h                   |   45 +
+ include/linux/mfd/db8500-prcmu.h                   |  978 +++++++++
+ include/linux/regulator/db8500-prcmu.h             |   45 +
+ 34 files changed, 4848 insertions(+), 799 deletions(-)
+ delete mode 100644 arch/arm/mach-ux500/cpufreq.c
+ create mode 100644 arch/arm/mach-ux500/include/mach/irqs-board-u5500.h
+ delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu-defs.h
+ delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu-regs.h
+ delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu.h
+ delete mode 100644 arch/arm/mach-ux500/prcmu.c
+ create mode 100644 drivers/cpufreq/db8500-cpufreq.c
+ create mode 100644 drivers/mfd/db5500-prcmu-regs.h
+ create mode 100644 drivers/mfd/db5500-prcmu.c
+ create mode 100644 drivers/mfd/db8500-prcmu-regs.h
+ create mode 100644 drivers/mfd/db8500-prcmu.c
+ create mode 100644 drivers/regulator/db8500-prcmu.c
+ create mode 100644 include/linux/mfd/db5500-prcmu.h
+ create mode 100644 include/linux/mfd/db8500-prcmu.h
+ create mode 100644 include/linux/regulator/db8500-prcmu.h
+
+-- 
+1.7.4.4
+
