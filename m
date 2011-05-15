@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760018Ab1EOONQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 10:13:16 -0400
-Received: from relay.ptn-ipout02.plus.net ([212.159.7.36]:15800 "EHLO
-	relay.ptn-ipout02.plus.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753881Ab1EOONP (ORCPT
+	id S1755244Ab1EOO2e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 10:28:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32856 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab1EOO2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 10:13:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqEhAC7ez01UXeb6/2dsb2JhbACCNIJmkkYxjgV3uS0ChhyJHg6GCwSUQIQchio
-Subject: [PATCH] mfd: Fix ASIC3 SD Host Controller Configuration size
-From: "Paul Parsons" <lost.distance@yahoo.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <sameo@linux.intel.com>, <philipp.zabel@gmail.com>
-Date: Sun, 15 May 2011 14:13:11 +0000
-Content-Type: text/plain
-Mime-Version: 1.0
-X-Mailer: email v2.5.0 (Linux 2.6.38 x86_64 [http://email.cleancode.org])
-Message-Id: <E1QLc4H-0005Vx-7y@outmx05.plus.net>
+	Sun, 15 May 2011 10:28:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ffLhsAIMSwupgwVYD3d8UjqbJwNwn7/SLddVixjEUKOJhGsN4pUcjgd+hc/A2w0NDH
+         xAnZAgPGav3QfIKIdWIlnmSwWYErsJA5n0zNqf0nUHR7sGTLRchAyRQXFTH69TB4w61p
+         pK52TyAT7mQrv609TZrczfbqcF97lo87kjiiw=
+Date: Sun, 15 May 2011 16:28:27 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re:
+ [PATCH 11/11] ptrace: implement group stop notification for ptracer]
+Message-ID: <20110515142827.GF23665@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-12-git-send-email-tj@kernel.org>
+ <20110515140232.GB31855@host1.jankratochvil.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110515140232.GB31855@host1.jankratochvil.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the TC6380AF SD Host Controller Configuration area is 0x200 bytes (assuming registers are aligned on 32-bit boundaries), not 0x400 bytes. Source: Toshiba TC6380AF Specification sections 4.2 and 4.3.1
+Hello, Jan.
 
-Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
----
-diff -uprN clean-2.6.39-rc7/drivers/mfd/asic3.c linux-2.6.39-rc7/drivers/mfd/asic3.c
---- clean-2.6.39-rc7/drivers/mfd/asic3.c	2011-05-15 14:54:26.240112516 +0100
-+++ linux-2.6.39-rc7/drivers/mfd/asic3.c	2011-05-15 14:59:12.758135981 +0100
-@@ -854,7 +854,8 @@ static int __init asic3_mfd_probe(struct
- 
- 	/* MMC */
- 	asic->tmio_cnf = ioremap((ASIC3_SD_CONFIG_BASE >> asic->bus_shift) +
--				 mem_sdio->start, 0x400 >> asic->bus_shift);
-+				 mem_sdio->start,
-+				 ASIC3_SD_CONFIG_SIZE >> asic->bus_shift);
- 	if (!asic->tmio_cnf) {
- 		ret = -ENOMEM;
- 		dev_dbg(asic->dev, "Couldn't ioremap SD_CONFIG\n");
-diff -uprN clean-2.6.39-rc7/include/linux/mfd/asic3.h linux-2.6.39-rc7/include/linux/mfd/asic3.h
---- clean-2.6.39-rc7/include/linux/mfd/asic3.h	2011-05-15 14:54:23.488093081 +0100
-+++ linux-2.6.39-rc7/include/linux/mfd/asic3.h	2011-05-13 19:21:20.515450640 +0100
-@@ -297,6 +297,7 @@ struct asic3_platform_data {
-  *
-  *****************************************************************************/
- #define ASIC3_SD_CONFIG_BASE	0x0400 /* Assumes 32 bit addressing */
-+#define ASIC3_SD_CONFIG_SIZE	0x0200 /* Assumes 32 bit addressing */
- #define ASIC3_SD_CTRL_BASE	0x1000
- #define ASIC3_SDIO_CTRL_BASE	0x1200
- 
+On Sun, May 15, 2011 at 04:02:32PM +0200, Jan Kratochvil wrote:
+> Or there should be some other way how to query the siginfo_t state
+> fully transparently (*).
+>
+> (*) But if there exists such syscall it probably does not make sense to modify
+>     anything by PTRACE_GETSIGINFO.
 
+If there's a syscall which doesn't affect notification state, then we
+need something which does clear it.  Either way, I suppose you're
+saying we need both something which clears the notification and
+something which doesn't.
+
+> Imagine various LD_PRELOAD tools which try to wrap system/library calls and
+> operate with ptrace while keeping it transparent for the original debugger.
+> (I have a bunch of such libraries for testing gdb/strace/etc. written there.)
+> 
+> Also complicated debuggers with internal OO hierarchy would need to just wrap
+> PTRACE_GETSIGINFO into an internal function to make it transparent for calls
+> not intending to modify the debuggee state.
+
+We can add a flag or new request for that but I don't know.  Those are
+pretty fringe use cases and they don't even strictly require such
+feature - Even for LD_PRELOAD, it can simply keep scheduling INTERRUPT
+until the application calls the wrapped GETSIGINFO when it detects the
+stopped state has changed.  It can be easily done from userland.
+
+Thank you.
+
+-- 
+tejun
