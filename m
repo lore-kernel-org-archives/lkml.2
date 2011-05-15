@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760027Ab1EON5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 09:57:09 -0400
-Received: from keil-draco.com ([216.193.185.50]:42534 "EHLO
-	mail.keil-draco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab1EON5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 09:57:07 -0400
-X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 May 2011 09:57:07 EDT
-From: Daniel Hazelton <dhazelton@enter.net>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: 2.6.39-rc7 nouveau vs KDE 4.6.2
-Date: Sun, 15 May 2011 09:47:38 -0400
-User-Agent: KMail/1.13.6 (Linux/2.6.38-sabayon; KDE/4.6.2; x86_64; ; )
-Cc: bskeggs@redhat.com, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org
-References: <20110514231208.GA2947@p183> <20110515080929.GA2533@p183> <20110515082137.GA3882@p183>
-In-Reply-To: <20110515082137.GA3882@p183>
+	id S1759987Ab1EONuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 09:50:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38919 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753522Ab1EONum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 09:50:42 -0400
+Date: Sun, 15 May 2011 15:50:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.39-rc7
+Message-ID: <20110515135037.GA26111@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105150947.38329.dhazelton@enter.net>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 15, 2011 04:21:37 AM Alexey Dobriyan wrote:
-> On Sun, May 15, 2011 at 11:09:29AM +0300, Alexey Dobriyan wrote:
-> > On Sun, May 15, 2011 at 02:12:08AM +0300, Alexey Dobriyan wrote:
-> > > After logging into KDE, I get garbage areas when say mouse moves over
-> > > icon in tray, or when window is opened fullscreen to the point it's
-> > > unusable.
-> > > 
-> > > Previous version of KDE (4.4.5?) was OK.
-> > > 
-> > > 
-> > > Linux version 2.6.39-rc7 (ad@p183) (gcc version 4.4.5 (Gentoo 4.4.5
-> > > p1.2, pie-0.4.5) ) #4 SMP PREEMPT Tue May 10 22:07:32 EEST 2011
-> > 
-> > FYI, 2.6.38.5 is no different.
-> 
-> Disable compositing/"desktop effects" (alt+shift+F12) works except
-> switch to fbconsole and back leaves screen black.
+On Mon, May 09, 2011 at 07:49:48PM -0700, Linus Torvalds wrote:
+> But please do test, just to make sure that 39-final is good.
 
-(sorry if some of you get this double - I forgot to hit "reply all" when I 
-first replied...)
+I'm hitting a warn_on in the gendisk events code; happens after plugging
+an ipod through usb. Adding Tejun.
 
-I've come across a similar bug with the binary blob driver from nvidia - and 
-compositing state doesn't matter. The fbconsole switch leaves that system with 
-an image of the desktop, but said image is non-responsive. In the case of an 
-application or game that was running in a fullscreen window it will lose some 
-events and generally get stuck non-working and showing nothing. After seeing 
-the report of problems with the fbcon switch (I've also seen some artifacting 
-and/or "garbage" with the binary blob) I'm wondering if there might not be a 
-hardware bug that nvidia manages to paper-over in the windows version of the 
-driver that nouveau and the ugly binary-blob are unable to miss in Linux...
+[49045.176773] usb 1-3.1: new high speed USB device number 5 using ehci_hcd
+[49045.287681] usb 1-3.1: New USB device found, idVendor=05ac, idProduct=1263
+[49045.287697] usb 1-3.1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[49045.287707] usb 1-3.1: Product: iPod
+[49045.287715] usb 1-3.1: Manufacturer: Apple Inc.
+[49045.294369] scsi5 : usb-storage 1-3.1:1.0
+[49046.300561] scsi 5:0:0:0: Direct-Access     Apple    iPod             1.62 PQ: 0 ANSI: 0
+[49046.350703] sd 5:0:0:0: [sdc] 3944897 4096-byte logical blocks: (16.1 GB/15.0 GiB)
+[49046.354059] sd 5:0:0:0: [sdc] Write Protect is off
+[49046.354071] sd 5:0:0:0: [sdc] Mode Sense: 68 00 00 08
+[49046.354078] sd 5:0:0:0: [sdc] Assuming drive cache: write through
+[49046.357265] sd 5:0:0:0: [sdc] 3944897 4096-byte logical blocks: (16.1 GB/15.0 GiB)
+[49046.358222] sd 5:0:0:0: [sdc] Assuming drive cache: write through
+[49046.359584]  sdc: sdc1
+[49046.363303] sd 5:0:0:0: [sdc] 3944897 4096-byte logical blocks: (16.1 GB/15.0 GiB)
+[49046.364265] sd 5:0:0:0: [sdc] Assuming drive cache: write through
+[49046.364290] sd 5:0:0:0: [sdc] Attached SCSI removable disk
+[49739.003924] ------------[ cut here ]------------
+[49739.003946] WARNING: at block/genhd.c:1556 disk_clear_events+0xca/0x101()
+[49739.003954] Hardware name: System Product Name
+[49739.003961] Modules linked in: nls_iso8859_15 nls_cp437 usblp tun powernow_k8 mperf cpufreq_ondemand cpufreq_powersave cpufreq_userspace cpufreq_conservative cpufreq_stats freq_table binfmt_misc kvm_amd kvm fuse ipv6 vfat fat 8250_pnp 8250 edac_core serial_core ohci_hcd k10temp
+[49739.004043] Pid: 11237, comm: hald-addon-stor Not tainted 2.6.39-rc7 #1
+[49739.004050] Call Trace:
+[49739.004067]  [<ffffffff8144673e>] ? _raw_spin_unlock_irqrestore+0x38/0x69
+[49739.004082]  [<ffffffff810383ee>] warn_slowpath_common+0x85/0x9d
+[49739.004094]  [<ffffffff81038420>] warn_slowpath_null+0x1a/0x1c
+[49739.004104]  [<ffffffff81190b97>] disk_clear_events+0xca/0x101
+[49739.004117]  [<ffffffff811159b9>] check_disk_change+0x27/0x5f
+[49739.004129]  [<ffffffff813051e4>] sd_open+0x86/0x12d
+[49739.004139]  [<ffffffff81191eae>] ? disk_get_part+0x22/0x128
+[49739.004150]  [<ffffffff811168ce>] __blkdev_get+0xb0/0x34c
+[49739.004161]  [<ffffffff81116d62>] blkdev_get+0x1f8/0x32a
+[49739.004172]  [<ffffffff81030494>] ? sub_preempt_count+0xa3/0xb6
+[49739.004182]  [<ffffffff814467a4>] ? _raw_spin_unlock+0x35/0x52
+[49739.004194]  [<ffffffff81116f1d>] blkdev_open+0x89/0x8d
+[49739.004205]  [<ffffffff810e6dc9>] __dentry_open+0x250/0x37b
+[49739.004216]  [<ffffffff81116e94>] ? blkdev_get+0x32a/0x32a
+[49739.004227]  [<ffffffff810e6fbf>] nameidata_to_filp+0x60/0x67
+[49739.004238]  [<ffffffff810f4ff8>] do_last+0x5c4/0x6b8
+[49739.004250]  [<ffffffff810f6167>] path_openat+0xca/0x363
+[49739.004261]  [<ffffffff8105d941>] ? local_clock+0x2a/0x3b
+[49739.004272]  [<ffffffff81101357>] ? alloc_fd+0x1bc/0x1ce
+[49739.004284]  [<ffffffff810f64f9>] do_filp_open+0x3d/0x8c
+[49739.004294]  [<ffffffff814467a4>] ? _raw_spin_unlock+0x35/0x52
+[49739.004305]  [<ffffffff81101357>] ? alloc_fd+0x1bc/0x1ce
+[49739.004316]  [<ffffffff810e697d>] do_sys_open+0x110/0x1a9
+[49739.004327]  [<ffffffff810e6a49>] sys_open+0x20/0x22
+[49739.004338]  [<ffffffff814472eb>] system_call_fastpath+0x16/0x1b
+[49739.004347] ---[ end trace 0e6e57542dc517bf ]---
 
-DRH
+-- 
+Regards/Gruss,
+    Boris.
