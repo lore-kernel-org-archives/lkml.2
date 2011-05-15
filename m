@@ -1,300 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab1EOXiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 19:38:13 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:23000 "EHLO mail.df.lth.se"
+	id S1754550Ab1EOXhh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 19:37:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53527 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755456Ab1EOXiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 19:38:09 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 07/13] mach-ux500: move the DB8500 PRCMU driver to MFD
-Date: Mon, 16 May 2011 01:38:06 +0200
-Message-Id: <1305502686-32646-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1752999Ab1EOXhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 19:37:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH 6/6][RFC] PM / Domains: Support for multiple generic power domain states
+Date: Mon, 16 May 2011 01:38:10 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201104290154.12966.rjw@sisk.pl> <201105082320.57185.rjw@sisk.pl> <201105160117.46927.rjw@sisk.pl>
+In-Reply-To: <201105160117.46927.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105160138.10431.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have decided that this function arbiter fits better in the MFD
-subsystem. Since we need to concatenate the split header files we move
-it basically like this:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-mv mach-ux500/prcmu-db8500.c drivers/mfd/db8500-prcmu.c
-mv mach-ux500/include/mach/prcmu-defs.h include/linux/mfd/db8500-prcmu.h
-mv mach-ux500/include/mach/prcmu-regs.h drivers/mfd/db8500-prcmu-regs.h
-mach-ux500/include/mach/prcmu.h >> include/linux/mfd/db8500-prcmu.h
-rm arch/arm/mach-ux500/include/mach/prcmu.h
+Allow the generic power domains support code to handle power
+domains with multiple states.  Replace the .power_down_ok()
+callback in struct dev_power_governor with a new callback
+.choose_state() that will return the number of the state to put the
+power domain into.  Add new fields nr_states and current_state to
+struct generic_power_domain with the assumption that state 0 will be
+the full power state and states 1 through (nr_states - 1) will be low
+power.  Replace power domain callbacks .power_off() and .power_on()
+with a single .set_state() callback taking the number of the state
+to put the power domain into as its second argument.  Add a new
+generic power domain callback .power_off_state() (taking a state
+number as its second argument) allowing the core to check if
+device runtime PM callbacks need to be executed before putting the
+given power domain into the given state.  Modify the core power
+domains code and the ARM shmobile platform code to take all of the
+above changes into account.
 
-Then we update different #include statements and Makefile orders etc
-to make the PRCMU driver compile, link and boot in the new place
-without really changing any code.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-ux500/Kconfig                        |    1 +
- arch/arm/mach-ux500/Makefile                       |    2 +-
- arch/arm/mach-ux500/cpu.c                          |    2 +-
- arch/arm/mach-ux500/cpufreq.c                      |    3 +-
- arch/arm/mach-ux500/include/mach/prcmu-defs.h      |   30 -----------------
- drivers/mfd/Kconfig                                |   12 ++++++-
- drivers/mfd/Makefile                               |    4 ++-
- drivers/mfd/ab8500-i2c.c                           |    3 +-
- .../mfd/db8500-prcmu-regs.h                        |    0
- .../prcmu-db8500.c => drivers/mfd/db8500-prcmu.c   |    5 ++-
- .../prcmu.h => include/linux/mfd/db8500-prcmu.h    |   34 ++++++++++++++++++-
- 11 files changed, 54 insertions(+), 42 deletions(-)
- delete mode 100644 arch/arm/mach-ux500/include/mach/prcmu-defs.h
- rename arch/arm/mach-ux500/include/mach/prcmu-regs.h => drivers/mfd/db8500-prcmu-regs.h (100%)
- rename arch/arm/mach-ux500/prcmu-db8500.c => drivers/mfd/db8500-prcmu.c (99%)
- rename arch/arm/mach-ux500/include/mach/prcmu.h => include/linux/mfd/db8500-prcmu.h (54%)
+ arch/arm/mach-shmobile/pm-sh7372.c |   11 ++++--
+ drivers/base/power/domain.c        |   60 +++++++++++++++++++++++++++----------
+ include/linux/pm_domain.h          |   20 ++++++++----
+ 3 files changed, 67 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index 5862601..8071d27 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -15,6 +15,7 @@ config UX500_SOC_DB5500
+Index: linux-2.6/include/linux/pm_domain.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm_domain.h
++++ linux-2.6/include/linux/pm_domain.h
+@@ -12,7 +12,11 @@
+ #include <linux/device.h>
  
- config UX500_SOC_DB8500
- 	bool "DB8500"
-+	select MFD_DB8500_PRCMU
- 
- endmenu
- 
-diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
-index 2a08a10..7a1d43e 100644
---- a/arch/arm/mach-ux500/Makefile
-+++ b/arch/arm/mach-ux500/Makefile
-@@ -5,7 +5,7 @@
- obj-y				:= clock.o cpu.o devices.o devices-common.o \
- 				   id.o usb.o
- obj-$(CONFIG_UX500_SOC_DB5500)	+= cpu-db5500.o dma-db5500.o
--obj-$(CONFIG_UX500_SOC_DB8500)	+= cpu-db8500.o devices-db8500.o prcmu-db8500.o
-+obj-$(CONFIG_UX500_SOC_DB8500)	+= cpu-db8500.o devices-db8500.o
- obj-$(CONFIG_MACH_U8500)	+= board-mop500.o board-mop500-sdi.o \
- 				board-mop500-regulators.o \
- 				board-mop500-uib.o board-mop500-stuib.o \
-diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
-index 0190e0e..11360f7 100644
---- a/arch/arm/mach-ux500/cpu.c
-+++ b/arch/arm/mach-ux500/cpu.c
-@@ -8,6 +8,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-+#include <linux/mfd/db8500-prcmu.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -19,7 +20,6 @@
- #include <mach/hardware.h>
- #include <mach/setup.h>
- #include <mach/devices.h>
--#include <mach/prcmu.h>
- 
- #include "clock.h"
- 
-diff --git a/arch/arm/mach-ux500/cpufreq.c b/arch/arm/mach-ux500/cpufreq.c
-index 5c5b747..d196939 100644
---- a/arch/arm/mach-ux500/cpufreq.c
-+++ b/arch/arm/mach-ux500/cpufreq.c
-@@ -17,10 +17,9 @@
- #include <linux/kernel.h>
- #include <linux/cpufreq.h>
- #include <linux/delay.h>
-+#include <linux/mfd/db8500-prcmu.h>
- 
- #include <mach/hardware.h>
--#include <mach/prcmu.h>
--#include <mach/prcmu-defs.h>
- 
- #define DRIVER_NAME "cpufreq-u8500"
- #define CPUFREQ_NAME "u8500"
-diff --git a/arch/arm/mach-ux500/include/mach/prcmu-defs.h b/arch/arm/mach-ux500/include/mach/prcmu-defs.h
-deleted file mode 100644
-index 848ba64..0000000
---- a/arch/arm/mach-ux500/include/mach/prcmu-defs.h
-+++ /dev/null
-@@ -1,30 +0,0 @@
--/*
-- * Copyright (C) STMicroelectronics 2009
-- * Copyright (C) ST-Ericsson SA 2010
-- *
-- * Author: Sundar Iyer <sundar.iyer@stericsson.com>
-- * Author: Martin Persson <martin.persson@stericsson.com>
-- *
-- * License Terms: GNU General Public License v2
-- *
-- * PRCM Unit definitions
-- */
--
--#ifndef __MACH_PRCMU_DEFS_H
--#define __MACH_PRCMU_DEFS_H
--
--enum prcmu_cpu_opp {
--	CPU_OPP_INIT	  = 0x00,
--	CPU_OPP_NO_CHANGE = 0x01,
--	CPU_OPP_100	  = 0x02,
--	CPU_OPP_50	  = 0x03,
--	CPU_OPP_MAX	  = 0x04,
--	CPU_OPP_EXT_CLK	  = 0x07
--};
--enum prcmu_ape_opp {
--	APE_OPP_NO_CHANGE = 0x00,
--	APE_OPP_100	  = 0x02,
--	APE_OPP_50	  = 0x03,
--};
--
--#endif /* __MACH_PRCMU_DEFS_H */
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 3ed3ff0..7eaeb97 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -538,7 +538,7 @@ config AB8500_CORE
- 
- config AB8500_I2C_CORE
- 	bool "AB8500 register access via PRCMU I2C"
--	depends on AB8500_CORE && UX500_SOC_DB8500
-+	depends on AB8500_CORE && MFD_DB8500_PRCMU
- 	default y
- 	help
- 	  This enables register access to the AB8500 chip via PRCMU I2C.
-@@ -575,6 +575,16 @@ config AB3550_CORE
- 	  LEDs, vibrator, system power and temperature, power management
- 	  and ALSA sound.
- 
-+config MFD_DB8500_PRCMU
-+	bool "ST-Ericsson DB8500 Power Reset Control Management Unit"
-+	depends on UX500_SOC_DB8500
-+	select MFD_CORE
-+	help
-+	  Select this option to enable support for the DB8500 Power Reset
-+	  and Control Management Unit. This is basically an autonomous
-+	  system controller running an XP70 microprocessor, which is accessed
-+	  through a register map.
+ struct dev_power_governor {
+-	bool (*power_down_ok)(struct dev_power_domain *domain);
++	int (*choose_state)(struct dev_power_domain *domain);
++};
 +
- config MFD_CS5535
- 	tristate "Support for CS5535 and CS5536 southbridge core functions"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 419caa9..814c57a 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -74,9 +74,11 @@ obj-$(CONFIG_AB3100_CORE)	+= ab3100-core.o
- obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
- obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
- obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
--obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
- obj-$(CONFIG_AB8500_DEBUG)	+= ab8500-debugfs.o
- obj-$(CONFIG_AB8500_GPADC)	+= ab8500-gpadc.o
-+obj-$(CONFIG_MFD_DB8500_PRCMU)	+= db8500-prcmu.o
-+# ab8500-i2c need to come after db8500-prcmu (which provides the channel)
-+obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
- obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
- obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
-diff --git a/drivers/mfd/ab8500-i2c.c b/drivers/mfd/ab8500-i2c.c
-index 821e6b8..9be541c 100644
---- a/drivers/mfd/ab8500-i2c.c
-+++ b/drivers/mfd/ab8500-i2c.c
-@@ -11,8 +11,7 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/mfd/ab8500.h>
--
--#include <mach/prcmu.h>
-+#include <linux/mfd/db8500-prcmu.h>
++struct power_domain_state {
++	void *platform_data;
+ };
  
- static int ab8500_i2c_write(struct ab8500 *ab8500, u16 addr, u8 data)
+ struct generic_power_domain {
+@@ -23,12 +27,14 @@ struct generic_power_domain {
+ 	struct list_head device_list;
+ 	struct mutex lock;
+ 	struct dev_power_governor *gov;
+-	unsigned int in_progress;
++	int nr_states;
++	int current_state;
+ 	bool power_is_off;
++	unsigned int in_progress;
+ 	unsigned int device_count;
+ 	unsigned int suspended_count;
+-	int (*power_off)(struct dev_power_domain *domain);
+-	int (*power_on)(struct dev_power_domain *domain);
++	int (*set_state)(struct dev_power_domain *domain, int state);
++	bool (*power_off_state)(struct dev_power_domain *domain, int state);
+ 	int (*start_device)(struct device *dev);
+ 	int (*stop_device)(struct device *dev);
+ };
+@@ -48,7 +54,8 @@ extern int pm_genpd_add_subdomain(struct
+ extern int pm_genpd_remove_subdomain(struct generic_power_domain *genpd,
+ 				     struct generic_power_domain *target);
+ extern void pm_genpd_init(struct generic_power_domain *genpd,
+-			  struct dev_power_governor *gov, bool is_off);
++			  struct dev_power_governor *gov, int nr_states,
++			  int cur_state);
+ #else
+ static inline int pm_genpd_add_device(struct generic_power_domain *genpd,
+ 				      struct device *dev)
+@@ -71,7 +78,8 @@ static inline int pm_genpd_remove_subdom
+ 	return -ENOSYS;
+ }
+ static inline void pm_genpd_init(struct generic_power_domain *genpd,
+-				 struct dev_power_governor *gov, bool is_off) {}
++				 struct dev_power_governor *gov,
++				 int nr_states, int cur_state) {}
+ #endif
+ 
+ #endif /* _LINUX_PM_DOMAIN_H */
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -62,6 +62,7 @@ static int __pm_genpd_poweroff(struct ge
+ 	struct generic_power_domain *subdomain;
+ 	struct dev_list_entry *dle;
+ 	unsigned int not_suspended;
++	int new_state;
+ 	int ret;
+ 
+ 	if (genpd->power_is_off)
+@@ -83,9 +84,23 @@ static int __pm_genpd_poweroff(struct ge
+ 			return ret;
+ 	}
+ 
+-	if (genpd->gov && genpd->gov->power_down_ok) {
+-		if (!genpd->gov->power_down_ok(&genpd->domain))
+-			return -EAGAIN;
++	new_state = (genpd->gov && genpd->gov->choose_state) ?
++			genpd->gov->choose_state(&genpd->domain) : 1;
++	if (new_state < 0 || new_state >= genpd->nr_states)
++		return -EAGAIN;
++
++	if (new_state == genpd->current_state)
++		return 0;
++
++	if (genpd->power_off_state
++	    && !genpd->power_off_state(&genpd->domain, new_state)) {
++		if (genpd->set_state) {
++			ret = genpd->set_state(&genpd->domain, new_state);
++			if (ret)
++				return ret;
++		}
++		genpd->current_state = new_state;
++		return 0;
+ 	}
+ 
+ 	list_for_each_entry_reverse(dle, &genpd->device_list, node) {
+@@ -105,9 +120,13 @@ static int __pm_genpd_poweroff(struct ge
+ 			goto err_dev;
+ 	}
+ 
+-	if (genpd->power_off)
+-		genpd->power_off(&genpd->domain);
++	if (genpd->set_state) {
++		ret = genpd->set_state(&genpd->domain, new_state);
++		if (ret)
++			goto err_dev;
++	}
+ 
++	genpd->current_state = new_state;
+ 	genpd->power_is_off = true;
+ 
+ 	return 0;
+@@ -199,14 +218,17 @@ static int __pm_genpd_poweron(struct gen
  {
-diff --git a/arch/arm/mach-ux500/include/mach/prcmu-regs.h b/drivers/mfd/db8500-prcmu-regs.h
-similarity index 100%
-rename from arch/arm/mach-ux500/include/mach/prcmu-regs.h
-rename to drivers/mfd/db8500-prcmu-regs.h
-diff --git a/arch/arm/mach-ux500/prcmu-db8500.c b/drivers/mfd/db8500-prcmu.c
-similarity index 99%
-rename from arch/arm/mach-ux500/prcmu-db8500.c
-rename to drivers/mfd/db8500-prcmu.c
-index c522d26..31f18c8 100644
---- a/arch/arm/mach-ux500/prcmu-db8500.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -20,10 +20,11 @@
- #include <linux/jiffies.h>
- #include <linux/bitops.h>
- #include <linux/interrupt.h>
-+#include <linux/mfd/db8500-prcmu.h>
+ 	struct dev_list_entry *dle;
  
- #include <mach/hardware.h>
--#include <mach/prcmu-regs.h>
--#include <mach/prcmu-defs.h>
-+
-+#include "db8500-prcmu-regs.h"
+-	if (!genpd->power_is_off)
++	if (genpd->current_state == 0)
+ 		return 0;
  
- /* Global var to runtime determine TCDM base for v2 or v1 */
- static __iomem void *tcdm_base;
-diff --git a/arch/arm/mach-ux500/include/mach/prcmu.h b/include/linux/mfd/db8500-prcmu.h
-similarity index 54%
-rename from arch/arm/mach-ux500/include/mach/prcmu.h
-rename to include/linux/mfd/db8500-prcmu.h
-index c49e456..d591d79 100644
---- a/arch/arm/mach-ux500/include/mach/prcmu.h
-+++ b/include/linux/mfd/db8500-prcmu.h
-@@ -2,6 +2,37 @@
-  * Copyright (C) STMicroelectronics 2009
-  * Copyright (C) ST-Ericsson SA 2010
-  *
-+ * Author: Sundar Iyer <sundar.iyer@stericsson.com>
-+ * Author: Martin Persson <martin.persson@stericsson.com>
-+ *
-+ * License Terms: GNU General Public License v2
-+ *
-+ * PRCM Unit definitions
-+ */
-+
-+#ifndef __MACH_PRCMU_DEFS_H
-+#define __MACH_PRCMU_DEFS_H
-+
-+enum prcmu_cpu_opp {
-+	CPU_OPP_INIT	  = 0x00,
-+	CPU_OPP_NO_CHANGE = 0x01,
-+	CPU_OPP_100	  = 0x02,
-+	CPU_OPP_50	  = 0x03,
-+	CPU_OPP_MAX	  = 0x04,
-+	CPU_OPP_EXT_CLK	  = 0x07
-+};
-+enum prcmu_ape_opp {
-+	APE_OPP_NO_CHANGE = 0x00,
-+	APE_OPP_100	  = 0x02,
-+	APE_OPP_50	  = 0x03,
-+};
-+
-+#endif /* __MACH_PRCMU_DEFS_H */
-+
-+/*
-+ * Copyright (C) STMicroelectronics 2009
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-  * Author: Kumar Sanghvi <kumar.sanghvi@stericsson.com>
-  * Author: Sundar Iyer <sundar.iyer@stericsson.com>
-  * Author: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
-@@ -12,7 +43,6 @@
+-	if (genpd->power_on) {
+-		int ret = genpd->power_on(&genpd->domain);
++	if (genpd->set_state) {
++		int ret = genpd->set_state(&genpd->domain, 0);
+ 		if (ret)
+ 			return ret;
+ 	}
++	genpd->current_state = 0;
++	if (!genpd->power_is_off)
++		return 0;
+ 
+ 	genpd->power_is_off = false;
+ 
+@@ -363,8 +385,8 @@ static int pm_genpd_suspend_noirq(struct
+ 
+ 	mutex_lock(&genpd->lock);
+ 	if (++genpd->suspended_count == genpd->device_count) {
+-		if (genpd->power_off)
+-			genpd->power_off(&genpd->domain);
++		if (genpd->set_state)
++			genpd->set_state(&genpd->domain, genpd->nr_states - 1);
+ 	}
+ 	mutex_unlock(&genpd->lock);
+ 
+@@ -395,8 +417,8 @@ static int pm_genpd_resume_noirq(struct
+ 
+ 	mutex_lock(&genpd->lock);
+ 	if (genpd->suspended_count == genpd->device_count) {
+-		if (genpd->power_on) {
+-			int ret = genpd->power_on(&genpd->domain);
++		if (genpd->set_state) {
++			int ret = genpd->set_state(&genpd->domain, 0);
+ 			if (ret) {
+ 				mutex_unlock(&genpd->lock);
+ 				return ret;
+@@ -713,10 +735,12 @@ int pm_genpd_remove_subdomain(struct gen
+  * pm_genpd_init - Initialize a generic I/O power domain object.
+  * @genpd: Power domain object to initialize.
+  * @gov: Power domain governor to associate with the domain (may be NULL).
+- * @is_off: Initial value of the domain's power_is_off field.
++ * @nr_states: Number of power domain states (must be greater than 1).
++ * @cur_state: Initial state of the power domain.
   */
- #ifndef __MACH_PRCMU_H
- #define __MACH_PRCMU_H
--#include <mach/prcmu-defs.h>
+ void pm_genpd_init(struct generic_power_domain *genpd,
+-		   struct dev_power_governor *gov, bool is_off)
++		   struct dev_power_governor *gov, int nr_states,
++		   int cur_state)
+ {
+ 	if (IS_ERR_OR_NULL(genpd))
+ 		return;
+@@ -727,8 +751,14 @@ void pm_genpd_init(struct generic_power_
+ 	INIT_LIST_HEAD(&genpd->subdomain_list);
+ 	mutex_init(&genpd->lock);
+ 	genpd->gov = gov;
++	genpd->nr_states = nr_states > 1 ? nr_states : 2;
++	if (cur_state < 0 || cur_state >= nr_states)
++		cur_state = 0;
++	genpd->current_state = cur_state;
++	genpd->power_is_off = genpd->power_off_state ?
++		genpd->power_off_state(&genpd->domain, cur_state) :
++			(cur_state > 0);
+ 	genpd->in_progress = 0;
+-	genpd->power_is_off = is_off;
+ 	genpd->device_count = 0;
+ 	genpd->suspended_count = 0;
+ 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
+Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
++++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -60,15 +60,20 @@ static int pd_power_up(struct dev_power_
+ 	return 0;
+ }
  
- void __init prcmu_early_init(void);
- int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
-@@ -21,7 +51,7 @@ int prcmu_set_ape_opp(enum prcmu_ape_opp opp);
- int prcmu_set_cpu_opp(enum prcmu_cpu_opp opp);
- int prcmu_set_ape_cpu_opps(enum prcmu_ape_opp ape_opp,
- 			   enum prcmu_cpu_opp cpu_opp);
--int prcmu_get_ape_opp(void);
-+enum prcmu_ape_opp prcmu_get_ape_opp(void);
- int prcmu_get_cpu_opp(void);
- bool prcmu_has_arm_maxopp(void);
++static int pd_set_state(struct dev_power_domain *domain, int state)
++{
++	return state > 0 ? pd_power_down(domain) : pd_power_up(domain);
++}
++
+ static void sh7372_init_domain(struct generic_power_domain *domain,
+ 			       struct sh7372_domain_data *pdata)
+ {
+-	pm_genpd_init(domain, NULL, false);
+ 	domain->domain.platform_data = pdata;
+ 	domain->stop_device = pm_runtime_clk_suspend;
+ 	domain->start_device = pm_runtime_clk_resume;
+-	domain->power_off = pd_power_down;
+-	domain->power_on = pd_power_up;
++	domain->set_state = pd_set_state;
++	domain->power_off_state = NULL;
++	pm_genpd_init(domain, NULL, 2, 0);
+ }
  
--- 
-1.7.4.4
+ void sh7372_add_device_to_domain(struct generic_power_domain *domain,
 
