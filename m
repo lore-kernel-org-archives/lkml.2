@@ -1,190 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab1EOTlS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 15:41:18 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:39725 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751279Ab1EOTlR (ORCPT
+	id S1752103Ab1EOTtD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 15:49:03 -0400
+Received: from vps.jankratochvil.net ([46.28.109.124]:47991 "EHLO
+	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751452Ab1EOTtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 15:41:17 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: [PATCH RFC] tea575x: convert to control framework
-Date: Sun, 15 May 2011 21:41:01 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-References: <201105140017.26968.linux@rainbow-software.org> <201105141206.51832.hverkuil@xs4all.nl>
-In-Reply-To: <201105141206.51832.hverkuil@xs4all.nl>
+	Sun, 15 May 2011 15:49:01 -0400
+Date: Sun, 15 May 2011 21:48:29 +0200
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
+ implement PTRACE_SEIZE]
+Message-ID: <20110515194829.GA27023@host1.jankratochvil.net>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-3-git-send-email-tj@kernel.org>
+ <20110515155602.GD31855@host1.jankratochvil.net>
+ <20110515162630.GG23665@htj.dyndns.org>
+ <20110515171512.GA24047@host1.jankratochvil.net>
+ <20110515172505.GL23665@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201105152141.05415.linux@rainbow-software.org>
+In-Reply-To: <20110515172505.GL23665@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert tea575x-tuner to use the new V4L2 control framework.
+Hi Tejun,
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+On Sun, 15 May 2011 19:25:05 +0200, Tejun Heo wrote:
+> On Sun, May 15, 2011 at 07:15:12PM +0200, Jan Kratochvil wrote:
+> > On Sun, 15 May 2011 18:26:30 +0200, Tejun Heo wrote:
+> > > the code to SEIZE and establish initial state would be simple.
+> > 
+> > In normal case yes; but one needs to handle all the corner cases when the
+> > first signal is not INTERRUPT; which one usually does not handle as during
+> > development (=in normal cases) it is always INTERRUPT.
+[...]
+> Maybe this is best solved with a test case which can reliably trigger
+> different initial traps sites?
 
---- linux-2.6.39-rc2-/include/sound/tea575x-tuner.h	2011-05-13 19:39:23.000000000 +0200
-+++ linux-2.6.39-rc2/include/sound/tea575x-tuner.h	2011-05-15 20:34:54.000000000 +0200
-@@ -23,8 +23,7 @@
-  */
- 
- #include <linux/videodev2.h>
--#include <media/v4l2-dev.h>
--#include <media/v4l2-ioctl.h>
-+#include <media/v4l2-ctrls.h>
- 
- #define TEA575X_FMIF	10700
- 
-@@ -54,6 +53,7 @@ struct snd_tea575x {
- 	void *private_data;
- 	u8 card[32];
- 	u8 bus_info[32];
-+	struct v4l2_ctrl_handler ctrl_handler;
- };
- 
- int snd_tea575x_init(struct snd_tea575x *tea);
---- linux-2.6.39-rc2-/sound/i2c/other/tea575x-tuner.c	2011-05-13 19:39:23.000000000 +0200
-+++ linux-2.6.39-rc2/sound/i2c/other/tea575x-tuner.c	2011-05-15 20:34:23.000000000 +0200
-@@ -22,11 +22,11 @@
- 
- #include <asm/io.h>
- #include <linux/delay.h>
--#include <linux/interrupt.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/version.h>
--#include <sound/core.h>
-+#include <media/v4l2-dev.h>
-+#include <media/v4l2-ioctl.h>
- #include <sound/tea575x-tuner.h>
- 
- MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
-@@ -62,17 +62,6 @@ module_param(radio_nr, int, 0);
- #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
- #define TEA575X_BIT_FREQ_MASK	0x7fff
- 
--static struct v4l2_queryctrl radio_qctrl[] = {
--	{
--		.id            = V4L2_CID_AUDIO_MUTE,
--		.name          = "Mute",
--		.minimum       = 0,
--		.maximum       = 1,
--		.default_value = 1,
--		.type          = V4L2_CTRL_TYPE_BOOLEAN,
--	}
--};
--
- /*
-  * lowlevel part
-  */
-@@ -266,47 +255,19 @@ static int vidioc_s_audio(struct file *f
- 	return 0;
- }
- 
--static int vidioc_queryctrl(struct file *file, void *priv,
--					struct v4l2_queryctrl *qc)
-+static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
- {
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(radio_qctrl); i++) {
--		if (qc->id && qc->id == radio_qctrl[i].id) {
--			memcpy(qc, &(radio_qctrl[i]),
--						sizeof(*qc));
--			return 0;
--		}
--	}
--	return -EINVAL;
--}
--
--static int vidioc_g_ctrl(struct file *file, void *priv,
--					struct v4l2_control *ctrl)
--{
--	struct snd_tea575x *tea = video_drvdata(file);
-+	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
- 
- 	switch (ctrl->id) {
- 	case V4L2_CID_AUDIO_MUTE:
--		ctrl->value = tea->mute;
--		return 0;
--	}
--	return -EINVAL;
--}
--
--static int vidioc_s_ctrl(struct file *file, void *priv,
--					struct v4l2_control *ctrl)
--{
--	struct snd_tea575x *tea = video_drvdata(file);
--
--	switch (ctrl->id) {
--	case V4L2_CID_AUDIO_MUTE:
--		if (tea->mute != ctrl->value) {
--			tea->mute = ctrl->value;
-+		if (tea->mute != ctrl->val) {
-+			tea->mute = ctrl->val;
- 			snd_tea575x_set_freq(tea);
- 		}
- 		return 0;
- 	}
-+
- 	return -EINVAL;
- }
- 
-@@ -355,9 +316,6 @@ static const struct v4l2_ioctl_ops tea57
- 	.vidioc_s_input     = vidioc_s_input,
- 	.vidioc_g_frequency = vidioc_g_frequency,
- 	.vidioc_s_frequency = vidioc_s_frequency,
--	.vidioc_queryctrl   = vidioc_queryctrl,
--	.vidioc_g_ctrl      = vidioc_g_ctrl,
--	.vidioc_s_ctrl      = vidioc_s_ctrl,
- };
- 
- static struct video_device tea575x_radio = {
-@@ -367,6 +325,10 @@ static struct video_device tea575x_radio
- 	.release	= video_device_release,
- };
- 
-+static const struct v4l2_ctrl_ops tea575x_ctrl_ops = {
-+	.s_ctrl = tea575x_s_ctrl,
-+};
-+
- /*
-  * initialize all the tea575x chips
-  */
-@@ -406,6 +368,17 @@ int snd_tea575x_init(struct snd_tea575x
- 		return retval;
- 	}
- 
-+	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
-+	tea575x_radio_inst->ctrl_handler = &tea->ctrl_handler;
-+	v4l2_ctrl_new_std(&tea->ctrl_handler, &tea575x_ctrl_ops, V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
-+	retval = tea->ctrl_handler.error;
-+	if (retval) {
-+		v4l2_ctrl_handler_free(&tea->ctrl_handler);
-+		kfree(tea575x_radio_inst);
-+		return retval;
-+	}
-+	v4l2_ctrl_handler_setup(&tea->ctrl_handler);
-+
- 	snd_tea575x_set_freq(tea);
- 	tea->vd = tea575x_radio_inst;
- 
-@@ -415,6 +388,7 @@ int snd_tea575x_init(struct snd_tea575x
- void snd_tea575x_exit(struct snd_tea575x *tea)
- {
- 	if (tea->vd) {
-+		v4l2_ctrl_handler_free(&tea->ctrl_handler);
- 		video_unregister_device(tea->vd);
- 		tea->vd = NULL;
- 	}
+How to trigger it reliably?  One can just try it in a loop but it takes minutes
+and depends on hardware specifics making it I guess even unreproducible in
+various configurations.  We were allocating various machines for hours in the
+farm but it may be unreproducible anyway.
+
+http://sources.redhat.com/cgi-bin/cvsweb.cgi/~checkout~/tests/ptrace-tests/tests/attach-into-signal.c?cvsroot=systemtap
+  // Even DEFAULT_LOOPS of 400 is not enough to catch it reliably.
+  // With TESTTIME=60 or more it should be close to 100%,
+  // but takes long time (~10 minutes).
+http://sources.redhat.com/cgi-bin/cvsweb.cgi/~checkout~/tests/ptrace-tests/tests/attach-sigcont-wait.c?cvsroot=systemtap
+/* Failure occurs either immediately or in about 20 runs.
+   But sometimes not.  */
+etc.
 
 
--- 
-Ondrej Zary
+> > > You can tell them apart from userland and it doesn't matter which order or
+> > > how many times INTERRUPT occurs.
+> > 
+> > I must know in which order they come to know when the tracee is still stopped
+> > and I collect the signals to be displayed to the user and at which moment
+> > there are no more signals in the queue and I start waiting on the debuggee
+> > which started running.
+> > 
+> > Otherwise I can workaround it by various waitpid(NOHANG)s but it is better if
+> > the ordering and when INTERRUPT is / is not reported is well defined.
+> 
+> Hmmm... you should be able to tell that without resorting to WNOHANG
+> or depending on order of traps.  That's the goal anyway.  I'm a bit
+> confused tho.  What do you mean by "the tracee is still stopped"?
+> Tracee is always stopped (or rather trapped) after reporting a trap.
+
+When debugging races in multithreaded applications a thread may get multiple
+signals at once.  GDB in the default all-stop mode (the other is non-stop mode)
+stops all the other threads when it sees the first event on some thread.
+
+#include <pthread.h>
+#include <assert.h>
+#include <asm/unistd.h>
+#include <unistd.h>
+#include <signal.h>
+#define tkill(tid, sig) syscall (__NR_tkill, (tid), (sig))
+#define gettid() syscall (__NR_gettid)
+static volatile pid_t tid;
+static void *
+start (void *arg)
+{
+  int i = (intptr_t) arg;
+  while (!tid);
+  sleep (1);
+  tkill (tid, i & 1 ? SIGUSR1 : SIGUSR2);
+  pause ();
+  return arg;
+}
+int main (void)
+{
+  pthread_t thread;
+  int i;
+  for (i = 0; i < 10; i++)
+    pthread_create (&thread, NULL, start, (void *) (intptr_t) i);
+  tid = gettid ();	/* line 25 */
+  sleep (1);
+  return pause ();
+}
+
+gdb -nx ./threadsigs -ex 'tb 25' -ex r -ex 'set debug lin-lwp 1' -ex c
+GNU gdb (GDB) 7.3.50.20110514-cvs
+This GDB was configured as "x86_64-unknown-linux-gnu".
+Program received signal SIGUSR1, User defined signal 1.
+(gdb) info threads 
+  Id   Target Id         Frame 
+  11   Thread 0x7ffff3019700 (LWP 31784) "threadsigs" 0x00007ffff7bcecfd in pause () at ../sysdeps/unix/syscall-template.S:82
+... [ everything in pause () ]
+  2    Thread 0x7ffff7822700 (LWP 31775) "threadsigs" 0x00007ffff7bcecfd in pause () at ../sysdeps/unix/syscall-template.S:82
+* 1    Thread 0x7ffff7fe6720 (LWP 31772) "threadsigs" 0x00007ffff78d0ced in nanosleep () at ../sysdeps/unix/syscall-template.S:82
+(gdb) _
+
+$ grep SigCgt /proc/31772/task/31772/status
+SigCgt:	0000000180000000
+
+OK, so the threads managed to deliver both SIGUSR1 and SIGUSR2 but GDB has
+reported only SIGUSR1 to the user.
+
+# The debugee does not handle SIGUSR1 so it would crash on its delivery:
+(gdb) handle SIGUSR1 nopass
+Signal        Stop	Print	Pass to program	Description
+SIGUSR1       Yes	Yes	No		User defined signal 1
+(gdb) continue 
+Program received signal SIGUSR1, User defined signal 1.
+
+OK, GDB has waitpid()ed SIGUSR1 already and still some thread has delivered
+afterwards before GDB has managed to stop that thread.
+
+(gdb) continue 
+Program received signal SIGUSR2, User defined signal 2.
+
+Only now the user has found SIGUSR2 has also been delivered.  The main thread
+(receiving the signals) has not run yet been resumed at all.  It would be nice
+if GDB could display all the signals the inferior has received as the other
+threads are stopped already after the signals were sent (in pause ()) - this
+gives user a skewed picture of different state in time for each thread.
+
+I would prefer if GDB would print all the signals at once on a single stop:
+
+Program received signal SIGUSR1, User defined signal 1.
+Program received signal SIGUSR2, User defined signal 2.
+(gdb) _
+
+(This is not a simple change for GDB as it has many operations bound to
+receiving single signal.)
+
+Currently when GDB receives SIGUSR1 it has to do PTRACE_CONT before waitpid()
+and receiving SIGUSR2.  The time it does PTRACE_CONT it does not know if then
+waitpid() returns immediately or if the application will run for another hour.
+
+There are similar problems GDB wanting to do something-like-INTERRUPT sends now
+SIGSTOP and then it wants to remove that SIGSTOP from the inferior's queue as
+it would confuse both user and the debuggee if left there.  Fortunately this
+paragraph's pain will no longer be needed with PTRACE_INTERRUPT.
+
+For example if you guarantee that after PTRACE_INTERRUPT the INTERRUPT even
+will always get delivered as the last one after all the other signals GDB could
+safely operate on all the delivered signals without a risk of accidentally
+resuming the debuggee before explicitly instructed to do so by the user.
+
+This is not a real plan how it should be done - but I hope it gives a picture
+debuggers are interested the processing all the already delivered signals.
+GDB should probably check the SigCgt /proc field (it already does in some
+cases) for the informational display of delivered threads.
+
+
+Thanks,
+Jan
