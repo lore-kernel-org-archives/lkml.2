@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089Ab1EOPve (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 11:51:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52271 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760052Ab1EOPvd (ORCPT
+	id S1760106Ab1EOP4b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 11:56:31 -0400
+Received: from vps.jankratochvil.net ([46.28.109.124]:56961 "EHLO
+	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756656Ab1EOP4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 11:51:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:cc:subject:x-mailer:references:in-reply-to
-         :content-type:content-id:date:message-id:mime-version
-         :content-transfer-encoding;
-        b=OW+KmwF9ThCyysos76caLej9gJcsOjL8oAB0TFeHsJxGIG4FGJ3pWZoAS4MQUEPEpd
-         tHXricj/ya57sIx2FtWaZOMroBDQEiGoB00vmmdhRfjCwTXABDm1yAaMmj/qTpFx1pgg
-         ltX97cHIPSv1peZe1TwdNyLQTUJSn3bX2uWqI=
-From: Marek Vasut <marek.vasut.n900@gmail.com>
-Reply-To: Marek Vasut <marek.vasut.n900@gmail.com>
-To: Cyril Hrubis <metan@ucw.cz>, Marek Vasut <marek.vasut@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
-Subject: Re: Zaurus CF tests -- ok
-X-Mailer: Modest 3.2
-References: <20110415211822.GB21111@atrey.karlin.mff.cuni.cz>
-	 <20110415213817.GC4420@atrey.karlin.mff.cuni.cz>
-	 <20110416074134.GA26440@ucw.cz> <201105151426.50230.marek.vasut@gmail.com>
-	  <20110515143141.GA7913@atrey.karlin.mff.cuni.cz>
-In-Reply-To: <20110515143141.GA7913@atrey.karlin.mff.cuni.cz>
-Content-Type: text/plain; charset=utf-8
-Content-ID: <1305474684.17656.1.camel@konomi>
-Date: Sun, 15 May 2011 17:51:25 +0200
-Message-Id: <1305474685.17656.2.camel@konomi>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Sun, 15 May 2011 11:56:30 -0400
+Date: Sun, 15 May 2011 17:56:02 +0200
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace: implement
+ PTRACE_SEIZE]
+Message-ID: <20110515155602.GD31855@host1.jankratochvil.net>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304869745-1073-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi!
-> > Backtrace from QEMU ... I think this is what Cyril observed. But heck,
-> > it   happens in QEMU too ;-)
-> 
-> Yes, that is pretty much it.
-> 
-> It happens randomly, eg. adding printk() line into kernel code
-> (somewhere in mmc stack). Or sometimes crashes in the pccard
-> initalization when two cards are inserted at the boot time.
->
+On Sun, 08 May 2011 17:48:56 +0200, Tejun Heo wrote:
+> The usage is the same with PTRACE_ATTACH but it takes PTRACE_SEIZE_*
+> flags in @data.
 
-It happens randomly in qemu too.
- 
-> -- 
-> metan
+> After PTRACE_SEIZE, tracee will trap.
 
+PTRACE_SEIZE does not need to stop, there is that new PTRACE_INTERRUPT for it.
+This is not an improvement.
+
+It was already addressed by me before so I will give more reasons:
+	https://lkml.org/lkml/2011/3/1/309
+
+GDB already has mode `set observer on' (in this case we are interested in its
+part `set may-interrupt off') - see: $ info '(gdb)Observer Mode'
+	# If you want to [...] observe program behavior without any chance of
+	# disruption by GDB
+This is an increasingly requested feature as one of the ways of monitoring.
+
+There are also requests to handle applications using 10000+ threads, which
+currently have problems with GDB.  One can imagine a needless
+waitpid+PTRACE_CONT is not a help.
+
+There could be a new PTRACE_SEIZE_INTERRUPT option in @data so that
+applications does not have to use two syscalls (PTRACE_SEIZE
++ PTRACE_INTERRUPT) if the applications really want to perform some operations
+on the tracee requiring having it stopped after the attachment.  (Personally
+I do not think this single vs. double syscall difference is worth the new
+flag.)
+
+
+> Which trap will happen isn't fixed.  If other trap conditions exist (signal
+> delivery or group stop), they might be taken; otherwise, a trap with
+> exit_code SIGTRAP | (PTRACE_EVENT_INTERRUPT << 8) is taken.
+
+What if PTRACE_INTERRUPT is called by tracer only after the tracee has stopped
+on a signal delivery?  It should be ignored in such case - as the first signal
+will not be PTRACE_EVENT_INTERRUPT.  (Sorry if you have stated it somewhere.)
+
+
+Thanks,
+Jan
