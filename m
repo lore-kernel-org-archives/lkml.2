@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab1EOOEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 10:04:42 -0400
-Received: from vps.jankratochvil.net ([46.28.109.124]:48870 "EHLO
-	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753522Ab1EOOEl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 10:04:41 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 May 2011 10:04:41 EDT
-Date: Sun, 15 May 2011 15:55:27 +0200
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, oleg@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: ptrace-testsuite status  [Re: [PATCHSET ptrace] ptrace: implement
- PTRACE_SEIZE/INTERRUPT and group stop notification]
-Message-ID: <20110515135527.GA31855@host1.jankratochvil.net>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <201105090027.41534.vda.linux@googlemail.com>
+	id S1760020Ab1EONz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 09:55:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753343Ab1EONz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 09:55:57 -0400
+Date: Sun, 15 May 2011 16:55:41 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+Message-ID: <20110515135541.GF24932@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com>
+ <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com>
+ <874o54h4rt.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201105090027.41534.vda.linux@googlemail.com>
+In-Reply-To: <874o54h4rt.fsf@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 May 2011 00:27:41 +0200, Denys Vlasenko wrote:
-> I don't know the status of ptrace test suite
-> after I stopped working on strace (did the suite bit rot, or is it
-> maintained and still relevant?). If it is still in use,
-> I can adapt these tests and add them to it.
+On Mon, May 09, 2011 at 02:03:26PM +0930, Rusty Russell wrote:
+> On Wed, 4 May 2011 23:51:47 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > Use the new avail_event feature to reduce the number
+> > of exits from the guest.
+> 
+> Figures here would be nice :)
 
-That is:
-	http://sourceware.org/systemtap/wiki/utrace/tests
-	cvs -d :pserver:anoncvs:anoncvs@sourceware.org:/cvs/systemtap co ptrace-tests 
+You mean ASCII art in comments?
 
-The testsuite is actively in use but it has always been a regression testsuite
-only and there are no known new regressions.  So there is no need for
-testsuite updates now.
+> > @@ -228,6 +237,12 @@ add_head:
+> >  	 * new available array entries. */
+> >  	virtio_wmb();
+> >  	vq->vring.avail->idx++;
+> > +	/* If the driver never bothers to kick in a very long while,
+> > +	 * avail index might wrap around. If that happens, invalidate
+> > +	 * kicked_avail index we stored. TODO: make sure all drivers
+> > +	 * kick at least once in 2^16 and remove this. */
+> > +	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
+> > +		vq->kicked_avail_valid = true;
+> 
+> If they don't, they're already buggy.  Simply do:
+>         WARN_ON(vq->vring.avail->idx == vq->kicked_avail);
 
-With new ptrace features sure their testcases would be nice to include there.
-Despite there has never been an attempt to cover existing ptrace functionality
-by the testcases.
+Hmm, but does it say that somewhere?
+It seems that most drivers use locking to prevent
+posting more buffers while they drain the used ring,
+and also kick at least once in vq->num buffers,
+which I guess in the end would work out fine
+as vq num is never as large as 2^15.
 
+> > +static bool vring_notify(struct vring_virtqueue *vq)
+> > +{
+> > +	u16 old, new;
+> > +	bool v;
+> > +	if (!vq->event)
+> > +		return !(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY);
+> > +
+> > +	v = vq->kicked_avail_valid;
+> > +	old = vq->kicked_avail;
+> > +	new = vq->kicked_avail = vq->vring.avail->idx;
+> > +	vq->kicked_avail_valid = true;
+> > +	if (unlikely(!v))
+> > +		return true;
+> 
+> This is the only place you actually used kicked_avail_valid.  Is it
+> possible to initialize it in such a way that you can remove this?
 
-Thanks,
-Jan
+If we kill the code above as you suggested, likely yes.
+Maybe an explicit flag is more obvious?
+
+> > @@ -482,6 +517,8 @@ void vring_transport_features(struct virtio_device *vdev)
+> >  			break;
+> >  		case VIRTIO_RING_F_USED_EVENT_IDX:
+> >  			break;
+> > +		case VIRTIO_RING_F_AVAIL_EVENT_IDX:
+> > +			break;
+> >  		default:
+> >  			/* We don't understand this bit. */
+> >  			clear_bit(i, vdev->features);
+> 
+> Does this belong in a prior patch?
+> 
+> Thanks,
+> Rusty.
+
+Well if we don't support the feature in the ring we should not
+ack the feature, right?
