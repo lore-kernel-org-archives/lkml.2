@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148Ab1EORPl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 13:15:41 -0400
-Received: from vps.jankratochvil.net ([46.28.109.124]:36061 "EHLO
-	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752020Ab1EORPl (ORCPT
+	id S1760200Ab1EORPz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 13:15:55 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:59220 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab1EORPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 13:15:41 -0400
-Date: Sun, 15 May 2011 19:15:12 +0200
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
- implement PTRACE_SEIZE]
-Message-ID: <20110515171512.GA24047@host1.jankratochvil.net>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-3-git-send-email-tj@kernel.org>
- <20110515155602.GD31855@host1.jankratochvil.net>
- <20110515162630.GG23665@htj.dyndns.org>
+	Sun, 15 May 2011 13:15:53 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alex Davis <alex14641@yahoo.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Possible coding issue in udf??
+References: <367853.39582.qm@web130121.mail.mud.yahoo.com>
+	<m2k4dsnghx.fsf@firstfloor.org>
+X-Yow: A KAISER ROLL?!  What good is a Kaiser Roll without a little
+ COLE SLAW on the SIDE?
+Date: Sun, 15 May 2011 19:15:50 +0200
+In-Reply-To: <m2k4dsnghx.fsf@firstfloor.org> (Andi Kleen's message of "Sun, 15
+	May 2011 08:14:02 -0700")
+Message-ID: <m2liy7evg9.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110515162630.GG23665@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 May 2011 18:26:30 +0200, Tejun Heo wrote:
-> the code to SEIZE and establish initial state would be simple.
+Andi Kleen <andi@firstfloor.org> writes:
 
-In normal case yes; but one needs to handle all the corner cases when the
-first signal is not INTERRUPT; which one usually does not handle as during
-development (=in normal cases) it is always INTERRUPT.
+> Alex Davis <alex14641@yahoo.com> writes:
+>
+>> In fs/udf/inode.c, line 1455, linux 2.6.35, there is the following code:
+>>
+>> 	udfperms = ((inode->i_mode & S_IRWXO)) |
+>> 		   ((inode->i_mode & S_IRWXG) << 2) |
+>> 		   ((inode->i_mode & S_IRWXU) << 4);
+>>
+>> Shouldn't we be shifting by 3 bits? i.e:
+>> 	udfperms = ((inode->i_mode & S_IRWXO)) |
+>> 		   ((inode->i_mode & S_IRWXG) << 3) |
+>> 		   ((inode->i_mode & S_IRWXU) << 6);
+>>
+>> The S_I.. constants are all defined in include/linux/stat.h as 3-bit values.
+>>
+>> I will send a patch if needed.
+>
+> I  would suggest you test it first. Put in a UDF disk that triggers
+> this case (verify with a printk). Check in ls -l if the 
+> permissions are correct or wrong.
 
-Such thing is even difficult to test in QA testcases as in some cases one just
-cannot reproduce the (in current case) non-SIGSTOP signal arriving as first
-one.
+That's the write part of UDF, so a read-only test won't trigger.
 
+Andreas.
 
-> How long does it take to attach to / detach from 10000+ threads?  If
-> you don't do it serially, it shouldn't take that long.
-
-It is not (such) a problem it takes time.  It is a problem it stops the tracee
-for a moment which completely changes the tracee's racy behavior one tries to
-debug.
-
-
-> You can tell them apart from userland and it doesn't matter which order or
-> how many times INTERRUPT occurs.
-
-I must know in which order they come to know when the tracee is still stopped
-and I collect the signals to be displayed to the user and at which moment
-there are no more signals in the queue and I start waiting on the debuggee
-which started running.
-
-Otherwise I can workaround it by various waitpid(NOHANG)s but it is better if
-the ordering and when INTERRUPT is / is not reported is well defined.
-
-
-Thanks,
-Jan
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
