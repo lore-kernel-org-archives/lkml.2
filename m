@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab1EOTK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 15:10:28 -0400
-Received: from relay01.digicable.hu ([92.249.128.189]:38079 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab1EOTK0 (ORCPT
+	id S1751755Ab1EOTMz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 15:12:55 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36932 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab1EOTMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 15:10:26 -0400
-Message-ID: <4DD024ED.9000509@freemail.hu>
-Date: Sun, 15 May 2011 21:09:33 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Sun, 15 May 2011 15:12:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=jXCQ2PMTb0apatOT5vHG8Jl1ilOMy0lPKrGrqh6Gz4SSDCrUVmTN+42TEF6VZHs/aF
+         kJjIdP/fVogn1fRs2oLwzxSk34lTK0ut3BoFdPKIu3cMk1VCPrG0g886WYAcyPk6gw/W
+         IUvhF7hrQ4HUWAC2BywplJvvbSdqejxUcFt9g=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #34002] [REGRESSION] [2.6.39-rc3] Wrong resolution in framebuffer and X Window
+Date: Sun, 15 May 2011 21:12:44 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc7; KDE/4.4.5; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Florian Mickler <florian@mickler.org>
+References: <So1vU2GC7XM.A.5wB.44vzNB@chimera> <HA8urZ3ZRcP.A.cZC.h5vzNB@chimera>
+In-Reply-To: <HA8urZ3ZRcP.A.cZC.h5vzNB@chimera>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86 pci acpi: rename struct pci_root_info
-References: <4DCEB5BB.1080202@freemail.hu> <4DCEC4EB.2050107@zytor.com>
-In-Reply-To: <4DCEC4EB.2050107@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.203.108
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105152112.45069.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Márton Németh <nm127@freemail.hu>
+On niedziela, 15 maja 2011 o 00:30:07 Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.38.  Please verify if it still should be listed and let the
+> tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=34002
+> Subject		: [REGRESSION] [2.6.39-rc3] Wrong resolution in framebuffer 
+and X
+> Window Submitter	: Maciej Rutecki <maciej.rutecki@gmail.com>
+> Date		: 2011-04-17 16:04 (28 days old)
+> Message-ID	: <201104171804.04664.maciej.rutecki@gmail.com>
+> References	: http://marc.info/?l=linux-fbdev&m=130305625114863&w=2
 
-Rename struct pci_root_info to struct acpi_pci_root_info in
-arch/x86/pci/acpi.c because there is already a struct
-pci_root_info declared in arch/x86/pci/bus_numa.h . They both
-belnog to x86 architecture and the two declarations differ,
-so after rename each will have a unique name.
 
-Signed-off-by: Márton Németh <nm127@freemail.hu>
----
---- linux-2.6.39-rc7/arch/x86/pci/acpi.c.orig	2011-05-10 04:33:54.000000000 +0200
-+++ linux-2.6.39-rc7/arch/x86/pci/acpi.c	2011-05-15 17:02:52.000000000 +0200
-@@ -7,7 +7,7 @@
- #include <asm/numa.h>
- #include <asm/pci_x86.h>
+Still present in -rc7
 
--struct pci_root_info {
-+struct acpi_pci_root_info {
- 	struct acpi_device *bridge;
- 	char *name;
- 	unsigned int res_num;
-@@ -120,7 +120,7 @@ resource_to_addr(struct acpi_resource *r
- static acpi_status
- count_resource(struct acpi_resource *acpi_res, void *data)
- {
--	struct pci_root_info *info = data;
-+	struct acpi_pci_root_info *info = data;
- 	struct acpi_resource_address64 addr;
- 	acpi_status status;
-
-@@ -133,7 +133,7 @@ count_resource(struct acpi_resource *acp
- static acpi_status
- setup_resource(struct acpi_resource *acpi_res, void *data)
- {
--	struct pci_root_info *info = data;
-+	struct acpi_pci_root_info *info = data;
- 	struct resource *res;
- 	struct acpi_resource_address64 addr;
- 	acpi_status status;
-@@ -188,7 +188,7 @@ static bool resource_contains(struct res
- 	return false;
- }
-
--static void coalesce_windows(struct pci_root_info *info, int type)
-+static void coalesce_windows(struct acpi_pci_root_info *info, int type)
- {
- 	int i, j;
- 	struct resource *res1, *res2;
-@@ -223,7 +223,7 @@ static void coalesce_windows(struct pci_
- 	}
- }
-
--static void add_resources(struct pci_root_info *info)
-+static void add_resources(struct acpi_pci_root_info *info)
- {
- 	int i;
- 	struct resource *res, *root, *conflict;
-@@ -259,7 +259,7 @@ static void
- get_current_resources(struct acpi_device *device, int busnum,
- 			int domain, struct pci_bus *bus)
- {
--	struct pci_root_info info;
-+	struct acpi_pci_root_info info;
- 	size_t size;
-
- 	if (pci_use_crs)
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
