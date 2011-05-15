@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569Ab1EOOrn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 10:47:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28662 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab1EOOrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 10:47:41 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "linux-btrfs" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Btrfs updates
-Date: Sun, 15 May 2011 10:47:23 -0400
-Message-Id: <1305470325-sup-6477@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DCFE78A.00E1:SCFMA922111,ss=1,fgs=0
+	id S1760042Ab1EOPOd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 11:14:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24073 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756286Ab1EOPOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 11:14:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,369,1301900400"; 
+   d="scan'208";a="1939157"
+From: Andi Kleen <andi@firstfloor.org>
+To: Alex Davis <alex14641@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Possible coding issue in udf??
+References: <367853.39582.qm@web130121.mail.mud.yahoo.com>
+Date: Sun, 15 May 2011 08:14:02 -0700
+In-Reply-To: <367853.39582.qm@web130121.mail.mud.yahoo.com> (Alex Davis's
+	message of "Fri, 13 May 2011 19:57:20 -0700 (PDT)")
+Message-ID: <m2k4dsnghx.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alex Davis <alex14641@yahoo.com> writes:
 
-Hi everyone,
+> In fs/udf/inode.c, line 1455, linux 2.6.35, there is the following code:
+>
+> 	udfperms = ((inode->i_mode & S_IRWXO)) |
+> 		   ((inode->i_mode & S_IRWXG) << 2) |
+> 		   ((inode->i_mode & S_IRWXU) << 4);
+>
+> Shouldn't we be shifting by 3 bits? i.e:
+> 	udfperms = ((inode->i_mode & S_IRWXO)) |
+> 		   ((inode->i_mode & S_IRWXG) << 3) |
+> 		   ((inode->i_mode & S_IRWXU) << 6);
+>
+> The S_I.. constants are all defined in include/linux/stat.h as 3-bit values.
+>
+> I will send a patch if needed.
 
-The master branch of the btrfs unstable tree has a few more fixes:
+I  would suggest you test it first. Put in a UDF disk that triggers
+this case (verify with a printk). Check in ls -l if the 
+permissions are correct or wrong.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+-Andi
 
-These include small fixes in the new per-file flags, an oops in
-the btrfs acl code and ENOSPC fixes for mixed block groups (used in very
-small filesystems).
-
-Li Zefan (3) commits (+15/-10):
-    Btrfs: fix FS_IOC_SETFLAGS ioctl (+2/-0)
-    Btrfs: fix FS_IOC_GETFLAGS ioctl (+7/-0)
-    fs: remove FS_COW_FL (+6/-10)
-
-Daniel J Blueman (1) commits (+3/-2):
-    Prevent oopsing in posix_acl_valid()
-
-liubo (1) commits (+26/-11):
-    Btrfs: fix easily get into ENOSPC in mixed case
-
-Total: (5) commits (+44/-23)
-
- fs/btrfs/acl.c         |    5 +++--
- fs/btrfs/extent-tree.c |   37 ++++++++++++++++++++++++++-----------
- fs/btrfs/ioctl.c       |   24 +++++++++++++++---------
- include/linux/fs.h     |    1 -
- 4 files changed, 44 insertions(+), 23 deletions(-)
+-- 
+ak@linux.intel.com -- Speaking for myself only
