@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928Ab1EODZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 May 2011 23:25:23 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:59245 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759915Ab1EODZR (ORCPT
+	id S1759936Ab1EODZb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 23:25:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41683 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759854Ab1EODZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 May 2011 23:25:17 -0400
+	Sat, 14 May 2011 23:25:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:content-type:date:message-id:mime-version
          :x-mailer:content-transfer-encoding;
-        b=SAPWIQBp3amWZ8YxegzikaUUT1FPioj9yAzgRj68g56EHsZCwA42Ul99W8f5TiIfHI
-         jardipDq7Mk8m/KmxNC8RvMffd143qJfkykWpFr0+n5UX8uypYKadKQzPmiWEsgNR3fM
-         7Z6xwqpa4aBRbGKjkJWmRujgbqKAupK7tGGqs=
+        b=RREC8FVmpZ9hqB6+PCRlKuXRbAu7YK5DV/AiF/ElOxlQc1BPQRRIIHgr2SwUxedfp1
+         /T8HEglRvczJDo+N90xWmQJ233mbxn3YSgvRssUILfeqyxMbVmtDJdj8agr2ZynC2MWR
+         6OLbLefnxPPhIGTWBSAdtIuy8eYHGMdFz/OBQ=
 Subject: [PATCH 1/3] Cleanup:removing extra spaces,redundant code and using
  macros[staging sm7xx]
 From: anish <anish198519851985@gmail.com>
 To: greg@kroah.com, teddy.wang@siliconmotion.com.cn
 Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 15 May 2011 08:54:58 +0530
-Message-ID: <1305429898.9023.0.camel@anish-desktop>
+Date: Sun, 15 May 2011 08:55:24 +0530
+Message-ID: <1305429924.9023.1.camel@anish-desktop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -121,6 +121,7 @@ index 0c11383..c5e6989 100644
 +#define numVGAModes		ARRAY_SIZE(VGAMode)
 -- 
 1.7.0.4
+
 
 
 
