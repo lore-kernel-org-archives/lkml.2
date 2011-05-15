@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab1EOIXR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 04:23:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54620 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696Ab1EOIXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 04:23:12 -0400
-Message-ID: <4DCF8D6B.9080905@redhat.com>
-Date: Sun, 15 May 2011 11:23:07 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1755586Ab1EOI2c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 04:28:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51596 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754607Ab1EOI22 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 04:28:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Nmzc0foxFnCvySGesGLySMDnZXvj8NsKM8J+HzTJrSUpUE/d0UwYaStUBxIvZvxb3H
+         vSr19kUEJkpQ2+uicfcZvdqVbvJ56mkCsFiByeEKPMSNWQNj8Wv41xJSvnKm4ND3novB
+         qTuapDcnJ7F/qE+IFn7hvVxCUk4mNM94Wy8uA=
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/7] KVM: MMU: remove the arithmetic of parent pte rmap
-References: <4DCEF5B1.3050706@cn.fujitsu.com> <4DCEF7C2.401@cn.fujitsu.com>
-In-Reply-To: <4DCEF7C2.401@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTiktnQyEnNiQdTr_p=PG66rzVkr9ig@mail.gmail.com>
+References: <1302960373-5309-1-git-send-email-abogani@kernel.org>
+	<BANLkTi=y60Jt3-OMzbxQJzGkvzCzNJfJtA@mail.gmail.com>
+	<BANLkTimfFEv+vZ8dYvhG0oj2Q4g+KnG4aA@mail.gmail.com>
+	<BANLkTinDiGCaKPtS+ZpKf2swJpParJ4eew@mail.gmail.com>
+	<BANLkTi=JXq+V783amiJB-qLX=7PaeH-83w@mail.gmail.com>
+	<BANLkTi=OXuR4iJFqUEa4pA=yO0aXaqEzyA@mail.gmail.com>
+	<BANLkTikFSN-DkkPNPtv1VigCg08YoB_q2g@mail.gmail.com>
+	<BANLkTi=fhsSP069WMNPN8BA=E1=1TZ6Zmw@mail.gmail.com>
+	<BANLkTikyR7ByAgxtbz-gOHspLMFo4a+vaQ@mail.gmail.com>
+	<BANLkTinQx+8T3Hv0T5yPEAtxtU87CcOJVw@mail.gmail.com>
+	<BANLkTiktnQyEnNiQdTr_p=PG66rzVkr9ig@mail.gmail.com>
+Date: Sun, 15 May 2011 10:28:25 +0200
+X-Google-Sender-Auth: fAJMJ_ub36atCoQNI5S9d1yTPsw
+Message-ID: <BANLkTinr5xw8wDrZ6P1d5BYLRMmj-i3w4g@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Speed up the symbols' resolution process V4
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2011 12:44 AM, Xiao Guangrong wrote:
-> Parent pte rmap and page rmap are very similar, so use the same arithmetic for
-> them
+Dear Mr. Frysinger,
+
+2011/5/14 Mike Frysinger <vapier.adi@gmail.com>:
+> On Fri, May 13, 2011 at 03:01, Alessio Igor Bogani wrote:
+>> I changed the "__" in "+". Could you test this, please?
+>> http://git.kernel.org/?p=linux/kernel/git/abogani/linux-2.6.git;a=shortlog;h=refs/heads/ksym-sorted-v6
+>> Thanks a lot!
 >
+> seems to build & boot ok for me.  cheers.
+> -mike
 
-While they're similar, this is going to cause a lot of confusion because 
-the name 'rmap' already has a deep meaning, at least for me.
+Thank you very much!
 
-Maybe we can call the abstract structure 'spte_list' and define 
-operations on that, then implement rmap_* and *_parent_pte as wrappers 
-around spte_list.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Ciao,
+Alessio
