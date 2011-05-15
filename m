@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760151Ab1EOQrL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 12:47:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42054 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab1EOQrJ (ORCPT
+	id S1760157Ab1EOQwe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 12:52:34 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:52454 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760043Ab1EOQwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 12:47:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CNNIg3kLqcLjx3pQ7kl7JeVHHCFIpGuNdcdmeJS6MeTVCrCd/iVLou1xRv5MyQGXhp
-         i9YQIW/HaAt/WKPnZhsx3/eUIVi+ZnbqQwOeP9FoQQ7EnPwdkpiPjwR35HGXFUzUbXgX
-         RRW9jMkIXxCBWjj4Yc+moU+33QTPlMtlahbGo=
-Date: Sun, 15 May 2011 18:47:05 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: waitpid(WNOHANG) should report SIGCHLD-notified signals  [Re:
- [PATCH 09/11] job control: reorganize wait_task_stopped()]
-Message-ID: <20110515164705.GI23665@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-10-git-send-email-tj@kernel.org>
- <20110511154854.GB23688@redhat.com>
- <20110511192902.GC24245@mtj.dyndns.org>
- <20110512154247.GC18599@redhat.com>
- <20110512160253.GK1030@htj.dyndns.org>
- <20110512172506.GA23033@redhat.com>
- <20110512173228.GO1030@htj.dyndns.org>
- <20110515144017.GC31855@host1.jankratochvil.net>
-MIME-Version: 1.0
+	Sun, 15 May 2011 12:52:33 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Sun, 15 May 2011 12:49:21 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Greg KH <greg@kroah.com>
+Cc: matt mooney <mfmooney@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/14] staging: usbip: add userspace code
+Message-ID: <20110515164921.GA4060@foursquare.net>
+References: <cover.1305369175.git.mfm@muteddisk.com> <7dce7775af890105a685b67408f38fbef99cbdfe.1305369176.git.mfm@muteddisk.com> <20110515034608.GA8484@foursquare.net> <20110515162950.GD1315@kroah.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110515144017.GC31855@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110515162950.GD1315@kroah.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jan.
-
-On Sun, May 15, 2011 at 04:40:17PM +0200, Jan Kratochvil wrote:
-> It may be not related, I do not inderstand the kernel internals being
-> discussed.
+On Sun, May 15, 2011 at 09:29:50AM -0700, Greg KH wrote:
+> Are these in the "real" usb.ids file?  If not, care to enter them in on
+> the linux-usb.org site so we can sync up there?
 > 
-> I was told by Roland McGrath that after SIGCHLD of a ptrace even from tracee
-> invokes sighandler for that SIGCHLD in the tracer then waitpid(WNOHANG) still
-> may return 0 as the signal is not yet ready.  I was not able to reproduce it
-> with a testcase myself.
+> This file will be removed from the in-kernel tree as soon as possible,
+> it's just there as part of the original import of the usbip userspace
+> tools.  No one should ever have to have 2 copies of this file on their
+> system, that's madness.
 
-Hmmm... I could easily be wrong but AFAICS that shouldn't happen.  If
-you can reproduce the problem, please let us know.
+Thanks.  I didn't realize there was a master copy.
 
-> But if it is a case it should be fixed as there is no later notification when
-> to call waitpid(WNOHANG) again.  And sure the debugger cannot busy-loop poll
-> it.
+I checked linux-usb.org and the extra IDs are already there.
 
-But, the current WNOHANG wait is racy.  It's unlikely but definitely
-possible for WNOHANG to fail when it's expected to succeed (not the
-above case but more convoluted ones).
+- Chris
 
-But, just out of curiosity, is there any reason the ptracer itself
-should be doing something other than waitpid() while tracee is
-running?  It's not like ptrace requests can be issued during that time
-and sleeping waitpid() is way saner mechanism to wait for tracee
-events than signal.
-
-Thanks.
-
--- 
-tejun
