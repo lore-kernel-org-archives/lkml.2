@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031Ab1EOOFU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 10:05:20 -0400
-Received: from vps.jankratochvil.net ([46.28.109.124]:48877 "EHLO
-	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755434Ab1EOOFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 10:05:17 -0400
-Date: Sun, 15 May 2011 16:02:32 +0200
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: getter PTRACE_GETSIGINFO should not modify anything  [Re: [PATCH
- 11/11] ptrace: implement group stop notification for ptracer]
-Message-ID: <20110515140232.GB31855@host1.jankratochvil.net>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1760049Ab1EOOOP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 10:14:15 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:62787 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754052Ab1EOOON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 10:14:13 -0400
+Date: Sun, 15 May 2011 16:13:07 +0200
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 1/4] export bus_kset
+Message-ID: <20110515141307.GC15994@mail.gnudd.com>
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com> <1305220265-9020-2-git-send-email-lamiaposta71@gmail.com> <201105122128.54172.rjw@sisk.pl> <20110513171148.GM29259@mail.gnudd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1304869745-1073-12-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110513171148.GM29259@mail.gnudd.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 08 May 2011 17:49:05 +0200, Tejun Heo wrote:
-> which triggers INTERRUPT trap but is sticky until the next
-> PTRACE_GETSIGINFO.
+On Fri, May 13, 2011 at 07:11:48PM +0200, Davide Ciminaghi wrote:
+> On Thu, May 12, 2011 at 09:28:53PM +0200, Rafael J. Wysocki wrote:
+> 
+> hi,
+> 
+> sorry, I missed this message this morning.
+> 
+> > On Thursday, May 12, 2011, Raffaele Recalcati wrote:
+> > > From: Davide Ciminaghi <ciminaghi@gnudd.com>
+> > 
+> > Please explain why you need to export it, what the alternatives are and
+> > why you think this approach is better than the alternatives.
+> > 
+> 
+> what I needed to do was walking through the list of registered busses,
+> and invoking the bus_added()/bus_removed() callback of a newly registered
+> policy. I couldn't find any other simple way to do it.
+>
+well, I there is another way to do that: adding a function like this
+(include/linux/device.h) :
 
-PTRACE_GETSIGINFO is a getter.  It must not modify anything.  Or there should
-be some other way how to query the siginfo_t state fully transparently (*).
+/**
+ * run a callback for each registered bus type
+ *
+ * @data : arg passed to callback
+ * @fn : pointer to callback
+ */
+int for_each_bus(void *data, int (*fn)(struct bus_type *bus, void *data));
 
-(*) But if there exists such syscall it probably does not make sense to modify
-    anything by PTRACE_GETSIGINFO.
-
-Imagine various LD_PRELOAD tools which try to wrap system/library calls and
-operate with ptrace while keeping it transparent for the original debugger.
-(I have a bunch of such libraries for testing gdb/strace/etc. written there.)
-
-Also complicated debuggers with internal OO hierarchy would need to just wrap
-PTRACE_GETSIGINFO into an internal function to make it transparent for calls
-not intending to modify the debuggee state.
+which would be similar to the already existing bus_for_each_dev() and
+would allow to avoid exporting a global variable.
 
 
-Thanks,
-Jan
+Regards
+Davide
