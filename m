@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab1EPDyt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 23:54:49 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39592 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594Ab1EPDyq (ORCPT
+	id S1753633Ab1EOVtW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 17:49:22 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50180 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1EOVtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 23:54:46 -0400
-Date: Sun, 15 May 2011 15:35:50 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] gpiolib: export gpiochip_find
-Message-ID: <20110515213550.GD30725@angua.secretlab.ca>
-References: <20110416093015.3befd780@endymion.delvare>
- <20110513105220.4b61a5be@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513105220.4b61a5be@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 15 May 2011 17:49:21 -0400
+Date: Sun, 15 May 2011 17:44:30 -0400 (EDT)
+Message-Id: <20110515.174430.1379973540554096232.davem@davemloft.net>
+To: solar@openwall.com
+Cc: eric.dumazet@gmail.com, segoon@openwall.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, peak@argo.troja.mff.cuni.cz,
+        kees.cook@canonical.com, dan.j.rosenberg@gmail.com, eugene@redhat.com,
+        nelhage@ksplice.com, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
+Subject: Re: [PATCH net-next-2.6] net: ping: dont call udp_ioctl()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110515213018.GA26820@openwall.com>
+References: <20110513200100.GA3875@albatros>
+	<1305447520.3120.88.camel@edumazet-laptop>
+	<20110515213018.GA26820@openwall.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 15 May 2011 14:44:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 10:52:20AM +0200, Jean Delvare wrote:
-> Hi Grant,
+From: Solar Designer <solar@openwall.com>
+Date: Mon, 16 May 2011 01:30:18 +0400
+
+> On Sun, May 15, 2011 at 10:18:40AM +0200, Eric Dumazet wrote:
+>> Do we really need to support SIOCOUTQ and SIOCINQ ioctls for ping
+>> sockets ?
 > 
-> On Sat, 16 Apr 2011 09:30:15 +0200, Jean Delvare wrote:
-> > Export function gpiochip_find so that modules can use it.
-> > 
-> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > ---
-> > I need this to add support for SMBus multiplexing on my Asus Z8NA-D6
-> > board.
-> > 
-> >  drivers/gpio/gpiolib.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > --- linux-2.6.39-rc3.orig/drivers/gpio/gpiolib.c	2011-03-30 10:57:19.000000000 +0200
-> > +++ linux-2.6.39-rc3/drivers/gpio/gpiolib.c	2011-04-16 09:00:25.000000000 +0200
-> > @@ -1165,6 +1165,7 @@ struct gpio_chip *gpiochip_find(void *da
-> >  
-> >  	return chip;
-> >  }
-> > +EXPORT_SYMBOL_GPL(gpiochip_find);
-> >  
-> >  /* These "optional" allocation calls help prevent drivers from stomping
-> >   * on each other, and help provide better diagnostics in debugfs.
+> Probably not.
 > 
-> I am sorry to insist, but this patch seems quite straightforward, it
-> shouldn't take long to review. Do you have any problem with it? If not,
-> please apply it. I really would like to have it in kernel 2.6.40, as
-> the rest of my SMBus multiplexing support effort depends on it.
+>> BTW, link
+>> (ftp://mirrors.kernel.org/openwall/Owl/current/sources/Owl/packages/iputils/iputils-ss020927.tar.gz ) provided in http://openwall.info/wiki/people/segoon/ping is not working.
+>> 
+>> I had to manually patch iputils-s20101006.tar.bz2 instead.
+> 
+> Oh, the link broke precisely because we updated to s20101006 since then,
+> and the link was to our current branch.  I've just updated the wiki page
+> to include links both for iputils-ss020927 and for iputils-s20101006
+> (both original tarballs and patches).
+> 
+>> [PATCH net-next-2.6] net: ping: dont call udp_ioctl()
+>> 
+>> udp_ioctl() really handles UDP and UDPLite protocols.
+>> 
+>> 1) It can increment UDP_MIB_INERRORS in case first_packet_length() finds
+>> a frame with bad checksum.
+>> 
+>> 2) It has a dependency on sizeof(struct udphdr), not applicable to
+>> ICMP/PING
+>> 
+>> If ping sockets need to handle SIOCINQ/SIOCOUTQ ioctl, this should be
+>> done differently.
+>> 
+>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> CC: Vasiliy Kulikov <segoon@openwall.com>
+> 
+> Reviewed-by: Solar Designer <solar@openwall.com>
 
-Merged, thanks.
+Just get rid of ping_ioctl() entirely, as that is the effect of
+this change since inet_ioctl() returns -ENOIOCTLCMD when
+sk_prot->ioctl is NULL.
 
-Sorry for the delay.  All the activity around UDS and getting the
-ARM device tree patches into a state ready for merging pretty much
-eliminated any chance I've had to look at gpio stuff over the last
-month.  :-(  I'm trying to get through the backlog now.
+Also get rid of asm/ioctls.h since that will be no longer needed.
 
-g.
-
+Thanks.
