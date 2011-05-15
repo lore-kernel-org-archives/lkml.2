@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761080Ab1EOWV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 18:21:26 -0400
-Received: from mout.perfora.net ([74.208.4.194]:51225 "EHLO mout.perfora.net"
+	id S1761163Ab1EOWVn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 18:21:43 -0400
+Received: from mout.perfora.net ([74.208.4.194]:57226 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761295Ab1EOWVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 18:21:20 -0400
+	id S1761168Ab1EOWVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 18:21:38 -0400
 From: Stephen Wilson <wilsons@start.ca>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH v2 0/9] avoid allocation in show_numa_map()
-Date: Sun, 15 May 2011 18:20:20 -0400
-Message-Id: <1305498029-11677-1-git-send-email-wilsons@start.ca>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH v2 1/9] mm: export get_vma_policy()
+Date: Sun, 15 May 2011 18:20:21 -0400
+Message-Id: <1305498029-11677-2-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.4.4
-X-Provags-ID: V02:K0:Cbq10bCDwk79I6x+kKtmChoBcpd8SlAk2Ve95bkYti9
- 2g+AE4KInnjYA24vEeC8fJiwybfRKZDJbdJyccwad1m8QE179Q
- ewkPrV92DIbQXLYb/rPDQumSFH2D6iKhrmdfzRzTykqAePrXBK
- jr75nc+x/7ecB2Aqr8LlRdl+xWq77eHBjKQkOm+2fZD2Opp8+1
- JnEJ3ysWux9pDSWtpTHRQKw6kB9SFtEK5Doq3VtXVE=
+In-Reply-To: <1305498029-11677-1-git-send-email-wilsons@start.ca>
+References: <1305498029-11677-1-git-send-email-wilsons@start.ca>
+X-Provags-ID: V02:K0:GSTksvR9NfM0yltO2qliKREepMAFs2HJ3OVVyedSUDg
+ Zs9ECgWauh+5jEKDZ/PBsqbySFBB4WdY80FIz3q7HAKFZCcVY+
+ blRzjkFN/UYHGM72QVsNgerDki++7VknMSl/1aRpOTdqc+qXS3
+ R2yN5ubiu6ubjAeSSUYTtBGDpJ+KSzTz+8rgxDJTYyKAy5/Ggx
+ vjlURXa2JEpOvKs1QmIhSUXX2K0WhiNY+WyGdqGIrU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+In commit 48fce3429df84a94766fbbc845fa8450d0715b48 get_vma_policy() was
+marked static as all clients were local to mempolicy.c.
 
-This is version 2 of a patch series[1] aimed at removing repeated
-allocation/free cycles happening in show_numa_maps() while we hold a reference
-to an mm.  The concern is that performing an allocation while referencing an mm
-could lead to a stalemate in the oom killer as previously explained by Hugh
-Dickins[2].
+However, the decision to generate /proc/pid/numa_maps in the numa memory
+policy code and outside the procfs subsystem introduces an artificial
+interdependency between the two systems.  Exporting get_vma_policy()
+once again is the first step to clean up this interdependency.
 
-This series addresses all issues raised in the previous round and is organized
-as follows:
+Signed-off-by: Stephen Wilson <wilsons@start.ca>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+---
+ include/linux/mempolicy.h |    3 +++
+ mm/mempolicy.c            |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-Patches 1-6 convert show_numa_maps() to use the generic walk_page_range()
-functionality instead of the mempolicy.c specific page table walking logic.
-Also, get_vma_policy() and mpol_to_str() are exported.  This makes the
-show_numa_maps() implementation independent of mempolicy.c.
-
-Patch 7 moves show_numa_maps() and supporting routines over to
-fs/proc/task_mmu.c.
-
-Finally, patches 8 and 9 provide minor cleanup and eliminate the troublesome
-allocation.
-
-
-These patches are based on mmotm-2011-05-12-15-52 and have been tested on a
-dual node NUMA machine.
-
-
-Thanks,
-
---
-steve
-
-[1] http://lkml.org/lkml/2011/4/27/578
-[2] http://lkml.org/lkml/2011/4/25/496
-
-
-Changes since v1:
-	- Fix compilation error when CONFIG_TMPFS=n.
-
-	- Traverse pte's with proper locking and checks.
-
-
-Stephen Wilson (9):
-      mm: export get_vma_policy()
-      mm: use walk_page_range() instead of custom page table walking code
-      mm: remove MPOL_MF_STATS
-      mm: make gather_stats() type-safe and remove forward declaration
-      mm: remove check_huge_range()
-      mm: declare mpol_to_str() when CONFIG_TMPFS=n
-      mm: proc: move show_numa_map() to fs/proc/task_mmu.c
-      proc: make struct proc_maps_private truly private
-      proc: allocate storage for numa_maps statistics once
-
-
- fs/proc/internal.h        |    7 ++
- fs/proc/task_mmu.c        |  204 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/mempolicy.h |    7 +-
- include/linux/proc_fs.h   |    8 --
- mm/mempolicy.c            |  164 +-----------------------------------
- 5 files changed, 215 insertions(+), 175 deletions(-)
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 31ac26c..c2f6032 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -199,6 +199,9 @@ void mpol_free_shared_policy(struct shared_policy *p);
+ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
+ 					    unsigned long idx);
+ 
++struct mempolicy *get_vma_policy(struct task_struct *tsk,
++		struct vm_area_struct *vma, unsigned long addr);
++
+ extern void numa_default_policy(void);
+ extern void numa_policy_init(void);
+ extern void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new,
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 8e57a72..6cc997d 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1490,7 +1490,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+  * freeing by another task.  It is the caller's responsibility to free the
+  * extra reference for shared policies.
+  */
+-static struct mempolicy *get_vma_policy(struct task_struct *task,
++struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	struct mempolicy *pol = task->mempolicy;
+-- 
+1.7.4.4
 
