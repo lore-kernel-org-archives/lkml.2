@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab1EOR4i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 13:56:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194Ab1EOR4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 13:56:37 -0400
-Message-ID: <4DD013CB.8080408@redhat.com>
-Date: Sun, 15 May 2011 13:56:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1751659Ab1EOR7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 13:59:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53698 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab1EOR7w convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 13:59:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=YczYx/M6WVGjiL+QIqltQr4Ndutvauu5h+ZvcnS2SCZZ0UhhpgpDyaXmAio/gVXG+e
+         yCntsrmj2DB/UZ0WHHZeRrPJc/bmq2asrEqR3jsBzK5eL/vvQYSo6kvOtZjNV/2BSu89
+         /j1d3MT3AWQ+sNXFpSqFh1QOIf1cIrtx58Bc4=
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan.kim@gmail.com
-Subject: Re: [PATCH 1/3] vmscan,memcg: memcg aware swap token
-References: <4DCD1824.1060801@jp.fujitsu.com> <4DCD189D.2000207@jp.fujitsu.com>
-In-Reply-To: <4DCD189D.2000207@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110515173644.GA18241@kroah.com>
+References: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	<BANLkTinAtUQ8H1DQpqXxX_U4mLO617L3Eg@mail.gmail.com>
+	<20110515163257.GE1315@kroah.com>
+	<BANLkTi=hN6NeLdXAjzeeYwcZR7+BoJ1BQg@mail.gmail.com>
+	<20110515173644.GA18241@kroah.com>
+Date: Sun, 15 May 2011 19:59:51 +0200
+X-Google-Sender-Auth: 9xMz9dHj3w840f6EHRz-2IxYqDs
+Message-ID: <BANLkTinXhc+gRAWVrC--EdrbPjC6U8roYA@mail.gmail.com>
+Subject: Re: [PATCH v6] Add ST-Ericsson CG2900 driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Greg KH <greg@kroah.com>
+Cc: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>,
+        devel@driverdev.osuosl.org,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2011 07:40 AM, KOSAKI Motohiro wrote:
-> Currently, memcg reclaim can disable swap token even if the swap token
-> mm doesn't belong in its memory cgroup. It's slightly risky. If an
-> admin creates very small mem-cgroup and silly guy runs contentious heavy
-> memory pressure workload, every tasks are going to lose swap token and
-> then system may become unresponsive. That's bad.
+2011/5/15 Greg KH <greg@kroah.com>:
+> On Sun, May 15, 2011 at 07:29:04PM +0200, Linus Walleij wrote:
+>> It was my recommendation to put it into staging, by doing this
+>> people can talk about the architecture by submitting *patches*
+>> to show how they want it instead of these fruitless discussions.
+>>
+>> So this should be a case where staging really helps, at least in
+>> my dreams.
 >
-> This patch adds 'memcg' parameter into disable_swap_token(). and if
-> the parameter doesn't match swap token, VM doesn't disable it.
->
-> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> Yes, that is where staging should help, hopefully we can get these build
+> dependancies worked out to get this merged properly.  Perhaps for the
+> .41 merge window?
 
-Reviewed-by: Rik van Riel<riel@redhat.com>
+Since one of the build dependencies is the GPIO rework that already
+needed to be pushed from 2.6.40 to 2.6.41 due to shortage of
+review power for drivers/gpio, and since I cannot merge the updates
+to the current GPIO driver in arch/arm/plat-nomadik/gpio.c due to
+the current ban on anything that grows arch/arm/* we will likely
+have to postpone its merging to staging to 2.6.42.
 
--- 
-All rights reversed
+Basically this driver has ended up in cross-subsystem dependency
+hell :-)
+
+But worse things have happened, and these are special times,
+so let's let it rest for a while.
+
+Linus Walleij
