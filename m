@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760179Ab1EORFo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 13:05:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60280 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755745Ab1EORFn (ORCPT
+	id S1760081Ab1EOROF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 13:14:05 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:35096 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab1EOROD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 13:05:43 -0400
-Date: Sun, 15 May 2011 10:05:44 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Margarita Olaya <magi@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        sameo@linux.intel.com
-Subject: Re: [PATCHv3 1/4] mfd: tps65912: Add new mfd device
-Message-ID: <20110515170544.GB11579@opensource.wolfsonmicro.com>
-References: <BANLkTinwGcDx7gU-vMX4=uHhLWC6qBb-jQ@mail.gmail.com>
+	Sun, 15 May 2011 13:14:03 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Alex Davis <alex14641@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Possible coding issue in udf??
+References: <367853.39582.qm@web130121.mail.mud.yahoo.com>
+X-Yow: ..The TENSION mounts as I MASSAGE your RIGHT ANKLE according to
+ ancient Tibetan ACCOUNTING PROCEDURES..are you NEUROTIC yet??
+Date: Sun, 15 May 2011 19:13:59 +0200
+In-Reply-To: <367853.39582.qm@web130121.mail.mud.yahoo.com> (Alex Davis's
+	message of "Fri, 13 May 2011 19:57:20 -0700 (PDT)")
+Message-ID: <m2pqnjevjc.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinwGcDx7gU-vMX4=uHhLWC6qBb-jQ@mail.gmail.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 04:30:22PM -0500, Margarita Olaya wrote:
+Alex Davis <alex14641@yahoo.com> writes:
 
-> +#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-> +static int tps65912_i2c_read(struct tps65912 *tps65912, u8 reg,
-> +				  int bytes, void *dest)
-> +{
+> In fs/udf/inode.c, line 1455, linux 2.6.35, there is the following code:
+>
+> 	udfperms = ((inode->i_mode & S_IRWXO)) |
+> 		   ((inode->i_mode & S_IRWXG) << 2) |
+> 		   ((inode->i_mode & S_IRWXU) << 4);
+>
+> Shouldn't we be shifting by 3 bits? i.e:
+> 	udfperms = ((inode->i_mode & S_IRWXO)) |
+> 		   ((inode->i_mode & S_IRWXG) << 3) |
+> 		   ((inode->i_mode & S_IRWXU) << 6);
 
-Putting both SPI and I2C drivers into the same file means that I2C is
-forced to be built in if SPI is enabled (SPI can't be built as a
-module).  This isn't a big deal really but it's nice to avoid the
-dependency.
+udfperms contains three bit fields of 5 bits each, of which 3 bits are
+each filled from one of the three RWX parts of i_mode, and 2 bits
+(DELETE and CHATTR) are added later.  Thus each of the three bit fields
+are expanded from 3 to 5 bits, so that the second one needs to be
+shifted by 2 and the third one by 4.
 
-> +	dcdc_avs = (pmic_plat_data->is_dcdc1_avs << 0 |
-> +			pmic_plat_data->is_dcdc2_avs  << 1 |
-> +				pmic_plat_data->is_dcdc3_avs << 2 |
-> +					pmic_plat_data->is_dcdc4_avs << 3);
-> +	if (dcdc_avs) {
-> +		tps65912->read(tps65912, TPS65912_I2C_SPI_CFG, 1, &value);
-> +		dcdc_avs |= value;
-> +		tps65912->write(tps65912, TPS65912_I2C_SPI_CFG, 1, &dcdc_avs);
-> +	}
-> +
-> +	ret = mfd_add_devices(tps65912->dev, -1,
-> +			      tps65912s, ARRAY_SIZE(tps65912s),
-> +			      NULL, 0);
-> +	if (ret < 0)
-> +		goto err;
+Andreas.
 
-The platform data and MFD handling are common to both I2C and SPI - it'd
-seem sensible to factor them out into a separate function called by the
-I2C and SPI init paths to ensure they are kept in sync.
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
