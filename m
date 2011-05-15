@@ -1,206 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759945Ab1EOMvH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 08:51:07 -0400
-Received: from smtpout03.highway.telekom.at ([195.3.96.115]:12053 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753233Ab1EOMvD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 08:51:03 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: i915/kms/backlight-combo mode problem
-Date: Sun, 15 May 2011 14:50:42 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38.6; KDE/4.6.3; x86_64; ; )
-Cc: "Joey Lee" <jlee@novell.com>, "Michael Chang" <MChang@novell.com>,
-        chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org,
-        tiwai@suse.de
-References: <BANLkTimXkXCAKQGK2ysTRNN-xa4ZChxcHA@mail.gmail.com> <BANLkTimQJM3N1WdBhYVOH0UyyOTFcxOfUQ@mail.gmail.com> <4DCE2D4D020000230002C96A@novprvlin0050.provo.novell.com>
-In-Reply-To: <4DCE2D4D020000230002C96A@novprvlin0050.provo.novell.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1759972Ab1EON0j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 09:26:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52754 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759368Ab1EON0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 09:26:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mikko Vinni <mmvinni@yahoo.com>
+Subject: Re: pci 0000:0a:00.0: Refused to change power state, currently in D3
+Date: Sun, 15 May 2011 15:26:41 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+References: <936833.81097.qm@web161805.mail.bf1.yahoo.com>
+In-Reply-To: <936833.81097.qm@web161805.mail.bf1.yahoo.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105151450.48405@rk-nord.at>
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105151526.41801.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Sunday, May 15, 2011, Mikko Vinni wrote:
+> Hi,
 
-* Michael Chang -- Friday 13 May 2011:
-> But there's more questions in my mind, made me feel not
-> able to proceed any further.. :(
+Hi,
 
-No problem. The reason for inconsistencies in my reports is
-simply that I've realized some properties only later. So here's
-a new error description, based on ddb503b42960, which is current
-HEAD.
-
-
-On this "Acer Travelmate 5735Z-452G32Mnss" the following happens
-since after 2.6.37-rc8, with acpi_osi=Linux:
-
-- the backlight goes dark as soon as KMS takes over early in the
-  boot process (the screen contents aren't corrupted, though, and
-  under appropriate lighting conditions I can even see the
-  (very dark) uncorrupted contents.)
-
-- when I press the "backlight darker" key, the backlight is turned
-  on. (No other key does that AFAICS, including "display toggle"
-  and "backlight brighter.)
-
-Everything works correctly after that, including backlight adjustment,
-BUT:
-
- - when I close the lid and open it again, the backlight stays black
-   again, just like before. Backlight adjustment turns it on, and
-   now even the "brighter" key does it sometimes, but not always.)
-
-
-
-> 1. is_backlight_combination_mode() really returns 0x4 ..?
-
->From https://bugzilla.kernel.org/show_bug.cgi?id=31522, comment #8:
-"It turned out that on this machine INTEL_INFO(dev)->gen equals 4,
-and is_backlight_combination_mode() returns 0x40000000."
-
-That was true when I reported it. But lpbc was always 0 in my tests
-back then, and now it's not. 
-
-
-
-> I understand your words, but if this is true then Joey Lee provided
-> patch should log out some information about changing the LPBC
+> in an HP Pavilion dv5 laptop model dv5-1250eo always at resume
+> from s2ram the following messages are printed:
 > 
->   set backlight lbpc = ...
+> pci 0000:0a:00.0: Refused to change power state, currently in D3
+> pci 0000:0a:00.1: Refused to change power state, currently in D3
+> pci 0000:0a:00.2: Refused to change power state, currently in D3
+> pci 0000:0a:00.3: Refused to change power state, currently in D3
+> pci 0000:0a:00.4: Refused to change power state, currently in D3
+
+The lspci output indicates that this is a single multi-function
+device that doesn't change its power state when programmed to go
+into D0.  Perhaps it requires a power resource that is not available
+at the point we're trying to restore those devices' registers.
+
+Hard to say what that may be, though.  Please attach the output of
+acpidump from the affected system.
+
 > 
-> but I didn't see any of the log output .. :(
-
-You hadn't told me that these patches were meant to be incremental,
-so I backed the first logging patch out before applying the other.
-Here is the result of ddb503b42960 with both logging patches applied:
-
-boot phase:
-[    2.620237] [drm] Initialized drm 1.1.0 20060810
-[    2.664806] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[    2.664812] i915 0000:00:02.0: setting latency timer to 64
-[    2.726569] [drm:intel_opregion_setup], graphic opregion physical addr: 0x7ba8c018
-[    2.726612] [drm:intel_opregion_setup], Public ACPI methods supported
-[    2.726615] [drm:intel_opregion_setup], SWSCI supported
-[    2.726617] [drm:intel_opregion_setup], ASLE supported
-[    2.726650] i915 0000:00:02.0: irq 44 for MSI/MSI-X
-[    2.726655] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[    2.726656] [drm] Driver supports precise vblank timestamp query.
-[    2.753294] [drm:init_status_page], render ring hws offset: 0x00000000
-[    2.753431] [drm:init_status_page], bsd ring hws offset: 0x00021000
-[    2.753547] [drm:intel_parse_bios], Using VBT from OpRegion: $VBT CANTIGA        d
-[    2.797315] [drm:intel_panel_get_backlight], get backlight val = 2890
-[    2.797319] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[    2.797322] [drm:intel_panel_get_backlight], get backlight PWM = 0
-[    2.797328] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-[    2.797658] [drm:intel_panel_set_backlight], set backlight PWM = 0
-[    2.797661] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[    2.797664] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[    2.797667] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[    2.797669] [drm:intel_panel_set_backlight], set backlight max = 736950
-[    2.797671] [drm:intel_panel_set_backlight], set backlight lbpc = 1
-[    2.797678] [drm:intel_opregion_asle_intr], non asle set request??
-[    2.797681] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401930
-[    2.797683] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[    2.797685] [drm:intel_panel_set_backlight], set backlight level = 0
-[    2.905962] scsi 4:0:0:0: Direct-Access     Generic- Multi-Card       1.00 PQ: 0 ANSI: 0 CCS
-[    3.040041] [drm:gm45_get_vblank_counter], trying to get vblank count for disabled pipe A
-[    3.040047] [drm:gm45_get_vblank_counter], trying to get vblank count for disabled pipe A
-[    3.090368] checking generic (80000000 3ff0000) vs hw (80000000 10000000)
-[    3.090373] fb: conflicting fb hw usage inteldrmfb vs VESA VGA - removing generic driver
-[    3.090392] Console: switching to colour dummy device 80x25
-[    3.091058] fbcon: inteldrmfb (fb0) is primary device
-[    3.125522] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[    3.125525] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[    3.125527] [drm:intel_panel_set_backlight], set backlight PWM = 736950
-[    3.125529] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[    3.125531] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[    3.125533] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[    3.125535] [drm:intel_panel_set_backlight], set backlight max = 736950
-[    3.125537] [drm:intel_panel_set_backlight], set backlight lbpc = 255
-[    3.125541] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399040
-[    3.125543] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[    3.125544] [drm:intel_panel_set_backlight], set backlight level = 2890
-[    3.125557] [drm:intel_opregion_asle_intr],
-[    3.125559] Console: switching non asle set request??
-[    3.125562] to colour frame buffer device 170x48
-[    3.128264] fb0: inteldrmfb frame buffer device
-[    3.128265] drm: registered panic notifier
-[    3.429079] acpi device:07: registered as cooling_device2
-[    3.429425] input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:01/input/input6
-[    3.429521] ACPI: Video Device [OVGA] (multi-head: yes  rom: no  post: no)
-[    3.429980] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-[    3.806479] sd 4:0:0:0: [sdb] 15720448 512-byte logical blocks: (8.04 GB/7.49 GiB)
-[    3.807220] sd 4:0:0:0: [sdb] Write Protect is off
-[    3.807222] sd 4:0:0:0: [sdb] Mode Sense: 03 00 00 00
-[    3.807225] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[    3.809345] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[    3.813728]  sdb: sdb1
-[    3.815475] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[    3.815513] sd 4:0:0:0: [sdb] Attached SCSI removable disk
-[    4.786309] md: linear personality registered for level -1
-[   84.936637] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[   84.936641] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[   84.936644] [drm:intel_panel_set_backlight], set backlight PWM = 72250
-[   84.936646] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[   84.936649] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[   84.936652] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[   84.936654] [drm:intel_panel_set_backlight], set backlight max = 736950
-[   84.936656] [drm:intel_panel_set_backlight], set backlight lbpc = 25
-[   84.936660] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401930
-[   84.936662] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[   84.936664] [drm:intel_panel_set_backlight], set backlight level = 2890
-[   84.936669] [drm:intel_opregion_asle_intr], non asle set request??
-[   84.936672] [drm:intel_opregion_asle_intr], non asle set request??
-
-brighter:
-[  325.356259] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[  325.356268] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[  325.356273] [drm:intel_panel_set_backlight], set backlight PWM = 0
-[  325.356278] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[  325.356283] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[  325.356288] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[  325.356292] [drm:intel_panel_set_backlight], set backlight max = 736950
-[  325.356297] [drm:intel_panel_set_backlight], set backlight lbpc = 1
-[  325.356302] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189401930
-[  325.356307] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  325.356311] [drm:intel_panel_set_backlight], set backlight level = 0
-[  325.356318] [drm:intel_opregion_asle_intr], non asle set request??
-[  325.356324] [drm:intel_opregion_asle_intr], non asle set request??
-
-darker:
-[  359.642417] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[  359.642424] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[  359.642429] [drm:intel_panel_set_backlight], set backlight PWM = 72250
-[  359.642434] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[  359.642439] [drm:is_backlight_combination_mode], BLM_COMBINATION_MODE = 1073741824
-[  359.642443] [drm:intel_panel_get_max_backlight], max backlight PWM = 736950
-[  359.642448] [drm:intel_panel_set_backlight], set backlight max = 736950
-[  359.642452] [drm:intel_panel_set_backlight], set backlight lbpc = 25
-[  359.642458] [drm:intel_panel_set_backlight], set backlight tmp(1) = 189399040
-[  359.642463] [drm:intel_panel_set_backlight], set backlight tmp(2) = 189399040
-[  359.642467] [drm:intel_panel_set_backlight], set backlight level = 2890
-[  359.642474] [drm:intel_opregion_asle_intr], non asle set request??
-[  359.642480] [drm:intel_opregion_asle_intr], non asle set request??
-
-
- 
-> http://marc.info/?l=linux-kernel&m=130462815211684&w=2
 > 
-> If you rebase this patch to your currently git commit, will it fixes
-> all problems [...]
+> lspci:
+> 
+> 00:00.0 Host bridge: Advanced Micro Devices [AMD] RS780 Host Bridge
+> 00:02.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (ext gfx port 0)
+> 00:04.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (PCIE port 0)
+> 00:05.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (PCIE port 1)
+> 00:06.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (PCIE port 2)
+> 00:0a.0 PCI bridge: Advanced Micro Devices [AMD] RS780/RS880 PCI to PCI bridge (PCIE port 5)
+> 00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]
+> 00:12.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
+> 00:12.1 USB Controller: ATI Technologies Inc SB7x0 USB OHCI1 Controller
+> 00:12.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI Controller
+> 00:13.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
+> 00:13.1 USB Controller: ATI Technologies Inc SB7x0 USB OHCI1 Controller
+> 00:13.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI Controller
+> 00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 3a)
+> 00:14.1 IDE interface: ATI Technologies Inc SB7x0/SB8x0/SB9x0 IDE Controller
+> 00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA)
+> 00:14.3 ISA bridge: ATI Technologies Inc SB7x0/SB8x0/SB9x0 LPC host controller
+> 00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge
+> 00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor HyperTransport Configuration (rev 40)
+> 00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor Address Map
+> 00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor DRAM Controller
+> 00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor Miscellaneous Control
+> 00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor Link Control
+> 01:00.0 VGA compatible controller: ATI Technologies Inc Mobility Radeon HD 3400 Series
+> 01:00.1 Audio device: ATI Technologies Inc RV620 Audio device [Radeon HD 34xx Series]
+> 08:00.0 Ethernet controller: Atheros Communications Inc. AR5001 Wireless Network Adapter (rev 01)
+> 09:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 02)
+> 0a:00.0 FireWire (IEEE 1394): JMicron Technology Corp. IEEE 1394 Host Controller
+> 0a:00.1 System peripheral: JMicron Technology Corp. SD/MMC Host Controller
+> 0a:00.2 SD Host controller: JMicron Technology Corp. Standard SD Host Controller
+> 0a:00.3 System peripheral: JMicron Technology Corp. MS Host Controller
+> 0a:00.4 System peripheral: JMicron Technology Corp. xD Host Controller
+> 
+> 
+> (first reported to linux-mmc at http://thread.gmane.org/gmane.linux.kernel.mmc/7988,
+> because the card reader is one of the non-functioning devices after resume)
+> 
+> What could be causing such a problem?
+> 
+> The following log is from 2.6.39-rc7 + some code from mmc-next, but this
+> is not a new problem. I can reproduce it easily for example with the
+> default 2.6.32 kernel from Ubuntu 10.10.
+...
+> 
+> 
+> A perhaps funny after-effect of the s2ram problem is that
+> s2disk after that leads to -1 being written all around
+> in the affected pci area after resume:
+> 
+> ...
+> ACPI: Waking up from system sleep state S4
+> ...
+> pci 0000:0a:00.0: restoring config space at offset 0xf (was 0x10a, writing 0xffffffff)
+> pci 0000:0a:00.0: restoring config space at offset 0xe (was 0x0, writing 0xffffffff)
+> ...
 
-This patch didn't fix my problems back then, and since an always zeroed lbpc
-is apparently not the case, I assume this test wouldn't be very helpful. Of
-course, if you insist, then I'll try it again. 
+That's not even strange.  Since the device is in D3 during hibernation,
+the reads from its registers all return -1 and that's what is saved as the
+current state.
 
-Thanks for your help, and sorry for the confusion.  :-)
-m.
+> I haven't tested whether firewire or the card reader, for example, works
+> with such config space.
+
+No, it's not.
+
+Thanks,
+Rafael
