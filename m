@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab1EOLME (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 07:12:04 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:55071 "EHLO toro.web-alm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792Ab1EOLMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 07:12:03 -0400
-Message-ID: <4DCFB4AE.2070800@osadl.org>
-Date: Sun, 15 May 2011 13:10:38 +0200
-From: Carsten Emde <C.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL)
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1753300Ab1EOLTA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 07:19:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39694 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab1EOLS7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 07:18:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lpCmbjUrEUz8qZFdcG8AghcRGzScjhLtKEGXFZRITuxf/cYUJ+kWm1GiffvIsZr0GW
+         t8bGqs07o+rfwR6UJ/LOQJ1Fs70thB10RBqXmMYM1TE9LlmC79Zbpk9nmHSmOuBwZH35
+         mCEB8+0SX8dIn23Xd/mg2hKhE6iOT2q5YX3ds=
 MIME-Version: 1.0
-To: John Kacur <jkacur@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Subject: Re: merge of real-time 2.6.33.9-rt31 with stable 2.6.33.13
-References: <alpine.LFD.2.00.1105141749180.29326@localhost6.localdomain6>	<alpine.LFD.2.02.1105141827270.3078@ionos> <BANLkTim68rrUkRi0r-5xo4T10r5ALgcQhg@mail.gmail.com>
-In-Reply-To: <BANLkTim68rrUkRi0r-5xo4T10r5ALgcQhg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1305441316.7460.40.camel@marge.simson.net>
+References: <BANLkTi=_gfo4bZjkoBsxspLxxWSPy=7J+Q@mail.gmail.com>
+	<1305441316.7460.40.camel@marge.simson.net>
+Date: Sun, 15 May 2011 19:18:57 +0800
+Message-ID: <BANLkTi=huV8r6tRqYt6OWj+8wgc-m2c_iw@mail.gmail.com>
+Subject: Re: [PATCH] sched: avoid overpull when pulling RT task
+From: Hillf Danton <dhillf@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John,
-
-> On Sat, May 14, 2011 at 6:28 PM, Thomas Gleixner<tglx@linutronix.de>  wrote:
->> On Sat, 14 May 2011, John Kacur wrote:
->>> I did some light testing merging 2.6.33.13 into real-time 2.6.33.9-rt31.
->>> In addition I cherry-picked 3c955b407a084810f57260d61548cc92c14bc627
->>> in order to compile on newer distros.
+On Sun, May 15, 2011 at 2:35 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Sun, 2011-05-15 at 12:35 +0800, Hillf Danton wrote:
+>> When pulling RT task for a given runqueue, pulling is continued even
+>> after certain RT tasks get pulled, in case there are still higher
+>> priority tasks on other runqueues, though it is low likelihood as the
+>> comment says. The load of of this runqueue, on other hand, should also
+>> be concerned. If it is overloaded, the low likelihood should be
+>> abandoned to avoid overpull.
 >>
->> Thanks.
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> ---
+>>  kernel/sched_rt.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
 >>
->>> Here is the result of cyclic test on one machine
->>> sudo ./cyclictest -t32 -p 80 -n -i 10000 -l 10000
->>> policy: fifo: loadavg: 0.00 0.00 0.00 1/541 3759
->>>
->>> T: 0 ( 3728) P:80 I:10000 C:  10000 Min:      7 Act:  104 Avg:  114 Max:     470
+>> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+>> index 14c764b..b425ca1 100644
+>> --- a/kernel/sched_rt.c
+>> +++ b/kernel/sched_rt.c
+>> @@ -1508,6 +1508,11 @@ static int pull_rt_task(struct rq *this_rq)
+>>               }
+>>  skip:
+>>               double_unlock_balance(this_rq, src_rq);
+>> +
+>> +             /* if pulled we have to also avoid overpull */
+>> +             if (ret == 1)
+>> +                     if (likely(rt_overloaded(this_rq)))
+>> +                             break;
+>>       }
 >>
->> The numbers are weird. How does that compare to older kernels on that
->> machine with the same test?
+>>       return ret;
 >
-> Note this was on a machine with a straight Fedora install, and no -rt
-> packages or tuning. That being the case, the numbers are no better or
-> worse than recent -rt kernels. I can get you numbers with the last
-> kernel if you wish, on Monday. Perhaps Carsten would be interested in
-> running his tests?
-I created my own 2.6.33.13-rt31 kernel some days ago. It is running on a 
-pretest machine in our farm (rack #1, slot #4) since then -> 
-https://www.osadl.org/?id=994. For an overview about the kernels in the 
-farm (ordered by kernel version and release) see -> 
-https://www.osadl.org/?id=1001. Real-time and all other data before and 
-after the kernel upgrade to 2.6.33.13-rt31 are indistinguishable between 
-each other.
+> Hm.
+>
+> It looks to me like you should remove the rt_overloaded() test (and
+> function) entirely instead.  If you look at pull usage, the intent is
+> that system wide, higher priority tasks run before lower.
+>
+> I don't think it matters much if we pull too much, since what we pull
+> while traversing is ever increasing in priority _and waiting_ anyway.
+> We may do a bit more work than strictly necessary on the way to the
+> highest priority runnable task, but what matters most is that highest
+> priority gets to the CPU first, which testing for overload can stymie.
+>
+> (seems pulling more than one could turn out either good or bad for any
+> but the highest priority task though, lacking crystal ball)
+>
+Hi Mike
 
-Nevertheless, it would be interesting to investigate the origin of the 
-numbers Thomas (correctly IMHO) classified as weird. The average and the 
-maximum latency could be from a Pentium 90, the minimum latency looks ok 
-for a state-of-the-art processor. What machine is this and how did you 
-manage to create such numbers? It doesn't look like SMIs were 
-responsible for that since they normally increase the maximum, not the 
-average. Was another task with prio 80 or higher running?
+It is solid reason that the highest priority should get CPU, and along
+this direction the info about the highest priority is add in struct root_domain,
+then the overpull looks relieved, though not cured, please review again.
 
-Thanks,
-Carsten.
+thanks
+Hillf
+---
+
+--- a/kernel/sched.c	2011-04-27 11:48:50.000000000 +0800
++++ b/kernel/sched.c	2011-05-15 18:54:28.000000000 +0800
+@@ -426,6 +426,8 @@ struct root_domain {
+ 	 */
+ 	cpumask_var_t rto_mask;
+ 	atomic_t rto_count;
++	/* the highest prio in rto_mask */
++	int rto_prio;
+ 	struct cpupri cpupri;
+ };
+
+@@ -6634,6 +6636,8 @@ static int init_rootdomain(struct root_d
+
+ 	if (cpupri_init(&rd->cpupri) != 0)
+ 		goto free_rto_mask;
++
++	rd->rto_prio = MAX_RT_PRIO;
+ 	return 0;
+
+ free_rto_mask:
+--- b/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
++++ b/kernel/sched_rt.c	2011-05-15 19:02:50.000000000 +0800
+@@ -108,6 +108,10 @@ static void inc_rt_migration(struct sche
+ 		rt_rq->rt_nr_migratory++;
+
+ 	update_rt_migration(rt_rq);
++
++	if (rt_rq->overloaded &&
++	    rq_of_rt_rq(rt_rq)->rd->rto_prio > rt_task_of(rt_se)->prio)
++		rq_of_rt_rq(rt_rq)->rd->rto_prio = rt_task_of(rt_se)->prio;
+ }
+
+ static void dec_rt_migration(struct sched_rt_entity *rt_se, struct
+rt_rq *rt_rq)
+@@ -1425,9 +1429,7 @@ static int pull_rt_task(struct rq *this_
+ 	int this_cpu = this_rq->cpu, ret = 0, cpu;
+ 	struct task_struct *p;
+ 	struct rq *src_rq;
+-
+-	if (likely(!rt_overloaded(this_rq)))
+-		return 0;
++	int rto_prio_pulled = 0;
+
+ 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
+ 		if (this_cpu == cpu)
+@@ -1481,6 +1483,8 @@ static int pull_rt_task(struct rq *this_
+ 				goto skip;
+
+ 			ret = 1;
++			if (p->prio <= this_rq->rd->rto_prio)
++				rto_prio_pulled = 1;
+
+ 			deactivate_task(src_rq, p, 0);
+ 			set_task_cpu(p, this_cpu);
+@@ -1494,6 +1498,9 @@ static int pull_rt_task(struct rq *this_
+ 		}
+ skip:
+ 		double_unlock_balance(this_rq, src_rq);
++
++		if (rto_prio_pulled)
++			break;
+ 	}
+
+ 	return ret;
