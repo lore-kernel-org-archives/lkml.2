@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760186Ab1EOR2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 13:28:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50790 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab1EOR2P (ORCPT
+	id S1758027Ab1EOR3I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 13:29:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58095 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1EOR3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 13:28:15 -0400
+	Sun, 15 May 2011 13:29:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cEhiFer/o9E5EsIR1FI+fVGsMj1t77yZComYe4kl0SRQ1G8T1DKjgEuRBS17sXvJKO
-         F1QGTN6c7ixczARlkmIxzeMWCElxDaSaHlxev4zqDtgk5fez7HA3EiozahNRpWjkbSKH
-         ulFC1Gt2f7y5qvwV+iNLnf8D0I9uFJPo7ICqY=
-Date: Sun, 15 May 2011 19:28:11 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re:
- [PATCH 11/11] ptrace: implement group stop notification for ptracer]
-Message-ID: <20110515172811.GM23665@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
- <20110515140232.GB31855@host1.jankratochvil.net>
- <20110515142827.GF23665@htj.dyndns.org>
- <20110515171748.GA25216@host1.jankratochvil.net>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=kT0VBiQM3/E1kl7h8JtzJI6VkA6PYsTkxT7Mc6TJBJCn09/Zu4Ro72zFqziTNpZFLJ
+         Vf7i2PX9yNYlrfEA7t3g04Fy6LmpCS3jFrXKmVZaXT5+WVa9D5d10VtiqN+RHxPC0Huv
+         mE0avUhA84/ngFVJmMCr0BHcnOI7e1GqKZnvo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110515171748.GA25216@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110515163257.GE1315@kroah.com>
+References: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	<BANLkTinAtUQ8H1DQpqXxX_U4mLO617L3Eg@mail.gmail.com>
+	<20110515163257.GE1315@kroah.com>
+Date: Sun, 15 May 2011 19:29:04 +0200
+X-Google-Sender-Auth: 8bM-tU6TDFPLaVHl1oAyBy4Ns7A
+Message-ID: <BANLkTi=hN6NeLdXAjzeeYwcZR7+BoJ1BQg@mail.gmail.com>
+Subject: Re: [PATCH v6] Add ST-Ericsson CG2900 driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Greg KH <greg@kroah.com>
+Cc: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>,
+        devel@driverdev.osuosl.org,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2011/5/15 Greg KH <greg@kroah.com>:
 
-On Sun, May 15, 2011 at 07:17:48PM +0200, Jan Kratochvil wrote:
-> just a general point for all the mails:
-> 
-> On Sun, 15 May 2011 16:28:27 +0200, Tejun Heo wrote:
-> > Even for LD_PRELOAD, it can simply keep scheduling INTERRUPT
-> > until the application calls the wrapped GETSIGINFO when it detects the
-> > stopped state has changed.  It can be easily done from userland.
-> 
-> I thought the goal is to simplify the interface, not making it even more
-> complicated.
+> That's why you should only use staging as a last resort, not as your
+> primary way of getting code into the kernel, especially for stuff with
+> a constantly changing in-kernel interface like you have pointed out
+> here.
 
-It's a balancing act.  The primary goal is to make it _functional_ as
-the current ptrace is outright broken in many places.  The second, at
-least for me, is not deviating from the current behavior too much
-unless required by the first goal or not doing so is extremely silly.
+Agree 100%
 
-It would be nice to have a concise pretty interface but we already
-have this ugly thing which works half ways and it's not like the
-current users can drop support for old kernels quickly, so I don't see
-a lot of benefit in making changes for prettiness, but please note
-that I'm not trying to make it any more complicated.  It won't be
-pretty but won't be more complicated than now either.
+Trust me, we tried this already.
 
-After all, this is a pretty low level API which only a handful are
-gonna use.  If it involves some ugliness to use it, as long as no
-functionality is compromised, I would go that way than introducing
-larger behavior difference from the current one.
+> Just do the "real work" first and get it merged the real way if at all
+> possible.
 
-That said, give me strong enough reasons, I'll be happy to change the
-behavior.
+This driver development has gone into statis due to conflicts and
+endless discussions pertaining to the HCI transport layer
+beneath it.
 
-And, thanks a lot for your comments.  I really appreciate them.
+It was my recommendation to put it into staging, by doing this
+people can talk about the architecture by submitting *patches*
+to show how they want it instead of these fruitless discussions.
 
--- 
-tejun
+So this should be a case where staging really helps, at least in
+my dreams.
+
+Linus Walleij
