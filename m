@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab1EOXfD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 19:35:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53465 "EHLO ogre.sisk.pl"
+	id S1753898Ab1EOXeR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 19:34:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53455 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab1EOXeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 19:34:15 -0400
+	id S1753007Ab1EOXeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 19:34:14 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 3/6] PM: System-wide transitions support for generic power domains (v2)
-Date: Mon, 16 May 2011 01:31:58 +0200
+Subject: [PATCH 4/6] ARM / shmobile: Support for I/O power domains for SH7372 (v5)
+Date: Mon, 16 May 2011 01:32:39 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
 Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
         Kevin Hilman <khilman@ti.com>,
@@ -24,433 +24,198 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105160131.58687.rjw@sisk.pl>
+Message-Id: <201105160132.39572.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make generic power domains support system-wide power transitions
-(system suspend and hibernation).  Add suspend, resume, freeze and
-thaw callbacks to be associated with struct generic_power_domain
-objects and make pm_genpd_init() use them as appropriate.
-
-The new callbacks do nothing for devices belonging to power domains
-that were powered down at run time (before the transition).  For the
-other devices the action carried out depends on the type of the
-transition.  During system suspend the power domain ->suspend()
-callback executes pm_generic_suspend() for the device, while the
-power domain ->suspend_noirq() callback stops the device and
-eventually removes power from the power domain it belongs to (after
-all devices in the power domain have been stopped).  During system
-resume the power domain ->resume_noirq() callback powers up the power
-domain (when executed for the first time for the given power domain)
-and starts the device, while the ->resume() callback executes
-pm_generic_resume() for the device.  Finally, the ->complete()
-callback executes pm_runtime_idle() for the device which should put
-it back into the suspended state if its runtime PM usage count is
-equal to zero at that time.
-
-The actions carried out during hibernation and resume from it are
-analogous to the ones described above.
+Use the generic power domains support introduced by the previous
+patch to implement support for power domains on SH7372.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |  321 ++++++++++++++++++++++++++++++++++++++++++--
- include/linux/pm_domain.h   |    2 
- 2 files changed, 315 insertions(+), 8 deletions(-)
+ arch/arm/mach-shmobile/Kconfig               |    1 
+ arch/arm/mach-shmobile/Makefile              |    4 +
+ arch/arm/mach-shmobile/board-mackerel.c      |    3 
+ arch/arm/mach-shmobile/include/mach/sh7372.h |   16 ++++
+ arch/arm/mach-shmobile/pm-sh7372.c           |   97 +++++++++++++++++++++++++++
+ 5 files changed, 121 insertions(+)
 
-Index: linux-2.6/drivers/base/power/domain.c
+Index: linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
 ===================================================================
---- linux-2.6.orig/drivers/base/power/domain.c
-+++ linux-2.6/drivers/base/power/domain.c
-@@ -14,6 +14,19 @@
- #include <linux/slab.h>
- #include <linux/err.h>
+--- linux-2.6.orig/arch/arm/mach-shmobile/board-mackerel.c
++++ linux-2.6/arch/arm/mach-shmobile/board-mackerel.c
+@@ -1215,6 +1215,9 @@ static void __init mackerel_init(void)
  
-+#ifdef CONFIG_PM
+ 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
+ 
++	sh7372_add_device_to_domain(SH7372_A4LC, &lcdc_device);
++	sh7372_add_device_to_domain(SH7372_A4LC, &hdmi_lcdc_device);
 +
-+static struct generic_power_domain *dev_to_genpd(struct device *dev)
+ 	hdmi_init_pm_clock();
+ }
+ 
+Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+===================================================================
+--- /dev/null
++++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -0,0 +1,97 @@
++/*
++ * arch/arm/mach-shmobile/pm-sh7372.c
++ *
++ * Power domains support code for SH7372
++ *
++ * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License v2.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/pm_runtime.h>
++#include <linux/platform_device.h>
++
++#include <mach/sh7372.h>
++
++struct sh7372_domain_data {
++	unsigned int bit_shift;
++};
++
++#define SPDCR 0xe6180008
++#define SWUCR 0xe6180014
++#define PSTR 0xe6180080
++
++static int pd_power_down(struct dev_power_domain *domain)
 +{
-+	if (IS_ERR_OR_NULL(dev->pwr_domain))
-+		return ERR_PTR(-EINVAL);
++	struct sh7372_domain_data *dd = domain->platform_data;
++	unsigned int mask = 1 << dd->bit_shift;
 +
-+	return container_of(dev->pwr_domain,
-+			    struct generic_power_domain, domain);
++	if (__raw_readl(PSTR) & mask) {
++		__raw_writel(mask, SPDCR);
++
++		while (__raw_readl(SPDCR) & mask) {}
++
++		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
++			 mask, __raw_readl(PSTR));
++	}
++
++	return 0;
 +}
 +
++static int pd_power_up(struct dev_power_domain *domain)
++{
++	struct sh7372_domain_data *dd = domain->platform_data;
++	unsigned int mask = 1 << dd->bit_shift;
++
++	if (!(__raw_readl(PSTR) & mask)) {
++		__raw_writel(mask, SWUCR);
++
++		while (__raw_readl(SWUCR) & mask) {}
++
++		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
++			 mask, __raw_readl(PSTR));
++	}
++
++	return 0;
++}
++
++static void sh7372_init_domain(struct generic_power_domain *domain,
++			       struct sh7372_domain_data *pdata)
++{
++	pm_genpd_init(domain, NULL, false);
++	domain->domain.platform_data = pdata;
++	domain->stop_device = pm_runtime_clk_suspend;
++	domain->start_device = pm_runtime_clk_resume;
++	domain->power_off = pd_power_down;
++	domain->power_on = pd_power_up;
++}
++
++void sh7372_add_device_to_domain(struct generic_power_domain *domain,
++				 struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++
++	if (!dev->power.subsys_data) {
++		pm_runtime_clk_init(dev);
++		pm_runtime_clk_add(dev, NULL);
++	}
++	pm_genpd_add_device(domain, dev);
++}
++
++static struct sh7372_domain_data sh7372_a4lc_domain_data = {
++	.bit_shift = 1,
++};
++
++struct generic_power_domain sh7372_a4lc_domain;
++
++static int __init sh7372_power_domains_init(void)
++{
++	sh7372_init_domain(&sh7372_a4lc_domain, &sh7372_a4lc_domain_data);
++	return 0;
++}
++core_initcall(sh7372_power_domains_init);
+Index: linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
++++ linux-2.6/arch/arm/mach-shmobile/include/mach/sh7372.h
+@@ -12,6 +12,7 @@
+ #define __ASM_SH7372_H__
+ 
+ #include <linux/sh_clk.h>
++#include <linux/pm_domain.h>
+ 
+ /*
+  * Pin Function Controller:
+@@ -469,4 +470,19 @@ extern struct clk sh7372_fsibck_clk;
+ extern struct clk sh7372_fsidiva_clk;
+ extern struct clk sh7372_fsidivb_clk;
+ 
++struct platform_device;
++
++#ifdef CONFIG_PM
++extern struct generic_power_domain sh7372_a4lc_domain;
++#define SH7372_A4LC	(&sh7372_a4lc_domain)
++
++extern void sh7372_add_device_to_domain(struct generic_power_domain *domain,
++					struct platform_device *pdev);
++#else
++#define SH7372_A4LC	NULL
++
++static inline void sh7372_add_device_to_domain(struct generic_power_domain *dom,
++					       struct platform_device *pd) {}
 +#endif /* CONFIG_PM */
 +
- #ifdef CONFIG_PM_RUNTIME
- 
- /**
-@@ -143,12 +156,10 @@ static int pm_genpd_runtime_suspend(stru
- 
- 	dev_dbg(dev, "%s()\n", __func__);
- 
--	if (IS_ERR_OR_NULL(dev->pwr_domain))
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
- 		return -EINVAL;
- 
--	genpd = container_of(dev->pwr_domain,
--			     struct generic_power_domain, domain);
--
- 	mutex_lock(&genpd->lock);
- 
- 	if (genpd->stop_device) {
-@@ -250,12 +261,10 @@ static int pm_genpd_runtime_resume(struc
- 
- 	dev_dbg(dev, "%s()\n", __func__);
- 
--	if (IS_ERR_OR_NULL(dev->pwr_domain))
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
- 		return -EINVAL;
- 
--	genpd = container_of(dev->pwr_domain,
--			     struct generic_power_domain, domain);
--
- 	ret = pm_genpd_poweron(genpd);
- 	if (ret)
- 		return ret;
-@@ -273,6 +282,284 @@ static int pm_genpd_runtime_resume(struc
- 
- #endif /* CONFIG_PM_RUNTIME */
- 
-+#ifdef CONFIG_PM_SLEEP
-+
-+/**
-+ * pm_genpd_prepare - Start power transition of a device in a power domain.
-+ * @dev: Device to start the transition of.
-+ *
-+ * Start a power transition of a device (during a system-wide power transition)
-+ * under the assumption that its pwr_domain field points to the domain member of
-+ * an object of type struct generic_power_domain representing a power domain
-+ * consisting of I/O devices.
-+ */
-+static int pm_genpd_prepare(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	if (genpd->power_is_off)
-+		return 0;
-+
-+	/*
-+	 * If the device is in the (runtime) "suspended" state, call
-+	 * ->start_device() for it, if defined.
-+	 */
-+	pm_runtime_resume(dev);
-+
-+	return pm_generic_prepare(dev);
-+}
-+
-+/**
-+ * pm_genpd_suspend - Suspend a device belonging to an I/O power domain.
-+ * @dev: Device to suspend.
-+ *
-+ * Suspend a device under the assumption that its pwr_domain field points to the
-+ * domain member of an object of type struct generic_power_domain representing
-+ * a power domain consisting of I/O devices.
-+ */
-+static int pm_genpd_suspend(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	return genpd->power_is_off ? 0 : pm_generic_suspend(dev);
-+}
-+
-+/**
-+ * pm_genpd_suspend_noirq - Late suspend of a device from an I/O power domain.
-+ * @dev: Device to suspend.
-+ *
-+ * Carry out a late suspend of a device under the assumption that its
-+ * pwr_domain field points to the domain member of an object of type
-+ * struct generic_power_domain representing a power domain consisting of I/O
-+ * devices.
-+ */
-+static int pm_genpd_suspend_noirq(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	if (genpd->power_is_off)
-+		return 0;
-+
-+	if (genpd->stop_device)
-+		genpd->stop_device(dev);
-+
-+	mutex_lock(&genpd->lock);
-+	if (++genpd->suspended_count == genpd->device_count) {
-+		if (genpd->power_off)
-+			genpd->power_off(&genpd->domain);
-+	}
-+	mutex_unlock(&genpd->lock);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pm_genpd_resume_noirq - Early resume of a device from an I/O power domain.
-+ * @dev: Device to resume.
-+ *
-+ * Carry out an early resume of a device under the assumption that its
-+ * pwr_domain field points to the domain member of an object of type
-+ * struct generic_power_domain representing a power domain consisting of I/O
-+ * devices.
-+ */
-+static int pm_genpd_resume_noirq(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	if (genpd->power_is_off)
-+		return 0;
-+
-+	mutex_lock(&genpd->lock);
-+	if (genpd->suspended_count == genpd->device_count) {
-+		if (genpd->power_on) {
-+			int ret = genpd->power_on(&genpd->domain);
-+			if (ret) {
-+				mutex_unlock(&genpd->lock);
-+				return ret;
-+			}
-+		}
-+	}
-+	genpd->suspended_count--;
-+	mutex_unlock(&genpd->lock);
-+
-+	if (genpd->start_device)
-+		genpd->start_device(dev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pm_genpd_resume - Resume a device belonging to an I/O power domain.
-+ * @dev: Device to resume.
-+ *
-+ * Resume a device under the assumption that its pwr_domain field points to the
-+ * domain member of an object of type struct generic_power_domain representing
-+ * a power domain consisting of I/O devices.
-+ */
-+static int pm_genpd_resume(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	return genpd->power_is_off ? 0 : pm_generic_resume(dev);
-+}
-+
-+/**
-+ * pm_genpd_freeze - Freeze a device belonging to an I/O power domain.
-+ * @dev: Device to freeze.
-+ *
-+ * Freeze a device under the assumption that its pwr_domain field points to the
-+ * domain member of an object of type struct generic_power_domain representing
-+ * a power domain consisting of I/O devices.
-+ */
-+static int pm_genpd_freeze(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	return genpd->power_is_off ? 0 : pm_generic_freeze(dev);
-+}
-+
-+/**
-+ * pm_genpd_freeze_noirq - Late freeze of a device from an I/O power domain.
-+ * @dev: Device to freeze.
-+ *
-+ * Carry out a late freeze of a device under the assumption that its
-+ * pwr_domain field points to the domain member of an object of type
-+ * struct generic_power_domain representing a power domain consisting of I/O
-+ * devices.
-+ */
-+static int pm_genpd_freeze_noirq(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	if (!genpd->power_is_off && genpd->stop_device)
-+		genpd->stop_device(dev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pm_genpd_thaw_noirq - Early thaw of a device from an I/O power domain.
-+ * @dev: Device to thaw.
-+ *
-+ * Carry out an early thaw of a device under the assumption that its
-+ * pwr_domain field points to the domain member of an object of type
-+ * struct generic_power_domain representing a power domain consisting of I/O
-+ * devices.
-+ */
-+static int pm_genpd_thaw_noirq(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	if (!genpd->power_is_off && genpd->start_device)
-+		genpd->start_device(dev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pm_genpd_thaw - Thaw a device belonging to an I/O power domain.
-+ * @dev: Device to thaw.
-+ *
-+ * Thaw a device under the assumption that its pwr_domain field points to the
-+ * domain member of an object of type struct generic_power_domain representing
-+ * a power domain consisting of I/O devices.
-+ */
-+static int pm_genpd_thaw(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (IS_ERR(genpd))
-+		return -EINVAL;
-+
-+	return genpd->power_is_off ? 0 : pm_generic_thaw(dev);
-+}
-+
-+/**
-+ * pm_genpd_complete - Complete power transition of a device in a power domain.
-+ * @dev: Device to complete the transition of.
-+ *
-+ * Complete a power transition of a device (during a system-wide power
-+ * transition) under the assumption that its pwr_domain field points to the
-+ * domain member of an object of type struct generic_power_domain representing
-+ * a power domain consisting of I/O devices.
-+ */
-+static void pm_genpd_complete(struct device *dev)
-+{
-+	struct generic_power_domain *genpd;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	genpd = dev_to_genpd(dev);
-+	if (!IS_ERR(genpd) && !genpd->power_is_off)
-+		pm_generic_complete(dev);
-+}
-+
-+#else
-+
-+#define pm_genpd_prepare	NULL
-+#define pm_genpd_suspend	NULL
-+#define pm_genpd_suspend_noirq	NULL
-+#define pm_genpd_resume_noirq	NULL
-+#define pm_genpd_resume		NULL
-+#define pm_genpd_freeze		NULL
-+#define pm_genpd_freeze_noirq	NULL
-+#define pm_genpd_thaw_noirq	NULL
-+#define pm_genpd_thaw		NULL
-+#define pm_genpd_complete	NULL
-+
-+#endif /* CONFIG_PM_SLEEP */
-+
- /**
-  * pm_genpd_add_device - Add a device to an I/O power domain.
-  * @genpd: Power domain to add the device to.
-@@ -304,6 +591,7 @@ int pm_genpd_add_device(struct generic_p
- 
- 	dle->dev = dev;
- 	list_add_tail(&dle->node, &genpd->device_list);
-+	genpd->device_count++;
- 
- 	spin_lock_irq(&dev->power.lock);
- 	dev->pwr_domain = &genpd->domain;
-@@ -341,6 +629,7 @@ int pm_genpd_remove_device(struct generi
- 		dev->pwr_domain = NULL;
- 		spin_unlock_irq(&dev->power.lock);
- 
-+		genpd->device_count--;
- 		list_del(&dle->node);
- 		kfree(dle);
- 
-@@ -440,7 +729,23 @@ void pm_genpd_init(struct generic_power_
- 	genpd->gov = gov;
- 	genpd->in_progress = 0;
- 	genpd->power_is_off = is_off;
-+	genpd->device_count = 0;
-+	genpd->suspended_count = 0;
- 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
- 	genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
- 	genpd->domain.ops.runtime_idle = pm_generic_runtime_idle;
-+	genpd->domain.ops.prepare = pm_genpd_prepare;
-+	genpd->domain.ops.suspend = pm_genpd_suspend;
-+	genpd->domain.ops.suspend_noirq = pm_genpd_suspend_noirq;
-+	genpd->domain.ops.resume_noirq = pm_genpd_resume_noirq;
-+	genpd->domain.ops.resume = pm_genpd_resume;
-+	genpd->domain.ops.freeze = pm_genpd_freeze;
-+	genpd->domain.ops.freeze_noirq = pm_genpd_freeze_noirq;
-+	genpd->domain.ops.thaw_noirq = pm_genpd_thaw_noirq;
-+	genpd->domain.ops.thaw = pm_genpd_thaw;
-+	genpd->domain.ops.poweroff = pm_genpd_suspend;
-+	genpd->domain.ops.poweroff_noirq = pm_genpd_suspend_noirq;
-+	genpd->domain.ops.restore_noirq = pm_genpd_resume_noirq;
-+	genpd->domain.ops.restore = pm_genpd_resume;
-+	genpd->domain.ops.complete = pm_genpd_complete;
- }
-Index: linux-2.6/include/linux/pm_domain.h
+ #endif /* __ASM_SH7372_H__ */
+Index: linux-2.6/arch/arm/mach-shmobile/Makefile
 ===================================================================
---- linux-2.6.orig/include/linux/pm_domain.h
-+++ linux-2.6/include/linux/pm_domain.h
-@@ -25,6 +25,8 @@ struct generic_power_domain {
- 	struct dev_power_governor *gov;
- 	unsigned int in_progress;
- 	bool power_is_off;
-+	unsigned int device_count;
-+	unsigned int suspended_count;
- 	int (*power_off)(struct dev_power_domain *domain);
- 	int (*power_on)(struct dev_power_domain *domain);
- 	int (*start_device)(struct device *dev);
+--- linux-2.6.orig/arch/arm/mach-shmobile/Makefile
++++ linux-2.6/arch/arm/mach-shmobile/Makefile
+@@ -40,6 +40,10 @@ obj-$(CONFIG_MACH_AP4EVB)	+= board-ap4ev
+ obj-$(CONFIG_MACH_AG5EVM)	+= board-ag5evm.o
+ obj-$(CONFIG_MACH_MACKEREL)	+= board-mackerel.o
+ 
++# PM objects
++pm-$(CONFIG_ARCH_SH7372)	+= pm-sh7372.o
++
+ # Framework support
+ obj-$(CONFIG_SMP)		+= $(smp-y)
+ obj-$(CONFIG_GENERIC_GPIO)	+= $(pfc-y)
++obj-$(CONFIG_PM)		+= $(pm-y)
+Index: linux-2.6/arch/arm/mach-shmobile/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/Kconfig
++++ linux-2.6/arch/arm/mach-shmobile/Kconfig
+@@ -19,6 +19,7 @@ config ARCH_SH7372
+ 	select CPU_V7
+ 	select SH_CLK_CPG
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
++	select PM_GENERIC_DOMAINS
+ 
+ config ARCH_SH73A0
+ 	bool "SH-Mobile AG5 (R8A73A00)"
 
