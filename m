@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760173Ab1EORAe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 13:00:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab1EORAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 13:00:32 -0400
-Date: Sun, 15 May 2011 18:59:45 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Michal Marek <mmarek@suse.cz>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 1/1] igmp: fix ip_mc_clear_src to not reset
- ip_mc_list->sf{mode,count}
-Message-ID: <20110515165945.GA20024@darkmag.usersys.redhat.com>
+	id S1760166Ab1EORBp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 13:01:45 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35684 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab1EORBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 13:01:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hXuuwGQKu9rWcYP6KX0GR1HMcZKR8jzCjqRbcxodt/TUo+WYKnuTnXIticFMwkSdkI
+         aKjT9/g2m1T6e6MbJBpx9moL8fnsGjwrNeJuHlTS9u6EQ+5qYktHS28P4asIAx0N02+I
+         rF0Fnp5/5hAv5F1As3COaPyaL11TnzNbsKz/s=
+Date: Sun, 15 May 2011 19:01:39 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: waitpid(WNOHANG) should report SIGCHLD-notified signals  [Re:
+ [PATCH 09/11] job control: reorganize wait_task_stopped()]
+Message-ID: <20110515170139.GJ23665@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-10-git-send-email-tj@kernel.org>
+ <20110511154854.GB23688@redhat.com>
+ <20110511192902.GC24245@mtj.dyndns.org>
+ <20110512154247.GC18599@redhat.com>
+ <20110512160253.GK1030@htj.dyndns.org>
+ <20110512172506.GA23033@redhat.com>
+ <20110512173228.GO1030@htj.dyndns.org>
+ <20110515144017.GC31855@host1.jankratochvil.net>
+ <20110515164705.GI23665@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110515164705.GI23665@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ip_mc_clear_src resets the imc->sfcount and imc->sfmode, without taking into
-account the current number of sockets listening on that multicast struct, which
-can lead to bogus routes for local listeners.
+Hello,
 
-On NETDEV_DOWN/UP event, if there were 3 multicast listeners for that interface's
-address, the imc->sfcount[MCAST_EXCLUDE] will be reset to 1. And after that a
-listener socket destroys, multicast traffic will not be delivered to local
-listeners because __mkroute_output drops the local flag for the route (by
-checking ip_check_mc).
+BTW, I'm pretty close to send the second take and the INTERRUPT trap
+has changed quite a bit.  It got renamed to PTRACE_EVENT_STOP and now
+acts as both group stop trap and INTERRUPT trap.  IOW,
+PTRACE_INTERRUPT makes tracee go park at group stop trap site.  The
+whole thing is much prettier this way.  Well, being ptrace, it's not
+really pretty but at least it is much less disgusting.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Thanks.
 
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 1fd3d9c..b14f371 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1775,9 +1775,6 @@ static void ip_mc_clear_src(struct ip_mc_list *pmc)
- 		kfree(psf);
- 	}
- 	pmc->sources = NULL;
--	pmc->sfmode = MCAST_EXCLUDE;
--	pmc->sfcount[MCAST_INCLUDE] = 0;
--	pmc->sfcount[MCAST_EXCLUDE] = 1;
- }
- 
- 
+-- 
+tejun
