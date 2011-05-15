@@ -1,92 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760093Ab1EOP1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 11:27:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32929 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759965Ab1EOP1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 11:27:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,369,1301900400"; 
-   d="scan'208";a="1941365"
-Date: Sun, 15 May 2011 23:27:47 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Lutomirski <luto@mit.edu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
- vmlinux)
-Message-ID: <20110515152747.GA25905@localhost>
-References: <BANLkTi=XqROAp2MOgwQXEQjdkLMenh_OTQ@mail.gmail.com>
- <m2fwokj0oz.fsf@firstfloor.org>
- <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
- <20110512054631.GI6008@one.firstfloor.org>
- <BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
- <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
- <20110514165346.GV6008@one.firstfloor.org>
- <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
- <20110514174333.GW6008@one.firstfloor.org>
- <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
+	id S1760087Ab1EOP0I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 11:26:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63916 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759965Ab1EOP0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 11:26:06 -0400
+Message-ID: <4DCFF0F8.50909@cn.fujitsu.com>
+Date: Sun, 15 May 2011 23:27:52 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 6/7] KVM: MMU: cleanup for kvm_mmu_page_unlink_children
+References: <4DCFEF3B.5060806@cn.fujitsu.com>
+In-Reply-To: <4DCFEF3B.5060806@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-15 23:26:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-05-15 23:26:12,
+	Serialize complete at 2011-05-15 23:26:12
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 15, 2011 at 09:37:58AM +0800, Minchan Kim wrote:
-> On Sun, May 15, 2011 at 2:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> > Copying back linux-mm.
-> >
-> >> Recently, we added following patch.
-> >> https://lkml.org/lkml/2011/4/26/129
-> >> If it's a culprit, the patch should solve the problem.
-> >
-> > It would be probably better to not do the allocations at all under
-> > memory pressure.  Even if the RA allocation doesn't go into reclaim
-> 
-> Fair enough.
-> I think we can do it easily now.
-> If page_cache_alloc_readahead(ie, GFP_NORETRY) is fail, we can adjust
-> RA window size or turn off a while. The point is that we can use the
-> fail of __do_page_cache_readahead as sign of memory pressure.
-> Wu, What do you think?
+Cleanup the same operation between kvm_mmu_page_unlink_children and
+mmu_pte_write_zap_pte
 
-No, disabling readahead can hardly help.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   66 ++++++++++++++++++---------------------------------
+ 1 files changed, 23 insertions(+), 43 deletions(-)
 
-The sequential readahead memory consumption can be estimated by
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index c0b16dd..3fab3c2 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1566,32 +1566,33 @@ static void validate_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 	}
+ }
+ 
++static void mmu_page_zap_pte(struct kvm *kvm, struct kvm_mmu_page *sp,
++			     u64 *spte)
++{
++	u64 pte;
++	struct kvm_mmu_page *child;
++
++	pte = *spte;
++	if (is_shadow_present_pte(pte)) {
++		if (is_last_spte(pte, sp->role.level))
++			drop_spte(kvm, spte, shadow_trap_nonpresent_pte);
++		else {
++			child = page_header(pte & PT64_BASE_ADDR_MASK);
++			mmu_page_remove_parent_pte(child, spte);
++		}
++	}
++	__set_spte(spte, shadow_trap_nonpresent_pte);
++	if (is_large_pte(pte))
++		--kvm->stat.lpages;
++}
++
+ static void kvm_mmu_page_unlink_children(struct kvm *kvm,
+ 					 struct kvm_mmu_page *sp)
+ {
+ 	unsigned i;
+-	u64 *pt;
+-	u64 ent;
+-
+-	pt = sp->spt;
+ 
+-	for (i = 0; i < PT64_ENT_PER_PAGE; ++i) {
+-		ent = pt[i];
+-
+-		if (is_shadow_present_pte(ent)) {
+-			if (!is_last_spte(ent, sp->role.level)) {
+-				ent &= PT64_BASE_ADDR_MASK;
+-				mmu_page_remove_parent_pte(page_header(ent),
+-							   &pt[i]);
+-			} else {
+-				if (is_large_pte(ent))
+-					--kvm->stat.lpages;
+-				drop_spte(kvm, &pt[i],
+-					  shadow_trap_nonpresent_pte);
+-			}
+-		}
+-		pt[i] = shadow_trap_nonpresent_pte;
+-	}
++	for (i = 0; i < PT64_ENT_PER_PAGE; ++i)
++		mmu_page_zap_pte(kvm, sp, sp->spt + i);
+ }
+ 
+ static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
+@@ -3069,27 +3070,6 @@ void kvm_mmu_unload(struct kvm_vcpu *vcpu)
+ }
+ EXPORT_SYMBOL_GPL(kvm_mmu_unload);
+ 
+-static void mmu_pte_write_zap_pte(struct kvm_vcpu *vcpu,
+-				  struct kvm_mmu_page *sp,
+-				  u64 *spte)
+-{
+-	u64 pte;
+-	struct kvm_mmu_page *child;
+-
+-	pte = *spte;
+-	if (is_shadow_present_pte(pte)) {
+-		if (is_last_spte(pte, sp->role.level))
+-			drop_spte(vcpu->kvm, spte, shadow_trap_nonpresent_pte);
+-		else {
+-			child = page_header(pte & PT64_BASE_ADDR_MASK);
+-			mmu_page_remove_parent_pte(child, spte);
+-		}
+-	}
+-	__set_spte(spte, shadow_trap_nonpresent_pte);
+-	if (is_large_pte(pte))
+-		--vcpu->kvm->stat.lpages;
+-}
+-
+ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
+ 				  struct kvm_mmu_page *sp, u64 *spte,
+ 				  const void *new)
+@@ -3271,7 +3251,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		spte = &sp->spt[page_offset / sizeof(*spte)];
+ 		while (npte--) {
+ 			entry = *spte;
+-			mmu_pte_write_zap_pte(vcpu, sp, spte);
++			mmu_page_zap_pte(vcpu->kvm, sp, spte);
+ 			if (gentry &&
+ 			      !((sp->role.word ^ vcpu->arch.mmu.base_role.word)
+ 			      & mask.word))
+-- 
+1.7.4.4
 
-                2 * (number of concurrent read streams) * (readahead window size)
-
-And you can double that when there are two level of readaheads.
-
-Since there are hardly any concurrent read streams in Andy's case,
-the readahead memory consumption will be ignorable.
-
-Typically readahead thrashing will happen long before excessive
-GFP_NORETRY failures, so the reasonable solutions are to
-
-- shrink readahead window on readahead thrashing
-  (current readahead heuristic can somehow do this, and I have patches
-  to further improve it)
-
-- prevent abnormal GFP_NORETRY failures
-  (when there are many reclaimable pages)
-
-
-Andy's OOM memory dump (incorrect_oom_kill.txt.xz) shows that there are
-
-- 8MB   active+inactive file pages
-- 160MB active+inactive anon pages
-- 1GB   shmem pages
-- 1.4GB unevictable pages
-
-Hmm, why are there so many unevictable pages?  How come the shmem
-pages become unevictable when there are plenty of swap space?
-
-Thanks,
-Fengguang
