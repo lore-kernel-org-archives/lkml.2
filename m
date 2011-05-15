@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab1EOIb0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 04:31:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57313 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754611Ab1EOIbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 04:31:23 -0400
-Message-ID: <4DCF8FC6.8050600@cn.fujitsu.com>
-Date: Sun, 15 May 2011 16:33:10 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+	id S1755800Ab1EOIdX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 04:33:23 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44600 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755330Ab1EOIdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 04:33:21 -0400
+Date: Sun, 15 May 2011 01:33:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Cheng Xu <chengxu@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] sched: rt_rq runtime leakage bug fix
+Message-ID: <20110515083318.GJ2258@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4DCE1F12.6040609@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/7] KVM: MMU: optimize pte write path if don't have protected
- sp
-References: <4DCEF5B1.3050706@cn.fujitsu.com> <4DCF8CBC.1040602@redhat.com>
-In-Reply-To: <4DCF8CBC.1040602@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-15 16:31:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-05-15 16:31:32,
-	Serialize complete at 2011-05-15 16:31:32
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DCE1F12.6040609@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2011 04:20 PM, Avi Kivity wrote:
-> On 05/15/2011 12:35 AM, Xiao Guangrong wrote:
->> Simply return from kvm_mmu_pte_write path if no shadow page is
->> write-protected, then we can avoid to walk all shadow pages and hold
->> mmu-lock
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 2841805..971e2d2 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -498,6 +498,7 @@ static void account_shadowed(struct kvm *kvm, gfn_t gfn)
->>           linfo = lpage_info_slot(gfn, slot, i);
->>           linfo->write_count += 1;
->>       }
->> +    atomic_inc(&kvm->arch.indirect_shadow_pages);
->>   }
->>
->>   static void unaccount_shadowed(struct kvm *kvm, gfn_t gfn)
->> @@ -513,6 +514,7 @@ static void unaccount_shadowed(struct kvm *kvm, gfn_t gfn)
->>           linfo->write_count -= 1;
->>           WARN_ON(linfo->write_count<  0);
->>       }
->> +    atomic_dec(&kvm->arch.indirect_shadow_pages);
->>   }
+On Sat, May 14, 2011 at 02:20:02PM +0800, Cheng Xu wrote:
+> This patch is to fix the real-time scheduler bug reported at 
+> https://lkml.org/lkml/2011/4/26/13. That is, when running multiple real-time 
+> threads on every logical CPUs and then turning off one CPU, the kernel will 
+> bug at function __disable_runtime(). 
 > 
-> These atomic ops are always called from within the spinlock, so we don't need an atomic_t here.
+> Function __disable_runtime() bugs and reports leakage of rt_rq runtime. The 
+> root cause is __disable_runtime() assumes it iterates through all the existing 
+> rt_rq's while walking rq->leaf_rt_rq_list, which actually contains only 
+> runnable rt_rq's. This problem also applies to __enable_runtime() and 
+> print_rt_stats(). 
 > 
-> Sorry, I should have noticed this on the first version.
+> The patch is based on above analysis, appears to fix the problem, but is only 
+> lightly tested. 
+> 
+> Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Cheng Xu <chengxu@linux.vnet.ibm.com>
 
-We read indirect_shadow_pages atomically on pte write path, that is allowed out of mmu_lock
+Works for me!
+
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> ---
+>  kernel/sched_rt.c |   22 +++++++++++++++++++---
+>  1 files changed, 19 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index e7cebdc..f8fcf82 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -183,6 +183,14 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+>  	return ktime_to_ns(rt_rq->tg->rt_bandwidth.rt_period);
+>  }
+> 
+> +typedef struct task_group *rt_rq_iter_t;
+> +
+> +#define for_each_rt_rq(rt_rq, iter, rq) \
+> +	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list); \
+> +	     (&iter->list != &task_groups) && \
+> +	     (rt_rq = iter->rt_rq[cpu_of(rq)]); \
+> +	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list))
+> +
+>  static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+>  {
+>  	list_add_rcu(&rt_rq->leaf_rt_rq_list,
+> @@ -288,6 +296,11 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+>  	return ktime_to_ns(def_rt_bandwidth.rt_period);
+>  }
+> 
+> +typedef struct rt_rq *rt_rq_iter_t;
+> +
+> +#define for_each_rt_rq(rt_rq, iter, rq) \
+> +	for ((void) iter, rt_rq = &rq->rt; rt_rq; rt_rq = NULL)
+> +
+>  static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+>  {
+>  }
+> @@ -402,12 +415,13 @@ next:
+>  static void __disable_runtime(struct rq *rq)
+>  {
+>  	struct root_domain *rd = rq->rd;
+> +	rt_rq_iter_t iter;
+>  	struct rt_rq *rt_rq;
+> 
+>  	if (unlikely(!scheduler_running))
+>  		return;
+> 
+> -	for_each_leaf_rt_rq(rt_rq, rq) {
+> +	for_each_rt_rq(rt_rq, iter, rq) {
+>  		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+>  		s64 want;
+>  		int i;
+> @@ -487,6 +501,7 @@ static void disable_runtime(struct rq *rq)
+> 
+>  static void __enable_runtime(struct rq *rq)
+>  {
+> +	rt_rq_iter_t iter;
+>  	struct rt_rq *rt_rq;
+> 
+>  	if (unlikely(!scheduler_running))
+> @@ -495,7 +510,7 @@ static void __enable_runtime(struct rq *rq)
+>  	/*
+>  	 * Reset each runqueue's bandwidth settings
+>  	 */
+> -	for_each_leaf_rt_rq(rt_rq, rq) {
+> +	for_each_rt_rq(rt_rq, iter, rq) {
+>  		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+> 
+>  		raw_spin_lock(&rt_b->rt_runtime_lock);
+> @@ -1796,10 +1811,11 @@ extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
+> 
+>  static void print_rt_stats(struct seq_file *m, int cpu)
+>  {
+> +	rt_rq_iter_t iter;
+>  	struct rt_rq *rt_rq;
+> 
+>  	rcu_read_lock();
+> -	for_each_leaf_rt_rq(rt_rq, cpu_rq(cpu))
+> +	for_each_rt_rq(rt_rq, iter, cpu_rq(cpu))
+>  		print_rt_rq(m, cpu, rt_rq);
+>  	rcu_read_unlock();
+>  }
+> -- 
+> 1.7.1
+> 
