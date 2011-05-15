@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab1EOWec (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 18:34:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934091Ab1EOWeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 18:34:31 -0400
-Message-ID: <4DD054EF.4020300@redhat.com>
-Date: Sun, 15 May 2011 18:34:23 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1761942Ab1EOWko (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 18:40:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40874 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759876Ab1EOWkn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 18:40:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vVVHFfaLFOOSW2nLnRBAYWD1lY2AM3bVnzgbbc83FB0ADW4DcjRaNqSbRGfhHXtpUD
+         4wFMznLGOmycHOr+wm86yLkF+bV8LDda0tllUoPyuNNU8TDqxwD6oe4fcrrl26g//Awv
+         kzGsoy2IhICpBdAXOXzkZzfyhsyZMpLqGQyoY=
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan.kim@gmail.com
-Subject: Re: [PATCH 3/3] vmscan: implement swap token priority decay
-References: <4DCD1824.1060801@jp.fujitsu.com> <4DCD1913.2090200@jp.fujitsu.com>
-In-Reply-To: <4DCD1913.2090200@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110515152747.GA25905@localhost>
+References: <BANLkTi=XqROAp2MOgwQXEQjdkLMenh_OTQ@mail.gmail.com>
+	<m2fwokj0oz.fsf@firstfloor.org>
+	<BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
+	<20110512054631.GI6008@one.firstfloor.org>
+	<BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
+	<BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
+	<20110514165346.GV6008@one.firstfloor.org>
+	<BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
+	<20110514174333.GW6008@one.firstfloor.org>
+	<BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
+	<20110515152747.GA25905@localhost>
+Date: Mon, 16 May 2011 07:40:42 +0900
+Message-ID: <BANLkTinv=_38E3Eyu88Ra4-x5vPEq7CDkw@mail.gmail.com>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking vmlinux)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Lutomirski <luto@mit.edu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2011 07:42 AM, KOSAKI Motohiro wrote:
-> While testing for memcg aware swap token, I observed a swap token
-> was often grabbed an intermittent running process (eg init, auditd)
-> and they never release a token.
+On Mon, May 16, 2011 at 12:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Sun, May 15, 2011 at 09:37:58AM +0800, Minchan Kim wrote:
+>> On Sun, May 15, 2011 at 2:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> > Copying back linux-mm.
+>> >
+>> >> Recently, we added following patch.
+>> >> https://lkml.org/lkml/2011/4/26/129
+>> >> If it's a culprit, the patch should solve the problem.
+>> >
+>> > It would be probably better to not do the allocations at all under
+>> > memory pressure.  Even if the RA allocation doesn't go into reclaim
+>>
+>> Fair enough.
+>> I think we can do it easily now.
+>> If page_cache_alloc_readahead(ie, GFP_NORETRY) is fail, we can adjust
+>> RA window size or turn off a while. The point is that we can use the
+>> fail of __do_page_cache_readahead as sign of memory pressure.
+>> Wu, What do you think?
 >
-> Why? Currently, swap toke priority is only decreased at page fault
-> path. Then, if the process sleep immediately after to grab swap
-> token, their swap token priority never be decreased. That makes
-> obviously undesired result.
+> No, disabling readahead can hardly help.
+
+I don't mean we have to disable RA.
+As I said, the point is that we can use __GFP_NORETRY alloc fail as
+_sign_ of memory pressure.
+
 >
-> This patch implement very poor (and lightweight) priority decay
-> mechanism. It only be affect to the above corner case and doesn't
-> change swap tendency workload performance (eg multi process qsbench
-> load)
+> The sequential readahead memory consumption can be estimated by
+>
+>                2 * (number of concurrent read streams) * (readahead window size)
+>
+> And you can double that when there are two level of readaheads.
+>
+> Since there are hardly any concurrent read streams in Andy's case,
+> the readahead memory consumption will be ignorable.
+>
+> Typically readahead thrashing will happen long before excessive
+> GFP_NORETRY failures, so the reasonable solutions are to
 
-Ohhh, good catch.  The original swap token algorithm did
-not have this problem, and I never caught the fact that
-the replacement (which is better in many ways) does...
+If it is, RA thrashing could be better sign than failure of __GFP_NORETRY.
+If we can do it easily, I don't object it. :)
 
-> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>
+> - shrink readahead window on readahead thrashing
+>  (current readahead heuristic can somehow do this, and I have patches
+>  to further improve it)
 
-Reviewed-by: Rik van Riel<riel@redhat.com>
+Good to hear. :)
+I don't want RA steals high order page in memory pressure.
+My patch and shrinking RA window helps this case.
 
 -- 
-All rights reversed
+Kind regards,
+Minchan Kim
