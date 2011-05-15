@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1EOKUy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 06:20:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52515 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab1EOKUw convert rfc822-to-8bit (ORCPT
+	id S1756214Ab1EOK0H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 06:26:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56322 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab1EOK0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 06:20:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=wRbBl9w7yRYg+Di/HPk/jSnJfweLVFJ7FvHnTi7C2HYBKgHWSA+j+Q7hiumJKuxVA5
-         YmlArXTVZbIGc3povBVe3OScX6kEfDmw0KIdUSeFrqFjajhMlywgjWz5dmYpyvFhDSCQ
-         v/zy74688mJtQ/m4QPABZwwsHfOQ20OV+xFKc=
+	Sun, 15 May 2011 06:26:04 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DCFAA80.7040109@jp.fujitsu.com>
+Date: Sun, 15 May 2011 19:27:12 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-References: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-Date: Sun, 15 May 2011 12:20:51 +0200
-X-Google-Sender-Auth: 11EqU0iF0burHZJfmVdnJlHkeJs
-Message-ID: <BANLkTinAtUQ8H1DQpqXxX_U4mLO617L3Eg@mail.gmail.com>
-Subject: Re: [PATCH v6] Add ST-Ericsson CG2900 driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: mgorman@suse.de
+CC: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
+        colin.king@canonical.com, raghu.prabhu13@gmail.com, jack@suse.cz,
+        chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
+        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de> <1305295404-12129-5-git-send-email-mgorman@suse.de>
+In-Reply-To: <1305295404-12129-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/10 Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>:
+(2011/05/13 23:03), Mel Gorman wrote:
+> Under constant allocation pressure, kswapd can be in the situation where
+> sleeping_prematurely() will always return true even if kswapd has been
+> running a long time. Check if kswapd needs to be scheduled.
+> 
+> Signed-off-by: Mel Gorman<mgorman@suse.de>
+> ---
+>   mm/vmscan.c |    4 ++++
+>   1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index af24d1e..4d24828 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+>   	unsigned long balanced = 0;
+>   	bool all_zones_ok = true;
+> 
+> +	/* If kswapd has been running too long, just sleep */
+> +	if (need_resched())
+> +		return false;
+> +
 
-> Patch created on next-20110510.
-> Compared to v5 this patch has the following update:
->  - Updated driver after changes to MFD interfaces in linux-next (from mfd_data
->   to platform_data).
->  - Changed platform specific file dependencies (included correct nomadik file).
+Hmm... I don't like this patch so much. because this code does
 
-Sorry I don't know if all this will work, it's due to all the churn created by
-the current push to get stuff out of the ARM tree so not much to do.
+- don't sleep if kswapd got context switch at shrink_inactive_list
+- sleep if kswapd didn't
 
-The Nomadik GPIO file was moved in next but I will take that code move
-out today, because the GPIO maintainer has told me he couldn't
-provide feedback on these patches in time for me to finalize the change
-for kernel 2.6.40. Thus it won't go into 2.6.40 and I must remove it
-from next.
+It seems to be semi random behavior.
 
-The MFD changes will *probably* happen, if you're thinking about the
-PRCMU movement etc.
 
-To merge into the staging tree right now, you need to base it off
-Gregs staging tree, which is where it'll be merged:
-http://git.kernel.org/?p=linux/kernel/git/gregkh/staging-2.6.git;a=summary
 
-Sorry about all the confusion, I think it's actually nobodys fault,
-it's just reflecting the fact that embedded drivers with deep
-platform dependencies are *really* *hard* to manage in staging.
-It works best for things like a standard-form driver on a local bus
-(I2C, PCI, USB ...) without any bindings to a lot of platform stuff.
-
-Maybe the device tree will fix all this. Sometime.
-
-Yours,
-Linus Walleij
