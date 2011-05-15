@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816Ab1EOEUn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 00:20:43 -0400
-Received: from nic.NetDirect.CA ([216.16.235.2]:35357 "EHLO
-	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab1EOEUm (ORCPT
+	id S1759906Ab1EOD7t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 May 2011 23:59:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41403 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab1EOD7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 00:20:42 -0400
-X-Greylist: delayed 1882 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 May 2011 00:20:41 EDT
-X-Originating-Ip: 216.16.235.2
-Date: Sat, 14 May 2011 23:46:08 -0400
-From: Chris Frey <cdfrey@foursquare.net>
-To: matt mooney <mfmooney@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/14] staging: usbip: add userspace code
-Message-ID: <20110515034608.GA8484@foursquare.net>
-References: <cover.1305369175.git.mfm@muteddisk.com> <7dce7775af890105a685b67408f38fbef99cbdfe.1305369176.git.mfm@muteddisk.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7dce7775af890105a685b67408f38fbef99cbdfe.1305369176.git.mfm@muteddisk.com>
-User-Agent: Mutt/1.4.2.2i
+	Sat, 14 May 2011 23:59:48 -0400
+Message-ID: <4DCF4F98.4000009@kernel.org>
+Date: Sat, 14 May 2011 20:59:20 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+References: <4DCAFFD8.2080605@kernel.org> <4DCB157F.20202@kernel.org> <20110512060344.GB3191@elte.hu> <4DCB8BCD.1080607@kernel.org> <4DCB8F7A.90603@kernel.org> <20110512092013.GJ2258@linux.vnet.ibm.com> <4DCC52FB.6030500@kernel.org> <BANLkTin1haL+isnR0UUoHdNm99bnxYPt-g@mail.gmail.com> <20110514142621.GB2258@linux.vnet.ibm.com> <20110514153118.GA24311@linux.vnet.ibm.com> <20110514183453.GA32756@linux.vnet.ibm.com>
+In-Reply-To: <20110514183453.GA32756@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4DCF4FB0.004B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 14, 2011 at 03:55:07AM -0700, matt mooney wrote:
-> +0fca  Research In Motion, Ltd.
-> +	0001  Blackberry Handheld
+On 05/14/2011 11:34 AM, Paul E. McKenney wrote:
+>> and do the inspection afterwards.
+> 
+> And here is a lightly-tested patch, which applies on tip/core/rcu.
+> 
+> This problem could account for both the long delays seen with e59fb312
+> (Decrease memory-barrier usage based on semi-formal proof) and the
+> shorter delays seen with a26ac245 (move TREE_RCU from softirq to kthread).
 
-For Barry, we recognize the following product ID's under the RIM Vendor ID:
+yes. it fixes the problem.
 
-	0001	The original ID, sometimes we call it Classic
-	0004	The old Pearl dual-endpoint mode.  Had both Mass Storage
-		and Database endpoints
-	0006	Pearl in database-only endpoint mode
-	8001	The 8200 series Pearl Flip
-	8004	The 8120 Pearl (and some other new models I think)
-	8007	The Storm
+for 1024g system when hotadd mem enabled in kernel config
 
-- Chris
+[   31.814803] cpu_dev_init done
+[   35.437163] memory_dev_init done
 
+even it is with gcc from opensuse 11.3
+
+Thanks
+
+Yinghai
