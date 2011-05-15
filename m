@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab1EOKqH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 06:46:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59020 "EHLO
+	id S1759895Ab1EOKqE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 06:46:04 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59025 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab1EOKpp (ORCPT
+	with ESMTP id S1759447Ab1EOKpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 06:45:45 -0400
+	Sun, 15 May 2011 06:45:47 -0400
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         alan@linux.intel.com, david@woodhou.se, tomas.winkler@intel.com,
         Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 09/10] staging/mei: AMT Watchdog
-Date: Sun, 15 May 2011 13:43:47 +0300
-Message-Id: <1305456228-15265-10-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 10/10] staging/mei: add mei to staging Kbuild
+Date: Sun, 15 May 2011 13:43:48 +0300
+Message-Id: <1305456228-15265-11-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1305456228-15265-1-git-send-email-oren.jer.weil@intel.com>
 References: <1305456228-15265-1-git-send-email-oren.jer.weil@intel.com>
@@ -22,213 +22,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-code that open connection and invoke
-heartbeats to the AMT Watchdog client/feature, if exists
-
-Connect to WD Client, if exists Send Start WD Command.
-Every 2 secs send heartbeats.
-On System shutdown/suspends, send Stop WD command.
-
-This is intermediate stage before moving this code to standalone watchdog
-driver.
+Add mei to Kconfig and Makefile in drivers/staging
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Itzhak Tzeel-Krupp <itzhak.tzeel-krupp@intel.com>
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 ---
- drivers/staging/mei/wd.c |  183 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 183 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/mei/wd.c
+ drivers/staging/Kconfig      |    2 ++
+ drivers/staging/Makefile     |    1 +
+ drivers/staging/mei/Kconfig  |   28 ++++++++++++++++++++++++++++
+ drivers/staging/mei/Makefile |   11 +++++++++++
+ 4 files changed, 42 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/mei/Kconfig
+ create mode 100644 drivers/staging/mei/Makefile
 
-diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index e3786f1..856c0d6 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -177,5 +177,7 @@ source "drivers/staging/gma500/Kconfig"
+ 
+ source "drivers/staging/altera-stapl/Kconfig"
+ 
++source "drivers/staging/mei/Kconfig"
++
+ endif # !STAGING_EXCLUDE_BUILD
+ endif # STAGING
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index f0d5c53..73e7f80 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -70,3 +70,4 @@ obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
+ obj-$(CONFIG_TOUCHSCREEN_CLEARPAD_TM1217)	+= cptm1217/
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)	+= ste_rmi4/
+ obj-$(CONFIG_DRM_PSB)		+= gma500/
++obj-$(CONFIG_INTEL_MEI)		+= mei/
+diff --git a/drivers/staging/mei/Kconfig b/drivers/staging/mei/Kconfig
 new file mode 100644
-index 0000000..2564b03
+index 0000000..3f3f170
 --- /dev/null
-+++ b/drivers/staging/mei/wd.c
-@@ -0,0 +1,183 @@
-+/*
-+ *
-+ * Intel Management Engine Interface (Intel MEI) Linux driver
-+ * Copyright (c) 2003-2011, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/device.h>
-+#include <linux/pci.h>
-+#include <linux/sched.h>
++++ b/drivers/staging/mei/Kconfig
+@@ -0,0 +1,28 @@
++config INTEL_MEI
++	tristate "Intel Management Engine Interface (Intel MEI)"
++	depends on X86 && PCI && EXPERIMENTAL
++	help
++	  The Intel Management Engine (Intel ME) provides Manageability,
++	  Security and Media services for system containing Intel chipsets.
++	  if selected /dev/mei misc device will be created.
 +
-+#include "mei_dev.h"
-+#include "hw.h"
-+#include "interface.h"
-+#include "mei.h"
++	  Supported Chipsets are:
++	  7 Series Chipset Family
++	  6 Series Chipset Family
++	  5 Series Chipset Family
++	  4 Series Chipset Family
++	  Mobile 4 Series Chipset Family
++	  ICH9
++	  82946GZ/GL
++	  82G35 Express
++	  82Q963/Q965
++	  82P965/G965
++	  Mobile PM965/GM965
++	  Mobile GME965/GLE960
++	  82Q35 Express
++	  82G33/G31/P35/P31 Express
++	  82Q33 Express
++	  82X38/X48 Express
 +
-+/*
-+ * MEI Watchdog Module Parameters
-+ */
-+static u16 watchdog_timeout = AMT_WD_VALUE;
-+module_param(watchdog_timeout, ushort, 0);
-+MODULE_PARM_DESC(watchdog_timeout,
-+		"Intel(R) AMT Watchdog timeout value in seconds. (default="
-+					__MODULE_STRING(AMT_WD_VALUE)
-+					", disable=0)");
-+
-+static const u8 mei_start_wd_params[] = { 0x02, 0x12, 0x13, 0x10 };
-+static const u8 mei_stop_wd_params[] = { 0x02, 0x02, 0x14, 0x10 };
-+
-+const u8 mei_wd_state_independence_msg[3][4] = {
-+	{0x05, 0x02, 0x51, 0x10},
-+	{0x05, 0x02, 0x52, 0x10},
-+	{0x07, 0x02, 0x01, 0x10}
-+};
-+
-+/* UUIDs for AMT F/W clients */
-+const uuid_le mei_wd_guid = UUID_LE(0x05B79A6F, 0x4628, 0x4D7F, 0x89,
-+						0x9D, 0xA9, 0x15, 0x14, 0xCB,
-+						0x32, 0xAB);
-+
-+
-+void mei_wd_start_setup(struct mei_device *dev)
-+{
-+	dev_dbg(&dev->pdev->dev, "dev->wd_timeout=%d.\n", dev->wd_timeout);
-+	memcpy(dev->wd_data, mei_start_wd_params, MEI_WD_PARAMS_SIZE);
-+	memcpy(dev->wd_data + MEI_WD_PARAMS_SIZE,
-+		&dev->wd_timeout, sizeof(u16));
-+}
-+
-+/**
-+ * host_init_wd - mei initialization wd.
-+ *
-+ * @dev: the device structure
-+ */
-+void mei_wd_host_init(struct mei_device *dev)
-+{
-+	mei_init_file_private(&dev->wd_cl, dev);
-+
-+	/* look for WD client and connect to it */
-+	dev->wd_cl.state = MEI_FILE_DISCONNECTED;
-+	dev->wd_timeout = watchdog_timeout;
-+
-+	if (dev->wd_timeout > 0) {
-+		mei_wd_start_setup(dev);
-+		/* find ME WD client */
-+		mei_find_me_client_update_filext(dev, &dev->wd_cl,
-+					&mei_wd_guid, MEI_WD_HOST_CLIENT_ID);
-+
-+		dev_dbg(&dev->pdev->dev, "check wd_cl\n");
-+		if (MEI_FILE_CONNECTING == dev->wd_cl.state) {
-+			if (!mei_connect(dev, &dev->wd_cl)) {
-+				dev_dbg(&dev->pdev->dev, "Failed to connect to WD client\n");
-+				dev->wd_cl.state = MEI_FILE_DISCONNECTED;
-+				dev->wd_cl.host_client_id = 0;
-+				host_init_iamthif(dev) ;
-+			} else {
-+				dev->wd_cl.timer_count = CONNECT_TIMEOUT;
-+			}
-+		} else {
-+			dev_dbg(&dev->pdev->dev, "Failed to find WD client\n");
-+			host_init_iamthif(dev) ;
-+		}
-+	} else {
-+		dev->wd_bypass = true;
-+		dev_dbg(&dev->pdev->dev, "WD requested to be disabled\n");
-+		host_init_iamthif(dev) ;
-+	}
-+}
-+
-+/**
-+ * mei_wd_send - sends watch dog message to fw.
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns 0 if success,
-+ *	-EIO when message send fails
-+ *	-EINVAL when invalid message is to be sent
-+ */
-+int mei_wd_send(struct mei_device *dev)
-+{
-+	struct mei_msg_hdr *mei_hdr;
-+
-+	mei_hdr = (struct mei_msg_hdr *) &dev->wr_msg_buf[0];
-+	mei_hdr->host_addr = dev->wd_cl.host_client_id;
-+	mei_hdr->me_addr = dev->wd_cl.me_client_id;
-+	mei_hdr->msg_complete = 1;
-+	mei_hdr->reserved = 0;
-+
-+	if (!memcmp(dev->wd_data, mei_start_wd_params, MEI_WD_PARAMS_SIZE))
-+		mei_hdr->length = MEI_START_WD_DATA_SIZE;
-+	else if (!memcmp(dev->wd_data, mei_stop_wd_params, MEI_WD_PARAMS_SIZE))
-+		mei_hdr->length = MEI_WD_PARAMS_SIZE;
-+	else
-+		return -EINVAL;
-+
-+	if (mei_write_message(dev, mei_hdr, dev->wd_data, mei_hdr->length))
-+		return 0;
-+	return -EIO;
-+}
-+
-+int mei_wd_stop(struct mei_device *dev, bool preserve)
-+{
-+	int ret;
-+	u16 wd_timeout = dev->wd_timeout;
-+
-+	cancel_delayed_work(&dev->wd_work);
-+	if (dev->wd_cl.state != MEI_FILE_CONNECTED || !dev->wd_timeout)
-+		return 0;
-+
-+	dev->wd_timeout = 0;
-+	dev->wd_due_counter = 0;
-+	memcpy(dev->wd_data, mei_stop_wd_params, MEI_WD_PARAMS_SIZE);
-+	dev->stop = 1;
-+
-+	ret = mei_flow_ctrl_creds(dev, &dev->wd_cl);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (ret && dev->mei_host_buffer_is_empty) {
-+		ret = 0;
-+		dev->mei_host_buffer_is_empty = 0;
-+
-+		if (!mei_wd_send(dev)) {
-+			ret = mei_flow_ctrl_reduce(dev, &dev->wd_cl);
-+			if (ret)
-+				goto out;
-+		} else {
-+			dev_dbg(&dev->pdev->dev, "send stop WD failed\n");
-+		}
-+
-+		dev->wd_pending = 0;
-+	} else {
-+		dev->wd_pending = 1;
-+	}
-+	dev->wd_stopped = 0;
-+	mutex_unlock(&dev->device_lock);
-+
-+	ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
-+					dev->wd_stopped, 10 * HZ);
-+	mutex_lock(&dev->device_lock);
-+	if (!dev->wd_stopped)
-+		dev_dbg(&dev->pdev->dev, "stop wd failed to complete.\n");
-+	else
-+		dev_dbg(&dev->pdev->dev, "stop wd complete.\n");
-+
-+	if (preserve)
-+		dev->wd_timeout = wd_timeout;
-+
-+out:
-+	return ret;
-+}
-+
++	  For more information see
++	  <http://software.intel.com/en-us/manageability/>
+diff --git a/drivers/staging/mei/Makefile b/drivers/staging/mei/Makefile
+new file mode 100644
+index 0000000..57168db
+--- /dev/null
++++ b/drivers/staging/mei/Makefile
+@@ -0,0 +1,11 @@
++#
++# Makefile - Intel Management Engine Interface (Intel MEI) Linux driver
++# Copyright (c) 2010-2011, Intel Corporation.
++#
++obj-$(CONFIG_INTEL_MEI) += mei.o
++mei-objs := init.o
++mei-objs += interrupt.o
++mei-objs += interface.o
++mei-objs += iorw.o
++mei-objs += main.o
++mei-objs += wd.o
 -- 
 1.7.1
 
