@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab1EOKe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 06:34:59 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:50142 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755668Ab1EOKe6 (ORCPT
+	id S1756295Ab1EOKpZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 06:45:25 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58966 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab1EOKpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 06:34:58 -0400
-Message-ID: <4DCFAC4F.5030606@web.de>
-Date: Sun, 15 May 2011 12:34:55 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org
-Subject: [PATCH] intel-iommu: Remove obsolete comment from detect_intel_iommu
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1/NL78wZlu189hnjX0CQVeYrgxYjNbZ//FEEg0f
-	ou7f2p4hBcQTNwtKmUqKgX1ZgonAcdetnTHRnjO/g33Llqfdo0
-	CuML5Qaq4=
+	Sun, 15 May 2011 06:45:24 -0400
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        alan@linux.intel.com, david@woodhou.se, tomas.winkler@intel.com,
+        Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH 00/10] staging/mei: Intel MEI Driver
+Date: Sun, 15 May 2011 13:43:38 +0300
+Message-Id: <1305456228-15265-1-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+﻿Intel MEI Driver
+===============
 
-Since cacd4213d8, this comment no longer applies.
+This second try to submit the Intel MEI Driver to the staging.
+Most of the work was done in mei.txt file to describe the driver 
+functionality and flows.
+TODO file was updated with steps we believe need to be done.
+We also hope that patches have better descriptions to help with review.
+Some reorganization of header files was also preformed.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- drivers/pci/dmar.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+Thanks
+	Oren Weil
+	Intel Corporation.
 
-diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
-index 12e02bf..3dc9bef 100644
---- a/drivers/pci/dmar.c
-+++ b/drivers/pci/dmar.c
-@@ -698,12 +698,7 @@ int __init detect_intel_iommu(void)
- 	{
- #ifdef CONFIG_INTR_REMAP
- 		struct acpi_table_dmar *dmar;
--		/*
--		 * for now we will disable dma-remapping when interrupt
--		 * remapping is enabled.
--		 * When support for queued invalidation for IOTLB invalidation
--		 * is added, we will not need this any more.
--		 */
-+
- 		dmar = (struct acpi_table_dmar *) dmar_tbl;
- 		if (ret && cpu_has_x2apic && dmar->flags & 0x1)
- 			printk(KERN_INFO
--- 
-1.7.1
+Oren Weil (10):
+  staging/mei: MEI Driver documentations
+  staging/mei: MEI Driver TODO list
+  staging/mei: PCI device and char driver support.
+  staging/mei: Interrupt handling.
+  staging/mei: MEI link layer
+  staging/mei: MEI driver init flow.
+  staging/mei: Hardware and MEI driver internal struct definition
+  staging/mei: mei.h defining user space interface
+  staging/mei: AMT Watchdog
+  staging/mei: add mei to staging Kbuild
+
+ drivers/staging/Kconfig           |    2 +
+ drivers/staging/Makefile          |    1 +
+ drivers/staging/mei/Kconfig       |   28 +
+ drivers/staging/mei/Makefile      |   11 +
+ drivers/staging/mei/TODO          |   17 +
+ drivers/staging/mei/hw.h          |  333 ++++++++
+ drivers/staging/mei/init.c        |  770 ++++++++++++++++++
+ drivers/staging/mei/interface.c   |  447 ++++++++++
+ drivers/staging/mei/interface.h   |   62 ++
+ drivers/staging/mei/interrupt.c   | 1624 +++++++++++++++++++++++++++++++++++++
+ drivers/staging/mei/iorw.c        |  604 ++++++++++++++
+ drivers/staging/mei/main.c        | 1349 ++++++++++++++++++++++++++++++
+ drivers/staging/mei/mei.h         |  105 +++
+ drivers/staging/mei/mei.txt       |  189 +++++
+ drivers/staging/mei/mei_dev.h     |  422 ++++++++++
+ drivers/staging/mei/mei_version.h |   31 +
+ drivers/staging/mei/wd.c          |  183 +++++
+ 17 files changed, 6178 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/mei/Kconfig
+ create mode 100644 drivers/staging/mei/Makefile
+ create mode 100644 drivers/staging/mei/TODO
+ create mode 100644 drivers/staging/mei/hw.h
+ create mode 100644 drivers/staging/mei/init.c
+ create mode 100644 drivers/staging/mei/interface.c
+ create mode 100644 drivers/staging/mei/interface.h
+ create mode 100644 drivers/staging/mei/interrupt.c
+ create mode 100644 drivers/staging/mei/iorw.c
+ create mode 100644 drivers/staging/mei/main.c
+ create mode 100644 drivers/staging/mei/mei.h
+ create mode 100644 drivers/staging/mei/mei.txt
+ create mode 100644 drivers/staging/mei/mei_dev.h
+ create mode 100644 drivers/staging/mei/mei_version.h
+ create mode 100644 drivers/staging/mei/wd.c
+
