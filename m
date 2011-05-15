@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab1EOISv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 04:18:51 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56377 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363Ab1EOISs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 04:18:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=JsH36wQuMsWp/hLvPGnYzhWlFwnKivbqwVKCLauGmVADBEBd79X3VDOihm8zBd0xF7
-         4kgeiMxuDmzbam8/PRSK3rCxUvY5055l6Hv2TBanQBopJBWTkPNBxKmsLWurvewILnpq
-         5BK5RGqidUnFgDyUVoAOgwextuuQQGY8F+Qhg=
-Subject: [PATCH net-next-2.6] net: ping: dont call udp_ioctl()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: David Miller <davem@davemloft.net>, solar@openwall.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        peak@argo.troja.mff.cuni.cz, kees.cook@canonical.com,
-        dan.j.rosenberg@gmail.com, eugene@redhat.com, nelhage@ksplice.com,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-In-Reply-To: <20110513200100.GA3875@albatros>
-References: <20110510.121550.112583080.davem@davemloft.net>
-	 <20110513200100.GA3875@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 15 May 2011 10:18:40 +0200
-Message-ID: <1305447520.3120.88.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1755324Ab1EOIUY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 04:20:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753823Ab1EOIUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 04:20:20 -0400
+Message-ID: <4DCF8CBC.1040602@redhat.com>
+Date: Sun, 15 May 2011 11:20:12 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/7] KVM: MMU: optimize pte write path if don't have protected
+ sp
+References: <4DCEF5B1.3050706@cn.fujitsu.com>
+In-Reply-To: <4DCEF5B1.3050706@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 14 mai 2011 à 00:01 +0400, Vasiliy Kulikov a écrit :
+On 05/15/2011 12:35 AM, Xiao Guangrong wrote:
+> Simply return from kvm_mmu_pte_write path if no shadow page is
+> write-protected, then we can avoid to walk all shadow pages and hold
+> mmu-lock
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 2841805..971e2d2 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -498,6 +498,7 @@ static void account_shadowed(struct kvm *kvm, gfn_t gfn)
+>   		linfo = lpage_info_slot(gfn, slot, i);
+>   		linfo->write_count += 1;
+>   	}
+> +	atomic_inc(&kvm->arch.indirect_shadow_pages);
+>   }
+>
+>   static void unaccount_shadowed(struct kvm *kvm, gfn_t gfn)
+> @@ -513,6 +514,7 @@ static void unaccount_shadowed(struct kvm *kvm, gfn_t gfn)
+>   		linfo->write_count -= 1;
+>   		WARN_ON(linfo->write_count<  0);
+>   	}
+> +	atomic_dec(&kvm->arch.indirect_shadow_pages);
+>   }
 
-> +/*
-> + *	IOCTL requests applicable to the UDP^H^H^HICMP protocol
-> + */
-> +
-> +int ping_ioctl(struct sock *sk, int cmd, unsigned long arg)
-> +{
-> +	pr_debug("ping_ioctl(sk=%p,sk->num=%u,cmd=%d,arg=%lu)\n",
-> +		inet_sk(sk), inet_sk(sk)->inet_num, cmd, arg);
-> +	switch (cmd) {
-> +	case SIOCOUTQ:
-> +	case SIOCINQ:
-> +		return udp_ioctl(sk, cmd, arg);
-> +	default:
-> +		return -ENOIOCTLCMD;
-> +	}
-> +}
+These atomic ops are always called from within the spinlock, so we don't 
+need an atomic_t here.
 
-Do we really need to support SIOCOUTQ and SIOCINQ ioctls for ping
-sockets ?
+Sorry, I should have noticed this on the first version.
 
-I ask this because udp_ioctl() assumes it handles UDP frames, and can
-change UDP_MIB_INERRORS in case first_packet_length() finds a frame with
-bad checksum.
 
-[ UDP let the checksum be completed and checked when it performs the
-Kernel->User copy ]
 
-I would just remove this legacy, please shout if you believe we really
-should support ioctl...
 
-[ I actually tested that ping was still working correctly, of course ]
 
-BTW, link
-(ftp://mirrors.kernel.org/openwall/Owl/current/sources/Owl/packages/iputils/iputils-ss020927.tar.gz ) provided in http://openwall.info/wiki/people/segoon/ping is not working.
-
-I had to manually patch iputils-s20101006.tar.bz2 instead.
-
-Thanks
-
-[PATCH net-next-2.6] net: ping: dont call udp_ioctl()
-
-udp_ioctl() really handles UDP and UDPLite protocols.
-
-1) It can increment UDP_MIB_INERRORS in case first_packet_length() finds
-a frame with bad checksum.
-
-2) It has a dependency on sizeof(struct udphdr), not applicable to
-ICMP/PING
-
-If ping sockets need to handle SIOCINQ/SIOCOUTQ ioctl, this should be
-done differently.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Vasiliy Kulikov <segoon@openwall.com>
----
- net/ipv4/ping.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
-
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 7041d09..952505a 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -610,20 +610,15 @@ do_confirm:
- }
- 
- /*
-- *	IOCTL requests applicable to the UDP^H^H^HICMP protocol
-+ *	IOCTL requests applicable to PING sockets
-  */
- 
- int ping_ioctl(struct sock *sk, int cmd, unsigned long arg)
- {
- 	pr_debug("ping_ioctl(sk=%p,sk->num=%u,cmd=%d,arg=%lu)\n",
- 		inet_sk(sk), inet_sk(sk)->inet_num, cmd, arg);
--	switch (cmd) {
--	case SIOCOUTQ:
--	case SIOCINQ:
--		return udp_ioctl(sk, cmd, arg);
--	default:
--		return -ENOIOCTLCMD;
--	}
-+
-+	return -ENOIOCTLCMD;
- }
- 
- int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
-
+-- 
+error compiling committee.c: too many arguments to function
 
