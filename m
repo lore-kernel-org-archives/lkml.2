@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab1EOGET (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 02:04:19 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:60729 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab1EOGES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 02:04:18 -0400
-Date: Sat, 14 May 2011 23:04:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110515060415.GF2258@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4DCB8F7A.90603@kernel.org>
- <20110512092013.GJ2258@linux.vnet.ibm.com>
- <4DCC52FB.6030500@kernel.org>
- <BANLkTin1haL+isnR0UUoHdNm99bnxYPt-g@mail.gmail.com>
- <20110514142621.GB2258@linux.vnet.ibm.com>
- <20110514153118.GA24311@linux.vnet.ibm.com>
- <20110514183453.GA32756@linux.vnet.ibm.com>
- <4DCF5322.7030305@kernel.org>
- <4DCF6789.70701@kernel.org>
- <4DCF696B.8020304@kernel.org>
+	id S1753675Ab1EOGfG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 02:35:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57111 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab1EOGfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 02:35:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=x444jCPlCBEiYmAFgnTyHqd1PXKwHUAuapurTQyR7t/q1qr9XfjNbaZFabwlVWECTb
+         HV9hRYCmzsthbmxkEIHEhm3fDNATAZJspSks4RcKLfVz0pTfDVVuW+EQ9kmA4dAobKGA
+         b0yZTgIFMOMbfE1a08WQrmUKtVwdB8WE92xb4=
+Message-ID: <4DCF7413.4070704@gmail.com>
+Date: Sun, 15 May 2011 10:34:59 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DCF696B.8020304@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: huang ying <huang.ying.caritas@gmail.com>
+CC: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>	<4DCD4B85.3040702@gmail.com>	<BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com>	<4DCE3493.4090404@gmail.com> <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com>
+In-Reply-To: <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 14, 2011 at 10:49:31PM -0700, Yinghai Lu wrote:
-> On 05/14/2011 10:41 PM, Yinghai Lu wrote:
-> > On 05/14/2011 09:14 PM, Yinghai Lu wrote:
-> >> On 05/14/2011 11:34 AM, Paul E. McKenney wrote:
-> >>>> and do the inspection afterwards.
-> >>>
-> >>> And here is a lightly-tested patch, which applies on tip/core/rcu.
-> >>>
-> >>> This problem could account for both the long delays seen with e59fb312
-> >>> (Decrease memory-barrier usage based on semi-formal proof) and the
-> >>> shorter delays seen with a26ac245 (move TREE_RCU from softirq to kthread).
-> >>
-> >> yes. it fixes the problem.
-> >>
-> >> for 1024g system when hotadd mem enabled in kernel config
-> >>
-> >> [   31.814803] cpu_dev_init done
-> >> [   35.437163] memory_dev_init done
-> >>
-> >> even it is with gcc from opensuse 11.3
-> > 
-> > got:
-> > 
-> > [   86.931217] Switched to NOHz mode on CPU #0
-> > [   86.931272] Switched to NOHz mode on CPU #25
-> > [   86.931278] ------------[ cut here ]------------
-> > [   86.931290] WARNING: at kernel/rcutree.c:364 rcu_enter_nohz+0x44/0x76()
-> > [   86.931294] Hardware name: Sun Fire X4800 M2 
-> > [   86.931297] Modules linked in:
-> > [   86.931303] Pid: 0, comm: swapper Not tainted 2.6.39-rc7-tip-yh-04836-g5e42dc2-dirty #3
-> > [   86.931307] Call Trace:
-> > [   86.931333]  [<ffffffff81080280>] warn_slowpath_common+0x85/0x9d
-> > [   86.931338] Switched to NOHz mode on CPU #74
-> > [   86.931346]  [<ffffffff810802b2>] warn_slowpath_null+0x1a/0x1c
-> > [   86.931356]  [<ffffffff810d3615>] rcu_enter_nohz+0x44/0x76
-> > [   86.931370]  [<ffffffff810ab3cb>] tick_nohz_stop_sched_tick+0x27d/0x366
-> > [   86.931381]  [<ffffffff810391bc>] cpu_idle+0x7a/0xcc
-> > [   86.931397]  [<ffffffff81bd1aa3>] rest_init+0xb7/0xbe
-> > [   86.931408]  [<ffffffff81bd19ec>] ? csum_partial_copy_generic+0x16c/0x16c
-> > [   86.931423]  [<ffffffff82738e39>] start_kernel+0x3b2/0x3bd
-> > [   86.931428] Switched to NOHz mode on CPU #94
-> > [   86.931436]  [<ffffffff827382cc>] x86_64_start_reservations+0x9c/0xa0
-> > [   86.931446]  [<ffffffff827384a8>] x86_64_start_kernel+0x1d8/0x1e3
-> > [   86.931463] ---[ end trace 2cfc591bf7de931f ]---
-> > [   86.931598] Switched to NOHz mode on CPU #151
-> > [   86.931613] Switched to NOHz mode on CPU #152
+On 05/15/2011 04:06 AM, huang ying wrote:
+...
+>>
+>> yes, is not good. But at least we *must* provide a way to turn this new feature off
+>> via command line I think. One of a reason for me is perf unknown nmis (at moment we seems
+>> to have captured and cured all parasite NMIs sources but there is no guarantee we wont
+>> meet them in future due to some code change or whatever). And bloating trap.c with
+>> new if()'s is not that good I guess, that is why I asked if there a way to do all the
+>> work via notifiers ;)
 > 
-> it seems gcc from Fedora 14 is not happy with this patch.
+> Yes.  We should consider about perf unknown NMI issues.  But compared
+> with pushing all magic to user, I think the better way is to have a
+> better default behavior in kernel.  For example, we can turn off
+> unknown NMI as hwerr logic temporarily if there are more than 1 perf
+> NMI events in action.  Is that reasonable?
+
+  I'm personally fine even if it's enabled by default, only worried to have
+an option to disable hwerr from boot line.
+
 > 
-> [   35.113696] cpu_dev_init done
-> [  155.963662] memory_dev_init done
+> And, I am not a big fan of notifiers, that makes code hard to be
+> understood.  If you have concerns about the size of traps.c, we can
+> move all NMI logic to a new file.
 
-Hmmm...  It looks like my attempts to make RCU recover from misnesting are
-not completely foolproof.  I will be especially happy to look into this
-if you could look for the source of the irq_enter()/irq_exit() misnesting.
+  Ying, the concern is rather related to the code scheme in general. Since
+we have notifiers I think the better way to be consistent here and use
+hwerr notifier too. But it's IMHO ;)
 
-(And yes, it still might be a bug in my code -- I will be looking at that
-yet again as well.)
+> 
+> Best Regards,
+> Huang Ying
 
-							Thanx, Paul
+-- 
+            Cyrill
