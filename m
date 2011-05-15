@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab1EOFcC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 01:32:02 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48254 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab1EOFb7 (ORCPT
+	id S1753780Ab1EOFcZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 01:32:25 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:45482 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab1EOFcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 01:31:59 -0400
+	Sun, 15 May 2011 01:32:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cY30Ogo9/i9BOUciN+OfzG0hmKVUElyrvrMdvKDNJJeGYL16ipu7ZYGEJyVS2J9wIt
-         4ddphk8fMrXlPh8HuPhGKmwbPaS0IKgn2srj9lghGyew4q3udXvpdQla1W1LyVmv+kAT
-         fyG61fK1MWTdEi8t+5BzHMVj7qEfw/gQOPrP0=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=iv8G/hyeTQopppGlc4nCMmDi8dhU8IWUgKzU6g26sMX7bldOuU2380GHxTWEUfJHb9
+         POFr6btSwN0AO493fMQGBwddU4PCbfdKpZdpIMw6IKn6iCLpHzIh4+iM6ZtqaSE9hWPh
+         r174l70njE8wk65p0wN5RtL3yrnmqBDhro4z8=
 From: Namhyung Kim <namhyung@gmail.com>
 To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         Jens Axboe <axboe@kernel.dk>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] bsg: fix bsg_poll() to return POLLOUT properly
-Date: Sun, 15 May 2011 14:31:51 +0900
-Message-Id: <1305437513-3914-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/3] bsg: remove unnecessary conditional expressions
+Date: Sun, 15 May 2011 14:31:52 +0900
+Message-Id: <1305437513-3914-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.5
+In-Reply-To: <1305437513-3914-1-git-send-email-namhyung@gmail.com>
+References: <1305437513-3914-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-POLLOUT should be returned only if bd->queued_cmds < bd->max_queue
-so that bsg_alloc_command() can proceed.
+Second condition in OR always implies first condition is false
+thus bytes_read in the second is not needed. The same goes to
+bytes_written.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- block/bsg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ block/bsg.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/block/bsg.c b/block/bsg.c
-index 0c8b64a16484..c4f49e255751 100644
+index c4f49e255751..b7e42ad55361 100644
 --- a/block/bsg.c
 +++ b/block/bsg.c
-@@ -878,7 +878,7 @@ static unsigned int bsg_poll(struct file *file, poll_table *wait)
- 	spin_lock_irq(&bd->lock);
- 	if (!list_empty(&bd->done_list))
- 		mask |= POLLIN | POLLRDNORM;
--	if (bd->queued_cmds >= bd->max_queue)
-+	if (bd->queued_cmds < bd->max_queue)
- 		mask |= POLLOUT;
- 	spin_unlock_irq(&bd->lock);
+@@ -606,7 +606,7 @@ bsg_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	ret = __bsg_read(buf, count, bd, NULL, &bytes_read);
+ 	*ppos = bytes_read;
  
+-	if (!bytes_read || (bytes_read && err_block_err(ret)))
++	if (!bytes_read || err_block_err(ret))
+ 		bytes_read = ret;
+ 
+ 	return bytes_read;
+@@ -686,7 +686,7 @@ bsg_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+ 	/*
+ 	 * return bytes written on non-fatal errors
+ 	 */
+-	if (!bytes_written || (bytes_written && err_block_err(ret)))
++	if (!bytes_written || err_block_err(ret))
+ 		bytes_written = ret;
+ 
+ 	dprintk("%s: returning %Zd\n", bd->name, bytes_written);
 -- 
 1.7.5
 
