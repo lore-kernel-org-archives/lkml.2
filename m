@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab1EOR7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 13:59:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53698 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1EOR7w convert rfc822-to-8bit (ORCPT
+	id S1752486Ab1EOSLL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 14:11:11 -0400
+Received: from nm5-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.165]:38566 "HELO
+	nm5-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751249Ab1EOSLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 13:59:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YczYx/M6WVGjiL+QIqltQr4Ndutvauu5h+ZvcnS2SCZZ0UhhpgpDyaXmAio/gVXG+e
-         yCntsrmj2DB/UZ0WHHZeRrPJc/bmq2asrEqR3jsBzK5eL/vvQYSo6kvOtZjNV/2BSu89
-         /j1d3MT3AWQ+sNXFpSqFh1QOIf1cIrtx58Bc4=
+	Sun, 15 May 2011 14:11:09 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 May 2011 14:11:09 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 517960.51286.bm@omp1052.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=fzhNAcll2Wph79hbFqrmCJ91RprcRlclfxWGOIb8vwzZDO34UIOcPuH3kF6BWVzY/2ySMH/0vOAH4fc+EpF5/ORaKS7KfWDVuOomTEMopmx1xME8z/fwYSNoojv4daybcfQYHd78QCB80rc1MX5XrL5mL0wviLjVHd67yg2jO5o=;
+Message-ID: <177649.65029.qm@web130106.mail.mud.yahoo.com>
+X-YMail-OSG: d8ksBbEVM1lJsRrp66jLOZHY6HsSdz2r.Sx8fDfowOo9qYu
+ GdSYlllzGYfl3S5fAMp4GnhLeA59fjvKPNZLHNEy2Xbs8LLH1IK51FcqXoRt
+ VfjC5ML_r7xomBZx7qb9ATxSEn.uQbxzsJTaqZ5qb.z_fC6ADVACGiLiWYlT
+ 0.Hp3KjjBONol0GN7hEoSaL13m19N1cf9tH1dvBhQb9wC6dkSOuUko6Nbziu
+ oesiJOdWanxd8hT0HaikmmPqK15vZc5z5iGrTu6zDR3bBBwJoYKH4x67D.Jo
+ 8MEjmBv6YYwuL_t2TAz3y9_ijecKtuePHzP_K.vBhi5M2A1X6UkX2jb54Vwd
+ oX35wH1CqzLLk1pAYsExv3knAgsLRqVU23XeNknBNVk9vqthEQwscqWtexoo
+ bGh.KHO0FjC13
+X-Mailer: YahooMailClassic/12.0.2 YahooMailWebService/0.8.111.303096
+Date: Sun, 15 May 2011 11:04:27 -0700 (PDT)
+From: Alex Davis <alex14641@yahoo.com>
+Subject: Re: Possible coding issue in udf??
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <m2pqnjevjc.fsf@igel.home>
 MIME-Version: 1.0
-In-Reply-To: <20110515173644.GA18241@kroah.com>
-References: <1305040215-712-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-	<BANLkTinAtUQ8H1DQpqXxX_U4mLO617L3Eg@mail.gmail.com>
-	<20110515163257.GE1315@kroah.com>
-	<BANLkTi=hN6NeLdXAjzeeYwcZR7+BoJ1BQg@mail.gmail.com>
-	<20110515173644.GA18241@kroah.com>
-Date: Sun, 15 May 2011 19:59:51 +0200
-X-Google-Sender-Auth: 9xMz9dHj3w840f6EHRz-2IxYqDs
-Message-ID: <BANLkTinXhc+gRAWVrC--EdrbPjC6U8roYA@mail.gmail.com>
-Subject: Re: [PATCH v6] Add ST-Ericsson CG2900 driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg KH <greg@kroah.com>
-Cc: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>,
-        devel@driverdev.osuosl.org,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vitaly Wool <vitalywool@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@sify.com>,
-        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/15 Greg KH <greg@kroah.com>:
-> On Sun, May 15, 2011 at 07:29:04PM +0200, Linus Walleij wrote:
->> It was my recommendation to put it into staging, by doing this
->> people can talk about the architecture by submitting *patches*
->> to show how they want it instead of these fruitless discussions.
->>
->> So this should be a case where staging really helps, at least in
->> my dreams.
->
-> Yes, that is where staging should help, hopefully we can get these build
-> dependancies worked out to get this merged properly.  Perhaps for the
-> .41 merge window?
+I get it now.
 
-Since one of the build dependencies is the GPIO rework that already
-needed to be pushed from 2.6.40 to 2.6.41 due to shortage of
-review power for drivers/gpio, and since I cannot merge the updates
-to the current GPIO driver in arch/arm/plat-nomadik/gpio.c due to
-the current ban on anything that grows arch/arm/* we will likely
-have to postpone its merging to staging to 2.6.42.
+Thanks.
 
-Basically this driver has ended up in cross-subsystem dependency
-hell :-)
+I code, therefore I am
 
-But worse things have happened, and these are special times,
-so let's let it rest for a while.
 
-Linus Walleij
+--- On Sun, 5/15/11, Andreas Schwab <schwab@linux-m68k.org> wrote:
+
+> From: Andreas Schwab <schwab@linux-m68k.org>
+> Subject: Re: Possible coding issue in udf??
+> To: "Alex Davis" <alex14641@yahoo.com>
+> Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+> Date: Sunday, May 15, 2011, 1:13 PM
+> Alex Davis <alex14641@yahoo.com>
+> writes:
+> 
+> > In fs/udf/inode.c, line 1455, linux 2.6.35, there is
+> the following code:
+> >
+> >     udfperms = ((inode->i_mode &
+> S_IRWXO)) |
+> >        
+>    ((inode->i_mode & S_IRWXG) <<
+> 2) |
+> >        
+>    ((inode->i_mode & S_IRWXU) <<
+> 4);
+> >
+> > Shouldn't we be shifting by 3 bits? i.e:
+> >     udfperms = ((inode->i_mode &
+> S_IRWXO)) |
+> >        
+>    ((inode->i_mode & S_IRWXG) <<
+> 3) |
+> >        
+>    ((inode->i_mode & S_IRWXU) <<
+> 6);
+> 
+> udfperms contains three bit fields of 5 bits each, of which
+> 3 bits are
+> each filled from one of the three RWX parts of i_mode, and
+> 2 bits
+> (DELETE and CHATTR) are added later.  Thus each of the
+> three bit fields
+> are expanded from 3 to 5 bits, so that the second one needs
+> to be
+> shifted by 2 and the third one by 4.
+> 
+> Andreas.
+> 
+> -- 
+> Andreas Schwab, schwab@linux-m68k.org
+> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3
+> 44D5 214B 8276 4ED5
+> "And now for something completely different."
+> 
