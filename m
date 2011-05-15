@@ -1,121 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab1EON0j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 09:26:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52754 "EHLO ogre.sisk.pl"
+	id S1759950Ab1EONdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 09:33:22 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:45321 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759368Ab1EON0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 09:26:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mikko Vinni <mmvinni@yahoo.com>
-Subject: Re: pci 0000:0a:00.0: Refused to change power state, currently in D3
-Date: Sun, 15 May 2011 15:26:41 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <936833.81097.qm@web161805.mail.bf1.yahoo.com>
-In-Reply-To: <936833.81097.qm@web161805.mail.bf1.yahoo.com>
+	id S1753343Ab1EONdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 09:33:21 -0400
+Date: Sun, 15 May 2011 15:33:12 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] Pinmux subsystem
+Message-ID: <20110515133312.GM4071@lunn.ch>
+References: <1304363768-30338-1-git-send-email-linus.walleij@stericsson.com>
+ <20110503172712.GE6538@lunn.ch>
+ <BANLkTi=ncV3M1q5SXNdUaXmtfkZ8Wn9dmw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105151526.41801.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=ncV3M1q5SXNdUaXmtfkZ8Wn9dmw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 15, 2011, Mikko Vinni wrote:
-> Hi,
+Hi Folks
 
-Hi,
+There was a question, how many different combinations would end up in
+drivers/pinmux/pinmux-foo.c given the flexibility different devices
+have?
 
-> in an HP Pavilion dv5 laptop model dv5-1250eo always at resume
-> from s2ram the following messages are printed:
-> 
-> pci 0000:0a:00.0: Refused to change power state, currently in D3
-> pci 0000:0a:00.1: Refused to change power state, currently in D3
-> pci 0000:0a:00.2: Refused to change power state, currently in D3
-> pci 0000:0a:00.3: Refused to change power state, currently in D3
-> pci 0000:0a:00.4: Refused to change power state, currently in D3
+It has been suggested there would be a drivers/pinmux/pinmux-orion.c
+for all devices based around orion. That would be mach-kirkwood,
+mach-dove, mach-loki, mach-mv78xx0, mach-orion5x. Currently loki and
+dove have pin muxing code, but no board makes use of this. However
+kirkwood, orion5x and mv78xx0 do have pin muxing in use.
 
-The lspci output indicates that this is a single multi-function
-device that doesn't change its power state when programmed to go
-into D0.  Perhaps it requires a power resource that is not available
-at the point we're trying to restore those devices' registers.
+With a bit of scripting, came to the following results. Each line is
+on pinmux function description what would be needed in the driver. The
+number at the front says how many boards would use it. In total there
+are 33 descriptions needed. Of these, 18 are used only once. This to
+me suggests the board needs to be able to specify a pin description
+when there is no reuse with other boards.
 
-Hard to say what that may be, though.  Please attach the output of
-acpidump from the affected system.
-
-> 
-> 
-> lspci:
-> 
-> 00:00.0 Host bridge: Advanced Micro Devices [AMD] RS780 Host Bridge
-> 00:02.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (ext gfx port 0)
-> 00:04.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (PCIE port 0)
-> 00:05.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (PCIE port 1)
-> 00:06.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge (PCIE port 2)
-> 00:0a.0 PCI bridge: Advanced Micro Devices [AMD] RS780/RS880 PCI to PCI bridge (PCIE port 5)
-> 00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]
-> 00:12.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
-> 00:12.1 USB Controller: ATI Technologies Inc SB7x0 USB OHCI1 Controller
-> 00:12.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI Controller
-> 00:13.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
-> 00:13.1 USB Controller: ATI Technologies Inc SB7x0 USB OHCI1 Controller
-> 00:13.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI Controller
-> 00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 3a)
-> 00:14.1 IDE interface: ATI Technologies Inc SB7x0/SB8x0/SB9x0 IDE Controller
-> 00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA)
-> 00:14.3 ISA bridge: ATI Technologies Inc SB7x0/SB8x0/SB9x0 LPC host controller
-> 00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge
-> 00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor HyperTransport Configuration (rev 40)
-> 00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor Address Map
-> 00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor DRAM Controller
-> 00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor Miscellaneous Control
-> 00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 11h Processor Link Control
-> 01:00.0 VGA compatible controller: ATI Technologies Inc Mobility Radeon HD 3400 Series
-> 01:00.1 Audio device: ATI Technologies Inc RV620 Audio device [Radeon HD 34xx Series]
-> 08:00.0 Ethernet controller: Atheros Communications Inc. AR5001 Wireless Network Adapter (rev 01)
-> 09:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 02)
-> 0a:00.0 FireWire (IEEE 1394): JMicron Technology Corp. IEEE 1394 Host Controller
-> 0a:00.1 System peripheral: JMicron Technology Corp. SD/MMC Host Controller
-> 0a:00.2 SD Host controller: JMicron Technology Corp. Standard SD Host Controller
-> 0a:00.3 System peripheral: JMicron Technology Corp. MS Host Controller
-> 0a:00.4 System peripheral: JMicron Technology Corp. xD Host Controller
-> 
-> 
-> (first reported to linux-mmc at http://thread.gmane.org/gmane.linux.kernel.mmc/7988,
-> because the card reader is one of the non-functioning devices after resume)
-> 
-> What could be causing such a problem?
-> 
-> The following log is from 2.6.39-rc7 + some code from mmc-next, but this
-> is not a new problem. I can reproduce it easily for example with the
-> default 2.6.32 kernel from Ubuntu 10.10.
-...
-> 
-> 
-> A perhaps funny after-effect of the s2ram problem is that
-> s2disk after that leads to -1 being written all around
-> in the affected pci area after resume:
-> 
-> ...
-> ACPI: Waking up from system sleep state S4
-> ...
-> pci 0000:0a:00.0: restoring config space at offset 0xf (was 0x10a, writing 0xffffffff)
-> pci 0000:0a:00.0: restoring config space at offset 0xe (was 0x0, writing 0xffffffff)
-> ...
-
-That's not even strange.  Since the device is in D3 during hibernation,
-the reads from its registers all return -1 and that's what is saved as the
-current state.
-
-> I haven't tested whether firewire or the card reader, for example, works
-> with such config space.
-
-No, it's not.
-
-Thanks,
-Rafael
+      1 KIRKWOOD_MPP0_NF_IO2,KIRKWOOD_MPP1_NF_IO3,KIRKWOOD_MPP2_NF_IO4,KIRKWOOD_MPP3_NF_IO5,KIRKWOOD_MPP4_NF_IO6,KIRKWOOD_MPP5_NF_IO7,KIRKWOOD_MPP18_NF_IO0,KIRKWOOD_MPP19_NF_IO1,
+      1 KIRKWOOD_MPP0_NF_IO2,KIRKWOOD_MPP4_NF_IO6,KIRKWOOD_MPP5_NF_IO7,KIRKWOOD_MPP18_NF_IO0,KIRKWOOD_MPP19_NF_IO1,
+      1 KIRKWOOD_MPP12_SD_CLK,
+      1 KIRKWOOD_MPP12_SD_CLK,KIRKWOOD_MPP13_SD_CMD,KIRKWOOD_MPP14_SD_D0,KIRKWOOD_MPP15_SD_D1,KIRKWOOD_MPP16_SD_D2,KIRKWOOD_MPP17_SD_D3,
+      1 KIRKWOOD_MPP15_SATA0_ACTn,
+      1 KIRKWOOD_MPP15_SATA0_ACTn,KIRKWOOD_MPP17_SATA0_PRESENTn,
+      1 KIRKWOOD_MPP1_SPI_MOSI,KIRKWOOD_MPP2_SPI_SCK,KIRKWOOD_MPP3_SPI_MISO,KIRKWOOD_MPP7_SPI_SCn,
+      1 KIRKWOOD_MPP33_GE1_TXCTL,
+      1 KIRKWOOD_MPP39_AU_I2SBCLK,KIRKWOOD_MPP40_AU_I2SDO,KIRKWOOD_MPP43_AU_I2SDI,KIRKWOOD_MPP41_AU_I2SLRCLK,KIRKWOOD_MPP42_AU_I2SMCLK,
+      1 KIRKWOOD_MPP4_NF_IO6,KIRKWOOD_MPP5_NF_IO7,
+      1 KIRKWOOD_MPP4_NF_IO6,KIRKWOOD_MPP5_NF_IO7,KIRKWOOD_MPP18_NF_IO0,KIRKWOOD_MPP19_NF_IO1,
+      1 KIRKWOOD_MPP4_SATA1_ACTn,
+      1 KIRKWOOD_MPP5_SATA0_ACTn,
+      1 MV78xx0_MPP0_GE1_TXCLK,MV78xx0_MPP1_GE1_TXCTL,MV78xx0_MPP2_GE1_RXCTL,MV78xx0_MPP3_GE1_RXCLK,MV78xx0_MPP4_GE1_TXD0,MV78xx0_MPP5_GE1_TXD1,MV78xx0_MPP6_GE1_TXD2,MV78xx0_MPP7_GE1_TXD3,MV78xx0_MPP8_GE1_RXD0,MV78xx0_MPP9_GE1_RXD1,MV78xx0_MPP10_GE1_RXD2,MV78xx0_MPP11_GE1_RXD3,
+      1 MV78xx0_MPP13_SYSRST_OUTn,MV78xx0_MPP29_SYSRST_OUTn,
+      1 MV78xx0_MPP14_SATA1_ACTn,MV78xx0_MPP48_SATA1_ACTn,
+      1 MV78xx0_MPP15_SATA0_ACTn,MV78xx0_MPP49_SATA0_ACTn,
+      1 ORION5X_MPP2_PCI_ARB,ORION5X_MPP3_PCI_ARB,ORION5X_MPP4_PCI_ARB,ORION5X_MPP5_PCI_ARB,
+      2 KIRKWOOD_MPP16_SATA1_ACTn,
+      2 KIRKWOOD_MPP20_SATA1_ACTn,
+      2 KIRKWOOD_MPP7_PEX_RST_OUTn,
+      2 ORION5X_MPP0_PCIE_RST_OUTn,
+      2 ORION5X_MPP6_PCI_CLK,ORION5X_MPP7_PCI_CLK,
+      3 KIRKWOOD_MPP13_UART1_TXD,KIRKWOOD_MPP14_UART1_RXD,
+      3 KIRKWOOD_MPP20_GE1_TXD0,KIRKWOOD_MPP21_GE1_TXD1,KIRKWOOD_MPP22_GE1_TXD2,KIRKWOOD_MPP23_GE1_TXD3,KIRKWOOD_MPP24_GE1_RXD0,KIRKWOOD_MPP25_GE1_RXD1,KIRKWOOD_MPP26_GE1_RXD2,KIRKWOOD_MPP27_GE1_RXD3,KIRKWOOD_MPP30_GE1_RXCTL,KIRKWOOD_MPP31_GE1_RXCLK,KIRKWOOD_MPP32_GE1_TCLKOUT,KIRKWOOD_MPP33_GE1_TXCTL,
+      3 KIRKWOOD_MPP21_SATA0_ACTn,
+      3 ORION5X_MPP14_SATA_LED,ORION5X_MPP15_SATA_LED,
+      7 KIRKWOOD_MPP0_SPI_SCn,KIRKWOOD_MPP1_SPI_MOSI,KIRKWOOD_MPP2_SPI_SCK,KIRKWOOD_MPP3_SPI_MISO,
+      7 KIRKWOOD_MPP6_SYSRST_OUTn,
+      7 ORION5X_MPP12_SATA_LED,ORION5X_MPP13_SATA_LED,ORION5X_MPP14_SATA_LED,ORION5X_MPP15_SATA_LED,
+      8 KIRKWOOD_MPP10_UART0_TXD,KIRKWOOD_MPP11_UART0_RXD,
+      8 KIRKWOOD_MPP8_TW0_SDA,KIRKWOOD_MPP9_TW0_SCK
