@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987Ab1EONuo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 09:50:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38919 "EHLO mail.skyhub.de"
+	id S1759536Ab1EONuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 09:50:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42808 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab1EONum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 09:50:42 -0400
-Date: Sun, 15 May 2011 15:50:37 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.39-rc7
-Message-ID: <20110515135037.GA26111@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Tejun Heo <tj@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753617Ab1EONuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 09:50:14 -0400
+Date: Sun, 15 May 2011 09:51:06 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: errik <waitingfor2009marry@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: questions about compat_filldir
+Message-ID: <20110515095106.7d3fa93d@corrin.poochiereds.net>
+In-Reply-To: <BANLkTi=Zrc3FxN_2ueG8viSSUgc1m-q_Ow@mail.gmail.com>
+References: <BANLkTi=Zrc3FxN_2ueG8viSSUgc1m-q_Ow@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 07:49:48PM -0700, Linus Torvalds wrote:
-> But please do test, just to make sure that 39-final is good.
+On Sun, 15 May 2011 11:09:56 +0800
+errik <waitingfor2009marry@gmail.com> wrote:
 
-I'm hitting a warn_on in the gendisk events code; happens after plugging
-an ipod through usb. Adding Tejun.
+> Hi Jeff,
+>     I have noticed your good comments on kernel mailing list about CIFS.
+> http://kerneltrap.org/mailarchive/linux-kernel/2010/12/6/4655183/thread#mid-4655183
+> 
+>     Actually I also confront the same problem that 32 bit userspace
+> applications in an amd64 environment was not able to list the directories of
+> a CIFS-mounted share.  The application is an legacy code built without
+> option  -D_FILE_OFFSET_BITS=64.
+>    Our code supports series of RedHat enterprise server such as RHEL4/RHEL5,
+> it works fine on RHEL5 x86_64 (2.6.18). Now it can't work on RHEL6 x86_64
+> (kernel version is 2.6.32). Afer compared the related codes of the two
+> versions kernel, the root cause is change of function compat_filldir in
+> compat.c.
+>    >>>
+>   if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+> buf->error = -EOVERFLOW;
+> return -EOVERFLOW;
+> }
+>    >>>
+> My questions are:
+> 1) Why RHEL6 (2.6.32) need to do the change? Does that because CIFS on RHEL6
+> (2.6.32) use 64 bit inode while RHEL5 use 32-bit inode? If this, How I can
+> get the  inode information from kernel code?
+>    I think RHEL6 changes because kernel source change. I just want to know
+> the root cause of the change.
+>    I haved compared the struct inode in 2.6.32 and 2.6.18, still no idea the
+> change from 32-bit inode to 64-bit inode.
+> 
 
-[49045.176773] usb 1-3.1: new high speed USB device number 5 using ehci_hcd
-[49045.287681] usb 1-3.1: New USB device found, idVendor=05ac, idProduct=1263
-[49045.287697] usb 1-3.1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[49045.287707] usb 1-3.1: Product: iPod
-[49045.287715] usb 1-3.1: Manufacturer: Apple Inc.
-[49045.294369] scsi5 : usb-storage 1-3.1:1.0
-[49046.300561] scsi 5:0:0:0: Direct-Access     Apple    iPod             1.62 PQ: 0 ANSI: 0
-[49046.350703] sd 5:0:0:0: [sdc] 3944897 4096-byte logical blocks: (16.1 GB/15.0 GiB)
-[49046.354059] sd 5:0:0:0: [sdc] Write Protect is off
-[49046.354071] sd 5:0:0:0: [sdc] Mode Sense: 68 00 00 08
-[49046.354078] sd 5:0:0:0: [sdc] Assuming drive cache: write through
-[49046.357265] sd 5:0:0:0: [sdc] 3944897 4096-byte logical blocks: (16.1 GB/15.0 GiB)
-[49046.358222] sd 5:0:0:0: [sdc] Assuming drive cache: write through
-[49046.359584]  sdc: sdc1
-[49046.363303] sd 5:0:0:0: [sdc] 3944897 4096-byte logical blocks: (16.1 GB/15.0 GiB)
-[49046.364265] sd 5:0:0:0: [sdc] Assuming drive cache: write through
-[49046.364290] sd 5:0:0:0: [sdc] Attached SCSI removable disk
-[49739.003924] ------------[ cut here ]------------
-[49739.003946] WARNING: at block/genhd.c:1556 disk_clear_events+0xca/0x101()
-[49739.003954] Hardware name: System Product Name
-[49739.003961] Modules linked in: nls_iso8859_15 nls_cp437 usblp tun powernow_k8 mperf cpufreq_ondemand cpufreq_powersave cpufreq_userspace cpufreq_conservative cpufreq_stats freq_table binfmt_misc kvm_amd kvm fuse ipv6 vfat fat 8250_pnp 8250 edac_core serial_core ohci_hcd k10temp
-[49739.004043] Pid: 11237, comm: hald-addon-stor Not tainted 2.6.39-rc7 #1
-[49739.004050] Call Trace:
-[49739.004067]  [<ffffffff8144673e>] ? _raw_spin_unlock_irqrestore+0x38/0x69
-[49739.004082]  [<ffffffff810383ee>] warn_slowpath_common+0x85/0x9d
-[49739.004094]  [<ffffffff81038420>] warn_slowpath_null+0x1a/0x1c
-[49739.004104]  [<ffffffff81190b97>] disk_clear_events+0xca/0x101
-[49739.004117]  [<ffffffff811159b9>] check_disk_change+0x27/0x5f
-[49739.004129]  [<ffffffff813051e4>] sd_open+0x86/0x12d
-[49739.004139]  [<ffffffff81191eae>] ? disk_get_part+0x22/0x128
-[49739.004150]  [<ffffffff811168ce>] __blkdev_get+0xb0/0x34c
-[49739.004161]  [<ffffffff81116d62>] blkdev_get+0x1f8/0x32a
-[49739.004172]  [<ffffffff81030494>] ? sub_preempt_count+0xa3/0xb6
-[49739.004182]  [<ffffffff814467a4>] ? _raw_spin_unlock+0x35/0x52
-[49739.004194]  [<ffffffff81116f1d>] blkdev_open+0x89/0x8d
-[49739.004205]  [<ffffffff810e6dc9>] __dentry_open+0x250/0x37b
-[49739.004216]  [<ffffffff81116e94>] ? blkdev_get+0x32a/0x32a
-[49739.004227]  [<ffffffff810e6fbf>] nameidata_to_filp+0x60/0x67
-[49739.004238]  [<ffffffff810f4ff8>] do_last+0x5c4/0x6b8
-[49739.004250]  [<ffffffff810f6167>] path_openat+0xca/0x363
-[49739.004261]  [<ffffffff8105d941>] ? local_clock+0x2a/0x3b
-[49739.004272]  [<ffffffff81101357>] ? alloc_fd+0x1bc/0x1ce
-[49739.004284]  [<ffffffff810f64f9>] do_filp_open+0x3d/0x8c
-[49739.004294]  [<ffffffff814467a4>] ? _raw_spin_unlock+0x35/0x52
-[49739.004305]  [<ffffffff81101357>] ? alloc_fd+0x1bc/0x1ce
-[49739.004316]  [<ffffffff810e697d>] do_sys_open+0x110/0x1a9
-[49739.004327]  [<ffffffff810e6a49>] sys_open+0x20/0x22
-[49739.004338]  [<ffffffff814472eb>] system_call_fastpath+0x16/0x1b
-[49739.004347] ---[ end trace 0e6e57542dc517bf ]---
+The default on RHEL6 is to use server inode numbers if they are
+provided (-o serverino). The default on RHEL5 is to manufacture them.
+This is primarily because server inode numbers weren't properly
+supported when RHEL5 first shipped.
+
+You can make RHEL6 have RHEL5's behavior by mounting with "-o
+noserverino". That will make the kernel replace the inode numbers
+provided by the server with ones generated by iunique().
+
+> 2) compat_filldir is used for 32-bit system call on 64 bit OS, what's the
+> use of compat_filldir64 while this is filldir64.
+> 
+
+compat_filldir64 is for the 32-bit version of the getdents64() system
+call. compat_filldir is for the 32-bit version of getdents().
+
+> Thanks for your time. I am looking forward to your comments.
+> 
+> 
+> Regards,
+> Errik
+
 
 -- 
-Regards/Gruss,
-    Boris.
+Jeff Layton <jlayton@redhat.com>
