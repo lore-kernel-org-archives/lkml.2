@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab1EOEPA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 00:15:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52158 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab1EOEO7 (ORCPT
+	id S1751952Ab1EOEfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 00:35:10 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:46353 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab1EOEfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 00:14:59 -0400
-Message-ID: <4DCF5322.7030305@kernel.org>
-Date: Sat, 14 May 2011 21:14:26 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Sun, 15 May 2011 00:35:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=reiRrJ6BZ0DkbfR5Auwg0x+9vH7HmFB3BK1acX6RLaq8wPNnEm61oZH6aVgC2cTVDH
+         Enx2xwzsnIeUNhJEzgDXeBEDt2eZMiXbXW6GRDoP8upQWzskCeedc5BhieFnzA8AGhJf
+         8q1+4WjgiPSXcN5Y0b8jOnto2rYwV8I/5xjts=
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-References: <4DCAFFD8.2080605@kernel.org> <4DCB157F.20202@kernel.org> <20110512060344.GB3191@elte.hu> <4DCB8BCD.1080607@kernel.org> <4DCB8F7A.90603@kernel.org> <20110512092013.GJ2258@linux.vnet.ibm.com> <4DCC52FB.6030500@kernel.org> <BANLkTin1haL+isnR0UUoHdNm99bnxYPt-g@mail.gmail.com> <20110514142621.GB2258@linux.vnet.ibm.com> <20110514153118.GA24311@linux.vnet.ibm.com> <20110514183453.GA32756@linux.vnet.ibm.com>
-In-Reply-To: <20110514183453.GA32756@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DCF532D.003B,ss=1,fgs=0
+Date: Sun, 15 May 2011 12:35:02 +0800
+Message-ID: <BANLkTi=_gfo4bZjkoBsxspLxxWSPy=7J+Q@mail.gmail.com>
+Subject: [PATCH] sched: avoid overpull when pulling RT task
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2011 11:34 AM, Paul E. McKenney wrote:
->> and do the inspection afterwards.
-> 
-> And here is a lightly-tested patch, which applies on tip/core/rcu.
-> 
-> This problem could account for both the long delays seen with e59fb312
-> (Decrease memory-barrier usage based on semi-formal proof) and the
-> shorter delays seen with a26ac245 (move TREE_RCU from softirq to kthread).
+When pulling RT task for a given runqueue, pulling is continued even
+after certain RT tasks get pulled, in case there are still higher
+priority tasks on other runqueues, though it is low likelihood as the
+comment says. The load of of this runqueue, on other hand, should also
+be concerned. If it is overloaded, the low likelihood should be
+abandoned to avoid overpull.
 
-yes. it fixes the problem.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+ kernel/sched_rt.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-for 1024g system when hotadd mem enabled in kernel config
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 14c764b..b425ca1 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1508,6 +1508,11 @@ static int pull_rt_task(struct rq *this_rq)
+ 		}
+ skip:
+ 		double_unlock_balance(this_rq, src_rq);
++
++		/* if pulled we have to also avoid overpull */
++		if (ret == 1)
++			if (likely(rt_overloaded(this_rq)))
++				break;
+ 	}
 
-[   31.814803] cpu_dev_init done
-[   35.437163] memory_dev_init done
-
-even it is with gcc from opensuse 11.3
-
-Thanks
-
-Yinghai
+ 	return ret;
