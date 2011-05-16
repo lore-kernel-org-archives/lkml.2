@@ -1,163 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab1EPIFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:05:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37686 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab1EPIFb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:05:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=rUZ/m8gAmUaXPAezsvvsSyLdIywpdgCVmmvOgsyzX0EZvAmCqvchwLXrui4lb5ig8F
-         yjS0yHb/Vt4QOlLLJ/x/b3vU8WohVSGARn7jdJe6V9zEuCmO5M7wZHFgA0yUBHulB+ne
-         p7pMQCljRVOAwOq+vrhZm7LLr6cYSolT9saus=
+	id S1752670Ab1EPIJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:09:05 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54320 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277Ab1EPIJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:09:03 -0400
+Date: Mon, 16 May 2011 10:08:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, steiner@sgi.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, gorcunov@openvz.org
+Subject: Re: [patch 1/5] x84_64, apic: Use probe routines to simplify apic
+ selection
+Message-ID: <20110516080844.GC27635@elte.hu>
+References: <20110513180449.562138524@sbsiddha-MOBL3.sc.intel.com>
+ <20110513181008.859892593@sbsiddha-MOBL3.sc.intel.com>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <25864346.87131305530134778.JavaMail.weblogic@epml26>
-References: <25864346.87131305530134778.JavaMail.weblogic@epml26>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 16 May 2011 16:05:11 +0800
-Message-ID: <BANLkTinkMFeZVJmifEj6_H+ov8HMk_MAzA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS
- macros
-To: myungjoo.ham@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513181008.859892593@sbsiddha-MOBL3.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi MyungJoo,
 
-2011/5/16 함명주 <myungjoo.ham@samsung.com>:
-> Hello,
->
->> Sender : Axel Lin<axel.lin@gmail.com>
->> Date : 2011-05-16 15:52 (GMT+09:00)
->> Title : [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
->>
->> Looks like the original macro implementation assumes the caller pass the
->> parameter starting from 1.
->> Since now we have +1 operation from all the caller, it would be easier to
->> assume the caller pass the parameter starting from 0.
->> Then we can simplify the +1 operation from the caller and then -1 operation
->> in the macro implementation.
->>
->> I think this change also improves readability.
->>
->> Signed-off-by: Axel Lin
->
-> Well, I'd rather just change the for loop statement for your purpose, which I also agree.
->
-> The reason I've used BUCKxDVS1 as the starting point is because of the register names; register names of BUCKxDVS starts from 1, not from 0.
+* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
 
-Ok. I got your point for the implementation.
-
-> Thus, in order to maintain the consistency between the code and the chip manual, I'd rather not change that part, but change like this:
->
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: x84_64, apic: Use probe routines to simplify apic selection
+> 
+> Use the unused probe routine in the apic driver to finalize the apic model
+> selection. This cleans up the default_setup_apic_routing() and this probe
+> routine in future can also be used for doing any apic model specific
+> initialization.
+> 
+> Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 > ---
-> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-> index b1c1444..aad85e4 100644
-> --- a/drivers/regulator/max8997.c
-> +++ b/drivers/regulator/max8997.c
-> @@ -1031,12 +1031,12 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
->        }
->
->        /* For the safety, set max voltage before setting up */
-> -       for (i = 0; i < 8; i++) {
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-> +       for (i = 1; i <= 8; i++) {
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i),
->                                max_buck1, 0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i),
->                                max_buck2, 0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i),
->                                max_buck5, 0x3f);
->        }
->
-> --
-> 1.7.4.1
->
-> How about this one?
->
-But it doesn't apply for below case because max8997->buck1_vol[i] is
-start from 0.
+>  arch/x86/kernel/apic/apic_flat_64.c   |   10 +++++++++-
+>  arch/x86/kernel/apic/probe_64.c       |   22 +++++++---------------
+>  arch/x86/kernel/apic/x2apic_cluster.c |    7 ++++++-
+>  arch/x86/kernel/apic/x2apic_phys.c    |   10 +++++++++-
+>  arch/x86/kernel/apic/x2apic_uv_x.c    |    7 ++++++-
+>  5 files changed, 37 insertions(+), 19 deletions(-)
 
+Ok, looks like a step forward in the right direction.
 
-        for (i = 0; i < 8; i++) {
-                max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i),
-                                max8997->buck1_vol[i],
-                                0x3f);
+Wouldnt it be more self-contained if the probe function returned an apic driver 
+pointer?
 
-Maybe consider to remove the macro may make things simpler.
-If you agree, I'll send a v2.
+We could add an __apicdriver section trick to 'know' about all APIC probing 
+functions - and we'd call them one by one and use the first one that returns a 
+non-NULL result.
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index b1c1444..10d5a1d 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -1032,11 +1032,11 @@ static __devinit int max8997_pmic_probe(struct
-platform_device *pdev)
+Then we'd have the generic fallback APIC drivers as well - not marked 
+__apicdriver but used by the probe function directly.
 
- 	/* For the safety, set max voltage before setting up */
- 	for (i = 0; i < 8; i++) {
--		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
- 				max_buck1, 0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
- 				max_buck2, 0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
- 				max_buck5, 0x3f);
- 	}
+Or we could have them as __apicdriver as well, but then the .o link ordering 
+matters to probing order.
 
-@@ -1113,13 +1113,13 @@ static __devinit int max8997_pmic_probe(struct
-platform_device *pdev)
+Thanks,
 
- 	/* Initialize all the DVS related BUCK registers */
- 	for (i = 0; i < 8; i++) {
--		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
- 				max8997->buck1_vol[i],
- 				0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
- 				max8997->buck2_vol[i],
- 				0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
- 				max8997->buck5_vol[i],
- 				0x3f);
- 	}
-diff --git a/include/linux/mfd/max8997-private.h
-b/include/linux/mfd/max8997-private.h
-index 69d1010..5ff2400 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -311,10 +311,6 @@ enum max8997_irq {
- 	MAX8997_IRQ_NR,
- };
-
--#define MAX8997_REG_BUCK1DVS(x)	(MAX8997_REG_BUCK1DVS1 + (x) - 1)
--#define MAX8997_REG_BUCK2DVS(x)	(MAX8997_REG_BUCK2DVS1 + (x) - 1)
--#define MAX8997_REG_BUCK5DVS(x)	(MAX8997_REG_BUCK5DVS1 + (x) - 1)
--
- #define MAX8997_NUM_GPIO	12
- struct max8997_dev {
- 	struct device *dev;
-
-
-Regards,
-Axel
+	Ingo
