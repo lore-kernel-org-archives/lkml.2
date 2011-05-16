@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab1EPR2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 13:28:49 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:51063 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753417Ab1EPR2s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 13:28:48 -0400
-Subject: Re: [PATCH v5 03/19] ARM: LPAE: Use unsigned long for
- __phys_to_virt and __virt_to_phys
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110508214437.GP27807@n2100.arm.linux.org.uk>
-References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
-	 <1304859098-10760-4-git-send-email-catalin.marinas@arm.com>
-	 <20110508214437.GP27807@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Mon, 16 May 2011 18:28:37 +0100
-Message-ID: <1305566917.19230.158.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 16 May 2011 17:28:46.0673 (UTC) FILETIME=[B6314C10:01CC13EE]
-X-MC-Unique: 111051618284600601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753825Ab1EPRb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 13:31:58 -0400
+Received: from kroah.org ([198.145.64.141]:57143 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753570Ab1EPRb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 13:31:57 -0400
+Date: Mon, 16 May 2011 10:29:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        alan@linux.intel.com
+Subject: Re: [PATCH 1/2] amba pl011: workaround for uart registers lockup
+Message-ID: <20110516172958.GA13011@kroah.com>
+References: <1305550879-28945-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305550879-28945-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-08 at 22:44 +0100, Russell King - ARM Linux wrote:
-> On Sun, May 08, 2011 at 01:51:22PM +0100, Catalin Marinas wrote:
-> > The !CONFIG_ARM_PATCH_PHYS_VIRT case uses macros for __phys_to_virt and
-> > __virt_to_phys but does not use any type casting. This causes issues
+On Mon, May 16, 2011 at 06:31:18PM +0530, Shreshtha Kumar SAHU wrote:
+> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
 > 
-> It might be a good idea to include the compiler warning message in the
-> commit log, so that the 'issues' being addressed are readily known.
+> This workaround aims to break the deadlock situation
+> which raises during continuous transfer of data for long
+> duration over uart with hardware flow control. It is
+> observed that CTS interrupt cannot be cleared in uart
+> interrupt register (ICR). Hence further transfer over
+> uart gets blocked.
+> 
+> It is seen that during such deadlock condition ICR
+> don't get cleared even on multiple write. This leads
+> pass_counter to decrease and finally reach zero. This
+> can be taken as trigger point to run this UART_BT_WA.
+> 
+> Workaround backups the register configuration, does soft
+> reset of UART using BIT-0 of PRCC_K_SOFTRST_SET/CLEAR
+> registers and restores the registers.
+> 
+> This patch also provides support for uart init and exit
+> function calls if present.
+> 
+> Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
 
-Here's the new log:
+Please always run your patches through scripts/checkpatch.pl so we don't
+end up telling you to fix up the same obvious things that this tool
+would tell you needs to be fixed...
 
-    ARM: LPAE: Use unsigned long for __phys_to_virt and __virt_to_phys
-    
-    The !CONFIG_ARM_PATCH_PHYS_VIRT case uses macros for __phys_to_virt and
-    __virt_to_phys but does not use any type casting. This causes compiler
-    warnings with LPAE where the phys_addr_t and dma_addr_t are 64-bit:
-    
-      CC      arch/arm/mm/dma-mapping.o
-    In file included from /work/Linux/linux-marc/include/linux/dma-mapping.h:93:0,
-                     from /work/Linux/linux-marc/arch/arm/mm/dma-mapping.c:19:
-    /work/Linux/linux-marc/arch/arm/include/asm/dma-mapping.h: In function 'dma_to_virt':
-    /work/Linux/linux-marc/arch/arm/include/asm/dma-mapping.h:35:9: warning:
-            cast to pointer from integer of different size
-    
-    Note that these macros are only valid for lowmem physical addresses
-    where the range is within 32-bit address range.
-    
-    Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+thanks,
 
--- 
-Catalin
-
-
+greg k-h
