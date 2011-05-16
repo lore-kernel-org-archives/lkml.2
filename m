@@ -1,159 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab1EPWBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 18:01:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44866 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1EPWB3 (ORCPT
+	id S1753914Ab1EPWCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 18:02:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38457 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab1EPWCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 18:01:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=Rb6Q1fWVAHer6w741oh4R/++ezPPe5WJbIzSwZXA1H2aVkMSIT0MLRVCnCNo8iOmrG
-         45kVY2dTtjPs3oOhILz6b6IQDuQmNYTHiKKpvvAy52Z5XIH81vLnIvXhMaNZ7KcXiYih
-         u+vQoqMGTya5rY/qR+Q01xwcNcofEOYXDQIJk=
-Message-ID: <4DD19EB5.7060900@gmail.com>
-Date: Tue, 17 May 2011 00:01:25 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Mon, 16 May 2011 18:02:14 -0400
+Date: Tue, 17 May 2011 00:01:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fenghua Yu <fenghua.yu@intel.com>
+cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] x86/kernel/common.c: Disable SMEP by kernel option
+ nosmep
+In-Reply-To: <1305581685-5144-5-git-send-email-fenghua.yu@intel.com>
+Message-ID: <alpine.LFD.2.02.1105162359500.3078@ionos>
+References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com> <1305581685-5144-5-git-send-email-fenghua.yu@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock seqlock to protect task->comm
- access
-References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org> <1305580757-13175-2-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1305580757-13175-2-git-send-email-john.stultz@linaro.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2011 11:19 PM, John Stultz wrote:
-> The implicit rules for current->comm access being safe without locking
-> are no longer true. Accessing current->comm without holding the task
-> lock may result in null or incomplete strings (however, access won't
-> run off the end of the string).
-> 
-> In order to properly fix this, I've introduced a comm_lock spinlock
-> which will protect comm access and modified get_task_comm() and
-> set_task_comm() to use it.
-> 
-> Since there are a number of cases where comm access is open-coded
-> safely grabbing the task_lock(), we preserve the task locking in
-> set_task_comm, so those users are also safe.
-> 
-> With this patch, users that access current->comm without a lock
-> are still prone to null/incomplete comm strings, but it should
-> be no worse then it is now.
-> 
-> The next step is to go through and convert all comm accesses to
-> use get_task_comm(). This is substantial, but can be done bit by
-> bit, reducing the race windows with each patch.
-> 
-> CC: Ted Ts'o <tytso@mit.edu>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: David Rientjes <rientjes@google.com>
-> CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: linux-mm@kvack.org
-> Acked-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  fs/exec.c                 |   19 ++++++++++++++++---
->  include/linux/init_task.h |    1 +
->  include/linux/sched.h     |    5 ++---
->  3 files changed, 19 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 5e62d26..34fa611 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -998,17 +998,28 @@ static void flush_old_files(struct files_struct * files)
->  
->  char *get_task_comm(char *buf, struct task_struct *tsk)
->  {
-> -	/* buf must be at least sizeof(tsk->comm) in size */
-> -	task_lock(tsk);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&tsk->comm_lock, flags);
->  	strncpy(buf, tsk->comm, sizeof(tsk->comm));
-> -	task_unlock(tsk);
-> +	spin_unlock_irqrestore(&tsk->comm_lock, flags);
->  	return buf;
->  }
->  
->  void set_task_comm(struct task_struct *tsk, char *buf)
->  {
-> +	unsigned long flags;
-> +
-> +	/*
-> +	 * XXX - Even though comm is protected by comm_lock,
-> +	 * we take the task_lock here to serialize against
-> +	 * current users that directly access comm.
-> +	 * Once those users are removed, we can drop the
-> +	 * task locking & memsetting.
-> +	 */
->  	task_lock(tsk);
->  
-> +	spin_lock_irqsave(&tsk->comm_lock, flags);
->  	/*
->  	 * Threads may access current->comm without holding
->  	 * the task lock, so write the string carefully.
-> @@ -1018,6 +1029,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
->  	memset(tsk->comm, 0, TASK_COMM_LEN);
->  	wmb();
->  	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
-> +	spin_unlock_irqrestore(&tsk->comm_lock, flags);
-> +
->  	task_unlock(tsk);
->  	perf_event_comm(tsk);
->  }
-> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> index caa151f..b69d94b 100644
-> --- a/include/linux/init_task.h
-> +++ b/include/linux/init_task.h
-> @@ -161,6 +161,7 @@ extern struct cred init_cred;
->  	.group_leader	= &tsk,						\
->  	RCU_INIT_POINTER(.real_cred, &init_cred),			\
->  	RCU_INIT_POINTER(.cred, &init_cred),				\
-> +	.comm_lock	= __SPIN_LOCK_UNLOCKED(tsk.comm_lock),		\
+On Mon, 16 May 2011, Fenghua Yu wrote:
+> +/*
+> + * If SMEP is supported by the processor, SMEP has been enabled in CR4 earlier.
+> + * But if kernel option "nosmep" is given, we disable SMEP here.
+> + */
+> +static __init void config_smep(struct cpuinfo_x86 *c)
+> +{
+> +	if (cpu_has(c, X86_FEATURE_SMEP) && unlikely(disable_smep)) {
 
-Hmm, you should also init the spinlock somewhere in copy_process.
-Otherwise when a process is forked in the middle of [gs]et_task_comm
-called on it on another cpu, you have two locked locks and only the
-parent's will be unlocked, right?
+That unlikely() is completely pointless. This is init code and inside
+of a if() already. Where is the point ?
 
->  	.comm		= "swapper",					\
->  	.thread		= INIT_THREAD,					\
->  	.fs		= &init_fs,					\
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 18d63ce..f8a7cdf 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1333,10 +1333,9 @@ struct task_struct {
->  	const struct cred __rcu *cred;	/* effective (overridable) subjective task
->  					 * credentials (COW) */
->  	struct cred *replacement_session_keyring; /* for KEYCTL_SESSION_TO_PARENT */
-> -
-> +	spinlock_t comm_lock;		/* protect's comm */
->  	char comm[TASK_COMM_LEN]; /* executable name excluding path
-> -				     - access with [gs]et_task_comm (which lock
-> -				       it with task_lock())
-> +				     - access with [gs]et_task_comm
->  				     - initialized normally by setup_new_exec */
->  /* file system info */
->  	int link_count, total_link_count;
+> +		setup_clear_cpu_cap(X86_FEATURE_SMEP);
+> +		clear_in_cr4(X86_CR4_SMEP);
+> +	}
+> +}
 
-thanks,
--- 
-js
+Thanks,
+
+	tglx
