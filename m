@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1EPMRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:17:30 -0400
-Received: from vps.jankratochvil.net ([46.28.109.124]:33147 "EHLO
-	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752295Ab1EPMR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:17:29 -0400
-Date: Mon, 16 May 2011 14:17:11 +0200
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re: [PATCH
- 11/11] ptrace: implement group stop notification for ptracer]
-Message-ID: <20110516121711.GC10469@host1.jankratochvil.net>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
- <20110515140232.GB31855@host1.jankratochvil.net>
- <20110515142827.GF23665@htj.dyndns.org>
- <20110515171748.GA25216@host1.jankratochvil.net>
- <20110515172811.GM23665@htj.dyndns.org>
- <20110515200654.GA32659@host1.jankratochvil.net>
- <20110516084350.GO23665@htj.dyndns.org>
+	id S1753942Ab1EPMTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:19:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47191 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab1EPMTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 08:19:08 -0400
+Message-ID: <4DD11633.6020302@ti.com>
+Date: Mon, 16 May 2011 13:18:59 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516084350.GO23665@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>,
+        David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH] regulator: If we can't configure optimum mode we're always
+ in the best one
+References: <1305397185-22024-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1305397185-22024-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On 14/05/11 19:19, Mark Brown wrote:
+> If either a regulator driver can't tell us what the optimum mode is (or
+> doesn't have modes in the first place) or the system doesn't allow DRMS
+> changes then it's more helpful for users to just say that we're in the
+> optimal mode, even if it's from a selection of one.
+> 
+> Still report errors if the process of picking and setting a mode changes as
+> this may indicate that we're stuck in a low power mode and unable to deliver
+> a higher current that the consumer just asked for.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/regulator/core.c |   16 +++++++++++++---
+>  1 files changed, 13 insertions(+), 3 deletions(-)
+> 
 
-On Mon, 16 May 2011 10:43:50 +0200, Tejun Heo wrote:
-> There's distinction between "broken" and "ugly".  If it's ugly but
-> functional, you don't need to "fix" it.
+Applied.
 
-The final goal is the user experience (such as the users of GDB), nothing else
-matters.  If it is so "ugly" the userland developers fail to use it the
-project as a whole still broken.
+Thanks
 
-
-> Frankly, I think the biggest disease was this obsession with
-> perfection.
-
-I try to suggest fixes which seem to be easier on the kernel side than trying
-to workaround them in all the debugger-like applications.  After various
-strace fixes and for years gdb linux-nat fixes there is a need to move to
-gdbserver which will mean to reimplement all the ptrace workarounds again.
-
-
-> So, I'm gonna push back quite a bit unless it actually compromises
-> functionality or correctness.
-
-With your position "if it is workaroundable in userland let's make the new
-kernel API broken again" it no longer makes sense to comment on it.  Yes,
-everything is workaroundable but that is usually not the goal of new APIs.
-
-
-Thanks,
-Jan
+Liam
