@@ -1,125 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab1EPTGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:06:13 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41372 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab1EPTGK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:06:10 -0400
-Date: Mon, 16 May 2011 12:04:27 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
-	writeback for various fses
-Message-ID: <20110516190427.GN20579@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+	id S1754084Ab1EPTIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:08:32 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:49484 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753798Ab1EPTIb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:08:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=nanometrics.ca; s=google;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FXXpymQEfjhluesb09pXq3dZZxhzx37wm3PvwUjPfCXHfNNa53fxujQoMpRMOP6JDW
+         QYSIYMOuuZuC6jjYr2xQVHLYFFBWusHpgcj02xqogkADvrzMk2mA6Mf1UWRw/E5NdTm7
+         Rfo5dJLNnH5hFb/SWxE3uIh2dH2ALOM90Pa+I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C0082E3@dbde02.ent.ti.com>
+References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com>
+	<B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
+	<886E26C48DE446C3937D89ECF86030B2@subhasishg>
+	<B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
+	<25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
+	<B85A65D85D7EB246BE421B3FB0FBB593024C0082E3@dbde02.ent.ti.com>
+Date: Mon, 16 May 2011 15:08:21 -0400
+Message-ID: <BANLkTimDw3T2CFAw6te-smj2q07F=+_wbA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: "Nori, Sekhar" <nsekhar@ti.com>,
+        Subhasish Ghosh <subhasish@mistralsolutions.com>
+Cc: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 09, 2011 at 04:03:18PM -0700, Darrick J. Wong wrote:
-> Hi all,
-> 
-> This is v3.1 of the stable-page-writes patchset for ext4/3/2, xfs, and fat.
-> The purpose of this patchset is to prohibit processes from writing on memory
-> pages that are currently being written to disk because certain storage setups
-> (e.g. SCSI disks with DIF integrity checksums) will fail a write if the page
-> contents don't match the checksum.  btrfs already guarantees page stability, so
-> it does not use these changes.
-> 
-> The technique used is fairly simple -- whenever a page is about to become
-> writable (either because of a write fault to a mapped page, or a buffered write
-> is in progress), wait for the page writeback flag to be clear, indicating that
-> the page is not being written to disk.  This means that it is necessary (1) to
-> add wait for writeback code to grab_cache_page_write_begin to take care of
-> buffered writes, and (2) all filesystems must have a page_mkwrite that locks a
-> page, waits for writeback, and returns the locked page.  For filesystems that
-> piggyback on the generic block_page_mkwrite, the patchset adds the writeback
-> wait to that function; for filesystems that do not use the page_mkwrite hook at
-> all, the patchset provides a stub page_mkwrite.
-> 
-> I ran my write-after-checksum ("wac") reproducer program to try to create the
-> DIF checksum errors by madly rewriting the same memory pages.  In fact, I tried
-> the following combinations against ext2/3/4, xfs, btrfs, and vfat:
-> 
-> a. 64 write() threads + sync_file_range
-> b. 64 mmap write threads + msync
-> c. 32 write() threads + sync_file_range + 32 mmap write threads + msync
-> d. Same as C, but with all threads in directio mode
-> e. Same as A, but with all threads in directio mode
-> f. Same as B, but with all threads in directio mode
-> 
-> After running profiles A-F for 30 minutes each on 6 different machines, ext2,
-> ext4, xfs, and vfat reported no errors.  ext3 still has a lingering failure
-> case (which I will touch on briefly later) and btrfs eventually reports -ENOSPC
-> and fails the test, though it does that even without any of the patches applied.
-> 
-> To assess the performance impact of stable page writes, I moved to a disk that
-> doesn't have DIF support so that I could measure just the impact of waiting for
-> writeback.  I first ran wac with 64 threads madly scribbling on a 64k file and
-> saw about a 12 percent performance decrease.  I then reran the wac program with
-> 64 threads and a 64MB file and saw about the same performance numbers.  As I
-> suspected, the patchset only seems to impact workloads that rewrite the same
-> memory page frequently.
-> 
-> I am still chasing down what exactly is broken in ext3.  data=writeback mode
-> passes with no failures.  data=ordered, however, does not pass; my current
-> suspicion is that jbd is calling submit_bh on data buffers but doesn't call
-> page_mkclean to kick the userspace programs off the page before writing it.
-> 
-> Per various comments regarding v3 of this patchset, I've integrated his
-> suggestions, reworked the patch descriptions to make it clearer which ones
-> touch all the filesystems and which ones are to fix remaining holes in specific
-> filesystems, and expanded the scope of filesystems that got fixed.
-> 
-> As always, questions and comments are welcome; and thank you to all the
-> previous reviewers of this patchset.  I am also soliciting people's opinions on
-> whether or not these patches could go upstream for .40.
+Hi Subhasish and Sekhar,
 
-[adding Andrew Morton to cc]
+Subhashish, I was testing your patch here while investigating
+davinci-pcm ping-pong buffers on da850.
 
-Ted, Mingming, and I were discussing how we might get this patchset pushed
-upstream on today's ext4 community call.  The ext2 patch can be dropped since
-it really only was there as a proof that the generic mm/fs fixes actually
-worked.  I'm unsure of the vfat maintainer's feelings on the patchset, though
-he seems concerned about the performance of apps that rewrite pages frequently.
-Ted seemed agreeable with the ext4 changes, though I don't know if he's
-reviewed them thoroughly yet.
+On Fri, Feb 11, 2011 at 9:21 AM, Subhasish Ghosh
+<subhasish@mistralsolutions.com> wrote:
+> This patch modifies the sram allocator to allocate memory
+> from the DA8XX shared RAM.
+>
+> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+> ---
+>  arch/arm/mach-davinci/da850.c              |    6 +++---
+>  arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
 
-Ted asked for clarification as to which patches are needed to fix ext4.
-Patches 1 and 5 are the two that are required for ext4, and patch 4 cleans up
-some ext4 code.
+Since this changes only the da850 behaviour, a subject prefix of da850
+might be more appropriate than 'davinci'.
 
-Patches 1 and 2 are needed to fix xfs and nilfs.
+>  2 files changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+> index 3443d97..8a4de97 100644
+> --- a/arch/arm/mach-davinci/da850.c
+> +++ b/arch/arm/mach-davinci/da850.c
+> @@ -711,7 +711,7 @@ static struct map_desc da850_io_desc[] = {
+>        },
+>        {
+>                .virtual        = SRAM_VIRT,
+> -               .pfn            = __phys_to_pfn(DA8XX_ARM_RAM_BASE),
+> +               .pfn            = __phys_to_pfn(DA8XX_SHARED_RAM_BASE),
+>                .length         = SZ_8K,
 
-Patches 1 and 3 (and fs-specific patches such as 6 & 7) are needed to fix the
-rest.
+Assigning only 8K to this iomap will result in a fault for the first
+victim to access SRAM_VIRT+0x2000. This will happen for example with
+mcasp ping-pong buffers totalling more than 8K on the da850.
 
-Unfortunately, Ted and I weren't sure who (if anyone) is in charge of pushing
-mm and generic fs patches upstream.  Ted suggested Andrew Morton for the mm
-patches (1 & 3) and we weren't sure if Al Viro or Christoph (or someone else)
-is in charge of generic vfs patches (patch #2).
+Unfortunately SZ_128K cannot be used here since it will cause a panic
+on boot. SZ_64K works though.
 
-So, who do I actually ask to take the mm and vfs patches?  Andrew, can I send
-you patches?
+>                .type           = MT_DEVICE
+>        },
+> @@ -1083,8 +1083,8 @@ static struct davinci_soc_info davinci_soc_info_da850 = {
+>        .gpio_irq               = IRQ_DA8XX_GPIO0,
+>        .serial_dev             = &da8xx_serial_device,
+>        .emac_pdata             = &da8xx_emac_pdata,
+> -       .sram_dma               = DA8XX_ARM_RAM_BASE,
+> -       .sram_len               = SZ_8K,
+> +       .sram_dma               = DA8XX_SHARED_RAM_BASE,
+> +       .sram_len               = SZ_128K,
 
---D
+This should probably be set to match whatever is reported in the map
+entry above -- or an ioremap could be issued later but before the sram
+init?
+
+On Wed, Mar 2, 2011 at 12:12 PM, Nori, Sekhar <nsekhar@ti.com> wrote:
+> [...]
+>> root@arago:~# rtcwake -d /dev/rtc0 -s 20 -m mem
+>> wakeup from "mem" at Tue Apr 21 14:31:13 2009
+>> PM: Syncing filesystems ... done.
+>> Freezing user space processes ... (elapsed 0.01 seconds) done.
+>> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+>> Suspending console(s) (use no_console_suspend to debug)
+>>
+>> From the Kconfig I had enabled RTC_DRV_OMAP, CONFIG_PM, CONFIG_SUSPEND.
+>
+> Nothing stands out from these logs. One thing to
+> verify is if the RTC Alarm interrupt is really
+> working by using the test program present in the
+> Documentation/ folder.
+>
+> Anyway, the easiest way for you to move quickly is
+> to use ramdisk so you can bypass all driver specific
+> issues.
+
+I tested suspend here with the patch applied on top of 2.6.39-rc7
+using "rtcwake -d /dev/rtc0 -s 20 -m mem" and it works.
+
+Best Regards,
+Ben Gardiner
+
+---
+Nanometrics Inc.
+http://www.nanometrics.ca
