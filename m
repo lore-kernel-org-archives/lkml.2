@@ -1,187 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab1EPI3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:29:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49288 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1EPI3w convert rfc822-to-8bit (ORCPT
+	id S1752759Ab1EPIbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:31:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51838 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab1EPIbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:29:52 -0400
+	Mon, 16 May 2011 04:31:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=pJwJRhdnlIAZg/zO8UzKctkeQ8nk94PFWUIc9UOCplHVYuQX/gmVESL2HZpa1XgLzD
-         SmroTZxQxLz4D3j/Z82uMdA1FP2KFuqIoUXoKPs5ggJjobLB2Y8JSfyQGEef1mQ0ogrZ
-         ua7pFbWddciEvURhBLRbiH/s5Cq1WBqj2swEA=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bpR0T3MdTLPTQ4H5gIirLYf+vEITSQOb/Qebvwzs8V0+a+n91huyvuqOSmM7jKlxox
+         uxjOt4VmCx6+YlsalEsS5+JNs172R7W/ksnNeCK2sxhqSPZqO/A87ejj+Djty7tBtftT
+         bocDReExJ4G4KO+UU/5f6NNCtg18lMViBuzyo=
+Date: Mon, 16 May 2011 10:31:13 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
+ implement PTRACE_SEIZE]
+Message-ID: <20110516083113.GN23665@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-3-git-send-email-tj@kernel.org>
+ <20110515155602.GD31855@host1.jankratochvil.net>
+ <20110515162630.GG23665@htj.dyndns.org>
+ <20110515171512.GA24047@host1.jankratochvil.net>
+ <20110515172505.GL23665@htj.dyndns.org>
+ <20110515194829.GA27023@host1.jankratochvil.net>
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <BANLkTinkMFeZVJmifEj6_H+ov8HMk_MAzA@mail.gmail.com>
-References: <25864346.87131305530134778.JavaMail.weblogic@epml26>
-	<BANLkTinkMFeZVJmifEj6_H+ov8HMk_MAzA@mail.gmail.com>
-Date: Mon, 16 May 2011 17:29:51 +0900
-X-Google-Sender-Auth: iGKa3gATo-yjZ_9Oz36fv7CaJiU
-Message-ID: <BANLkTimHr2OOi8RVone+h2yCXAHh2Sm5aQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS
- macros
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: axel.lin@gmail.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110515194829.GA27023@host1.jankratochvil.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Axel,
+Hello,
 
-On Mon, May 16, 2011 at 5:05 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> Hi MyungJoo,
->
-> 2011/5/16 함명주 <myungjoo.ham@samsung.com>:
->> Hello,
->>
->>> Sender : Axel Lin<axel.lin@gmail.com>
->>> Date : 2011-05-16 15:52 (GMT+09:00)
->>> Title : [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
->>>
->>> Looks like the original macro implementation assumes the caller pass the
->>> parameter starting from 1.
->>> Since now we have +1 operation from all the caller, it would be easier to
->>> assume the caller pass the parameter starting from 0.
->>> Then we can simplify the +1 operation from the caller and then -1 operation
->>> in the macro implementation.
->>>
->>> I think this change also improves readability.
->>>
->>> Signed-off-by: Axel Lin
->>
->> Well, I'd rather just change the for loop statement for your purpose, which I also agree.
->>
->> The reason I've used BUCKxDVS1 as the starting point is because of the register names; register names of BUCKxDVS starts from 1, not from 0.
->
-> Ok. I got your point for the implementation.
->
->> Thus, in order to maintain the consistency between the code and the chip manual, I'd rather not change that part, but change like this:
->>
->> ---
->> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
->> index b1c1444..aad85e4 100644
->> --- a/drivers/regulator/max8997.c
->> +++ b/drivers/regulator/max8997.c
->> @@ -1031,12 +1031,12 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
->>        }
->>
->>        /* For the safety, set max voltage before setting up */
->> -       for (i = 0; i < 8; i++) {
->> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
->> +       for (i = 1; i <= 8; i++) {
->> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i),
->>                                max_buck1, 0x3f);
->> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
->> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i),
->>                                max_buck2, 0x3f);
->> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
->> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i),
->>                                max_buck5, 0x3f);
->>        }
->>
->> --
->> 1.7.4.1
->>
->> How about this one?
->>
-> But it doesn't apply for below case because max8997->buck1_vol[i] is
-> start from 0.
->
->
->        for (i = 0; i < 8; i++) {
->                max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i),
->                                max8997->buck1_vol[i],
->                                0x3f);
->
-> Maybe consider to remove the macro may make things simpler.
-> If you agree, I'll send a v2.
+On Sun, May 15, 2011 at 09:48:29PM +0200, Jan Kratochvil wrote:
+> How to trigger it reliably?  One can just try it in a loop but it takes minutes
+> and depends on hardware specifics making it I guess even unreproducible in
+> various configurations.  We were allocating various machines for hours in the
+> farm but it may be unreproducible anyway.
 
-Yes, that looks just fine to me.
+First of all, I don't think hitting different trap spots would be that
+difficult.  Handling different traps after SEIZE might not be easy but
+could just be something which needs to be done anyway.  I'm reluctant
+to treat the initial trap differently because it's essentially
+identical to what happens when a program does PTRACE_INTERRUPT.  It's
+just something the program should be able to deal with, somewhat like
+read(2) may return shorter amount of data than provided buffer.
 
-Thank you.
+> # The debugee does not handle SIGUSR1 so it would crash on its delivery:
+> (gdb) handle SIGUSR1 nopass
+> Signal        Stop	Print	Pass to program	Description
+> SIGUSR1       Yes	Yes	No		User defined signal 1
+> (gdb) continue 
+> Program received signal SIGUSR1, User defined signal 1.
+> 
+> OK, GDB has waitpid()ed SIGUSR1 already and still some thread has delivered
+> afterwards before GDB has managed to stop that thread.
 
+I can't understand the above sentence.  A thread can't deliver signal
+without going through tracer while ptraced.  Can you elaborate a bit
+more?
 
-- MyungJoo
+> (gdb) continue 
+> Program received signal SIGUSR2, User defined signal 2.
+> 
+> Only now the user has found SIGUSR2 has also been delivered.  The main thread
+> (receiving the signals) has not run yet been resumed at all.
 
->
-> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-> index b1c1444..10d5a1d 100644
-> --- a/drivers/regulator/max8997.c
-> +++ b/drivers/regulator/max8997.c
-> @@ -1032,11 +1032,11 @@ static __devinit int max8997_pmic_probe(struct
-> platform_device *pdev)
->
->        /* For the safety, set max voltage before setting up */
->        for (i = 0; i < 8; i++) {
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
->                                max_buck1, 0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
->                                max_buck2, 0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
->                                max_buck5, 0x3f);
->        }
->
-> @@ -1113,13 +1113,13 @@ static __devinit int max8997_pmic_probe(struct
-> platform_device *pdev)
->
->        /* Initialize all the DVS related BUCK registers */
->        for (i = 0; i < 8; i++) {
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
->                                max8997->buck1_vol[i],
->                                0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
->                                max8997->buck2_vol[i],
->                                0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
->                                max8997->buck5_vol[i],
->                                0x3f);
->        }
-> diff --git a/include/linux/mfd/max8997-private.h
-> b/include/linux/mfd/max8997-private.h
-> index 69d1010..5ff2400 100644
-> --- a/include/linux/mfd/max8997-private.h
-> +++ b/include/linux/mfd/max8997-private.h
-> @@ -311,10 +311,6 @@ enum max8997_irq {
->        MAX8997_IRQ_NR,
->  };
->
-> -#define MAX8997_REG_BUCK1DVS(x)        (MAX8997_REG_BUCK1DVS1 + (x) - 1)
-> -#define MAX8997_REG_BUCK2DVS(x)        (MAX8997_REG_BUCK2DVS1 + (x) - 1)
-> -#define MAX8997_REG_BUCK5DVS(x)        (MAX8997_REG_BUCK5DVS1 + (x) - 1)
-> -
->  #define MAX8997_NUM_GPIO       12
->  struct max8997_dev {
->        struct device *dev;
->
->
-> Regards,
-> Axel
->
+There's no distinction between main or sub threads in terms of signal
+delivery unless signal itself is specifically directed to a thread.
 
+> It would be nice if GDB could display all the signals the inferior
+> has received as the other threads are stopped already after the
+> signals were sent (in pause ()) - this gives user a skewed picture
+> of different state in time for each thread.
 
+Isn't that the signal pending mask?
+
+> I would prefer if GDB would print all the signals at once on a single stop:
+> 
+> Program received signal SIGUSR1, User defined signal 1.
+> Program received signal SIGUSR2, User defined signal 2.
+> (gdb) _
+
+Ditto.
+
+> (This is not a simple change for GDB as it has many operations bound to
+> receiving single signal.)
+> 
+> Currently when GDB receives SIGUSR1 it has to do PTRACE_CONT before waitpid()
+> and receiving SIGUSR2.  The time it does PTRACE_CONT it does not know if then
+> waitpid() returns immediately or if the application will run for another hour.
+> 
+> There are similar problems GDB wanting to do something-like-INTERRUPT sends now
+> SIGSTOP and then it wants to remove that SIGSTOP from the inferior's queue as
+> it would confuse both user and the debuggee if left there.  Fortunately this
+> paragraph's pain will no longer be needed with PTRACE_INTERRUPT.
+> 
+> For example if you guarantee that after PTRACE_INTERRUPT the INTERRUPT even
+> will always get delivered as the last one after all the other signals GDB could
+> safely operate on all the delivered signals without a risk of accidentally
+> resuming the debuggee before explicitly instructed to do so by the user.
+
+Signal delivery is sequential in nature and delivering a signal which
+has user specified signal handler involves roundtrip to userland.  I'm
+not following what you're suggesting.
+
+> This is not a real plan how it should be done - but I hope it gives a picture
+> debuggers are interested the processing all the already delivered signals.
+> GDB should probably check the SigCgt /proc field (it already does in some
+> cases) for the informational display of delivered threads.
+
+Okay, I'm a bit confused, so let's clear things up a bit.
+
+* Signal is sent to a group of threads of a specific thread.  Note
+  that SIGCONT wakes up stopped process at this point.
+
+* On the receipient, the signal becomes pending.  The mask of pending
+  signals is visible through /proc.
+
+* Signal is delievered when the receipient processes those pending
+  signals.  This, of course, happens one signal after another.
+  Depending on signal and configuration, signal may be ignored, kill,
+  stop the process or trigger signal handler which involves roundtrip
+  to userland.
+  
+* ptrace is notified of and can alter signal delivery.
+
+Given the different modes of signal deliveries, I don't think
+prioritizing signal delivery to other traps makes sense.
+
+Hmmm... but I think what you want can be achieved with simply calling
+PTRACE_INTERRUPT on each signal delivery trap.  The tracee will
+deliver the signal and then immediately take INTERRUPT trap.  ie.
+
+* Check if there are pending signals which can be delivered by this
+  thread.  Note that different threads may have different pending and
+  blocked masks so there isn't a single thread which can do
+  everything.
+
+* If there are signals to deliver, CONT it and it will take the signal
+  trap (eventually).  During signal trap, do PTRACE_INTERRUPT and then
+  let the tracee deliver the signal.  Tracee will deliver the signal
+  and take STOP trap.
+
+Is the above enough for your use case?
+
+Thanks.
 
 -- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+tejun
