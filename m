@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab1ERRJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 May 2011 13:09:13 -0400
-Received: from cuca.q1.fcen.uba.ar ([157.92.31.69]:52855 "EHLO
-	cuca.q1.fcen.uba.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933109Ab1ERRJM (ORCPT
+	id S1756467Ab1EPXmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:42:00 -0400
+Received: from eastrmfepi107.cox.net ([68.230.241.203]:51356 "EHLO
+	eastrmfepi107.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755859Ab1EPXl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 May 2011 13:09:12 -0400
-X-Greylist: delayed 139875 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 May 2011 13:09:11 EDT
-Message-ID: <63351.120.140.166.192.1305588490.squirrel@webmail.qi.fcen.uba.ar>
-Date: Mon, 16 May 2011 20:28:10 -0300 (ART)
+	Mon, 16 May 2011 19:41:58 -0400
+X-Greylist: delayed 715 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 May 2011 19:41:57 EDT
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020206.4DD1B379.013C,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=QBJLiq5gro4Mpqd/bvx7LXNxeYJi9t0SEue4EfcrmdY=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=Z6WwYdEpHsUA:10
+ a=IkcTkHD0fZMA:10 a=CA97L4c2R2SWvNNgQse4rQ==:17 a=rykLL9nUegV6zHp_Qu8A:9
+ a=JrNJPXrXWxag32GPcMMA:7 a=QEXdDO2ut3YA:10 a=zZIqlBkmxoazK6SG:21
+ a=qW-A1qPplwJujTSv:21 a=CA97L4c2R2SWvNNgQse4rQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110516193003.DDUM8.463702.imail@eastrmwml37>
+Date: Mon, 16 May 2011 19:30:03 -0400
+From: Greg Moore <ddh45@cox.net>
+Reply-To: ruliangrop@aol.com
 Subject: 
-From: "NORTHERN ROCK LOAN PLC" <yae@qi.fcen.uba.ar>
-Reply-To: northernrockplc3@live.co.uk
-User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 X-Priority: 3 (Normal)
-Importance: Normal
+Sensitivity: Normal
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
 
 
--- 
-NORTHERN ROCK LOAN PLC
-Email: northernrockplc3@live.co.uk
 
-We give out loan from $5,000 to $5,000,000 to individual or corporate
-organisation at a convenience repay period. Do you have bad credit? Are
-you financially stressed and need business or personal loans? Do you need
-a loan and don't know how to apply? Just address your email to
-NORTHERN ROCK PLC(northernrockplc3@live.co.uk)with the following information:
 
-1.Full Name:
-2.Country:
-3.Phone Number:
-4.Monthly Income:
-5.Amount Needed:
-6.Loan Duration:
 
-We put an end to your financial problems.
 
-Sincerely,
-NORTHERN ROCK LOAN PLC.
 
+
+
+
+
+
+
+
+I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
+
+
+
+
+
+I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
+
+
+
+
+
+
+
+
+
+
+
+
+
+I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
+
+
+
+
+
+
+
+I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
