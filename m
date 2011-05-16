@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab1EPTow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:44:52 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51507 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab1EPTov (ORCPT
+	id S1755230Ab1EPTrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:47:39 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:50091 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab1EPTrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:44:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=BJFVcZIxgfC3TvdDhChOWhGD1vOWj6FwPE1oslZWyYBMzIqTvYgYs+/4INeOxGX/PD
-         5PBdroYgy7+c2F4TUEytZjPsVkY9Avu6mR8zNji9kUrNFj5D69XDFp3pkHcOZRz6o8IA
-         2W18Z03IOYwFmeqqbsEuhOedxVfK4yr1SBml8=
-Message-ID: <4DD17EAF.4040305@gmail.com>
-Date: Mon, 16 May 2011 23:44:47 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>	<4DCD4B85.3040702@gmail.com>	<BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com>	<4DCE3493.4090404@gmail.com> <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com> <4DCF7413.4070704@gmail.com> <4DD07959.4030608@intel.com>
-In-Reply-To: <4DD07959.4030608@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 16 May 2011 15:47:37 -0400
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1305574680.3456.33.camel@localhost.localdomain>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+	 <1305574518.2885.25.camel@bwh-desktop>
+	 <1305574680.3456.33.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 16 May 2011 20:47:33 +0100
+Message-ID: <1305575253.2885.28.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 May 2011 19:47:36.0608 (UTC) FILETIME=[1B388200:01CC1402]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18138.005
+X-TM-AS-Result: No--17.633200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2011 05:09 AM, Huang Ying wrote:
-...
->>
->>   I'm personally fine even if it's enabled by default, only worried to have
->> an option to disable hwerr from boot line.
+On Mon, 2011-05-16 at 12:38 -0700, Shirley Ma wrote:
+> On Mon, 2011-05-16 at 20:35 +0100, Ben Hutchings wrote:
+> > Sorry, bit 31 is taken.  You get the job of turning features into a
+> > wider bitmap.
 > 
-> The white list mechanism is not sufficient?  Spurious unknown NMI can
-> occur on white list machines?  People don't want to protect their data?
-> 
+> :) will do it.
 
-  I suppose no, it's not sufficient considering how many cpu errata already
-out in general. And I see no guarantee that unknown NMIs never triggers on
-white list machines and I know that you know that as well ;)
+Bear in mind that feature masks are manipulated in many different
+places.  This is not a simple task.
 
->>> And, I am not a big fan of notifiers, that makes code hard to be
->>> understood.  If you have concerns about the size of traps.c, we can
->>> move all NMI logic to a new file.
->>
->>   Ying, the concern is rather related to the code scheme in general. Since
->> we have notifiers I think the better way to be consistent here and use
->> hwerr notifier too. But it's IMHO ;)
-> 
-> As for go notifiers or not.  IMHO, a rule can be:
-> 
-> - If it is something like a driver, than it should go notifier
-> - If it is architectural/PC defacto standard, it can sit outside of notifier.
-> 
-> I think that seeing unknown NMI as hardware error should be part of PC
-> defacto standard.  Do you think so?
+See previous discussion at:
+http://thread.gmane.org/gmane.linux.network/193284
+and especially:
+http://thread.gmane.org/gmane.linux.network/193284/focus=193332
 
-  Ying, movin the handler into notifier is my IMHO, this would release nmi handler
-from details since with time more and more "standarts" would appear. If Don, Ingo
-and x86-team is fine with your approach -- of course I'm pretty fine too ;)
-
-> 
-> Best Regards,
-> Huang Ying
-
-/me Just found Don has some more concerns
+Ben.
 
 -- 
-            Cyrill
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
