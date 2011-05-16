@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab1EPJBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:01:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35172 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471Ab1EPJBa (ORCPT
+	id S1753386Ab1EPJCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:02:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50645 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab1EPJCO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:01:30 -0400
+	Mon, 16 May 2011 05:02:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=g1+rLIeCmJB7GZHuWbLDLCT1qmSoQcJ6dV0vYZAsfJ+l3K8pZXZ9Y4TMd3N0WXl0uh
-         IehneNXbZ0aDS+znqMY0JEt3zZ9qXOCtes8/p4J1zOkybIz2FbN1bWTrkAXH4gauJ9VO
-         N+6NRkEhJuQpJxFTJJRUl+rAVHNAVhr3Rzo38=
-Date: Mon, 16 May 2011 11:01:25 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: PTRACE_DETACH without stop  [Re: [PATCH 04/11] ptrace:
- implement PTRACE_INTERRUPT]
-Message-ID: <20110516090125.GP23665@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <20110510095022.GR1661@htj.dyndns.org>
- <20110510140620.GB21834@redhat.com>
- <201105102359.58900.vda.linux@googlemail.com>
- <20110511091955.GD1661@htj.dyndns.org>
- <20110515161000.GE31855@host1.jankratochvil.net>
- <20110515163523.GH23665@htj.dyndns.org>
- <20110515173940.GA26241@host1.jankratochvil.net>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=idCnPQTZOSaL7QUIXSK5GRvMIc80jyev0Ugb4AOp1bDrUa9wkJc6Z1qcF8SZwvVS7y
+         wMBjjsJXDRG8OW7AjMOivUMvp6p47HWRZ5KvYRQwYcKtPmVPghaNk9FoQGa0IkZzTqeF
+         BwH06WSYgM2vzM6pUuoOXpasBUshJFG0Yq7PM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110515173940.GA26241@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110510055926.GA2747@redhat.com>
+References: <1304687191-23814-1-git-send-email-linus.walleij@stericsson.com>
+	<201105061522.33179.arnd@arndb.de>
+	<20110510055926.GA2747@redhat.com>
+Date: Mon, 16 May 2011 11:02:14 +0200
+X-Google-Sender-Auth: nmRMs8-m0yHqefIQZl3A9JWaL-c
+Message-ID: <BANLkTimh2Xaz73v-2c0GmcS9wD4+JFWzrw@mail.gmail.com>
+Subject: Re: [PATCH 10/10] mach-ux500: update and move cpufreq driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dave Jones <davej@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+2011/5/10 Dave Jones <davej@redhat.com>:
 
-On Sun, May 15, 2011 at 07:39:40PM +0200, Jan Kratochvil wrote:
-> #include <unistd.h>
-> #include <sys/wait.h>
-> #include <sys/ptrace.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> static int status;
-> static pid_t child;
-> void
-> handler (int signo)
-> {
->   puts ("PASS");
->   exit (0);
-> }
-> /* Ensure CHILD is stopped even if it is running now - for PTRACE_DETACH.  */
-> void
-> stop_child_for_detach (void)
-> {
->   kill (child, SIGCONT);	/* To be PTRACE_INTERRUPT in the future.  */
->   /* The problem - here a signal may get lost.  */
->   wait (&status);
-> }
-> int
-> main (void)
-> {
->   child = fork ();
->   switch (child)
->     {
->     case 0:
->       signal (SIGUSR2, handler);
->       ptrace (PTRACE_TRACEME, 0, NULL, NULL);
->       raise (SIGUSR1);
->       puts ("FAIL");
->       exit (1);
->     default:
->       wait (&status);
->       /* Sent by arbitrary external program.  */
->       kill (child, SIGUSR2);
->       /* Comment out for PTRACE_DETACH not requiring stopped tracee.  */
-> #if 1
->       ptrace (PTRACE_CONT, child, NULL, NULL);
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Haven't had chance to really read much patches the last few days
+> (travelling until the 16th).  Due to the patch collisions we'll keep
+> seeing on kconfig/Makefiles, should these go via the cpufreq tree,
+> or do people want to still push them through their respective arch trees ?
 
-You can lose signal here.  You must check which trap happened why and
-then take action accordingly.  Argh... we really need better
-documentation of ptrace behaviors and traps.  Anyways, sans the
-confusion between debugger sent signals and signals from other sources
-and the side effects caused by debugger sent ones, the current ptrace
-interface isn't broken to the point where you just lose signal.
+I pushed a patch series yesterday that basically deactivates the
+cpufreq driver in the mach-ux500, moves it over to drivers/cpufreq,
+updates it, then reactivates it in the new place with a patch to
+the Makefile.
 
->       stop_child_for_detach ();
-> #endif
->       ptrace (PTRACE_DETACH, child, NULL, NULL);
->     }
->   return 0;
-> }
-> 
-> 
-> > The reason why I'm reluctant to drop trapped requirement from both
-> > SEIZE and DETACH is that removing those synchronization points opens
-> > up a lot of corner cases.
-> 
-> They are either (currently) in the userland or they would be in the kernel.
+Of these changes only the last patch will collide with your tree,
+so I pushed all of them except that one to linux-next.
 
-Nope.  What userland is currently dealing with isn't that type of
-conditions.  It's dealing with nasty side effects of implied and
-required signals, which will be removed with the new interface.  Those
-attach/detach sync points are currently in the kernel and wouldn't
-change with the proposed updates.  You're suggesting to remove them.
+The last patch I plan to submit to Torvalds directly after both
+trees have gone into the merge window.
 
-So, it's not about moving them, at all.  It's about removing them.
+Can you please look into this and ACK the patches if they
+seem OK?
 
-That said, it might not be such a bad idea.  Let's see how difficult
-or easy it actually is.
-
-Thanks.
-
--- 
-tejun
+Linus Walleij
