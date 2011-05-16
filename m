@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab1EPPV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:21:57 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:35843 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755769Ab1EPPV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:21:56 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=fjv2D7Ts3fz5xcBrCubIVv4Lo9MQZCPUYx7aTwOKl9Wg/kXcquS3lWHjlLjAFcJhsZWR9IUGaoXFGGr2ey2v9VxEsRgnLb8jVvkgGDD3dm+FjYS6eTO8cHbe/rYcraYp;
-Date: Mon, 16 May 2011 08:21:53 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: any value in centralizing a defn of "RUN_AT()"?
-Message-Id: <20110516082153.b55d3f85.rdunlap@xenotime.net>
-In-Reply-To: <alpine.DEB.2.00.1105151616530.28104@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1105151616530.28104@localhost6.localdomain6>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1756082Ab1EPP02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:26:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52391 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755769Ab1EPP00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 11:26:26 -0400
+Date: Mon, 16 May 2011 17:26:08 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
+Subject: Re: [PATCH 1/2] mm: vmscan: Correct use of pgdat_balanced in
+ sleeping_prematurely
+Message-ID: <20110516152608.GT16531@cmpxchg.org>
+References: <1305558417-24354-1-git-send-email-mgorman@suse.de>
+ <1305558417-24354-2-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305558417-24354-2-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 May 2011 16:18:17 -0400 (EDT) Robert P. J. Day wrote:
-
+On Mon, May 16, 2011 at 04:06:56PM +0100, Mel Gorman wrote:
+> From: Johannes Weiner <hannes@cmpxchg.org>
 > 
->   i notice that a number of drivers duplicate a macro definition of
-> RUN_AT():
+> Johannes Weiner poined out that the logic in commit [1741c877: mm:
+> kswapd: keep kswapd awake for high-order allocations until a percentage
+> of the node is balanced] is backwards. Instead of allowing kswapd to go
+> to sleep when balancing for high order allocations, it keeps it kswapd
+> running uselessly.
 > 
-> drivers/staging/vt6655/device.h:#define RUN_AT(x) (jiffies+(x))
-> drivers/net/irda/au1k_ir.c:#define RUN_AT(x) (jiffies + (x))
-> drivers/net/hamachi.c:#define RUN_AT(x) (jiffies + (x))
-> drivers/net/tulip/tulip.h:#define RUN_AT(x) (jiffies + (x))
-> drivers/net/wireless/airo.c:#define RUN_AT(x) (jiffies+(x))
-> drivers/net/rrunner.c:#define RUN_AT(x) (jiffies + (x))
-> drivers/net/bnx2.c:#define RUN_AT(x) (jiffies + (x))
-> drivers/net/3c59x.c:#define RUN_AT(x) (jiffies + (x))
-> drivers/net/fealnx.c:#define RUN_AT(x) (jiffies + (x))
-> 
->   etc, etc.  any value in just defining that once in jiffies.h and
-> letting everyone use that?
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Yes IMO.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
