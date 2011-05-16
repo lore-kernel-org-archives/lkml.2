@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab1EPTxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:53:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49654 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab1EPTxF (ORCPT
+	id S1755452Ab1EPTxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:53:14 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60670 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755395Ab1EPTxK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:53:05 -0400
+	Mon, 16 May 2011 15:53:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=YBHuPkXGq7RFzmTyLRW7buNN/V6k/pLEmaAj0VYoOlkj89jY8Jp+clu/qvbkKNdxuU
-         Q0rdgu+94oglY/2jj4G1kukSF75KGINEyRAOiWBPLVxjlZjfkYvhzg/A7uwqUkk1xVv1
-         CaEucjXOINGeSyDLZSgH0s5KRIJB3ZIU7PLQU=
-Message-ID: <4DD1809D.8090403@gmail.com>
-Date: Mon, 16 May 2011 23:53:01 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DtURAXKpLMlZzhEKHqLgiIWSM1kBoG6zW8ua+ghk9YLKSk8vAPw6LiZ7bzZmfMmwjM
+         ck+mCWN/bSviWqekMnU8m3u0qkGsDLN6s1w0pBxITiXi0S3IVKqYRU+S4Xfdd4cy6yuJ
+         RAowxWVwv3ddJedM+WY2f9yJEp21+//xoYIt8=
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Huang Ying <ying.huang@intel.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com> <4DCD4B85.3040702@gmail.com> <BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com> <4DCE3493.4090404@gmail.com> <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com> <4DCF7413.4070704@gmail.com> <4DD07959.4030608@intel.com> <20110516190310.GH31888@redhat.com>
-In-Reply-To: <20110516190310.GH31888@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110516185646.282418545@sbsiddha-MOBL3.sc.intel.com>
+References: <20110516185646.282418545@sbsiddha-MOBL3.sc.intel.com>
+Date: Mon, 16 May 2011 20:53:09 +0100
+Message-ID: <BANLkTi=o0Z=Pc3KGDcZKr+a3OPWgb=iZrg@mail.gmail.com>
+Subject: Re: [patch 1/4] x86, ioapic: fix potential resume deadlock
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2011 11:03 PM, Don Zickus wrote:
-> On Mon, May 16, 2011 at 09:09:45AM +0800, Huang Ying wrote:
->>>   Ying, the concern is rather related to the code scheme in general. Since
->>> we have notifiers I think the better way to be consistent here and use
->>> hwerr notifier too. But it's IMHO ;)
->>
->> As for go notifiers or not.  IMHO, a rule can be:
->>
->> - If it is something like a driver, than it should go notifier
->> - If it is architectural/PC defacto standard, it can sit outside of
->> notifier.
-> 
-> Hmm, then what do you do about perf?  That is architectural and a defacto
-> standard, but I am not sure hardcoding that would be appropriate.
+On 16 May 2011 19:56, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> From: Daniel J Blueman <daniel.blueman@gmail.com>
+> Subject: x86, ioapic: fix potential resume deadlock
+>
+> Fix a potential deadlock when resuming; here the calling function
+> has disabled interrupts, so we cannot sleep.
+>
+> Change the memory allocation flag from GFP_KERNEL to GFP_ATOMIC.
+>
+> TODO: We can do away with this memory allocation during resume by
+> reusing the ioapic suspend/resume code that uses boot time allocated
+> buffers.
+>
+> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: stable@kernel.org   [v2.6.39]
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
+> ===================================================================
+> --- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
+> +++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
+> @@ -621,14 +621,14 @@ struct IO_APIC_route_entry **alloc_ioapi
+>        struct IO_APIC_route_entry **ioapic_entries;
+>
+>        ioapic_entries = kzalloc(sizeof(*ioapic_entries) * nr_ioapics,
+> -                               GFP_KERNEL);
+> +                               GFP_ATOMIC);
+>        if (!ioapic_entries)
+>                return 0;
+>
+>        for (apic = 0; apic < nr_ioapics; apic++) {
+>                ioapic_entries[apic] =
+>                        kzalloc(sizeof(struct IO_APIC_route_entry) *
+> -                               nr_ioapic_registers[apic], GFP_KERNEL);
+> +                               nr_ioapic_registers[apic], GFP_ATOMIC);
+>                if (!ioapic_entries[apic])
+>                        goto nomem;
+>        }
 
-  Good point!
+I just tested this patch series (1-3) and it does addresses the resume
+allocation failures I was consistently seeing (triggering your
+warning); it passes nicely with full lock, allocation etc debugging,
+so looks all good. Tested-by: Daniel J Blueman
+<daniel.blueman@gmail.com>
 
-> 
->>
->> I think that seeing unknown NMI as hardware error should be part of PC
->> defacto standard.  Do you think so?
-> 
-> Well after thinking about it, I would say no.  And my reason is, if
-> vendors are really serious about using NMIs as an indicator for hardware
-> errors, shouldn't they be setting a bit in the memory controller/north
-> bridge or south bridge/IOHC for an NMI handler to read?  I mean hardware
+Thanks, Suresh!
 
-  UV platform has such bit iirc :)
-
-> devices don't just get wired directly to the NMI pin on the cpu, right?
-> They generally have to go through some hub that acts as a multiplexer.
-> 
-> In those cases, why can't those hubs set a bit saying it detected an error
-> (don't PCIe bridges already do that?) and let the NMI handler read it to
-> confirm.  This way we can leave 'unknown NMIs' as a way to say an
-> unclaimed NMI entered the system and we can have users set policy about
-> what to do, panic, printk, whatever.
-> 
-> But for the HEST stuff, it should be smart enough by now to trap any
-> hardware error, no?  How does a machine that supports HEST let a hardware
-> error get through without detecting it?  Isn't that the point?  Detect a
-> hardware error, grab as much info about it as possible, save the error
-> record and then panic?
-> 
-> Otherwise if you just panic, then you have no idea why the machine errored
-> in the first place.  It might be the safe thing to do in some
-> circumstances, but then you have to wonder why the fancy HEST enabled
-> server didn't catch it.  Isn't that what people are spending extra money
-> for those Intel servers with RAS features?
-> 
-> Cheers,
-> Don
-
+Daniel
 -- 
-            Cyrill
+Daniel J Blueman
