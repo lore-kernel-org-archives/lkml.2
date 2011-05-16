@@ -1,45 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab1EPIT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:19:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41567 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab1EPIT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:19:57 -0400
-Message-ID: <4DD0DE2C.4060806@suse.cz>
-Date: Mon, 16 May 2011 10:19:56 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: mfmooney@gmail.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3] package: Makefile: fix perf target bug
-References: <4DCD8CE4.4090404@suse.cz> <b07e7ecdce48bc90a2cf83e8867494dae7cd174f.1305329845.git.mfm@muteddisk.com> <20110515154002.GB6274@ghostprotocols.net>
-In-Reply-To: <20110515154002.GB6274@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752792Ab1EPI3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:29:46 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34105 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1EPI3n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:29:43 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 16 May 2011 17:22:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, minchan.kim@gmail.com, riel@redhat.com
+Subject: Re: [PATCH 3/3] vmscan: implement swap token priority decay
+Message-Id: <20110516172258.c7dcd982.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4DCD1913.2090200@jp.fujitsu.com>
+References: <4DCD1824.1060801@jp.fujitsu.com>
+	<4DCD1913.2090200@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.5.2011 17:40, Arnaldo Carvalho de Melo wrote:
-> Em Fri, May 13, 2011 at 04:41:12PM -0700, mfmooney@gmail.com escreveu:
->> From: matt mooney<mfm@muteddisk.com>
->>
->> Specify --git-dir when building perf targets to allow out-of-tree
->> builds using O=<build-dir>.
->>
->> The shell command in `git archive' had to be modified to allow proper
->> file name expansion of the files listed in MANIFEST.
->>
->> Signed-off-by: matt mooney<mfm@muteddisk.com>
->
-> Michal,
->
-> 	Can I have your Reviewed-by or Acked-by for this one? Assuming
-> all is ok by now :)
+On Fri, 13 May 2011 20:42:11 +0900
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Reviewed-by: Michal Marek <mmarek@suse.cz>
+> While testing for memcg aware swap token, I observed a swap token
+> was often grabbed an intermittent running process (eg init, auditd)
+> and they never release a token.
+> 
+> Why? Currently, swap toke priority is only decreased at page fault
+> path. Then, if the process sleep immediately after to grab swap
+> token, their swap token priority never be decreased. That makes
+> obviously undesired result.
+> 
+> This patch implement very poor (and lightweight) priority decay
+> mechanism. It only be affect to the above corner case and doesn't
+> change swap tendency workload performance (eg multi process qsbench
+> load)
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Michal
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+But...
+
+> ---
+>  include/trace/events/vmscan.h |   12 ++++++++----
+>  mm/thrash.c                   |    5 ++++-
+>  2 files changed, 12 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+> index 1798e0c..ba18137 100644
+> --- a/include/trace/events/vmscan.h
+> +++ b/include/trace/events/vmscan.h
+> @@ -366,9 +366,10 @@ DEFINE_EVENT_CONDITION(put_swap_token_template, disable_swap_token,
+> 
+>  TRACE_EVENT_CONDITION(update_swap_token_priority,
+>  	TP_PROTO(struct mm_struct *mm,
+> -		 unsigned int old_prio),
+> +		 unsigned int old_prio,
+> +		 struct mm_struct *swap_token_mm),
+> 
+> -	TP_ARGS(mm, old_prio),
+> +	TP_ARGS(mm, old_prio, swap_token_mm),
+> 
+>  	TP_CONDITION(mm->token_priority != old_prio),
+> 
+> @@ -376,16 +377,19 @@ TRACE_EVENT_CONDITION(update_swap_token_priority,
+>  		__field(struct mm_struct*, mm)
+>  		__field(unsigned int, old_prio)
+>  		__field(unsigned int, new_prio)
+> +		__field(unsigned int, token_prio)
+>  	),
+> 
+>  	TP_fast_assign(
+>  		__entry->mm = mm;
+>  		__entry->old_prio = old_prio;
+>  		__entry->new_prio = mm->token_priority;
+> +		__entry->token_prio = swap_token_mm ? swap_token_mm->token_priority : 0;
+>  	),
+> 
+> -	TP_printk("mm=%p old_prio=%u new_prio=%u",
+> -		  __entry->mm, __entry->old_prio, __entry->new_prio)
+> +	TP_printk("mm=%p old_prio=%u new_prio=%u token_prio=%u",
+> +		  __entry->mm, __entry->old_prio, __entry->new_prio,
+> +		  __entry->token_prio)
+>  );
+> 
+>  #endif /* _TRACE_VMSCAN_H */
+> diff --git a/mm/thrash.c b/mm/thrash.c
+> index 14c6c9f..0c4f0a8 100644
+> --- a/mm/thrash.c
+> +++ b/mm/thrash.c
+> @@ -47,6 +47,9 @@ void grab_swap_token(struct mm_struct *mm)
+>  	if (!swap_token_mm)
+>  		goto replace_token;
+> 
+> +	if (!(global_faults & 0xff))
+> +		mm->token_priority /= 2;
+> +
+
+I personally don't like this kind of checking counter with mask.
+Hmm. How about this ?
+
+==
+	#define TOKEN_AGE_MASK	~(0xff)
+	/*
+	 * If current global_fault is in different age from previous global_fault,
+	 * Aging priority and starts new era.
+	 */
+	if ((mm->faultstamp & TOKEN_AGE_MASK) != (global_faults & MM_TOKEN_MASK))
+		mm->token_priority /= 2;
+==
+
+But I'm not sure 0xff is a proper value or not...
+
+Thanks,
+-Kame
+
