@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab1EPS7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:59:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37511 "EHLO mga01.intel.com"
+	id S1753692Ab1EPTAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:00:17 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37436 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752859Ab1EPS7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:59:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,220,1304319600"; 
-   d="scan'208";a="2408173"
-Message-Id: <20110516185646.559690403@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Mon, 16 May 2011 11:56:07 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, daniel.blueman@gmail.com,
-        suresh.b.siddha@intel.com
-Subject: [patch 4/4] x86, ioapic: remove duplicate code for saving/restoring RTEs
-References: <20110516185646.282418545@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=use_saved_ioapic_for_suspend.patch
+	id S1751204Ab1EPTAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:00:15 -0400
+Date: Mon, 16 May 2011 20:59:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+ writeback for various fses
+Message-ID: <20110516185947.GK5344@quack.suse.cz>
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
+ <20110510125124.GD4402@quack.suse.cz>
+ <20110511181901.GK20579@tux1.beaverton.ibm.com>
+ <20110512094255.GA4690@quack.suse.cz>
+ <20110516184927.GM20579@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516184927.GM20579@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code flow for enabling interrupt-remapping has its own routines for saving and
-restoring io-apic RTE's. ioapic suspend/resume code flow also has similar
-routines. Remove the duplicate code.
+On Mon 16-05-11 11:49:27, Darrick J. Wong wrote:
+> On Thu, May 12, 2011 at 11:42:55AM +0200, Jan Kara wrote:
+> > On Wed 11-05-11 11:19:01, Darrick J. Wong wrote:
+> > > On Tue, May 10, 2011 at 02:51:24PM +0200, Jan Kara wrote:
+> > > > On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
+> > > > > I am still chasing down what exactly is broken in ext3.  data=writeback mode
+> > > > > passes with no failures.  data=ordered, however, does not pass; my current
+> > > > > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
+> > > > > page_mkclean to kick the userspace programs off the page before writing it.
+> > > >   Yes, ext3 in data=ordered mode writes pages from
+> > > > journal_commit_transaction() via submit_bh() without clearing page dirty
+> > > > bits thus page_mkclean() is not called for these pages. Frankly, do you
+> > > > really want to bother with adding support for ext2 and ext3? People can use
+> > > > ext4 as a fs driver when they want to start using blk-integrity support.
+> > > > Especially ext2 patch looks really painful and just from a quick look I can
+> > > > see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
+> > > 
+> > > Yeah, I agree that ext2 is ugly and ext3/jbd might be more painful.  Are there
+> > > any other code that wants stable pages that's already running with ext3?  In
+> > > this months-long discussion I've heard that encryption and raid also like
+> > > stable pages during writes.  Have those users been broken this whole time, or
+> > > have they been stabilizing pages themselves?
+> >   I believe part of them has been broken (e.g. raid) and part of them do
+> > copy-out so they were OK.
+> 
+> A future step might be to undo all these homegrown copy-outs?
+  Sure but I'm not the right one to tell you where these are ;).
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/kernel/apic/io_apic.c |   36 +++++-------------------------------
- 1 file changed, 5 insertions(+), 31 deletions(-)
+> > > I suppose we can cross the "ext3 fails horribly on DIF" bridge when someone
+> > > complains about it.  Possibly we could try to steer them to btrfs.
+> >   Well, btrfs might be a bit too advantageous for production servers but
+> > ext4 would be definitely viable for them.
+> 
+> Are there any distros that are going straight from ext3 to btrfs?
+  Most distros currently offer users a choice of xfs, ext3, ext4, btrfs
+with ext4 being the default. I'm not sure if that's what you are asking
+about...
 
-Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -2887,37 +2887,11 @@ static int __init io_apic_bug_finalize(v
- 
- late_initcall(io_apic_bug_finalize);
- 
--static void suspend_ioapic(int ioapic_id)
-+static void resume_ioapic_id(int ioapic_id)
- {
--	struct IO_APIC_route_entry *saved_data = ioapic_saved_data[ioapic_id];
--	int i;
--
--	if (!saved_data)
--		return;
--
--	for (i = 0; i < nr_ioapic_registers[ioapic_id]; i++)
--		saved_data[i] = ioapic_read_entry(ioapic_id, i);
--}
--
--static int ioapic_suspend(void)
--{
--	int ioapic_id;
--
--	for (ioapic_id = 0; ioapic_id < nr_ioapics; ioapic_id++)
--		suspend_ioapic(ioapic_id);
--
--	return 0;
--}
--
--static void resume_ioapic(int ioapic_id)
--{
--	struct IO_APIC_route_entry *saved_data = ioapic_saved_data[ioapic_id];
- 	unsigned long flags;
- 	union IO_APIC_reg_00 reg_00;
--	int i;
- 
--	if (!saved_data)
--		return;
- 
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	reg_00.raw = io_apic_read(ioapic_id, 0);
-@@ -2926,8 +2900,6 @@ static void resume_ioapic(int ioapic_id)
- 		io_apic_write(ioapic_id, 0, reg_00.raw);
- 	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--	for (i = 0; i < nr_ioapic_registers[ioapic_id]; i++)
--		ioapic_write_entry(ioapic_id, i, saved_data[i]);
- }
- 
- static void ioapic_resume(void)
-@@ -2935,11 +2907,13 @@ static void ioapic_resume(void)
- 	int ioapic_id;
- 
- 	for (ioapic_id = nr_ioapics - 1; ioapic_id >= 0; ioapic_id--)
--		resume_ioapic(ioapic_id);
-+		resume_ioapic_id(ioapic_id);
-+
-+	restore_ioapic_entries();
- }
- 
- static struct syscore_ops ioapic_syscore_ops = {
--	.suspend = ioapic_suspend,
-+	.suspend = save_ioapic_entries,
- 	.resume = ioapic_resume,
- };
- 
-
-
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
