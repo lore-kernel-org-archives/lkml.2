@@ -1,147 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab1EPNO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:14:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35904 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab1EPNO6 convert rfc822-to-8bit (ORCPT
+	id S1755266Ab1EPNQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:16:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55031 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab1EPNQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:14:58 -0400
+	Mon, 16 May 2011 09:16:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ime7PRZozG/cGnJhCHtWh9PI4nerDA/TRRVjMHWhM1QOwIZEnAKiK96/D9co28vCRL
-         7vrbY8CnJ9rlDLWX9S8GvWgLlzAvd7siHN2Kg3ALvgQQerUItj2UBeME7Xb/bfFY8R1D
-         9WL6tikOshL7nlGBDpRe3Yk1d1bkg0huVbOVg=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fUX6ciSkVQPdSbVY0IzbhxVn8t1kZeaXZxxjOZi8fl+rTosSSxJEESmzhS1h1XvAxj
+         0BvjmxUZm8DMfR7/0JSAskbpXQ1/L+0a1QPhf/Zlx/UsCpkCxDSXGUFGhSWSZ75A5HbQ
+         Vo1WNLI6E+lkKPtGEoYXOKdrLv1tT0+5XsOhg=
+Date: Mon, 16 May 2011 15:16:08 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 4/9] ptrace: relocate set_current_state(TASK_TRACED) in
+ ptrace_stop()
+Message-ID: <20110516131608.GX23665@htj.dyndns.org>
+References: <1305301580-9924-1-git-send-email-tj@kernel.org>
+ <1305301580-9924-5-git-send-email-tj@kernel.org>
+ <20110516115711.GB4898@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1305441316.7460.40.camel@marge.simson.net>
-References: <BANLkTi=_gfo4bZjkoBsxspLxxWSPy=7J+Q@mail.gmail.com>
-	<1305441316.7460.40.camel@marge.simson.net>
-Date: Mon, 16 May 2011 21:14:56 +0800
-Message-ID: <BANLkTino730kar=fEDJGCy8bCSVUe52aOw@mail.gmail.com>
-Subject: Re: [PATCH] sched: avoid overpull when pulling RT task
-From: Hillf Danton <dhillf@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516115711.GB4898@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 15, 2011 at 2:35 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Sun, 2011-05-15 at 12:35 +0800, Hillf Danton wrote:
->> When pulling RT task for a given runqueue, pulling is continued even
->> after certain RT tasks get pulled, in case there are still higher
->> priority tasks on other runqueues, though it is low likelihood as the
->> comment says. The load of of this runqueue, on other hand, should also
->> be concerned. If it is overloaded, the low likelihood should be
->> abandoned to avoid overpull.
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>  kernel/sched_rt.c |    5 +++++
->>  1 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
->> index 14c764b..b425ca1 100644
->> --- a/kernel/sched_rt.c
->> +++ b/kernel/sched_rt.c
->> @@ -1508,6 +1508,11 @@ static int pull_rt_task(struct rq *this_rq)
->>               }
->>  skip:
->>               double_unlock_balance(this_rq, src_rq);
->> +
->> +             /* if pulled we have to also avoid overpull */
->> +             if (ret == 1)
->> +                     if (likely(rt_overloaded(this_rq)))
->> +                             break;
->>       }
->>
->>       return ret;
->
-> Hm.
->
-> It looks to me like you should remove the rt_overloaded() test (and
-> function) entirely instead.  If you look at pull usage, the intent is
-> that system wide, higher priority tasks run before lower.
->
-> I don't think it matters much if we pull too much, since what we pull
-> while traversing is ever increasing in priority _and waiting_ anyway.
-> We may do a bit more work than strictly necessary on the way to the
-> highest priority runnable task, but what matters most is that highest
-> priority gets to the CPU first, which testing for overload can stymie.
->
-> (seems pulling more than one could turn out either good or bad for any
-> but the highest priority task though, lacking crystal ball)
->
-Hi Mike
+Hey, Oleg.
 
-To win the crystal ball, I take another try.
+On Mon, May 16, 2011 at 01:57:11PM +0200, Oleg Nesterov wrote:
+> > and helps future updates to group stop participation.
+> 
+> OK, so I assume we need this change.
 
-In the following patch, pulling is played in two rounds. In the first round,
-the highest priority task is determined with no pull operation. Pulling is
-carried out in the second round, and if the highest priority task is pulled,
-pulling could be stopped when overload detected, to relieve overpull.
+We don't necessarily need it but it makes things prettier later.
 
-Please review again, thanks.
+> But the comment looks a bit confusing to me. This is fine, I almost never
+> read them ;) Just I'd like to ensure I din't miss something.
 
-Hillf
----
+Oleg, IIRC, those comments were taken from your email pointing out
+that set_current_state() needs to happen before clearing of TRAPPING,
+so, if you're confused, I'm confused too. :-)
 
---- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
-+++ b/kernel/sched_rt.c	2011-05-16 20:42:18.000000000 +0800
-@@ -1425,10 +1425,11 @@ static int pull_rt_task(struct rq *this_
- 	int this_cpu = this_rq->cpu, ret = 0, cpu;
- 	struct task_struct *p;
- 	struct rq *src_rq;
-+	int highest_prio = MAX_RT_PRIO;
-+	int highest_pulled = 0;
-+	int first_round = 1;
+> > +	 * We're committing to trapping.  TRACED should be visible before
+> > +	 * TRAPPING is cleared
+> 
+> This looks as if you explain the barrier in set_current_state(). And,
+> btw, why can't we use __set_current_state() here ?
+> 
+> And. not only TRACED, at least ->exit_code should be visible as well.
 
--	if (likely(!rt_overloaded(this_rq)))
--		return 0;
--
-+again:
- 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
- 		if (this_cpu == cpu)
- 			continue;
-@@ -1480,6 +1481,18 @@ static int pull_rt_task(struct rq *this_
- 			if (p->prio < src_rq->curr->prio)
- 				goto skip;
+The racy part was task_is_stopped_or_traced() in task_stopped_code()
+and the value of exit_code doesn't matter at that point.  So, we need
+at least smp_wmb() between __set_current_state() and clearing
+TRAPPING.
 
-+			/*
-+			 * To avoid overpull, we play pulling in two rounds,and
-+			 * the highest task is determined in the first round.
-+			 */
-+			if (first_round) {
-+				if (p->prio < highest_prio)
-+					highest_prio = p->prio;
-+				goto skip;
-+			}
-+			if (p->prio <= highest_prio)
-+				highest_pulled = 1;
-+
- 			ret = 1;
+> IOW. It is not that TRACED should be visible before jobctl &= ~JOBCTL_TRAPPING,
+> we should correctly update the tracee before __wake_up_sync_key(), and I assume
+> this is what the comment says.
+> 
+> Correct?
 
- 			deactivate_task(src_rq, p, 0);
-@@ -1494,6 +1507,15 @@ static int pull_rt_task(struct rq *this_
- 		}
- skip:
- 		double_unlock_balance(this_rq, src_rq);
-+
-+		if (highest_pulled && rt_overloaded(this_rq))
-+			break;
-+	}
-+
-+	if (first_round && highest_prio != MAX_RT_PRIO) {
-+		/* try to pull higher tasks on other RQs */
-+		first_round = 0;
-+		goto again;
- 	}
+All we need to update on the tracee is tracee->state and
+~JOBCTL_TRAPPING and __wake_up_sync_key() can be considered single
+operation.  One doesn't make sense with the other.  Anyways, if you
+wanna update the comment, please go ahead.
 
- 	return ret;
+Thanks.
+
+-- 
+tejun
