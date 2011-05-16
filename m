@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab1EPNYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:24:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44804 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab1EPNYF (ORCPT
+	id S1755343Ab1EPN0g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:26:36 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46733 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab1EPN0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:24:05 -0400
+	Mon, 16 May 2011 09:26:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=AuyFjtJb3EILhkaYu8gN3Tsw2Mj5vnJOQTZG/sMTd+HuwqONTjPU2QfScOktBjrVYh
-         LGgyxfTF4aXdLfgd8bypEXLoVEalcIUVndG+bX+IJpWsdGnNgtey/I3TwyaNeSrDZNsk
-         6ZPM3fJF0qyrwDH3P0pzkbDYLM3cNJlJGZli0=
-Date: Mon, 16 May 2011 15:24:00 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 6/9] job control: make task_clear_jobctl_pending()
- clear TRAPPING automatically
-Message-ID: <20110516132400.GY23665@htj.dyndns.org>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org>
- <1305301580-9924-7-git-send-email-tj@kernel.org>
- <20110516122535.GD4898@redhat.com>
+        b=DkpXrzEoTUqY8Woa2R6X8FQCY/WcnK7nDhff2gccWoYIgbHrcRbCqCOcenowHWJEg9
+         mJp2lzFIcGhpglsdO9HHW8Xws0NQe7+AasEwpr6DMiM5lNPKrH2THwaNx47cj3mixghq
+         XIgBzFdu1mxQla1umItz83SfbhGpLPAJnu2Z4=
+Date: Mon, 16 May 2011 21:26:23 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
+ update tsk->rt.nr_cpus_allowed
+Message-ID: <20110516132623.GA2058@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110428161149.GA15658@redhat.com>
+ <20110502194416.2D61.A69D9226@jp.fujitsu.com>
+ <20110502195657.2D68.A69D9226@jp.fujitsu.com>
+ <1305129929.2914.247.camel@laptop>
+ <4DCCC61F.80408@jp.fujitsu.com>
+ <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
+ <20110515185547.GL2258@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110516122535.GD4898@redhat.com>
+In-Reply-To: <20110515185547.GL2258@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, May 16, 2011 at 02:25:35PM +0200, Oleg Nesterov wrote:
-> On 05/13, Tejun Heo wrote:
-> >
-> > @@ -264,6 +267,9 @@ void task_clear_jobctl_pending(struct task_struct *task, unsigned int mask)
-> >  		mask |= JOBCTL_STOP_CONSUME | JOBCTL_STOP_DEQUEUED;
-> >
-> >  	task->jobctl &= ~mask;
-> > +
-> > +	if (!(task->jobctl & JOBCTL_PENDING_MASK))
-> > +		task_clear_jobctl_trapping(task);
-> >  }
+On Sun, May 15, 2011 at 11:55:47AM -0700, Paul E. McKenney wrote:
+> > Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
+> > which is under hotplug event CPU_UP_PREPARE. Maybe it should be
+> > under CPU_ONLINE.
 > 
-> So, SIGCONT clears JOBCTL_TRAPPING and wakes up the tracer.
+> Sorry, but this does not work.  The kthread must be running by the time
 
-If JOBCTL_TRAPPING is set && JOBCTL_STOP_PENDING was the only pending
-condition.
+Yup, I also noticed that from the comments of rcu_spawn_one_cpu_kthread();
 
-> I can't really understand this without seeing the next changes, but
-> it seems this makes some things worse, although I am not sure.
+> the CPU appears, otherwise RCU grace periods in CPU_ONLINE notifiers
+> will never complete.
+> 
+> This did turn out to be a scheduler bug -- see Cheng Xu's recent patch.
+> (chengxu@linux.vnet.ibm.com)
 
-It's a safety mechanism.  We shouldn't have TRAPPING set when no
-stop/trap is pending and the above establishes that invariant and will
-also be used to simplify exception cases where all pending conditions
-are cleared (tracee being killed).  It's conceptually much easier to
-grasp that way - you clear all pending conditions when the task dies
-and the mechanism to wait for trap transition is cleared together.
+Hmmm, I don't think they are same issue.
 
-> For example. PTRACE_SEIZE should guarantee the tracee will trap and
-> report. However, if the tracee is stopped during attach, we can race
-> with SIGCONT. The previous version had the similar problem afaics, but
-> it was easy (I think) to fix. Now that SIGCONT clears JOBCTL_TRAPPING
-> we need more complications.
+The patch sent by Cheng Xu is about rt runtime normalization during
+CPU hotplug.
 
-This problem doesn't exist anymore.  SEIZE directly schedules
-JOBCTL_TRAP_STOP instead of using JOBCTL_STOP_PENDING, so it actually
-works exactly as it should.
+But this one is about too earlier rt_rq load balance.
 
-1. If tracee was stopped and tracer attaches, tracee should re-trap
-   and tracer should wait for TRAPPING.
+Let consider this:
 
-2. If tracee was not stopped and tracer attaches, tracee traps to
-   STOP.
+		on boot CPU
+	...
+	kernel_init();
+	  smp_init();
+	    _cpu_up();
+	      __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
+	        rcu_cpu_notify();
+		  rcu_online_kthreads();
+		    rcu_spawn_one_node_kthread();
+		      wake_up_process();
+		        try_to_wake_up();
+			  select_task_rq();
+			    select_fallback_rq();
+			      cpuset_cpus_allowed_fallback();
+			        /* here the rcu_thread's cpus_allowed will be set
+				   to cpu_possible_mask, but now we only have the
+				   boot cpu online, so it will run on the boot cpu
+				   So if we have KOSAKI's patch applied,
+				   p->rt.nr_cpus_allowed will be set to
+				   cpumask_weight(cpu_possible_mask);
+				 */
+		      sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+		        __sched_setscheduler();
+			  check_class_changed();
+			    p->sched_class->switched_to(rq, p); /* rt_class */
+			      push_rt_task();
+			        find_lock_lowest_rq();
+				  find_lowest_rq();
+				    /* crash here because local_cpu_mask is uninitialized */
 
-3. If tracee was stopped and tracer attaches but SIGCONT is received
-   before TRAPPING is done, TRAPPING is cleared and tracer and tracee
-   are in the same conditions as #2, which is exactly how they should
-   be.
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Yong
