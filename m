@@ -1,64 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab1EPPar (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:30:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45405 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab1EPPaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:30:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=PjkUQ8v6qSougAjZuUfQqYpHJNooZ/DUgTbcNiGYz66qptLgaXJBpicAjsUdxxe6Hi
-         yhC8WBzwlQQGf19XaHSF5d8+WVxYpfGUACOcAEj01xKSrf8gKc5dMU41hVOTzyByS9K7
-         p7cWP4cnDPP+tH9+ycM7IW9m0LngpyiIoV+Ms=
-Subject: Re: [PATCH v2] posix-timers: RCU conversion
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>, ben@iagu.net
-In-Reply-To: <4DD13E49.6070508@redhat.com>
-References: <4D8773AA.8030408@redhat.com>
-	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
-	 <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com>
-	 <1300727545.2884.513.camel@edumazet-laptop>
-	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
-	 <1300746429.2837.20.camel@edumazet-laptop>
-	 <1300777760.2837.38.camel@edumazet-laptop>
-	 <1301849660.2837.211.camel@edumazet-laptop>
-	 <1301940501.2319.25.camel@work-vm>  <20110405144836.GA17490@redhat.com>
-	 <1302016682.3171.19.camel@edumazet-laptop>  <4DD13E49.6070508@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 17:30:38 +0200
-Message-ID: <1305559838.2898.47.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1756180Ab1EPPdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:33:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756103Ab1EPPdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 11:33:09 -0400
+Date: Mon, 16 May 2011 17:31:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: Ptrace documentation, draft #1
+Message-ID: <20110516153122.GA15856@redhat.com>
+References: <201105152235.32073.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105152235.32073.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 16 mai 2011 à 18:10 +0300, Avi Kivity a écrit :
-> On 04/05/2011 06:18 PM, Eric Dumazet wrote:
-> > [PATCH v2] posix-timers: RCU conversion
-> >
-> 
-> <snip>
-> 
-> Andrew, I see this in -mmotm, but I see v1, not v2.
-> 
+Denys, thanks for doing this.
 
-Good catch, thanks
+On 05/15, Denys Vlasenko wrote:
+>
+> 	1.x Death under ptrace.
+>
+> When a (possibly multi-threaded) process receives a killing signal (a
+> signal set to SIG_DFL and whose default action is to kill the process),
+> all threads exit. Tracees report their death to the tracer(s). This is
+> not a ptrace-stop (because tracer can't query tracee status such as
+> register contents, cannot restart tracee etc) but the notification
+> about this event is delivered through waitpid API similarly to
+> ptrace-stop.
 
-To be fair, v1 should work well too ;)
+Note: currently a killed PT_TRACE_EXIT tracee can stop and report
+PTRACE_EVENT_EXIT before it actually exits. I'd say this is wrong and
+should be fixed.
+
+Another problem: the tracee can silently "disappear" during exec,
+if it was the group leader and exec is called by its sub-thread.
+Unfortunately, this is not easy to fix. The new leader inherits
+the same pid. In fact, the old thread can "disappear", exactly
+because it changes its pid.
+
+IOW. If the old leader was traced - it disappears. If the new leader
+is traced, it continues to be traced but it changes its pid, so it
+is visible as the old leader to the tracer.
+
+> Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0).
+
+Oh, no. This is more or less equivalent to PTRACE_CONT(SIGKILL) except
+PTRACE_KILL doesn't return the error if the tracee is not stopped.
+
+I'd say: do not use PTRACE_KILL, never. If the tracer wants to kill
+the tracee - kill or tkill should be used.
+
+> When any thread executes exit_group syscall, every tracee reports its
+> death to its tracer.
+>
+> ??? Is it true that *every* thread reports death?
+
+Yes, if you mean do_wait() as above.
+
+> ??? is there a recommended usage of waitpid(WNOHANG) to check whether
+>     tracee is dead or alive?
+
+I don't think so. It can be dying but not dead yet, so WNOHANG | WEXITED
+will fail.
+
+> Kernel delivers an extra SIGTRAP to tracee after execve syscall
+> returns. This is an ordinary signal (similar to one generated by kill
+> -TRAP), not a special kind of ptrace-stop. If PTRACE_O_TRACEEXEC option
+> is in effect, a PTRACE_EVENT_EXEC-stop is generated instead.
+>
+> ??? can this SIGTRAP be distinguished from "real" user-generated SIGTRAP
+>     by looking at its siginfo?
+
+Afaics no. Well, except .si_pid shows that the signal was sent by the
+tracing process to itself.
+
+I'd say it is better to assume nobody sends SIGTRAP to the tracee.
+Even if the tracer could filter out the "real" signals, SIGTRAP doesn't
+queue.
+
+> ??? Are syscalls interrupted by signals which are suppressed by tracer?
+>     If yes, document it here
+
+Please reiterate, can't understand.
+
+> Note that restarting ptrace commands issued in ptrace-stops other than
+> signal-delivery-stop do NOT inject a signal, even if sig is nonzero. No
+> error is reported either. This is a cause of confusion among ptrace
+> users.
+
+Yes. Except syscall entry/exit. But in this case SET_SIGINFO doesn't work
+to add more confusion ;)
+
+> As of kernel 2.6.38, after tracer sees tracee ptrace-stop and until it
+> restarts or kills it, tracee will not run,
+
+Well, this is not exactly true. Initially the tracee sleeps in TASK_STOPPED
+and thus it can be woken by SIGCONT. But the first ptrace request changes
+turns this state into TASK_TRACED.
+
+This was already changed by the pending patches.
 
 
-V2 : rcu_head put in the 'it' union, as Oleg suggested.
+> If tracee was restarted by PTRACE_SYSCALL, tracee enters
+> syscall-enter-stop just prior to entering any syscall. If tracer
+> restarts it with PTRACE_SYSCALL, tracee enters syscall-exit-stop when
+> syscall is finished, or if it is interrupted by a signal. (That is,
+> signal-delivery-stop never happens between syscall-enter-stop and
+> syscall-exit-stop, it happens after syscall-exit-stop).
 
+This is true. But, just in case, please note that PTRACE_EVENT_EXEC
+or PTRACE_EVENT_{FORK,CLONE,etc} can be reported in between.
 
+> ??? how such death-because-of-other-thread is reported?
+
+again, can't understand the question.
+
+> Syscall-enter-stop and syscall-exit-stop are indistinguishable by
+> tracer.
+
+Almost... at least on x86 rax = -ENOSYS in syscall-enter-stop.
+
+> ??? What will happen if trace uses *NOT* PTRACE_SYSCALL to restart
+>     tracee after syscall-enter-stop?
+
+Nothing special. syscall-exit-stop won't be reported.
+
+> ??? what PTRACE_GETSIGINFO returns on syscall stops?
+
+The same info as any other ptrace_notify(). Except si_code which you
+already described: SIGTRAP, or SIGTRAP | 0x80 if PT_TRACESYSGOOD.
+
+> stop before exit
+> 	PTRACE_GETEVENTMSG returns exit status.
+> 	Registers can be examined (unlike when "real" exit happens).
+> ??? needs to be PTRACE_CONTed to finish exit, or not?
+
+Yes.
+
+> ??? what PTRACE_GETSIGINFO returns on PTRACE_EVENT-stops?
+
+The contents is always the same,
+
+	si_signo = SIGTRAP;
+	si_pid	= tid_of_the_tracee;
+	si_uid	= uid;
+
+But si_code = (event << 8) | SIGTRAP and depends on reported event.
+
+> Most ptrace commands (all except ATTACH, TRACEME, KILL, SETOPTIONS)
+> require tracee to be in ptrace-stop, otherwise they fail with ESRCH.
+
+SETOPTIONS needs the stopped tracee as well.
+
+> 	ptrace(PTRACE_cmd, pid, 0, sig);
+> where cmd is CONT, DETACH, SYSCALL, SINGLESTEP, SYSEMU,
+> SYSEMU_SINGLESTEP. If tracee is in signal-delivery-stop, sig is the
+> signal to be injected. Otherwise, sig is ignored.
+
+There is another special case. If the tracee single-stepps into the
+signal handler, it reports SIGTRAP as if it recieved this SIGNAL.
+But ptrace(PTRACE, ..., sig) doesn't inject after that.
+
+> ??? Is there a bug/misfeature that attaching interrupts some syscalls,
+>     such as nanosleep? Document it. (I guess even suppressed SIGSTOP
+>     causes syscall to return prematurely).
+
+Yes, this is the "normal" signal and thus it can interrupt syscalls.
+
+> If tracer dies, all tracees are automatically detached.
+>
+> ??? are they restarted if they were in some ptrace-stop?
+
+yes,
+
+>     Even those which were in group-stop?
+
+well, the current code is buggy, but it tries to leave it stopped.
+
+>     Is signal injected if they were in signal-delivery-stop?
+
+Yes, The tracee resumes and handles the previously reported signal.
+
+> As of 2.6.38, the following is believed to work correctly:
+>
+> - exit/death by signal is reported both to tracer and to real parent.
+
+First to the tracer. Once it does do_wait(), we notify the real parent.
+And of course, the real parent is not notified about the exiting threads.
+
+There is additional complication with the group-leader. If it is traced
+and exits, do_wait(WEXITED) doesn't work (until all threads exit) for
+the tracer. Should be changed, I think.
+
+Oleg.
 
