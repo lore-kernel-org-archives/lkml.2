@@ -1,80 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1EPS2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:28:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56783 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438Ab1EPS2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:28:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH 6/6][RFC] PM / Domains: Support for multiple generic power domain states
-Date: Mon, 16 May 2011 20:29:18 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <201104290154.12966.rjw@sisk.pl> <201105160138.10431.rjw@sisk.pl> <87sjsfdklw.fsf@ti.com>
-In-Reply-To: <87sjsfdklw.fsf@ti.com>
+	id S1751996Ab1EPSb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 14:31:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47544 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab1EPSb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 14:31:27 -0400
+Date: Mon, 16 May 2011 12:31:24 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [RFC PATCH] input: Add wiichuck driver
+Message-ID: <20110516183124.GA4875@ponder.secretlab.ca>
+References: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
+ <20110516164427.GA21232@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105162029.18615.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516164427.GA21232@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 16, 2011, Kevin Hilman wrote:
-> Hi Rafael,
+On Mon, May 16, 2011 at 09:44:27AM -0700, Dmitry Torokhov wrote:
+> Hi Grant,
 > 
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> On Thu, May 12, 2011 at 06:29:44AM +0200, Grant Likely wrote:
+> > This patch adds a driver for the Nintendo Nunchuck (wiimote accessory)
+> > attached to an i2c bus via something like a wiichuck adapter board
+> > from Sparkfun.
+> > 
+> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> > ---
+> > 
+> > This is RFC because the driver doesn't completely work yet.  The
+> > joystick and buttons work fine.  There is a bug with the accelerometer
+> > reporting though (nothing gets reported), and I'm not even sure I'm
+> > using the right input type for reporting accelerometer values.
 > 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > Allow the generic power domains support code to handle power
-> > domains with multiple states.  
+> Looks quite reasonable and I think that ABS_Rx is reasonable events for
+> accelerometer in this particular case.
 > 
-> Thanks!
+> A few more comments below.
 
-No problem. :-)
+Hi Dmitry, thanks for the review.  Replies below.
 
-> Before I even had the time to respond to you about my previous request
-> for this kind of feature, you've already implmented it. :)  
-
-Well, I had the idea how to implement it right after I had replied to
-your previous message.  The only problem was to find the time to actually
-prepare a patch.
-
-> > Replace the .power_down_ok()
-> > callback in struct dev_power_governor with a new callback
-> > .choose_state() that will return the number of the state to put the
-> > power domain into.  Add new fields nr_states and current_state to
-> > struct generic_power_domain with the assumption that state 0 will be
-> > the full power state and states 1 through (nr_states - 1) will be low
-> > power.  
-> > Replace power domain callbacks .power_off() and .power_on()
-> > with a single .set_state() callback taking the number of the state
-> > to put the power domain into as its second argument.  Add a new
-> > generic power domain callback .power_off_state() (taking a state
-> > number as its second argument) allowing the core to check if
-> > device runtime PM callbacks need to be executed before putting the
-> > given power domain into the given state.  Modify the core power
-> > domains code and the ARM shmobile platform code to take all of the
-> > above changes into account.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> > Comments welcome.
+> > 
+> >  drivers/input/joystick/Kconfig    |    8 +
+> >  drivers/input/joystick/Makefile   |    1 
+> >  drivers/input/joystick/wiichuck.c |  225 +++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 234 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/input/joystick/wiichuck.c
+> > 
+> > diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+> > index 56eb471..79f18db 100644
+> > --- a/drivers/input/joystick/Kconfig
+> > +++ b/drivers/input/joystick/Kconfig
+> > @@ -193,6 +193,14 @@ config JOYSTICK_TWIDJOY
+> >  	  To compile this driver as a module, choose M here: the
+> >  	  module will be called twidjoy.
+> >  
+> > +config JOYSTICK_WIICHUCK
+> > +	tristate "Nintendo Nunchuck on i2c bus"
+> > +	depends on I2C
+> > +	select INPUT_POLLDEV
+> > +	help
+> > +	  Say Y here if you have a Nintendo Nunchuck directly attached to
+> > +	  the machine's i2c bus.
+> > +
+> 
+> 	To compile this driver as a module, ...
 
-Thanks!
+That ends up being pretty useless boilerplate.  I've stopped adding
+that line to any of the Kconfig text I maintain.
 
-> This looks like a better starting point for more complicated hardware.
+> > +static void wiichuck_poll(struct input_polled_dev *poll_dev)
+> > +{
+> > +	struct wiichuck_device *wiichuck = poll_dev->private;
+> > +	struct i2c_client *i2c = wiichuck->i2c_client;
+> > +	static uint8_t cmd_byte = 0;
+> > +	struct i2c_msg cmd_msg =
+> > +		{ .addr = i2c->addr, .len = 1, .buf = &cmd_byte };
+> > +	uint8_t b[6];
+> 
+> As mentioned by others these buffers should not be on stack.
 
-I agree.
+Fixed.
 
-Rafael
+> 
+> > +	struct i2c_msg data_msg =
+> > +		{ .addr = i2c->addr, .flags = I2C_M_RD, .len = 6, .buf = b };
+> > +	int jx, jy, ax, ay, az;
+> > +	bool c, z;
+> > +
+> > +	switch (wiichuck->state) {
+> > +	case 0:
+> > +		i2c_transfer(i2c->adapter, &cmd_msg, 1);
+> > +		wiichuck->state = 1;
+> 
+> Do you really need to have a state machine here? Why not do both
+> transfers in one poll invocation?
+
+Mostly because there needs to a gap between setting up the data
+capture and reading the data back.  I could flip things around to
+setup the next transfer after reading the previous, but in my current
+version I also add state for handling hotplug of the wiimote
+accessories, so I think the state machine is still warranted.
+
+> > +	set_bit(EV_KEY, input_dev->evbit);
+> > +	set_bit(BTN_C, input_dev->keybit); /* buttons */
+> > +	set_bit(BTN_Z, input_dev->keybit);
+> 
+> I prefer __set_bit() here since there is no concurrency.
+
+In general, I avoid using __* versions of functions unless it is
+actually important that I do so.  I'm not concerned about slightly
+higher overhead here, and I'd rather my code set a good example.
+
+g.
