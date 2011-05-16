@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1EPVT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:19:26 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:39327 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054Ab1EPVTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:19:25 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: [PATCH 3/3] checkpatch.pl: Add check for task comm references
-Date: Mon, 16 May 2011 14:19:17 -0700
-Message-Id: <1305580757-13175-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1305580757-13175-1-git-send-email-john.stultz@linaro.org>
-References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org>
+	id S1756122Ab1EPVUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:20:30 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:58652 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab1EPVU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:20:28 -0400
+Subject: Re: kernel bug relating to networking
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: James <bjlockie@lockie.ca>, David Miller <davem@davemloft.net>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+In-Reply-To: <4DD18D52.9070302@lockie.ca>
+References: <4DD14424.8000003@lockie.ca>
+	 <BANLkTikF3ntwWjV3iuwwCnJhZKJMVHHygQ@mail.gmail.com>
+	 <4DD18D52.9070302@lockie.ca>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 16 May 2011 22:20:25 +0100
+Message-ID: <1305580825.2885.49.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 May 2011 21:20:28.0288 (UTC) FILETIME=[14336800:01CC140F]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18138.005
+X-TM-AS-Result: No--14.445700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that accessing current->comm needs to be protected,
-avoid new current->comm or other task->comm usage by adding
-a warning to checkpatch.pl.
+On Mon, 2011-05-16 at 16:47 -0400, James wrote:
+> On 05/16/11 11:47, Daniel Baluta wrote:
+> > On Mon, May 16, 2011 at 6:35 PM, James <bjlockie@lockie.ca> wrote:
+> >> I originally posted to linux-net@vger.kernel.org but all that list
+> > This should be netdev@vger.kernel.org.
+> That is confusing since the welcome message said: "welcome message for
+> linux-net@vger.kernel.org".
+> 
+> Both lists are listed at http://vger.kernel.org/vger-lists.html but it
+> doesn't say the difference.
 
-Fair warning: I know zero perl, so this was written in the
-style of "monkey see, monkey do". It does appear to work
-in my testing though.
+linux-net: spam and unanswered questions
+netdev: actual discussions
 
-Thanks to Jiri Slaby and Michal Nazarewicz for help improving
-the regex!
+David, is it not time to stop the confusion by shutting down linux-net?
 
-Close review and feedback would be appreciated.
+Ben.
 
-CC: Ted Ts'o <tytso@mit.edu>
-CC: Michal Nazarewicz <mina86@mina86.com>
-CC: Jiri Slaby <jirislaby@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- scripts/checkpatch.pl |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d867081..3a713c2 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2868,6 +2868,10 @@ sub process {
- 			WARN("usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n" . $herecurr);
- 		}
- 
-+# check for current->comm usage
-+		if ($line =~ /\b(?:current|task|tsk|t)\s*->\s*comm\b/) {
-+			WARN("comm access needs to be protected. Use get_task_comm, or printk's \%ptc formatting.\n" . $herecurr);
-+		}
- # check for %L{u,d,i} in strings
- 		my $string;
- 		while ($line =~ /(?:^|")([X\t]*)(?:"|$)/g) {
 -- 
-1.7.3.2.146.gca209
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
