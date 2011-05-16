@@ -1,155 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab1EPQgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:36:25 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52810 "EHLO e9.ny.us.ibm.com"
+	id S1753353Ab1EPRLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 13:11:13 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:37514 "EHLO purkki.adurom.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab1EPQgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:36:22 -0400
-Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-security-module@vger.kernel.org, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <1305562469.2855.26.camel@menhir>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305559822.2855.14.camel@menhir>
-	 <1305561051.2669.10.camel@localhost.localdomain>
-	 <1305562469.2855.26.camel@menhir>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 12:35:58 -0400
-Message-ID: <1305563758.2669.26.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1752945Ab1EPRLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 13:11:12 -0400
+X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 May 2011 13:11:12 EDT
+To: Julia Lawall <julia@diku.dk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, kernel-janitors@vger.kernel.org,
+        Vipin Mehta <vmehta@atheros.com>, Joe Perches <joe@perches.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Naveen Singh <nsingh@atheros.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] drivers/staging/ath6kl/os/linux/cfg80211.c: Add missing call to cfg80211_put_bss
+References: <1305537629-29876-1-git-send-email-julia@diku.dk>
+From: Kalle Valo <kvalo@adurom.com>
+Date: Mon, 16 May 2011 19:37:46 +0300
+In-Reply-To: <1305537629-29876-1-git-send-email-julia@diku.dk> (Julia Lawall's message of "Mon\, 16 May 2011 11\:20\:29 +0200")
+Message-ID: <87wrhqd2jp.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 17:14 +0100, Steven Whitehouse wrote:
-> Hi,
-> 
-> On Mon, 2011-05-16 at 11:50 -0400, Mimi Zohar wrote:
-> > On Mon, 2011-05-16 at 16:30 +0100, Steven Whitehouse wrote:
-> > > Hi,
-> > > 
-> > > On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
-> > > > After creating the initial LSM security extended attribute, call
-> > > > evm_inode_post_init_security() to create the 'security.evm'
-> > > > extended attribute.
-> > > > 
-> > > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > > > ---
-> > > >  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
-> > > >  1 files changed, 19 insertions(+), 9 deletions(-)
-> > > > 
-> > > [snip]
-> > > > +	struct xattr lsm_xattr;
-> > > > +	struct xattr evm_xattr;
-> > > >  
-> > > >  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
-> > > > -					   &name, &value, &len);
-> > > > +					   &lsm_xattr.name, &lsm_xattr.value,
-> > > > +					   &lsm_xattr.value_len);
-> > > >  
-> > > >  	if (err) {
-> > > >  		if (err == -EOPNOTSUPP)
-> > > > @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
-> > > >  		return err;
-> > > >  	}
-> > > >  
-> > > > -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
-> > > > -			       GFS2_EATYPE_SECURITY);
-> > > > -	kfree(value);
-> > > > -	kfree(name);
-> > > > -
-> > > > +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
-> > > > +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
-> > > > +	if (err < 0)
-> > > > +		goto out;
-> > > > +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
-> > > > +					   &evm_xattr);
-> > > > +	if (err)
-> > > > +		goto out;
-> > > > +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
-> > > > +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
-> > > > +	kfree(evm_xattr.value);
-> > > > +out:
-> > > > +	kfree(lsm_xattr.name);
-> > > > +	kfree(lsm_xattr.value);
-> > > >  	return err;
-> > > >  }
-> > > >  
-> > > 
-> > > Just wondering whether we could have a single call to the security
-> > > subsystem which returns a vector of xattrs rather than having to call
-> > > two different functions?
-> > > 
-> > > Steve.
-> > 
-> > There are a number of places that the LSM function is called immediately
-> > followed by either EVM/IMA.  In each of those places it is hidden from
-> > the caller by calling the security_inode_XXX_security().  In this case
-> > each fs has it's own method of creating an extended attribute.  If that
-> > method could be passed to security_inode_init_security, then
-> > security_inode_init_security() could call both the LSM and EVM functions
-> > directly.
-> > 
-> > Mimi
-> > 
-> 
-> I'm still not quite sure I understand... from a (very brief) look at the
-> paper, it seems that what you are trying to do is add a new xattr to
-> inodes which has some hash of some of the inode metadata (presumably
-> including the selinux xattr and some other fields).
+Hi Julia,
 
-Yes, for the time being the other metadata is i_ino, i_generation,
-i_uid, i_gid, and i_mode.  The IMA-appriasal extension would store the
-file hash as an extended attribute. The digital-signature extension
-would store a digitial signature instead of the hash.
+Julia Lawall <julia@diku.dk> writes:
 
-> I'm not sure why it matters whether the selinux data has been written to
-> the buffers before the xattr containing the hash? The data will not
-> change (I hope!) and if it does presumably the hash will pick that up
-> when it is checked at a later date?
+> From: Julia Lawall <julia@diku.dk>
+>
+> A call to cfg80211_get_bss hould be accompanied by a call to
+> cfg80211_put_bss in error-handling code.
 
-In this case it doesn't matter, as there aren't any other xattrs at this
-point.  When the file closes, the file hash would be written out as
-security.ima, causing security.evm to be updated to reflect the change.
+[...]
 
-> The reason I'm asking is that currently the creation of GFS2 inodes is
-> broken down into a number of transactions, carefully designed to ensure
-> that the correct clean up occurs if there is an error. I would like to
-> try and reduce the number of transactions during the create process
-> where possible. That means I would like to move to a model which looks
-> like this:
-> 
-> 1. Calculate number of blocks required, based on inode + xattrs (if any)
-> 2. Allocate blocks
-> 3. Populate with data (i.e. set xattrs)
-> 
-> I'm trying to work out whether there is some reason why we have to use
-> your proposed:
-> 
-> 1. Get selinux xattr
-> 2. Set selinux xattr
-> 3. Get EVM xattr
-> 4. Set EVM xattr
-> 
-> as opposed to getting all the xattrs in a single call and then being
-> able to set them all in a single operation, if that makes sense?
-> 
-> Steve.
+> ---
+> I don't really understand the use of the bss variable later.  Afterwards,
+> along the normal execution path, there is also a call to cfg80211_put_bss,
+> but at this point bss has been redefined, and I don't have the impression
+> that it still points to the same value.
 
-Yes, it makes sense.
+The original code looks buggy to me:
 
-thanks,
+    /* Before informing the join/connect event, make sure that
+     * bss entry is present in scan list, if it not present
+     * construct and insert into scan list, otherwise that
+     * event will be dropped on the way by cfg80211, due to
+     * this keys will not be plumbed in case of WEP and
+     * application will not be aware of join/connect status. */
+    bss = cfg80211_get_bss(ar->wdev->wiphy, NULL, bssid,
+                           ar->wdev->ssid, ar->wdev->ssid_len,
+                           ((ADHOC_NETWORK & networkType) ?
+    WLAN_CAPABILITY_IBSS : WLAN_CAPABILITY_ESS),
+                           ((ADHOC_NETWORK & networkType) ?
+    WLAN_CAPABILITY_IBSS : WLAN_CAPABILITY_ESS));
 
-Mimi
+But, as you point out, the bss is not used for anything. I think the
+call and the comment should be just removed.
 
+-- 
+Kalle Valo
