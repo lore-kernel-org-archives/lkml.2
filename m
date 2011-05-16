@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab1EPF4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 01:56:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37907 "EHLO mx1.suse.de"
+	id S1751533Ab1EPF4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 01:56:20 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:53656 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab1EPF4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 01:56:17 -0400
-Message-ID: <4DD0BC7E.3060901@suse.de>
-Date: Mon, 16 May 2011 07:56:14 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1751357Ab1EPF4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 01:56:19 -0400
+Date: Sun, 15 May 2011 22:56:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110516055615.GB2573@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110512060344.GB3191@elte.hu>
+ <4DCB8BCD.1080607@kernel.org>
+ <4DCB8F7A.90603@kernel.org>
+ <20110512092013.GJ2258@linux.vnet.ibm.com>
+ <4DCC52FB.6030500@kernel.org>
+ <BANLkTin1haL+isnR0UUoHdNm99bnxYPt-g@mail.gmail.com>
+ <20110514142621.GB2258@linux.vnet.ibm.com>
+ <20110514153118.GA24311@linux.vnet.ibm.com>
+ <20110514183453.GA32756@linux.vnet.ibm.com>
+ <20110515220113.GA2810@nowhere>
 MIME-Version: 1.0
-To: Oliver Neukum <oliver@neukum.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Charles Hannum <root@ihack.net>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-scsi <linux-scsi@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] scsi/sd: fix suspend with USB-connected Android phone
- (one line)
-References: <BANLkTi=XNyR8GD43GGnMag+=JmhUd_5HtA@mail.gmail.com> <201105122203.13671.rjw@sisk.pl> <1305232563.2575.85.camel@mulgrave.site> <201105142111.53266.oliver@neukum.org>
-In-Reply-To: <201105142111.53266.oliver@neukum.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110515220113.GA2810@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2011 09:11 PM, Oliver Neukum wrote:
-> Am Donnerstag, 12. Mai 2011, 22:36:03 schrieb James Bottomley:
->
->> Instinct tells me the correct set of fixes is to add a sync cache from
->> release (so we automatically sync on last close, which is usually when
->> an ordered remove happens), keep the one on shutdown, just in case the
->> system goes down with stuff still mounted and print a nasty message on
->> suspend for a write back device that's been removed.
->>
->> I also think we shouldn't abort the suspend if the disk doesn't respond
->> correctly to start/stop ... the power is going to be disconnected
->> anyway, so it's no issue if the disk spins for a second or so longer.
->>
->> The problem this is going to cause is double sync on shutdown (once when
->> final unmount closes the device and once on shutdown) ... do people
->> agree that's a price worth paying?
->>
->> Something like this?
->
-> Hi,
->
-> it seems to me that the error codes should really be evaluated a bit better.
-> How about this?
->
-> 	Regards
-> 		Oliver
->
->  From 2ab03ae46d6dc126a51ee9cd38206fbdc8bf6a34 Mon Sep 17 00:00:00 2001
-> From: Oliver Neukum<oliver@neukum.org>
-> Date: Mon, 25 Oct 2010 12:25:26 +0200
-> Subject: [PATCH 2/5] SCSI:sd:error handling in sd_sync_cache()
->
-> The SCSI commands sd_sync_cache() uses may fail.
-> These errors needs to be evaluated to return correct
-> error codes. This fixes system suspension while a device
-> removal is being handled.
->
-> Signed-off-by: Oliver NEukum<oneukum@suse.de>
-Yep, this makes sense.
+On Mon, May 16, 2011 at 12:01:17AM +0200, Frederic Weisbecker wrote:
+> On Sat, May 14, 2011 at 11:34:53AM -0700, Paul E. McKenney wrote:
+> >  rcutree.c |   91 +++++++++++++++++++++++++++++++++++++++++++++++++++-----------
+> >  1 file changed, 75 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index a4a2ef0..0b541bd 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -308,23 +308,25 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
+> >  
+> >  #ifdef CONFIG_NO_HZ
+> >  
+> > -/**
+> > - * rcu_enter_nohz - inform RCU that current CPU is entering nohz
+> > +/*
+> > + * __rcu_enter_nohz - inform RCU that current CPU is entering nohz
+> >   *
+> >   * Enter nohz mode, in other words, -leave- the mode in which RCU
+> >   * read-side critical sections can occur.  (Though RCU read-side
+> >   * critical sections can occur in irq handlers in nohz mode, a possibility
+> >   * handled by rcu_irq_enter() and rcu_irq_exit()).
+> > + *
+> > + * This variant should only be called from rcu_irq_exit() because it
+> > + * assumes perfect nesting.  The caller must have irqs disabled.
+> >   */
+> > -void rcu_enter_nohz(void)
+> > +void __rcu_enter_nohz(void)
+> >  {
+> > -	unsigned long flags;
+> >  	struct rcu_dynticks *rdtp;
+> >  
+> > -	local_irq_save(flags);
+> >  	rdtp = &__get_cpu_var(rcu_dynticks);
+> > +	WARN_ON_ONCE(rdtp->dynticks_nesting <= 0);
+> 
+> But this warning will always trigger if it's called from rcu_irq_enter()
+> after rcu_enter_nohz(). Right?
 
-Acked-by: Hannes Reinecke <hare@suse.de>
+Hello, Frederic,
 
-Cheers,
+Thank you for looking this over!
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+But you lost me on this one.  Isn't __rcu_enter_nohz() called from
+rcu_irq_exit() rather than from rcu_irq_enter()?
+
+							Thanx, Paul
