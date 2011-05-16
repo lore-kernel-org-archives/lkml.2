@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab1EPUme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 16:42:34 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49954 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab1EPUmc (ORCPT
+	id S1755892Ab1EPUmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 16:42:53 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:22882 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab1EPUmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 16:42:32 -0400
-In-Reply-To: <20110516.140359.111037536766782557.davem@davemloft.net>
-References: <20110515165945.GA20024@darkmag.usersys.redhat.com> <20110516.140359.111037536766782557.davem@davemloft.net>
-To: David Miller <davem@davemloft.net>
-Cc: jmorris@namei.org, kaber@trash.net, kuznet@ms2.inr.ac.ru,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mmarek@suse.cz, netdev@vger.kernel.org, pekkas@netcore.fi,
-        vfalico@redhat.com, yoshfuji@linux-ipv6.org
+	Mon, 16 May 2011 16:42:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=uWZxbTfA6z6TPzS9MhTXSzJKkci1RkyAHHrjSX5m7Q/Rlexrdb3QDWR1XiGsBrxrtx
+         9gHU7s5pogZku16Y+mvQ==
+Date: Mon, 16 May 2011 13:42:46 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Minchan Kim <minchan.kim@gmail.com>, CAI Qian <caiqian@redhat.com>,
+        avagin@gmail.com, Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: OOM Killer don't works at all if the system have >gigabytes
+ memory (was Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable())
+In-Reply-To: <4DCD1027.70408@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1105161336500.4353@chino.kir.corp.google.com>
+References: <1889981320.330808.1305081044822.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <alpine.DEB.2.00.1105111331480.9346@chino.kir.corp.google.com> <BANLkTi=fNtPZQk5Mp7rbZJFpA1tzBh+VcA@mail.gmail.com> <alpine.DEB.2.00.1105121229150.2407@chino.kir.corp.google.com>
+ <BANLkTikJvT8BmfvMeyL8MAyww3Gdgm3kPA@mail.gmail.com> <4DCD1027.70408@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Subject: Re: [PATCH 1/1] igmp: fix ip_mc_clear_src to not reset ip_mc_list->sf{mode,count}
-X-KeepSent: 948388D5:90B3F5A7-88257892:006C3228;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.1FP5 SHF29 November 12, 2010
-From: David Stevens <dlstevens@us.ibm.com>
-Message-ID: <OF948388D5.90B3F5A7-ON88257892.006C3228-88257892.0071B9D5@us.ibm.com>
-Date: Mon, 16 May 2011 13:42:11 -0700
-X-MIMETrack: Serialize by Router on D03NM121/03/M/IBM(Release 8.5.1FP2|March 17, 2010) at
- 05/16/2011 14:42:12,
-	Serialize complete at 05/16/2011 14:42:12
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Veaceslav Falico <vfalico@redhat.com>
-> Date: Sun, 15 May 2011 18:59:45 +0200
-> 
-> > ip_mc_clear_src resets the imc->sfcount and imc->sfmode, without 
-taking into
-> > account the current number of sockets listening on that multicast 
-> struct, which
-> > can lead to bogus routes for local listeners.
+On Fri, 13 May 2011, KOSAKI Motohiro wrote:
+
+> > > Yes, I'm sure we'll still have additional discussion when KOSAKI-san
+> > > replies to my review of his patchset, so this quick patch was written only
+> > > for CAI's testing at this point.
+> > > 
+> > > In reference to the above, I think that giving root processes a 3% bonus
+> > > at all times may be a bit aggressive.  As mentioned before, I don't think
+> > > that all root processes using 4% of memory and the remainder of system
+> > > threads are using 1% should all be considered equal.  At the same time, I
+> > > do not believe that two threads using 50% of memory should be considered
+> > > equal if one is root and one is not.  So my idea was to discount 1% for
+> > > every 30% of memory that a root process uses rather than a strict 3%.
+> > > 
+> > > That change can be debated and I think we'll probably settle on something
+> > > more aggressive like 1% for every 10% of memory used since oom scores are
+> > > only useful in comparison to other oom scores: in the above scenario where
+> > > there are two threads, one by root and one not by root, using 50% of
+> > > memory each, I think it would be legitimate to give the root task a 5%
+> > > bonus so that it would only be selected if no other threads used more than
+> > > 44% of memory (even though the root thread is truly using 50%).
+> > > 
+> > > This is a heuristic within the oom killer badness scoring that can always
+> > > be debated back and forth, but I think a 1% bonus for root processes for
+> > > every 10% of memory used is plausible.
+> > > 
+> > > Comments?
 > > 
-> > On NETDEV_DOWN/UP event, if there were 3 multicast listeners for 
-> that interface's
-> > address, the imc->sfcount[MCAST_EXCLUDE] will be reset to 1. And 
-> after that a
-> > listener socket destroys, multicast traffic will not be delivered to 
-local
-> > listeners because __mkroute_output drops the local flag for the route 
-(by
-> > checking ip_check_mc).
+> > Yes. Tend to agree.
+> > Apparently, absolute 3% bonus is a problem in CAI's case.
+> > 
+> > Your approach which makes bonus with function of rss is consistent
+> > with current OOM heuristic.
+> > So In consistency POV, I like it as it could help deterministic OOM policy.
+> > 
+> > About 30% or 10% things, I think it's hard to define a ideal magic
+> > value for handling for whole workloads.
+> > It would be very arguable. So we might need some standard method to
+> > measure it/or redhat/suse peoples. Anyway, I don't want to argue it
+> > until we get a number.
+> 
+> I have small comments. 1) typical system have some small size system daemon
+> 2) David's points -= 100 * (points / 3000); line doesn't make any bonus if
+> points is less than 3000.
 
-        On NETDEV_DOWN, all group memberships are dropped. 
-ip_mc_clear_src()
-is simply freeing all the source filters and turning it into an "EXCLUDE 
-nobody"
-membership (ie, the same as an ordinary join without source filtering). 
-This
-ordinarily happens when you are deleting the group entirely (when the 
-reference
-count goes to 0), but is also called on device down.
-        This patch is not appropriate; when the groups are deleted, the 
-source
-filters are deleted, and the filter counts have to reflect the source 
-filters
-in the list. If you had an "INCLUDE A" filter, for example, that would 
-become
-an "INCLUDE nobody" filter and drop all traffic (from A or not). The 
-number
-of source filters is not related to the number of listener sockets, and 
-the
-function of ip_mc_clear_src() is to make it 0 (with the special case of 1 
-for
-EXCLUDE), so setting the counts has to be done for proper functioning.
-        I don't quite understand the problem you're trying to solve here 
---
-when the device comes back up, the group should be re-added with 
-{EXCLUDE,nobody} and
-ip_check_mc() should therefore return 1. Of course, while the interface is
-down, the mc_list is empty and it'd return 0 in that case.
-        Do you have a small test program to demonstrate the problem?
+With the 1% bonus per 10% memory consumption, it would be
 
-        For the patch, I have to say NACK.
+	points -= 100 * (points / 1000);
 
-                                                                +-DLS
+instead.  So, yes, this wouldn't give any bonus for root tasks that use 
+10% of allowed memory or less.
 
+> Zero root bonus is really desired? It may lead to
+> kill system daemon at first issue.
 
+I would think of it this way: if a root task is using 9% of available 
+memory and that happens to be the largest consumer of memory, then it 
+makes sense to kill it instead of killing other smaller non-root tasks.  
+The 3% bonus would have killed the task if all other threads are using 6% 
+or less, this just allows them to use 2% more memory now.
+
+On the other hand, if a root task is using 50% of available memory, then a 
+45% non-root task would be sacrificed instead.
+
+Perhaps we need to be more aggressive and give more of a bonus to root 
+tasks?
