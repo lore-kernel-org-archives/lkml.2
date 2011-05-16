@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab1EPVr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:47:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24098 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756432Ab1EPVrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:47:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,221,1304319600"; 
-   d="scan'208";a="643471709"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Arjan van de Ven" <arjan@infradead.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Andi Kleen" <andi@firstfloor.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v2 4/4] x86/kernel/common.c: Disable SMEP by kernel option nosmep
-Date: Mon, 16 May 2011 14:34:45 -0700
-Message-Id: <1305581685-5144-5-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
-References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com>
+	id S1756614Ab1EPVkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:40:46 -0400
+Received: from nigelcunningham.com.au ([178.79.133.97]:56122 "EHLO
+	nigelcunningham.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab1EPVkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:40:45 -0400
+X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 May 2011 17:40:45 EDT
+Message-ID: <4DD19879.5020606@tuxonice.net>
+Date: Tue, 17 May 2011 07:34:49 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+Reply-To: nigel@tuxonice.net
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] PM / Hibernate: Add sysfs knob to control size of
+ memory for drivers
+References: <201105100059.25372.rjw@sisk.pl> <201105150056.55601.rjw@sisk.pl> <201105151051.38934.Martin@lichtvoll.de> <201105151136.22169.rjw@sisk.pl>
+In-Reply-To: <201105151136.22169.rjw@sisk.pl>
+X-TagToolbar-Keys: D20110517073449281
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+Hi.
 
-SMEP is enabled unconditionally on all CPUs that support it, the nosmep boot
-option would turn it off shortly afterwards.
+On 15/05/11 19:36, Rafael J. Wysocki wrote:
+> In fact, if drivers allocated their memory from suspend/hibernate notifiers,
+> that would be practically equivalent to setting reserved_size to the total
+> amount of memory reserved by the drivers.  However, it may be difficult
+> for drivers to predict how much memory they will need at the time the
+> notifiers are called (they are called before freezing user space).
+> 
+> Thus I'm considering a change that will cause device drivers' ->prepare()
+> callbacks to be executed before the preallocation of memory takes place.
+> In that case the drivers may allocate memory from their ->prepare()
+> callbacks _after_ user space has been frozen and that will make more
+> sense overall.
+> 
+> For now, however, I think that exposing reserved_size is the right choice.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/kernel/cpu/common.c        |   22 ++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+Sorry for not commenting earlier - too busy with Drupal development and
+only came across this thread by chance (yes, I'm still subscribed to the
+PM list, but haven't been reading it. Hibernation isn't high on my list
+of priorities at the moment because TOI is feature complete and stable.
+I know I'm supposed to be sending you patches, but other things have
+been taking the time that would be used for that).
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index cc85a92..76c67e5 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1664,6 +1664,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			noexec=on: enable non-executable mappings (default)
- 			noexec=off: disable non-executable mappings
- 
-+	nosmep		[X86]
-+			Disable SMEP (Supervisor Mode Execution Protection)
-+			even if it is supported by the processor.
-+
- 	noexec32	[X86-64]
- 			This affects only 32-bit executables.
- 			noexec32=on: enable non-executable mappings (default)
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index e2ced00..cd0762a 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -254,6 +254,27 @@ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
- }
- #endif
- 
-+static int disable_smep __initdata;
-+
-+static __init int setup_nosmep(char *arg)
-+{
-+	disable_smep = 1;
-+	return 1;
-+}
-+__setup("nosmep", setup_nosmep);
-+
-+/*
-+ * If SMEP is supported by the processor, SMEP has been enabled in CR4 earlier.
-+ * But if kernel option "nosmep" is given, we disable SMEP here.
-+ */
-+static __init void config_smep(struct cpuinfo_x86 *c)
-+{
-+	if (cpu_has(c, X86_FEATURE_SMEP) && unlikely(disable_smep)) {
-+		setup_clear_cpu_cap(X86_FEATURE_SMEP);
-+		clear_in_cr4(X86_CR4_SMEP);
-+	}
-+}
-+
- /*
-  * Some CPU features depend on higher CPUID levels, which may not always
-  * be available due to CPUID level capping or broken virtualization
-@@ -737,6 +758,7 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
- 	get_cpu_vendor(c);
- 
- 	get_cpu_cap(c);
-+	config_smep(c);
- 
- 	if (c->cpuid_level >= 0x00000001) {
- 		c->initial_apicid = (cpuid_ebx(1) >> 24) & 0xFF;
--- 
-1.7.2
+Anyway...
 
+This sounds to me like a great development. As far as TuxOnIce goes,
+we've had a knob for ages that has allowed the user to specify an amount
+of memory to be kept aside for driver allocations, and we calculate and
+report how much they used in the debugging info sysfs entry. Because
+TuxOnIce works differently to [u]swsusp, this is the only source of
+potential out-of-memory related failures, and the measures just
+mentioned made things much more reliable.
+
+If things went in the direction you're suggesting here, they'd get
+better again. I'm all in favour!
+
+Regards,
+
+Nigel
