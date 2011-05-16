@@ -1,151 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab1EPToJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:44:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44547 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab1EPToH (ORCPT
+	id S1755072Ab1EPTow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:44:52 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51507 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab1EPTov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:44:07 -0400
+	Mon, 16 May 2011 15:44:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cHErvd91Ws+NtWBEVbdNM44udq0XXRsQCZ9k4f556bvx+2cMZPuo/Q86zhkYBkbnEW
-         hTGDRj3g0uLjT4eS5K/69DeLtUxs63IFceAeOdcC4gasIn0aIkYkuAQ3dUoDGZndIN1n
-         xtvxX1TyyAgO2S0sE8jg2DH2vEwQMk7RsMhGk=
-Date: Mon, 16 May 2011 12:44:01 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [RFC PATCH] input: Add wiichuck driver
-Message-ID: <20110516194401.GB18110@core.coreip.homeip.net>
-References: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
- <20110516164427.GA21232@core.coreip.homeip.net>
- <20110516183124.GA4875@ponder.secretlab.ca>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=BJFVcZIxgfC3TvdDhChOWhGD1vOWj6FwPE1oslZWyYBMzIqTvYgYs+/4INeOxGX/PD
+         5PBdroYgy7+c2F4TUEytZjPsVkY9Avu6mR8zNji9kUrNFj5D69XDFp3pkHcOZRz6o8IA
+         2W18Z03IOYwFmeqqbsEuhOedxVfK4yr1SBml8=
+Message-ID: <4DD17EAF.4040305@gmail.com>
+Date: Mon, 16 May 2011 23:44:47 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516183124.GA4875@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Huang Ying <ying.huang@intel.com>
+CC: huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>	<4DCD4B85.3040702@gmail.com>	<BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com>	<4DCE3493.4090404@gmail.com> <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com> <4DCF7413.4070704@gmail.com> <4DD07959.4030608@intel.com>
+In-Reply-To: <4DD07959.4030608@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 12:31:24PM -0600, Grant Likely wrote:
-> On Mon, May 16, 2011 at 09:44:27AM -0700, Dmitry Torokhov wrote:
-> > Hi Grant,
-> > 
-> > On Thu, May 12, 2011 at 06:29:44AM +0200, Grant Likely wrote:
-> > > This patch adds a driver for the Nintendo Nunchuck (wiimote accessory)
-> > > attached to an i2c bus via something like a wiichuck adapter board
-> > > from Sparkfun.
-> > > 
-> > > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> > > ---
-> > > 
-> > > This is RFC because the driver doesn't completely work yet.  The
-> > > joystick and buttons work fine.  There is a bug with the accelerometer
-> > > reporting though (nothing gets reported), and I'm not even sure I'm
-> > > using the right input type for reporting accelerometer values.
-> > 
-> > Looks quite reasonable and I think that ABS_Rx is reasonable events for
-> > accelerometer in this particular case.
-> > 
-> > A few more comments below.
+On 05/16/2011 05:09 AM, Huang Ying wrote:
+...
+>>
+>>   I'm personally fine even if it's enabled by default, only worried to have
+>> an option to disable hwerr from boot line.
 > 
-> Hi Dmitry, thanks for the review.  Replies below.
-> 
-> > 
-> > > Comments welcome.
-> > > 
-> > >  drivers/input/joystick/Kconfig    |    8 +
-> > >  drivers/input/joystick/Makefile   |    1 
-> > >  drivers/input/joystick/wiichuck.c |  225 +++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 234 insertions(+), 0 deletions(-)
-> > >  create mode 100644 drivers/input/joystick/wiichuck.c
-> > > 
-> > > diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-> > > index 56eb471..79f18db 100644
-> > > --- a/drivers/input/joystick/Kconfig
-> > > +++ b/drivers/input/joystick/Kconfig
-> > > @@ -193,6 +193,14 @@ config JOYSTICK_TWIDJOY
-> > >  	  To compile this driver as a module, choose M here: the
-> > >  	  module will be called twidjoy.
-> > >  
-> > > +config JOYSTICK_WIICHUCK
-> > > +	tristate "Nintendo Nunchuck on i2c bus"
-> > > +	depends on I2C
-> > > +	select INPUT_POLLDEV
-> > > +	help
-> > > +	  Say Y here if you have a Nintendo Nunchuck directly attached to
-> > > +	  the machine's i2c bus.
-> > > +
-> > 
-> > 	To compile this driver as a module, ...
-> 
-> That ends up being pretty useless boilerplate.  I've stopped adding
-> that line to any of the Kconfig text I maintain.
+> The white list mechanism is not sufficient?  Spurious unknown NMI can
+> occur on white list machines?  People don't want to protect their data?
 > 
 
-This tells the user name of the module, that is the reason I have all
-input drivers use this boilerplate.
+  I suppose no, it's not sufficient considering how many cpu errata already
+out in general. And I see no guarantee that unknown NMIs never triggers on
+white list machines and I know that you know that as well ;)
 
-> > > +static void wiichuck_poll(struct input_polled_dev *poll_dev)
-> > > +{
-> > > +	struct wiichuck_device *wiichuck = poll_dev->private;
-> > > +	struct i2c_client *i2c = wiichuck->i2c_client;
-> > > +	static uint8_t cmd_byte = 0;
-> > > +	struct i2c_msg cmd_msg =
-> > > +		{ .addr = i2c->addr, .len = 1, .buf = &cmd_byte };
-> > > +	uint8_t b[6];
-> > 
-> > As mentioned by others these buffers should not be on stack.
+>>> And, I am not a big fan of notifiers, that makes code hard to be
+>>> understood.  If you have concerns about the size of traps.c, we can
+>>> move all NMI logic to a new file.
+>>
+>>   Ying, the concern is rather related to the code scheme in general. Since
+>> we have notifiers I think the better way to be consistent here and use
+>> hwerr notifier too. But it's IMHO ;)
 > 
-> Fixed.
+> As for go notifiers or not.  IMHO, a rule can be:
 > 
-> > 
-> > > +	struct i2c_msg data_msg =
-> > > +		{ .addr = i2c->addr, .flags = I2C_M_RD, .len = 6, .buf = b };
-> > > +	int jx, jy, ax, ay, az;
-> > > +	bool c, z;
-> > > +
-> > > +	switch (wiichuck->state) {
-> > > +	case 0:
-> > > +		i2c_transfer(i2c->adapter, &cmd_msg, 1);
-> > > +		wiichuck->state = 1;
-> > 
-> > Do you really need to have a state machine here? Why not do both
-> > transfers in one poll invocation?
+> - If it is something like a driver, than it should go notifier
+> - If it is architectural/PC defacto standard, it can sit outside of notifier.
 > 
-> Mostly because there needs to a gap between setting up the data
-> capture and reading the data back.
+> I think that seeing unknown NMI as hardware error should be part of PC
+> defacto standard.  Do you think so?
 
-How long is the gap? You should be able simply sleep in the poll().
+  Ying, movin the handler into notifier is my IMHO, this would release nmi handler
+from details since with time more and more "standarts" would appear. If Don, Ingo
+and x86-team is fine with your approach -- of course I'm pretty fine too ;)
 
->  I could flip things around to
-> setup the next transfer after reading the previous, but in my current
-> version I also add state for handling hotplug of the wiimote
-> accessories, so I think the state machine is still warranted.
 > 
-> > > +	set_bit(EV_KEY, input_dev->evbit);
-> > > +	set_bit(BTN_C, input_dev->keybit); /* buttons */
-> > > +	set_bit(BTN_Z, input_dev->keybit);
-> > 
-> > I prefer __set_bit() here since there is no concurrency.
-> 
-> In general, I avoid using __* versions of functions unless it is
-> actually important that I do so.  I'm not concerned about slightly
-> higher overhead here, and I'd rather my code set a good example.
+> Best Regards,
+> Huang Ying
 
-In case of xxx_bit() __xxx_bit() is not an "internal, call only if you
-are really sure" version but regular, non-atomic one. Unfortunately the
-naming chosen used double underscores for them.
-
-I prefer drivers using set_bit() and clear_bit() only if atomicity is
-important, in all other cases underscored versions are more appropriate.
-
-Thanks.
+/me Just found Don has some more concerns
 
 -- 
-Dmitry
+            Cyrill
