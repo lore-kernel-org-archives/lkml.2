@@ -1,260 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1EPTew (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:34:52 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:52612 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab1EPTev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:34:51 -0400
-Subject: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 12:34:44 -0700
-Message-ID: <1305574484.3456.30.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1754546Ab1EPTe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:34:59 -0400
+Received: from christianhoffmann.info ([88.175.101.52]:57949 "EHLO
+	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab1EPTe5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:34:57 -0400
+Message-ID: <4DD17C5A.1050501@christianhoffmann.info>
+Date: Mon, 16 May 2011 21:34:50 +0200
+From: Christian Hoffmann <email@christianhoffmann.info>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: john stultz <johnstul@us.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Long timeout when booting >= 2.6.38
+References: <4DBEFCBA.3070501@christianhoffmann.info>  <1304363375.3226.5.camel@work-vm> <4DBF1725.3030800@christianhoffmann.info>  <1304372955.3226.15.camel@work-vm>  <4DBF2FB4.8000304@christianhoffmann.info> <1304470839.3037.12.camel@work-vm> <4DC100D0.1030302@christianhoffmann.info> <alpine.LFD.2.02.1105041015220.3005@ionos> <4DC1832E.5030806@christianhoffmann.info> <alpine.LFD.2.02.1105041931510.3005@ionos> <4DC1AB9B.8080501@christianhoffmann.info> <alpine.LFD.2.02.1105042154410.3005@ionos> <4DC2DE2C.40108@christianhoffmann.info> <alpine.LFD.2.02.1105091020450.2895@ionos> <4DD0335A.6050400@christianhoffmann.info> <alpine.LFD.2.02.1105161105170.3078@ionos>
+In-Reply-To: <alpine.LFD.2.02.1105161105170.3078@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch maintains the outstanding userspace buffers in the 
-sequence it is delivered to vhost. The outstanding userspace buffers 
-will be marked as done once the lower device buffers DMA has finished. 
-This is monitored through last reference of kfree_skb callback. Two
-buffer index are used for this purpose.
 
-The vhost passes the userspace buffers info to lower device skb 
-through message control. Since there will be some done DMAs when
-entering vhost handle_tx. The worse case is all buffers in the vq are
-in pending/done status, so we need to notify guest to release DMA done 
-buffers first before get any new buffers from the vq.
+>
+> Nothing to be sorry about. Thanks for providing the information. If I
+> decoded the problem correctly then this just unearthed a real long
+> standing bug. Does the patch below solve the problem ?
+>
+> Thanks,
+>
+> 	tglx
+>
+> --- linux-2.6.orig/kernel/time/tick-broadcast.c
+> +++ linux-2.6/kernel/time/tick-broadcast.c
+> @@ -522,10 +522,11 @@ static void tick_broadcast_init_next_eve
+>    */
+>   void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+>   {
+> +	int cpu = smp_processor_id();
+> +
+>   	/* Set it up only once ! */
+>   	if (bc->event_handler != tick_handle_oneshot_broadcast) {
+>   		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
+> -		int cpu = smp_processor_id();
+>
+>   		bc->event_handler = tick_handle_oneshot_broadcast;
+>   		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+> @@ -551,6 +552,15 @@ void tick_broadcast_setup_oneshot(struct
+>   			tick_broadcast_set_event(tick_next_period, 1);
+>   		} else
+>   			bc->next_event.tv64 = KTIME_MAX;
+> +	} else {
+> +		/*
+> +		 * The first cpu which switches to oneshot mode sets
+> +		 * the bit for all other cpus which are in the general
+> +		 * (periodic) broadcast mask. So the bit is set and
+> +		 * would prevent the first broadcast enter after this
+> +		 * to program the bc device.
+> +		 */
+> +		tick_broadcast_clear_oneshot(cpu);
+>   	}
+>   }
+>
 
-Signed-off-by: Shirley <xma@us.ibm.com>
----
+Hi,
 
- drivers/vhost/net.c   |   39 +++++++++++++++++++++++++++++++-
- drivers/vhost/vhost.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/vhost.h |   12 ++++++++++
- 3 files changed, 107 insertions(+), 2 deletions(-)
+I booted a couple of times now, and the problem seems solved.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 2f7c76a..c964000 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -32,6 +32,10 @@
-  * Using this limit prevents one virtqueue from starving others. */
- #define VHOST_NET_WEIGHT 0x80000
- 
-+/* MAX number of TX used buffers for outstanding zerocopy */
-+#define VHOST_MAX_PEND 128
-+#define VHOST_GOODCOPY_LEN 256
-+
- enum {
- 	VHOST_NET_VQ_RX = 0,
- 	VHOST_NET_VQ_TX = 1,
-@@ -129,6 +133,7 @@ static void handle_tx(struct vhost_net *net)
- 	int err, wmem;
- 	size_t hdr_size;
- 	struct socket *sock;
-+	struct skb_ubuf_info pend;
- 
- 	/* TODO: check that we are running from vhost_worker? */
- 	sock = rcu_dereference_check(vq->private_data, 1);
-@@ -151,6 +156,10 @@ static void handle_tx(struct vhost_net *net)
- 	hdr_size = vq->vhost_hlen;
- 
- 	for (;;) {
-+		/* Release DMAs done buffers first */
-+		if (atomic_read(&vq->refcnt) > VHOST_MAX_ZEROCOPY_PEND)
-+			vhost_zerocopy_signal_used(vq, false);
-+
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
-@@ -166,6 +175,12 @@ static void handle_tx(struct vhost_net *net)
- 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
- 				break;
- 			}
-+			/* If more outstanding DMAs, queue the work */
-+			if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND) {
-+				tx_poll_start(net, sock);
-+				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-+				break;
-+			}
- 			if (unlikely(vhost_enable_notify(vq))) {
- 				vhost_disable_notify(vq);
- 				continue;
-@@ -188,17 +203,37 @@ static void handle_tx(struct vhost_net *net)
- 			       iov_length(vq->hdr, s), hdr_size);
- 			break;
- 		}
-+		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-+		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
-+			vq->heads[vq->upend_idx].id = head;
-+			if (len <= VHOST_GOODCOPY_LEN)
-+				/* copy don't need to wait for DMA done */
-+				vq->heads[vq->upend_idx].len =
-+							VHOST_DMA_DONE_LEN;
-+			else {
-+				vq->heads[vq->upend_idx].len = len;
-+				pend.callback = vhost_zerocopy_callback;
-+				pend.arg = vq;
-+				pend.desc = vq->upend_idx;
-+				msg.msg_control = &pend;
-+				msg.msg_controllen = sizeof(pend);
-+			}
-+			atomic_inc(&vq->refcnt);
-+			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
-+		}
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
--			vhost_discard_vq_desc(vq, 1);
-+			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+				vhost_discard_vq_desc(vq, 1);
- 			tx_poll_start(net, sock);
- 			break;
- 		}
- 		if (err != len)
- 			pr_debug("Truncated TX packet: "
- 				 " len %d != %zd\n", err, len);
--		vhost_add_used_and_signal(&net->dev, vq, head, 0);
-+		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+			vhost_add_used_and_signal(&net->dev, vq, head, 0);
- 		total_len += len;
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 2ab2912..1a40310 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
- 	vq->call_ctx = NULL;
- 	vq->call = NULL;
- 	vq->log_ctx = NULL;
-+	vq->upend_idx = 0;
-+	vq->done_idx = 0;
-+	atomic_set(&vq->refcnt, 0);
- }
- 
- static int vhost_worker(void *data)
-@@ -385,16 +388,62 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
- 	return 0;
- }
- 
-+/* Since we need to keep the order of used_idx as avail_idx, it's possible that
-+ * DMA done not in order in lower device driver for some reason. To prevent
-+ * used_idx out of order, upend_idx is used to track avail_idx order, done_idx
-+ * is used to track used_idx order. Once lower device DMA done, then upend_idx
-+ * can move to done_idx.
-+ */
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown)
-+{
-+	int i, j = 0;
-+
-+	i = vq->done_idx;
-+	while (i != vq->upend_idx) {
-+		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN) || shutdown) {
-+			/* reset len = 0 */
-+			vq->heads[i].len = 0;
-+			i = (i + 1) % UIO_MAXIOV;
-+			++j;
-+		} else
-+			break;
-+	}
-+	if (j) {
-+		/* heads is an array, i is used to tracking the last done_idx,
-+		 * if last done_idx is less than current done_idx, then
-+		 * add_used_n is not contiguous */
-+		if (i > vq->done_idx)
-+			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
-+		else {
-+			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
-+					 UIO_MAXIOV - vq->done_idx);
-+			vhost_add_used_n(vq, vq->heads, i);
-+		}
-+		vq->done_idx = i;
-+		vhost_signal(vq->dev, vq);
-+		atomic_sub(j, &vq->refcnt);
-+	}
-+}
-+
- /* Caller should have device mutex */
- void vhost_dev_cleanup(struct vhost_dev *dev)
- {
- 	int i;
-+	unsigned long begin = jiffies;
- 
- 	for (i = 0; i < dev->nvqs; ++i) {
- 		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
- 			vhost_poll_stop(&dev->vqs[i].poll);
- 			vhost_poll_flush(&dev->vqs[i].poll);
- 		}
-+		/* Wait for all lower device DMAs done, then notify virtio_net
-+		 * or just notify it without waiting for all DMA done here ?
-+		 * in case of DMAs never done for some reason */
-+		if (atomic_read(&dev->vqs[i].refcnt)) {
-+			/* how long should we wait ? */
-+			msleep(1000);
-+			vhost_zerocopy_signal_used(&dev->vqs[i], true);
-+		}
- 		if (dev->vqs[i].error_ctx)
- 			eventfd_ctx_put(dev->vqs[i].error_ctx);
- 		if (dev->vqs[i].error)
-@@ -1416,3 +1465,12 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
- 		vq_err(vq, "Failed to enable notification at %p: %d\n",
- 		       &vq->used->flags, r);
- }
-+
-+void vhost_zerocopy_callback(struct sk_buff *skb)
-+{
-+	int idx = skb_shinfo(skb)->ubuf.desc;
-+	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
-+
-+	/* set len = 1 to mark this desc buffers done DMA */
-+	vq->heads[idx].len = VHOST_DMA_DONE_LEN;
-+}
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index b3363ae..8e3ecc7 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -13,6 +13,10 @@
- #include <linux/virtio_ring.h>
- #include <asm/atomic.h>
- 
-+/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
-+ * done */
-+#define VHOST_DMA_DONE_LEN	1
-+
- struct vhost_device;
- 
- struct vhost_work;
-@@ -108,6 +112,12 @@ struct vhost_virtqueue {
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-+	/* vhost zerocopy support */
-+	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
-+	/* copy of avail idx to monitor outstanding DMA zerocopy buffers */
-+	int upend_idx;
-+	/* copy of used idx to monintor DMA done zerocopy buffers */
-+	int done_idx;
- };
- 
- struct vhost_dev {
-@@ -154,6 +164,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
- 
- int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 		    unsigned int log_num, u64 len);
-+void vhost_zerocopy_callback(struct sk_buff *skb);
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown);
- 
- #define vq_err(vq, fmt, ...) do {                                  \
- 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+[    1.423793] TCP reno registered
+[    1.423805] UDP hash table entries: 4096 (order: 5, 131072 bytes)
+[    1.423847] UDP-Lite hash table entries: 4096 (order: 5, 131072 bytes)
+[    1.423944] NET: Registered protocol family 1
+[    1.423953] pci 0000:00:01.0: MSI quirk detected; subordinate MSI 
+disabled
+[    2.300205] pci 0000:01:05.0: Boot video device
+[    2.300218] PCI: CLS 64 bytes, default 64
+[    2.300262] Trying to unpack rootfs image as initramfs...
+[    2.438632] Freeing initrd memory: 10540k freed
+[    2.442368] PCI-DMA: Disabling AGP.
+[    2.442501] PCI-DMA: aperture base @ c0000000 size 65536 KB
+[    2.442503] PCI-DMA: using GART IOMMU.
+[    2.442505] PCI-DMA: Reserving 64MB of IOMMU area in the AGP aperture
+[    2.446264] audit: initializing netlink socket (disabled)
 
+Thanks a lot!!!
 
+Kind regards,
+Chris
