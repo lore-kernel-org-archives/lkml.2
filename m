@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab1EPQF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:05:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:44465 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423Ab1EPQF0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:05:26 -0400
-Subject: Re: [patch 08/15] sched: throttle cfs_rq entities which exceed
- their local runtime
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110503092905.163081832@google.com>
-References: <20110503092846.022272244@google.com>
-	 <20110503092905.163081832@google.com>
+	id S1752334Ab1EPQja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:39:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14079 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823Ab1EPQj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 12:39:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,375,1301900400"; 
+   d="scan'208";a="436931465"
+Subject: Re: [PATCH] dw_dmac: Replace subsys_init() with arch_initcall()
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linus.walleij@linaro.org,
+        armando.visconti@st.com, shiraz.hashim@st.com, viresh.linux@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>
+References: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 May 2011 18:05:03 +0200
-Message-ID: <1305561903.2466.4458.camel@twins>
+Date: Mon, 16 May 2011 21:36:33 +0530
+Message-ID: <1305561993.28926.73.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 02:28 -0700, Paul Turner wrote:
-> +       task_delta = -cfs_rq->h_nr_running;
-> +       for_each_sched_entity(se) {
-> +               struct cfs_rq *qcfs_rq = cfs_rq_of(se);
-> +               /* throttled entity or throttle-on-deactivate */
-> +               if (!se->on_rq)
-> +                       break;
-> +
-> +               if (dequeue)
-> +                       dequeue_entity(qcfs_rq, se, DEQUEUE_SLEEP);
-> +               qcfs_rq->h_nr_running += task_delta;
-> +
-> +               if (qcfs_rq->load.weight)
-> +                       dequeue = 0;
-> +       }
-> +
-> +       if (!se)
-> +               rq->nr_running += task_delta; 
+On Mon, 2011-05-16 at 10:20 +0530, Viresh Kumar wrote:
+> In some cases users of dw_dmac, amba-pl022, are initialized before dw_dmac, and
+> if they try to use dw_dmac, they simply fail. So its better we register init()
+> routine of driver using arch_initcall() instead of subsys_init(), so that dma
+> driver is available at the earliest possible.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  drivers/dma/dw_dmac.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index 54d72a8..4b580e7 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1566,7 +1566,7 @@ static int __init dw_init(void)
+>  {
+>  	return platform_driver_probe(&dw_driver, dw_probe);
+>  }
+> -subsys_initcall(dw_init);
+> +arch_initcall(dw_init);
+arch_init is usually kept for subystem initialization.
+Why cant you move the amba-pl022 init to module_init, that should take
+care of this.
 
-So throttle is like dequeue, it removes tasks, so why then insist on
-writing it like its adding tasks? (I see you're adding a negative
-number, but its all just weird).
+-- 
+~Vinod
+
