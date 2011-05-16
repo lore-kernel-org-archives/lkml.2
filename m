@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab1EPWoD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 18:44:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60819 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691Ab1EPWoA (ORCPT
+	id S1755591Ab1EPWxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 18:53:52 -0400
+Received: from mailout08.t-online.de ([194.25.134.20]:57564 "EHLO
+	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab1EPWxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 18:44:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=W+O8aUz14QmCDEhv0Znk6y++RuZ7VUX8j4BwZx7+lVWvXvV2zGk+yjHKAzIl2puAOj
-         PTjlILEBUQbRFjWXP0wkb6EMDkzuJ8rr83lz4nw6NXWlVKcrL6nqJY7GWNLgOMta+ax+
-         VR2OjhsvfdNvogARZjY0b4SWuR+PD1FmgyocA=
-Date: Mon, 16 May 2011 15:43:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ben Dooks <ben@trinity.fluff.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, simon@mungewell.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        OliverNeukumoliver@neukum.org
-Subject: Re: [PATCH] input: Add Nintendo extension controller driver
-Message-ID: <20110516224353.GA19481@core.coreip.homeip.net>
-References: <20110516214608.17011.3075.stgit@ponder>
- <20110516215110.GE16731@trinity.fluff.org>
+	Mon, 16 May 2011 18:53:51 -0400
+Message-ID: <4DD1AAF2.7030502@t-online.de>
+Date: Tue, 17 May 2011 00:53:38 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516215110.GE16731@trinity.fluff.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Keith Packard <keithp@keithp.com>
+CC: Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] [BUG][2.6.39-rc7]
+References: <4DD0D4CC.9070401@t-online.de> <yunei3y1g9u.fsf@aiko.keithp.com>
+In-Reply-To: <yunei3y1g9u.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-ID: rq7mzmZZwh6atNhHrLR4B2Ze1VOxHe8l6Ef7oDpt5PCl5keoP4Io9HGycwje4kBw8a
+X-TOI-MSGID: 9c71ce13-e6a5-44b4-b9c2-36af869fa7c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 10:51:10PM +0100, Ben Dooks wrote:
-> On Mon, May 16, 2011 at 03:46:08PM -0600, Grant Likely wrote:
-> > +
-> > +	/*
-> > +	 * DMA buffer, with padding to give it its own cache line so that
-> > +	 * the DMA streaming works on non-coherent architectures.
-> > +	 * Question: Is this the proper pattern, and is this really necessary?
-> > +	 */
-> > +	uint8_t pad1[L1_CACHE_BYTES];
-> > +	uint8_t buf[6];
-> > +	uint8_t pad2[L1_CACHE_BYTES];
-> > +};
-> 
-> I think there's an attribute to do this, starting with an __ defined
-> in the kernel.
-> 
 
-Yes, it is called "____cacheline_aligned".
+> The fix for this bug is still under review and was not ready in time for
+> 2.6.39. It is planned for merging in the 2.6.40 time frame, and should
+> be suitable for a stable backport when merged to master.
+>
 
--- 
-Dmitry
+Nice to know that .39 will have the feature to lock screen and all input devices
+on exotic hardware like i915GM.
+
+Well, .31 and Xorg 1.6.5 are still around and good enough for months of uptime.
+
+cu,
+ Knut
