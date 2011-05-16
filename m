@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab1EPOVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 10:21:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55103 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755500Ab1EPOVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:21:21 -0400
-Date: Mon, 16 May 2011 16:21:18 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Arun Sharma <asharma@fb.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kbuild@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add $KERNELRELEASE to firmware install path
-Message-ID: <20110516142118.GM13293@sepie.suse.cz>
-References: <20110505173939.GA20575@dev1756.snc6.facebook.com>
- <4DC3CA39.30806@suse.cz>
- <1304677113.20656.2.camel@i7.infradead.org>
- <20110506184438.GA30417@dev1756.snc6.facebook.com>
- <1304708557.20656.49.camel@i7.infradead.org>
- <20110506223727.GA29011@dev1756.snc6.facebook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110506223727.GA29011@dev1756.snc6.facebook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755589Ab1EPOWX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:22:23 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43134 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab1EPOWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 10:22:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tDibIJ052MOP+NUDTPHbnfRDGz+wGBjDBnO5xzsiS7+Exzt3Qca5wiXhYQ0fjTuAyB
+         rqJLSV08VRlfAx3m3VVSFo1S+N2ewqclfHZRSbuvPfcAFnMXBVJUQAwsfq0NtdKhuOn0
+         Fqnls9wmSDYpxHbEoW+x8+pfdi+47CmEdQ41U=
+Subject: Re: [patch V3] percpu_counter: scalability works
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
+In-Reply-To: <1305538504.2898.33.camel@edumazet-laptop>
+References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
+	 <20110511092848.GE1661@htj.dyndns.org>
+	 <1305168493.2373.15.camel@sli10-conroe>
+	 <20110512082159.GB1030@htj.dyndns.org>
+	 <1305190520.2373.18.camel@sli10-conroe>
+	 <20110512085922.GD1030@htj.dyndns.org>
+	 <1305190936.3795.1.camel@edumazet-laptop>
+	 <20110512090534.GE1030@htj.dyndns.org>
+	 <1305261477.2373.45.camel@sli10-conroe>
+	 <1305264007.2831.14.camel@edumazet-laptop>
+	 <20110513052859.GA11088@sli10-conroe.sh.intel.com>
+	 <1305268456.2831.38.camel@edumazet-laptop>
+	 <1305298300.3866.22.camel@edumazet-laptop>
+	 <1305301151.3866.39.camel@edumazet-laptop>
+	 <1305304532.3866.54.camel@edumazet-laptop>
+	 <1305305190.3866.57.camel@edumazet-laptop>
+	 <1305324187.3120.30.camel@edumazet-laptop>
+	 <1305507517.2375.10.camel@sli10-conroe>
+	 <1305526296.3120.204.camel@edumazet-laptop>
+	 <1305527828.2375.28.camel@sli10-conroe>
+	 <1305528912.3120.213.camel@edumazet-laptop>
+	 <1305530143.2375.42.camel@sli10-conroe>
+	 <1305531877.3120.230.camel@edumazet-laptop>
+	 <1305534857.2375.55.camel@sli10-conroe>
+	 <1305538504.2898.33.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 16:22:16 +0200
+Message-ID: <1305555736.2898.46.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 06, 2011 at 03:37:27PM -0700, Arun Sharma wrote:
-> On Fri, May 06, 2011 at 08:02:36PM +0100, David Woodhouse wrote:
-> > On Fri, 2011-05-06 at 11:44 -0700, Arun Sharma wrote:
-> > > 
-> > > Without this change, if you have two kernel rpms/debs from different
-> > > kernel versions installed, they'll result in a namespace conflict
-> > > (rpm/deb install will fail), which gets resolved by this patch. 
-> > 
-> > The packages are broken then. They shouldn't include *any* files
-> > in /lib/firmware.
-> > 
-> > Fix *that*, and the problem goes away.
-> 
-> Sounds good.
-> 
-> Michal: Should I send you a patch that drops /lib/firmware?
+Le lundi 16 mai 2011 à 11:35 +0200, Eric Dumazet a écrit :
 
-make deb-pkg generates a separate package with the firmware files. I
-would suggest we do the same for rpm.
+> Given that vm_committed has one percent resolution need
+> (sysctl_overcommit_ratio is expressed with percent resolution), it
+> should be used with an appropriate batch value, something like :
+> 
+> vm_committed_as_batch = max(percpu_counter_batch,
+> 			    total_ram_pages/(num_possible_cpus()*100));
+> 
 
-Michal
+
+Funny thing with vm_committed_as is we dont even read its value with
+default vm configuration 
+
+(sysctl_overcommit_memory == OVERCOMMIT_ALWAYS or OVERCOMMIT_GUESS)
+
+[ In this case, we read it only for /proc/meminfo output ]
+
+Ideally, we could dynamically change vm_committed_as_batch when
+sysctl_overcommit_memory or other param is changed. This would need a
+mechanism to ask all cpus to transfert/clear their local s32 into global
+fbc->count [when lowering vm_committed_as_batch]
+
+Another idea would be to use an atomic when manipulating the percpu s32,
+so that __percpu_counter_sum() is able to make this operation itself :
+At the end of __percpu_counter_sum(), fbc->count would be the final
+result, and all s32 would be zero, unless some cpus called _add()
+meanwhile.
+
+
+
