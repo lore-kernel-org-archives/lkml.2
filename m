@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab1EPREM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 13:04:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24014 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab1EPREL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 13:04:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,375,1301900400"; 
-   d="scan'208";a="2356655"
-Subject: Re: [PATCH] ioapic: fix potential resume deadlock
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Daniel J Blueman <daniel.blueman@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        H Peter Anvin <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110516113205.GF19837@elte.hu>
-References: <1304908814-23369-1-git-send-email-daniel.blueman@gmail.com>
-	 <20110510073551.GH11595@elte.hu>
-	 <BANLkTik0GTwV0Z21+UO69JX0cqjxwqu7jw@mail.gmail.com>
-	 <1305071894.2736.50.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <BANLkTimvX3YXTxVSHDFm1N9a8vsALufrMg@mail.gmail.com>
-	 <1305308919.27535.19.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <BANLkTik3sE-z3QdHVwW5uPXDDFj=3zMyDg@mail.gmail.com>
-	 <20110516113205.GF19837@elte.hu>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Mon, 16 May 2011 10:04:31 -0700
-Message-Id: <1305565471.26846.4.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1753156Ab1EPRFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 13:05:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34915 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab1EPRFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 13:05:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=x+lO5NKkLfQd44zsKTe0G7J4EvwBhHW6+5+rQI1BOroe2qyy54dA6nEGQFZPFhROqd
+         OclL/7Y+n40dVak8klhjkLxKGz8+kyLDrDqLBoa/bgTa2hDL47eoCQdPuig0nFAhAXC0
+         if9yjWJwrUuWn70uBcYfDdL2ZLTlJMn6W/y0s=
+MIME-Version: 1.0
+In-Reply-To: <20110516164939.GD25898@one.firstfloor.org>
+References: <cover.1305560561.git.luto@mit.edu> <20110516160943.GC25898@one.firstfloor.org>
+ <alpine.LFD.2.02.1105161817120.3078@ionos> <20110516164939.GD25898@one.firstfloor.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 16 May 2011 13:05:12 -0400
+X-Google-Sender-Auth: f9Zlz0ECkKUyx7wazpL58Jcj0xk
+Message-ID: <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@amd64.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 04:32 -0700, Ingo Molnar wrote: 
-> * Daniel J Blueman <daniel.blueman@gmail.com> wrote:
-> 
-> > Hi Suresh,
-> > 
-> > On 14 May 2011 01:48, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> > > On Wed, 2011-05-11 at 09:15 -0700, Daniel J Blueman wrote:
-> > >> Superb, this works, tested against 2.6.39-rc7 and addresses the "BUG:
-> > >> sleeping function called from invalid context at mm/slub.c:824"
-> > >> warning I was previously seeing. It would be good to get this fix into
-> > >> 2.6.39-final if possible.
-> > >>
-> > >> Tested-by: Daniel J Blueman <daniel.blueman@gmail.com>
-> > >
-> > > Thanks Daniel for testing my quick patch. I have appended the complete
-> > > patch which cleans up this code.
-> > >
-> > > Ingo, This patch is relatively big (mostly removes the duplicate code
-> > > and changes the location where we allocate ioapic_saved_data, so that
-> > > this can be shared between interrupt-remapping and io-apic
-> > > suspend/resume flows). May be this can go into 2.6.40-rc1 and probably
-> > > go to 2.6.39-stable?
-> > >
-> > > Or we can take the Daniel's GFP_ATOMIC patch for 2.6.39 and push this
-> > > patch for 2.6.40-rc1. I am ok either way.
-> > []
-> > 
-> > Testing this, all looks well in that the patch resolves the
-> > potentially sleeping allocation, however I do see (on boot) this
-> > suspicious message (though suspend and resume does work):
-> > 
-> > IOAPIC 0: suspend/resume impossible!
-> > 
-> > I guess it's not expected...
+On Mon, May 16, 2011 at 12:49 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> And unless you or someone else changes the primitive state of the
+>> kernel, framepointers are going to stay simply because removing them
+>> breaks profiling backtraces when the hit is inside vread().
+>
+> This doesn't work anyways because the glibc stub code calling vgettimeofday
+> normally doesn't set up a frame pointer frame.
+>
+> The only way to unwind there is dwarf2.
 
-oops. I had a spurious initialization, from the earlier attempts to fix
-this that was still left out.
+For code in the vsyscall page, I think using CFI data is a lost cause.
+ How is any user code supposed to find the CFI data?
 
-> No. Has this been introduced by Suresh's patch?
+For the vDSO, we could be nice to userspace and install the debugging
+symbols somewhere sensible.  Currently we generate a buildid but we
+don't install the symbols anywhere by default.
 
-Ofcourse yes ;(
+Longer term, it would be nice to mark the vsyscall page NX.  That
+involves a few things:
 
-Will fix this and split the patch into multiple steps.
+1. Move vread to the vDSO.  That's not very hard.
+2. Get glibc to stop using the old vsyscalls.  I think it still does
+for static-linked programs.
+3. Have a bit of a deprecation period.
+4. Come up with some way to make old programs keep working even with
+NX set.  Maybe just delete the vsyscall functions and emulate them on
+a trap (with a printk_once warning about the performance loss).
 
-thanks,
-suresh
+That way all user code has (in principle) dwarf2.  And we won't have a
+syscall instruction sitting at a predictable address.
 
+--Andy
+
+>
+> -Andi
+>
