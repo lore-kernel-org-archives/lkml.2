@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1EPOF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 10:05:56 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46151 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab1EPOFz (ORCPT
+	id S1755499Ab1EPOLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:11:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53107 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755276Ab1EPOLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:05:55 -0400
-Date: Mon, 16 May 2011 15:05:41 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Subject: Re: [PATCH 2/2] amba pl011: platform data for reg lockup and glitch
-Message-ID: <20110516140541.GA22445@flint.arm.linux.org.uk>
-References: <1305550879-28945-1-git-send-email-shreshthakumar.sahu@stericsson.com> <1305550879-28945-2-git-send-email-shreshthakumar.sahu@stericsson.com> <20110516130905.GA12192@flint.arm.linux.org.uk> <20110516140045.GA9387@bnru02.bnr.st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516140045.GA9387@bnru02.bnr.st.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 16 May 2011 10:11:21 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX195IUVkUpt5fYOduV42n98H5VRgLE0aJ1CFIKzIq/
+	Ocf6LY/232ysYs
+Subject: Re: [PATCH] sched: avoid overpull when pulling RT task
+From: Mike Galbraith <efault@gmx.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <BANLkTino730kar=fEDJGCy8bCSVUe52aOw@mail.gmail.com>
+References: <BANLkTi=_gfo4bZjkoBsxspLxxWSPy=7J+Q@mail.gmail.com>
+	 <1305441316.7460.40.camel@marge.simson.net>
+	 <BANLkTino730kar=fEDJGCy8bCSVUe52aOw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 16:11:17 +0200
+Message-ID: <1305555077.12285.63.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 07:30:46PM +0530, Shreshtha Kumar SAHU wrote:
-> On Mon, May 16, 2011 at 15:09:05 +0200, Russell King wrote:
-> > On Mon, May 16, 2011 at 06:31:19PM +0530, Shreshtha Kumar SAHU wrote:
-> > > From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-> > >
-> > > This patch provides platform data for following
-> > >  - uart reset function to assist uart register lockup workaround
-> > >
-> > >  - init/exit function to fix glitch in the tx pin in tty_open
-> > >       when tty port0 is opened a glitch is seen in the tx line
-> > >       of uart0. This happens in __pl011_startup() when tx fifo
-> > >       interrupt is provoked into asserting.
-> > 
-> > I was trying to work out where that is, but i can't find this function.
-> > Is your patch against a different version of the driver?
-> sorry, the function names in commit message is wrong by mistake.
-> It should be - "This happens in pl011_startup() when tx 
-> fifo interrupt is provoked into asserting."
-> I will send out a new patch with corrected commit mesaage.
+On Mon, 2011-05-16 at 21:14 +0800, Hillf Danton wrote:
 
-Have you tracked down why this happens?
+> In the following patch, pulling is played in two rounds. In the first round,
+> the highest priority task is determined with no pull operation. Pulling is
+> carried out in the second round, and if the highest priority task is pulled,
+> pulling could be stopped when overload detected, to relieve overpull.
+> 
+> Please review again, thanks.
 
-Is it the switching into and out of loopback mode, or does loopback mode
-not prevent the transmit pin toggling?
+Traversing runqueues twice to avoid some potential task bouncing during
+overload situation seems like a really bad trade.  Not to mention that
+between pass one and pass two, the world turns under your feet.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+You could do it in one pass by leaving the victim's runqueue locked
+unless you find a better victim I suppose.  Dunno, guess it all depends
+on how much benefit the is to pulling only highest, which I can't answer
+(my gut says "none, only more pain to be had here").
+
+	-Mike
+
