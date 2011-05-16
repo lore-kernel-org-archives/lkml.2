@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab1EPPHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:07:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56515 "EHLO mx1.suse.de"
+	id S1755843Ab1EPPKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:10:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755770Ab1EPPHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:07:03 -0400
-From: Mel Gorman <mgorman@suse.de>
+	id S1753788Ab1EPPKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 11:10:45 -0400
+Message-ID: <4DD13E49.6070508@redhat.com>
+Date: Mon, 16 May 2011 18:10:01 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
+CC: Eric Dumazet <eric.dumazet@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/2] mm: vmscan: If kswapd has been running too long, allow it to sleep
-Date: Mon, 16 May 2011 16:06:57 +0100
-Message-Id: <1305558417-24354-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1305558417-24354-1-git-send-email-mgorman@suse.de>
-References: <1305558417-24354-1-git-send-email-mgorman@suse.de>
+        Richard Cochran <richard.cochran@omicron.at>, ben@iagu.net
+Subject: Re: [PATCH v2] posix-timers: RCU conversion
+References: <4D8773AA.8030408@redhat.com>	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>	 <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com>	 <1300727545.2884.513.camel@edumazet-laptop>	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>	 <1300746429.2837.20.camel@edumazet-laptop>	 <1300777760.2837.38.camel@edumazet-laptop>	 <1301849660.2837.211.camel@edumazet-laptop>	 <1301940501.2319.25.camel@work-vm>  <20110405144836.GA17490@redhat.com> <1302016682.3171.19.camel@edumazet-laptop>
+In-Reply-To: <1302016682.3171.19.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under constant allocation pressure, kswapd can be in the situation where
-sleeping_prematurely() will always return true even if kswapd has been
-running a long time. Check if kswapd needs to be scheduled.
+On 04/05/2011 06:18 PM, Eric Dumazet wrote:
+> [PATCH v2] posix-timers: RCU conversion
+>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+<snip>
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index af24d1e..4d24828 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 	unsigned long balanced = 0;
- 	bool all_zones_ok = true;
- 
-+	/* If kswapd has been running too long, just sleep */
-+	if (need_resched())
-+		return false;
-+
- 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
- 	if (remaining)
- 		return true;
+Andrew, I see this in -mmotm, but I see v1, not v2.
+
 -- 
-1.7.3.4
+error compiling committee.c: too many arguments to function
 
