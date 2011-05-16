@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab1EPOwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 10:52:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56642 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755619Ab1EPOwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:52:10 -0400
-Date: Tue, 17 May 2011 00:52:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
-Subject: Re: linux-next: manual merge of the security-testing tree with
- Linus' tree
-Message-Id: <20110517005206.4158b74a.sfr@canb.auug.org.au>
-In-Reply-To: <20110516141359.GA9430@mail.hallyn.com>
-References: <20110516130209.0477a9e7.sfr@canb.auug.org.au>
-	<20110516141359.GA9430@mail.hallyn.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1755935Ab1EPO45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:56:57 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:49112 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755837Ab1EPO44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 10:56:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=JqLXqI/HQcePbeQTZXwdEstm1o4YnvTOBRotpaF7wnBOp6e79b0lD4muS8L+cIXoiQ2Fr2rAVbDXy8jegj8YW2cRf13KwrEVmNmoORK5JIcrau9VD8E/QT//XiYH3Cpi;
+Date: Mon, 16 May 2011 07:56:52 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Documentation: Update augmented rbtree documentation
+Message-Id: <20110516075652.4ae904ce.rdunlap@xenotime.net>
+In-Reply-To: <1305539802-12509-1-git-send-email-levinsasha928@gmail.com>
+References: <1305539802-12509-1-git-send-email-levinsasha928@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__17_May_2011_00_52_06_+1000_5nUaRqnkW.53Fz7B"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_May_2011_00_52_06_+1000_5nUaRqnkW.53Fz7B
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 16 May 2011 12:56:42 +0300 Sasha Levin wrote:
 
-Hi Serge,
+> Current documentation referred to the old method
+> of handling augmented trees. Update documentation
+> to correspond with the changes done in commit
+> b945d6b2554d550fe95caadc61e521c0ad71fb9c.
+> 
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: David Woodhouse <David.Woodhouse@intel.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  Documentation/rbtree.txt |   23 ++++++++++++++---------
+>  1 files changed, 14 insertions(+), 9 deletions(-)
+> 
+> diff --git a/Documentation/rbtree.txt b/Documentation/rbtree.txt
+> index 19f8278..b847598 100644
+> --- a/Documentation/rbtree.txt
+> +++ b/Documentation/rbtree.txt
+> @@ -196,15 +196,20 @@ Support for Augmented rbtrees
+>  Augmented rbtree is an rbtree with "some" additional data stored in each node.
+>  This data can be used to augment some new functionality to rbtree.
+>  Augmented rbtree is an optional feature built on top of basic rbtree
+> -infrastructure. rbtree user who wants this feature will have an augment
+> -callback function in rb_root initialized.
+> -
+> -This callback function will be called from rbtree core routines whenever
+> -a node has a change in one or both of its children. It is the responsibility
+> -of the callback function to recalculate the additional data that is in the
+> -rb node using new children information. Note that if this new additional
+> -data affects the parent node's additional data, then callback function has
+> -to handle it and do the recursive updates.
+> +infrastructure. rbtree user who wants this feature will have to call the
+> +augmentation functions with the user provided augmentation callback
+> +when inserting and erasing nodes.
+> +
+> +On insertion, The user must call rb_augment_insert() once the new node is in
 
-On Mon, 16 May 2011 09:13:59 -0500 Serge Hallyn <serge.hallyn@canonical.com=
-> wrote:
->
-> looking at commit ffa8e59df047, it also adds
->=20
-> +extern const kernel_cap_t __cap_full_set;
->=20
-> under __cap_empty_set.  My trees are a bit screwed up so I'm not sure if
-> that gets later removed, but I just wanted to make sure you didn't
-> accidentally drop that.
+                 the user
 
-Yeah, it got removed in the next commit (5163b583a036  "capabilities:
-delete unused cap_set_full"), sorry for not mentioning that.
+> +place. This will cause the augmentation function callback to be called for
+> +each node between the new node and the root which have been affected by the
 
-> Otherwise looks good,
+                                               which has been
 
-Thanks.
+> +insertion.
+> +
+> +When erasing a node, The user must call rb_augment_erase_begin() first to
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+                        the user
 
---Signature=_Tue__17_May_2011_00_52_06_+1000_5nUaRqnkW.53Fz7B
-Content-Type: application/pgp-signature
+> +retrieve the deepest node on the rebalance path. Then, After erasing the
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+                                                          after
 
-iQEcBAEBAgAGBQJN0ToWAAoJEDMEi1NhKgbs1DcH/iukLBr19uJfocI1II1aDGgA
-nQcckLX2Iwpi/9nleBz3la6epeYozkOYkSkol1GNMVuyi/el7sMzUc0PEmxI9eJE
-XYt+43HNH8fYsiJI8a5BSy2TKVarkHi5w9++dW2AP4OzQ+ApdQ8JUWhQp6/Jw26M
-P+nVGcOtR/pFzL8rHD+uUcrmBsa3yrjpMSf4SlTLa8k1QOhvIOcPdIKyuW35PLKV
-9ls4QaqraVSmdkkajHzRHRc+mrFrjnmoBLeTaNsA6a5+/+Kxj0agfCHflozbZBfe
-TbN/QeG4W3VAQvS6IYTFfMyDe+vtljf5iZPVCzyWGaqsVzdvEOGZPUOhg84NPRU=
-=uO4y
------END PGP SIGNATURE-----
+> +original node, the user must call rb_augment_erase_end() with the deepest
+> +node found earlier. This will cause the augmentation function to be called
+> +for each affected node between the deepest node and the root.
+>  
+>  
+>  Interval tree is an example of augmented rb tree. Reference -
+> -- 
 
---Signature=_Tue__17_May_2011_00_52_06_+1000_5nUaRqnkW.53Fz7B--
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
