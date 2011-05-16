@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab1EPP1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:27:03 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52403 "EHLO zene.cmpxchg.org"
+	id S1756155Ab1EPP3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:29:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29542 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755769Ab1EPP1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:27:00 -0400
-Date: Mon, 16 May 2011 17:26:49 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>, stable <stable@kernel.org>
-Subject: Re: [PATCH 2/2] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-Message-ID: <20110516152649.GU16531@cmpxchg.org>
-References: <1305558417-24354-1-git-send-email-mgorman@suse.de>
- <1305558417-24354-3-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305558417-24354-3-git-send-email-mgorman@suse.de>
+	id S1755839Ab1EPP3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 11:29:17 -0400
+Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 16 May 2011 16:30:22 +0100
+Message-ID: <1305559822.2855.14.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 04:06:57PM +0100, Mel Gorman wrote:
-> Under constant allocation pressure, kswapd can be in the situation where
-> sleeping_prematurely() will always return true even if kswapd has been
-> running a long time. Check if kswapd needs to be scheduled.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
+Hi,
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
+> After creating the initial LSM security extended attribute, call
+> evm_inode_post_init_security() to create the 'security.evm'
+> extended attribute.
+> 
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> ---
+>  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
+>  1 files changed, 19 insertions(+), 9 deletions(-)
+> 
+[snip]
+> +	struct xattr lsm_xattr;
+> +	struct xattr evm_xattr;
+>  
+>  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
+> -					   &name, &value, &len);
+> +					   &lsm_xattr.name, &lsm_xattr.value,
+> +					   &lsm_xattr.value_len);
+>  
+>  	if (err) {
+>  		if (err == -EOPNOTSUPP)
+> @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
+>  		return err;
+>  	}
+>  
+> -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
+> -			       GFS2_EATYPE_SECURITY);
+> -	kfree(value);
+> -	kfree(name);
+> -
+> +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
+> +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
+> +	if (err < 0)
+> +		goto out;
+> +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
+> +					   &evm_xattr);
+> +	if (err)
+> +		goto out;
+> +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
+> +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
+> +	kfree(evm_xattr.value);
+> +out:
+> +	kfree(lsm_xattr.name);
+> +	kfree(lsm_xattr.value);
+>  	return err;
+>  }
+>  
+
+Just wondering whether we could have a single call to the security
+subsystem which returns a vector of xattrs rather than having to call
+two different functions?
+
+Steve.
+
+
