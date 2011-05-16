@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab1EPSrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:47:31 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:51059 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1EPSr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:47:29 -0400
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-From: John Stultz <john.stultz@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-In-Reply-To: <20110516113707.GQ30539@n2100.arm.linux.org.uk>
-References: <20110513083738.GA19733@n2100.arm.linux.org.uk>
-	 <20110513092646.GK13647@elte.hu>
-	 <20110513213640.GB30539@n2100.arm.linux.org.uk>
-	 <20110516073144.GF24836@elte.hu>
-	 <20110516074230.GI30539@n2100.arm.linux.org.uk>
-	 <20110516091744.GB12325@elte.hu>
-	 <20110516091927.GK30539@n2100.arm.linux.org.uk>
-	 <20110516094056.GA25039@elte.hu>
-	 <20110516100750.GN30539@n2100.arm.linux.org.uk>
-	 <20110516110652.GC19837@elte.hu>
-	 <20110516113707.GQ30539@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 11:47:06 -0700
-Message-ID: <1305571626.2915.24.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753086Ab1EPSrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 14:47:43 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:34679 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687Ab1EPSrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 14:47:40 -0400
+Date: Mon, 16 May 2011 11:47:36 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+	writeback for various fses
+Message-ID: <20110516184736.GL20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <87tyd31fkc.fsf@devron.myhome.or.jp> <20110510123819.GB4402@quack.suse.cz> <87hb924s2x.fsf@devron.myhome.or.jp> <20110510132953.GE4402@quack.suse.cz> <878vue4qjb.fsf@devron.myhome.or.jp> <87zkmu3b2i.fsf@devron.myhome.or.jp> <20110510145421.GJ4402@quack.suse.cz> <87zkmupmaq.fsf@devron.myhome.or.jp> <20110510162237.GM4402@quack.suse.cz> <87vcxipljj.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vcxipljj.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 12:37 +0100, Russell King - ARM Linux wrote:
-> Obviously I shouldn't have added John's ack, which was sent during Monday
-> nighttime to the commit so quickly, but instead waited a week before doing
-> so.  Had I done that you wouldn't be complaining about "24 hours" or "18
-> hours".
+On Wed, May 11, 2011 at 01:28:32AM +0900, OGAWA Hirofumi wrote:
+> Jan Kara <jack@suse.cz> writes:
+> 
+> >> Maybe possible, but you really think on usual case just blocking is
+> >> better?
+> >   Define usual case... As Christoph noted, we don't currently have a real
+> > practical case where blocking would matter (since frequent rewrites are
+> > rather rare). So defining what is usual when we don't have a single real
+> > case is kind of tough ;)
+> 
+> OK. E.g. usual workload on desktop, but FS like ext2/fat.
 
-Yea, so its unfair for Russell to be taking all the heat on this one. 
+In the frequent rewrite case, here's what you get:
 
-I acked it, and I should have caught this issue. Part of the reason for
-that is because my base for testing things is usually linus' tree, and
-not tip.
+Regular disk: (possibly garbage) write, followed by a second write to make the
+disk reflect memory contents.
 
-Also the clocksource_register_hz/khz patches in tip (which also includes
-Russell's "clocksource name const" patch) have been taking forever to
-get upstream. They are low priority non-critical cleanups at this point,
-so that's ok, but the original pull request for those was in Feb. And
-the slower those sorts of things take to get upstream, the bigger the
-window is for a collision.
+RAID w/ shadow pages: two writes, both consistent.  Higher memory consumption.
 
-So I'll try to be more proactive about grabbing and queuing such fixes
-against the appropriate tip branch so that we can catch these issues,
-and ideally the related patches properly move through their proper
-maintainer tree.
+T10 DIF disk: disk error any time the CPU modifies a page that the disk
+controller is DMA'ing out of memory.  I suppose one could simply retry the
+operation if the page is dirty, but supposing memory writes are happening fast
+enough that the retries also produce disk errors, _nothing_ ever gets written.
 
-At the same time, having recently done some similar consolidation work
-in the RTC tree, as well as in the past the various clocksource work,
-splitting up such changes across a number of different maintainers can
-be a painfully slow process. This case isn't so bad because it was only
-three spots, but I can understand if you don't see your patches pulled
-into various maintainer trees quickly, you might use your normal
-upstream route to get them in. Maybe it was a little too quick this
-time, but I'm somewhat sympathetic to it.
+With the new stable-page-writes patchset, the garbage write/disk error symptoms
+go away since the processes block instead of creating this window where it's
+not clear whether the disk's copy of the data is consistent.  I could turn the
+wait_on_page_writeback calls into some sort of page migration if the
+performance turns out to be terrible, though I'm still working on quantifying
+the impact.  Some people pointed out that sqlite tends to write the same blocks
+frequently, though I wonder if sqlite actually tries to write memory pages
+while syncing them?
 
+One use case where I could see a serious performance hit happening is the case
+where some app writes a bunch of memory pages, calls sync to force the dirty
+pages to disk, and /must/ resume writing those memory pages before the sync
+completes.  The page migration would of course help there, provided a memory
+page can be found in less time than an I/O operation.
 
-thanks
--john
+Someone commented on the LWN article about this topic, claiming that he had a
+program that couldn't afford to block on writes to mlock()'d memory.  I'm not
+sure how to fix that program, because if memory writes never coordinate with
+disk writes and the other threads are always writing memory, I wonder how the
+copy on disk isn't always indeterminate.
 
-
-
-
-
-
-
-
+--D
