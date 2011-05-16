@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1EPWgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 18:36:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53069 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535Ab1EPWgh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 18:36:37 -0400
-Date: Mon, 16 May 2011 15:36:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 2/6] vmscan: make distinction between memcg reclaim
- and LRU list selection
-Message-Id: <20110516153607.49d4dc41.akpm@linux-foundation.org>
-In-Reply-To: <20110513065854.GB18610@cmpxchg.org>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
-	<1305212038-15445-3-git-send-email-hannes@cmpxchg.org>
-	<20110513085027.25b25a47.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110513065854.GB18610@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755305Ab1EPWg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 18:36:29 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:50559 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535Ab1EPWg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 18:36:27 -0400
+Date: Mon, 16 May 2011 15:36:21 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH -v2] pci: Check bridge resources after resource
+ allocation.
+Message-ID: <20110516223621.GX8195@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <4DC9E415.5010402@kernel.org>
+ <20110512180638.GA5012@ram-laptop>
+ <BANLkTikGG6F22+JEtueF8c5xjX9bBPp+0A@mail.gmail.com>
+ <20110512182229.GQ8195@ram-laptop>
+ <20110512113726.123fd85b@jbarnes-desktop>
+ <BANLkTikt_oWhYHZwVMnrxvow4j+zkPuFCQ@mail.gmail.com>
+ <20110512123412.64e9b4cc@jbarnes-desktop>
+ <4DCDD589.8010309@kernel.org>
+ <20110516075926.GW8195@ram-laptop>
+ <4DD18F4A.5030208@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DD18F4A.5030208@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011 08:58:54 +0200
-Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> > > @@ -154,16 +158,24 @@ static LIST_HEAD(shrinker_list);
-> > >  static DECLARE_RWSEM(shrinker_rwsem);
-> > >  
-> > >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> > > -#define scanning_global_lru(sc)	(!(sc)->mem_cgroup)
-> > > +static bool global_reclaim(struct scan_control *sc)
-> > > +{
-> > > +	return !sc->memcg;
-> > > +}
-> > > +static bool scanning_global_lru(struct scan_control *sc)
-> > > +{
-> > > +	return !sc->current_memcg;
-> > > +}
+On Mon, May 16, 2011 at 01:55:38PM -0700, Yinghai Lu wrote:
+> On 05/16/2011 12:59 AM, Ram Pai wrote:
+> > On Fri, May 13, 2011 at 06:06:17PM -0700, Yinghai Lu wrote:
+> >> On 05/12/2011 12:34 PM, Jesse Barnes wrote:
+> >>> On Thu, 12 May 2011 12:18:43 -0700
+> >>> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> >>>
+> >>>> On Thu, May 12, 2011 at 11:37 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >>>>>
+> >>>>> Linus, I don't have anything else queued up, so you may as well take
+> >>>>> this one directly if you want it in 2.6.39.  It's a regression fix, but
+> >>>>> resource changes always make me nervous.  Alternately, I could put it
+> >>>>> into 2.6.40 instead, the backport to 2.6.39.x if it survives until
+> >>>>> 2.6.40-rc2 or so...
+> >>>>
+> >>>> Considering the trouble resource allocation always ends up being, I'd
+> >>>> almost prefer that "mark it for stable and put it in the 2.6.40
+> >>>> queue".
+> >>>>
+> >>>> Afaik this problem hasn't actually hit any "normal" users, has it? So ...
+> >>>
+> >>> Sounds good, thanks.  Yeah I don't think it's hit anyone but Yinghai
+> >>> (at least I don't know of any other reports).
+> >>>
+> >>
+> >> please check this one, it should be safe for 2.6.39 ?
 > > 
+> >>  	size0 = calculate_iosize(size, min_size, size1,
+> >>  			resource_size(b_res), 4096);
+> >> -	size1 = !add_size? size0:
+> >> +	size1 = (!add_head || (add_head && !add_size)) ? size0 :
+> >>  		calculate_iosize(size, min_size+add_size, size1,
+> >>  			resource_size(b_res), 4096);
 > > 
-> > Could you add comments ?
+> > This solves the problem you encountered.
+> > 
+> > But, I think, it still does not fix the following scenario:
+> > 
+> > adjust_resource() failing to allocate additional resource to a hotplug bridge
+> > that has no children. In this case  ->flags of that 'struct resource'
+> > continues to be set even when no resource is allocated to that hot-plug bridge.
+> > 
+> that case: requested_size will be 0, but add_size will not be zero.
+> 
+> res->flags is not cleared in pbus_size_xx, so it will be put into head.
+> so it will go through first path.
+> ...
+>                 if (!resource_size(res) && add_size) {
+>                          res->end = res->start + add_size - 1;
+>                          if(pci_assign_resource(list->dev, idx))
+>                                 reset_resource(res);
+>                 } else if (add_size) {
+>                         adjust_resource(res, res->start,
+>                                 resource_size(res) + add_size);
+>                 }
+> 
+> and if it fails to get assign, the flags will get clear in reset_resource.
+> 
+> so it should be ok. and testing in one my setup show those flags get clear correctly and does not emit any warning.
 
-oy, that's my job.
 
-> Yes, I will.
+Ack. You are right.
 
-> +static bool global_reclaim(struct scan_control *sc) { return 1; }
-> +static bool scanning_global_lru(struct scan_control *sc) { return 1; }
+Linus/Jesse:  can we consider this patch for 2.6.39? It is the simplest fix to the problem.
 
-s/1/true/
+Reviewed-by: Ram Pai <linuxram@us.ibm.com>
 
-And we may as well format the functions properly?
-
-And it would be nice for the names of the functions to identify what
-subsystem they belong to: memcg_global_reclaim() or such.  Although
-that's already been a bit messed up in memcg (and in the VM generally).
-
+RP
