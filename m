@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab1EPI4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:56:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56887 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab1EPI4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:56:17 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH] omap: usbhs: Fixed the crash during rmmod of ehci and ohci
-Date: Mon, 16 May 2011 14:22:07 +0530
-Message-ID: <1305535927-19840-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752847Ab1EPIxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:53:51 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:55399 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751121Ab1EPIxu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:53:50 -0400
+Subject: Re: =?UTF-8?Q?=E7=AD=94=E5=A4=8D=3A?= problem with kmemleak
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: ttlxzz ccc <boyzccc@gmail.com>
+Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTinv6aSQMgh9ce1xaQ14_aHDPvFTxw@mail.gmail.com>
+References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
+	 <BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
+	 <BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
+	 <009c01cc108b$4635c7d0$d2a15770$@com>
+	 <BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
+	 <BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
+	 <BANLkTik=M8uwnmHABqYBkeVDk56UMrnkMg@mail.gmail.com>
+	 <BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
+	 <BANLkTik6c8-g8FrXZy8-V35W6-Th++5p_A@mail.gmail.com>
+	 <BANLkTi=bYzYrHx+P=yTH_0VTiQaGZHeB9A@mail.gmail.com>
+	 <BANLkTinv6aSQMgh9ce1xaQ14_aHDPvFTxw@mail.gmail.com>
+Organization: ARM Limited
+Date: Mon, 16 May 2011 09:53:36 +0100
+Message-ID: <1305536016.19230.3.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 16 May 2011 08:53:45.0031 (UTC) FILETIME=[C360ED70:01CC13A6]
+X-MC-Unique: 111051609534606801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Mon, 2011-05-16 at 08:18 +0100, ttlxzz ccc wrote:
+> I'm very glad to find the reason of this problem. It's just because
+> the CONFIG_FRAME_POINTER is not set :).
+> 
+> And in dump_stack() which is defined in arch/x86/kernel/dumpstack.c,
+> CONFIG_FRAME_POINTER control whether to get the bp.
+> 
+> Now I enable CONFIG_FRAME_POINTER and I can see the full backtrace. :)
 
-The disableing of clocks and freeing GPIO are changed
-to fix the occurence of the crash of rmmod of ehci and ohci
-drivers. The GPIOs should be freed after the spin locks are
-unlocked.
+It's good you found it. I thought STACKTRACE on x86_64 would set the
+necessary options like FRAME_POINTER so that it works properly. Kmemleak
+only sets STACKTRACE.
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
----
- drivers/mfd/omap-usb-host.c |   27 +++++++++++++++++++--------
- 1 files changed, 19 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 3ab9ffa..55c5d47 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -994,22 +994,33 @@ static void usbhs_disable(struct device *dev)
- 			dev_dbg(dev, "operation timed out\n");
- 	}
- 
--	if (pdata->ehci_data->phy_reset) {
--		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
--			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
--
--		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
--			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
-+	if (is_omap_usbhs_rev2(omap)) {
-+		if (is_ehci_tll_mode(pdata->port_mode[0]))
-+			clk_enable(omap->usbtll_p1_fck);
-+		if (is_ehci_tll_mode(pdata->port_mode[1]))
-+			clk_enable(omap->usbtll_p2_fck);
-+		clk_disable(omap->utmi_p2_fck);
-+		clk_disable(omap->utmi_p1_fck);
- 	}
- 
--	clk_disable(omap->utmi_p2_fck);
--	clk_disable(omap->utmi_p1_fck);
- 	clk_disable(omap->usbtll_ick);
- 	clk_disable(omap->usbtll_fck);
- 	clk_disable(omap->usbhost_fs_fck);
- 	clk_disable(omap->usbhost_hs_fck);
- 	clk_disable(omap->usbhost_ick);
- 
-+	/* The gpio_free migh sleep; so unlock the spinlock */
-+	spin_unlock_irqrestore(&omap->lock, flags);
-+
-+	if (pdata->ehci_data->phy_reset) {
-+		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
-+			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
-+
-+		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
-+			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
-+	}
-+	return;
-+
- end_disble:
- 	spin_unlock_irqrestore(&omap->lock, flags);
- }
 -- 
-1.6.0.4
+Catalin
+
 
