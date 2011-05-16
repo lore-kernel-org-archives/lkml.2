@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab1EPJfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:35:09 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45118 "EHLO
+	id S1753553Ab1EPJgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:36:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43773 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab1EPJfH (ORCPT
+	with ESMTP id S1753100Ab1EPJgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:35:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VwrF9nlF9a6m7rcReWk3ohQaEMMl+4gINAdLc0p0VWtsjHZN3YHtSOL5MqmCXsiZ08
-         K1hKnuzEFkpvOF48hMX18bO5N9eFVzRtdobHmO/nlSz4A/wn6fEUi/Jf6Freez7zcW0L
-         l20TYpWOjvz0OX0TI3s+bidFv+cdWAaNVsfoQ=
-Subject: Re: [patch V3] percpu_counter: scalability works
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-In-Reply-To: <1305534857.2375.55.camel@sli10-conroe>
-References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
-	 <20110511092848.GE1661@htj.dyndns.org>
-	 <1305168493.2373.15.camel@sli10-conroe>
-	 <20110512082159.GB1030@htj.dyndns.org>
-	 <1305190520.2373.18.camel@sli10-conroe>
-	 <20110512085922.GD1030@htj.dyndns.org>
-	 <1305190936.3795.1.camel@edumazet-laptop>
-	 <20110512090534.GE1030@htj.dyndns.org>
-	 <1305261477.2373.45.camel@sli10-conroe>
-	 <1305264007.2831.14.camel@edumazet-laptop>
-	 <20110513052859.GA11088@sli10-conroe.sh.intel.com>
-	 <1305268456.2831.38.camel@edumazet-laptop>
-	 <1305298300.3866.22.camel@edumazet-laptop>
-	 <1305301151.3866.39.camel@edumazet-laptop>
-	 <1305304532.3866.54.camel@edumazet-laptop>
-	 <1305305190.3866.57.camel@edumazet-laptop>
-	 <1305324187.3120.30.camel@edumazet-laptop>
-	 <1305507517.2375.10.camel@sli10-conroe>
-	 <1305526296.3120.204.camel@edumazet-laptop>
-	 <1305527828.2375.28.camel@sli10-conroe>
-	 <1305528912.3120.213.camel@edumazet-laptop>
-	 <1305530143.2375.42.camel@sli10-conroe>
-	 <1305531877.3120.230.camel@edumazet-laptop>
-	 <1305534857.2375.55.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 11:35:03 +0200
-Message-ID: <1305538504.2898.33.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Mon, 16 May 2011 05:36:11 -0400
+Date: Mon, 16 May 2011 10:36:02 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jamie Iles <jamie@jamieiles.com>, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] drivers: create a pinmux subsystem v2
+Message-ID: <20110516093602.GC17104@pulham.picochip.com>
+References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
+ <20110510235853.GM26703@pulham.picochip.com>
+ <BANLkTim5wurV7aFSm4ae6+HBpGZO1z_=XA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTim5wurV7aFSm4ae6+HBpGZO1z_=XA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 16 mai 2011 Ã  16:34 +0800, Shaohua Li a Ã©crit :
-
-> let's not argue the batch size anymore. If we can make percpu_counter
-> faster, why we don't (even your patch mentioned this).
+On Mon, May 16, 2011 at 02:09:20AM +0200, Linus Walleij wrote:
+> 2011/5/11 Jamie Iles <jamie@jamieiles.com>:
+> > [...]
+> >> +static struct foo_pmx_func myfuncs[] = {
+> >> +     {
+> >> +             .name = "spi0-0",
+> >> +             .pins = spi0_0_pins,
+> >> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
+> >> +     },
+> >> +     {
+> >> +             .name = "i2c0",
+> >> +             .pins = i2c0_pins,
+> >> +             .num_pins = ARRAY_SIZE(i2c0_pins),
+> >> +     },
+> >> +     {
+> >> +             .name = "spi0-1",
+> >> +             .pins = spi0_1_pins,
+> >> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
+> >> +     },
+> >> +};
+> >
+> > So I can see how this works well for these examples, but on our devices,
+> > we have some interfaces for connecting to radios and these have a pair
+> > of 8-bit RX and TX busses.  However, depending on what radio you
+> > connect, you may not need all 8 bits of each and this is dependent on
+> > the board.  What would be the best way to deal with that in this scheme
+> > where say we only wanted 4 bits of each, saving the others for GPIO?
+> > Would this need to be a function for each configuration?
 > 
+> Yes. Define a function containing the pins you need, then when that
+> function is muxed in by pinmux_get() the remaining pins are still
+> available for GPIO.
+> 
+> The framework only deals with functions as groups of pins and
+> individual GPIO pins, defining the groups is currently up to each
+> platform.
 
-I actually changed my mind, after trying to solve the problem and spend
-a few hours on it. This is not worth it and counterproductive.
+OK, from this and your other emails I think I understand this now.  So 
+for this (using the current, non-device-tree method) case I guess we 
+could leave the registration of these pins to the board code rather than 
+the chip specific stuff.
 
-Whole point of percpu_counter is being able to avoid the false sharing
-in _most_ cases. I would even make the false sharing case even more
-expensive just to pinpoint a bad user, thanks to profiling.
+> > [...]
+> >> +/**
+> >> + * pinmux_request_gpio() - request a single pin to be muxed in to be used
+> >> + *   as a GPIO pin
+> >> + * @pin: the pin to mux in as GPIO
+> >> + * @gpio: the corresponding GPIO pin number
+> >> + */
+> >> +int pinmux_request_gpio(int pin, unsigned gpio)
+> >> +{
+> >> +     char gpiostr[16];
+> >> +
+> >> +     snprintf(gpiostr, 15, "gpio%d", gpio);
+> >> +     return pin_request(pin, gpiostr, true);
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(pinmux_request_gpio);
+> >
+> > Our devices have two different GPIO controllers, which can be muxed to
+> > the same pad (they're slightly different - one is a bit slower but can
+> > do sigma-delta output) and our pinmux driver would need to know what
+> > GPIO controller it should route to the pad.  Could gpio_request_enable()
+> > be passed the GPIO number or is there a better way to do this?
+> 
+> Hmmmm that was really new!
+> 
+> But like we have the more complex config function for pinmux groups:
+> extern int pinmux_config(struct pinmux *pmx, u16 param, unsigned long *data);
+> 
+> I believe your case could be handled with a similar more complex
+> per-pin config function like this:
+> extern int pinmux_config_gpio(int pin, unsigned gpio, u16 param,
+> unsigned long *data);
+> 
+> Would that work?
 
-Trying to make it fast in pathological case is throwing a brown paper
-bag.
+Yes, I think it probably would.  I'm travelling for a bit now so won't 
+get chance to try this for a week or two but I'll try porting our 
+platform over to this system; it would be great to have a standardized 
+way of handling pin muxing.
 
-An interesting move would be to make percpu_counter hierarchical,
-because we might need it for 4096 cpus machines.
-
-Given that vm_committed has one percent resolution need
-(sysctl_overcommit_ratio is expressed with percent resolution), it
-should be used with an appropriate batch value, something like :
-
-vm_committed_as_batch = max(percpu_counter_batch,
-			    total_ram_pages/(num_possible_cpus()*100));
-
-Instead of the default percpu_counter_batch, more aimed for 
-_add(1)/_add(-1) uses.
-
-Note : This wont solve your mmap(128M)/munmap() problem, unless your
-machine has a _lot_ of memory. Still, this will be a win on many real
-workloads.
-
-
-
+Jamie
