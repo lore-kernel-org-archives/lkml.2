@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1EPURJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 16:17:09 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37607 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab1EPURH (ORCPT
+	id S1755428Ab1EPUTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 16:19:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57574 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab1EPUTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 16:17:07 -0400
-Date: Mon, 16 May 2011 13:16:54 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH] mm: fix kernel-doc warning in page_alloc.c
-Message-Id: <20110516131654.c8aa74bd.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 16 May 2011 16:19:14 -0400
+Subject: Re: [PATCH RESEND] mfd: Fix off-by-one value range checking for
+ tps65910_i2c_write
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>
+In-Reply-To: <1305555542.2337.3.camel@phoenix>
+References: <1305555542.2337.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 21:19:10 +0100
+Message-ID: <1305577150.3156.14.camel@odin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DD18641.0020:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, 2011-05-16 at 22:19 +0800, Axel Lin wrote:
+> If bytes == (TPS65910_MAX_REGISTER + 1), we have a buffer overflow when
+> doing memcpy(&msg[1], src, bytes).
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> ---
+>  drivers/mfd/tps65910.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+> index bf649cf..e318248 100644
+> --- a/drivers/mfd/tps65910.c
+> +++ b/drivers/mfd/tps65910.c
+> @@ -71,7 +71,7 @@ static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
+>  	u8 msg[TPS65910_MAX_REGISTER + 1];
+>  	int ret;
+>  
+> -	if (bytes > (TPS65910_MAX_REGISTER + 1))
+> +	if (bytes > TPS65910_MAX_REGISTER)
+>  		return -EINVAL;
+>  
+>  	msg[0] = reg;
 
-Fix new kernel-doc warning in mm/page_alloc.c:
+Applied.
 
-Warning(mm/page_alloc.c:2370): No description found for parameter 'nid'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- mm/page_alloc.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-2.6.39-rc7-git10.orig/mm/page_alloc.c
-+++ linux-2.6.39-rc7-git10/mm/page_alloc.c
-@@ -2358,6 +2358,7 @@ EXPORT_SYMBOL(alloc_pages_exact);
- /**
-  * alloc_pages_exact_nid - allocate an exact number of physically-contiguous
-  *			   pages on a node.
-+ * @nid: the preferred node ID where memory should be allocated
-  * @size: the number of bytes to allocate
-  * @gfp_mask: GFP flags for the allocation
-  *
