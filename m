@@ -1,365 +1,520 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab1EPVm6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:42:58 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4063 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab1EPVm5 (ORCPT
+	id S1756682Ab1EPVqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:46:12 -0400
+Received: from mail-px0-f173.google.com ([209.85.212.173]:51753 "EHLO
+	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab1EPVqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:42:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 16 May 2011 14:42:57 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH v3] net: rfkill: add generic gpio rfkill driver
-Date: Mon, 16 May 2011 14:41:48 -0700
-Message-Id: <1305582108-23267-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.5.1
+	Mon, 16 May 2011 17:46:11 -0400
+Subject: [PATCH] input: Add Nintendo extension controller driver
+To: simon@mungewell.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        OliverNeukumoliver@neukum.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 16 May 2011 15:46:08 -0600
+Message-ID: <20110516214608.17011.3075.stgit@ponder>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new generic gpio rfkill driver to support rfkill switches
-which are controlled by gpios. The driver also supports passing in
-data about the clock for the radio, so that when rfkill is blocking,
-it can disable the clock.
+This driver adds support for Nintendo Wiimote extension controllers
+directly attached to an i2c bus, such as when using an adaptor like
+the Wiichuck.
 
-This driver assumes platform data is passed from the board files to
-configure it for specific devices.
-
-Original-patch-by: Anantha Idapalapati <aidapalapati@nvidia.com>
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
-v2: 
-	- Moved to dynamic allocation for gpio names
-	- added state of clock enabled to prevent double disabling/enabling
-	- fixed Kconfig description
-	- removed setting initial state, as rfkill-core will do it
-	- enabled using this driver as a module
+ drivers/input/joystick/Kconfig    |   13 +
+ drivers/input/joystick/Makefile   |    1 
+ drivers/input/joystick/wiichuck.c |  441 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 455 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/joystick/wiichuck.c
 
-v3:
-	- modified Kconfig to depend on HAVE_CLK 
-	- modified Kconfig to default to N
-	- change From line to Original-patch-by
-
- include/linux/rfkill-gpio.h |   43 ++++++++
- net/rfkill/Kconfig          |    9 ++
- net/rfkill/Makefile         |    1 +
- net/rfkill/rfkill-gpio.c    |  227 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 280 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/rfkill-gpio.h
- create mode 100644 net/rfkill/rfkill-gpio.c
-
-diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
-new file mode 100644
-index 0000000..a175d05
---- /dev/null
-+++ b/include/linux/rfkill-gpio.h
-@@ -0,0 +1,43 @@
-+/*
-+ * Copyright (c) 2011, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+
-+
-+#ifndef __RFKILL_GPIO_H
-+#define __RFKILL_GPIO_H
-+
-+#include <linux/types.h>
-+#include <linux/rfkill.h>
-+
-+/**
-+ * struct rfkill_gpio_platform_data - platform data for rfkill gpio device.
-+ * for unused gpio's, the expected value is -1.
-+ * @name:		name for the gpio rf kill instance
-+ * @reset_gpio:		GPIO which is used for reseting rfkill switch
-+ * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
-+ * @power_clk_name:	[optional] name of clk to turn off while blocked
-+ */
-+
-+struct rfkill_gpio_platform_data {
-+	char			*name;
-+	int			reset_gpio;
-+	int			shutdown_gpio;
-+	const char		*power_clk_name;
-+	enum rfkill_type	type;
-+};
-+
-+#endif /* __RFKILL_GPIO_H */
-diff --git a/net/rfkill/Kconfig b/net/rfkill/Kconfig
-index 48464ca..78efe89 100644
---- a/net/rfkill/Kconfig
-+++ b/net/rfkill/Kconfig
-@@ -33,3 +33,12 @@ config RFKILL_REGULATOR
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 56eb471..5b7fba7 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -193,6 +193,19 @@ config JOYSTICK_TWIDJOY
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called twidjoy.
  
-           To compile this driver as a module, choose M here: the module will
-           be called rfkill-regulator.
-+
-+config RFKILL_GPIO
-+	tristate "GPIO RFKILL driver"
-+	depends on RFKILL && GPIOLIB && HAVE_CLK
-+	default n
++config JOYSTICK_WIICHUCK
++	tristate "Nintendo Wiimote Extension connector on i2c bus"
++	depends on I2C
++	select INPUT_POLLDEV
 +	help
-+	  If you say yes here you get support of a generic gpio RFKILL
-+	  driver. The platform should fill in the appropriate fields in the
-+	  rfkill_gpio_platform_data structure and pass that to the driver.
-diff --git a/net/rfkill/Makefile b/net/rfkill/Makefile
-index d9a5a58..3117687 100644
---- a/net/rfkill/Makefile
-+++ b/net/rfkill/Makefile
-@@ -6,3 +6,4 @@ rfkill-y			+= core.o
- rfkill-$(CONFIG_RFKILL_INPUT)	+= input.o
- obj-$(CONFIG_RFKILL)		+= rfkill.o
- obj-$(CONFIG_RFKILL_REGULATOR)	+= rfkill-regulator.o
-+obj-$(CONFIG_RFKILL_GPIO)	+= rfkill-gpio.o
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
++	  Say Y here if you have a Nintendo Wiimote extension connector
++	  attached directly to an i2c bus, like the Sparcfun Wiichuck adapter
++	  board.  This driver supports both the Nunchuck and the Classic
++	  Controller extensions.
++
++	  To compile this driver as a module, choose M here: the
++	  modules will be called wiichuck.
++
+ config JOYSTICK_ZHENHUA
+ 	tristate "5-byte Zhenhua RC transmitter"
+ 	select SERIO
+diff --git a/drivers/input/joystick/Makefile b/drivers/input/joystick/Makefile
+index 92dc0de..78466d6 100644
+--- a/drivers/input/joystick/Makefile
++++ b/drivers/input/joystick/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_JOYSTICK_TMDC)		+= tmdc.o
+ obj-$(CONFIG_JOYSTICK_TURBOGRAFX)	+= turbografx.o
+ obj-$(CONFIG_JOYSTICK_TWIDJOY)		+= twidjoy.o
+ obj-$(CONFIG_JOYSTICK_WARRIOR)		+= warrior.o
++obj-$(CONFIG_JOYSTICK_WIICHUCK)		+= wiichuck.o
+ obj-$(CONFIG_JOYSTICK_XPAD)		+= xpad.o
+ obj-$(CONFIG_JOYSTICK_ZHENHUA)		+= zhenhua.o
+ obj-$(CONFIG_JOYSTICK_WALKERA0701)	+= walkera0701.o
+diff --git a/drivers/input/joystick/wiichuck.c b/drivers/input/joystick/wiichuck.c
 new file mode 100644
-index 0000000..256c5dd
+index 0000000..85a194f
 --- /dev/null
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -0,0 +1,227 @@
++++ b/drivers/input/joystick/wiichuck.c
+@@ -0,0 +1,441 @@
 +/*
-+ * Copyright (c) 2011, NVIDIA Corporation.
++ * i2c Wiichuck driver (Nintendo Wiimote accessory connector)
++ *
++ * This driver supports Nintendo Wiimote accessories like the Nunchuck and
++ * the Classic Controller connected to an i2c bus.
++ *
++ * Copyright (c) 2011 Secret Lab Technologies Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
 + *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
++ * This driver uses the polled input device abstraction to implement an
++ * input driver for Nintendo expansion devices wired up to an i2c bus.
 + *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ * A state machine implements the protocol handling.  It starts in the
++ * DISCONNECTED state initially and polls every second waiting for a
++ * device to get attached, and reading the device id when one does.
++ * If the device is recognized, then the polling period is bumped up
++ * to 50ms, and the state machine enters into a loop alternating
++ * between writing the data address (which triggers data capture) and
++ * reading the data block out of the device.  If at any time the
++ * device is disconnected, then it goes back to DISCONNECTED state and
++ * drops the polling frequency back down to 1 second.
++ *
++ * A callback is implemented for each supported devices, currently the
++ * Nunchuck and the Classic Controller.  Wii Motion Plus has yet to be
++ * added.
 + */
 +
-+#include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/rfkill.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
++#include <linux/cache.h>
++#include <linux/delay.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/input.h>
++#include <linux/input-polldev.h>
++#include <linux/mod_devicetable.h>
 +#include <linux/slab.h>
 +
-+#include <linux/rfkill-gpio.h>
++MODULE_AUTHOR("Grant Likely <grant.likely@secretlab.ca>");
++MODULE_DESCRIPTION("Wiichuck (i2c Nintendo Wiimote accessory) driver");
++MODULE_LICENSE("GPL");
 +
-+enum rfkill_gpio_clk_state {
-+	UNSPECIFIED = 0,
-+	PWR_ENABLED,
-+	PWR_DISABLED
++#define WIICHUCK_POLL_PERIOD	(1000)	/* 1 second */
++#ifdef DEBUG
++#define WIICHUCK_CAPTURE_PERIOD (500)	/* 1/2 second for debug */
++#else
++#define WIICHUCK_CAPTURE_PERIOD (100)	/* 100 milliseconds */
++#endif /* DEBUG */
++
++enum wiichuck_state {
++	WIICHUCK_STATE_DISCONNECTED = 0,
++	WIICHUCK_STATE_DATA,
 +};
 +
-+#define PWR_CLK_SET(_RF, _EN) \
-+	((_RF)->pwr_clk_enabled = (!(_EN) ? PWR_ENABLED : PWR_DISABLED))
-+#define PWR_CLK_ENABLED(_RF) ((_RF)->pwr_clk_enabled == PWR_ENABLED)
-+#define PWR_CLK_DISABLED(_RF) ((_RF)->pwr_clk_enabled != PWR_ENABLED)
++struct wiichuck_device {
++	struct input_polled_dev *poll_dev;
++	struct i2c_client *i2c_client;
++	int (*process)(struct wiichuck_device *wiichuck);
++	enum wiichuck_state state;
 +
-+struct rfkill_gpio_data {
-+	struct rfkill_gpio_platform_data	*pdata;
-+	struct rfkill				*rfkill_dev;
-+	char					*reset_name;
-+	char					*shutdown_name;
-+	enum rfkill_gpio_clk_state		pwr_clk_enabled;
-+	struct clk				*pwr_clk;
++	/*
++	 * DMA buffer, with padding to give it its own cache line so that
++	 * the DMA streaming works on non-coherent architectures.
++	 * Question: Is this the proper pattern, and is this really necessary?
++	 */
++	uint8_t pad1[L1_CACHE_BYTES];
++	uint8_t buf[6];
++	uint8_t pad2[L1_CACHE_BYTES];
 +};
 +
-+static int rfkill_gpio_set_power(void *data, bool blocked)
++static int wiichuck_transfer(struct wiichuck_device *wiichuck,
++			     int len, bool read)
 +{
-+	struct rfkill_gpio_data *rfkill = data;
++	struct i2c_client *i2c = wiichuck->i2c_client;
++	struct i2c_msg msg = {
++		.addr = i2c->addr, .len = len, .buf = wiichuck->buf };
 +
-+	if (blocked) {
-+		if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
-+			gpio_direction_output(rfkill->pdata->shutdown_gpio, 0);
-+		if (gpio_is_valid(rfkill->pdata->reset_gpio))
-+			gpio_direction_output(rfkill->pdata->reset_gpio, 0);
-+		if (rfkill->pwr_clk && PWR_CLK_ENABLED(rfkill))
-+			clk_disable(rfkill->pwr_clk);
-+	} else {
-+		if (rfkill->pwr_clk && PWR_CLK_DISABLED(rfkill))
-+			clk_enable(rfkill->pwr_clk);
-+		if (gpio_is_valid(rfkill->pdata->reset_gpio))
-+			gpio_direction_output(rfkill->pdata->reset_gpio, 1);
-+		if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
-+			gpio_direction_output(rfkill->pdata->shutdown_gpio, 1);
-+	}
++	if (read)
++		msg.flags = I2C_M_RD;
++	return i2c_transfer(i2c->adapter, &msg, 1);
++}
 +
-+	if (rfkill->pwr_clk)
-+		PWR_CLK_SET(rfkill, blocked);
++static int wiichuck_write(struct wiichuck_device *wiichuck,
++			   uint8_t addr, uint8_t val)
++{
++	wiichuck->buf[0] = addr;
++	wiichuck->buf[1] = val;
++	return wiichuck_transfer(wiichuck, 2, false);
++}
 +
++static inline int wiichuck_setaddr(struct wiichuck_device *wiichuck,
++				    uint8_t addr)
++{
++	wiichuck->buf[0] = addr;
++	return wiichuck_transfer(wiichuck, 1, false);
++}
++
++static inline int wiichuck_read(struct wiichuck_device *wiichuck, int len)
++{
++	return wiichuck_transfer(wiichuck, len, true);
++}
++
++static inline bool WIIBTN(int val, int bit)
++{
++	return (val & BIT(bit)) == 0;
++}
++
++static int wiichuck_process_unknown(struct wiichuck_device *wiichuck)
++{
 +	return 0;
 +}
 +
-+static const struct rfkill_ops rfkill_gpio_ops = {
-+	.set_block = rfkill_gpio_set_power,
++static int wiichuck_process_nunchuck(struct wiichuck_device *wiichuck)
++{
++	struct input_dev *input_dev = wiichuck->poll_dev->input;
++	uint8_t *b = wiichuck->buf;
++	int ax, ay, az, rc;
++
++	rc = wiichuck_read(wiichuck, 6);
++	if (rc < 0)
++		return rc;
++
++	ax = (b[2] << 2) | ((b[5] >> 2) & 0x3);
++	ay = (b[3] << 2) | ((b[5] >> 4) & 0x3);
++	az = (b[4] << 2) | ((b[5] >> 6) & 0x3);
++
++	input_report_abs(input_dev, ABS_X, b[0]);
++	input_report_abs(input_dev, ABS_Y, b[1]);
++	input_report_abs(input_dev, ABS_RX, ax);
++	input_report_abs(input_dev, ABS_RY, ax);
++	input_report_abs(input_dev, ABS_RZ, ay);
++	input_report_key(input_dev, BTN_C, WIIBTN(b[5], 1));
++	input_report_key(input_dev, BTN_Z, WIIBTN(b[5], 0));
++	input_sync(input_dev);
++
++	dev_dbg(&wiichuck->i2c_client->dev,
++		"nunchuck: j=%.3i,%.3i a=%.3x,%.3x,%.3x c,z=%i,%i\n",
++		b[0],b[1], ax,ay,az, WIIBTN(b[5], 1), WIIBTN(b[5], 0));
++	return 0;
 +};
 +
-+static int rfkill_gpio_probe(struct platform_device *pdev)
++static int wiichuck_process_classic(struct wiichuck_device *wiichuck)
 +{
-+	struct rfkill_gpio_data *rfkill;
-+	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
-+	int ret = 0;
-+	int len = 0;
++	struct input_dev *input_dev = wiichuck->poll_dev->input;
++	uint8_t *b = wiichuck->buf;
++	int lx, ly, lt, rx, ry, rt, rc;
 +
-+	if (!pdata) {
-+		pr_warn("%s: No platform data specified\n", __func__);
-+		return -EINVAL;
++	rc = wiichuck_read(wiichuck, 6);
++	if (rc < 0)
++		return rc;
++
++	/* Analog measurements; some values are split between registers */
++	rx = ((b[0] >> 3) & 0x18) | ((b[1] >> 5) & 6) | ((b[2] >> 7) & 1);
++	ry = b[2] & 0x1f;
++	rt = b[3] & 0x1f;
++	lx = b[0] & 0x3f;
++	ly = b[1] & 0x3f;
++	lt = ((b[2] >> 2) & 0x18) | ((b[3] >> 5) & 7);
++
++	input_report_abs(input_dev, ABS_HAT0X, lx); /* left joystick */
++	input_report_abs(input_dev, ABS_HAT0Y, ly);
++	input_report_abs(input_dev, ABS_BRAKE, lt); /* left trigger */
++	input_report_abs(input_dev, ABS_HAT1X, rx); /* right joystick */
++	input_report_abs(input_dev, ABS_HAT1Y, ry);
++	input_report_abs(input_dev, ABS_GAS, rt); /* right trigger */
++
++	/* D-pad */
++	input_report_abs(input_dev, ABS_HAT2X, WIIBTN(b[4],7) - WIIBTN(b[5],1));
++	input_report_abs(input_dev, ABS_HAT2Y, WIIBTN(b[4],6) - WIIBTN(b[5],0));
++
++	/* Buttons */
++	input_report_key(input_dev, BTN_TL, WIIBTN(b[4], 5)); /* left trigger */
++	input_report_key(input_dev, BTN_SELECT, WIIBTN(b[4], 4)); /* minus */
++	input_report_key(input_dev, BTN_MODE, WIIBTN(b[4], 3)); /* home */
++	input_report_key(input_dev, BTN_START, WIIBTN(b[4], 2)); /* plus */
++	input_report_key(input_dev, BTN_TR, WIIBTN(b[4], 1)); /* right trigger */
++
++	input_report_key(input_dev, BTN_TL2, WIIBTN(b[5], 7)); /* left z */
++	input_report_key(input_dev, BTN_B, WIIBTN(b[5], 6));
++	input_report_key(input_dev, BTN_Y, WIIBTN(b[5], 5));
++	input_report_key(input_dev, BTN_A, WIIBTN(b[5], 4));
++	input_report_key(input_dev, BTN_X, WIIBTN(b[5], 3));
++	input_report_key(input_dev, BTN_TR2, WIIBTN(b[5], 2)); /* right z */
++	input_sync(input_dev);
++
++	dev_dbg(&wiichuck->i2c_client->dev,
++		"classic: r=%.3i,%.3i,%.3i l=%.3x,%.3x,%.3x b=%.2x,%.2x\n",
++		lx,ly,lt, rx,ry,rt, b[4],b[5]);
++	return 0;
++};
++
++/**
++ * wiichuck_poll() - Protocol state machine implementation
++ *
++ * A state machine is used here to keep the protocol processing
++ * reentrant.  Any of the i2c transactions will indeed sleep because
++ * i2c transactions are slow, but there is a mandatory delay between
++ * triggering the data capture (set address) and reading the data
++ * back.  Using a state machine means the poll function can return and
++ * free up the worker thread while waiting for the data.
++ */
++static void wiichuck_poll(struct input_polled_dev *poll_dev)
++{
++	struct wiichuck_device *wiichuck = poll_dev->private;
++	int id;
++
++	switch (wiichuck->state) {
++	case WIICHUCK_STATE_DISCONNECTED:
++		/* Disable encryption */
++		if (wiichuck_write(wiichuck, 0xf0, 0x55) < 0)
++			return;
++		if (wiichuck_write(wiichuck, 0xfb, 0x00) < 0)
++			return;
++
++		/* Read device id */
++		if (wiichuck_setaddr(wiichuck, 0xfe) < 0)
++			return;
++		if (wiichuck_read(wiichuck, 2) < 0)
++			return;
++		id = (wiichuck->buf[0] << 8) | wiichuck->buf[1];
++
++		switch (id) {
++			case 0x0000: /* Nunchuck */
++				wiichuck->process = wiichuck_process_nunchuck;
++				dev_info(&wiichuck->i2c_client->dev,
++					 "Connected Nunchuck\n");
++				break;
++
++			case 0x0101: /* Classic Controller */
++				wiichuck->process = wiichuck_process_classic;
++				dev_info(&wiichuck->i2c_client->dev,
++					 "Connected Classic Controller\n");
++
++			default: /* No connection or unsupported device */
++				wiichuck->process = wiichuck_process_unknown;
++				dev_dbg(&wiichuck->i2c_client->dev,
++					 "Connected unknown id: %x\n", id);
++				return;
++		}
++
++		/* Setup the first data transfer */
++		if (wiichuck_setaddr(wiichuck, 0) < 0)
++			return;
++
++		wiichuck->state = WIICHUCK_STATE_DATA;
++		poll_dev->poll_interval = WIICHUCK_CAPTURE_PERIOD;
++		break;
++
++	case WIICHUCK_STATE_DATA:
++		/* Read the input report */
++		if (wiichuck->process(wiichuck) < 0)
++			goto disconnect;
++
++		/* Setup the next transfer */
++		if (wiichuck_setaddr(wiichuck, 0) < 0)
++			goto disconnect;
++		break;
++
++	default:
++		goto disconnect;
 +	}
++	return;
 +
-+	/* make sure at-least one of the GPIO is defined and that
-+	 * a name is specified for this instance */
-+	if (!pdata->name || (!gpio_is_valid(pdata->reset_gpio) &&
-+		!gpio_is_valid(pdata->shutdown_gpio))) {
-+		pr_warn("%s: invalid platform data\n", __func__);
-+		return -EINVAL;
-+	}
++ disconnect:
++	dev_info(&wiichuck->i2c_client->dev, "disconnected\n");
++	wiichuck->state = WIICHUCK_STATE_DISCONNECTED;
++	poll_dev->poll_interval = WIICHUCK_POLL_PERIOD;
++}
 +
-+	rfkill = kzalloc(sizeof(*rfkill), GFP_KERNEL);
-+	if (!rfkill)
++/**
++ * wiichuck_open() - Set up initial state machine state
++ *
++ * Called exactly once the first time the device is opened by
++ * userspace.  Will not be called again unless all users close it
++ * before reopening.  This simply clears the state to disconnected and
++ * sets the poll rate back to the slow speed
++ */
++static void wiichuck_open(struct input_polled_dev *poll_dev)
++{
++	struct wiichuck_device *wiichuck = poll_dev->private;
++
++	wiichuck->process = wiichuck_process_unknown;
++	wiichuck->state = WIICHUCK_STATE_DISCONNECTED;
++	wiichuck->poll_dev->poll_interval = WIICHUCK_POLL_PERIOD;
++}
++
++static int __devinit wiichuck_probe(struct i2c_client *client,
++				const struct i2c_device_id *id)
++{
++	struct wiichuck_device *wiichuck;
++	struct input_polled_dev *poll_dev;
++	struct input_dev *input_dev;
++	int rc;
++
++	wiichuck = kzalloc(sizeof(*wiichuck), GFP_KERNEL);
++	if (!wiichuck)
 +		return -ENOMEM;
 +
-+	rfkill->pdata = pdata;
-+
-+	len = strlen(pdata->name);
-+	rfkill->reset_name = kzalloc(len + 7, GFP_KERNEL);
-+	if (!rfkill->reset_name) {
-+		ret = -ENOMEM;
-+		goto fail_alloc;
++	poll_dev = input_allocate_polled_device();
++	if (!poll_dev) {
++		rc = -ENOMEM;
++		goto err_alloc;
 +	}
 +
-+	rfkill->shutdown_name = kzalloc(len + 10, GFP_KERNEL);
-+	if (!rfkill->shutdown_name) {
-+		ret = -ENOMEM;
-+		goto fail_reset_name;
++	wiichuck->i2c_client = client;
++	wiichuck->poll_dev = poll_dev;
++
++	poll_dev->private = wiichuck;
++	poll_dev->poll = wiichuck_poll;
++	poll_dev->open = wiichuck_open;
++
++	input_dev = poll_dev->input;
++	input_dev->name = "Wiichuck expansion connector";
++	input_dev->id.bustype = BUS_I2C;
++	input_dev->dev.parent = &client->dev;
++
++	/* Declare the events generated by this driver */
++	__set_bit(EV_ABS, input_dev->evbit);
++	__set_bit(EV_KEY, input_dev->evbit);
++
++	/* Nunchuck ranges */
++	__set_bit(ABS_X, input_dev->absbit); /* joystick */
++	__set_bit(ABS_Y, input_dev->absbit);
++	input_set_abs_params(input_dev, ABS_X, 30, 220, 4, 8);
++	input_set_abs_params(input_dev, ABS_Y, 40, 200, 4, 8);
++
++	__set_bit(ABS_RX, input_dev->absbit); /* accelerometer */
++	__set_bit(ABS_RY, input_dev->absbit);
++	__set_bit(ABS_RZ, input_dev->absbit);
++	input_set_abs_params(input_dev, ABS_RX, 0, 0x3ff, 4, 8);
++	input_set_abs_params(input_dev, ABS_RY, 0, 0x3ff, 4, 8);
++	input_set_abs_params(input_dev, ABS_RZ, 0, 0x3ff, 4, 8);
++
++	/* Nunchuck buttons */
++	__set_bit(BTN_C, input_dev->keybit);
++	__set_bit(BTN_Z, input_dev->keybit);
++
++	/* Classic ranges */
++	__set_bit(ABS_HAT0X, input_dev->absbit); /* Left Joystick */
++	__set_bit(ABS_HAT0Y, input_dev->absbit);
++	input_set_abs_params(input_dev, ABS_HAT0X, 0, 63, 2, 4);
++	input_set_abs_params(input_dev, ABS_HAT0Y, 0, 63, 2, 4);
++
++	__set_bit(ABS_HAT1X, input_dev->absbit); /* Right Joystick */
++	__set_bit(ABS_HAT1Y, input_dev->absbit);
++	input_set_abs_params(input_dev, ABS_HAT1X, 0, 31, 1, 2);
++	input_set_abs_params(input_dev, ABS_HAT1Y, 0, 31, 1, 2);
++
++	__set_bit(ABS_HAT2X, input_dev->absbit); /* D-pad */
++	__set_bit(ABS_HAT2Y, input_dev->absbit);
++	input_set_abs_params(input_dev, ABS_HAT2X, -1, 1, 0, 0);
++	input_set_abs_params(input_dev, ABS_HAT2Y, -1, 1, 0, 0);
++
++	__set_bit(ABS_BRAKE, input_dev->absbit); /* Left trigger */
++	input_set_abs_params(input_dev, ABS_BRAKE, 0, 31, 1, 2);
++	__set_bit(ABS_GAS, input_dev->absbit);
++	input_set_abs_params(input_dev, ABS_GAS, 0, 31, 1, 2);
++
++	/* Classic buttons */
++	__set_bit(BTN_TL, input_dev->keybit);
++	__set_bit(BTN_SELECT, input_dev->keybit);
++	__set_bit(BTN_MODE, input_dev->keybit);
++	__set_bit(BTN_START, input_dev->keybit);
++	__set_bit(BTN_TR, input_dev->keybit);
++	__set_bit(BTN_TL2, input_dev->keybit);
++	__set_bit(BTN_B, input_dev->keybit);
++	__set_bit(BTN_Y, input_dev->keybit);
++	__set_bit(BTN_A, input_dev->keybit);
++	__set_bit(BTN_X, input_dev->keybit);
++	__set_bit(BTN_TR2, input_dev->keybit);
++
++	i2c_set_clientdata(client, wiichuck);
++
++	/* Register the device; it is 'live' after this point */
++	rc = input_register_polled_device(wiichuck->poll_dev);
++	if (rc) {
++		dev_err(&client->dev, "Failed to register input device\n");
++		goto err_register;
 +	}
-+
-+	snprintf(rfkill->reset_name, len + 6 , "%s_reset", pdata->name);
-+	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", pdata->name);
-+
-+	if (pdata->power_clk_name) {
-+		rfkill->pwr_clk = clk_get(&pdev->dev, pdata->power_clk_name);
-+		if (IS_ERR(rfkill->pwr_clk)) {
-+			pr_warn("%s: can't find pwr_clk.\n", __func__);
-+			goto fail_shutdown_name;
-+		}
-+	}
-+
-+	if (gpio_is_valid(pdata->reset_gpio)) {
-+		ret = gpio_request(pdata->reset_gpio, rfkill->reset_name);
-+		if (ret) {
-+			pr_warn("%s: failed to get reset gpio.\n", __func__);
-+			goto fail_clock;
-+		}
-+	}
-+
-+	if (gpio_is_valid(pdata->shutdown_gpio)) {
-+		ret = gpio_request(pdata->shutdown_gpio, rfkill->shutdown_name);
-+		if (ret) {
-+			pr_warn("%s: failed to get shutdown gpio.\n", __func__);
-+			goto fail_reset;
-+		}
-+	}
-+
-+	rfkill->rfkill_dev = rfkill_alloc(pdata->name, &pdev->dev, pdata->type,
-+				&rfkill_gpio_ops, rfkill);
-+	if (!rfkill->rfkill_dev)
-+		goto fail_shutdown;
-+
-+	ret = rfkill_register(rfkill->rfkill_dev);
-+	if (ret < 0)
-+		goto fail_rfkill;
-+
-+	platform_set_drvdata(pdev, rfkill);
-+
-+	dev_info(&pdev->dev, "%s device registered.\n", pdata->name);
 +
 +	return 0;
 +
-+fail_rfkill:
-+	rfkill_destroy(rfkill->rfkill_dev);
-+fail_shutdown:
-+	if (gpio_is_valid(pdata->shutdown_gpio))
-+		gpio_free(pdata->shutdown_gpio);
-+fail_reset:
-+	if (gpio_is_valid(pdata->reset_gpio))
-+		gpio_free(pdata->reset_gpio);
-+fail_clock:
-+	if (rfkill->pwr_clk)
-+		clk_put(rfkill->pwr_clk);
-+fail_shutdown_name:
-+	kfree(rfkill->shutdown_name);
-+fail_reset_name:
-+	kfree(rfkill->reset_name);
-+fail_alloc:
-+	kfree(rfkill);
++ err_register:
++	i2c_set_clientdata(client, NULL);
++	input_free_polled_device(poll_dev);
++ err_alloc:
++	kfree(wiichuck);
 +
-+	return ret;
++	return rc;
 +}
 +
-+static int rfkill_gpio_remove(struct platform_device *pdev)
++static int __devexit wiichuck_remove(struct i2c_client *client)
 +{
-+	struct rfkill_gpio_data *rfkill = platform_get_drvdata(pdev);
++	struct wiichuck_device *wiichuck = i2c_get_clientdata(client);
 +
-+	rfkill_unregister(rfkill->rfkill_dev);
-+	rfkill_destroy(rfkill->rfkill_dev);
-+	if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
-+		gpio_free(rfkill->pdata->shutdown_gpio);
-+	if (gpio_is_valid(rfkill->pdata->reset_gpio))
-+		gpio_free(rfkill->pdata->reset_gpio);
-+	if (rfkill->pwr_clk && PWR_CLK_ENABLED(rfkill))
-+		clk_disable(rfkill->pwr_clk);
-+	if (rfkill->pwr_clk)
-+		clk_put(rfkill->pwr_clk);
-+	kfree(rfkill->shutdown_name);
-+	kfree(rfkill->reset_name);
-+	kfree(rfkill);
++	i2c_set_clientdata(client, NULL);
++	input_unregister_polled_device(wiichuck->poll_dev);
++	input_free_polled_device(wiichuck->poll_dev);
++	kfree(wiichuck);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver rfkill_gpio_driver = {
-+	.probe = rfkill_gpio_probe,
-+	.remove = __devexit_p(rfkill_gpio_remove),
++static const struct i2c_device_id wiichuck_id[] = {
++	{ "wiichuck", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, wiichuck_id);
++
++#ifdef CONFIG_OF
++static struct of_device_id wiichuck_match_table[] __devinitdata = {
++	{ .compatible = "nintendo,wiimote-extension", },
++	{ }
++};
++#else
++#define wiichuck_match_table NULL
++#endif
++
++static struct i2c_driver wiichuck_driver = {
 +	.driver = {
-+		   .name = "rfkill_gpio",
-+		   .owner = THIS_MODULE,
++		.name = "wiichuck",
++		.owner = THIS_MODULE,
++		.of_match_table = wiichuck_match_table,
 +	},
++	.probe		= wiichuck_probe,
++	.remove		= __devexit_p(wiichuck_remove),
++	.id_table	= wiichuck_id,
 +};
 +
-+static int __init rfkill_gpio_init(void)
++static int __init wiichuck_init(void)
 +{
-+	return platform_driver_register(&rfkill_gpio_driver);
++	return i2c_add_driver(&wiichuck_driver);
 +}
++module_init(wiichuck_init);
 +
-+static void __exit rfkill_gpio_exit(void)
++static void __exit wiichuck_exit(void)
 +{
-+	platform_driver_unregister(&rfkill_gpio_driver);
++	i2c_del_driver(&wiichuck_driver);
 +}
-+
-+module_init(rfkill_gpio_init);
-+module_exit(rfkill_gpio_exit);
-+
-+MODULE_DESCRIPTION("gpio rfkill");
-+MODULE_AUTHOR("NVIDIA");
-+MODULE_LICENSE("GPL");
--- 
-1.7.5.1
++module_exit(wiichuck_exit);
 
