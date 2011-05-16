@@ -1,77 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1EPNAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:00:49 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42356 "EHLO mx2.mail.elte.hu"
+	id S1755142Ab1EPNBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:01:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23830 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab1EPNAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:00:47 -0400
-Date: Mon, 16 May 2011 15:00:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>, oleg@redhat.com,
-        vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re: [PATCH
- 11/11] ptrace: implement group stop notification for ptracer]
-Message-ID: <20110516130032.GF7128@elte.hu>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
- <20110515140232.GB31855@host1.jankratochvil.net>
- <20110515142827.GF23665@htj.dyndns.org>
- <20110515171748.GA25216@host1.jankratochvil.net>
- <20110515172811.GM23665@htj.dyndns.org>
- <20110515200654.GA32659@host1.jankratochvil.net>
- <20110516084350.GO23665@htj.dyndns.org>
- <20110516121711.GC10469@host1.jankratochvil.net>
- <20110516125615.GW23665@htj.dyndns.org>
+	id S1754730Ab1EPNBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 09:01:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,374,1301900400"; 
+   d="scan'208";a="747845870"
+Date: Mon, 16 May 2011 21:00:55 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/17] writeback: sync expired inodes first in
+ background writeback
+Message-ID: <20110516130055.GA12407@localhost>
+References: <20110512135706.937596128@intel.com>
+ <20110512140031.390955672@intel.com>
+ <20110512225525.GK19446@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110516125615.GW23665@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110512225525.GK19446@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tejun Heo <tj@kernel.org> wrote:
-
-> Hello,
-> 
-> On Mon, May 16, 2011 at 02:17:11PM +0200, Jan Kratochvil wrote:
-> > On Mon, 16 May 2011 10:43:50 +0200, Tejun Heo wrote:
-> > > There's distinction between "broken" and "ugly".  If it's ugly but
-> > > functional, you don't need to "fix" it.
+On Fri, May 13, 2011 at 06:55:25AM +0800, Dave Chinner wrote:
+> On Thu, May 12, 2011 at 09:57:12PM +0800, Wu Fengguang wrote:
+> > A background flush work may run for ever. So it's reasonable for it to
+> > mimic the kupdate behavior of syncing old/expired inodes first.
 > > 
-> > The final goal is the user experience (such as the users of GDB), nothing else
-> > matters.  If it is so "ugly" the userland developers fail to use it the
-> > project as a whole still broken.
+> > At each queue_io() time, first try enqueuing only newly expired inodes.
+> > If there are zero expired inodes to work with, then relax the rule and
+> > enqueue all dirty inodes.
+> > 
+> > It at least makes sense from the data integrity point of view.
+> > 
+> > This may also reduce the number of dirty pages encountered by page
+> > reclaim, eg. the pageout() calls. Normally older inodes contain older
+> > dirty pages, which are more close to the end of the LRU lists. So
+> > syncing older inodes first helps reducing the dirty pages reached by the
+> > page reclaim code.
+> > 
+> > More background: as Mel put it, "it makes sense to write old pages first
+> > to reduce the chances page reclaim is initiating IO."
+> > 
+> > Rik also presented the situation with a graph:
+> > 
+> > LRU head                                 [*] dirty page
+> > [                          *              *      * *  *  * * * * * *]
+> > 
+> > Ideally, most dirty pages should lie close to the LRU tail instead of
+> > LRU head. That requires the flusher thread to sync old/expired inodes
+> > first (as there are obvious correlations between inode age and page
+> > age), and to give fair opportunities to newly expired inodes rather
+> > than sticking with some large eldest inodes (as larger inodes have
+> > weaker correlations in the inode<=>page ages).
+> > 
+> > This patch helps the flusher to meet both the above requirements.
+> > 
+> > Side effects: it might reduce the batch size and hence reduce
+> > inode_wb_list_lock hold time, but in turn make the cluster-by-partition
+> > logic in the same function less effective on reducing disk seeks.
+> > 
+> > v2: keep policy changes inside wb_writeback() and keep the
+> > wbc.older_than_this visibility as suggested by Dave.
+> > 
+> > CC: Dave Chinner <david@fromorbit.com>
+> > Acked-by: Jan Kara <jack@suse.cz>
+> > Acked-by: Rik van Riel<riel@redhat.com>
+> > Acked-by: Mel Gorman <mel@csn.ul.ie>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  fs/fs-writeback.c |   16 +++++++++++++++-
+> >  1 file changed, 15 insertions(+), 1 deletion(-)
+> > 
+> > --- linux-next.orig/fs/fs-writeback.c	2011-05-05 23:30:25.000000000 +0800
+> > +++ linux-next/fs/fs-writeback.c	2011-05-05 23:30:26.000000000 +0800
+> > @@ -718,7 +718,7 @@ static long wb_writeback(struct bdi_writ
+> >  		if (work->for_background && !over_bground_thresh())
+> >  			break;
+> >  
+> > -		if (work->for_kupdate) {
+> > +		if (work->for_kupdate || work->for_background) {
+> >  			oldest_jif = jiffies -
+> >  				msecs_to_jiffies(dirty_expire_interval * 10);
+> >  			wbc.older_than_this = &oldest_jif;
+> > @@ -729,6 +729,7 @@ static long wb_writeback(struct bdi_writ
+> >  		wbc.pages_skipped = 0;
+> >  		wbc.inodes_cleaned = 0;
+> >  
+> > +retry:
+> >  		trace_wbc_writeback_start(&wbc, wb->bdi);
+> >  		if (work->sb)
+> >  			__writeback_inodes_sb(work->sb, wb, &wbc);
+> > @@ -752,6 +753,19 @@ static long wb_writeback(struct bdi_writ
+> >  		if (wbc.inodes_cleaned)
+> >  			continue;
+> >  		/*
+> > +		 * background writeback will start with expired inodes, and
+> > +		 * if none is found, fallback to all inodes. This order helps
+> > +		 * reduce the number of dirty pages reaching the end of LRU
+> > +		 * lists and cause trouble to the page reclaim.
+> > +		 */
+> > +		if (work->for_background &&
+> > +		    wbc.older_than_this &&
+> > +		    list_empty(&wb->b_io) &&
+> > +		    list_empty(&wb->b_more_io)) {
+> > +			wbc.older_than_this = NULL;
+> > +			goto retry;
+> > +		}
+> > +		/*
+> >  		 * No more inodes for IO, bail
+> >  		 */
+> >  		if (!wbc.more_io)
 > 
-> To me, it seems the breakage and mountain of workarounds come more from lack 
-> of proper documentation plus the current ptrace + job control + signal 
-> interaction which is really broken.  For example, it seems nobody really 
-> understood how group stop and ptrace interacts and the different types of 
-> traps being used - strace(2) thought the same signal was being delivered 
-> twice.
+> I have to say that I dislike this implicit nested looping structure
+> using a goto. It would seem better to me to make it explicit that we
+> can do multiple writeback calls by using a do/while loop here and
+> moving the logic of setting/resetting wbc.older_than_this to one
+> place inside the nested loop...
 
-Btw., i'd also like to offer the observation that even these days, running 
-brand-new Rawhide distribution with strace-4.5.20-2.fc15.x86_64 and a fresh 
-kernel, i *still* often see strace (or ptrace?) misbehavior like it 
-misprocessing Ctrl-C and leaving hung threads around which i have to clean up 
-manually ...
-
-So if you could bring sanity in here i think we could live with a regression or 
-two, if the situation could be improved in the longer run - it's not like we 
-are protecting a stable bastion of robust functionality here ...
+This is the best I can do. Does it look better? Now the
+.older_than_this modifying lines are close to each others :)
 
 Thanks,
+Fengguang
+---
 
-	Ingo
+ fs/fs-writeback.c |   58 +++++++++++++++++++++++---------------------
+ 1 file changed, 31 insertions(+), 27 deletions(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2011-05-16 20:29:53.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-05-16 20:53:31.000000000 +0800
+@@ -713,42 +713,22 @@ static long wb_writeback(struct bdi_writ
+ 	unsigned long oldest_jif;
+ 	struct inode *inode;
+ 	long progress;
++	bool bg_retry_all = false;
+ 
+ 	oldest_jif = jiffies;
+ 	work->older_than_this = &oldest_jif;
+ 
+ 	spin_lock(&wb->list_lock);
+ 	for (;;) {
+-		/*
+-		 * Stop writeback when nr_pages has been consumed
+-		 */
+-		if (work->nr_pages <= 0)
+-			break;
+-
+-		/*
+-		 * Background writeout and kupdate-style writeback may
+-		 * run forever. Stop them if there is other work to do
+-		 * so that e.g. sync can proceed. They'll be restarted
+-		 * after the other works are all done.
+-		 */
+-		if ((work->for_background || work->for_kupdate) &&
+-		    !list_empty(&wb->bdi->work_list))
+-			break;
+-
+-		/*
+-		 * For background writeout, stop when we are below the
+-		 * background dirty threshold
+-		 */
+-		if (work->for_background && !over_bground_thresh())
+-			break;
+-
+-		if (work->for_kupdate || work->for_background) {
++		if (bg_retry_all) {
++			bg_retry_all = false;
++			work->older_than_this = NULL;
++		} else if (work->for_kupdate || work->for_background) {
+ 			oldest_jif = jiffies -
+ 				msecs_to_jiffies(dirty_expire_interval * 10);
+ 			work->older_than_this = &oldest_jif;
+ 		}
+ 
+-retry:
+ 		trace_writeback_start(wb->bdi, work);
+ 		if (list_empty(&wb->b_io))
+ 			queue_io(wb, work->older_than_this);
+@@ -778,14 +758,38 @@ retry:
+ 		    work->older_than_this &&
+ 		    list_empty(&wb->b_io) &&
+ 		    list_empty(&wb->b_more_io)) {
+-			work->older_than_this = NULL;
+-			goto retry;
++			bg_retry_all = true;
++			continue;
+ 		}
+ 		/*
+ 		 * No more inodes for IO, bail
+ 		 */
+ 		if (list_empty(&wb->b_more_io))
+ 			break;
++
++		/*
++		 * Stop writeback when nr_pages has been consumed
++		 */
++		if (work->nr_pages <= 0)
++			break;
++
++		/*
++		 * Background writeout and kupdate-style writeback may
++		 * run forever. Stop them if there is other work to do
++		 * so that e.g. sync can proceed. They'll be restarted
++		 * after the other works are all done.
++		 */
++		if ((work->for_background || work->for_kupdate) &&
++		    !list_empty(&wb->bdi->work_list))
++			break;
++
++		/*
++		 * For background writeout, stop when we are below the
++		 * background dirty threshold
++		 */
++		if (work->for_background && !over_bground_thresh())
++			break;
++
+ 		/*
+ 		 * Nothing written. Wait for some inode to
+ 		 * become available for writeback. Otherwise
