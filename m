@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab1EPUc1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 16:32:27 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:16489 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab1EPUc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 16:32:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=ydkUz7S/2hasR8um1K2r3xr5AlRLlvblLZ00I+Tny4Y919b8XiE8gxyBahzVti8iJK
-         9lVtknHIWNIQJFcmYwqg==
-Date: Mon, 16 May 2011 13:32:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Daniel Kiper <dkiper@net-space.pl>
-cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] mm: Remove dependency on CONFIG_FLATMEM from
- online_page()
-In-Reply-To: <20110516075849.GB6393@router-fw-old.local.net-space.pl>
-Message-ID: <alpine.DEB.2.00.1105161330570.4353@chino.kir.corp.google.com>
-References: <20110502211915.GB4623@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105111547160.24003@chino.kir.corp.google.com> <20110512102515.GA27851@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105121223500.2407@chino.kir.corp.google.com>
- <20110516075849.GB6393@router-fw-old.local.net-space.pl>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1755755Ab1EPUdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 16:33:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59140 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755575Ab1EPUdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 16:33:52 -0400
+Subject: Re: [PATCH v2] x86, vt-d: enable x2apic opt out
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: "Song, Youquan" <youquan.song@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Liu, Kent" <kent.liu@intel.com>,
+        Youquan Song <youquan.song@linux.intel.com>
+In-Reply-To: <1305126431.30435.163.camel@i7.infradead.org>
+References: <1302764783-24491-1-git-send-email-youquan.song@intel.com>
+	 <1305126431.30435.163.camel@i7.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 14:32:57 -0600
+Message-ID: <1305577977.3146.112.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 May 2011, Daniel Kiper wrote:
-
-> > No, I would just reply to the email notification you received when the
-> > patch went into -mm saying that the changelog should be adjusted to read
-> > something like
-> >
-> > 	online_pages() is only compiled for CONFIG_MEMORY_HOTPLUG_SPARSE,
-> > 	so there is no need to support CONFIG_FLATMEM code within it.
-> >
-> > 	This patch removes code that is never used.
+On Wed, 2011-05-11 at 16:07 +0100, Woodhouse, David wrote:
+> On Thu, 2011-04-14 at 08:06 +0100, Song, Youquan wrote:
+> > New version of VT-d2 specification (http://download.intel.com/technology
+> > /computing/vptech/Intel(r)_VT_for_Direct_IO.pdf) includes a new feature that 
+> > provide firmware a way to request system software to opt out of enable x2APIC
+> > mode. DMAR ACPI table newly define flags.1 bit: x2APIC_OPT_OUT which is set to
+> > request System software opt out xAPIC mode if flags.0 bit:INTR_REMAP is also
+> > set.
+> > 
+> > This patch enable the feature. Also re-define x2apic_supported() to address
+> > platform x2apic support needs 1)processor has x2apic capability 2)interrupt
+> > remapping support 3)firmware does not request opt-out. 
 > 
-> Please look into attachments.
+> Given that x2apic is *required* to be safe from irq injection tricks,
+> why would we ever want to manually disable it?
 > 
-> If you have any questions please drop me a line.
-> 
+> Is this just a workaround for a crappy BIOS? What is the *actual* reason
+> for wanting to disable x2apic?
 
-Not sure why you've attached the emails from the mm-commits mailing list.  
-I'll respond to the commits with with my suggestions for how the changelog 
-should be fixed.
+Just a guess, but the OEM probably hasn't updated their SMI handlers to
+understand x2apic yet and won't before the product ships because some
+other OS doesn't bother to use x2apic.  We can still enable interrupt
+remapping w/o x2apic though, so I'm curious what other irq injection
+tricks you're referring to.  Thanks,
 
-Thanks.
+Alex
+
