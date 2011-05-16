@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751009Ab1EPEWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 00:22:35 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36020 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750787Ab1EPEWe (ORCPT
+	id S1751145Ab1EPE23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 00:28:29 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56906 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab1EPE21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 00:22:34 -0400
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: mgorman@suse.de, akpm@linux-foundation.org, colin.king@canonical.com,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-In-Reply-To: <4DCFAA80.7040109@jp.fujitsu.com>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-	 <1305295404-12129-5-git-send-email-mgorman@suse.de>
-	 <4DCFAA80.7040109@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 08:21:51 +0400
-Message-ID: <1305519711.4806.7.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Mon, 16 May 2011 00:28:27 -0400
+X-Nat-Received: from [202.181.97.72]:61326 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1305520062.24284
+Message-Id: <201105160427.p4G4Rfbq041525@www262.sakura.ne.jp>
+Subject: Re: [Bug #34492] [2.6.39-rc4, x86_32] Stall at default_idle()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: rjw@sisk.pl
+Cc: kernel-testers@vger.kernel.org, maciej.rutecki@gmail.com,
+        florian@mickler.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Date: Mon, 16 May 2011 13:27:41 +0900
+References: <So1vU2GC7XM.A.5wB.44vzNB@chimera> <HA8urZ3ZRcP.A.6QC.Q5vzNB@chimera>
+In-Reply-To: <HA8urZ3ZRcP.A.6QC.Q5vzNB@chimera>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 16052011 #5417128, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-15 at 19:27 +0900, KOSAKI Motohiro wrote:
-> (2011/05/13 23:03), Mel Gorman wrote:
-> > Under constant allocation pressure, kswapd can be in the situation where
-> > sleeping_prematurely() will always return true even if kswapd has been
-> > running a long time. Check if kswapd needs to be scheduled.
-> > 
-> > Signed-off-by: Mel Gorman<mgorman@suse.de>
-> > ---
-> >   mm/vmscan.c |    4 ++++
-> >   1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index af24d1e..4d24828 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
-> >   	unsigned long balanced = 0;
-> >   	bool all_zones_ok = true;
-> > 
-> > +	/* If kswapd has been running too long, just sleep */
-> > +	if (need_resched())
-> > +		return false;
-> > +
+Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> Hmm... I don't like this patch so much. because this code does
+> The following bug entry is on the current list of known regressions
+> from 2.6.38.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> - don't sleep if kswapd got context switch at shrink_inactive_list
-
-This isn't entirely true:  need_resched() will be false, so we'll follow
-the normal path for determining whether to sleep or not, in effect
-leaving the current behaviour unchanged.
-
-> - sleep if kswapd didn't
-
-This also isn't entirely true: whether need_resched() is true at this
-point depends on a whole lot more that whether we did a context switch
-in shrink_inactive. It mostly depends on how long we've been running
-without giving up the CPU.  Generally that will mean we've been round
-the shrinker loop hundreds to thousands of times without sleeping.
-
-> It seems to be semi random behavior.
-
-Well, we have to do something.  Chris Mason first suspected the hang was
-a kswapd rescheduling problem a while ago.  We tried putting
-cond_rescheds() in several places in the vmscan code, but to no avail.
-The need_resched() in sleeping_prematurely() seems to be about the best
-option.  The other option might be just to put a cond_resched() in
-kswapd_try_to_sleep(), but that will really have about the same effect.
-
-James
-
-
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=34492
+> Subject		: [2.6.39-rc4, x86_32] Stall at default_idle()
+> Submitter	: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+> Date		: 2011-04-27 4:49 (18 days old)
+> Message-ID	: <201104270449.p3R4n54n023453@www262.sakura.ne.jp>
+> References	: http://marc.info/?l=linux-kernel&m=130387977425687&w=2
+> 
+I don't know whether this bug has been fixed or not, for I haven't succeeded
+to reproduce this bug since then. Can somebody figure out what was happening?
