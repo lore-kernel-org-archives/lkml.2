@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab1EPKjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 06:39:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60327 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754607Ab1EPKjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 06:39:31 -0400
-Date: Mon, 16 May 2011 12:38:45 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Documentation: Update augmented rbtree documentation
-Message-ID: <20110516103845.GB19837@elte.hu>
-References: <1305539802-12509-1-git-send-email-levinsasha928@gmail.com>
+	id S1754848Ab1EPKkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 06:40:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40778 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471Ab1EPKkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 06:40:51 -0400
+Date: Mon, 16 May 2011 06:40:16 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/17] writeback: introduce
+ writeback_control.inodes_cleaned
+Message-ID: <20110516104015.GA18520@infradead.org>
+References: <20110512135706.937596128@intel.com>
+ <20110512140031.025181367@intel.com>
+ <20110512224420.GJ19446@dastard>
+ <20110513033605.GC8016@localhost>
+ <20110515235021.GP19446@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305539802-12509-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110515235021.GP19446@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 16, 2011 at 09:50:21AM +1000, Dave Chinner wrote:
+> > - nr_to_write has always been "# of pages written" and writeback_sb_inodes()
+> >   is actually making use of it to do page accounting in work->nr_pages.
+> 
+> Do we really care whether it's inodes or pages that are written? As
+> far as i can tell it doesn't, because writing inodes generally
+> requires more IO and so needs to be limited anyway.
 
-* Sasha Levin <levinsasha928@gmail.com> wrote:
+We do care, but the current infrastructure already is bad enough to
+not make it work.  E.g. when calling from balance_dirty_pages we
+couldn't care less if the inode is written back, we just want pages
+on stable storage, similar for wakeups from the VM code.  Sooner or
+later there's no way around splitting page and inode writeback
+completely.
 
-> Current documentation referred to the old method
-> of handling augmented trees. Update documentation
-> to correspond with the changes done in commit
-> b945d6b2554d550fe95caadc61e521c0ad71fb9c.
+> So put the accounting in the post-write code in
+> writeback_single_inode() where we already check if the inode is
+> still dirty or not.  Splitting per-inode post-write processing
+> between writeback_single_inode and the higher level code is cludgy -
+> I'd much prefer it done in only one place.
 
->  Augmented rbtree is an rbtree with "some" additional data stored in each node.
->  This data can be used to augment some new functionality to rbtree.
->  Augmented rbtree is an optional feature built on top of basic rbtree
-> +infrastructure. rbtree user who wants this feature will have to call the
+I'd tend to agree.  Especially as cleaner separation was the main
+goal for getting rid of the writeback_control overload in the beginning.
 
-s/rbtree user/An rbtree user
-
-> +augmentation functions with the user provided augmentation callback
-> +when inserting and erasing nodes.
-> +
-> +On insertion, The user must call rb_augment_insert() once the new node is in
-> +place. This will cause the augmentation function callback to be called for
-> +each node between the new node and the root which have been affected by the
-> +insertion.
-> +
-> +When erasing a node, The user must call rb_augment_erase_begin() first to
-> +retrieve the deepest node on the rebalance path. Then, After erasing the
-> +original node, the user must call rb_augment_erase_end() with the deepest
-> +node found earlier. This will cause the augmentation function to be called
-> +for each affected node between the deepest node and the root.
-
-Acked-by: Ingo Molnar <mingo@elte.hu>
-
-Thanks,
-
-	Ingo
