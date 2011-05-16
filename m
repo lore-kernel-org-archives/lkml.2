@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1EPNVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:21:08 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:33470 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753829Ab1EPNVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:21:07 -0400
-X-ASG-Debug-ID: 1305552065-01de28096b3bd40001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DD124BE.6050104@fusionio.com>
-Date: Mon, 16 May 2011 15:21:02 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755322Ab1EPNVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:21:51 -0400
+Received: from vps.jankratochvil.net ([46.28.109.124]:39807 "EHLO
+	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753829Ab1EPNVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 09:21:50 -0400
+Date: Mon, 16 May 2011 15:21:23 +0200
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
+ implement PTRACE_SEIZE]
+Message-ID: <20110516132123.GA13544@host1.jankratochvil.net>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-3-git-send-email-tj@kernel.org>
+ <20110515155602.GD31855@host1.jankratochvil.net>
+ <20110515162630.GG23665@htj.dyndns.org>
+ <20110515171512.GA24047@host1.jankratochvil.net>
+ <20110515172505.GL23665@htj.dyndns.org>
+ <20110515194829.GA27023@host1.jankratochvil.net>
+ <20110516083113.GN23665@htj.dyndns.org>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Li Zefan <lizf@cn.fujitsu.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-throttle: Use task_subsys_state() to determine a
-  task's blkio_cgroup
-References: <20110509134915.GC5975@redhat.com> <20110516131608.GA8237@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH] blk-throttle: Use task_subsys_state() to determine a
-  task's blkio_cgroup
-In-Reply-To: <20110516131608.GA8237@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1305552065
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.63904
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516083113.GN23665@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-16 15:16, Vivek Goyal wrote:
-> On Mon, May 09, 2011 at 09:49:15AM -0400, Vivek Goyal wrote:
->> Currentlly we first map the task to cgroup and then cgroup to
->> blkio_cgroup. There is a more direct way to get to blkio_cgroup
->> from task using task_subsys_state(). Use that.
->>
-> 
-> Hi Jens,
-> 
-> Can you please apply this patch. I was hoping to get this fixed in 2.6.39.
-> If it is too late, then we can queue it up for 2.6.40.
+Hi Tejun,
 
-Yep will do, I have a few things for .39 and still one pending item for
-.39 as well that isn't completely resolved yet.
+On Mon, 16 May 2011 10:31:13 +0200, Tejun Heo wrote:
+> First of all, I don't think hitting different trap spots would be that
+> difficult.  Handling different traps after SEIZE might not be easy but
+> could just be something which needs to be done anyway.  I'm reluctant
+> to treat the initial trap differently because it's essentially
+> identical to what happens when a program does PTRACE_INTERRUPT.  It's
+> just something the program should be able to deal with, somewhat like
+> read(2) may return shorter amount of data than provided buffer.
 
--- 
-Jens Axboe
+If not clear I would like also PTRACE_INTERRUPT to deliver the INTERRUPT event
+always as the first one, if it is not clear.
 
+tracer            tracee                                foreign process
+---------------   ------                                ---------------
+attaches tracee                                        
+normal run                                             
+                                                        tkill(tracee, SIGUSR1)
+                  stopped, to report SIGUSR1 to tracer
+PTRACE_INTERRUPT  (but tracee is already stopped)
+waitpid(tracee)
+
+Currently that waitpid will report SIGUSR1 first and then the INTERRUPT trap.
+
+I suggest - if possible - that tracer will get that INTERRUPT trap first.
+
+But you made the optimization that the INTERRUPT gets suppressed in such case.
+Which improves performance for the cost of more complicated debuggers.
+
+I guess after PTRACE_SEIZE if the first signal/event is not INTERRUPT there
+will not be any INTERRUPT later, as you said.
+
+
+Thanks,
+Jan
