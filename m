@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1EPJUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:20:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41927 "EHLO mgw2.diku.dk"
+	id S1753349Ab1EPJXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:23:21 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48053 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202Ab1EPJUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:20:33 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, Vipin Mehta <vmehta@atheros.com>,
-        Joe Perches <joe@perches.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Naveen Singh <nsingh@atheros.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/staging/ath6kl/os/linux/cfg80211.c: Add missing call to cfg80211_put_bss
-Date: Mon, 16 May 2011 11:20:29 +0200
-Message-Id: <1305537629-29876-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1752737Ab1EPJXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:23:19 -0400
+Date: Mon, 16 May 2011 11:23:09 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <j-pihet@ti.com>, linux-omap@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] perf: export power_start and power_end tracepoints
+Message-ID: <20110516092309.GD12325@elte.hu>
+References: <1305297838-4015-1-git-send-email-j-pihet@ti.com>
+ <20110513144830.GB32688@elte.hu>
+ <BANLkTikkd9bNRLF1iDAz9Jwrnon3A=j44g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikkd9bNRLF1iDAz9Jwrnon3A=j44g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
 
-A call to cfg80211_get_bss hould be accompanied by a call to
-cfg80211_put_bss in error-handling code.
+* Jean Pihet <jean.pihet@newoldbits.com> wrote:
 
-A simplified version of the semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
+> Adding l-o and linux-pm MLs. The original post is at
+> http://www.spinics.net/lists/kernel/msg1186554.html
+> 
+> On Fri, May 13, 2011 at 4:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * jean.pihet@newoldbits.com <jean.pihet@newoldbits.com> wrote:
+> >
+> >> From: Jean Pihet <j-pihet@ti.com>
+> >>
+> >> If used in a module both tracepoints need to be exported by the
+> >> kernel.
+> >
+> > but it's not used by any module in the kernel AFAICS, so why is this needed?
+> Not currently, that is why the error went unnoticed. I think it is
+> better to fix it now than later.
+> 
+> I am working on a plan to clean-up and isolate the OMAP PM code from
+> the core code and to provide the PM functionality as a module. This
+> effort is part of the 'remove the crazy ARM churn' from the kernel.
 
-// <smpl>
-@r exists@
-local idexpression struct cfg80211_bss * x;
-expression ra,rr;
-position p1,p2;
-@@
+Feel free to keep this patch with those modifications/cleanups:
 
-x = cfg80211_get_bss@p1(...)
-...  when != x = rr
-     when != cfg80211_put_bss(x,...)
-     when != if (...) { ... cfg80211_put_bss(x,...) ...}
-if(...) { ... when != x = ra
-     when forall
-     when != cfg80211_put_bss(x,...)
- \(return <+...x...+>; \| return@p2...; \) }
+Acked-by: Ingo Molnar <mingo@elte.hu>
 
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
+but please make sure you push it together, i.e. never export something 
+(knowingly) without having in-tree use for it.
 
-cocci.print_main("cfg80211_get_bss",p1)
-cocci.print_secs("return",p2)
+Thanks,
 
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-I don't really understand the use of the bss variable later.  Afterwards,
-along the normal execution path, there is also a call to cfg80211_put_bss,
-but at this point bss has been redefined, and I don't have the impression
-that it still points to the same value.
-
- drivers/staging/ath6kl/os/linux/cfg80211.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/ath6kl/os/linux/cfg80211.c b/drivers/staging/ath6kl/os/linux/cfg80211.c
-index efd4ae5..1e6a343 100644
---- a/drivers/staging/ath6kl/os/linux/cfg80211.c
-+++ b/drivers/staging/ath6kl/os/linux/cfg80211.c
-@@ -545,6 +545,7 @@ ar6k_cfg80211_connect_event(struct ar6_softc *ar, u16 channel,
-     if(!ieeemgmtbuf) {
-             AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
-                             ("%s: ieeeMgmtbuf alloc error\n", __func__));
-+	    cfg80211_put_bss(bss);
-             return;
-     }
- 
-
+	Ingo
