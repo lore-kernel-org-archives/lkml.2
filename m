@@ -1,86 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab1EPHWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 03:22:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34960 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911Ab1EPHWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 03:22:09 -0400
-Date: Mon, 16 May 2011 09:21:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-Message-ID: <20110516072134.GE24836@elte.hu>
-References: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
- <20110513080634.GA13647@elte.hu>
- <20110513083738.GA19733@n2100.arm.linux.org.uk>
- <20110513092646.GK13647@elte.hu>
- <20110513172509.GC19733@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513172509.GC19733@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752315Ab1EPH0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 03:26:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32813 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab1EPH0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 03:26:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hNkYEnOVkHfEUrpbc+7+pso8bmRsu8um3tAeXyF8NQhANfUN9HoQnwqWWY9dvynNt2
+         y1F2VLzyZZJDcGBSib4CbN2Bf1tdzykuAQoelPrZhf9yDBDNgz2GbuJ2ArzVZw4qWJu3
+         /h3/KEEl5pejLsUehcGG3zDI2lUuy5p7TAIlc=
+Subject: [PATCH net-next-2.6 v2] net: ping: dont call udp_ioctl()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: solar@openwall.com, segoon@openwall.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, peak@argo.troja.mff.cuni.cz,
+        kees.cook@canonical.com, dan.j.rosenberg@gmail.com, eugene@redhat.com,
+        nelhage@ksplice.com, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
+In-Reply-To: <20110515.174430.1379973540554096232.davem@davemloft.net>
+References: <20110513200100.GA3875@albatros>
+	 <1305447520.3120.88.camel@edumazet-laptop>
+	 <20110515213018.GA26820@openwall.com>
+	 <20110515.174430.1379973540554096232.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 09:26:31 +0200
+Message-ID: <1305530791.3120.217.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le dimanche 15 mai 2011 à 17:44 -0400, David Miller a écrit :
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-
-> On Fri, May 13, 2011 at 11:26:46AM +0200, Ingo Molnar wrote:
-> > Also note that there's also some pending changes in the x86 tree modifying
-> > arch/x86/kernel/i8253.c:
-> > 
-> >   b01cc1b0eae0: x86: Convert remaining x86 clocksources to clocksource_register_hz/khz
-> > 
-> > If you want to do any further change to this file you need to pull in this 
-> > change first or need to resolve the conflict in some other way.
+> Just get rid of ping_ioctl() entirely, as that is the effect of
+> this change since inet_ioctl() returns -ENOIOCTLCMD when
+> sk_prot->ioctl is NULL.
 > 
-> I have been told by Linus on more than one occasion that Linus wants to
-> see exactly these kinds of merge conflicts, as it helps him track what's
-> going on.
+> Also get rid of asm/ioctls.h since that will be no longer needed.
 
-He has told us on more than one occasion that he wants to see *easy* conflicts, 
-where he can see benign interaction between properly maintained trees.
+Sure, here is updated version, thanks.
 
-Here he would look and would only determine what i have already determined: 
-that the workflow of applying this patch sucked. That is definitely not the 
-kind of conflict Linus wants to see in the merge window ...
+[PATCH net-next-2.6 v2] net: ping: dont call udp_ioctl()
 
-You applied the patch without talking to the maintainers who are running the 
-affected tree. You talked to one of the developers which is fine, and i will 
-generally ack it in hindsight if you do a fine job of sorting out the details - 
-but here you touched an under-modification file without even realizing it. So 
-you messed up which fact i will keep pointing out and i will keep asking you to 
-fix your workflow, so that similar mistakes wont happen in the future.
+udp_ioctl() really handles UDP and UDPLite protocols.
 
-Really, Russell, you sometimes need to accept blame and you need to admit when 
-you messed up instead of writing countless mails trying to save face and 
-wriggle out of it. I mess up all the time and my hand does not rot away from 
-writing this. Really, write this down: "You are right, I messed this up a bit, 
-lets fix it instead of wasting time on emails."
+1) It can increment UDP_MIB_INERRORS in case first_packet_length() finds
+a frame with bad checksum.
 
-Lets resolve the conflict and move on, okay?
+2) It has a dependency on sizeof(struct udphdr), not applicable to
+ICMP/PING
 
-Thanks,
+If ping sockets need to handle SIOCINQ/SIOCOUTQ ioctl, this should be
+done differently.
 
-	Ingo
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+---
+ net/ipv4/ping.c |   19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index 7041d09..41836ab 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -22,7 +22,6 @@
+ 
+ #include <asm/system.h>
+ #include <linux/uaccess.h>
+-#include <asm/ioctls.h>
+ #include <linux/types.h>
+ #include <linux/fcntl.h>
+ #include <linux/socket.h>
+@@ -609,23 +608,6 @@ do_confirm:
+ 	goto out;
+ }
+ 
+-/*
+- *	IOCTL requests applicable to the UDP^H^H^HICMP protocol
+- */
+-
+-int ping_ioctl(struct sock *sk, int cmd, unsigned long arg)
+-{
+-	pr_debug("ping_ioctl(sk=%p,sk->num=%u,cmd=%d,arg=%lu)\n",
+-		inet_sk(sk), inet_sk(sk)->inet_num, cmd, arg);
+-	switch (cmd) {
+-	case SIOCOUTQ:
+-	case SIOCINQ:
+-		return udp_ioctl(sk, cmd, arg);
+-	default:
+-		return -ENOIOCTLCMD;
+-	}
+-}
+-
+ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		 size_t len, int noblock, int flags, int *addr_len)
+ {
+@@ -735,7 +717,6 @@ struct proto ping_prot = {
+ 	.close =	ping_close,
+ 	.connect =	ip4_datagram_connect,
+ 	.disconnect =	udp_disconnect,
+-	.ioctl =	ping_ioctl,
+ 	.setsockopt =	ip_setsockopt,
+ 	.getsockopt =	ip_getsockopt,
+ 	.sendmsg =	ping_sendmsg,
+
+
