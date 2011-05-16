@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab1EPMsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:48:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36341 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab1EPMsg (ORCPT
+	id S1755183Ab1EPMzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:55:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63104 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623Ab1EPMzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:48:36 -0400
+	Mon, 16 May 2011 08:55:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=i2tN8d/gwpL1pyT+I6+l19/p/EFh911TV5jufq1UzTwQR9oVnxAQU7ZE8jfmkDxVgi
-         eqErPFN18XSH4IguTxQjAbmD7yyYCfmj2pPfnCmQ+AofWlSFcVvzPOVH08vXfvZDXJou
-         HzX4vxIgy7DaoP41LDUVQzmNj+lOldwYLS8Lc=
-Date: Mon, 16 May 2011 16:48:28 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, solar@openwall.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        peak@argo.troja.mff.cuni.cz, kees.cook@canonical.com,
-        dan.j.rosenberg@gmail.com, eugene@redhat.com, nelhage@ksplice.com,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-Subject: Re: [PATCH net-next-2.6 v2] net: ping: dont call udp_ioctl()
-Message-ID: <20110516124828.GA5943@albatros>
-References: <1305447520.3120.88.camel@edumazet-laptop>
- <20110515213018.GA26820@openwall.com>
- <20110515.174430.1379973540554096232.davem@davemloft.net>
- <1305530791.3120.217.camel@edumazet-laptop>
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=DaAEeGQRrp8NRt7jqRh2m5YS2v7DK5jOARlZhQ9JFqk065KDa0ueJi7jzM2q7fd1hE
+         Oyg78Lw4NXk/XPnCiQ3NBhAkjw78S52MarCP/Unhnqo8aknQj+Nqa0tXipBXAcGgQOzj
+         dKKRMGlo1Xt40xBtY9pqFPoB1F3B44Q0neKhA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1305530791.3120.217.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 16 May 2011 20:55:51 +0800
+Message-ID: <BANLkTikqKnQgyLr0OmL86iEHE95xB4Z50Q@mail.gmail.com>
+Subject: [PATCH] sched: fix priority leakage in pick_next_highest_task_rt()
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 09:26 +0200, Eric Dumazet wrote:
-> Le dimanche 15 mai 2011 à 17:44 -0400, David Miller a écrit :
-> 
-> > Just get rid of ping_ioctl() entirely, as that is the effect of
-> > this change since inet_ioctl() returns -ENOIOCTLCMD when
-> > sk_prot->ioctl is NULL.
-> > 
-> > Also get rid of asm/ioctls.h since that will be no longer needed.
-> 
-> Sure, here is updated version, thanks.
-> 
-> [PATCH net-next-2.6 v2] net: ping: dont call udp_ioctl()
-> 
-> udp_ioctl() really handles UDP and UDPLite protocols.
-> 
-> 1) It can increment UDP_MIB_INERRORS in case first_packet_length() finds
-> a frame with bad checksum.
-> 
-> 2) It has a dependency on sizeof(struct udphdr), not applicable to
-> ICMP/PING
-> 
-> If ping sockets need to handle SIOCINQ/SIOCOUTQ ioctl, this should be
-> done differently.
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+When picking the second highest RT task for a given runqueue, if no
+task found after scanning the queue of priority == idx, the next idx
+should also be checked even in case that next is already existing, or
+the window of priority leakage could be opened.
 
-Acked-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-Thanks,
+--- a/kernel/sched_rt.c	2011-04-27 11:48:50.000000000 +0800
++++ b/kernel/sched_rt.c	2011-05-16 19:58:42.000000000 +0800
+@@ -1166,6 +1166,8 @@ static struct task_struct *pick_next_hig
+ 	int idx;
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+ 	for_each_leaf_rt_rq(rt_rq, rq) {
++		struct task_struct *this;
++
+ 		array = &rt_rq->active;
+ 		idx = sched_find_first_bit(array->bitmap);
+ next_idx:
+@@ -1173,6 +1175,7 @@ next_idx:
+ 			continue;
+ 		if (next && next->prio < idx)
+ 			continue;
++		this = NULL;
+ 		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+ 			struct task_struct *p;
+
+@@ -1181,11 +1184,15 @@ next_idx:
+
+ 			p = rt_task_of(rt_se);
+ 			if (pick_rt_task(rq, p, cpu)) {
+-				next = p;
++				this = p;
+ 				break;
+ 			}
+ 		}
+-		if (!next) {
++		if (this != NULL)
++			next = this;
++		else {	/*
++			 * we have to check next idx even if next != NULL
++			 */
+ 			idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
+ 			goto next_idx;
+ 		}
