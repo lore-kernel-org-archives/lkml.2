@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab1EPVX7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:23:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51672 "EHLO mx1.redhat.com"
+	id S1756298Ab1EPVYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:24:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44669 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab1EPVX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:23:57 -0400
-Date: Tue, 17 May 2011 00:24:01 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-Message-ID: <20110516212401.GF18148@redhat.com>
-References: <1305574484.3456.30.camel@localhost.localdomain>
- <20110516204540.GD18148@redhat.com>
- <1305579414.3456.49.camel@localhost.localdomain>
+	id S1754705Ab1EPVYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:24:52 -0400
+Date: Mon, 16 May 2011 14:24:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110516212449.GJ2573@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110513121906.GA3676@elte.hu>
+ <20110513130414.GA6863@elte.hu>
+ <20110513131218.GA7669@elte.hu>
+ <20110513141431.GV2258@linux.vnet.ibm.com>
+ <20110513150744.GE32688@elte.hu>
+ <20110513162646.GW2258@linux.vnet.ibm.com>
+ <20110516070808.GC24836@elte.hu>
+ <20110516074822.GE2573@linux.vnet.ibm.com>
+ <20110516115148.GA2421@elte.hu>
+ <20110516122329.GA29356@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305579414.3456.49.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110516122329.GA29356@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
-> On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
-> > > +/* Since we need to keep the order of used_idx as avail_idx, it's
-> > possible that
-> > > + * DMA done not in order in lower device driver for some reason. To
-> > prevent
-> > > + * used_idx out of order, upend_idx is used to track avail_idx
-> > order, done_idx
-> > > + * is used to track used_idx order. Once lower device DMA done,
-> > then upend_idx
-> > > + * can move to done_idx.
+On Mon, May 16, 2011 at 02:23:29PM +0200, Ingo Molnar wrote:
+> 
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > > In the meantime, would you be willing to try out the patch at 
+> > > https://lkml.org/lkml/2011/5/14/89?  This patch helped out Yinghai in 
+> > > several configurations.
 > > 
-> > Could you clarify this please? virtio explicitly allows out of order
-> > completion of requests. Does it simplify code that we try to keep
-> > used index updates in-order? Because if not, this is not
-> > really a requirement.
+> > Wasn't this the one i tested - or is it a new iteration?
+> > 
+> > I'll try it in any case.
 > 
-> Hello Mike,
+> oh, this was a new iteration, mea culpa!
 > 
-> Based on my testing, vhost_add_used() must be in order from
-> vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
-> freed.
+> And yes, it solves all problems for me as well. Mind pushing it as a fix? :-)
 
-Double-freed or you get NULL below?
+;-)
 
-> I didn't spend time on debugging this.
-> 
-> in virtqueue_get_buf
-> 
->         if (unlikely(!vq->data[i])) {
->                 BAD_RING(vq, "id %u is not a head!\n", i);
->                 return NULL;
->         }
+Unfortunately, the only reason I can see that it works is (1) there
+is some obscure bug in my code or (2) someone somewhere is failing to
+call irq_exit() on some interrupt-exit path.  Much as I might be tempted
+to paper this one over, I believe that we do need to find whatever the
+underlying bug is.
 
-Yes but i used here is the head that we read from the
-ring, not the ring index itself.
-	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id
-we must complete any id only once, but in any order.
+Oh, yes, there is option (3) as well: maybe if an interrupt deschedules
+a process, the final irq_exit() is omitted in favor of rcu_enter_nohz()?
+But I couldn't see any evidence of this in my admittedly cursory scan
+of the x86 interrupt-handling code.
 
-> That's the reason I created the upend_idx and done_idx.
-> 
-> Thanks
-> Shirley
+So until I learn differently, I am assuming that each and every
+irq_enter() has a matching call to irq_exit(), and that rcu_enter_nohz()
+is called after the final irq_exit() of a given burst of interrupts.
 
-Very strange, it sounds like a bug, but I can't tell where: in
-host or in guest. If it's in the guest, we must fix it.
-If in host, we should only fix it if it makes life simpler for us.
-Could you try to nail it down pls?  Another question: will code get
-simpler or more complex if that restriction's removed?
+If my assumptions are mistaken, please do let me know!
 
--- 
-MST
+							Thanx, Paul
