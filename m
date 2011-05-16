@@ -1,132 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1EPTcA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:32:00 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:52158 "EHLO e5.ny.us.ibm.com"
+	id S1753499Ab1EPTd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:33:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62742 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab1EPTb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:31:58 -0400
-Subject: [PATCH V5 3/6 net-next] skbuff: Add userspace zero-copy buffers in
- skb
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 12:31:54 -0700
-Message-ID: <1305574314.3456.27.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1751221Ab1EPTd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:33:27 -0400
+Date: Mon, 16 May 2011 15:33:01 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
+ support
+Message-ID: <20110516193301.GF29881@redhat.com>
+References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds userspace buffers support in skb shared info. A new 
-struct skb_ubuf_info is needed to maintain the userspace buffers
-argument and index, a callback is used to notify userspace to release
-the buffers once lower device has done DMA (Last reference to that skb
-has gone).
+On Tue, May 10, 2011 at 11:08:41AM +0800, Huang Ying wrote:
+> The testing of Generic Hardware Error Source (GHES) is quite
+> difficult, because special hardware is needed to trigger the hardware
+> error. So a software based hardware error injector for GHES is
+> implemented.
+> 
+> Error notification is not provided in this patch.  So you still need
+> some NMI/SCI/IRQ injecting support to make it work.
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+Should we add that to this patch, otherwise it seems like the injection
+isn't very useful or intuitive from the end-user perspective that they
+have to provide their own notification source (ie NMI/SCI/MCE/IRQ).
 
- include/linux/skbuff.h |   26 ++++++++++++++++++++++++++
- net/core/skbuff.c      |   13 +++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
+Cheers,
+Don
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 79aafbb..40faffe 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -189,6 +189,18 @@ enum {
- 	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
- };
- 
-+/*
-+ * The callback notifies userspace to release buffers when skb DMA is
-done in
-+ * lower device, the skb last reference should be 0 when calling this.
-+ * The desc is used to track userspace buffer index.
-+ */
-+struct skb_ubuf_info {
-+	/* support buffers allocation from userspace */
-+	void		(*callback)(struct sk_buff *);
-+	void		*arg;
-+	size_t		desc;
-+};
-+
- /* This data is invariant across clones and lives at
-  * the end of the header data, ie. at skb->end.
-  */
-@@ -211,6 +223,10 @@ struct skb_shared_info {
- 	/* Intermediate layers must ensure that destructor_arg
- 	 * remains valid until skb destructor */
- 	void *		destructor_arg;
-+
-+	/* DMA mapping from/to userspace buffers */
-+	struct skb_ubuf_info ubuf;
-+
- 	/* must be last field, see pskb_expand_head() */
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
-@@ -2261,5 +2277,15 @@ static inline void
-skb_checksum_none_assert(struct sk_buff *skb)
- }
- 
- bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
-+
-+/*
-+ *	skb_ubuf - is the buffer from userspace
-+ *	@skb: buffer to check
-+ */
-+static inline int skb_ubuf(const struct sk_buff *skb)
-+{
-+	return (skb_shinfo(skb)->ubuf.callback != NULL);
-+}
-+
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 7ebeed0..9cbd3fc 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t
-gfp_mask,
- 	shinfo = skb_shinfo(skb);
- 	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
- 	atomic_set(&shinfo->dataref, 1);
-+	shinfo->ubuf.callback = NULL;
-+	shinfo->ubuf.arg = NULL;
- 	kmemcheck_annotate_variable(shinfo->destructor_arg);
- 
- 	if (fclone) {
-@@ -328,6 +330,14 @@ static void skb_release_data(struct sk_buff *skb)
- 				put_page(skb_shinfo(skb)->frags[i].page);
- 		}
- 
-+		/*
-+		 * if skb buf is from userspace, we need to notify the caller
-+		 * the lower device DMA has done;
-+		 */
-+		if (skb_shinfo(skb)->ubuf.callback) {
-+			skb_shinfo(skb)->ubuf.callback(skb);
-+			skb_shinfo(skb)->ubuf.callback = NULL;
-+		}
- 		if (skb_has_frag_list(skb))
- 			skb_drop_fraglist(skb);
- 
-@@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int
-skb_size)
- 	if (irqs_disabled())
- 		return false;
- 
-+	if (skb_ubuf(skb))
-+		return false;
-+
- 	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
- 		return false;
- 
-
-
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  drivers/acpi/apei/Kconfig         |   10 ++
+>  drivers/acpi/apei/Makefile        |    1 
+>  drivers/acpi/apei/apei-internal.h |    8 ++
+>  drivers/acpi/apei/ghes-inj.c      |  132 ++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/apei/ghes.c          |   15 ++++
+>  5 files changed, 165 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/acpi/apei/ghes-inj.c
+> 
+> --- a/drivers/acpi/apei/Kconfig
+> +++ b/drivers/acpi/apei/Kconfig
+> @@ -54,3 +54,13 @@ config ACPI_APEI_ERST_DEBUG
+>  	  error information to and from a persistent store. Enable this
+>  	  if you want to debugging and testing the ERST kernel support
+>  	  and firmware implementation.
+> +
+> +config ACPI_APEI_GHES_INJ
+> +	tristate "APEI Generic Hardware Error Source (GHES) Injecting Support"
+> +	depends on ACPI_APEI_GHES
+> +	help
+> +	  GHES provides a way to report platform hardware errors (such
+> +	  as that from chipset).
+> +
+> +	  The injector can inject fake hardware error record. This is
+> +	  used for GHES debugging/testing.
+> --- a/drivers/acpi/apei/Makefile
+> +++ b/drivers/acpi/apei/Makefile
+> @@ -2,5 +2,6 @@ obj-$(CONFIG_ACPI_APEI)		+= apei.o
+>  obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
+>  obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
+>  obj-$(CONFIG_ACPI_APEI_ERST_DEBUG) += erst-dbg.o
+> +obj-$(CONFIG_ACPI_APEI_GHES_INJ) += ghes-inj.o
+>  
+>  apei-y := apei-base.o hest.o cper.o erst.o
+> --- a/drivers/acpi/apei/apei-internal.h
+> +++ b/drivers/acpi/apei/apei-internal.h
+> @@ -33,6 +33,14 @@ struct apei_exec_context {
+>  	u32 entries;
+>  };
+>  
+> +struct ghes_inject_data {
+> +	unsigned long error_status_address;
+> +	u16 source_id;
+> +	unsigned short valid : 1;
+> +};
+> +
+> +extern struct ghes_inject_data ghes_inject_data;
+> +
+>  void apei_exec_ctx_init(struct apei_exec_context *ctx,
+>  			struct apei_exec_ins_type *ins_table,
+>  			u32 instructions,
+> --- /dev/null
+> +++ b/drivers/acpi/apei/ghes-inj.c
+> @@ -0,0 +1,132 @@
+> +/*
+> + * APEI Generic Hardware Error Source (GHES) injector support
+> + *
+> + * Fake hardware error record can be injected. This is used for for
+> + * GHES debugging/testing.
+> + *
+> + * Copyright 2010,2011 Intel Corp.
+> + *   Author: Huang Ying <ying.huang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/debugfs.h>
+> +#include <acpi/apei.h>
+> +
+> +#include "apei-internal.h"
+> +
+> +#define GHES_INJ_PFX		"GHES-INJ: "
+> +
+> +#define GHES_INJ_BUF_LEN_MAX	4096
+> +
+> +static void *ghes_inj_buf;
+> +static unsigned int ghes_inj_buf_len;
+> +
+> +/* Prevent erst_inj_buf from being accessed concurrently */
+> +static DEFINE_MUTEX(ghes_inj_mutex);
+> +
+> +static ssize_t ghes_inj_write(struct file *filp, const char __user *ubuf,
+> +			      size_t usize, loff_t *off)
+> +{
+> +	int rc;
+> +
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EPERM;
+> +
+> +	if (*off != 0)
+> +		return -EINVAL;
+> +
+> +	if (usize > GHES_INJ_BUF_LEN_MAX)
+> +		return -EINVAL;
+> +
+> +	if (mutex_lock_interruptible(&ghes_inj_mutex))
+> +		return -EINTR;
+> +	ghes_inject_data.valid = 0;
+> +	/* Wait for all consumers finish using the injecting buffer */
+> +	synchronize_rcu();
+> +	if (usize > ghes_inj_buf_len) {
+> +		void *p;
+> +		rc = -ENOMEM;
+> +		p = kmalloc(usize, GFP_KERNEL);
+> +		if (!p)
+> +			goto out;
+> +		kfree(ghes_inj_buf);
+> +		ghes_inj_buf = p;
+> +		ghes_inj_buf_len = usize;
+> +	}
+> +	rc = copy_from_user(ghes_inj_buf, ubuf, usize);
+> +	if (rc) {
+> +		rc = -EFAULT;
+> +		goto out;
+> +	}
+> +	ghes_inject_data.error_status_address = __pa(ghes_inj_buf);
+> +	/*
+> +	 * ghes_injiect_data.valid must be set after other fields are
+> +	 * written
+> +	 */
+> +	smp_wmb();
+> +	ghes_inject_data.valid = 1;
+> +out:
+> +	mutex_unlock(&ghes_inj_mutex);
+> +	return rc ? rc : usize;
+> +}
+> +
+> +static const struct file_operations ghes_inj_fops = {
+> +	.owner		= THIS_MODULE,
+> +	.write		= ghes_inj_write,
+> +};
+> +
+> +static struct dentry *ghes_debug_dir;
+> +
+> +static __init int ghes_inj_init(void)
+> +{
+> +	struct dentry *f;
+> +	int rc = -ENOMEM;
+> +
+> +	ghes_debug_dir = debugfs_create_dir("ghes", apei_get_debugfs_dir());
+> +	if (!ghes_debug_dir)
+> +		return rc;
+> +	f = debugfs_create_file("inject", S_IWUSR, ghes_debug_dir,
+> +				NULL, &ghes_inj_fops);
+> +	if (!f)
+> +		goto err_cleanup;
+> +	f = debugfs_create_u16("inject_source_id", S_IRUSR | S_IWUSR,
+> +			       ghes_debug_dir, &ghes_inject_data.source_id);
+> +	if (!f)
+> +		goto err_cleanup;
+> +
+> +	return 0;
+> +err_cleanup:
+> +	debugfs_remove_recursive(ghes_debug_dir);
+> +	return rc;
+> +}
+> +
+> +static __exit void ghes_inj_exit(void)
+> +{
+> +	debugfs_remove_recursive(ghes_debug_dir);
+> +	ghes_inject_data.valid = 0;
+> +	/* Wait for all consumers finish using the injecting buffer */
+> +	synchronize_rcu();
+> +	kfree(ghes_inj_buf);
+> +}
+> +
+> +module_init(ghes_inj_init);
+> +module_exit(ghes_inj_exit);
+> +
+> +MODULE_AUTHOR("Huang Ying");
+> +MODULE_DESCRIPTION("APEI Generic Hardware Error Source (GHES) injecting support");
+> +MODULE_LICENSE("GPL");
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -153,6 +153,9 @@ static unsigned long ghes_estatus_pool_s
+>  static struct llist_head ghes_estatus_llist;
+>  static struct irq_work ghes_proc_irq_work;
+>  
+> +struct ghes_inject_data ghes_inject_data;
+> +EXPORT_SYMBOL_GPL(ghes_inject_data);
+> +
+>  static int ghes_ioremap_init(void)
+>  {
+>  	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
+> @@ -371,7 +374,13 @@ static int ghes_read_estatus(struct ghes
+>  	u32 len;
+>  	int rc;
+>  
+> -	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
+> +	if (!ghes_inject_data.valid ||
+> +	    ghes_inject_data.source_id != g->header.source_id)
+> +		rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
+> +	else {
+> +		buf_paddr = ghes_inject_data.error_status_address;
+> +		rc = 0;
+> +	}
+>  	if (rc) {
+>  		if (!silent && printk_ratelimit())
+>  			pr_warning(FW_WARN GHES_PFX
+> @@ -420,6 +429,10 @@ static void ghes_clear_estatus(struct gh
+>  	ghes_copy_tofrom_phys(ghes->estatus, ghes->buffer_paddr,
+>  			      sizeof(ghes->estatus->block_status), 0);
+>  	ghes->flags &= ~GHES_TO_CLEAR;
+> +
+> +	if (ghes_inject_data.valid &&
+> +	    ghes_inject_data.source_id == ghes->generic->header.source_id)
+> +		ghes_inject_data.valid = 0;
+>  }
+>  
+>  static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
