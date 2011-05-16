@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab1EPUTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 16:19:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57574 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab1EPUTO (ORCPT
+	id S1755521Ab1EPUTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 16:19:36 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51767 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1EPUTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 16:19:14 -0400
-Subject: Re: [PATCH RESEND] mfd: Fix off-by-one value range checking for
- tps65910_i2c_write
+	Mon, 16 May 2011 16:19:35 -0400
+Subject: Re: [PATCH RESEND] regulator: Remove
+ MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
 From: Liam Girdwood <lrg@slimlogic.co.uk>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Samuel Ortiz <sameo@linux.intel.com>
-In-Reply-To: <1305555542.2337.3.camel@phoenix>
-References: <1305555542.2337.3.camel@phoenix>
+In-Reply-To: <1305541234.3006.5.camel@phoenix>
+References: <1305541234.3006.5.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 21:19:10 +0100
-Message-ID: <1305577150.3156.14.camel@odin>
+Date: Mon, 16 May 2011 21:19:31 +0100
+Message-ID: <1305577171.3156.15.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -26,29 +27,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 22:19 +0800, Axel Lin wrote:
-> If bytes == (TPS65910_MAX_REGISTER + 1), we have a buffer overflow when
-> doing memcpy(&msg[1], src, bytes).
+On Mon, 2011-05-16 at 18:20 +0800, Axel Lin wrote:
+> In current implementation, the original macro implementation assumes the caller
+> pass the parameter starting from 1 (to match the register names in datasheet).
+> Thus we have unneeded plus one then minus one operations
+> when using MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros.
+> 
+> This patch removes these macros to avoid unneeded plus one then minus one operations
+> without reducing readability.
 > 
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 > ---
->  drivers/mfd/tps65910.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> index bf649cf..e318248 100644
-> --- a/drivers/mfd/tps65910.c
-> +++ b/drivers/mfd/tps65910.c
-> @@ -71,7 +71,7 @@ static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
->  	u8 msg[TPS65910_MAX_REGISTER + 1];
->  	int ret;
->  
-> -	if (bytes > (TPS65910_MAX_REGISTER + 1))
-> +	if (bytes > TPS65910_MAX_REGISTER)
->  		return -EINVAL;
->  
->  	msg[0] = reg;
 
 Applied.
 
