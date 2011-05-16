@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1EPIhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:37:34 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:33395 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab1EPIhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:37:33 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DD0E2EE.7010107@cam.ac.uk>
-Date: Mon, 16 May 2011 09:40:14 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1752910Ab1EPImh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:42:37 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42180 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752634Ab1EPImf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:42:35 -0400
+Date: Mon, 16 May 2011 09:42:30 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+Message-ID: <20110516084230.GC5279@suse.de>
+References: <20110512154649.GB4559@redhat.com>
+ <1305216023.2575.54.camel@mulgrave.site>
+ <alpine.DEB.2.00.1105121121120.26013@router.home>
+ <1305217843.2575.57.camel@mulgrave.site>
+ <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
+ <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
+ <alpine.DEB.2.00.1105121232110.28493@router.home>
+ <20110512180018.GN11579@random.random>
+ <20110513094958.GA3569@suse.de>
+ <20110515163906.GB25981@random.random>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Hudson <chudson@kionix.com>
-Subject: Re: [PATCH 1/1] input: Add support for Kionix KXTJ9 accelerometer
-References: <1305310406-9870-1-git-send-email-chudson@kionix.com>	<1305310406-9870-2-git-send-email-chudson@kionix.com> <20110513192710.5b4791ca@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110513192710.5b4791ca@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110515163906.GB25981@random.random>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll leave taking a proper look until you have cleared up the issues Alan pointed out.
-But as I was taking a quick look...
+On Sun, May 15, 2011 at 06:39:06PM +0200, Andrea Arcangeli wrote:
+> On Fri, May 13, 2011 at 10:49:58AM +0100, Mel Gorman wrote:
+> > On Thu, May 12, 2011 at 08:00:18PM +0200, Andrea Arcangeli wrote:
+> > > <SNIP>
+> > >
+> > > BTW, it comes to mind in patch 2, SLUB should clear __GFP_REPEAT too
+> > > (not only __GFP_NOFAIL). Clearing __GFP_WAIT may be worth it or not
+> > > with COMPACTION=y, definitely good idea to clear __GFP_WAIT unless
+> > > lumpy is restricted to __GFP_REPEAT|__GFP_NOFAIL.
+> > 
+> > This is in V2 (unreleased, testing in progress and was running
+> > overnight). I noticed that clearing __GFP_REPEAT is required for
+> > reclaim/compaction if direct reclaimers from SLUB are to return false in
+> > should_continue_reclaim() and bail out from high-order allocation
+> > properly. As it is, there is a possibility for slub high-order direct
+> > reclaimers to loop in reclaim/compaction for a long time. This is
+> > only important when CONFIG_COMPACTION=y.
+> 
+> Agreed. However I don't expect anyone to allocate from slub(/slab)
+> with __GFP_REPEAT so it's probably only theoretical but more correct
+> indeed ;).
 
-Firstly I concur entirely with Alan in that most of the sysfs stuff should be
-platform data for an input driver.
-...
-> 
->> +	memcpy(tj9->pdata, client->dev.platform_data, sizeof(*tj9->pdata));
->> +	if (tj9->pdata->init) {
->> +		err = tj9->pdata->init();
->> +		if (err < 0)
->> +			goto err2;
->> +	}
->> +
->> +	tj9->irq = gpio_to_irq(tj9->pdata->gpio);
-> 
-> What if it's not on a gpio. Probably better any gpio and irq conversion is
-> done by the platform callback/init code
-Perfectly good irq element in i2c_board_info structure.  This is exactly what
-it is normally used for.
-> 
-> 
-> And the sysfs nodes need documentation.
-Would be nice to have some docs on that platform data struct as well.
-Most of it is fairly obvious, but data_odr_init etc aren't!
-> 
-> 
-> Overall it looks like a lot of input drivers that get posted here
-> 
-> - Nobody has considered locking between actions and sysfs (or multiple
->   sysfs actions in parallel)
-> - Enable/disable is implemented in blissful ignorance of what happens if
->   a disable occurs during a sysfs or other action
-> 
-> Most of the rest looks like it just needs a good polish.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Networking layer does specify __GFP_REPEAT.
 
+-- 
+Mel Gorman
+SUSE Labs
