@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab1EPVDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:03:51 -0400
-Received: from smtp16.mail.ru ([94.100.176.153]:42189 "EHLO smtp16.mail.ru"
+	id S1753950Ab1EPVDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:03:50 -0400
+Received: from smtp16.mail.ru ([94.100.176.153]:42207 "EHLO smtp16.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab1EPVDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751968Ab1EPVDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 May 2011 17:03:30 -0400
 From: Dmitry Artamonow <mad_soft@inbox.ru>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -14,856 +14,335 @@ Cc: Harald Welte <laforge@gnumonks.org>,
         Paul Parsons <lost.distance@yahoo.com>,
         Eric Miao <eric.y.miao@gmail.com>, alsa-devel@alsa-project.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] ASoC: Asahi Kasei AK4641 codec driver
-Date: Tue, 17 May 2011 01:03:23 +0400
-Message-Id: <1305579805-15617-2-git-send-email-mad_soft@inbox.ru>
+Subject: [PATCH v2 2/3] ASoC: add iPAQ hx4700 machine driver
+Date: Tue, 17 May 2011 01:03:24 +0400
+Message-Id: <1305579805-15617-3-git-send-email-mad_soft@inbox.ru>
 X-Mailer: git-send-email 1.7.4.rc3
 In-Reply-To: <1305579805-15617-1-git-send-email-mad_soft@inbox.ru>
 References: <1305579805-15617-1-git-send-email-mad_soft@inbox.ru>
 X-Spam: Not detected
 X-Mras: Ok
-X-MR-Warn: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A driver for the AK4641 codec used in iPAQ hx4700 and Glofiish M800
-among others.
+AK4641 connected via I2S and I2C, jack detection via GPIO.
 
-Signed-off-by: Harald Welte <laforge@gnumonks.org>
 Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
 Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
 ---
- include/sound/ak4641.h    |   26 ++
- sound/soc/codecs/Kconfig  |    4 +
- sound/soc/codecs/Makefile |    2 +
- sound/soc/codecs/ak4641.c |  687 +++++++++++++++++++++++++++++++++++++++++++++
- sound/soc/codecs/ak4641.h |   47 +++
- 5 files changed, 766 insertions(+), 0 deletions(-)
- create mode 100644 include/sound/ak4641.h
- create mode 100644 sound/soc/codecs/ak4641.c
- create mode 100644 sound/soc/codecs/ak4641.h
+ sound/soc/pxa/Kconfig  |    9 ++
+ sound/soc/pxa/Makefile |    2 +
+ sound/soc/pxa/hx4700.c |  260 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 271 insertions(+), 0 deletions(-)
+ create mode 100644 sound/soc/pxa/hx4700.c
 
-diff --git a/include/sound/ak4641.h b/include/sound/ak4641.h
-new file mode 100644
-index 0000000..96d1991
---- /dev/null
-+++ b/include/sound/ak4641.h
-@@ -0,0 +1,26 @@
-+/*
-+ * AK4641 ALSA SoC Codec driver
-+ *
-+ * Copyright 2009 Philipp Zabel
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __AK4641_H
-+#define __AK4641_H
-+
-+/**
-+ * struct ak4641_platform_data - platform specific AK4641 configuration
-+ * @gpio_power:	GPIO to control external power to AK4641
-+ * @gpio_npdn:	GPIO connected to AK4641 nPDN pin
-+ *
-+ * Both GPIO parameters are optional.
-+ */
-+struct ak4641_platform_data {
-+	int gpio_power;
-+	int gpio_npdn;
-+};
-+
-+#endif /* __AK4641_H */
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 2a69718..98175a0 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -20,6 +20,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_ADS117X
- 	select SND_SOC_AK4104 if SPI_MASTER
- 	select SND_SOC_AK4535 if I2C
-+	select SND_SOC_AK4641 if I2C
- 	select SND_SOC_AK4642 if I2C
- 	select SND_SOC_AK4671 if I2C
- 	select SND_SOC_ALC5623 if I2C
-@@ -139,6 +140,9 @@ config SND_SOC_AK4104
- config SND_SOC_AK4535
- 	tristate
+diff --git a/sound/soc/pxa/Kconfig b/sound/soc/pxa/Kconfig
+index 580f485..33ebc46 100644
+--- a/sound/soc/pxa/Kconfig
++++ b/sound/soc/pxa/Kconfig
+@@ -155,6 +155,15 @@ config SND_SOC_RAUMFELD
+ 	help
+ 	  Say Y if you want to add support for SoC audio on Raumfeld devices
  
-+config SND_SOC_AK4641
-+	tristate
++config SND_PXA2XX_SOC_HX4700
++	tristate "SoC Audio support for HP iPAQ hx4700"
++	depends on SND_PXA2XX_SOC && MACH_H4700
++	select SND_PXA2XX_SOC_I2S
++	select SND_SOC_AK4641
++	help
++	  Say Y if you want to add support for SoC audio on the
++	  HP iPAQ hx4700.
 +
- config SND_SOC_AK4642
- 	tristate
- 
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 4cb2f42..fd85584 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -7,6 +7,7 @@ snd-soc-ad73311-objs := ad73311.o
- snd-soc-ads117x-objs := ads117x.o
- snd-soc-ak4104-objs := ak4104.o
- snd-soc-ak4535-objs := ak4535.o
-+snd-soc-ak4641-objs := ak4641.o
- snd-soc-ak4642-objs := ak4642.o
- snd-soc-ak4671-objs := ak4671.o
- snd-soc-cq93vc-objs := cq93vc.o
-@@ -97,6 +98,7 @@ obj-$(CONFIG_SND_SOC_AD73311) += snd-soc-ad73311.o
- obj-$(CONFIG_SND_SOC_ADS117X)	+= snd-soc-ads117x.o
- obj-$(CONFIG_SND_SOC_AK4104)	+= snd-soc-ak4104.o
- obj-$(CONFIG_SND_SOC_AK4535)	+= snd-soc-ak4535.o
-+obj-$(CONFIG_SND_SOC_AK4641)	+= snd-soc-ak4641.o
- obj-$(CONFIG_SND_SOC_AK4642)	+= snd-soc-ak4642.o
- obj-$(CONFIG_SND_SOC_AK4671)	+= snd-soc-ak4671.o
- obj-$(CONFIG_SND_SOC_ALC5623)    += snd-soc-alc5623.o
-diff --git a/sound/soc/codecs/ak4641.c b/sound/soc/codecs/ak4641.c
+ config SND_PXA2XX_SOC_MAGICIAN
+ 	tristate "SoC Audio support for HTC Magician"
+ 	depends on SND_PXA2XX_SOC && MACH_MAGICIAN
+diff --git a/sound/soc/pxa/Makefile b/sound/soc/pxa/Makefile
+index 0766016..af35762 100644
+--- a/sound/soc/pxa/Makefile
++++ b/sound/soc/pxa/Makefile
+@@ -22,6 +22,7 @@ snd-soc-palm27x-objs := palm27x.o
+ snd-soc-saarb-objs := saarb.o
+ snd-soc-tavorevb3-objs := tavorevb3.o
+ snd-soc-zylonite-objs := zylonite.o
++snd-soc-hx4700-objs := hx4700.o
+ snd-soc-magician-objs := magician.o
+ snd-soc-mioa701-objs := mioa701_wm9713.o
+ snd-soc-z2-objs := z2.o
+@@ -37,6 +38,7 @@ obj-$(CONFIG_SND_PXA2XX_SOC_E800) += snd-soc-e800.o
+ obj-$(CONFIG_SND_PXA2XX_SOC_SPITZ) += snd-soc-spitz.o
+ obj-$(CONFIG_SND_PXA2XX_SOC_EM_X270) += snd-soc-em-x270.o
+ obj-$(CONFIG_SND_PXA2XX_SOC_PALM27X) += snd-soc-palm27x.o
++obj-$(CONFIG_SND_PXA2XX_SOC_HX4700) += snd-soc-hx4700.o
+ obj-$(CONFIG_SND_PXA2XX_SOC_MAGICIAN) += snd-soc-magician.o
+ obj-$(CONFIG_SND_PXA2XX_SOC_MIOA701) += snd-soc-mioa701.o
+ obj-$(CONFIG_SND_PXA2XX_SOC_Z2) += snd-soc-z2.o
+diff --git a/sound/soc/pxa/hx4700.c b/sound/soc/pxa/hx4700.c
 new file mode 100644
-index 0000000..07e4d7a
+index 0000000..8a13f2f
 --- /dev/null
-+++ b/sound/soc/codecs/ak4641.c
-@@ -0,0 +1,687 @@
++++ b/sound/soc/pxa/hx4700.c
+@@ -0,0 +1,260 @@
 +/*
-+ * ak4641.c  --  AK4641 ALSA Soc Audio driver
++ * SoC audio for HP iPAQ hx4700
 + *
-+ * Copyright (C) 2008 Harald Welte <laforge@gnufiish.org>
-+ * Copyright (C) 2011 Dmitry Artamonow <mad_soft@inbox.ru>
++ * Copyright (c) 2009 Philipp Zabel
 + *
-+ * Based on ak4535.c by Richard Purdie
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
 + */
 +
 +#include <linux/module.h>
-+#include <linux/init.h>
++#include <linux/timer.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
 +#include <linux/delay.h>
 +#include <linux/gpio.h>
-+#include <linux/pm.h>
-+#include <linux/i2c.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
++
 +#include <sound/core.h>
++#include <sound/jack.h>
 +#include <sound/pcm.h>
 +#include <sound/pcm_params.h>
 +#include <sound/soc.h>
-+#include <sound/initval.h>
-+#include <sound/tlv.h>
-+#include <sound/ak4641.h>
 +
-+#include "ak4641.h"
++#include <mach/hx4700.h>
++#include <asm/mach-types.h>
++#include "pxa2xx-i2s.h"
 +
-+/* codec private data */
-+struct ak4641_priv {
-+	struct snd_soc_codec *codec;
-+	unsigned int sysclk;
-+	int deemph;
-+	int playback_fs;
++#include "../codecs/ak4641.h"
++
++static struct snd_soc_jack hs_jack;
++
++/* Headphones jack detection DAPM pin */
++static struct snd_soc_jack_pin hs_jack_pin[] = {
++	{
++		.pin	= "Headphone Jack",
++		.mask	= SND_JACK_HEADPHONE,
++	},
++	{
++		.pin	= "Speaker",
++		/* disable speaker when hp jack is inserted */
++		.mask   = SND_JACK_HEADPHONE,
++		.invert	= 1,
++	},
++};
++
++/* Headphones jack detection GPIO */
++static struct snd_soc_jack_gpio hs_jack_gpio = {
++	.gpio		= GPIO75_HX4700_EARPHONE_nDET,
++	.invert		= true,
++	.name		= "hp-gpio",
++	.report		= SND_JACK_HEADPHONE,
++	.debounce_time	= 200,
 +};
 +
 +/*
-+ * ak4641 register cache
++ * iPAQ hx4700 uses I2S for capture and playback.
 + */
-+static const u8 ak4641_reg[AK4641_CACHEREGNUM] = {
-+	0x00, 0x80, 0x00, 0x80,
-+	0x02, 0x00, 0x11, 0x05,
-+	0x00, 0x00, 0x36, 0x10,
-+	0x00, 0x00, 0x57, 0x00,
-+	0x88, 0x88, 0x08, 0x08
-+};
-+
-+
-+static int ak4641_sync(struct snd_soc_codec *codec)
++static int hx4700_hw_params(struct snd_pcm_substream *substream,
++			    struct snd_pcm_hw_params *params)
 +{
-+	u8 *cache = codec->reg_cache;
-+	int i, r = 0;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_dai *codec_dai = rtd->codec_dai;
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++	int ret = 0;
 +
-+	for (i = 0; i < AK4641_CACHEREGNUM; i++)
-+		r |= snd_soc_write(codec, i, cache[i]);
++	/* set codec DAI configuration */
++	ret = snd_soc_dai_set_fmt(codec_dai,
++			SND_SOC_DAIFMT_MSB | SND_SOC_DAIFMT_NB_NF |
++			SND_SOC_DAIFMT_CBS_CFS);
++	if (ret < 0)
++		return ret;
 +
-+	return r;
-+};
++	/* set cpu DAI configuration */
++	ret = snd_soc_dai_set_fmt(cpu_dai,
++			SND_SOC_DAIFMT_MSB | SND_SOC_DAIFMT_NB_NF |
++			SND_SOC_DAIFMT_CBS_CFS);
++	if (ret < 0)
++		return ret;
 +
-+static const int deemph_settings[] = {44100, 0, 48000, 32000};
++	/* set the I2S system clock as output */
++	ret = snd_soc_dai_set_sysclk(cpu_dai, PXA2XX_I2S_SYSCLK, 0,
++			SND_SOC_CLOCK_OUT);
++	if (ret < 0)
++		return ret;
 +
-+static int ak4641_set_deemph(struct snd_soc_codec *codec)
-+{
-+	struct ak4641_priv *ak4641 = snd_soc_codec_get_drvdata(codec);
-+	int i, best = 0;
++	/* inform codec driver about clock freq *
++	 * (PXA I2S always uses divider 256)    */
++	ret = snd_soc_dai_set_sysclk(codec_dai, 0, 256 * params_rate(params),
++			SND_SOC_CLOCK_IN);
++	if (ret < 0)
++		return ret;
 +
-+	for (i = 0 ; i < ARRAY_SIZE(deemph_settings); i++) {
-+		/* if deemphasis is on, select the nearest available rate */
-+		if (ak4641->deemph && deemph_settings[i] != 0 &&
-+		    abs(deemph_settings[i] - ak4641->playback_fs) <
-+		    abs(deemph_settings[best] - ak4641->playback_fs))
-+			best = i;
-+
-+		if (!ak4641->deemph && deemph_settings[i] == 0)
-+			best = i;
-+	}
-+
-+	dev_dbg(codec->dev, "Set deemphasis %d\n", best);
-+
-+	return snd_soc_update_bits(codec, AK4641_DAC, 0x3, best);
-+}
-+
-+static int ak4641_put_deemph(struct snd_kcontrol *kcontrol,
-+				struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-+	struct ak4641_priv *ak4641 = snd_soc_codec_get_drvdata(codec);
-+	int deemph = ucontrol->value.enumerated.item[0];
-+
-+	if (deemph > 1)
-+		return -EINVAL;
-+
-+	ak4641->deemph = deemph;
-+
-+	return ak4641_set_deemph(codec);
-+}
-+
-+static int ak4641_get_deemph(struct snd_kcontrol *kcontrol,
-+				struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-+	struct ak4641_priv *ak4641 = snd_soc_codec_get_drvdata(codec);
-+
-+	ucontrol->value.enumerated.item[0] = ak4641->deemph;
 +	return 0;
++}
++
++static struct snd_soc_ops hx4700_ops = {
++	.hw_params = hx4700_hw_params,
 +};
 +
-+static const char *ak4641_mono_out[] = {"(L + R)/2", "Hi-Z"};
-+static const char *ak4641_hp_out[] = {"Stereo", "Mono"};
-+static const char *ak4641_mic_select[] = {"Internal", "External"};
-+static const char *ak4641_mic_or_dac[] = {"Microphone", "Voice DAC"};
-+
-+
-+static const DECLARE_TLV_DB_SCALE(mono_gain_tlv, -1700, 2300, 0);
-+static const DECLARE_TLV_DB_SCALE(mic_boost_tlv, 0, 2000, 0);
-+static const DECLARE_TLV_DB_SCALE(eq_tlv, -1050, 150, 0);
-+static const DECLARE_TLV_DB_SCALE(master_tlv, -12750, 50, 0);
-+static const DECLARE_TLV_DB_SCALE(mic_stereo_sidetone_tlv, -2700, 300, 0);
-+static const DECLARE_TLV_DB_SCALE(mic_mono_sidetone_tlv, -400, 400, 0);
-+static const DECLARE_TLV_DB_SCALE(capture_tlv, -800, 50, 0);
-+static const DECLARE_TLV_DB_SCALE(alc_tlv, -800, 50, 0);
-+static const DECLARE_TLV_DB_SCALE(aux_in_tlv, -2100, 300, 0);
-+
-+
-+static const struct soc_enum ak4641_mono_out_enum =
-+	SOC_ENUM_SINGLE(AK4641_SIG1, 6, 2, ak4641_mono_out);
-+static const struct soc_enum ak4641_hp_out_enum =
-+	SOC_ENUM_SINGLE(AK4641_MODE2, 2, 2, ak4641_hp_out);
-+static const struct soc_enum ak4641_mic_select_enum =
-+	SOC_ENUM_SINGLE(AK4641_MIC, 1, 2, ak4641_mic_select);
-+static const struct soc_enum ak4641_mic_or_dac_enum =
-+	SOC_ENUM_SINGLE(AK4641_BTIF, 4, 2, ak4641_mic_or_dac);
-+
-+static const struct snd_kcontrol_new ak4641_snd_controls[] = {
-+	SOC_ENUM("Mono 1 Output", ak4641_mono_out_enum),
-+	SOC_SINGLE_TLV("Mono 1 Gain Volume", AK4641_SIG1, 7, 1, 1,
-+							mono_gain_tlv),
-+	SOC_ENUM("Headphone Output", ak4641_hp_out_enum),
-+	SOC_SINGLE_BOOL_EXT("Playback Deemphasis Switch", 0,
-+					ak4641_get_deemph, ak4641_put_deemph),
-+
-+	SOC_SINGLE_TLV("Mic Boost Volume", AK4641_MIC, 0, 1, 0, mic_boost_tlv),
-+
-+	SOC_SINGLE("ALC Operation Time", AK4641_TIMER, 0, 3, 0),
-+	SOC_SINGLE("ALC Recovery Time", AK4641_TIMER, 2, 3, 0),
-+	SOC_SINGLE("ALC ZC Time", AK4641_TIMER, 4, 3, 0),
-+
-+	SOC_SINGLE("ALC 1 Switch", AK4641_ALC1, 5, 1, 0),
-+
-+	SOC_SINGLE_TLV("ALC Volume", AK4641_ALC2, 0, 71, 0, alc_tlv),
-+	SOC_SINGLE("Left Out Enable Switch", AK4641_SIG2, 1, 1, 0),
-+	SOC_SINGLE("Right Out Enable Switch", AK4641_SIG2, 0, 1, 0),
-+
-+	SOC_SINGLE_TLV("Capture Volume", AK4641_PGA, 0, 71, 0, capture_tlv),
-+
-+	SOC_DOUBLE_R_TLV("Master Playback Volume", AK4641_LATT,
-+				AK4641_RATT, 0, 255, 1, master_tlv),
-+
-+	SOC_SINGLE_TLV("AUX In Volume", AK4641_VOL, 0, 15, 0, aux_in_tlv),
-+
-+	SOC_SINGLE("Equalizer Switch", AK4641_DAC, 2, 1, 0),
-+	SOC_SINGLE_TLV("EQ1 100 Hz Volume", AK4641_EQLO, 0, 15, 1, eq_tlv),
-+	SOC_SINGLE_TLV("EQ2 250 Hz Volume", AK4641_EQLO, 4, 15, 1, eq_tlv),
-+	SOC_SINGLE_TLV("EQ3 1 kHz Volume", AK4641_EQMID, 0, 15, 1, eq_tlv),
-+	SOC_SINGLE_TLV("EQ4 3.5 kHz Volume", AK4641_EQMID, 4, 15, 1, eq_tlv),
-+	SOC_SINGLE_TLV("EQ5 10 kHz Volume", AK4641_EQHI, 0, 15, 1, eq_tlv),
-+};
-+
-+/* Mono 1 Mixer */
-+static const struct snd_kcontrol_new ak4641_mono1_mixer_controls[] = {
-+	SOC_DAPM_SINGLE_TLV("Mic Mono Sidetone Volume", AK4641_VOL, 7, 1, 0,
-+						mic_mono_sidetone_tlv),
-+	SOC_DAPM_SINGLE("Mic Mono Sidetone Switch", AK4641_SIG1, 4, 1, 0),
-+	SOC_DAPM_SINGLE("Mono Playback Switch", AK4641_SIG1, 5, 1, 0),
-+};
-+
-+/* Stereo Mixer */
-+static const struct snd_kcontrol_new ak4641_stereo_mixer_controls[] = {
-+	SOC_DAPM_SINGLE_TLV("Mic Sidetone Volume", AK4641_VOL, 4, 7, 0,
-+						mic_stereo_sidetone_tlv),
-+	SOC_DAPM_SINGLE("Mic Sidetone Switch", AK4641_SIG2, 4, 1, 0),
-+	SOC_DAPM_SINGLE("Playback Switch", AK4641_SIG2, 7, 1, 0),
-+	SOC_DAPM_SINGLE("Aux Bypass Switch", AK4641_SIG2, 5, 1, 0),
-+};
-+
-+/* Input Mixer */
-+static const struct snd_kcontrol_new ak4641_input_mixer_controls[] = {
-+	SOC_DAPM_SINGLE("Mic Capture Switch", AK4641_MIC, 2, 1, 0),
-+	SOC_DAPM_SINGLE("Aux Capture Switch", AK4641_MIC, 5, 1, 0),
-+};
-+
-+/* Mic mux */
-+static const struct snd_kcontrol_new ak4641_mic_mux_control =
-+	SOC_DAPM_ENUM("Mic Select", ak4641_mic_select_enum);
-+
-+/* Input mux */
-+static const struct snd_kcontrol_new ak4641_input_mux_control =
-+	SOC_DAPM_ENUM("Input Select", ak4641_mic_or_dac_enum);
-+
-+/* mono 2 switch */
-+static const struct snd_kcontrol_new ak4641_mono2_control =
-+	SOC_DAPM_SINGLE("Switch", AK4641_SIG1, 0, 1, 0);
-+
-+/* ak4641 dapm widgets */
-+static const struct snd_soc_dapm_widget ak4641_dapm_widgets[] = {
-+	SND_SOC_DAPM_MIXER("Stereo Mixer", SND_SOC_NOPM, 0, 0,
-+		&ak4641_stereo_mixer_controls[0],
-+		ARRAY_SIZE(ak4641_stereo_mixer_controls)),
-+	SND_SOC_DAPM_MIXER("Mono1 Mixer", SND_SOC_NOPM, 0, 0,
-+		&ak4641_mono1_mixer_controls[0],
-+		ARRAY_SIZE(ak4641_mono1_mixer_controls)),
-+	SND_SOC_DAPM_MIXER("Input Mixer", SND_SOC_NOPM, 0, 0,
-+		&ak4641_input_mixer_controls[0],
-+		ARRAY_SIZE(ak4641_input_mixer_controls)),
-+	SND_SOC_DAPM_MUX("Mic Mux", SND_SOC_NOPM, 0, 0,
-+		&ak4641_mic_mux_control),
-+	SND_SOC_DAPM_MUX("Input Mux", SND_SOC_NOPM, 0, 0,
-+		&ak4641_input_mux_control),
-+	SND_SOC_DAPM_SWITCH("Mono 2 Enable", SND_SOC_NOPM, 0, 0,
-+		&ak4641_mono2_control),
-+
-+	SND_SOC_DAPM_OUTPUT("LOUT"),
-+	SND_SOC_DAPM_OUTPUT("ROUT"),
-+	SND_SOC_DAPM_OUTPUT("MOUT1"),
-+	SND_SOC_DAPM_OUTPUT("MOUT2"),
-+	SND_SOC_DAPM_OUTPUT("MICOUT"),
-+
-+	SND_SOC_DAPM_ADC("ADC", "HiFi Capture", AK4641_PM1, 0, 0),
-+	SND_SOC_DAPM_PGA("Mic", AK4641_PM1, 1, 0, NULL, 0),
-+	SND_SOC_DAPM_PGA("AUX In", AK4641_PM1, 2, 0, NULL, 0),
-+	SND_SOC_DAPM_PGA("Mono Out", AK4641_PM1, 3, 0, NULL, 0),
-+	SND_SOC_DAPM_PGA("Line Out", AK4641_PM1, 4, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_DAC("DAC", "HiFi Playback", AK4641_PM2, 0, 0),
-+	SND_SOC_DAPM_PGA("Mono Out 2", AK4641_PM2, 3, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_ADC("Voice ADC", "Voice Capture", AK4641_BTIF, 0, 0),
-+	SND_SOC_DAPM_ADC("Voice DAC", "Voice Playback", AK4641_BTIF, 1, 0),
-+
-+	SND_SOC_DAPM_MICBIAS("Mic Int Bias", AK4641_MIC, 3, 0),
-+	SND_SOC_DAPM_MICBIAS("Mic Ext Bias", AK4641_MIC, 4, 0),
-+
-+	SND_SOC_DAPM_INPUT("MICIN"),
-+	SND_SOC_DAPM_INPUT("MICEXT"),
-+	SND_SOC_DAPM_INPUT("AUX"),
-+	SND_SOC_DAPM_INPUT("AIN"),
-+};
-+
-+static const struct snd_soc_dapm_route audio_map[] = {
-+	/* Stereo Mixer */
-+	{"Stereo Mixer", "Playback Switch", "DAC"},
-+	{"Stereo Mixer", "Mic Sidetone Switch", "Input Mux"},
-+	{"Stereo Mixer", "Aux Bypass Switch", "AUX In"},
-+
-+	/* Mono 1 Mixer */
-+	{"Mono1 Mixer", "Mic Mono Sidetone Switch", "Input Mux"},
-+	{"Mono1 Mixer", "Mono Playback Switch", "DAC"},
-+
-+	/* Mic */
-+	{"Mic", NULL, "AIN"},
-+	{"Mic Mux", "Internal", "Mic Int Bias"},
-+	{"Mic Mux", "External", "Mic Ext Bias"},
-+	{"Mic Int Bias", NULL, "MICIN"},
-+	{"Mic Ext Bias", NULL, "MICEXT"},
-+	{"MICOUT", NULL, "Mic Mux"},
-+
-+	/* Input Mux */
-+	{"Input Mux", "Microphone", "Mic"},
-+	{"Input Mux", "Voice DAC", "Voice DAC"},
-+
-+	/* Line Out */
-+	{"LOUT", NULL, "Line Out"},
-+	{"ROUT", NULL, "Line Out"},
-+	{"Line Out", NULL, "Stereo Mixer"},
-+
-+	/* Mono 1 Out */
-+	{"MOUT1", NULL, "Mono Out"},
-+	{"Mono Out", NULL, "Mono1 Mixer"},
-+
-+	/* Mono 2 Out */
-+	{"MOUT2", NULL, "Mono 2 Enable"},
-+	{"Mono 2 Enable", "Switch", "Mono Out 2"},
-+	{"Mono Out 2", NULL, "Stereo Mixer"},
-+
-+	{"Voice ADC", NULL, "Mono 2 Enable"},
-+
-+	/* Aux In */
-+	{"AUX In", NULL, "AUX"},
-+
-+	/* ADC */
-+	{"ADC", NULL, "Input Mixer"},
-+	{"Input Mixer", "Mic Capture Switch", "Mic"},
-+	{"Input Mixer", "Aux Capture Switch", "AUX In"},
-+};
-+
-+static int ak4641_add_widgets(struct snd_soc_codec *codec)
++static int hx4700_spk_power(struct snd_soc_dapm_widget *w,
++			    struct snd_kcontrol *k, int event)
 +{
++	gpio_set_value(GPIO107_HX4700_SPK_nSD, !!SND_SOC_DAPM_EVENT_ON(event));
++	return 0;
++}
++
++static int hx4700_hp_power(struct snd_soc_dapm_widget *w,
++			   struct snd_kcontrol *k, int event)
++{
++	gpio_set_value(GPIO92_HX4700_HP_DRIVER, !!SND_SOC_DAPM_EVENT_ON(event));
++	return 0;
++}
++
++/* hx4700 machine dapm widgets */
++static const struct snd_soc_dapm_widget ak4641_dapm_widgets[] = {
++	SND_SOC_DAPM_HP("Headphone Jack", hx4700_hp_power),
++	SND_SOC_DAPM_SPK("Speaker", hx4700_spk_power),
++	SND_SOC_DAPM_MIC("Built-in Microphone", NULL),
++};
++
++/* hx4700 machine audio_map */
++static const struct snd_soc_dapm_route audio_map[] = {
++
++	/* Headphone connected to LOUT, ROUT */
++	{"Headphone Jack", NULL, "LOUT"},
++	{"Headphone Jack", NULL, "ROUT"},
++
++	/* Speaker connected to MOUT2 */
++	{"Speaker", NULL, "MOUT2"},
++
++	/* Microphone connected to MICIN */
++	{"MICIN", NULL, "Built-in Microphone"},
++	{"AIN", NULL, "MICOUT"},
++};
++
++static struct snd_soc_card snd_soc_card_hx4700;
++
++/*
++ * Logic for a ak4641 as connected on a HP iPAQ hx4700
++ */
++static int hx4700_ak4641_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct snd_soc_codec *codec = rtd->codec;
 +	struct snd_soc_dapm_context *dapm = &codec->dapm;
++	int err;
++
++	/* NC codec pins */
++	/* FIXME: is anything connected here? */
++	snd_soc_dapm_nc_pin(dapm, "MOUT1");
++	snd_soc_dapm_nc_pin(dapm, "MICEXT");
++	snd_soc_dapm_nc_pin(dapm, "AUX");
++
++	/* Add hx4700 specific widgets */
 +	snd_soc_dapm_new_controls(dapm, ak4641_dapm_widgets,
 +				  ARRAY_SIZE(ak4641_dapm_widgets));
 +
++	/* Set up hx4700 specific audio path interconnects */
 +	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
 +
-+	snd_soc_dapm_new_widgets(dapm);
-+	return 0;
++	snd_soc_dapm_sync(dapm);
++
++	/* Jack detection API stuff */
++	err = snd_soc_jack_new(codec, "Headphone Jack",
++				SND_JACK_HEADPHONE, &hs_jack);
++	if (err)
++		return err;
++
++	err = snd_soc_jack_add_pins(&hs_jack, ARRAY_SIZE(hs_jack_pin),
++					hs_jack_pin);
++	if (err)
++		return err;
++
++	err = snd_soc_jack_add_gpios(&hs_jack, 1, &hs_jack_gpio);
++
++	return err;
 +}
 +
-+static int ak4641_set_dai_sysclk(struct snd_soc_dai *codec_dai,
-+	int clk_id, unsigned int freq, int dir)
++/* hx4700 digital audio interface glue - connects codec <--> CPU */
++static struct snd_soc_dai_link hx4700_dai[] = {
 +{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	struct ak4641_priv *ak4641 = snd_soc_codec_get_drvdata(codec);
-+
-+	ak4641->sysclk = freq;
-+	return 0;
-+}
-+
-+static int ak4641_i2s_hw_params(struct snd_pcm_substream *substream,
-+				 struct snd_pcm_hw_params *params,
-+				 struct snd_soc_dai *dai)
-+{
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_codec *codec = rtd->codec;
-+	struct ak4641_priv *ak4641 = snd_soc_codec_get_drvdata(codec);
-+	u8 mode2 = snd_soc_read(codec, AK4641_MODE2) & ~(0x3 << 5);
-+	int rate = params_rate(params), fs = 256;
-+
-+	if (rate)
-+		fs = ak4641->sysclk / rate;
-+	else
-+		return -EINVAL;
-+
-+	/* set fs */
-+	switch (fs) {
-+	case 1024:
-+		mode2 |= (0x2 << 5);
-+		break;
-+	case 512:
-+		mode2 |= (0x1 << 5);
-+		break;
-+	case 256:
-+		break;
-+	default:
-+		dev_err(codec->dev, "Error: unsupported fs=%d\n", fs);
-+		return -EINVAL;
-+	}
-+
-+	/* set rate */
-+	snd_soc_write(codec, AK4641_MODE2, mode2);
-+
-+	/* Update de-emphasis filter for the new rate */
-+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-+		ak4641->playback_fs = rate;
-+		ak4641_set_deemph(codec);
-+	};
-+
-+	return 0;
-+}
-+
-+static int ak4641_pcm_set_dai_fmt(struct snd_soc_dai *codec_dai,
-+				  unsigned int fmt)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	u8 btif = snd_soc_read(codec, AK4641_BTIF) & ~(0x3 << 5);
-+
-+	/* interface format */
-+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
-+	case SND_SOC_DAIFMT_I2S:
-+		btif |= (0x3 << 5);
-+		break;
-+	case SND_SOC_DAIFMT_LEFT_J:
-+		btif |= (0x2 << 5);
-+		break;
-+	case SND_SOC_DAIFMT_DSP_A:	/* MSB after FRM */
-+		btif |= (0x0 << 5);
-+		break;
-+	case SND_SOC_DAIFMT_DSP_B:	/* MSB during FRM */
-+		btif |= (0x1 << 5);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	snd_soc_write(codec, AK4641_BTIF, btif);
-+	return 0;
-+}
-+
-+static int ak4641_i2s_set_dai_fmt(struct snd_soc_dai *codec_dai,
-+		unsigned int fmt)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	u8 mode1 = 0;
-+
-+	/* interface format */
-+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
-+	case SND_SOC_DAIFMT_I2S:
-+		mode1 = 0x0002;
-+		break;
-+	case SND_SOC_DAIFMT_LEFT_J:
-+		mode1 = 0x0001;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	snd_soc_write(codec, AK4641_MODE1, mode1);
-+	return 0;
-+}
-+
-+static int ak4641_mute(struct snd_soc_dai *dai, int mute)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	u16 mute_reg = snd_soc_read(codec, AK4641_DAC);
-+	if (!mute)
-+		snd_soc_write(codec, AK4641_DAC, mute_reg & ~0x20);
-+	else
-+		snd_soc_write(codec, AK4641_DAC, mute_reg | 0x20);
-+	return 0;
-+}
-+
-+static int ak4641_set_bias_level(struct snd_soc_codec *codec,
-+	enum snd_soc_bias_level level)
-+{
-+	struct ak4641_platform_data *pdata = codec->dev->platform_data;
-+	u16 i, mute_reg;
-+
-+	switch (level) {
-+	case SND_SOC_BIAS_ON:
-+		mute_reg = snd_soc_read(codec, AK4641_DAC);
-+		snd_soc_write(codec, AK4641_DAC, mute_reg & ~0x20) ;
-+		break;
-+	case SND_SOC_BIAS_PREPARE:
-+		mute_reg = snd_soc_read(codec, AK4641_DAC);
-+		snd_soc_write(codec, AK4641_DAC, mute_reg | 0x20);
-+		break;
-+	case SND_SOC_BIAS_STANDBY:
-+		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
-+			if (pdata && gpio_is_valid(pdata->gpio_power))
-+				gpio_set_value(pdata->gpio_power, 1);
-+			mdelay(1);
-+			if (pdata && gpio_is_valid(pdata->gpio_npdn))
-+				gpio_set_value(pdata->gpio_npdn, 1);
-+			mdelay(1);
-+			ak4641_sync(codec);
-+		}
-+		i = snd_soc_read(codec, AK4641_PM1);
-+		snd_soc_write(codec, AK4641_PM1, i | 0x80);
-+		i = snd_soc_read(codec, AK4641_PM2);
-+		snd_soc_write(codec, AK4641_PM2, i & (~0x80));
-+		break;
-+	case SND_SOC_BIAS_OFF:
-+		i = snd_soc_read(codec, AK4641_PM1);
-+		snd_soc_write(codec, AK4641_PM1, i & (~0x80));
-+		if (pdata && gpio_is_valid(pdata->gpio_npdn))
-+			gpio_set_value(pdata->gpio_npdn, 0);
-+		if (pdata && gpio_is_valid(pdata->gpio_power))
-+			gpio_set_value(pdata->gpio_power, 0);
-+		break;
-+	}
-+	codec->dapm.bias_level = level;
-+	return 0;
-+}
-+
-+#define AK4641_RATES	(SNDRV_PCM_RATE_8000_48000)
-+#define AK4641_RATES_BT (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
-+			 SNDRV_PCM_RATE_16000)
-+#define AK4641_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE)
-+
-+static struct snd_soc_dai_ops ak4641_i2s_dai_ops = {
-+	.hw_params    = ak4641_i2s_hw_params,
-+	.set_fmt      = ak4641_i2s_set_dai_fmt,
-+	.digital_mute = ak4641_mute,
-+	.set_sysclk   = ak4641_set_dai_sysclk,
-+};
-+
-+static struct snd_soc_dai_ops ak4641_pcm_dai_ops = {
-+	.hw_params    = NULL, /* rates are controlled by BT chip */
-+	.set_fmt      = ak4641_pcm_set_dai_fmt,
-+	.digital_mute = ak4641_mute,
-+	.set_sysclk   = ak4641_set_dai_sysclk,
-+};
-+
-+struct snd_soc_dai_driver ak4641_dai[] = {
-+{
-+	.name = "ak4641-hifi",
-+	.id = 1,
-+	.playback = {
-+		.stream_name = "HiFi Playback",
-+		.channels_min = 1,
-+		.channels_max = 2,
-+		.rates = AK4641_RATES,
-+		.formats = AK4641_FORMATS,
-+	},
-+	.capture = {
-+		.stream_name = "HiFi Capture",
-+		.channels_min = 1,
-+		.channels_max = 2,
-+		.rates = AK4641_RATES,
-+		.formats = AK4641_FORMATS,
-+	},
-+	.ops = &ak4641_i2s_dai_ops,
-+	.symmetric_rates = 1,
-+},
-+{
-+	.name = "ak4641-voice",
-+	.id = 1,
-+	.playback = {
-+		.stream_name = "Voice Playback",
-+		.channels_min = 1,
-+		.channels_max = 1,
-+		.rates = AK4641_RATES_BT,
-+		.formats = AK4641_FORMATS,
-+	},
-+	.capture = {
-+		.stream_name = "Voice Capture",
-+		.channels_min = 1,
-+		.channels_max = 1,
-+		.rates = AK4641_RATES_BT,
-+		.formats = AK4641_FORMATS,
-+	},
-+	.ops = &ak4641_pcm_dai_ops,
-+	.symmetric_rates = 1,
++	.name = "ak4641",
++	.stream_name = "AK4641",
++	.cpu_dai_name = "pxa2xx-i2s",
++	.codec_dai_name = "ak4641-hifi",
++	.platform_name = "pxa-pcm-audio",
++	.codec_name = "ak4641.0-0012",
++	.init = hx4700_ak4641_init,
++	.ops = &hx4700_ops,
 +},
 +};
 +
-+static int ak4641_suspend(struct snd_soc_codec *codec, pm_message_t state)
-+{
-+	ak4641_set_bias_level(codec, SND_SOC_BIAS_OFF);
-+	return 0;
-+}
-+
-+static int ak4641_resume(struct snd_soc_codec *codec)
-+{
-+	ak4641_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-+	return 0;
-+}
-+
-+static int ak4641_probe(struct snd_soc_codec *codec)
-+{
-+	struct ak4641_platform_data *pdata = codec->dev->platform_data;
-+	int ret;
-+
-+
-+	if (pdata) {
-+		if (gpio_is_valid(pdata->gpio_power)) {
-+			ret = gpio_request_one(pdata->gpio_power,
-+					GPIOF_OUT_INIT_LOW, "ak4641 power");
-+			if (ret)
-+				goto err_out;
-+		}
-+		if (gpio_is_valid(pdata->gpio_npdn)) {
-+			ret = gpio_request_one(pdata->gpio_npdn,
-+					GPIOF_OUT_INIT_LOW, "ak4641 npdn");
-+			if (ret)
-+				goto err_gpio;
-+
-+			udelay(1); /* > 150 ns */
-+			gpio_set_value(pdata->gpio_npdn, 1);
-+		}
-+	}
-+
-+	ret = snd_soc_codec_set_cache_io(codec, 8, 8, SND_SOC_I2C);
-+	if (ret != 0) {
-+		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
-+		goto err_register;
-+	}
-+
-+	/* power on device */
-+	ak4641_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-+	snd_soc_add_controls(codec, ak4641_snd_controls,
-+				ARRAY_SIZE(ak4641_snd_controls));
-+	ak4641_add_widgets(codec);
-+
-+	return 0;
-+
-+err_register:
-+	if (pdata) {
-+		if (gpio_is_valid(pdata->gpio_power))
-+			gpio_set_value(pdata->gpio_power, 0);
-+		if (gpio_is_valid(pdata->gpio_npdn))
-+			gpio_free(pdata->gpio_npdn);
-+	}
-+err_gpio:
-+	if (pdata && gpio_is_valid(pdata->gpio_power))
-+		gpio_free(pdata->gpio_power);
-+err_out:
-+	return ret;
-+}
-+
-+static int ak4641_remove(struct snd_soc_codec *codec)
-+{
-+	struct ak4641_platform_data *pdata = codec->dev->platform_data;
-+
-+	ak4641_set_bias_level(codec, SND_SOC_BIAS_OFF);
-+
-+	if (pdata) {
-+		if (gpio_is_valid(pdata->gpio_power)) {
-+			gpio_set_value(pdata->gpio_power, 0);
-+			gpio_free(pdata->gpio_power);
-+		}
-+		if (gpio_is_valid(pdata->gpio_npdn))
-+			gpio_free(pdata->gpio_npdn);
-+	}
-+	return 0;
-+}
-+
-+
-+static struct snd_soc_codec_driver soc_codec_dev_ak4641 = {
-+	.probe		= ak4641_probe,
-+	.remove		= ak4641_remove,
-+	.suspend	= ak4641_suspend,
-+	.resume		= ak4641_resume,
-+	.set_bias_level	= ak4641_set_bias_level,
-+	.reg_cache_size	= ARRAY_SIZE(ak4641_reg),
-+	.reg_word_size	= sizeof(u8),
-+	.reg_cache_default = ak4641_reg,
-+	.reg_cache_step	= 1,
++/* hx4700 audio machine driver */
++static struct snd_soc_card snd_soc_card_hx4700 = {
++	.name = "iPAQ hx4700",
++	.dai_link = hx4700_dai,
++	.num_links = ARRAY_SIZE(hx4700_dai),
 +};
 +
++static struct platform_device *hx4700_snd_device;
 +
-+static int __devinit ak4641_i2c_probe(struct i2c_client *i2c,
-+				      const struct i2c_device_id *id)
-+{
-+	struct ak4641_priv *ak4641;
-+	int ret;
-+
-+	ak4641 = kzalloc(sizeof(struct ak4641_priv), GFP_KERNEL);
-+	if (!ak4641)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(i2c, ak4641);
-+
-+	ret = snd_soc_register_codec(&i2c->dev, &soc_codec_dev_ak4641,
-+				ak4641_dai, ARRAY_SIZE(ak4641_dai));
-+	if (ret < 0)
-+		kfree(ak4641);
-+
-+	return ret;
-+}
-+
-+static int __devexit ak4641_i2c_remove(struct i2c_client *i2c)
-+{
-+	snd_soc_unregister_codec(&i2c->dev);
-+	kfree(i2c_get_clientdata(i2c));
-+	return 0;
-+}
-+
-+static const struct i2c_device_id ak4641_i2c_id[] = {
-+	{ "ak4641", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, ak4641_i2c_id);
-+
-+static struct i2c_driver ak4641_i2c_driver = {
-+	.driver = {
-+		.name = "ak4641",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe =    ak4641_i2c_probe,
-+	.remove =   __devexit_p(ak4641_i2c_remove),
-+	.id_table = ak4641_i2c_id,
-+};
-+
-+static int __init ak4641_modinit(void)
++static int __init hx4700_init(void)
 +{
 +	int ret;
 +
-+	ret = i2c_add_driver(&ak4641_i2c_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register AK4641 I2C driver: %d\n", ret);
++	if (!machine_is_h4700())
++		return -ENODEV;
 +
++	ret = gpio_request(GPIO107_HX4700_SPK_nSD, "SPK_POWER");
++	if (ret)
++		goto err_request_spk;
++	ret = gpio_request(GPIO92_HX4700_HP_DRIVER, "EP_POWER");
++	if (ret)
++		goto err_request_ep;
++
++	gpio_direction_output(GPIO107_HX4700_SPK_nSD, 1);
++	gpio_direction_output(GPIO92_HX4700_HP_DRIVER, 0);
++
++	hx4700_snd_device = platform_device_alloc("soc-audio", -1);
++	if (!hx4700_snd_device) {
++		ret = -ENOMEM;
++		goto err_pdev;
++	}
++
++	platform_set_drvdata(hx4700_snd_device, &snd_soc_card_hx4700);
++	ret = platform_device_add(hx4700_snd_device);
++	if (ret) {
++		platform_device_put(hx4700_snd_device);
++		goto err_pdev;
++	}
++
++	return 0;
++
++err_pdev:
++	gpio_free(GPIO92_HX4700_HP_DRIVER);
++err_request_ep:
++	gpio_free(GPIO107_HX4700_SPK_nSD);
++err_request_spk:
 +	return ret;
 +}
-+module_init(ak4641_modinit);
 +
-+static void __exit ak4641_exit(void)
++static void __exit hx4700_exit(void)
 +{
-+	i2c_del_driver(&ak4641_i2c_driver);
-+}
-+module_exit(ak4641_exit);
++	snd_soc_jack_free_gpios(&hs_jack, 1, &hs_jack_gpio);
++	platform_device_unregister(hx4700_snd_device);
 +
-+MODULE_DESCRIPTION("SoC AK4641 driver");
-+MODULE_AUTHOR("Harald Welte <laforge@gnufiish.org>");
++	gpio_set_value(GPIO92_HX4700_HP_DRIVER, 0);
++	gpio_set_value(GPIO107_HX4700_SPK_nSD, 0);
++
++	gpio_free(GPIO92_HX4700_HP_DRIVER);
++	gpio_free(GPIO107_HX4700_SPK_nSD);
++}
++
++module_init(hx4700_init);
++module_exit(hx4700_exit);
++
++MODULE_AUTHOR("Philipp Zabel");
++MODULE_DESCRIPTION("ALSA SoC iPAQ hx4700");
 +MODULE_LICENSE("GPL");
-diff --git a/sound/soc/codecs/ak4641.h b/sound/soc/codecs/ak4641.h
-new file mode 100644
-index 0000000..4a26324
---- /dev/null
-+++ b/sound/soc/codecs/ak4641.h
-@@ -0,0 +1,47 @@
-+/*
-+ * ak4641.h  --  AK4641 SoC Audio driver
-+ *
-+ * Copyright 2008 Harald Welte <laforge@gnufiish.org>
-+ *
-+ * Based on ak4535.h
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _AK4641_H
-+#define _AK4641_H
-+
-+/* AK4641 register space */
-+
-+#define AK4641_PM1		0x00
-+#define AK4641_PM2		0x01
-+#define AK4641_SIG1		0x02
-+#define AK4641_SIG2		0x03
-+#define AK4641_MODE1		0x04
-+#define AK4641_MODE2		0x05
-+#define AK4641_DAC		0x06
-+#define AK4641_MIC		0x07
-+#define AK4641_TIMER		0x08
-+#define AK4641_ALC1		0x09
-+#define AK4641_ALC2		0x0a
-+#define AK4641_PGA		0x0b
-+#define AK4641_LATT		0x0c
-+#define AK4641_RATT		0x0d
-+#define AK4641_VOL		0x0e
-+#define AK4641_STATUS		0x0f
-+#define AK4641_EQLO		0x10
-+#define AK4641_EQMID		0x11
-+#define AK4641_EQHI		0x12
-+#define AK4641_BTIF		0x13
-+
-+#define AK4641_CACHEREGNUM	0x14
-+
-+
-+
-+#define AK4641_DAI_HIFI		0
-+#define AK4641_DAI_VOICE	1
-+
-+
-+#endif
 -- 
 1.7.4.rc1
 
