@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab1EPNVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:21:51 -0400
-Received: from vps.jankratochvil.net ([46.28.109.124]:39807 "EHLO
-	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753829Ab1EPNVu (ORCPT
+	id S1755337Ab1EPNYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:24:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44804 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab1EPNYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:21:50 -0400
-Date: Mon, 16 May 2011 15:21:23 +0200
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
- implement PTRACE_SEIZE]
-Message-ID: <20110516132123.GA13544@host1.jankratochvil.net>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-3-git-send-email-tj@kernel.org>
- <20110515155602.GD31855@host1.jankratochvil.net>
- <20110515162630.GG23665@htj.dyndns.org>
- <20110515171512.GA24047@host1.jankratochvil.net>
- <20110515172505.GL23665@htj.dyndns.org>
- <20110515194829.GA27023@host1.jankratochvil.net>
- <20110516083113.GN23665@htj.dyndns.org>
+	Mon, 16 May 2011 09:24:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AuyFjtJb3EILhkaYu8gN3Tsw2Mj5vnJOQTZG/sMTd+HuwqONTjPU2QfScOktBjrVYh
+         LGgyxfTF4aXdLfgd8bypEXLoVEalcIUVndG+bX+IJpWsdGnNgtey/I3TwyaNeSrDZNsk
+         6ZPM3fJF0qyrwDH3P0pzkbDYLM3cNJlJGZli0=
+Date: Mon, 16 May 2011 15:24:00 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 6/9] job control: make task_clear_jobctl_pending()
+ clear TRAPPING automatically
+Message-ID: <20110516132400.GY23665@htj.dyndns.org>
+References: <1305301580-9924-1-git-send-email-tj@kernel.org>
+ <1305301580-9924-7-git-send-email-tj@kernel.org>
+ <20110516122535.GD4898@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110516083113.GN23665@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110516122535.GD4898@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Hello,
 
-On Mon, 16 May 2011 10:31:13 +0200, Tejun Heo wrote:
-> First of all, I don't think hitting different trap spots would be that
-> difficult.  Handling different traps after SEIZE might not be easy but
-> could just be something which needs to be done anyway.  I'm reluctant
-> to treat the initial trap differently because it's essentially
-> identical to what happens when a program does PTRACE_INTERRUPT.  It's
-> just something the program should be able to deal with, somewhat like
-> read(2) may return shorter amount of data than provided buffer.
+On Mon, May 16, 2011 at 02:25:35PM +0200, Oleg Nesterov wrote:
+> On 05/13, Tejun Heo wrote:
+> >
+> > @@ -264,6 +267,9 @@ void task_clear_jobctl_pending(struct task_struct *task, unsigned int mask)
+> >  		mask |= JOBCTL_STOP_CONSUME | JOBCTL_STOP_DEQUEUED;
+> >
+> >  	task->jobctl &= ~mask;
+> > +
+> > +	if (!(task->jobctl & JOBCTL_PENDING_MASK))
+> > +		task_clear_jobctl_trapping(task);
+> >  }
+> 
+> So, SIGCONT clears JOBCTL_TRAPPING and wakes up the tracer.
 
-If not clear I would like also PTRACE_INTERRUPT to deliver the INTERRUPT event
-always as the first one, if it is not clear.
+If JOBCTL_TRAPPING is set && JOBCTL_STOP_PENDING was the only pending
+condition.
 
-tracer            tracee                                foreign process
----------------   ------                                ---------------
-attaches tracee                                        
-normal run                                             
-                                                        tkill(tracee, SIGUSR1)
-                  stopped, to report SIGUSR1 to tracer
-PTRACE_INTERRUPT  (but tracee is already stopped)
-waitpid(tracee)
+> I can't really understand this without seeing the next changes, but
+> it seems this makes some things worse, although I am not sure.
 
-Currently that waitpid will report SIGUSR1 first and then the INTERRUPT trap.
+It's a safety mechanism.  We shouldn't have TRAPPING set when no
+stop/trap is pending and the above establishes that invariant and will
+also be used to simplify exception cases where all pending conditions
+are cleared (tracee being killed).  It's conceptually much easier to
+grasp that way - you clear all pending conditions when the task dies
+and the mechanism to wait for trap transition is cleared together.
 
-I suggest - if possible - that tracer will get that INTERRUPT trap first.
+> For example. PTRACE_SEIZE should guarantee the tracee will trap and
+> report. However, if the tracee is stopped during attach, we can race
+> with SIGCONT. The previous version had the similar problem afaics, but
+> it was easy (I think) to fix. Now that SIGCONT clears JOBCTL_TRAPPING
+> we need more complications.
 
-But you made the optimization that the INTERRUPT gets suppressed in such case.
-Which improves performance for the cost of more complicated debuggers.
+This problem doesn't exist anymore.  SEIZE directly schedules
+JOBCTL_TRAP_STOP instead of using JOBCTL_STOP_PENDING, so it actually
+works exactly as it should.
 
-I guess after PTRACE_SEIZE if the first signal/event is not INTERRUPT there
-will not be any INTERRUPT later, as you said.
+1. If tracee was stopped and tracer attaches, tracee should re-trap
+   and tracer should wait for TRAPPING.
 
+2. If tracee was not stopped and tracer attaches, tracee traps to
+   STOP.
 
-Thanks,
-Jan
+3. If tracee was stopped and tracer attaches but SIGCONT is received
+   before TRAPPING is done, TRAPPING is cleared and tracer and tracee
+   are in the same conditions as #2, which is exactly how they should
+   be.
+
+Thanks.
+
+-- 
+tejun
