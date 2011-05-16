@@ -1,172 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab1EPHSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 03:18:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43494 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab1EPHSf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 03:18:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FGiCAprm27f3ZoAikV77SzcScDV3PMraoNmgQ8G6wMaVpzP+aGQY6FIW/r5JKDrgfg
-         zeK8f54Us944gWjXwcCZraovUYrRllN99hCN30Z2k+zLZmRc/nEvAtHZFUQQxJAZ6hxv
-         3yAoY4YaSKLUnNynPAjidUj/69X9mwpBMER/s=
+	id S1752251Ab1EPHWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 03:22:11 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34960 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab1EPHWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 03:22:09 -0400
+Date: Mon, 16 May 2011 09:21:34 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jacob Pan <jacob.jun.pan@intel.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris McDermott <lcm@us.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the tip tree with the arm tree
+Message-ID: <20110516072134.GE24836@elte.hu>
+References: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
+ <20110513080634.GA13647@elte.hu>
+ <20110513083738.GA19733@n2100.arm.linux.org.uk>
+ <20110513092646.GK13647@elte.hu>
+ <20110513172509.GC19733@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=bYzYrHx+P=yTH_0VTiQaGZHeB9A@mail.gmail.com>
-References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
-	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
-	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
-	<009c01cc108b$4635c7d0$d2a15770$@com>
-	<BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
-	<BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
-	<BANLkTik=M8uwnmHABqYBkeVDk56UMrnkMg@mail.gmail.com>
-	<BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
-	<BANLkTik6c8-g8FrXZy8-V35W6-Th++5p_A@mail.gmail.com>
-	<BANLkTi=bYzYrHx+P=yTH_0VTiQaGZHeB9A@mail.gmail.com>
-Date: Mon, 16 May 2011 15:18:35 +0800
-Message-ID: <BANLkTinv6aSQMgh9ce1xaQ14_aHDPvFTxw@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
-From: ttlxzz ccc <boyzccc@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513172509.GC19733@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin and Wang :)
 
-I'm very glad to find the reason of this problem. It's just because
-the CONFIG_FRAME_POINTER is not set :).
+* Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-And in dump_stack() which is defined in arch/x86/kernel/dumpstack.c,
-CONFIG_FRAME_POINTER control whether to get the bp.
+> On Fri, May 13, 2011 at 11:26:46AM +0200, Ingo Molnar wrote:
+> > Also note that there's also some pending changes in the x86 tree modifying
+> > arch/x86/kernel/i8253.c:
+> > 
+> >   b01cc1b0eae0: x86: Convert remaining x86 clocksources to clocksource_register_hz/khz
+> > 
+> > If you want to do any further change to this file you need to pull in this 
+> > change first or need to resolve the conflict in some other way.
+> 
+> I have been told by Linus on more than one occasion that Linus wants to
+> see exactly these kinds of merge conflicts, as it helps him track what's
+> going on.
 
-Now I enable CONFIG_FRAME_POINTER and I can see the full backtrace. :)
+He has told us on more than one occasion that he wants to see *easy* conflicts, 
+where he can see benign interaction between properly maintained trees.
 
-Thank you very much for Catalin and Wang:).
+Here he would look and would only determine what i have already determined: 
+that the workflow of applying this patch sucked. That is definitely not the 
+kind of conflict Linus wants to see in the merge window ...
 
-On Fri, May 13, 2011 at 5:32 PM, ttlxzz ccc <boyzccc@gmail.com> wrote:
-> Hi, Wang and Catalin:
->
-> I have tested kmemleak on the x86 and x86_64 architecture again. There is only
->  backtrace:
->
->   [<ffffffffffffffff>] 0xffffffffffffffff
->
-> unreferenced object 0xffffc90012d27000 (size 64):
->
->  comm "insmod", pid 13092, jiffies 4298369684
->
->  hex dump (first 32 bytes):
->
->   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->
->   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->
->  backtrace:
->
->   [<ffffffffffffffff>] 0xffffffffffffffff
->
-> But in the x86, there is full backtrace.
->  I do this below
->> cat .config | grep STACETRACE
->>
->> CONFIG_STACKTRACE_SUPPORT=y
->> CONFIG_STACKTRACE=y
->> CONFIG_USER_STACKTRACE_SUPPORT=y
->>
->> As you see, the x86_64 architecture supprot stacktrace. But I found
->> there's no backtrace yesterday.
->> I'll test it again later.
->>
->> BTW
->>
->> cat /proc/cpuinfo | grep processor | wc -l
->> 8
->> cat /proc/cpuinfo | grep model
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->
-> and My linux version is redhat 3.4.5
->
-> Is it a problem of x86_64 architecture or something else? I am really
-> very Anxious.
->
-> Thanks:)
->
-> On Fri, May 13, 2011 at 11:58 AM, ttlxzz ccc <boyzccc@gmail.com> wrote:
->> Hi, wang
->> I have test kmemleak on the x86 architecture. There is no problem with
->> full backtrace.
->> But I can't test it on the x86_64 because my test machine is doing
->> something else.:(
->> But I do this below
->> cat .config | grep STACETRACE
->>
->> CONFIG_STACKTRACE_SUPPORT=y
->> CONFIG_STACKTRACE=y
->> CONFIG_USER_STACKTRACE_SUPPORT=y
->>
->> As you see, the x86_64 architecture supprot stacktrace. But I found
->> there's no backtrace yesterday.
->> I'll test it again later.
->>
->> BTW
->>
->> cat /proc/cpuinfo | grep processor | wc -l
->> 8
->> cat /proc/cpuinfo | grep model
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->> model           : 26
->> model name      : Intel(R) Xeon(R) CPU           E5520  @ 2.27GHz
->>
->> thank you :)
->>
->>
->> On Thu, May 12, 2011 at 10:49 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
->>> On Thu, May 12, 2011 at 10:33 PM, ttlxzz ccc <boyzccc@gmail.com> wrote:
->>>> Thanks for Wangcong
->>>>
->>>> I have test the kmemleak-test.ko and the result includes no backtrace
->>>> except fffffffff, too.
->>>> I'm compling the kernel by make menuconfig. :)
->>>
->>> Odd, this looks like a bug, Cc Catalin Marinas <catalin.marinas@arm.com>
->>>
->>> I can't reach my test machine right now, I will try this tomorrow.
->>>
->>
->
+You applied the patch without talking to the maintainers who are running the 
+affected tree. You talked to one of the developers which is fine, and i will 
+generally ack it in hindsight if you do a fine job of sorting out the details - 
+but here you touched an under-modification file without even realizing it. So 
+you messed up which fact i will keep pointing out and i will keep asking you to 
+fix your workflow, so that similar mistakes wont happen in the future.
+
+Really, Russell, you sometimes need to accept blame and you need to admit when 
+you messed up instead of writing countless mails trying to save face and 
+wriggle out of it. I mess up all the time and my hand does not rot away from 
+writing this. Really, write this down: "You are right, I messed this up a bit, 
+lets fix it instead of wasting time on emails."
+
+Lets resolve the conflict and move on, okay?
+
+Thanks,
+
+	Ingo
