@@ -1,206 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab1EPR4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 13:56:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753767Ab1EPR4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 13:56:46 -0400
-Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernl.org, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Mimi Zohar <zohar@us.ibm.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@redhat.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-In-Reply-To: <1305568250.2669.47.camel@localhost.localdomain>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305559822.2855.14.camel@menhir>
-	 <1305561051.2669.10.camel@localhost.localdomain>
-	 <1305562469.2855.26.camel@menhir>
-	 <1305563758.2669.26.camel@localhost.localdomain>
-	 <1305568250.2669.47.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 16 May 2011 18:57:51 +0100
-Message-ID: <1305568671.2855.31.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933397Ab1ERSHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:07:21 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:26559 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933132Ab1ERSHM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 May 2011 14:07:12 -0400
+Message-Id: <201105181807.p4II7AAd015220@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 16 May 2011 13:59:39 -0400
+Subject: [PATCH] arch/tile: use better definitions of xchg() and cmpxchg()
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 18 May 2011 18:07:10.0665 (UTC) FILETIME=[684E1390:01CC1586]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+These definitions use a ({}) construct to avoid some cases where
+we were getting warnings about unused return values.  We also
+promote the definition to the common <asm/atomic.h>, since it applies
+to both the 32- and 64-bit atomics.
 
-On Mon, 2011-05-16 at 13:50 -0400, Mimi Zohar wrote:
-> On Mon, 2011-05-16 at 12:35 -0400, Mimi Zohar wrote:
-> > On Mon, 2011-05-16 at 17:14 +0100, Steven Whitehouse wrote:
-> > > Hi,
-> > > 
-> > > On Mon, 2011-05-16 at 11:50 -0400, Mimi Zohar wrote:
-> > > > On Mon, 2011-05-16 at 16:30 +0100, Steven Whitehouse wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
-> > > > > > After creating the initial LSM security extended attribute, call
-> > > > > > evm_inode_post_init_security() to create the 'security.evm'
-> > > > > > extended attribute.
-> > > > > > 
-> > > > > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > > > > > ---
-> > > > > >  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
-> > > > > >  1 files changed, 19 insertions(+), 9 deletions(-)
-> > > > > > 
-> > > > > [snip]
-> > > > > > +	struct xattr lsm_xattr;
-> > > > > > +	struct xattr evm_xattr;
-> > > > > >  
-> > > > > >  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
-> > > > > > -					   &name, &value, &len);
-> > > > > > +					   &lsm_xattr.name, &lsm_xattr.value,
-> > > > > > +					   &lsm_xattr.value_len);
-> > > > > >  
-> > > > > >  	if (err) {
-> > > > > >  		if (err == -EOPNOTSUPP)
-> > > > > > @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
-> > > > > >  		return err;
-> > > > > >  	}
-> > > > > >  
-> > > > > > -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
-> > > > > > -			       GFS2_EATYPE_SECURITY);
-> > > > > > -	kfree(value);
-> > > > > > -	kfree(name);
-> > > > > > -
-> > > > > > +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
-> > > > > > +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
-> > > > > > +	if (err < 0)
-> > > > > > +		goto out;
-> > > > > > +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
-> > > > > > +					   &evm_xattr);
-> > > > > > +	if (err)
-> > > > > > +		goto out;
-> > > > > > +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
-> > > > > > +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
-> > > > > > +	kfree(evm_xattr.value);
-> > > > > > +out:
-> > > > > > +	kfree(lsm_xattr.name);
-> > > > > > +	kfree(lsm_xattr.value);
-> > > > > >  	return err;
-> > > > > >  }
-> > > > > >  
-> > > > > 
-> > > > > Just wondering whether we could have a single call to the security
-> > > > > subsystem which returns a vector of xattrs rather than having to call
-> > > > > two different functions?
-> > > > > 
-> > > > > Steve.
-> > > > 
-> > > > There are a number of places that the LSM function is called immediately
-> > > > followed by either EVM/IMA.  In each of those places it is hidden from
-> > > > the caller by calling the security_inode_XXX_security().  In this case
-> > > > each fs has it's own method of creating an extended attribute.  If that
-> > > > method could be passed to security_inode_init_security, then
-> > > > security_inode_init_security() could call both the LSM and EVM functions
-> > > > directly.
-> > > > 
-> > > > Mimi
-> > > > 
-> > > 
-> > > I'm still not quite sure I understand... from a (very brief) look at the
-> > > paper, it seems that what you are trying to do is add a new xattr to
-> > > inodes which has some hash of some of the inode metadata (presumably
-> > > including the selinux xattr and some other fields).
-> > 
-> > Yes, for the time being the other metadata is i_ino, i_generation,
-> > i_uid, i_gid, and i_mode.  The IMA-appriasal extension would store the
-> > file hash as an extended attribute. The digital-signature extension
-> > would store a digitial signature instead of the hash.
-> > 
-> > > I'm not sure why it matters whether the selinux data has been written to
-> > > the buffers before the xattr containing the hash? The data will not
-> > > change (I hope!) and if it does presumably the hash will pick that up
-> > > when it is checked at a later date?
-> > 
-> > In this case it doesn't matter, as there aren't any other xattrs at this
-> > point.  When the file closes, the file hash would be written out as
-> > security.ima, causing security.evm to be updated to reflect the change.
-> > 
-> > > The reason I'm asking is that currently the creation of GFS2 inodes is
-> > > broken down into a number of transactions, carefully designed to ensure
-> > > that the correct clean up occurs if there is an error. I would like to
-> > > try and reduce the number of transactions during the create process
-> > > where possible. That means I would like to move to a model which looks
-> > > like this:
-> > > 
-> > > 1. Calculate number of blocks required, based on inode + xattrs (if any)
-> > > 2. Allocate blocks
-> > > 3. Populate with data (i.e. set xattrs)
-> > > 
-> > > I'm trying to work out whether there is some reason why we have to use
-> > > your proposed:
-> > > 
-> > > 1. Get selinux xattr
-> > > 2. Set selinux xattr
-> > > 3. Get EVM xattr
-> > > 4. Set EVM xattr
-> > > 
-> > > as opposed to getting all the xattrs in a single call and then being
-> > > able to set them all in a single operation, if that makes sense?
-> > > 
-> > > Steve.
-> > 
-> > Yes, it makes sense.
-> 
-> Just to clarify (and am cc'ing Stephen, Eric, and Casey).
-> 
-> Instead of:
-> 
-> int security_inode_init_security(struct inode *inode, struct inode *dir,
->                                  const struct qstr *qstr, char **name,
->                                  void **value, size_t *len);
-> 
-> You're suggesting changing the interface to something like:
-> 
-> int security_inode_init_security(struct inode *inode, struct inode *dir,
->                                  const struct qstr *qstr, struct xattr **xattrs);
-> 
-> where 'struct xattr' is defined as (9th patch):
-> 
-> --- a/include/linux/xattr.h
-> +++ b/include/linux/xattr.h
-> @@ -70,6 +70,12 @@ struct xattr_handler {
->                    size_t size, int flags, int handler_flags);
->  };
-> 
-> +struct xattr {
-> +       char *name;
-> +       void *value;
-> +       size_t value_len;
-> +};
-> +
->  ssize_t xattr_getsecurity(struct inode *, const char *, void *, size_t);
->  ssize_t vfs_getxattr(struct dentry *, const char *, void *, size_t);
->  ssize_t vfs_listxattr(struct dentry *d, char *list, size_t size);
-> 
-> xattrs would be null terminated. The fs would be responsible for freeing the xattrs?
-> 
-> thanks,
-> 
-> Mimi
-> 
+In addition, define __HAVE_ARCH_CMPXCHG for TILE-Gx since it has
+efficient direct atomic instructions.
 
-Yes, if that makes sense... I got the impression from the paper that
-there is the possibility of more xattrs being added in future and this
-way the fs end of things wouldn't have to change again when that
-happens. I'm still trying to get my head around it all, but it seems a
-cleaner solution to me - though I may well be missing something still,
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/include/asm/atomic.h    |   49 +++++++++++++++++++++++++++++++-----
+ arch/tile/include/asm/atomic_32.h |   10 -------
+ arch/tile/include/asm/atomic_64.h |   19 ++------------
+ 3 files changed, 45 insertions(+), 33 deletions(-)
 
-Steve.
-
+diff --git a/arch/tile/include/asm/atomic.h b/arch/tile/include/asm/atomic.h
+index 75a1602..739cfe0 100644
+--- a/arch/tile/include/asm/atomic.h
++++ b/arch/tile/include/asm/atomic.h
+@@ -130,17 +130,52 @@ static inline int atomic_read(const atomic_t *v)
+  */
+ #define atomic_inc_not_zero(v)		atomic_add_unless((v), 1, 0)
+ 
+-
+-/*
+- * We define xchg() and cmpxchg() in the included headers.
+- * Note that we do not define __HAVE_ARCH_CMPXCHG, since that would imply
+- * that cmpxchg() is an efficient operation, which is not particularly true.
+- */
+-
+ /* Nonexistent functions intended to cause link errors. */
+ extern unsigned long __xchg_called_with_bad_pointer(void);
+ extern unsigned long __cmpxchg_called_with_bad_pointer(void);
+ 
++#define xchg(ptr, x)							\
++	({								\
++		typeof(*(ptr)) __x;					\
++		switch (sizeof(*(ptr))) {				\
++		case 4:							\
++			__x = (typeof(__x))(typeof(__x-__x))atomic_xchg( \
++				(atomic_t *)(ptr),			\
++				(u32)(typeof((x)-(x)))(x));		\
++			break;						\
++		case 8:							\
++			__x = (typeof(__x))(typeof(__x-__x))atomic64_xchg( \
++				(atomic64_t *)(ptr),			\
++				(u64)(typeof((x)-(x)))(x));		\
++			break;						\
++		default:						\
++			__xchg_called_with_bad_pointer();		\
++		}							\
++		__x;							\
++	})
++
++#define cmpxchg(ptr, o, n)						\
++	({								\
++		typeof(*(ptr)) __x;					\
++		switch (sizeof(*(ptr))) {				\
++		case 4:							\
++			__x = (typeof(__x))(typeof(__x-__x))atomic_cmpxchg( \
++				(atomic_t *)(ptr),			\
++				(u32)(typeof((o)-(o)))(o),		\
++				(u32)(typeof((n)-(n)))(n));		\
++			break;						\
++		case 8:							\
++			__x = (typeof(__x))(typeof(__x-__x))atomic64_cmpxchg( \
++				(atomic64_t *)(ptr),			\
++				(u64)(typeof((o)-(o)))(o),		\
++				(u64)(typeof((n)-(n)))(n));		\
++			break;						\
++		default:						\
++			__cmpxchg_called_with_bad_pointer();		\
++		}							\
++		__x;							\
++	})
++
+ #define tas(ptr) (xchg((ptr), 1))
+ 
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/tile/include/asm/atomic_32.h b/arch/tile/include/asm/atomic_32.h
+index ed359ae..92a8bee 100644
+--- a/arch/tile/include/asm/atomic_32.h
++++ b/arch/tile/include/asm/atomic_32.h
+@@ -110,16 +110,6 @@ static inline void atomic_set(atomic_t *v, int n)
+ 	_atomic_xchg(v, n);
+ }
+ 
+-#define xchg(ptr, x) ((typeof(*(ptr))) \
+-  ((sizeof(*(ptr)) == sizeof(atomic_t)) ? \
+-   atomic_xchg((atomic_t *)(ptr), (long)(x)) : \
+-   __xchg_called_with_bad_pointer()))
+-
+-#define cmpxchg(ptr, o, n) ((typeof(*(ptr))) \
+-  ((sizeof(*(ptr)) == sizeof(atomic_t)) ? \
+-   atomic_cmpxchg((atomic_t *)(ptr), (long)(o), (long)(n)) : \
+-   __cmpxchg_called_with_bad_pointer()))
+-
+ /* A 64bit atomic type */
+ 
+ typedef struct {
+diff --git a/arch/tile/include/asm/atomic_64.h b/arch/tile/include/asm/atomic_64.h
+index 3217052..ff885dc 100644
+--- a/arch/tile/include/asm/atomic_64.h
++++ b/arch/tile/include/asm/atomic_64.h
+@@ -148,21 +148,8 @@ static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
+ #define smp_mb__before_atomic_inc()	smp_mb()
+ #define smp_mb__after_atomic_inc()	smp_mb()
+ 
+-#define xchg(ptr, x)							\
+-	((typeof(*(ptr)))						\
+-	 ((sizeof(*(ptr)) == sizeof(atomic_t)) ?			\
+-	  atomic_xchg((atomic_t *)(ptr), (long)(x)) :			\
+-	  (sizeof(*(ptr)) == sizeof(atomic_long_t)) ?			\
+-	  atomic_long_xchg((atomic_long_t *)(ptr), (long)(x)) :		\
+-	  __xchg_called_with_bad_pointer()))
+-
+-#define cmpxchg(ptr, o, n)						\
+-	((typeof(*(ptr)))						\
+-	 ((sizeof(*(ptr)) == sizeof(atomic_t)) ?			\
+-	  atomic_cmpxchg((atomic_t *)(ptr), (long)(o), (long)(n)) :	\
+-	  (sizeof(*(ptr)) == sizeof(atomic_long_t)) ?			\
+-	  atomic_long_cmpxchg((atomic_long_t *)(ptr), (long)(o), (long)(n)) : \
+-	  __cmpxchg_called_with_bad_pointer()))
++/* Define this to indicate that cmpxchg is an efficient operation. */
++#define __HAVE_ARCH_CMPXCHG
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
+-- 
+1.6.5.2
 
