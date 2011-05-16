@@ -1,269 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1EPTd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:33:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62742 "EHLO mx1.redhat.com"
+	id S1753977Ab1EPTew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:34:52 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52612 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab1EPTd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:33:27 -0400
-Date: Mon, 16 May 2011 15:33:01 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [RFC] ACPI, APEI, Generic Hardware Error Source (GHES) injecting
- support
-Message-ID: <20110516193301.GF29881@redhat.com>
-References: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1304996921-24881-1-git-send-email-ying.huang@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751495Ab1EPTev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:34:51 -0400
+Subject: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 12:34:44 -0700
+Message-ID: <1305574484.3456.30.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 10, 2011 at 11:08:41AM +0800, Huang Ying wrote:
-> The testing of Generic Hardware Error Source (GHES) is quite
-> difficult, because special hardware is needed to trigger the hardware
-> error. So a software based hardware error injector for GHES is
-> implemented.
-> 
-> Error notification is not provided in this patch.  So you still need
-> some NMI/SCI/IRQ injecting support to make it work.
+This patch maintains the outstanding userspace buffers in the 
+sequence it is delivered to vhost. The outstanding userspace buffers 
+will be marked as done once the lower device buffers DMA has finished. 
+This is monitored through last reference of kfree_skb callback. Two
+buffer index are used for this purpose.
 
-Should we add that to this patch, otherwise it seems like the injection
-isn't very useful or intuitive from the end-user perspective that they
-have to provide their own notification source (ie NMI/SCI/MCE/IRQ).
+The vhost passes the userspace buffers info to lower device skb 
+through message control. Since there will be some done DMAs when
+entering vhost handle_tx. The worse case is all buffers in the vq are
+in pending/done status, so we need to notify guest to release DMA done 
+buffers first before get any new buffers from the vq.
 
-Cheers,
-Don
+Signed-off-by: Shirley <xma@us.ibm.com>
+---
 
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  drivers/acpi/apei/Kconfig         |   10 ++
->  drivers/acpi/apei/Makefile        |    1 
->  drivers/acpi/apei/apei-internal.h |    8 ++
->  drivers/acpi/apei/ghes-inj.c      |  132 ++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/apei/ghes.c          |   15 ++++
->  5 files changed, 165 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/acpi/apei/ghes-inj.c
-> 
-> --- a/drivers/acpi/apei/Kconfig
-> +++ b/drivers/acpi/apei/Kconfig
-> @@ -54,3 +54,13 @@ config ACPI_APEI_ERST_DEBUG
->  	  error information to and from a persistent store. Enable this
->  	  if you want to debugging and testing the ERST kernel support
->  	  and firmware implementation.
-> +
-> +config ACPI_APEI_GHES_INJ
-> +	tristate "APEI Generic Hardware Error Source (GHES) Injecting Support"
-> +	depends on ACPI_APEI_GHES
-> +	help
-> +	  GHES provides a way to report platform hardware errors (such
-> +	  as that from chipset).
-> +
-> +	  The injector can inject fake hardware error record. This is
-> +	  used for GHES debugging/testing.
-> --- a/drivers/acpi/apei/Makefile
-> +++ b/drivers/acpi/apei/Makefile
-> @@ -2,5 +2,6 @@ obj-$(CONFIG_ACPI_APEI)		+= apei.o
->  obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
->  obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
->  obj-$(CONFIG_ACPI_APEI_ERST_DEBUG) += erst-dbg.o
-> +obj-$(CONFIG_ACPI_APEI_GHES_INJ) += ghes-inj.o
->  
->  apei-y := apei-base.o hest.o cper.o erst.o
-> --- a/drivers/acpi/apei/apei-internal.h
-> +++ b/drivers/acpi/apei/apei-internal.h
-> @@ -33,6 +33,14 @@ struct apei_exec_context {
->  	u32 entries;
->  };
->  
-> +struct ghes_inject_data {
-> +	unsigned long error_status_address;
-> +	u16 source_id;
-> +	unsigned short valid : 1;
-> +};
-> +
-> +extern struct ghes_inject_data ghes_inject_data;
-> +
->  void apei_exec_ctx_init(struct apei_exec_context *ctx,
->  			struct apei_exec_ins_type *ins_table,
->  			u32 instructions,
-> --- /dev/null
-> +++ b/drivers/acpi/apei/ghes-inj.c
-> @@ -0,0 +1,132 @@
-> +/*
-> + * APEI Generic Hardware Error Source (GHES) injector support
-> + *
-> + * Fake hardware error record can be injected. This is used for for
-> + * GHES debugging/testing.
-> + *
-> + * Copyright 2010,2011 Intel Corp.
-> + *   Author: Huang Ying <ying.huang@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version
-> + * 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/debugfs.h>
-> +#include <acpi/apei.h>
-> +
-> +#include "apei-internal.h"
-> +
-> +#define GHES_INJ_PFX		"GHES-INJ: "
-> +
-> +#define GHES_INJ_BUF_LEN_MAX	4096
-> +
-> +static void *ghes_inj_buf;
-> +static unsigned int ghes_inj_buf_len;
-> +
-> +/* Prevent erst_inj_buf from being accessed concurrently */
-> +static DEFINE_MUTEX(ghes_inj_mutex);
-> +
-> +static ssize_t ghes_inj_write(struct file *filp, const char __user *ubuf,
-> +			      size_t usize, loff_t *off)
-> +{
-> +	int rc;
-> +
-> +	if (!capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
-> +
-> +	if (*off != 0)
-> +		return -EINVAL;
-> +
-> +	if (usize > GHES_INJ_BUF_LEN_MAX)
-> +		return -EINVAL;
-> +
-> +	if (mutex_lock_interruptible(&ghes_inj_mutex))
-> +		return -EINTR;
-> +	ghes_inject_data.valid = 0;
-> +	/* Wait for all consumers finish using the injecting buffer */
-> +	synchronize_rcu();
-> +	if (usize > ghes_inj_buf_len) {
-> +		void *p;
-> +		rc = -ENOMEM;
-> +		p = kmalloc(usize, GFP_KERNEL);
-> +		if (!p)
-> +			goto out;
-> +		kfree(ghes_inj_buf);
-> +		ghes_inj_buf = p;
-> +		ghes_inj_buf_len = usize;
-> +	}
-> +	rc = copy_from_user(ghes_inj_buf, ubuf, usize);
-> +	if (rc) {
-> +		rc = -EFAULT;
-> +		goto out;
-> +	}
-> +	ghes_inject_data.error_status_address = __pa(ghes_inj_buf);
-> +	/*
-> +	 * ghes_injiect_data.valid must be set after other fields are
-> +	 * written
-> +	 */
-> +	smp_wmb();
-> +	ghes_inject_data.valid = 1;
-> +out:
-> +	mutex_unlock(&ghes_inj_mutex);
-> +	return rc ? rc : usize;
-> +}
-> +
-> +static const struct file_operations ghes_inj_fops = {
-> +	.owner		= THIS_MODULE,
-> +	.write		= ghes_inj_write,
-> +};
-> +
-> +static struct dentry *ghes_debug_dir;
-> +
-> +static __init int ghes_inj_init(void)
-> +{
-> +	struct dentry *f;
-> +	int rc = -ENOMEM;
-> +
-> +	ghes_debug_dir = debugfs_create_dir("ghes", apei_get_debugfs_dir());
-> +	if (!ghes_debug_dir)
-> +		return rc;
-> +	f = debugfs_create_file("inject", S_IWUSR, ghes_debug_dir,
-> +				NULL, &ghes_inj_fops);
-> +	if (!f)
-> +		goto err_cleanup;
-> +	f = debugfs_create_u16("inject_source_id", S_IRUSR | S_IWUSR,
-> +			       ghes_debug_dir, &ghes_inject_data.source_id);
-> +	if (!f)
-> +		goto err_cleanup;
-> +
-> +	return 0;
-> +err_cleanup:
-> +	debugfs_remove_recursive(ghes_debug_dir);
-> +	return rc;
-> +}
-> +
-> +static __exit void ghes_inj_exit(void)
-> +{
-> +	debugfs_remove_recursive(ghes_debug_dir);
-> +	ghes_inject_data.valid = 0;
-> +	/* Wait for all consumers finish using the injecting buffer */
-> +	synchronize_rcu();
-> +	kfree(ghes_inj_buf);
-> +}
-> +
-> +module_init(ghes_inj_init);
-> +module_exit(ghes_inj_exit);
-> +
-> +MODULE_AUTHOR("Huang Ying");
-> +MODULE_DESCRIPTION("APEI Generic Hardware Error Source (GHES) injecting support");
-> +MODULE_LICENSE("GPL");
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -153,6 +153,9 @@ static unsigned long ghes_estatus_pool_s
->  static struct llist_head ghes_estatus_llist;
->  static struct irq_work ghes_proc_irq_work;
->  
-> +struct ghes_inject_data ghes_inject_data;
-> +EXPORT_SYMBOL_GPL(ghes_inject_data);
-> +
->  static int ghes_ioremap_init(void)
->  {
->  	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
-> @@ -371,7 +374,13 @@ static int ghes_read_estatus(struct ghes
->  	u32 len;
->  	int rc;
->  
-> -	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
-> +	if (!ghes_inject_data.valid ||
-> +	    ghes_inject_data.source_id != g->header.source_id)
-> +		rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
-> +	else {
-> +		buf_paddr = ghes_inject_data.error_status_address;
-> +		rc = 0;
-> +	}
->  	if (rc) {
->  		if (!silent && printk_ratelimit())
->  			pr_warning(FW_WARN GHES_PFX
-> @@ -420,6 +429,10 @@ static void ghes_clear_estatus(struct gh
->  	ghes_copy_tofrom_phys(ghes->estatus, ghes->buffer_paddr,
->  			      sizeof(ghes->estatus->block_status), 0);
->  	ghes->flags &= ~GHES_TO_CLEAR;
-> +
-> +	if (ghes_inject_data.valid &&
-> +	    ghes_inject_data.source_id == ghes->generic->header.source_id)
-> +		ghes_inject_data.valid = 0;
->  }
->  
->  static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+ drivers/vhost/net.c   |   39 +++++++++++++++++++++++++++++++-
+ drivers/vhost/vhost.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/vhost/vhost.h |   12 ++++++++++
+ 3 files changed, 107 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 2f7c76a..c964000 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -32,6 +32,10 @@
+  * Using this limit prevents one virtqueue from starving others. */
+ #define VHOST_NET_WEIGHT 0x80000
+ 
++/* MAX number of TX used buffers for outstanding zerocopy */
++#define VHOST_MAX_PEND 128
++#define VHOST_GOODCOPY_LEN 256
++
+ enum {
+ 	VHOST_NET_VQ_RX = 0,
+ 	VHOST_NET_VQ_TX = 1,
+@@ -129,6 +133,7 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	struct skb_ubuf_info pend;
+ 
+ 	/* TODO: check that we are running from vhost_worker? */
+ 	sock = rcu_dereference_check(vq->private_data, 1);
+@@ -151,6 +156,10 @@ static void handle_tx(struct vhost_net *net)
+ 	hdr_size = vq->vhost_hlen;
+ 
+ 	for (;;) {
++		/* Release DMAs done buffers first */
++		if (atomic_read(&vq->refcnt) > VHOST_MAX_ZEROCOPY_PEND)
++			vhost_zerocopy_signal_used(vq, false);
++
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+@@ -166,6 +175,12 @@ static void handle_tx(struct vhost_net *net)
+ 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+ 				break;
+ 			}
++			/* If more outstanding DMAs, queue the work */
++			if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND) {
++				tx_poll_start(net, sock);
++				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
++				break;
++			}
+ 			if (unlikely(vhost_enable_notify(vq))) {
+ 				vhost_disable_notify(vq);
+ 				continue;
+@@ -188,17 +203,37 @@ static void handle_tx(struct vhost_net *net)
+ 			       iov_length(vq->hdr, s), hdr_size);
+ 			break;
+ 		}
++		/* use msg_control to pass vhost zerocopy ubuf info to skb */
++		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
++			vq->heads[vq->upend_idx].id = head;
++			if (len <= VHOST_GOODCOPY_LEN)
++				/* copy don't need to wait for DMA done */
++				vq->heads[vq->upend_idx].len =
++							VHOST_DMA_DONE_LEN;
++			else {
++				vq->heads[vq->upend_idx].len = len;
++				pend.callback = vhost_zerocopy_callback;
++				pend.arg = vq;
++				pend.desc = vq->upend_idx;
++				msg.msg_control = &pend;
++				msg.msg_controllen = sizeof(pend);
++			}
++			atomic_inc(&vq->refcnt);
++			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
++		}
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+ 		if (unlikely(err < 0)) {
+-			vhost_discard_vq_desc(vq, 1);
++			if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++				vhost_discard_vq_desc(vq, 1);
+ 			tx_poll_start(net, sock);
+ 			break;
+ 		}
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 2ab2912..1a40310 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -174,6 +174,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	vq->upend_idx = 0;
++	vq->done_idx = 0;
++	atomic_set(&vq->refcnt, 0);
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -385,16 +388,62 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	return 0;
+ }
+ 
++/* Since we need to keep the order of used_idx as avail_idx, it's possible that
++ * DMA done not in order in lower device driver for some reason. To prevent
++ * used_idx out of order, upend_idx is used to track avail_idx order, done_idx
++ * is used to track used_idx order. Once lower device DMA done, then upend_idx
++ * can move to done_idx.
++ */
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown)
++{
++	int i, j = 0;
++
++	i = vq->done_idx;
++	while (i != vq->upend_idx) {
++		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN) || shutdown) {
++			/* reset len = 0 */
++			vq->heads[i].len = 0;
++			i = (i + 1) % UIO_MAXIOV;
++			++j;
++		} else
++			break;
++	}
++	if (j) {
++		/* heads is an array, i is used to tracking the last done_idx,
++		 * if last done_idx is less than current done_idx, then
++		 * add_used_n is not contiguous */
++		if (i > vq->done_idx)
++			vhost_add_used_n(vq, &vq->heads[vq->done_idx], j);
++		else {
++			vhost_add_used_n(vq, &vq->heads[vq->done_idx],
++					 UIO_MAXIOV - vq->done_idx);
++			vhost_add_used_n(vq, vq->heads, i);
++		}
++		vq->done_idx = i;
++		vhost_signal(vq->dev, vq);
++		atomic_sub(j, &vq->refcnt);
++	}
++}
++
+ /* Caller should have device mutex */
+ void vhost_dev_cleanup(struct vhost_dev *dev)
+ {
+ 	int i;
++	unsigned long begin = jiffies;
+ 
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		if (dev->vqs[i].kick && dev->vqs[i].handle_kick) {
+ 			vhost_poll_stop(&dev->vqs[i].poll);
+ 			vhost_poll_flush(&dev->vqs[i].poll);
+ 		}
++		/* Wait for all lower device DMAs done, then notify virtio_net
++		 * or just notify it without waiting for all DMA done here ?
++		 * in case of DMAs never done for some reason */
++		if (atomic_read(&dev->vqs[i].refcnt)) {
++			/* how long should we wait ? */
++			msleep(1000);
++			vhost_zerocopy_signal_used(&dev->vqs[i], true);
++		}
+ 		if (dev->vqs[i].error_ctx)
+ 			eventfd_ctx_put(dev->vqs[i].error_ctx);
+ 		if (dev->vqs[i].error)
+@@ -1416,3 +1465,12 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
+ 		vq_err(vq, "Failed to enable notification at %p: %d\n",
+ 		       &vq->used->flags, r);
+ }
++
++void vhost_zerocopy_callback(struct sk_buff *skb)
++{
++	int idx = skb_shinfo(skb)->ubuf.desc;
++	struct vhost_virtqueue *vq = skb_shinfo(skb)->ubuf.arg;
++
++	/* set len = 1 to mark this desc buffers done DMA */
++	vq->heads[idx].len = VHOST_DMA_DONE_LEN;
++}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b3363ae..8e3ecc7 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -13,6 +13,10 @@
+ #include <linux/virtio_ring.h>
+ #include <asm/atomic.h>
+ 
++/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
++ * done */
++#define VHOST_DMA_DONE_LEN	1
++
+ struct vhost_device;
+ 
+ struct vhost_work;
+@@ -108,6 +112,12 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* vhost zerocopy support */
++	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
++	/* copy of avail idx to monitor outstanding DMA zerocopy buffers */
++	int upend_idx;
++	/* copy of used idx to monintor DMA done zerocopy buffers */
++	int done_idx;
+ };
+ 
+ struct vhost_dev {
+@@ -154,6 +164,8 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+ 
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
++void vhost_zerocopy_callback(struct sk_buff *skb);
++void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq, bool shutdown);
+ 
+ #define vq_err(vq, fmt, ...) do {                                  \
+ 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+
+
