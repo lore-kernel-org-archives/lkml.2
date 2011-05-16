@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab1EPFaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 01:30:01 -0400
-Received: from spamfilter.jmicron.com ([220.130.51.235]:3497 "EHLO
-	jmsspam.jmicron.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750906Ab1EPFaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 01:30:00 -0400
-X-Greylist: delayed 658 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 May 2011 01:29:59 EDT
-X-IronPort-AV: E=Sophos;i="4.64,373,1301846400"; 
-   d="scan'208";a="1459927"
-Message-Id: <201105160518.p4G5IqrK014870@jmr105.jmicron.com>
-From: "Aries Lee" <arieslee@jmicron.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <devinchiu@jmicron.com>, "'Aries Lee'" <arieslee@jmicron.com>,
-        <oakad@yahoo.com>
-Subject: [PATCH 1/1] memstick: fix the bit shift problem for JMicron 38x controllers in ARM platform
-Date: Mon, 16 May 2011 13:18:52 +0800
+	id S1751434Ab1EPFju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 01:39:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60754 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab1EPFjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 01:39:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.64,373,1301900400"; 
+   d="scan'208";a="2122656"
+Date: Mon, 16 May 2011 13:39:46 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/17] writeback: introduce .tagged_sync for the
+ WB_SYNC_NONE sync stage
+Message-ID: <20110516053946.GA10776@localhost>
+References: <20110512135706.937596128@intel.com>
+ <20110512140030.759385136@intel.com>
+ <20110512224013.GH19446@dastard>
+ <20110513025607.GA8016@localhost>
+ <20110515234306.GO19446@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-Thread-Index: AcwTiL704fcTvjawSUeB+TdL8bf+pg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110515234306.GO19446@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If x86 architecture, an unsigned variable shift more than 31 times means a
-rotation.
-But in some architecture, shift 32 bit or more will give a zero value.
-For example, 
-An unsigned int variable of 0x11223344 runs the operation "<< 32",
-In x86 architecture, its value is still 0x11223344
-But its value will change as 0x00000000 in ARM.
+On Mon, May 16, 2011 at 07:43:06AM +0800, Dave Chinner wrote:
+> On Fri, May 13, 2011 at 10:56:08AM +0800, Wu Fengguang wrote:
+> > On Fri, May 13, 2011 at 06:40:13AM +0800, Dave Chinner wrote:
+> > > On Thu, May 12, 2011 at 09:57:07PM +0800, Wu Fengguang wrote:
+> > > > sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
+> > > > WB_SYNC_ALL sync. Tag the first stage with wbc.tagged_sync and do
+> > > > livelock prevention for it, too.
+> > > > 
+> > > > Note that writeback_inodes_sb() is called by not only sync(), they are
+> > > > treated the same because the other callers also need livelock prevention.
+> > > > 
+> > > > Impact:  It changes the order in which pages/inodes are synced to disk.
+> > > > Now in the WB_SYNC_NONE stage, it won't proceed to write the next inode
+> > > > until finished with the current inode.
+> > > 
+> > > What about all the filesystems that implement their own
+> > > .writepages()/write_cache_pages() functions or have
+> > > have special code that checks WB_SYNC_ALL in .writepages (e.g. gfs2,
+> > > ext4, btrfs and perhaps others). Don't they all need to be aware of
+> > > this tagged_sync field?
+> > 
+> > Right, good point. Currently only ext4 is updated. The other
+> > filesystems --- afs, btrfs, cifs, gfs2 --- do not even use
+> > PAGECACHE_TAG_TOWRITE for livelock prevention. My plan was to add
+> > PAGECACHE_TAG_TOWRITE and tagged_sync code to them as the next step,
+> > when tagged_sync is accepted and proved to work fine.
+> 
+> Where "proved to work fine" can mean "caused regressions for certain
+> filesystems"? I mean, for btrfs it means that the bio is submitted
+> with WRITE rather than WRITE_SYNC, which causes subtle changes of
+> behaviour in the elevator. that could cause strange regressions that
+> are very hard to isolate.
 
-This patch try to fix those architecture-specific code, and made it both
-work in x86 and the other architecture.
+Hmm, where is the relevant btrfs code? It seems that you assumed
+WB_SYNC_ALL semantics in .tagged_sync, however the latter merely means
+"tag all dirty pages with PAGECACHE_TAG_TOWRITE and write them out".
 
-Signed-off-by: Aries Lee <arieslee@jmicron.com>
----
-diff --git a/drivers/memstick/host/jmb38x_ms.c
-b/drivers/memstick/host/jmb38x_ms.c
-index d89d925..272e89c 100644
---- a/drivers/memstick/host/jmb38x_ms.c
-+++ b/drivers/memstick/host/jmb38x_ms.c
-@@ -287,8 +287,8 @@ static unsigned int jmb38x_ms_write_reg_data(struct
-jmb38x_ms_host *host,
- 		return off;
- 
- 	while (host->io_pos < 8 && length) {
--		host->io_word[1] &= ~(0xff << (host->io_pos * 8));
--		host->io_word[1] |=  buf[off++] << (host->io_pos * 8);
-+		host->io_word[1] &= ~(0xff << ((host->io_pos-4) * 8));
-+		host->io_word[1] |=  buf[off++] << ((host->io_pos-4) * 8);
- 		host->io_pos++;
- 		length--;
- 	}
+> Hence regardless of whether filesystems use PAGECACHE_TAG_TOWRITE
+> or not, filesystems are checking for synchronous writeback for
+> a reason. If we now have two different ways of signalling sync
+> writeback they need to know about them.
 
+See above, shall we rename .tagged_sync to .tagged_write?
 
+> Which just raised the question in my mind - why did you add a new
+> field rather than a new sync_mode definition? After all, this is a
+> new sync control, and it seems clumsy to me to have two separate
+> control fields for defining sync behaviour...
+
+Yeah I considered that too. The main problem is, it somehow overloads
+the sync mode enum and some filesystems already assumed two modes only
+by using (sync_mode == WB_SYNC_ALL) and (sync_mode != WB_SYNC_NONE)
+interchangeably.
+
+For example, if adding another mode
+
+        WB_SYNC_NONE            // WRITE, don't wait
++       WB_SYNC_NONE_TAGGED     // WRITE, don't wait, use PAGECACHE_TAG_TOWRITE
+        WB_SYNC_ALL             // WRITE_SYNC,  wait, use PAGECACHE_TAG_TOWRITE
+
+The btrfs code will unnecessarily wait on WB_SYNC_NONE_TAGGED:
+
+                        if (wbc->sync_mode != WB_SYNC_NONE) {
+                                if (PageWriteback(page))
+                                        flush_fn(data);
+                                wait_on_page_writeback(page);
+                        }
+
+We can fix btrfs trivially, however if there are out of tree
+filesystems, they'll break silently..
+
+Thanks,
+Fengguang
