@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab1EPRbE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 13:31:04 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:57467 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab1EPRbC (ORCPT
+	id S1753619Ab1EPR2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 13:28:49 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:51063 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753417Ab1EPR2s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 13:31:02 -0400
-Date: Mon, 16 May 2011 13:25:14 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: James Hogan <james@albanarts.com>
-Cc: linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: scheduling while atomic 2.6.39-rc7 (iwl3945_irq_tasklet)
-Message-ID: <20110516172513.GA2546@tuxdriver.com>
-References: <20110513203448.GA3523@gandalf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513203448.GA3523@gandalf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 May 2011 13:28:48 -0400
+Subject: Re: [PATCH v5 03/19] ARM: LPAE: Use unsigned long for
+ __phys_to_virt and __virt_to_phys
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110508214437.GP27807@n2100.arm.linux.org.uk>
+References: <1304859098-10760-1-git-send-email-catalin.marinas@arm.com>
+	 <1304859098-10760-4-git-send-email-catalin.marinas@arm.com>
+	 <20110508214437.GP27807@n2100.arm.linux.org.uk>
+Organization: ARM Limited
+Date: Mon, 16 May 2011 18:28:37 +0100
+Message-ID: <1305566917.19230.158.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 16 May 2011 17:28:46.0673 (UTC) FILETIME=[B6314C10:01CC13EE]
+X-MC-Unique: 111051618284600601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 09:34:49PM +0100, James Hogan wrote:
-> Hi,
+On Sun, 2011-05-08 at 22:44 +0100, Russell King - ARM Linux wrote:
+> On Sun, May 08, 2011 at 01:51:22PM +0100, Catalin Marinas wrote:
+> > The !CONFIG_ARM_PATCH_PHYS_VIRT case uses macros for __phys_to_virt and
+> > __virt_to_phys but does not use any type casting. This causes issues
 > 
-> On 2.6.39-rc7 I've seen a panic due to "BUG: scheduling while atomic"
-> with the backtrace below (not much detail as it was written in a text
-> message while it was displayed on the screen!). All worked fine in
-> 2.6.38.
-> 
-> This was soon after resuming from suspend (enough time to unlock the
-> screen, but not much else). I think it was the same bug I saw in rc2 but
-> didn't have time to track down. I can probably get it to happen again if
-> more detail is needed. It doesn't happen every suspend (I think it had
-> survived a couple of suspend/resume cycles at this point).
-> 
-> I could bisect if necessary, but hopefully the backtrace will be enough
-> to see what's going on?
+> It might be a good idea to include the compiler warning message in the
+> commit log, so that the 'issues' being addressed are readily known.
 
-A bisect might be very helpful -- time is short for 2.6.39 already.
+Here's the new log:
 
-John
+    ARM: LPAE: Use unsigned long for __phys_to_virt and __virt_to_phys
+    
+    The !CONFIG_ARM_PATCH_PHYS_VIRT case uses macros for __phys_to_virt and
+    __virt_to_phys but does not use any type casting. This causes compiler
+    warnings with LPAE where the phys_addr_t and dma_addr_t are 64-bit:
+    
+      CC      arch/arm/mm/dma-mapping.o
+    In file included from /work/Linux/linux-marc/include/linux/dma-mapping.h:93:0,
+                     from /work/Linux/linux-marc/arch/arm/mm/dma-mapping.c:19:
+    /work/Linux/linux-marc/arch/arm/include/asm/dma-mapping.h: In function 'dma_to_virt':
+    /work/Linux/linux-marc/arch/arm/include/asm/dma-mapping.h:35:9: warning:
+            cast to pointer from integer of different size
+    
+    Note that these macros are only valid for lowmem physical addresses
+    where the range is within 32-bit address range.
+    
+    Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Catalin
+
+
