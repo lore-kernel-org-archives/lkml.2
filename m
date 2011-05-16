@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab1EPM75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:59:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27381 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab1EPM74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:59:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=OeHupXo8AVmHgY6OrB+mN8dX0z6+CarLQq/fKC7Ed9GprDcwdqSlqjnKB/UvZqwrfj
-         mrQgqrcrv39M25kPV8+Q==
+	id S1754542Ab1EPNAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:00:49 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42356 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab1EPNAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 09:00:47 -0400
+Date: Mon, 16 May 2011 15:00:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jan Kratochvil <jan.kratochvil@redhat.com>, oleg@redhat.com,
+        vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re: [PATCH
+ 11/11] ptrace: implement group stop notification for ptracer]
+Message-ID: <20110516130032.GF7128@elte.hu>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-12-git-send-email-tj@kernel.org>
+ <20110515140232.GB31855@host1.jankratochvil.net>
+ <20110515142827.GF23665@htj.dyndns.org>
+ <20110515171748.GA25216@host1.jankratochvil.net>
+ <20110515172811.GM23665@htj.dyndns.org>
+ <20110515200654.GA32659@host1.jankratochvil.net>
+ <20110516084350.GO23665@htj.dyndns.org>
+ <20110516121711.GC10469@host1.jankratochvil.net>
+ <20110516125615.GW23665@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1305541621.2466.4112.camel@twins>
-References: <20110503092846.022272244@google.com> <20110503092904.985285812@google.com>
- <1305541621.2466.4112.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 16 May 2011 05:59:24 -0700
-Message-ID: <BANLkTin_0v7q1xDwwnOpo6ZFMbDNARisGg@mail.gmail.com>
-Subject: Re: [patch 06/15] sched: accumulate per-cfs_rq cpu usage and charge
- against bandwidth
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516125615.GW23665@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 3:27 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2011-05-03 at 02:28 -0700, Paul Turner wrote:
->> +unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
->
-> What happens when the period is smaller than the slice?
->
 
-We'll always take at most whatever's left in this case.
+* Tejun Heo <tj@kernel.org> wrote:
+
+> Hello,
+> 
+> On Mon, May 16, 2011 at 02:17:11PM +0200, Jan Kratochvil wrote:
+> > On Mon, 16 May 2011 10:43:50 +0200, Tejun Heo wrote:
+> > > There's distinction between "broken" and "ugly".  If it's ugly but
+> > > functional, you don't need to "fix" it.
+> > 
+> > The final goal is the user experience (such as the users of GDB), nothing else
+> > matters.  If it is so "ugly" the userland developers fail to use it the
+> > project as a whole still broken.
+> 
+> To me, it seems the breakage and mountain of workarounds come more from lack 
+> of proper documentation plus the current ptrace + job control + signal 
+> interaction which is really broken.  For example, it seems nobody really 
+> understood how group stop and ptrace interacts and the different types of 
+> traps being used - strace(2) thought the same signal was being delivered 
+> twice.
+
+Btw., i'd also like to offer the observation that even these days, running 
+brand-new Rawhide distribution with strace-4.5.20-2.fc15.x86_64 and a fresh 
+kernel, i *still* often see strace (or ptrace?) misbehavior like it 
+misprocessing Ctrl-C and leaving hung threads around which i have to clean up 
+manually ...
+
+So if you could bring sanity in here i think we could live with a regression or 
+two, if the situation could be improved in the longer run - it's not like we 
+are protecting a stable bastion of robust functionality here ...
+
+Thanks,
+
+	Ingo
