@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab1EPKkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 06:40:52 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40778 "EHLO
+	id S1754713Ab1EPKnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 06:43:50 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40862 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab1EPKkv (ORCPT
+	with ESMTP id S1754118Ab1EPKnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 06:40:51 -0400
-Date: Mon, 16 May 2011 06:40:16 -0400
+	Mon, 16 May 2011 06:43:49 -0400
+Date: Mon, 16 May 2011 06:43:39 -0400
 From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/17] writeback: introduce
- writeback_control.inodes_cleaned
-Message-ID: <20110516104015.GA18520@infradead.org>
+Subject: Re: [PATCH 12/17] writeback: skip balance_dirty_pages() for
+ in-memory fs
+Message-ID: <20110516104339.GB18520@infradead.org>
 References: <20110512135706.937596128@intel.com>
- <20110512140031.025181367@intel.com>
- <20110512224420.GJ19446@dastard>
- <20110513033605.GC8016@localhost>
- <20110515235021.GP19446@dastard>
+ <20110512140032.160664798@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110515235021.GP19446@dastard>
+In-Reply-To: <20110512140032.160664798@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -34,27 +32,6 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 09:50:21AM +1000, Dave Chinner wrote:
-> > - nr_to_write has always been "# of pages written" and writeback_sb_inodes()
-> >   is actually making use of it to do page accounting in work->nr_pages.
-> 
-> Do we really care whether it's inodes or pages that are written? As
-> far as i can tell it doesn't, because writing inodes generally
-> requires more IO and so needs to be limited anyway.
-
-We do care, but the current infrastructure already is bad enough to
-not make it work.  E.g. when calling from balance_dirty_pages we
-couldn't care less if the inode is written back, we just want pages
-on stable storage, similar for wakeups from the VM code.  Sooner or
-later there's no way around splitting page and inode writeback
-completely.
-
-> So put the accounting in the post-write code in
-> writeback_single_inode() where we already check if the inode is
-> still dirty or not.  Splitting per-inode post-write processing
-> between writeback_single_inode and the higher level code is cludgy -
-> I'd much prefer it done in only one place.
-
-I'd tend to agree.  Especially as cleaner separation was the main
-goal for getting rid of the writeback_control overload in the beginning.
+Isn't this a fix that should go to Linus ASAP independent of the rest
+of this series to fix tmpfs?
 
