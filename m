@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1EPUyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 16:54:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35638 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab1EPUyO (ORCPT
+	id S1756101Ab1EPU4Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 16:56:16 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34852 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab1EPU4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 16:54:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Ve4tS/nmctqTBBRcbU/9/gJOWEW4Obp9HR7u4PVrRfb0eskjOXLE+f2xAmxRrYn4v6
-         mylXdjs3RhmjKMEjlWvw==
-Date: Mon, 16 May 2011 13:54:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch v4] x86: allow ZONE_DMA to be configurable
-In-Reply-To: <alpine.DEB.2.00.1104271637310.25369@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1105161353560.4353@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1104141134260.386@chino.kir.corp.google.com> <4DA82F33.7080403@ladisch.de> <4DA8A5CE.2010004@zytor.com> <alpine.DEB.2.00.1104201929170.15661@chino.kir.corp.google.com> <4DAFAD9F.4020809@zytor.com>
- <alpine.DEB.2.00.1104271637310.25369@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 16 May 2011 16:56:13 -0400
+Date: Mon, 16 May 2011 13:55:35 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+	writeback for various fses
+Message-ID: <20110516205535.GP20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com> <20110516190427.GN20579@tux1.beaverton.ibm.com> <20110516202710.GA32630@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516202710.GA32630@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ZONE_DMA is unnecessary for a large number of machines that do not
-require addressing in the lower 16MB of memory because they do not use
-devices with 16-bit address registers (plus one page byte register).
+On Mon, May 16, 2011 at 04:27:10PM -0400, Christoph Hellwig wrote:
+> Whay about just sending the VFS patches to Al
 
-This patch allows users to disable ZONE_DMA for x86 if they know they
-will not be using such devices with their kernel.
+Al was in the To: list of all 7 patches.
 
-This prevents the VM from unnecessarily reserving a ratio of memory
-(defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
-for such allocations when it will never be used.
+> instead of talking about it on a totally irrelevant call that doesn't include
+> the important stakeholders?  FS-specific patches can go through the fs
+> maintainers independently.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/Kconfig      |    9 ++++++++-
- arch/x86/mm/init_32.c |    2 ++
- arch/x86/mm/init_64.c |    2 ++
- 3 files changed, 12 insertions(+), 1 deletions(-)
+The maintainers (ext4/ext2/vfat) were also in the To: list.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -112,7 +112,14 @@ config MMU
- 	def_bool y
- 
- config ZONE_DMA
--	def_bool y
-+	bool "DMA memory allocation support" if EXPERT
-+	default y
-+	help
-+	  DMA memory allocation support allows devices with less than 32-bit
-+	  addressing to allocate within the first 16MB of address space.
-+	  Disable if no such devices will be used.
-+
-+	  If unsure, say Y.
- 
- config SBUS
- 	bool
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -678,8 +678,10 @@ static void __init zone_sizes_init(void)
- {
- 	unsigned long max_zone_pfns[MAX_NR_ZONES];
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
-+#ifdef CONFIG_ZONE_DMA
- 	max_zone_pfns[ZONE_DMA] =
- 		virt_to_phys((char *)MAX_DMA_ADDRESS) >> PAGE_SHIFT;
-+#endif
- 	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
- #ifdef CONFIG_HIGHMEM
- 	max_zone_pfns[ZONE_HIGHMEM] = highend_pfn;
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -616,7 +616,9 @@ void __init paging_init(void)
- 	unsigned long max_zone_pfns[MAX_NR_ZONES];
- 
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
-+#ifdef CONFIG_ZONE_DMA
- 	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
-+#endif
- 	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
- 	max_zone_pfns[ZONE_NORMAL] = max_pfn;
- 
+Trouble is, MAINTAINERS says this:
+
+MEMORY MANAGEMENT
+L:      linux-mm@kvack.org
+W:      http://www.linux-mm.org
+S:      Maintained
+F:      include/linux/mm.h
+F:      mm/
+
+There's a list, but no specific contact person.  That's why I had to start
+asking around about who actually pushes mm changes to Linus.
+
+As for Al Viro, he's still listed as the VFS maintainer; isn't he resting?
+I guess he did nominate you for the holding off of morons (like me). :)
+
+--D
