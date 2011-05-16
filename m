@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1EPMZD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:25:03 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41645 "EHLO mgw2.diku.dk"
+	id S1754840Ab1EPM0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:26:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab1EPMZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:25:01 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, Markus Grabner <grabner@icg.tugraz.at>,
-        Kulikov Vasiliy <segooon@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/staging/line6/driver.c: Drop unneeded put functions.
-Date: Mon, 16 May 2011 14:24:57 +0200
-Message-Id: <1305548697-27591-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1754031Ab1EPM0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 08:26:53 -0400
+Date: Mon, 16 May 2011 14:25:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
+Subject: Re: [PATCH 6/9] job control: make task_clear_jobctl_pending()
+	clear TRAPPING automatically
+Message-ID: <20110516122535.GD4898@redhat.com>
+References: <1305301580-9924-1-git-send-email-tj@kernel.org> <1305301580-9924-7-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305301580-9924-7-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On 05/13, Tejun Heo wrote:
+>
+> @@ -264,6 +267,9 @@ void task_clear_jobctl_pending(struct task_struct *task, unsigned int mask)
+>  		mask |= JOBCTL_STOP_CONSUME | JOBCTL_STOP_DEQUEUED;
+>
+>  	task->jobctl &= ~mask;
+> +
+> +	if (!(task->jobctl & JOBCTL_PENDING_MASK))
+> +		task_clear_jobctl_trapping(task);
+>  }
 
-This seems to be the result of patches ab366c1a and 1027f476 crossing each
-other.  Patch ab366c1a adds calls to usb_put_intf and usb_put_dev at the
-end of the function line6_probe, in the error handling code, while patch
-1027f476 moves the calls to the corresponding get function from the
-beginning to the end of line6_probe, making the calls to put in the error
-handling code unnecessary.
+So, SIGCONT clears JOBCTL_TRAPPING and wakes up the tracer.
 
-// </smpl>
+I can't really understand this without seeing the next changes, but
+it seems this makes some things worse, although I am not sure.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+For example. PTRACE_SEIZE should guarantee the tracee will trap and
+report. However, if the tracee is stopped during attach, we can race
+with SIGCONT. The previous version had the similar problem afaics, but
+it was easy (I think) to fix. Now that SIGCONT clears JOBCTL_TRAPPING
+we need more complications.
 
----
- drivers/staging/line6/driver.c |    2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index ea9209d..851b762 100644
---- a/drivers/staging/line6/driver.c
-+++ b/drivers/staging/line6/driver.c
-@@ -1094,8 +1094,6 @@ static int line6_probe(struct usb_interface *interface,
- err_destruct:
- 	line6_destruct(interface);
- err_put:
--	usb_put_intf(interface);
--	usb_put_dev(usbdev);
- 	return ret;
- }
- 
+Oleg.
 
