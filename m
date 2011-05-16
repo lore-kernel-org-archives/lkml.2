@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab1EPWRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 18:17:50 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:46583 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab1EPWRt convert rfc822-to-8bit (ORCPT
+	id S1755415Ab1EPWgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 18:36:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53069 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751535Ab1EPWgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 18:17:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=ltilo9d9aZ6nyyAEflWLjsQbMNYn4C1OwAR0TBV9n0EFypCjBwLbmZIXNtNilfOnHL
-         +ipEyq6om2cwNaHAdVgk5sA3UOhDyZwohlETNUjxqwSZ6++TTsKXSYZPd2vd754PyDgF
-         RBlNsy0dkutdvkxD7JVqWJ3TsoTV5B5K7S+xs=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1105162345110.3078@ionos>
-References: <cover.1305560561.git.luto@mit.edu> <20110516160943.GC25898@one.firstfloor.org>
- <alpine.LFD.2.02.1105161817120.3078@ionos> <20110516164939.GD25898@one.firstfloor.org>
- <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com> <m2fwoeo0pf.fsf@firstfloor.org>
- <alpine.LFD.2.02.1105162345110.3078@ionos>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 16 May 2011 18:17:29 -0400
-X-Google-Sender-Auth: Jvd9xZ22mlsvz5ARAGxr5xsTQrY
-Message-ID: <BANLkTinVnr1ZM2wOxuH-rHZGh+_SBWT-+g@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 May 2011 18:36:37 -0400
+Date: Mon, 16 May 2011 15:36:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch 2/6] vmscan: make distinction between memcg reclaim
+ and LRU list selection
+Message-Id: <20110516153607.49d4dc41.akpm@linux-foundation.org>
+In-Reply-To: <20110513065854.GB18610@cmpxchg.org>
+References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
+	<1305212038-15445-3-git-send-email-hannes@cmpxchg.org>
+	<20110513085027.25b25a47.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110513065854.GB18610@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 5:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 16 May 2011, Andi Kleen wrote:
->> Andrew Lutomirski <luto@mit.edu> writes:
->> > Longer term, it would be nice to mark the vsyscall page NX.  That
->> > involves a few things:
->>
->> Why NX? What would make sense is to call the VDSO from it.
->> The problem is that the vDSO is randomized and there's no good memory
->> location to store the pointer to it.
->>
->> The real reason for all this dance is to have some less non randomized
->> code around. What I implemented back then was instead code to patch out
->> the SYSCALL in there if not needed to lower the attack surface (not sure
->> if that still works though, but that was the idea). For most cases
->> (TSC/HPET read) it's not needed.
->>
->> Checking: someone removed the code meanwhile.
->
-> For a damned good reason.
->
->> > And we won't have a
->> > syscall instruction sitting at a predictable address.
->>
->> The easy way to fix this is to just re-add the patching.
->
-> If you can address _all_ reasons why it was removed then we might
-> revisit that issue, but that's going to be an interesting patch.
+On Fri, 13 May 2011 08:58:54 +0200
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-We're now completely offtopic for the RDTSC patches, but do you have
-any moral objection to rigging the vsyscall page to generate a fault
-and emulating it after a couple years of deprecation?  If not, I can
-see if I can persuade Uli to take accept a glibc patch to stop calling
-it in future static glibc versions.
+> > > @@ -154,16 +158,24 @@ static LIST_HEAD(shrinker_list);
+> > >  static DECLARE_RWSEM(shrinker_rwsem);
+> > >  
+> > >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+> > > -#define scanning_global_lru(sc)	(!(sc)->mem_cgroup)
+> > > +static bool global_reclaim(struct scan_control *sc)
+> > > +{
+> > > +	return !sc->memcg;
+> > > +}
+> > > +static bool scanning_global_lru(struct scan_control *sc)
+> > > +{
+> > > +	return !sc->current_memcg;
+> > > +}
+> > 
+> > 
+> > Could you add comments ?
 
-The long-term cost to the kernel will be a special case (and, compare,
-unlikely branch) in whichever fault trap gets used.  The best way
-might be to use a page full of 0xCC so that an int3 fault (presumably
-not a performance-critical path) is taken.
+oy, that's my job.
 
---Andy
+> Yes, I will.
+
+> +static bool global_reclaim(struct scan_control *sc) { return 1; }
+> +static bool scanning_global_lru(struct scan_control *sc) { return 1; }
+
+s/1/true/
+
+And we may as well format the functions properly?
+
+And it would be nice for the names of the functions to identify what
+subsystem they belong to: memcg_global_reclaim() or such.  Although
+that's already been a bit messed up in memcg (and in the VM generally).
+
