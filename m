@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab1EPQOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:14:22 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:51413 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab1EPQOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:14:21 -0400
-Subject: Re: [BUG] perf: bogus correlation of kernel symbols
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com, kees.cook@canonical.com,
-        davem@davemloft.net, eranian@google.com, torvalds@linux-foundation.org,
-        adobriyan@gmail.com, penberg@kernel.org
-In-Reply-To: <20110516153527.GC21107@elte.hu>
-References: <1305292059.1949.0.camel@dan> <1305293345.1949.22.camel@dan>
-	 <20110516153527.GC21107@elte.hu>
+	id S1756752Ab1EPQNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756537Ab1EPQNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 12:13:52 -0400
+Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <1305561051.2669.10.camel@localhost.localdomain>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305559822.2855.14.camel@menhir>
+	 <1305561051.2669.10.camel@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 12:14:12 -0400
-Message-ID: <1305562452.1818.10.camel@dan>
+Organization: Red Hat UK Ltd
+Date: Mon, 16 May 2011 17:14:29 +0100
+Message-ID: <1305562469.2855.26.camel@menhir>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 17:35 +0200, Ingo Molnar wrote:
+Hi,
 
-> Agreed, it would be a very useful feature.
+On Mon, 2011-05-16 at 11:50 -0400, Mimi Zohar wrote:
+> On Mon, 2011-05-16 at 16:30 +0100, Steven Whitehouse wrote:
+> > Hi,
+> > 
+> > On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
+> > > After creating the initial LSM security extended attribute, call
+> > > evm_inode_post_init_security() to create the 'security.evm'
+> > > extended attribute.
+> > > 
+> > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> > > ---
+> > >  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
+> > >  1 files changed, 19 insertions(+), 9 deletions(-)
+> > > 
+> > [snip]
+> > > +	struct xattr lsm_xattr;
+> > > +	struct xattr evm_xattr;
+> > >  
+> > >  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
+> > > -					   &name, &value, &len);
+> > > +					   &lsm_xattr.name, &lsm_xattr.value,
+> > > +					   &lsm_xattr.value_len);
+> > >  
+> > >  	if (err) {
+> > >  		if (err == -EOPNOTSUPP)
+> > > @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
+> > >  		return err;
+> > >  	}
+> > >  
+> > > -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
+> > > -			       GFS2_EATYPE_SECURITY);
+> > > -	kfree(value);
+> > > -	kfree(name);
+> > > -
+> > > +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
+> > > +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
+> > > +	if (err < 0)
+> > > +		goto out;
+> > > +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
+> > > +					   &evm_xattr);
+> > > +	if (err)
+> > > +		goto out;
+> > > +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
+> > > +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
+> > > +	kfree(evm_xattr.value);
+> > > +out:
+> > > +	kfree(lsm_xattr.name);
+> > > +	kfree(lsm_xattr.value);
+> > >  	return err;
+> > >  }
+> > >  
+> > 
+> > Just wondering whether we could have a single call to the security
+> > subsystem which returns a vector of xattrs rather than having to call
+> > two different functions?
+> > 
+> > Steve.
 > 
-> I'd suggest to implement it along the lines of:
+> There are a number of places that the LSM function is called immediately
+> followed by either EVM/IMA.  In each of those places it is hidden from
+> the caller by calling the security_inode_XXX_security().  In this case
+> each fs has it's own method of creating an extended attribute.  If that
+> method could be passed to security_inode_init_security, then
+> security_inode_init_security() could call both the LSM and EVM functions
+> directly.
 > 
->  - First check whether grsecurity or PAX has this implemented already via the
->    relocation facility - they are pretty good at being paranoid so i'd be 
->    surprised if they didnt think of this already! :-)
-> 
->  - If not then have a look at CONFIG_RELOCATABLE and to relocate the kernel 
->    binary intentionally via a hardcoded parameter. Just see whether you can do 
->    it and whether it works as you expect it. Check /proc/kallsyms changing 
->    after your patch. Enjoy the kernel still working ;-)
-> 
->  - Then promote it to a boot parameter - this way you'll be able to tell 
->    whether there's any hidden build-time assumptions about relocation position. 
->    (there really shouldnt be any given that kexec works just fine - but i'd 
->     suggest this step just in case.)
-> 
->  - Then promote that hack to be a randomized parameter. Marvel at a different,
->    randomized /proc/kallsyms output at every bootup and enjoy the still working 
->    kernel!
-> 
->  - Then look at all RIP outputs (thanks to your prior efforts they are now 
->    mostly concentrated in the vprints code!) and reverse apply the random 
->    offset before it's exported into user-space. wchan, etc. Marvel at the 
->    constant /proc/kallsyms output, fully knowing that the *real* addresses
->    are randomized.
-> 
->  - Please do not forget to transfer perf RIPs and callchains and marvel at the
->    well working 'perf top' output.
-> 
-> At that point the feature will be highly useful already IMO. Remaining work 
-> will be to think through and close down all remaining avenues of RIP leakage. 
-> 
-> At this point kptr_restrict will be a lot less relevant - the symbols will 
-> expose offsets (so it's not totally unhelpful to attackers) but not the real 
-> absolute addresses.
-> 
-> Unless i'm missing some particularly difficult roadblock, which is possible.
-> 
-> If you try this then please keep us posted at every step above, even if your 
-> patches are not fully working and useful yet. Maybe some other 
-> details/ideas/suggestions will arise at that point.
+> Mimi
 > 
 
-Thanks for the detailed response.  I will attempt to go down this road,
-and will keep people posted with my progress.
+I'm still not quite sure I understand... from a (very brief) look at the
+paper, it seems that what you are trying to do is add a new xattr to
+inodes which has some hash of some of the inode metadata (presumably
+including the selinux xattr and some other fields).
 
--Dan
+I'm not sure why it matters whether the selinux data has been written to
+the buffers before the xattr containing the hash? The data will not
+change (I hope!) and if it does presumably the hash will pick that up
+when it is checked at a later date?
 
-> Thanks,
-> 
-> 	Ingo
+The reason I'm asking is that currently the creation of GFS2 inodes is
+broken down into a number of transactions, carefully designed to ensure
+that the correct clean up occurs if there is an error. I would like to
+try and reduce the number of transactions during the create process
+where possible. That means I would like to move to a model which looks
+like this:
+
+1. Calculate number of blocks required, based on inode + xattrs (if any)
+2. Allocate blocks
+3. Populate with data (i.e. set xattrs)
+
+I'm trying to work out whether there is some reason why we have to use
+your proposed:
+
+1. Get selinux xattr
+2. Set selinux xattr
+3. Get EVM xattr
+4. Set EVM xattr
+
+as opposed to getting all the xattrs in a single call and then being
+able to set them all in a single operation, if that makes sense?
+
+Steve.
 
 
