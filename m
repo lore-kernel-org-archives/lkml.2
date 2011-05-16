@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab1EPTUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:20:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19248 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab1EPTUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:20:17 -0400
-Date: Mon, 16 May 2011 15:19:51 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
-Message-ID: <20110516191951.GI31888@redhat.com>
-References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
- <20110513124523.GM13984@redhat.com>
- <20110513130011.GA6474@elte.hu>
- <BANLkTi=Z_3MZVs2CQyk82NfvZj-KdSw5kw@mail.gmail.com>
- <20110513152033.GB3854@elte.hu>
- <20110513160029.GD31888@redhat.com>
- <20110516112934.GE19837@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516112934.GE19837@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754524Ab1EPTYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:24:48 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:60321 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab1EPTYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:24:47 -0400
+Subject: [PATCH V5 0/6 net-next] macvtap/vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 12:24:28 -0700
+Message-ID: <1305573868.3456.18.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 01:29:34PM +0200, Ingo Molnar wrote:
-> > Interesting.  Question though, what do you mean by 'event filtering'.  Is 
-> > that different then setting 'unknown_nmi_panic' panic on the commandline or 
-> > procfs?
-> > 
-> > Or are you suggesting something like registering another callback on the 
-> > die_chain that looks for DIE_NMIUNKNOWN as the event, swallows them and 
-> > implements the policy?  That way only on HEST related platforms would 
-> > register them while others would keep the default of 'Dazed and confused' 
-> > messages?
-> 
-> The idea is that "event filters", which are an existing upstream feature and 
-> which can be used in rather flexible ways:
-> 
->   http://lkml.org/lkml/2011/4/27/660
-> 
-> Could be used to trigger non-standard policy action as well - such as to panic 
-> the box.
-> 
-> This would replace various very limited /debugfs and /sys event filtering hacks 
-> (and hardcoded policies) such as arch/x86/kernel/cpu/mcheck/mce-severity.c, and 
-> it would allow nonstandard behavior like 'panic the box on unknown NMIs' as 
-> well.
-> 
-> This could be set by the RAS daemon, and it could be propagated to the kernel 
-> boot line as well, where event filter syntax would look like this:
-> 
->   events=nmi::unknown"if (reason == 0) panic();"
+This patchset add supports for TX zero-copy between guest and host
+kernel through vhost. It significantly reduces CPU utilization on the
+local host on which the guest is located (It reduced 30-50% CPU usage
+for vhost thread for single stream test). The patchset is based on
+previous submission and comments from the community regarding when/how
+to handle guest kernel buffers to be released. This is the simplest
+approach I can think of after comparing with several other solutions.
 
-Wow. ok.  I believe that is the most complicated kernel boot param I have
-ever seen. :-)  Powerful, no doubt.
+This patchset has integrated V3 review comments from community: 
 
-So this would sorta be a meta-notifier?  I guess you are saying platforms
-that implement something like HEST could setup an event like that to
-trigger the behaviour they want on a per-platform basis?
+1. Add more comments on how to use device ZEROCOPY flag;
 
-My only argument against it would be sorta of what Ying complains about is
-that you start to lose track of who is hooked into the NMI.  It is one
-thing to search for all the users in the die_notifier to track down who is
-swallowing NMIs.  But to look for event users,  is going to be harder.
-Unless the events processing has a switch to turn on logging? :-)
+2. Change device ZEROCOPY to available bit 31
 
-Cheers,
-Don
+3. Fix skb header linear allocation when virtio_net GSO is not enabled
+
+It has integrated V4 review comments from MST and Sridhar:
+
+1. In vhost, using socket poll wake up for outstanding DMAs
+
+2. Add detailed comments for vhost_zerocopy_signal_used call
+
+3. Add sleep in vhost shutting down instead of busy-wait for outstanding
+   DMAs.
+
+4. Copy small packets, don't do zero-copy callback in mavtap, mark it's
+   DMA done in vhost
+
+5. change zerocopy to bool in macvtap.
+
+One comment doesn't address:
+
+Should we count the whole page in sk_wmem_alloc for zerocopy buffer? If
+so, sock_wfree needs to change too.
 
 
-> 
-> (Where the 'reason' field of the NMI event is the current legacy 'reason' value 
-> there.)
-> 
-> The filter code would have to be modified to be able to recognize the panic() 
-> bit, but that's desirable anyway and it is a one-time effort.
-> 
-> This:
-> 
->   events=nmi::unknown:"if (reason == 0) ignore();"
-> 
-> would be a possible outcome as well, on certain boxes - to skip certain events.
-> 
-> Thanks,
-> 
-> 	Ingo
+This patchset includes:
+
+1/6: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
+
+2/6: Add a new device flag, NETIF_F_ZEROCOPY for lower level device
+support zero-copy;
+
+3/6: Add a new struct skb_ubuf_info in skb_share_info for userspace
+buffers release callback when lower device DMA has done for that skb,
+which is the last reference count gone;
+
+4/6: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
+add vhost_zerocopy_signal_used to notify guest to release TX skb
+buffers.
+
+5/6: Add macvtap zero-copy in lower device when sending packet is
+greater than 256 bytes to make sure there is enough room for expanding
+skb head.
+
+6/6: example: enable Intel 10Gb NIC zero-copy feature flag
+
+The patchset is built against most recent net-next linux 2.6.39-rc7. It
+has passed netperf/netserver multiple streams stress test.
+
+Single TCP_STREAM 120 secs test results over ixgbe 10Gb NIC results:
+
+Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
+4K      7408.57         92.1%           22.6%           1229
+4K(Orig)4913.17         118.1%          84.1%           2086    
+8K      9129.90         89.3%           23.3%           1141
+8K(Orig)7094.55         115.9%          84.7%           2157
+16K     9178.81         89.1%           23.3%           1139
+16K(Orig)8927.1         118.7%          83.4%           2262
+64K     9171.43         88.4%           24.9%           1253
+64K(Orig)9085.85        115.9%          82.4%           2229
+
+For message size less or equal than 2K, there is a known KVM guest TX
+overrun issue. With this zero-copy patch, the issue becomes more severe,
+guest io_exits has tripled than before, so the performance is not good.
+Once the TX overrun problem has been addressed, I will retest the small
+message size performance.
+
