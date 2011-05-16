@@ -1,68 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1EPCCf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 22:02:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37176 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752225Ab1EPCCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 22:02:32 -0400
-Date: Mon, 16 May 2011 12:02:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>,
-        Anantha Idapalapati <aidapalapati@nvidia.com>
-Subject: linux-next: build failure after merge of the wireless tree
-Message-Id: <20110516120227.27a5a343.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__16_May_2011_12_02_27_+1000_Vi8j1h2D6fppQmli"
+	id S1753841Ab1EPCKc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 22:10:32 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:20630
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752382Ab1EPCK3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 May 2011 22:10:29 -0400
+X-SpamScore: -25
+X-BigFish: VS-25(zz9371O4015L542M1432N98dKzz1202hzz8275chz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Hu Mingkai-B21284 <B21284@freescale.com>
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: RE: spi_fsl_spi broken when compiled as module by
+ b36ece832512c1a0afa54ff0a56d63492a1caf08
+Thread-Topic: spi_fsl_spi broken when compiled as module by
+ b36ece832512c1a0afa54ff0a56d63492a1caf08
+Thread-Index: AQHMD/NmlBRc3temmEW7N4NnUhxzZZSIaR3wgAE4d4CABRpUAA==
+Date: Mon, 16 May 2011 02:10:25 +0000
+Message-ID: <9389EE59E16E9447AFB481039183BCF411AA99@039-SN1MPN1-005.039d.mgd.msft.net>
+References: <20110511155211.GA21349@caffeine.csclub.uwaterloo.ca>
+ <9389EE59E16E9447AFB481039183BCF4117B10@039-SN1MPN1-005.039d.mgd.msft.net>
+ <20110512151113.GE21345@caffeine.csclub.uwaterloo.ca>
+In-Reply-To: <20110512151113.GE21345@caffeine.csclub.uwaterloo.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_May_2011_12_02_27_+1000_Vi8j1h2D6fppQmli
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi len,
 
-Hi John,
+You can prepare the patch using git tool and send it to the maillist.
+Also add spi-devel-general@lists.sourceforge.net maillist.
 
-After merging the wireless tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thanks,
+Mingkai
 
-ERROR: "clk_get" [net/rfkill/rfkill-gpio.ko] undefined!
-ERROR: "clk_enable" [net/rfkill/rfkill-gpio.ko] undefined!
-ERROR: "clk_put" [net/rfkill/rfkill-gpio.ko] undefined!
-ERROR: "clk_disable" [net/rfkill/rfkill-gpio.ko] undefined!
+> -----Original Message-----
+> From: Lennart Sorensen [mailto:lsorense@csclub.uwaterloo.ca]
+> Sent: Thursday, May 12, 2011 11:11 PM
+> To: Hu Mingkai-B21284
+> Cc: Lennart Sorensen; linux-kernel@vger.kernel.org; Grant Likely; Kumar
+> Gala
+> Subject: Re: spi_fsl_spi broken when compiled as module by
+> b36ece832512c1a0afa54ff0a56d63492a1caf08
+> 
+> On Thu, May 12, 2011 at 01:33:55AM +0000, Hu Mingkai-B21284 wrote:
+> > Please submit a patch to modify it.
+> 
+> OK.  Here it is.
+> 
+> --
+> Len Sorensen
+> 
+> Add missing exports and module license to allow compiling of spi_fsl_*
+> drivers as modules again.  Originally broken by refactoring of code in
+> b36ece832512c1a0afa54ff0a56d63492a1caf08.
+> 
+> diff --git a/drivers/spi/spi_fsl_lib.c b/drivers/spi/spi_fsl_lib.c index
+> ff59f42..d7efaac 100644
+> --- a/drivers/spi/spi_fsl_lib.c
+> +++ b/drivers/spi/spi_fsl_lib.c
+> @@ -48,16 +48,23 @@ u32 mpc8xxx_spi_tx_buf_##type(struct mpc8xxx_spi
+> *mpc8xxx_spi)	\
+>  }
+> 
+>  MPC8XXX_SPI_RX_BUF(u8)
+> +EXPORT_SYMBOL(mpc8xxx_spi_rx_buf_u8);
+>  MPC8XXX_SPI_RX_BUF(u16)
+> +EXPORT_SYMBOL(mpc8xxx_spi_rx_buf_u16);
+>  MPC8XXX_SPI_RX_BUF(u32)
+> +EXPORT_SYMBOL(mpc8xxx_spi_rx_buf_u32);
+>  MPC8XXX_SPI_TX_BUF(u8)
+> +EXPORT_SYMBOL(mpc8xxx_spi_tx_buf_u8);
+>  MPC8XXX_SPI_TX_BUF(u16)
+> +EXPORT_SYMBOL(mpc8xxx_spi_tx_buf_u16);
+>  MPC8XXX_SPI_TX_BUF(u32)
+> +EXPORT_SYMBOL(mpc8xxx_spi_tx_buf_u32);
+> 
+>  struct mpc8xxx_spi_probe_info *to_of_pinfo(struct fsl_spi_platform_data
+> *pdata)  {
+>  	return container_of(pdata, struct mpc8xxx_spi_probe_info, pdata);  }
+> +EXPORT_SYMBOL(to_of_pinfo);
+> 
+>  void mpc8xxx_spi_work(struct work_struct *work)  { @@ -116,6 +123,7 @@
+> const char *mpc8xxx_spi_strmode(unsigned int flags)
+>  	}
+>  	return "CPU";
+>  }
+> +EXPORT_SYMBOL(mpc8xxx_spi_strmode);
+> 
+>  int mpc8xxx_spi_probe(struct device *dev, struct resource *mem,
+>  			unsigned int irq)
+> @@ -168,6 +176,7 @@ int mpc8xxx_spi_probe(struct device *dev, struct
+> resource *mem,
+>  err:
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL(mpc8xxx_spi_probe);
+> 
+>  int __devexit mpc8xxx_spi_remove(struct device *dev)  { @@ -188,6 +197,7
+> @@ int __devexit mpc8xxx_spi_remove(struct device *dev)
+> 
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL(mpc8xxx_spi_remove);
+> 
+>  int __devinit of_mpc8xxx_spi_probe(struct platform_device *ofdev)  { @@ -
+> 234,3 +244,8 @@ err:
+>  	kfree(pinfo);
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL(of_mpc8xxx_spi_probe);
+> +
+> +MODULE_AUTHOR("Kumar Gala");
+> +MODULE_DESCRIPTION("Freescale SPI/eSPI controller driver library");
+> +MODULE_LICENSE("GPL");
 
-Caused by commit 165d625850e8 ("net: rfkill: add generic gpio rfkill
-driver").
 
-I have used the wireless tree from next-20110513 for today.
-
-P.S. is the Author information for that commit correct?  It has a From:
-line near the bottom of the commit message.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__16_May_2011_12_02_27_+1000_Vi8j1h2D6fppQmli
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN0IWzAAoJEDMEi1NhKgbsMtgIAI3gRFzYJsoTgyb+kw8uO1Xj
-T9NNk454aS76rcZmKgoIpC77cdfNJh4D+gbzIbh7aBbN/G1GNN0VTQzBghxcPtG5
-9rh+exv3OauMlwRXHkpy5o5ELAaANlWoXkXaibJ3dYz7NYyg+GAPP9Qjico2Kg28
-09nddVOzEuH0pjtfwJyHuT+m+QnHd6e4PyCBSuHExLAh1gpl34Lk2iJ8nyaz1E0e
-r71ABK3/l5C1c+fq/TenY43XfZd160EJhd7Mx6rpi4fha/PeB+Ps8NqIb4qztB8i
-Llj3Bc7nUyOPP9CQyM9TZoH94awg129MwYCJawubo/7YCRIum6UriqNMHfYm5gg=
-=Kks2
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_May_2011_12_02_27_+1000_Vi8j1h2D6fppQmli--
