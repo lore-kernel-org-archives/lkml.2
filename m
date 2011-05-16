@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1EPNyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:54:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62892 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637Ab1EPNyT (ORCPT
+	id S1755438Ab1EPOBC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:01:02 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:43905 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755165Ab1EPOBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:54:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qY1Aos+hRZwFkCIahDgEtJnk9xWzdFI63dN3IGT/F72afyCDqwPyHgd+fOlX7+4WMt
-         UdhlDYUX5M2ctDHhL7b4dP4Na7VRVjKE02fO009E1qpOjnzCgW2v02v+9pdzZzsX2wdq
-         YECBV3KtINHNo4/hTNHlGan3ws5kUOgjLnUPc=
-Date: Mon, 16 May 2011 15:54:14 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
- implement PTRACE_SEIZE]
-Message-ID: <20110516135414.GC23665@htj.dyndns.org>
-References: <1304869745-1073-3-git-send-email-tj@kernel.org>
- <20110515155602.GD31855@host1.jankratochvil.net>
- <20110515162630.GG23665@htj.dyndns.org>
- <20110515171512.GA24047@host1.jankratochvil.net>
- <20110515172505.GL23665@htj.dyndns.org>
- <20110515194829.GA27023@host1.jankratochvil.net>
- <20110516083113.GN23665@htj.dyndns.org>
- <20110516132123.GA13544@host1.jankratochvil.net>
- <20110516134510.GA23665@htj.dyndns.org>
- <20110516134808.GA15806@host1.jankratochvil.net>
+	Mon, 16 May 2011 10:01:00 -0400
+Date: Mon, 16 May 2011 19:30:46 +0530
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: [PATCH 2/2] amba pl011: platform data for reg lockup and glitch
+Message-ID: <20110516140045.GA9387@bnru02.bnr.st.com>
+References: <1305550879-28945-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <1305550879-28945-2-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <20110516130905.GA12192@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110516134808.GA15806@host1.jankratochvil.net>
+In-Reply-To: <20110516130905.GA12192@flint.arm.linux.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, May 16, 2011 at 03:48:08PM +0200, Jan Kratochvil wrote:
-> On Mon, 16 May 2011 15:45:10 +0200, Tejun Heo wrote:
-> > I don't think INTERRUPT can be prioritized like that above existing
-> > trap conditions.  Traps are taken sometimes deep in the kernel
-> > (e.g. fork/exec) and often after modifying states irrevocably
-> > (e.g. signal is already dequeued on signal trap).  I don't think how
-> > it would be possible to rewind the state changes and replay it later.
+On Mon, May 16, 2011 at 15:09:05 +0200, Russell King wrote:
+> On Mon, May 16, 2011 at 06:31:19PM +0530, Shreshtha Kumar SAHU wrote:
+> > From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+> >
+> > This patch provides platform data for following
+> >  - uart reset function to assist uart register lockup workaround
+> >
+> >  - init/exit function to fix glitch in the tx pin in tty_open
+> >       when tty port0 is opened a glitch is seen in the tx line
+> >       of uart0. This happens in __pl011_startup() when tx fifo
+> >       interrupt is provoked into asserting.
 > 
-> OK, so that closes one of the major issues I was trying to get "fixed".
+> I was trying to work out where that is, but i can't find this function.
+> Is your patch against a different version of the driver?
+sorry, the function names in commit message is wrong by mistake.
+It should be - "This happens in pl011_startup() when tx 
+fifo interrupt is provoked into asserting."
+I will send out a new patch with corrected commit mesaage.
 
-Sorry, this one was too difficult and, even if somehow I pulled it,
-unlikely to make upstream.  It's gonna be extremely fragile.
-Unfortunately, userland would still have to deal with arbitrary order
-of traps.
+> 
+> --
+> Russell King
+>  Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+>  maintainer of:
 
-Thank you.
-
--- 
-tejun
+BR,
+Shreshtha
