@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1EPM4V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:56:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34487 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117Ab1EPM4U (ORCPT
+	id S1755228Ab1EPM5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:57:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:25772 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab1EPM53 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:56:20 -0400
+	Mon, 16 May 2011 08:57:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=h2TcY6vjFIgB9QxqhNe6UyYk2BggHg4HiPVZNReu3pNlM8kHesz9KZ4D5KjC5/vN1L
-         CxZ+jBgRXJAGrD+6QOHC37lXBLMhUPrQ+LedwwdCt3DmAzqwMVN/5Iig2DbpZeLvrnwR
-         cMTFvV0Z06q5ESIziEjp41bQutBER5CiNuzuQ=
-Date: Mon, 16 May 2011 14:56:15 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re:
- [PATCH 11/11] ptrace: implement group stop notification for ptracer]
-Message-ID: <20110516125615.GW23665@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
- <20110515140232.GB31855@host1.jankratochvil.net>
- <20110515142827.GF23665@htj.dyndns.org>
- <20110515171748.GA25216@host1.jankratochvil.net>
- <20110515172811.GM23665@htj.dyndns.org>
- <20110515200654.GA32659@host1.jankratochvil.net>
- <20110516084350.GO23665@htj.dyndns.org>
- <20110516121711.GC10469@host1.jankratochvil.net>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=s3jc4sPw9UVI+rMFSffg+NfVvXO4cHgj21E9aD65dCoIgPEWaS7cNDsCt5+IDB/BbN
+         SWj7fETgro/6Syy85kgQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516121711.GC10469@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305541088.2466.4102.camel@twins>
+References: <20110503092846.022272244@google.com> <20110503092904.895444153@google.com>
+ <1305541088.2466.4102.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 16 May 2011 05:56:56 -0700
+Message-ID: <BANLkTinRErBM_C=PB9BxH8QDVoNWJ_AdTA@mail.gmail.com>
+Subject: Re: [patch 05/15] sched: add a timer to handle CFS bandwidth refresh
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, May 16, 2011 at 3:18 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-05-03 at 02:28 -0700, Paul Turner wrote:
+>> @@ -1003,6 +1003,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>>
+>>         if (cfs_rq->nr_running == 1)
+>>                 list_add_leaf_cfs_rq(cfs_rq);
+>> +
+>> +       start_cfs_bandwidth(cfs_rq);
+>>  }
+>>
+>>  static void __clear_buddies_last(struct sched_entity *se)
+>> @@ -1220,6 +1222,8 @@ static void put_prev_entity(struct cfs_r
+>>                 update_stats_wait_start(cfs_rq, prev);
+>>                 /* Put 'current' back into the tree. */
+>>                 __enqueue_entity(cfs_rq, prev);
+>> +
+>> +               start_cfs_bandwidth(cfs_rq);
+>>         }
+>>         cfs_rq->curr = NULL;
+>>  }
+>
+> OK, so while the first made sense the second had me go wtf?!, now I
+> _think_ you do that because do_sched_cfs_period_timer() can return idle
+> and stop the timer when no bandwidth consumption is seen for a while,
+> and thus we need to re-start the timer when we put the entity to sleep,
+> since that could have been a throttle.
+>
+> If that's so then neither really do make sense and a big fat comment is
+> missing.
+>
+> So why not start on the same (but inverse) condition that makes it stop?
+>
 
-On Mon, May 16, 2011 at 02:17:11PM +0200, Jan Kratochvil wrote:
-> On Mon, 16 May 2011 10:43:50 +0200, Tejun Heo wrote:
-> > There's distinction between "broken" and "ugly".  If it's ugly but
-> > functional, you don't need to "fix" it.
-> 
-> The final goal is the user experience (such as the users of GDB), nothing else
-> matters.  If it is so "ugly" the userland developers fail to use it the
-> project as a whole still broken.
+This was originally to guard the case that an entity was running on
+stale (from a previous period) quota resulting in cfs_bandwidth->idle
+and the timer not being re-instantiated.
 
-To me, it seems the breakage and mountain of workarounds come more
-from lack of proper documentation plus the current ptrace + job
-control + signal interaction which is really broken.  For example, it
-seems nobody really understood how group stop and ptrace interacts and
-the different types of traps being used - strace(2) thought the same
-signal was being delivered twice.
+Now that expiration is properly integrated I think the two cases are
+analogous and that this can be dropped (and the start moved into the
+(nr_running == 1) entity case on enqueue).
 
-> > So, I'm gonna push back quite a bit unless it actually compromises
-> > functionality or correctness.
-> 
-> With your position "if it is workaroundable in userland let's make the new
-> kernel API broken again" it no longer makes sense to comment on it.  Yes,
-> everything is workaroundable but that is usually not the goal of new APIs.
-
-First of all, let's distinguish "broken" and "ugly" properly and
-please keep in mind that what's broken is broken but beauty is in the
-eyes of the beholder.
-
-Secondly, I'm listening to your comments and will incorporate them, so
-please don't give up so easily.
-
-Thank you.
-
--- 
-tejun
+I think this is correct but my brain's a little fuzzy right now, will
+confirm in the morning.
