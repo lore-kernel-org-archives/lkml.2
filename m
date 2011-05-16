@@ -1,293 +1,436 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1EPJIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:08:23 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:38235 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752978Ab1EPJIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:08:21 -0400
+	id S1753316Ab1EPJNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:13:05 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:34516 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751121Ab1EPJND convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:13:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1305206878-18094-4-git-send-email-gg@slimlogic.co.uk>
-References: <1305206878-18094-1-git-send-email-gg@slimlogic.co.uk>
-	<1305206878-18094-4-git-send-email-gg@slimlogic.co.uk>
-Date: Mon, 16 May 2011 14:38:15 +0530
-Message-ID: <BANLkTinrcQ-DRN-s+0sbJQ2=KRMtu+=hUg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] REGULATOR: TWL6025: add support to twl-regulator
-From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
-To: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, balbi@ti.com, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com
+In-Reply-To: <1305536697-20147-2-git-send-email-keshava_mgowda@ti.com>
+References: <1305536697-20147-1-git-send-email-keshava_mgowda@ti.com>
+	<1305536697-20147-2-git-send-email-keshava_mgowda@ti.com>
+Date: Mon, 16 May 2011 14:43:00 +0530
+Message-ID: <BANLkTimk-EorruFdqKkoWFSxzeFW+-7tUw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH 0/5] arm: omap: usb: Runtime PM support for EHCI
+ and OHCI drivers
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 6:57 PM, Graeme Gregory <gg@slimlogic.co.uk> wrote:
-> Adding support for the twl6025. Major difference in the twl6025 is the
-> group functionality has been removed from the chip so this affects how
-> regulators are enabled and disabled.
+Sorry ! Tis patch was 1/5 has different subjct;
+
+Some problem with my email setup , I will send the series.
+
+On Mon, May 16, 2011 at 2:34 PM, Keshava Munegowda
+<keshava_mgowda@ti.com> wrote:
+> Following 2 hwmod strcuture are added:
+> UHH hwmod of usbhs with uhh base address and
+> EHCI , OHCI irq and base addresses.
+> TLL hwmod of usbhs with the TLL base address and irq.
 >
-> The names of the regulators also changed.
->
-> The DCDCs of the 6025 are software controllable as well.
->
-> Since V1
->
-> Use the features variable passed via platform data instead of calling
-> global function.
->
-> Change the very switch like if statements to be a more readable
-> switch statement.
->
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 > ---
->  drivers/regulator/twl-regulator.c |  414 +++++++++++++++++++++++++++++++++---
->  1 files changed, 379 insertions(+), 35 deletions(-)
+>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  184 ++++++++++++++++++++++++++++
+>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  153 +++++++++++++++++++++++
+>  2 files changed, 337 insertions(+), 0 deletions(-)
 >
-> diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-> index 2a808c2..51f28cc 100644
-> --- a/drivers/regulator/twl-regulator.c
-> +++ b/drivers/regulator/twl-regulator.c
-> @@ -51,8 +51,13 @@ struct twlreg_info {
->        u16                     min_mV;
->        u16                     max_mV;
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> index 909a84d..fe9a176 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> @@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
+>  static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
+>  static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
+>  static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
+> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
+> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
 >
-> +       u8                      flags;
-> +
->        /* used by regulator core */
->        struct regulator_desc   desc;
-> +
-> +       /* chip specific features */
-> +       unsigned long           features;
->  };
->
->
-> @@ -70,6 +75,7 @@ struct twlreg_info {
->  #define VREG_TRANS             1
->  #define VREG_STATE             2
->  #define VREG_VOLTAGE           3
-> +#define VREG_VOLTAGE_DCDC      4
->  /* TWL6030 Misc register offsets */
->  #define VREG_BC_ALL            1
->  #define VREG_BC_REF            2
-> @@ -87,6 +93,17 @@ struct twlreg_info {
->  #define TWL6030_CFG_STATE_APP(v)       (((v) & TWL6030_CFG_STATE_APP_MASK) >>\
->                                                TWL6030_CFG_STATE_APP_SHIFT)
->
-> +/* Flags for DCDC Voltage reading */
-> +#define DCDC_OFFSET_EN         BIT(0)
-> +#define DCDC_EXTENDED_EN       BIT(1)
-> +
-> +/* twl6025 SMPS EPROM values */
-> +#define TWL6030_SMPS_OFFSET            0xB0
-> +#define TWL6030_SMPS_MULT              0xB3
-> +#define SMPS_MULTOFFSET_SMPS4  BIT(0)
-> +#define SMPS_MULTOFFSET_VIO    BIT(1)
-> +#define SMPS_MULTOFFSET_SMPS3  BIT(6)
-> +
->  static inline int
->  twlreg_read(struct twlreg_info *info, unsigned slave_subgp, unsigned offset)
->  {
-> @@ -144,11 +161,15 @@ static int twl6030reg_is_enabled(struct regulator_dev *rdev)
->        struct twlreg_info      *info = rdev_get_drvdata(rdev);
->        int                     grp, val;
->
-> -       grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> -       if (grp < 0)
-> -               return grp;
-> +       if (!(info->features & TWL6025_SUBCLASS)) {
-> +               grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> +               if (grp < 0)
-> +                       return grp;
->
-> -       grp &= P1_GRP_6030;
-> +               grp &= P1_GRP_6030;
-> +       } else {
-> +               grp = 1;
-> +       }
->
->        val = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_STATE);
->        val = TWL6030_CFG_STATE_APP(val);
-> @@ -159,19 +180,22 @@ static int twl6030reg_is_enabled(struct regulator_dev *rdev)
->  static int twlreg_enable(struct regulator_dev *rdev)
->  {
->        struct twlreg_info      *info = rdev_get_drvdata(rdev);
-> -       int                     grp;
-> -       int                     ret;
-> +       int                     grp = 0;
-> +       int                     ret = 0;
->
-> -       grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> -       if (grp < 0)
-> -               return grp;
-> +       if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS))) {
-> +               grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> +               if (grp < 0)
-> +                       return grp;
->
-> -       if (twl_class_is_4030())
-> -               grp |= P1_GRP_4030;
-> -       else
-> -               grp |= P1_GRP_6030;
-> +               if (twl_class_is_4030())
-> +                       grp |= P1_GRP_4030;
-> +               else
-> +                       grp |= P1_GRP_6030;
->
-> -       ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_GRP, grp);
-> +               ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER,
-> +                                       VREG_GRP, grp);
-> +       }
->
->        if (!ret && twl_class_is_6030())
->                ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_STATE,
-> @@ -186,29 +210,34 @@ static int twlreg_enable(struct regulator_dev *rdev)
->  static int twlreg_disable(struct regulator_dev *rdev)
->  {
->        struct twlreg_info      *info = rdev_get_drvdata(rdev);
-> -       int                     grp;
-> -       int                     ret;
-> -
-> -       grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> -       if (grp < 0)
-> -               return grp;
-> -
-> -       /* For 6030, set the off state for all grps enabled */
-> -       if (twl_class_is_6030()) {
-> -               ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_STATE,
-> -                       (grp & (P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030)) <<
-> -                               TWL6030_CFG_STATE_GRP_SHIFT |
-> -                       TWL6030_CFG_STATE_OFF);
-> +       int                     grp = 0;
-> +       int                     ret = 0;
-> +
-> +       if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS))) {
-> +               grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> +               if (grp < 0)
-> +                       return grp;
-> +
-> +               /* For 6030, set the off state for all grps enabled */
-> +               if (twl_class_is_6030()) {
-> +                       ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER,
-> +                                       VREG_STATE,
-> +                                       (grp & (P1_GRP_6030 | P2_GRP_6030 |
-> +                                       P3_GRP_6030)) <<
-> +                                       TWL6030_CFG_STATE_GRP_SHIFT |
-> +                                       TWL6030_CFG_STATE_OFF);
->                if (ret)
->                        return ret;
-> -       }
-> +               }
->
-> -       if (twl_class_is_4030())
-> -               grp &= ~(P1_GRP_4030 | P2_GRP_4030 | P3_GRP_4030);
-> -       else
-> -               grp &= ~(P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030);
-> +               if (twl_class_is_4030())
-> +                       grp &= ~(P1_GRP_4030 | P2_GRP_4030 | P3_GRP_4030);
-> +               else
-> +                       grp &= ~(P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030);
->
-> -       ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_GRP, grp);
-> +               ret = twlreg_write(info, TWL_MODULE_PM_RECEIVER,
-> +                                       VREG_GRP, grp);
-> +       }
->
->        /* Next, associate cleared grp in state register */
->        if (!ret && twl_class_is_6030())
-> @@ -299,10 +328,11 @@ static int twl4030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
->  static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
->  {
->        struct twlreg_info      *info = rdev_get_drvdata(rdev);
-> -       int grp;
-> +       int grp = 0;
->        int val;
->
-> -       grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
-> +       if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
-> +               grp = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_GRP);
->
->        if (grp < 0)
->                return grp;
-> @@ -594,6 +624,230 @@ static struct regulator_ops twl6030_fixed_resource = {
->        .get_status     = twl6030reg_get_status,
->  };
+>  /* L3 -> L4_CORE interface */
+>  static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
+> @@ -3574,6 +3576,185 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
+>        .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+>  };
 >
 > +/*
-> + * DCDC status and control
+> + * 'usb_host_hs' class
+> + * high-speed multi-port usb host controller
 > + */
-> +
-
-<snip>
-
-> +
-> +static struct regulator_ops twldcdc_ops = {
-> +       .list_voltage           = twl6030dcdc_list_voltage,
-> +
-> +       .set_voltage            = twl6030dcdc_set_voltage,
-> +       .get_voltage_sel        = twl6030dcdc_get_voltage_sel,
-
-These 3 dcdc related function is specific to twl6025, could you please rename it
-
-> +
-> +       .enable                 = twlreg_enable,
-> +       .disable                = twlreg_disable,
-> +       .is_enabled             = twl6030reg_is_enabled,
-> +
-> +       .set_mode               = twl6030reg_set_mode,
-> +
-> +       .get_status             = twl6030reg_get_status,
-
-Can you define separate twl6025 specific regulator enable/disable/is_enabled
-/set_mode and get_status function
-This can improve readability, reduce the number of if
-and improves maintainability of previous twl chips
-
+> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
+> +       .master         = &omap34xx_usb_host_hs_hwmod,
+> +       .slave          = &omap3xxx_l3_main_hwmod,
+> +       .clk            = "core_l3_ick",
+> +       .user           = OCP_USER_MPU,
 > +};
 > +
->  /*----------------------------------------------------------------------*/
+> +static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
+> +       .rev_offs       = 0x0000,
+> +       .sysc_offs      = 0x0010,
+> +       .syss_offs      = 0x0014,
+> +       .sysc_flags     = (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+> +       .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +                          MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
+> +       .sysc_fields    = &omap_hwmod_sysc_type1,
+> +};
+> +
+> +static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
+> +       .name = "usbhs_uhh",
+> +       .sysc = &omap34xx_usb_host_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
+> +       &omap34xx_usb_host_hs__l3_main_2,
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap34xx_usb_host_hs_irqs[] = {
+> +       { .name = "ohci-irq", .irq = 76 },
+> +       { .name = "ehci-irq", .irq = 77 },
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
+> +       {
+> +               .name           = "uhh",
+> +               .pa_start       = 0x48064000,
+> +               .pa_end         = 0x480643ff,
+> +               .flags          = ADDR_TYPE_RT
+> +       },
+> +       {
+> +               .name           = "ohci",
+> +               .pa_start       = 0x48064400,
+> +               .pa_end         = 0x480647FF,
+> +               .flags          = ADDR_MAP_ON_INIT
+> +       },
+> +       {
+> +               .name           = "ehci",
+> +               .pa_start       = 0x48064800,
+> +               .pa_end         = 0x48064CFF,
+> +               .flags          = ADDR_MAP_ON_INIT
+> +       }
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
+> +       .master         = &omap3xxx_l4_core_hwmod,
+> +       .slave          = &omap34xx_usb_host_hs_hwmod,
+> +       .clk            = "l4_ick",
+> +       .addr           = omap34xx_usb_host_hs_addrs,
+> +       .addr_cnt       = ARRAY_SIZE(omap34xx_usb_host_hs_addrs),
+> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
+> +       .clk            = "usbhost_120m_fck",
+> +       .user           = OCP_USER_MPU,
+> +       .flags          = OCPIF_SWSUP_IDLE,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_f48m_cfg__usb_host_hs = {
+> +       .clk            = "usbhost_48m_fck",
+> +       .user           = OCP_USER_MPU,
+> +       .flags          = OCPIF_SWSUP_IDLE,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_slaves[] = {
+> +       &omap34xx_l4_cfg__usb_host_hs,
+> +       &omap34xx_f128m_cfg__usb_host_hs,
+> +       &omap34xx_f48m_cfg__usb_host_hs,
+> +};
+> +
+> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
+> +       .name           = "usbhs_uhh",
+> +       .class          = &omap34xx_usb_host_hs_hwmod_class,
+> +       .mpu_irqs       = omap34xx_usb_host_hs_irqs,
+> +       .mpu_irqs_cnt   = ARRAY_SIZE(omap34xx_usb_host_hs_irqs),
+> +       .main_clk       = "usbhost_ick",
+> +       .prcm = {
+> +               .omap2 = {
+> +                       .module_offs = OMAP3430ES2_USBHOST_MOD,
+> +                       .prcm_reg_id = 1,
+> +                       .module_bit = 0,
+> +                       .idlest_reg_id = 1,
+> +                       .idlest_idle_bit = 1,
+> +                       .idlest_stdby_bit = 0,
+> +               },
+> +       },
+> +       .slaves         = omap34xx_usb_host_hs_slaves,
+> +       .slaves_cnt     = ARRAY_SIZE(omap34xx_usb_host_hs_slaves),
+> +       .masters        = omap34xx_usb_host_hs_masters,
+> +       .masters_cnt    = ARRAY_SIZE(omap34xx_usb_host_hs_masters),
+> +       .flags          = HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+> +       .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+> +};
+> +
+> +/*
+> + * 'usb_tll_hs' class
+> + * usb_tll_hs module is the adapter on the usb_host_hs ports
+> + */
+> +static struct omap_hwmod_class_sysconfig omap34xx_usb_tll_hs_sysc = {
+> +       .rev_offs       = 0x0000,
+> +       .sysc_offs      = 0x0010,
+> +       .syss_offs      = 0x0014,
+> +       .sysc_flags     = (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE),
+> +       .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
+> +       .sysc_fields    = &omap_hwmod_sysc_type1,
+> +};
+> +
+> +static struct omap_hwmod_class omap34xx_usb_tll_hs_hwmod_class = {
+> +       .name = "usbhs_tll",
+> +       .sysc = &omap34xx_usb_tll_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap34xx_usb_tll_hs_irqs[] = {
+> +       { .name = "tll-irq", .irq = 78 },
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_usb_tll_hs_addrs[] = {
+> +       {
+> +               .name           = "tll",
+> +               .pa_start       = 0x48062000,
+> +               .pa_end         = 0x48062fff,
+> +               .flags          = ADDR_TYPE_RT
+> +       },
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
+> +       .clk            = "usbtll_fck",
+> +       .user           = OCP_USER_MPU,
+> +       .flags          = OCPIF_SWSUP_IDLE,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_tll_hs = {
+> +       .master         = &omap3xxx_l4_core_hwmod,
+> +       .slave          = &omap34xx_usb_tll_hs_hwmod,
+> +       .clk            = "l4_ick",
+> +       .addr           = omap34xx_usb_tll_hs_addrs,
+> +       .addr_cnt       = ARRAY_SIZE(omap34xx_usb_tll_hs_addrs),
+> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_slaves[] = {
+> +       &omap34xx_l4_cfg__usb_tll_hs,
+> +       &omap34xx_f_cfg__usb_tll_hs,
+> +};
+> +
+> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
+> +       .name           = "usbhs_tll",
+> +       .class          = &omap34xx_usb_tll_hs_hwmod_class,
+> +       .mpu_irqs       = omap34xx_usb_tll_hs_irqs,
+> +       .mpu_irqs_cnt   = ARRAY_SIZE(omap34xx_usb_tll_hs_irqs),
+> +       .main_clk       = "usbtll_ick",
+> +       .prcm = {
+> +               .omap2 = {
+> +                       .module_offs = CORE_MOD,
+> +                       .prcm_reg_id = 3,
+> +                       .module_bit = 2,
+> +                       .idlest_reg_id = 3,
+> +                       .idlest_idle_bit = 2,
+> +               },
+> +       },
+> +       .slaves         = omap34xx_usb_tll_hs_slaves,
+> +       .slaves_cnt     = ARRAY_SIZE(omap34xx_usb_tll_hs_slaves),
+> +       .flags          = HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+> +       .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+> +};
+> +
+>  static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>        &omap3xxx_l3_main_hwmod,
+>        &omap3xxx_l4_core_hwmod,
+> @@ -3656,6 +3837,9 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>        /* usbotg for am35x */
+>        &am35xx_usbhsotg_hwmod,
 >
->  #define TWL4030_FIXED_LDO(label, offset, mVolts, num, turnon_delay, \
-> @@ -636,6 +890,22 @@ static struct regulator_ops twl6030_fixed_resource = {
->                }, \
->        }
+> +       &omap34xx_usb_host_hs_hwmod,
+> +       &omap34xx_usb_tll_hs_hwmod,
+> +
+>        NULL,
+>  };
 >
-> +#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts, num, \
-> +               remap_conf) { \
-> +       .base = offset, \
-> +       .id = num, \
-> +       .min_mV = min_mVolts, \
-> +       .max_mV = max_mVolts, \
-> +       .remap = remap_conf, \
-> +       .desc = { \
-> +               .name = #label, \
-> +               .id = TWL6025_REG_##label, \
-> +               .n_voltages = ((max_mVolts - min_mVolts)/100) + 1, \
-> +               .ops = &twl6030ldo_ops, \
-> +               .type = REGULATOR_VOLTAGE, \
-> +               .owner = THIS_MODULE, \
-> +               }, \
-> +       }
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> index abc548a..d7112b0 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> @@ -66,6 +66,8 @@ static struct omap_hwmod omap44xx_mmc2_hwmod;
+>  static struct omap_hwmod omap44xx_mpu_hwmod;
+>  static struct omap_hwmod omap44xx_mpu_private_hwmod;
+>  static struct omap_hwmod omap44xx_usb_otg_hs_hwmod;
+> +static struct omap_hwmod omap44xx_usb_host_hs_hwmod;
+> +static struct omap_hwmod omap44xx_usb_tll_hs_hwmod;
 >
->  #define TWL_FIXED_LDO(label, offset, mVolts, num, turnon_delay, remap_conf, \
->                family, operations) { \
-> @@ -667,6 +937,23 @@ static struct regulator_ops twl6030_fixed_resource = {
->                }, \
->        }
+>  /*
+>  * Interconnects omap_hwmod structures
+> @@ -5027,6 +5029,155 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
+>        .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+>  };
 >
-> +#define TWL6025_ADJUSTABLE_DCDC(label, offset, num, \
-> +               remap_conf) { \
-> +       .base = offset, \
-> +       .id = num, \
-> +       .min_mV = 600, \
-> +       .max_mV = 2100, \
-> +       .remap = remap_conf, \
-
-remap is not used for twl6025?
-
-> +       .desc = { \
-> +               .name = #label, \
-> +               .id = TWL6025_REG_##label, \
-> +               .n_voltages = 63, \
+> +/*
+> + * 'usb_host_hs' class
+> + * high-speed multi-port usb host controller
+> + */
+> +static struct omap_hwmod_ocp_if omap44xx_usb_host_hs__l3_main_2 = {
+> +       .master         = &omap44xx_usb_host_hs_hwmod,
+> +       .slave          = &omap44xx_l3_main_2_hwmod,
+> +       .clk            = "l3_div_ck",
+> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
+> +       .rev_offs       = 0x0000,
+> +       .sysc_offs      = 0x0010,
+> +       .syss_offs      = 0x0014,
+> +       .sysc_flags     = (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+> +       .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +                          MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
+> +       .sysc_fields    = &omap_hwmod_sysc_type2,
+> +};
+> +
+> +static struct omap_hwmod_class omap44xx_usb_host_hs_hwmod_class = {
+> +       .name = "usbhs_uhh",
+> +       .sysc = &omap44xx_usb_host_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_masters[] = {
+> +       &omap44xx_usb_host_hs__l3_main_2,
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap44xx_usb_host_hs_irqs[] = {
+> +       { .name = "ohci-irq", .irq = 76 + OMAP44XX_IRQ_GIC_START },
+> +       { .name = "ehci-irq", .irq = 77 + OMAP44XX_IRQ_GIC_START },
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap44xx_usb_host_hs_addrs[] = {
+> +       {
+> +               .name           = "uhh",
+> +               .pa_start       = 0x4a064000,
+> +               .pa_end         = 0x4a0647ff,
+> +               .flags          = ADDR_TYPE_RT
+> +       },
+> +       {
+> +               .name           = "ohci",
+> +               .pa_start       = 0x4A064800,
+> +               .pa_end         = 0x4A064BFF,
+> +               .flags          = ADDR_MAP_ON_INIT
+> +       },
+> +       {
+> +               .name           = "ehci",
+> +               .pa_start       = 0x4A064C00,
+> +               .pa_end         = 0x4A064FFF,
+> +               .flags          = ADDR_MAP_ON_INIT
+> +       }
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_host_hs = {
+> +       .master         = &omap44xx_l4_cfg_hwmod,
+> +       .slave          = &omap44xx_usb_host_hs_hwmod,
+> +       .clk            = "l4_div_ck",
+> +       .addr           = omap44xx_usb_host_hs_addrs,
+> +       .addr_cnt       = ARRAY_SIZE(omap44xx_usb_host_hs_addrs),
+> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_slaves[] = {
+> +       &omap44xx_l4_cfg__usb_host_hs,
+> +};
+> +
+> +static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
+> +       .name           = "usbhs_uhh",
+> +       .class          = &omap44xx_usb_host_hs_hwmod_class,
+> +       .mpu_irqs       = omap44xx_usb_host_hs_irqs,
+> +       .mpu_irqs_cnt   = ARRAY_SIZE(omap44xx_usb_host_hs_irqs),
+> +       .main_clk       = "usb_host_hs_fck",
+> +       .prcm = {
+> +               .omap4 = {
+> +                       .clkctrl_reg = OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> +               },
+> +       },
+> +       .slaves         = omap44xx_usb_host_hs_slaves,
+> +       .slaves_cnt     = ARRAY_SIZE(omap44xx_usb_host_hs_slaves),
+> +       .masters        = omap44xx_usb_host_hs_masters,
+> +       .masters_cnt    = ARRAY_SIZE(omap44xx_usb_host_hs_masters),
+> +       .flags          = HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+> +       .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+> +};
+> +
+> +/*
+> + * 'usb_tll_hs' class
+> + * usb_tll_hs module is the adapter on the usb_host_hs ports
+> + */
+> +static struct omap_hwmod_class_sysconfig omap44xx_usb_tll_hs_sysc = {
+> +       .rev_offs       = 0x0000,
+> +       .sysc_offs      = 0x0010,
+> +       .syss_offs      = 0x0014,
+> +       .sysc_flags     = (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE),
+> +       .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
+> +       .sysc_fields    = &omap_hwmod_sysc_type1,
+> +};
+> +
+> +static struct omap_hwmod_class omap44xx_usb_tll_hs_hwmod_class = {
+> +       .name = "usbhs_tll",
+> +       .sysc = &omap44xx_usb_tll_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap44xx_usb_tll_hs_irqs[] = {
+> +       { .name = "tll-irq", .irq = 78 + OMAP44XX_IRQ_GIC_START },
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap44xx_usb_tll_hs_addrs[] = {
+> +       {
+> +               .name           = "tll",
+> +               .pa_start       = 0x4a062000,
+> +               .pa_end         = 0x4a063fff,
+> +               .flags          = ADDR_TYPE_RT
+> +       },
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_tll_hs = {
+> +       .master         = &omap44xx_l4_cfg_hwmod,
+> +       .slave          = &omap44xx_usb_tll_hs_hwmod,
+> +       .clk            = "l4_div_ck",
+> +       .addr           = omap44xx_usb_tll_hs_addrs,
+> +       .addr_cnt       = ARRAY_SIZE(omap44xx_usb_tll_hs_addrs),
+> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usb_tll_hs_slaves[] = {
+> +       &omap44xx_l4_cfg__usb_tll_hs,
+> +};
+> +
+> +static struct omap_hwmod omap44xx_usb_tll_hs_hwmod = {
+> +       .name           = "usbhs_tll",
+> +       .class          = &omap44xx_usb_tll_hs_hwmod_class,
+> +       .mpu_irqs       = omap44xx_usb_tll_hs_irqs,
+> +       .mpu_irqs_cnt   = ARRAY_SIZE(omap44xx_usb_tll_hs_irqs),
+> +       .main_clk       = "usb_tll_hs_ick",
+> +       .prcm = {
+> +               .omap4 = {
+> +                       .clkctrl_reg = OMAP4430_CM_L3INIT_USB_TLL_CLKCTRL,
+> +               },
+> +       },
+> +       .slaves         = omap44xx_usb_tll_hs_slaves,
+> +       .slaves_cnt     = ARRAY_SIZE(omap44xx_usb_tll_hs_slaves),
+> +       .flags          = HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+> +       .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+> +};
+> +
+>  static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+>
+>        /* dmm class */
+> @@ -5173,6 +5324,8 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+>        &omap44xx_wd_timer2_hwmod,
+>        &omap44xx_wd_timer3_hwmod,
+>
+> +       &omap44xx_usb_host_hs_hwmod,
+> +       &omap44xx_usb_tll_hs_hwmod,
+>        NULL,
+>  };
+>
+> --
+> 1.6.0.4
+>
+>
