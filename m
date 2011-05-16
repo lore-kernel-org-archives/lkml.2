@@ -1,139 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab1EPQNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:13:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756537Ab1EPQNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:13:52 -0400
-Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <1305561051.2669.10.camel@localhost.localdomain>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1305559822.2855.14.camel@menhir>
-	 <1305561051.2669.10.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 16 May 2011 17:14:29 +0100
-Message-ID: <1305562469.2855.26.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753047Ab1EPQZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:25:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60812 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab1EPQZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 12:25:21 -0400
+Date: Mon, 16 May 2011 18:25:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Andy Lutomirski <luto@MIT.EDU>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
+In-Reply-To: <20110516160943.GC25898@one.firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1105161817120.3078@ionos>
+References: <cover.1305560561.git.luto@mit.edu> <20110516160943.GC25898@one.firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 16 May 2011, Andi Kleen wrote:
 
-On Mon, 2011-05-16 at 11:50 -0400, Mimi Zohar wrote:
-> On Mon, 2011-05-16 at 16:30 +0100, Steven Whitehouse wrote:
-> > Hi,
-> > 
-> > On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
-> > > After creating the initial LSM security extended attribute, call
-> > > evm_inode_post_init_security() to create the 'security.evm'
-> > > extended attribute.
-> > > 
-> > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > > ---
-> > >  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
-> > >  1 files changed, 19 insertions(+), 9 deletions(-)
-> > > 
-> > [snip]
-> > > +	struct xattr lsm_xattr;
-> > > +	struct xattr evm_xattr;
-> > >  
-> > >  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
-> > > -					   &name, &value, &len);
-> > > +					   &lsm_xattr.name, &lsm_xattr.value,
-> > > +					   &lsm_xattr.value_len);
-> > >  
-> > >  	if (err) {
-> > >  		if (err == -EOPNOTSUPP)
-> > > @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
-> > >  		return err;
-> > >  	}
-> > >  
-> > > -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
-> > > -			       GFS2_EATYPE_SECURITY);
-> > > -	kfree(value);
-> > > -	kfree(name);
-> > > -
-> > > +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
-> > > +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
-> > > +	if (err < 0)
-> > > +		goto out;
-> > > +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
-> > > +					   &evm_xattr);
-> > > +	if (err)
-> > > +		goto out;
-> > > +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
-> > > +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
-> > > +	kfree(evm_xattr.value);
-> > > +out:
-> > > +	kfree(lsm_xattr.name);
-> > > +	kfree(lsm_xattr.value);
-> > >  	return err;
-> > >  }
-> > >  
-> > 
-> > Just wondering whether we could have a single call to the security
-> > subsystem which returns a vector of xattrs rather than having to call
-> > two different functions?
-> > 
-> > Steve.
+> >  - Don't turn off frame pointers in vDSO code.
 > 
-> There are a number of places that the LSM function is called immediately
-> followed by either EVM/IMA.  In each of those places it is hidden from
-> the caller by calling the security_inode_XXX_security().  In this case
-> each fs has it's own method of creating an extended attribute.  If that
-> method could be passed to security_inode_init_security, then
-> security_inode_init_security() could call both the LSM and EVM functions
-> directly.
-> 
-> Mimi
-> 
+> Why? Note frame pointers are costly on some CPUs, like Atom.
 
-I'm still not quite sure I understand... from a (very brief) look at the
-paper, it seems that what you are trying to do is add a new xattr to
-inodes which has some hash of some of the inode metadata (presumably
-including the selinux xattr and some other fields).
+That's the least worry on ATOM.
 
-I'm not sure why it matters whether the selinux data has been written to
-the buffers before the xattr containing the hash? The data will not
-change (I hope!) and if it does presumably the hash will pick that up
-when it is checked at a later date?
+> Also unlike the primitive state of the kernel the user space debuggers
+> are usually advanced enough to support dwarf2 unwinding.
 
-The reason I'm asking is that currently the creation of GFS2 inodes is
-broken down into a number of transactions, carefully designed to ensure
-that the correct clean up occurs if there is an error. I would like to
-try and reduce the number of transactions during the create process
-where possible. That means I would like to move to a model which looks
-like this:
+And unless you or someone else changes the primitive state of the
+kernel, framepointers are going to stay simply because removing them
+breaks profiling backtraces when the hit is inside vread().
 
-1. Calculate number of blocks required, based on inode + xattrs (if any)
-2. Allocate blocks
-3. Populate with data (i.e. set xattrs)
+Thanks,
 
-I'm trying to work out whether there is some reason why we have to use
-your proposed:
-
-1. Get selinux xattr
-2. Set selinux xattr
-3. Get EVM xattr
-4. Set EVM xattr
-
-as opposed to getting all the xattrs in a single call and then being
-able to set them all in a single operation, if that makes sense?
-
-Steve.
-
-
+	tglx
