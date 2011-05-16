@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab1EPP6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:58:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58191 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423Ab1EPP6h convert rfc822-to-8bit (ORCPT
+	id S1756576Ab1EPP7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:59:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55615 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756466Ab1EPP7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:58:37 -0400
-Subject: Re: [patch 08/15] sched: throttle cfs_rq entities which exceed
- their local runtime
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110503092905.163081832@google.com>
-References: <20110503092846.022272244@google.com>
-	 <20110503092905.163081832@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 May 2011 17:58:15 +0200
-Message-ID: <1305561495.2466.4449.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 16 May 2011 11:59:18 -0400
+Date: Mon, 16 May 2011 08:59:15 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH RESEND] regulator: Remove
+ MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
+Message-ID: <20110516155914.GA6725@opensource.wolfsonmicro.com>
+References: <1305541234.3006.5.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305541234.3006.5.camel@phoenix>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-03 at 02:28 -0700, Paul Turner wrote:
-> +       /*
-> +        * it's possible active load balance has forced a throttled cfs_rq to
-> +        * run again, we don't want to re-throttled in this case.
-> +        */
-> +       if (cfs_rq_throttled(cfs_rq))
-> +               return; 
+On Mon, May 16, 2011 at 06:20:34PM +0800, Axel Lin wrote:
+> In current implementation, the original macro implementation assumes the caller
+> pass the parameter starting from 1 (to match the register names in datasheet).
+> Thus we have unneeded plus one then minus one operations
 
-expand a little on this, why would load-balancing interact with a
-throttled group? load-balancing should fully ignore these things,
-they're not runnable after all.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
