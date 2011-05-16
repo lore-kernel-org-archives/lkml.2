@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1EPWCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 18:02:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38457 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab1EPWCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 18:02:14 -0400
-Date: Tue, 17 May 2011 00:01:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fenghua Yu <fenghua.yu@intel.com>
-cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] x86/kernel/common.c: Disable SMEP by kernel option
- nosmep
-In-Reply-To: <1305581685-5144-5-git-send-email-fenghua.yu@intel.com>
-Message-ID: <alpine.LFD.2.02.1105162359500.3078@ionos>
-References: <1305581685-5144-1-git-send-email-fenghua.yu@intel.com> <1305581685-5144-5-git-send-email-fenghua.yu@intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754566Ab1EPWHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 18:07:15 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:38487 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753607Ab1EPWHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 18:07:13 -0400
+Date: Mon, 16 May 2011 15:07:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
+Message-ID: <20110516220710.GA6139@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110513131218.GA7669@elte.hu>
+ <20110513141431.GV2258@linux.vnet.ibm.com>
+ <20110513150744.GE32688@elte.hu>
+ <20110513162646.GW2258@linux.vnet.ibm.com>
+ <20110516070808.GC24836@elte.hu>
+ <20110516074822.GE2573@linux.vnet.ibm.com>
+ <20110516115148.GA2421@elte.hu>
+ <20110516122329.GA29356@elte.hu>
+ <20110516143005.GA25245@elte.hu>
+ <20110516213331.GK2573@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516213331.GK2573@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 May 2011, Fenghua Yu wrote:
-> +/*
-> + * If SMEP is supported by the processor, SMEP has been enabled in CR4 earlier.
-> + * But if kernel option "nosmep" is given, we disable SMEP here.
-> + */
-> +static __init void config_smep(struct cpuinfo_x86 *c)
-> +{
-> +	if (cpu_has(c, X86_FEATURE_SMEP) && unlikely(disable_smep)) {
+On Mon, May 16, 2011 at 02:33:31PM -0700, Paul E. McKenney wrote:
+> On Mon, May 16, 2011 at 04:30:05PM +0200, Ingo Molnar wrote:
+> > 
+> > * Ingo Molnar <mingo@elte.hu> wrote:
+> > 
+> > > > I'll try it in any case.
+> > > 
+> > > oh, this was a new iteration, mea culpa!
+> > > 
+> > > And yes, it solves all problems for me as well. Mind pushing it as a fix? :-)
+> > 
+> > FYI, i am also getting the warning below with a defconfig.
+> 
+> Yep, this is me whining that rcu_enter_nohz() was called before the
+> irq nesting count (->dynticks_nesting) had dropped to zero.  In other
+> words, either I am mis-counting interrupts or we entered some irq
+> handler and then somehow never left it, but still managed to get
+> to process-level execution.  Most likely that I am miscounting
+> somehow.
+> 
+> I suppose that I could remove the WARN_ON_ONCE() and pretend that all
+> was well, but...  ;-)
 
-That unlikely() is completely pointless. This is init code and inside
-of a if() already. Where is the point ?
+Actually, your test did prove something very interesting.  I have
+been suspecting NMIs, but since the patch you just tested commented
+out rcu_nmi_enter() and rcu_nmi_exit() completely, we know that there
+is some bug outside of these two functions.  So if I am miscounting
+nesting levels, I must be doing soe in rcu_enter_nohz(), rcu_exit_nohz(),
+rcu_irq_enter(), or rcu_irq_exit().  Or some combination of those four.
 
-> +		setup_clear_cpu_cap(X86_FEATURE_SMEP);
-> +		clear_in_cr4(X86_CR4_SMEP);
-> +	}
-> +}
+							Thanx, Paul
 
-Thanks,
-
-	tglx
+> > 	Ingo
+> > 
+> > initcall init_per_zone_wmark_min+0x0/0x5b returned 0 after 41 usecs
+> > calling  kswapd_init+0x0/0x1d @ 1
+> > ------------[ cut here ]------------
+> > WARNING: at kernel/rcutree.c:364 rcu_enter_nohz+0x4f/0x60()
+> > Hardware name: System Product Name
+> > Modules linked in:
+> > Pid: 0, comm: swapper Not tainted 2.6.39-rc7-tip-03260-gb177656-dirty #126707
+> > Call Trace:
+> >  [<c13974b6>] ? printk+0x18/0x1a
+> >  [<c1038f0d>] warn_slowpath_common+0x6d/0xa0
+> >  [<c1089bdf>] ? rcu_enter_nohz+0x4f/0x60
+> >  [<c1089bdf>] ? rcu_enter_nohz+0x4f/0x60
+> >  [<c1038f5d>] warn_slowpath_null+0x1d/0x20
+> >  [<c1089bdf>] rcu_enter_nohz+0x4f/0x60
+> >  [<c10639ca>] tick_nohz_stop_sched_tick+0x22a/0x470
+> >  [<c1001685>] cpu_idle+0x65/0xe0
+> >  [<c137d789>] rest_init+0xa1/0xa8
+> >  [<c137d6e8>] ? reciprocal_value+0x48/0x48
+> >  [<c156a6ef>] start_kernel+0x303/0x30b
+> >  [<c156a1fd>] ? obsolete_checksetup+0x95/0x95
+> >  [<c156a067>] i386_start_kernel+0x67/0x6d
+> > ---[ end trace fe4ebffb2b8ff187 ]---
+> > initcall kswapd_init+0x0/0x1d returned 0 after 70614 usecs
+> > calling  extfrag_debug_init+0x0/0x78 @ 1
+> > initcall extfrag_debug_init+0x0/0x78 returned 0 after 79 usecs
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
