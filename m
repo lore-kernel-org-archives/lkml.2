@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1EPI7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:59:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40698 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab1EPI7G (ORCPT
+	id S1753203Ab1EPI6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:58:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37209 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab1EPI6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:59:06 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH v1] omap: usbhs: Fixed the crash during rmmod of ehci and ohci
-Date: Mon, 16 May 2011 14:24:58 +0530
-Message-ID: <1305536098-19871-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
+	Mon, 16 May 2011 04:58:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bxQrw9/+v5CrPJhoZfNOO4G4Ajy/ymlnRsHK7Gm7ZAyXEwB6dkFXq/CLqZgZOKIue6
+         MlzocHfjp5mliv8LJ4T1g3gTOjLI7JYIWiJeC34lHoG+qq+dkFI/WcubiHn0Pb0V0fEx
+         K+KNekq9r5g/zqbnXMgnrs9jGzYYk4d9+QpSk=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1305536016.19230.3.camel@e102109-lin.cambridge.arm.com>
+References: <BANLkTikefReiFUggT8iPv0mOmY=+OOOS-A@mail.gmail.com>
+	<BANLkTim-FmuENeU_Cai+nYnTP+uJTEn3PA@mail.gmail.com>
+	<BANLkTi=S3VR1mxc0bsL4+N3ksHeo3scg3A@mail.gmail.com>
+	<009c01cc108b$4635c7d0$d2a15770$@com>
+	<BANLkTi=wg=RgyEWzL9_fwUymhFDaccQCfw@mail.gmail.com>
+	<BANLkTin9RLjsgu=frPGXL8mL8p8LPz-10w@mail.gmail.com>
+	<BANLkTik=M8uwnmHABqYBkeVDk56UMrnkMg@mail.gmail.com>
+	<BANLkTi=VesNU8ye=ntq-LAzBPG4pVYZPQQ@mail.gmail.com>
+	<BANLkTik6c8-g8FrXZy8-V35W6-Th++5p_A@mail.gmail.com>
+	<BANLkTi=bYzYrHx+P=yTH_0VTiQaGZHeB9A@mail.gmail.com>
+	<BANLkTinv6aSQMgh9ce1xaQ14_aHDPvFTxw@mail.gmail.com>
+	<1305536016.19230.3.camel@e102109-lin.cambridge.arm.com>
+Date: Mon, 16 May 2011 16:58:40 +0800
+Message-ID: <BANLkTinB8eHU-Oy7QEkkmh88OKMfqrX2-Q@mail.gmail.com>
+Subject: =?UTF-8?B?UmU6IOetlOWkjTogcHJvYmxlbSB3aXRoIGttZW1sZWFr?=
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: ttlxzz ccc <boyzccc@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Mon, May 16, 2011 at 4:53 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Mon, 2011-05-16 at 08:18 +0100, ttlxzz ccc wrote:
+>> I'm very glad to find the reason of this problem. It's just because
+>> the CONFIG_FRAME_POINTER is not set :).
+>>
+>> And in dump_stack() which is defined in arch/x86/kernel/dumpstack.c,
+>> CONFIG_FRAME_POINTER control whether to get the bp.
+>>
+>> Now I enable CONFIG_FRAME_POINTER and I can see the full backtrace. :)
+>
+> It's good you found it. I thought STACKTRACE on x86_64 would set the
+> necessary options like FRAME_POINTER so that it works properly. Kmemleak
+> only sets STACKTRACE.
+>
 
-The disabling of clocks and freeing GPIO are changed
-to fix the occurrence of the crash of rmmod of ehci and ohci
-drivers. The GPIOs should be freed after the spin locks are
-unlocked.
-
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
----
- drivers/mfd/omap-usb-host.c |   27 +++++++++++++++++++--------
- 1 files changed, 19 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 3ab9ffa..55c5d47 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -994,22 +994,33 @@ static void usbhs_disable(struct device *dev)
- 			dev_dbg(dev, "operation timed out\n");
- 	}
- 
--	if (pdata->ehci_data->phy_reset) {
--		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
--			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
--
--		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
--			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
-+	if (is_omap_usbhs_rev2(omap)) {
-+		if (is_ehci_tll_mode(pdata->port_mode[0]))
-+			clk_enable(omap->usbtll_p1_fck);
-+		if (is_ehci_tll_mode(pdata->port_mode[1]))
-+			clk_enable(omap->usbtll_p2_fck);
-+		clk_disable(omap->utmi_p2_fck);
-+		clk_disable(omap->utmi_p1_fck);
- 	}
- 
--	clk_disable(omap->utmi_p2_fck);
--	clk_disable(omap->utmi_p1_fck);
- 	clk_disable(omap->usbtll_ick);
- 	clk_disable(omap->usbtll_fck);
- 	clk_disable(omap->usbhost_fs_fck);
- 	clk_disable(omap->usbhost_hs_fck);
- 	clk_disable(omap->usbhost_ick);
- 
-+	/* The gpio_free migh sleep; so unlock the spinlock */
-+	spin_unlock_irqrestore(&omap->lock, flags);
-+
-+	if (pdata->ehci_data->phy_reset) {
-+		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
-+			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
-+
-+		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
-+			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
-+	}
-+	return;
-+
- end_disble:
- 	spin_unlock_irqrestore(&omap->lock, flags);
- }
--- 
-1.6.0.4
-
+I am wondering why STACKTRACE doesn't select FRAME_POINTER on x86_64,
+which seems necessary...
