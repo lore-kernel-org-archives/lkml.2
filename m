@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1EPSb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:31:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47544 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1EPSb1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:31:27 -0400
-Date: Mon, 16 May 2011 12:31:24 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [RFC PATCH] input: Add wiichuck driver
-Message-ID: <20110516183124.GA4875@ponder.secretlab.ca>
-References: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
- <20110516164427.GA21232@core.coreip.homeip.net>
+	id S1752845Ab1EPSb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 14:31:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56794 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab1EPSb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 14:31:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH] PM: Remove CONFIG_PM_VERBOSE
+Date: Mon, 16 May 2011 20:32:33 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <201105140042.04064.rjw@sisk.pl>
+In-Reply-To: <201105140042.04064.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516164427.GA21232@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105162032.33480.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 09:44:27AM -0700, Dmitry Torokhov wrote:
-> Hi Grant,
+On Saturday, May 14, 2011, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> On Thu, May 12, 2011 at 06:29:44AM +0200, Grant Likely wrote:
-> > This patch adds a driver for the Nintendo Nunchuck (wiimote accessory)
-> > attached to an i2c bus via something like a wiichuck adapter board
-> > from Sparkfun.
-> > 
-> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> > ---
-> > 
-> > This is RFC because the driver doesn't completely work yet.  The
-> > joystick and buttons work fine.  There is a bug with the accelerometer
-> > reporting though (nothing gets reported), and I'm not even sure I'm
-> > using the right input type for reporting accelerometer values.
+> Now that we have CONFIG_DYNAMIC_DEBUG there is no need for yet
+> another flag causing dev_dbg() and pr_debug() statements in the
+> core PM code to produce output.  Moreover, CONFIG_PM_VERBOSE
+> causes so much output to be generated that it's not really useful
+> and almost no one sets it.
 > 
-> Looks quite reasonable and I think that ABS_Rx is reasonable events for
-> accelerometer in this particular case.
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=23182
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+There are no comments, so my understanding is that no one has any objections to
+this patch.  If that really is the case, I'm going to put it into
+suspend-2.6/linux-next for 2.6.40.
+
+Thanks,
+Rafael
+
+
+> ---
+>  arch/sh/configs/apsh4ad0a_defconfig |    1 -
+>  arch/sh/configs/sdk7786_defconfig   |    1 -
+>  drivers/base/power/Makefile         |    3 +--
+>  kernel/power/Kconfig                |    6 ------
+>  4 files changed, 1 insertion(+), 10 deletions(-)
 > 
-> A few more comments below.
-
-Hi Dmitry, thanks for the review.  Replies below.
-
-> 
-> > Comments welcome.
-> > 
-> >  drivers/input/joystick/Kconfig    |    8 +
-> >  drivers/input/joystick/Makefile   |    1 
-> >  drivers/input/joystick/wiichuck.c |  225 +++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 234 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/input/joystick/wiichuck.c
-> > 
-> > diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-> > index 56eb471..79f18db 100644
-> > --- a/drivers/input/joystick/Kconfig
-> > +++ b/drivers/input/joystick/Kconfig
-> > @@ -193,6 +193,14 @@ config JOYSTICK_TWIDJOY
-> >  	  To compile this driver as a module, choose M here: the
-> >  	  module will be called twidjoy.
-> >  
-> > +config JOYSTICK_WIICHUCK
-> > +	tristate "Nintendo Nunchuck on i2c bus"
-> > +	depends on I2C
-> > +	select INPUT_POLLDEV
-> > +	help
-> > +	  Say Y here if you have a Nintendo Nunchuck directly attached to
-> > +	  the machine's i2c bus.
-> > +
-> 
-> 	To compile this driver as a module, ...
-
-That ends up being pretty useless boilerplate.  I've stopped adding
-that line to any of the Kconfig text I maintain.
-
-> > +static void wiichuck_poll(struct input_polled_dev *poll_dev)
-> > +{
-> > +	struct wiichuck_device *wiichuck = poll_dev->private;
-> > +	struct i2c_client *i2c = wiichuck->i2c_client;
-> > +	static uint8_t cmd_byte = 0;
-> > +	struct i2c_msg cmd_msg =
-> > +		{ .addr = i2c->addr, .len = 1, .buf = &cmd_byte };
-> > +	uint8_t b[6];
-> 
-> As mentioned by others these buffers should not be on stack.
-
-Fixed.
-
-> 
-> > +	struct i2c_msg data_msg =
-> > +		{ .addr = i2c->addr, .flags = I2C_M_RD, .len = 6, .buf = b };
-> > +	int jx, jy, ax, ay, az;
-> > +	bool c, z;
-> > +
-> > +	switch (wiichuck->state) {
-> > +	case 0:
-> > +		i2c_transfer(i2c->adapter, &cmd_msg, 1);
-> > +		wiichuck->state = 1;
-> 
-> Do you really need to have a state machine here? Why not do both
-> transfers in one poll invocation?
-
-Mostly because there needs to a gap between setting up the data
-capture and reading the data back.  I could flip things around to
-setup the next transfer after reading the previous, but in my current
-version I also add state for handling hotplug of the wiimote
-accessories, so I think the state machine is still warranted.
-
-> > +	set_bit(EV_KEY, input_dev->evbit);
-> > +	set_bit(BTN_C, input_dev->keybit); /* buttons */
-> > +	set_bit(BTN_Z, input_dev->keybit);
-> 
-> I prefer __set_bit() here since there is no concurrency.
-
-In general, I avoid using __* versions of functions unless it is
-actually important that I do so.  I'm not concerned about slightly
-higher overhead here, and I'd rather my code set a good example.
-
-g.
+> Index: linux-2.6/arch/sh/configs/apsh4ad0a_defconfig
+> ===================================================================
+> --- linux-2.6.orig/arch/sh/configs/apsh4ad0a_defconfig
+> +++ linux-2.6/arch/sh/configs/apsh4ad0a_defconfig
+> @@ -48,7 +48,6 @@ CONFIG_PREEMPT=y
+>  CONFIG_BINFMT_MISC=y
+>  CONFIG_PM=y
+>  CONFIG_PM_DEBUG=y
+> -CONFIG_PM_VERBOSE=y
+>  CONFIG_PM_RUNTIME=y
+>  CONFIG_CPU_IDLE=y
+>  CONFIG_NET=y
+> Index: linux-2.6/arch/sh/configs/sdk7786_defconfig
+> ===================================================================
+> --- linux-2.6.orig/arch/sh/configs/sdk7786_defconfig
+> +++ linux-2.6/arch/sh/configs/sdk7786_defconfig
+> @@ -83,7 +83,6 @@ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+>  CONFIG_BINFMT_MISC=y
+>  CONFIG_PM=y
+>  CONFIG_PM_DEBUG=y
+> -CONFIG_PM_VERBOSE=y
+>  CONFIG_PM_RUNTIME=y
+>  CONFIG_CPU_IDLE=y
+>  CONFIG_NET=y
+> Index: linux-2.6/drivers/base/power/Makefile
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/power/Makefile
+> +++ linux-2.6/drivers/base/power/Makefile
+> @@ -5,5 +5,4 @@ obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
+>  obj-$(CONFIG_PM_OPP)	+= opp.o
+>  obj-$(CONFIG_HAVE_CLK)	+= clock_ops.o
+>  
+> -ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+> -ccflags-$(CONFIG_PM_VERBOSE)   += -DDEBUG
+> +ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+> \ No newline at end of file
+> Index: linux-2.6/kernel/power/Kconfig
+> ===================================================================
+> --- linux-2.6.orig/kernel/power/Kconfig
+> +++ linux-2.6/kernel/power/Kconfig
+> @@ -125,12 +125,6 @@ config PM_DEBUG
+>  	code. This is helpful when debugging and reporting PM bugs, like
+>  	suspend support.
+>  
+> -config PM_VERBOSE
+> -	bool "Verbose Power Management debugging"
+> -	depends on PM_DEBUG
+> -	---help---
+> -	This option enables verbose messages from the Power Management code.
+> -
+>  config PM_ADVANCED_DEBUG
+>  	bool "Extra PM attributes in sysfs for low-level debugging/testing"
+>  	depends on PM_DEBUG
+> --
