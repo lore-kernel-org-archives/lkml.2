@@ -1,158 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab1EPLiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 07:38:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51717 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab1EPLiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 07:38:22 -0400
-Date: Mon, 16 May 2011 12:37:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm tree
-Message-ID: <20110516113707.GQ30539@n2100.arm.linux.org.uk>
-References: <20110513083738.GA19733@n2100.arm.linux.org.uk> <20110513092646.GK13647@elte.hu> <20110513213640.GB30539@n2100.arm.linux.org.uk> <20110516073144.GF24836@elte.hu> <20110516074230.GI30539@n2100.arm.linux.org.uk> <20110516091744.GB12325@elte.hu> <20110516091927.GK30539@n2100.arm.linux.org.uk> <20110516094056.GA25039@elte.hu> <20110516100750.GN30539@n2100.arm.linux.org.uk> <20110516110652.GC19837@elte.hu>
+	id S1753791Ab1EPLnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 07:43:15 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52855 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098Ab1EPLnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 07:43:14 -0400
+Date: Mon, 16 May 2011 13:42:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] x86, x86_64: Fix checks for userspace address limit
+Message-ID: <20110516114254.GI19837@elte.hu>
+References: <1305210630-7136-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110516110652.GC19837@elte.hu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1305210630-7136-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 01:06:52PM +0200, Ingo Molnar wrote:
+
+* Jiri Olsa <jolsa@redhat.com> wrote:
+
+> hi,
+> there seems to be bug in the _copy_to_user and _copy_from_user
+> functions, not allowing access to the last user page.
 > 
-> * Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> Also I tried to decipher the inline assembly in __range_not_ok,
+> and it seems to work properly, but the macro comment seems to
+> be misleading.
 > 
-> > On Mon, May 16, 2011 at 11:40:56AM +0200, Ingo Molnar wrote:
-> > >    maintainers (and not assume lack of ack after 24 hours means acceptance), or 
-> > 
-> > Wrong, 72 to 96 hours.  Sunday to Wednesday/Thursday.
+> wbr,
+> jirka
 > 
-> Not that this is really material (the argument is pretty much the same even had 
-> you waited 3 days), but you are already wrong about the 'Sunday' part, because 
-> you posted it to lkml on *Monday* 13:27 GMT:
+> ---
+> As shown in BZ 30352 (https://bugzilla.kernel.org/show_bug.cgi?id=30352)
+> there's an issue with reading last allowed page on x86_64.
 > 
->         Message-ID: <20110509132738.GB16919@n2100.arm.linux.org.uk>
->         Mon, 9 May 2011 09:27:52 -0400
-
-Sigh.  So you're only looking at the _second_ posting of them, not the first.
-Here's the message, minus the patch.
-
-| Date: Sun, 8 May 2011 19:24:07 +0100
-| From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-| To: Ralf Baechle <ralf@linux-mips.org>, John Stultz <johnstul@us.ibm.com>,
-|         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-| Subject: i8253 clocksource consolidation
-| Message-ID: <20110508182407.GN27807@n2100.arm.linux.org.uk>
-| 
-| Ralf, John, Ingo, hpa,
-| 
-| Below you'll find a work in progress patch.  We have three i8253 PIT
-| clocksource implementations in the kernel tree, which are all very
-| similar.  It seems pointless to have three copies of the code knocking
-| about, so this patch creates a common version in drivers/clocksource.
-| 
-| This is a combined patch; I have it broken out into a series locally,
-| and follows on from other consolidation work which I've been doing with
-| ARM clocksources.
-| 
-| This patch build-tests cleanly on ARM for NetWinder (one of the footbridge
-| platforms which uses an i8253.)
-| 
-| So, do we think moving this to drivers/clocksource in this way is a
-| good idea?  Any other comments?  If feedback is positive, I'll rebase
-| them onto mainline, add the necessary cc's, and send them out properly.
-
-To which I had this _single_ response:
-
-| Date: Mon, 9 May 2011 14:07:35 +0100
-| From: Ralf Baechle <ralf@linux-mips.org>
-| To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-| Cc: John Stultz <johnstul@us.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-|         Ingo Molnar <mingo@redhat.com>
-| 
-| I like this patch; it's been long overdue and and while atm the patch
-| does not seem to apply it seems to be mostly right.
-| 
-|   Ralf
-
-And "it doesn't seem to apply" is precisely what I expected with the patch
-because of the conflicts with _other_ work which was in progress, and as I
-was asking in the original message about the _idea_, that is perfectly
-acceptable.
-
-> How hard can it be for you to look up the dates of the events before you
-> accuse others of not listening?
-
-I think I've just proven above that it was Sunday, not Monday.
-
-> Then you committed/amdended it on Tuesday 7:20 GMT:
+> The _copy_to_user and _copy_from_user functions use following
+> check for address limit:
 > 
->  commit 3490f584b9ba5a0b6f63832fbc9c5ec72506697b
->  Author:     Russell King <rmk+kernel@arm.linux.org.uk>
->  AuthorDate: Sun May 8 18:55:19 2011 +0100
->  Commit:     Russell King <rmk+kernel@arm.linux.org.uk>
->  CommitDate: Tue May 10 08:20:54 2011 +0100
+> if (buf + size >= limit)
+> 	fail
+> 
+> while it should be:
+> 
+> if (buf + size > limit)
+> 	fail
+> 
+> That's because the size represents the number of bytes being
+> read/write from/to buf address AND including the buf address.
+> So the copy function will actually never touch the limit
+> address even if "buf + size == limit".
+> 
+> Following program fails to use the last page as buffer
+> due to the wrong limit check.
+> 
+> ---
+> #include <sys/mman.h>
+> #include <sys/socket.h>
+> #include <assert.h>
+> 
+> #define PAGE_SIZE       (4096)
+> #define LAST_PAGE       ((void*)(0x7fffffffe000))
+> 
+> int main()
+> {
+>         int fds[2], err;
+>         void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
+>                           MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+>         assert(ptr == LAST_PAGE);
+>         err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
+>         assert(err == 0);
+>         err = send(fds[0], ptr, PAGE_SIZE, 0);
+>         perror("send");
+>         assert(err == PAGE_SIZE);
+>         err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
+>         perror("recv");
+>         assert(err == PAGE_SIZE);
+>         return 0;
+> }
+> ---
+> 
+> Other place checking the addr limit is access_ok function,
+> which is working properly. There's just misleading comment
+> for the __range_not_ok macro.
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  arch/x86/include/asm/uaccess.h |    2 +-
+>  arch/x86/lib/copy_user_64.S    |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+> index abd3e0e..99f0ad7 100644
+> --- a/arch/x86/include/asm/uaccess.h
+> +++ b/arch/x86/include/asm/uaccess.h
+> @@ -42,7 +42,7 @@
+>   * Returns 0 if the range is valid, nonzero otherwise.
+>   *
+>   * This is equivalent to the following test:
+> - * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
+> + * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
+>   *
+>   * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
+>   */
+> diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
+> index 99e4826..a73397f 100644
+> --- a/arch/x86/lib/copy_user_64.S
+> +++ b/arch/x86/lib/copy_user_64.S
+> @@ -72,7 +72,7 @@ ENTRY(_copy_to_user)
+>  	addq %rdx,%rcx
+>  	jc bad_to_user
+>  	cmpq TI_addr_limit(%rax),%rcx
+> -	jae bad_to_user
+> +	ja bad_to_user
+>  	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
+>  	CFI_ENDPROC
+>  ENDPROC(_copy_to_user)
+> @@ -85,7 +85,7 @@ ENTRY(_copy_from_user)
+>  	addq %rdx,%rcx
+>  	jc bad_from_user
+>  	cmpq TI_addr_limit(%rax),%rcx
+> -	jae bad_from_user
+> +	ja bad_from_user
+>  	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
+>  	CFI_ENDPROC
+>  ENDPROC(_copy_from_user)
 
-Yes.  Committed on _Sunday_ before I sent out the _first_ message which
-I've included above.  Then tweaked and after Ralf's response, the series
-was then posted on _Monday_ in full.  Then John responded with his ack,
-which caused the amendment on _Tuesday_ morning.
+Hm, something tickles me about this area that we would reintroduce a security 
+hole, that we really wanted to treat the last page of user-space as some sort 
+of guard page but i cannot quite remember it why ...
 
-And then _36_ further hours passed before the branch was merged into
-for-next on _Wednesday_ _evening_.  So, Sunday evening to Wednesday
-evening.  Three times 24 is 72 hours, which is what I corrected you to.
+IIRC Linus wrote bits of this so i'm Cc:-ing him just in case he remembers.
 
-> which is a mere 18 hours after it was mailed to lkml - and then you pushed it 
-> out to linux-next some time after that, probably on the next day, Wednesday, 
-> right?
+Thanks,
 
-Are you _seriously_ trying to tell me that you have a problem with a commit
-dated 18 hours after being mailed out?  If so, you're being rediculous here.
-
-Obviously I shouldn't have added John's ack, which was sent during Monday
-nighttime to the commit so quickly, but instead waited a week before doing
-so.  Had I done that you wouldn't be complaining about "24 hours" or "18
-hours".
-
-> It does not matter one little bit that you'd have been 'ready to rebase' once 
-> more had some objection come in that short 2 days time window from Monday to 
-> Wednesday, or any of the dates after that.
-
-Well, stop making such a big deal about "24 hours" or "18 hours" then,
-but start realizing that the commit date is actually a total
-_irrelevance_ to the time that it appeared in linux-next.
-
-Your continual waving of that point, and reduction in time period, just
-shows that you're trying to make this a _political_ issue, not a technical
-or social one, which again is born out by the amount of people _you_ added
-to this thread.
-
-> What i'm saying for the fourth time is that what you did here is not a proper 
-> Git workflow: we only push bits out into permanent branches (and expose them to 
-> conflicts, etc.) once they are final, and we only do that after making sure 
-> that maintainers who maintain the trees of the affected files are fine with it 
-> and make sure that there are no conflicts.
-
-Well, the fact that I messed up the function name was unfortunate and
-should've been caught locally, which I appologize for.  I would have
-thought that much was obvious, but since you seem to believe that I
-_intentionally_ broke the x86 build.
-
-Anyway, the issue has been resolved _properly_ over the weekend, off-list,
-between Thomas and myself, in a way that results in no conflicts being
-exposed in any tree.
+	Ingo
