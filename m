@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab1EPXDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 19:03:22 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:35006 "EHLO slimlogic.co.uk"
+	id S1756395Ab1EPXDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:03:35 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:35015 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755745Ab1EPXDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 19:03:21 -0400
+	id S1755754Ab1EPXDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 19:03:33 -0400
 MIME-Version: 1.0
-Date: Mon, 16 May 2011 18:03:19 -0500
-Message-ID: <BANLkTikWt+2x1==AemSy13Y1kzBPna05gw@mail.gmail.com>
-Subject: [PATCHv4 3/4] tps65912: gpio: add gpio driver
+Date: Mon, 16 May 2011 18:03:30 -0500
+Message-ID: <BANLkTi=u9aE8iw+zw4r1UgRsOmz5yzZgRg@mail.gmail.com>
+Subject: [PATCHv4 4/4] tps65912: add regulator driver
 From: Margarita Olaya <magi@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        grant.likely@secretlab.ca
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TPS65912 has five GPIOs that can be configured for different
-purposes.
+The tps65912 consist of 4 DCDCs and 10 LDOs. The output voltages can be
+configured by the SPI or I2C interface, they are meant to supply power
+to the main processor and other components.
 
 Signed-off-by: Margarita Olaya Cabrera <magi@slimlogic.co.uk>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/gpio/Kconfig         |    6 ++
- drivers/gpio/Makefile        |    1 +
- drivers/gpio/tps65912-gpio.c |  159 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65912.h |    1 +
- 4 files changed, 167 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/tps65912-gpio.c
+ drivers/regulator/Kconfig              |    6 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps65912-regulator.c |  800 ++++++++++++++++++++++++++++++++
+ 3 files changed, 807 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/tps65912-regulator.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index d3b2953..7d79b7d 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -247,6 +247,12 @@ config GPIO_TWL4030
- 	  Say yes here to access the GPIO signals of various multi-function
- 	  power management chips from Texas Instruments.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index b9f29e0..0d26db6 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -248,6 +248,12 @@ config REGULATOR_TPS6507X
+ 	  three step-down converters and two general-purpose LDO voltage regulators.
+ 	  It supports TI's software based Class-2 SmartReflex implementation.
 
-+config GPIO_TPS65912
-+	tristate "TI TPS65912 GPIO"
++config REGULATOR_TPS65912
++	tristate "TI TPS65912 Power regulator"
 +	depends on (MFD_TPS65912_I2C || MFD_TPS65912_SPI)
 +	help
-+	  This driver supports TPS65912 gpio chip
++	    This driver supports TPS65912 voltage regulator chip.
 +
- config GPIO_WM831X
- 	tristate "WM831x GPIOs"
- 	depends on MFD_WM831X
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index becef59..f03ccc4 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -27,6 +27,7 @@ obj-$(CONFIG_GPIO_STMPE)	+= stmpe-gpio.o
- obj-$(CONFIG_GPIO_TC3589X)	+= tc3589x-gpio.o
- obj-$(CONFIG_GPIO_TIMBERDALE)	+= timbgpio.o
- obj-$(CONFIG_GPIO_TWL4030)	+= twl4030-gpio.o
-+obj-$(CONFIG_GPIO_TPS65912)	+= tps65912-gpio.o
- obj-$(CONFIG_GPIO_UCB1400)	+= ucb1400_gpio.o
- obj-$(CONFIG_GPIO_XILINX)	+= xilinx_gpio.o
- obj-$(CONFIG_GPIO_CS5535)	+= cs5535-gpio.o
-diff --git a/drivers/gpio/tps65912-gpio.c b/drivers/gpio/tps65912-gpio.c
+ config REGULATOR_88PM8607
+ 	bool "Marvell 88PM8607 Power regulators"
+ 	depends on MFD_88PM860X=y
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index d72a427..acb2bcc 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -38,6 +38,7 @@ obj-$(CONFIG_REGULATOR_TPS6105X) += tps6105x-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS6507X) += tps6507x-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS6524X) += tps6524x-regulator.o
++obj-$(CONFIG_REGULATOR_TPS65912) += tps65912-regulator.o
+ obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
+diff --git a/drivers/regulator/tps65912-regulator.c
+b/drivers/regulator/tps65912-regulator.c
 new file mode 100644
-index 0000000..2be15a2
+index 0000000..dfe47a0
 --- /dev/null
-+++ b/drivers/gpio/tps65912-gpio.c
-@@ -0,0 +1,159 @@
++++ b/drivers/regulator/tps65912-regulator.c
+@@ -0,0 +1,800 @@
 +/*
-+ * tps65912-gpio.c  --	TI TPS6591x
++ * tps65912.c  --  TI tps65912
 + *
 + * Copyright 2011 Texas Instruments Inc.
 + *
-+ * Author: Margarita Olaya <magi@slimlogic.co.uk>
++ * Author: Margarita Olaya Cabrera <magi@slimlogic.co.uk>
 + *
 + *  This program is free software; you can redistribute it and/or modify it
 + *  under  the terms of the GNU General  Public License as published by the
@@ -84,159 +85,788 @@ index 0000000..2be15a2
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/core.h>
++#include <linux/init.h>
++#include <linux/err.h>
 +#include <linux/platform_device.h>
-+#include <linux/seq_file.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/delay.h>
 +#include <linux/slab.h>
++#include <linux/gpio.h>
 +#include <linux/mfd/tps65912.h>
 +
-+struct tps65912_gpio_data {
-+	struct tps65912 *tps65912;
-+	struct gpio_chip gpio_chip;
++/* DCDC's */
++#define TPS65912_REG_DCDC1	0
++#define TPS65912_REG_DCDC2	1
++#define TPS65912_REG_DCDC3	2
++#define TPS65912_REG_DCDC4	3
++
++/* LDOs */
++#define TPS65912_REG_LDO1	4
++#define TPS65912_REG_LDO2	5
++#define TPS65912_REG_LDO3	6
++#define TPS65912_REG_LDO4	7
++#define TPS65912_REG_LDO5	8
++#define TPS65912_REG_LDO6	9
++#define TPS65912_REG_LDO7	10
++#define TPS65912_REG_LDO8	11
++#define TPS65912_REG_LDO9	12
++#define TPS65912_REG_LDO10	13
++
++#define TPS65912_MAX_REG_ID	TPS65912_REG_LDO_10
++
++/* Number of step-down converters available */
++#define TPS65912_NUM_DCDC	4
++
++/* Number of LDO voltage regulators  available */
++#define TPS65912_NUM_LDO	10
++
++/* Number of total regulators available */
++#define TPS65912_NUM_REGULATOR		(TPS65912_NUM_DCDC + TPS65912_NUM_LDO)
++
++#define TPS65912_REG_ENABLED	0x80
++#define OP_SELREG_MASK		0x40
++#define OP_SELREG_SHIFT		6
++
++struct tps_info {
++	const char *name;
 +};
 +
-+static int tps65912_gpio_get(struct gpio_chip *gc, unsigned offset)
++static struct tps_info tps65912_regs[] = {
++	{
++		.name = "DCDC1",
++	},
++	{
++		.name = "DCDC2",
++	},
++	{
++		.name = "DCDC3",
++	},
++	{
++		.name = "DCDC4",
++	},
++	{
++		.name = "LDO1",
++	},
++	{
++		.name = "LDO2",
++	},
++	{
++		.name = "LDO3",
++	},
++	{
++		.name = "LDO4",
++	},
++	{
++		.name = "LDO5",
++	},
++	{
++		.name = "LDO6",
++	},
++	{
++		.name = "LDO7",
++	},
++	{
++		.name = "LDO8",
++	},
++	{
++		.name = "LDO9",
++	},
++	{
++		.name = "LDO10",
++	},
++};
++
++struct tps65912_reg {
++	struct regulator_desc desc[TPS65912_NUM_REGULATOR];
++	struct tps65912 *mfd;
++	struct regulator_dev *rdev[TPS65912_NUM_REGULATOR];
++	struct tps_info *info[TPS65912_NUM_REGULATOR];
++	/* for read/write access */
++	struct mutex io_lock;
++	int mode;
++	int (*get_ctrl_reg)(int);
++	int dcdc1_range;
++	int dcdc2_range;
++	int dcdc3_range;
++	int dcdc4_range;
++	int pwm_mode_reg;
++	int eco_reg;
++};
++
++static int tps65912_get_range(struct tps65912_reg *pmic, int id)
 +{
-+	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
-+	int val;
++	struct tps65912 *mfd = pmic->mfd;
 +
-+	val = tps65912_reg_read(tps65912, TPS65912_GPIO1 + offset);
++	if (id > TPS65912_REG_DCDC4)
++		return 0;
 +
-+	if (val & GPIO_STS_MASK)
-+		return 1;
++	switch (id) {
++	case TPS65912_REG_DCDC1:
++		pmic->dcdc1_range = tps65912_reg_read(mfd,
++							TPS65912_DCDC1_LIMIT);
++		if (pmic->dcdc1_range < 0)
++			return pmic->dcdc1_range;
++		pmic->dcdc1_range = (pmic->dcdc1_range &
++			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
++		return pmic->dcdc1_range;
++	case TPS65912_REG_DCDC2:
++		pmic->dcdc2_range = tps65912_reg_read(mfd,
++							TPS65912_DCDC2_LIMIT);
++		if (pmic->dcdc2_range < 0)
++			return pmic->dcdc2_range;
++		pmic->dcdc2_range = (pmic->dcdc2_range &
++			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
++		return pmic->dcdc2_range;
++	case TPS65912_REG_DCDC3:
++		pmic->dcdc3_range = tps65912_reg_read(mfd,
++							TPS65912_DCDC3_LIMIT);
++		if (pmic->dcdc3_range < 0)
++			return pmic->dcdc3_range;
++		pmic->dcdc3_range = (pmic->dcdc3_range &
++			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
++		return pmic->dcdc3_range;
++	case TPS65912_REG_DCDC4:
++		pmic->dcdc4_range = tps65912_reg_read(mfd,
++							TPS65912_DCDC4_LIMIT);
++		if (pmic->dcdc4_range < 0)
++			return pmic->dcdc4_range;
++		pmic->dcdc4_range = (pmic->dcdc4_range &
++			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
++		return pmic->dcdc4_range;
++	default:
++		return 0;
++	}
++}
++
++static unsigned long tps65912_vsel_to_uv_range0(u8 vsel)
++{
++	unsigned long uv;
++
++	uv = ((vsel * 12500) + 500000);
++	return uv;
++}
++
++static unsigned long tps65912_vsel_to_uv_range1(u8 vsel)
++{
++	unsigned long uv;
++
++	 uv = ((vsel * 12500) + 700000);
++	return uv;
++}
++
++static unsigned long tps65912_vsel_to_uv_range2(u8 vsel)
++{
++	unsigned long uv;
++
++	uv = ((vsel * 25000) + 500000);
++	return uv;
++}
++
++static unsigned long tps65912_vsel_to_uv_range3(u8 vsel)
++{
++	unsigned long uv;
++
++	if (vsel == 0x3f)
++		uv = 3800000;
++	else
++		uv = ((vsel * 50000) + 500000);
++
++	return uv;
++}
++
++static unsigned long tps65912_vsel_to_uv_ldo(u8 vsel)
++{
++	unsigned long uv = 0;
++
++	if (vsel <= 32)
++		uv = ((vsel * 25000) + 800000);
++	else if (vsel > 32 && vsel <= 60)
++		uv = (((vsel - 32) * 50000) + 1600000);
++	else if (vsel > 60)
++		uv = (((vsel - 60) * 100000) + 3000000);
++	
++	return uv;
++}
++
++static int tps65912_get_ctrl_register(int id)
++{
++	switch (id) {
++	case TPS65912_REG_DCDC1:
++		return TPS65912_DCDC1_AVS;
++	case TPS65912_REG_DCDC2:
++		return TPS65912_DCDC2_AVS;
++	case TPS65912_REG_DCDC3:
++		return TPS65912_DCDC3_AVS;
++	case TPS65912_REG_DCDC4:
++		return TPS65912_DCDC4_AVS;
++	case TPS65912_REG_LDO1:
++		return TPS65912_LDO1_AVS;
++	case TPS65912_REG_LDO2:
++		return TPS65912_LDO2_AVS;
++	case TPS65912_REG_LDO3:
++		return TPS65912_LDO3_AVS;
++	case TPS65912_REG_LDO4:
++		return TPS65912_LDO4_AVS;
++	case TPS65912_REG_LDO5:
++		return TPS65912_LDO5;
++	case TPS65912_REG_LDO6:
++		return TPS65912_LDO6;
++	case TPS65912_REG_LDO7:
++		return TPS65912_LDO7;
++	case TPS65912_REG_LDO8:
++		return TPS65912_LDO8;
++	case TPS65912_REG_LDO9:
++		return TPS65912_LDO9;
++	case TPS65912_REG_LDO10:
++		return TPS65912_LDO10;
++	default:
++		return -EINVAL;
++	}
++}
++
++static int tps65912_get_dcdc_sel_register(struct tps65912_reg *pmic, int id)
++{
++	struct tps65912 *mfd = pmic->mfd;
++	int opvsel = 0, sr = 0;
++	u8 reg = 0;
++
++	if (id < TPS65912_REG_DCDC1 || id > TPS65912_REG_DCDC4)
++		return -EINVAL;
++
++	switch (id) {
++	case TPS65912_REG_DCDC1:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC1_OP);
++		sr = ((opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT);
++		if (sr)
++			reg = TPS65912_DCDC1_AVS;
++		else
++			reg = TPS65912_DCDC1_OP;
++		break;
++	case TPS65912_REG_DCDC2:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC2_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_DCDC2_AVS;
++		else
++			reg = TPS65912_DCDC2_OP;
++		break;
++	case TPS65912_REG_DCDC3:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC3_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_DCDC3_AVS;
++		else
++			reg = TPS65912_DCDC3_OP;
++		break;
++	case TPS65912_REG_DCDC4:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC4_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_DCDC4_AVS;
++		else
++			reg = TPS65912_DCDC4_OP;
++		break;
++	}
++	return reg;
++}
++
++static int tps65912_get_ldo_sel_register(struct tps65912_reg *pmic, int id)
++{
++	struct tps65912 *mfd = pmic->mfd;
++	int opvsel = 0, sr = 0;
++	u8 reg = 0;
++
++	if (id < TPS65912_REG_LDO1 || id > TPS65912_REG_LDO10)
++		return -EINVAL;
++
++	switch (id) {
++	case TPS65912_REG_LDO1:
++		opvsel = tps65912_reg_read(mfd, TPS65912_LDO1_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_LDO1_AVS;
++		else
++			reg = TPS65912_LDO1_OP;
++		break;
++	case TPS65912_REG_LDO2:
++		opvsel = tps65912_reg_read(mfd, TPS65912_LDO2_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_LDO2_AVS;
++		else
++			reg = TPS65912_LDO2_OP;
++		break;
++	case TPS65912_REG_LDO3:
++		opvsel = tps65912_reg_read(mfd, TPS65912_LDO3_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_LDO3_AVS;
++		else
++			reg = TPS65912_LDO3_OP;
++		break;
++	case TPS65912_REG_LDO4:
++		opvsel = tps65912_reg_read(mfd, TPS65912_LDO4_OP);
++		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++		if (sr)
++			reg = TPS65912_LDO4_AVS;
++		else
++			reg = TPS65912_LDO4_OP;
++		break;
++	case TPS65912_REG_LDO5:
++		reg = TPS65912_LDO5;
++		break;
++	case TPS65912_REG_LDO6:
++		reg = TPS65912_LDO6;
++		break;
++	case TPS65912_REG_LDO7:
++		reg = TPS65912_LDO7;
++		break;
++	case TPS65912_REG_LDO8:
++		reg = TPS65912_LDO8;
++		break;
++	case TPS65912_REG_LDO9:
++		reg = TPS65912_LDO9;
++		break;
++	case TPS65912_REG_LDO10:
++		reg = TPS65912_LDO10;
++		break;
++	}
++
++	return reg;
++}
++
++static int tps65912_get_mode_regiters(struct tps65912_reg *pmic, int id)
++{
++	switch (id) {
++	case TPS65912_REG_DCDC1:
++		pmic->pwm_mode_reg = TPS65912_DCDC1_CTRL;
++		pmic->eco_reg = TPS65912_DCDC1_AVS;
++		break;
++	case TPS65912_REG_DCDC2:
++		pmic->pwm_mode_reg = TPS65912_DCDC2_CTRL;
++		pmic->eco_reg = TPS65912_DCDC2_AVS;
++		break;
++	case TPS65912_REG_DCDC3:
++		pmic->pwm_mode_reg = TPS65912_DCDC3_CTRL;
++		pmic->eco_reg = TPS65912_DCDC3_AVS;
++		break;
++	case TPS65912_REG_DCDC4:
++		pmic->pwm_mode_reg = TPS65912_DCDC4_CTRL;
++		pmic->eco_reg = TPS65912_DCDC4_AVS;
++		break;
++	default:
++		return -EINVAL;
++	}
 +
 +	return 0;
 +}
 +
-+static void tps65912_gpio_set(struct gpio_chip *gc, unsigned offset,
-+			      int value)
++static int tps65912_reg_is_enabled(struct regulator_dev *dev)
 +{
-+	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int reg, value, id = rdev_get_id(dev);
 +
-+	if (value)
-+		tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
-+							GPIO_SET_MASK);
-+	else
-+		tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
-+								GPIO_SET_MASK);
++	if (id < TPS65912_REG_DCDC1 || id > TPS65912_REG_LDO10)
++		return -EINVAL;
++
++	reg = pmic->get_ctrl_reg(id);
++	if (reg < 0)
++		return reg;
++
++	value = tps65912_reg_read(mfd, reg);
++	if (value < 0)
++		return value;
++
++	return value & TPS65912_REG_ENABLED;
 +}
 +
-+static int tps65912_gpio_output(struct gpio_chip *gc, unsigned offset,
-+				int value)
++static int tps65912_reg_enable(struct regulator_dev *dev)
 +{
-+	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int id = rdev_get_id(dev);
++	u8 reg;
 +
-+	/* Set the initial value */
-+	tps65912_gpio_set(gc, offset, value);
++	if (id < TPS65912_REG_DCDC1 || id > TPS65912_REG_LDO10)
++		return -EINVAL;
 +
-+	return tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
-+								GPIO_CFG_MASK);
++	reg = pmic->get_ctrl_reg(id);
++	if (reg < 0)
++		return reg;
++
++	return tps65912_set_bits(mfd, reg, TPS65912_REG_ENABLED);
 +}
 +
-+static int tps65912_gpio_input(struct gpio_chip *gc, unsigned offset)
++static int tps65912_reg_disable(struct regulator_dev *dev)
 +{
-+	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int id = rdev_get_id(dev), reg;
 +
-+	return tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
-+								GPIO_CFG_MASK);
++	reg = pmic->get_ctrl_reg(id);
++	if (reg < 0)
++		return reg;
 +
++	return tps65912_clear_bits(mfd, reg, TPS65912_REG_ENABLED);
 +}
 +
-+static struct gpio_chip template_chip = {
-+	.label			= "tps65912",
-+	.owner			= THIS_MODULE,
-+	.direction_input	= tps65912_gpio_input,
-+	.direction_output	= tps65912_gpio_output,
-+	.get			= tps65912_gpio_get,
-+	.set			= tps65912_gpio_set,
-+	.can_sleep		= 1,
-+};
-+
-+static int __devinit tps65912_gpio_probe(struct platform_device *pdev)
++static int tps65912_set_mode(struct regulator_dev *dev, unsigned int mode)
 +{
-+	struct tps65912 *tps65912 = dev_get_drvdata(pdev->dev.parent);
-+	struct tps65912_board *pdata = tps65912->dev->platform_data;
-+	struct tps65912_gpio_data *tps65912_gpio;
-+	int ret;
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int pwm_mode, eco, id = rdev_get_id(dev);
 +
-+	tps65912_gpio = kzalloc(sizeof(*tps65912_gpio), GFP_KERNEL);
-+	if (tps65912_gpio == NULL)
-+		return -ENOMEM;
++	tps65912_get_mode_regiters(pmic, id);
 +
-+	tps65912_gpio->tps65912 = tps65912;
-+	tps65912_gpio->gpio_chip = template_chip;
-+	tps65912_gpio->gpio_chip.ngpio = 5;
-+	tps65912_gpio->gpio_chip.dev = &pdev->dev;
-+	if (pdata && pdata->gpio_base)
-+		tps65912_gpio->gpio_chip.base = pdata->gpio_base;
-+	else
-+		tps65912_gpio->gpio_chip.base = -1;
++	pwm_mode = tps65912_reg_read(mfd, pmic->pwm_mode_reg);
++	eco = tps65912_reg_read(mfd, pmic->eco_reg);
 +
-+	ret = gpiochip_add(&tps65912_gpio->gpio_chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to register gpiochip, %d\n", ret);
-+		goto err;
++	pwm_mode &= DCDCCTRL_DCDC_MODE_MASK;
++	eco &= DCDC_AVS_ECO_MASK;
++
++	switch (mode) {
++	case REGULATOR_MODE_FAST:
++		/* Verify if mode alredy set */
++		if (pwm_mode && !eco)
++			break;
++		tps65912_set_bits(mfd, pmic->pwm_mode_reg, DCDCCTRL_DCDC_MODE_MASK);
++		tps65912_clear_bits(mfd, pmic->eco_reg, DCDC_AVS_ECO_MASK);
++		break;
++	case REGULATOR_MODE_NORMAL:
++	case REGULATOR_MODE_IDLE:
++		if (!pwm_mode && !eco)
++			break;
++		tps65912_clear_bits(mfd, pmic->pwm_mode_reg, DCDCCTRL_DCDC_MODE_MASK);
++		tps65912_clear_bits(mfd, pmic->eco_reg, DCDC_AVS_ECO_MASK);
++		break;
++	case REGULATOR_MODE_STANDBY:
++		if (!pwm_mode && eco)
++			break;
++		tps65912_clear_bits(mfd, pmic->pwm_mode_reg, DCDCCTRL_DCDC_MODE_MASK);
++		tps65912_set_bits(mfd, pmic->eco_reg, DCDC_AVS_ECO_MASK);
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	platform_set_drvdata(pdev, tps65912_gpio);
-+
-+	return ret;
-+
-+err:
-+	kfree(tps65912_gpio);
-+	return ret;
++	return 0;
 +}
 +
-+static int __devexit tps65912_gpio_remove(struct platform_device *pdev)
++static unsigned int tps65912_get_mode(struct regulator_dev *dev)
 +{
-+	struct tps65912_gpio_data  *tps65912_gpio = platform_get_drvdata(pdev);
-+	int ret;
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int pwm_mode, eco, mode = 0, id = rdev_get_id(dev);
 +
-+	ret = gpiochip_remove(&tps65912_gpio->gpio_chip);
-+	if (ret == 0)
-+		kfree(tps65912_gpio);
++	tps65912_get_mode_regiters(pmic, id);
 +
-+	return ret;
++	pwm_mode = tps65912_reg_read(mfd, pmic->pwm_mode_reg);
++	eco = tps65912_reg_read(mfd, pmic->eco_reg);
++
++	pwm_mode &= DCDCCTRL_DCDC_MODE_MASK;
++	eco &= DCDC_AVS_ECO_MASK;
++
++	if (pwm_mode && !eco)
++		mode = REGULATOR_MODE_FAST;
++	else if (!pwm_mode && !eco)
++		mode = REGULATOR_MODE_NORMAL;
++	else if (!pwm_mode && eco)
++		mode = REGULATOR_MODE_STANDBY;
++
++	return mode;
 +}
 +
-+static struct platform_driver tps65912_gpio_driver = {
-+	.driver = {
-+		.name = "tps65912-gpio",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = tps65912_gpio_probe,
-+	.remove = __devexit_p(tps65912_gpio_remove),
++static int tps65912_get_voltage_dcdc(struct regulator_dev *dev)
++{
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int id = rdev_get_id(dev), voltage = 0, range;
++	int opvsel = 0, avsel = 0, sr, vsel;
++
++	switch (id) {
++	case TPS65912_REG_DCDC1:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC1_OP);
++		avsel = tps65912_reg_read(mfd, TPS65912_DCDC1_AVS);
++		range = pmic->dcdc1_range;
++		break;
++	case TPS65912_REG_DCDC2:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC2_OP);
++		avsel = tps65912_reg_read(mfd, TPS65912_DCDC2_AVS);
++		range = pmic->dcdc2_range;
++		break;
++	case TPS65912_REG_DCDC3:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC3_OP);
++		avsel = tps65912_reg_read(mfd, TPS65912_DCDC3_AVS);
++		range = pmic->dcdc3_range;
++		break;
++	case TPS65912_REG_DCDC4:
++		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC4_OP);
++		avsel = tps65912_reg_read(mfd, TPS65912_DCDC4_AVS);
++		range = pmic->dcdc4_range;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
++	if (sr)
++		vsel = avsel;
++	else
++		vsel = opvsel;
++	vsel &= 0x3F;
++
++	switch (range) {
++	case 0:
++		/* 0.5 - 1.2875V in 12.5mV steps */
++		voltage = tps65912_vsel_to_uv_range0(vsel);
++		break;
++	case 1:
++		/* 0.7 - 1.4875V in 12.5mV steps */
++		voltage = tps65912_vsel_to_uv_range1(vsel);
++		break;
++	case 2:
++		/* 0.5 - 2.075V in 25mV steps */
++		voltage = tps65912_vsel_to_uv_range2(vsel);
++		break;
++	case 3:
++		/* 0.5 - 3.8V in 50mV steps */
++		voltage = tps65912_vsel_to_uv_range3(vsel);
++		break;
++	}
++	return voltage;
++}
++
++static int tps65912_set_voltage_dcdc(struct regulator_dev *dev,
++						unsigned selector)
++{
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int id = rdev_get_id(dev);
++	int value;
++	u8 reg;
++
++	reg = tps65912_get_dcdc_sel_register(pmic, id);
++	value = tps65912_reg_read(mfd, reg);
++	value &= 0xC0;
++	return tps65912_reg_write(mfd, reg, selector | value);
++}
++
++static int tps65912_get_voltage_ldo(struct regulator_dev *dev)
++{
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int id = rdev_get_id(dev);
++	int vsel = 0;
++	u8 reg;
++
++	reg = tps65912_get_ldo_sel_register(pmic, id);
++	vsel = tps65912_reg_read(mfd, reg);
++	vsel &= 0x3F;
++
++	return tps65912_vsel_to_uv_ldo(vsel);
++}
++
++static int tps65912_set_voltage_ldo(struct regulator_dev *dev,
++						unsigned selector)
++{
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	struct tps65912 *mfd = pmic->mfd;
++	int id = rdev_get_id(dev), reg, value;
++
++	reg = tps65912_get_ldo_sel_register(pmic, id);
++	value = tps65912_reg_read(mfd, reg);
++	value &= 0xC0;
++	return tps65912_reg_write(mfd, reg, selector | value);
++}
++
++static int tps65912_list_voltage_dcdc(struct regulator_dev *dev,
++					unsigned selector)
++{
++	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
++	int range, voltage = 0, id = rdev_get_id(dev);
++
++	switch (id) {
++	case TPS65912_REG_DCDC1:
++		range = pmic->dcdc1_range;
++		break;
++	case TPS65912_REG_DCDC2:
++		range = pmic->dcdc2_range;
++		break;
++	case TPS65912_REG_DCDC3:
++		range = pmic->dcdc3_range;
++		break;
++	case TPS65912_REG_DCDC4:
++		range = pmic->dcdc4_range;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	switch (range) {
++	case 0:
++		/* 0.5 - 1.2875V in 12.5mV steps */
++		voltage = tps65912_vsel_to_uv_range0(selector);
++		break;
++	case 1:
++		/* 0.7 - 1.4875V in 12.5mV steps */
++		voltage = tps65912_vsel_to_uv_range1(selector);
++		break;
++	case 2:
++		/* 0.5 - 2.075V in 25mV steps */
++		voltage = tps65912_vsel_to_uv_range2(selector);
++		break;
++	case 3:
++		/* 0.5 - 3.8V in 50mV steps */
++		voltage = tps65912_vsel_to_uv_range3(selector);
++		break;
++	}
++	return voltage;
++}
++
++static int tps65912_list_voltage_ldo(struct regulator_dev *dev,
++					unsigned selector)
++{
++	int ldo = rdev_get_id(dev);
++
++	if (ldo < TPS65912_REG_LDO1 || ldo > TPS65912_REG_LDO10)
++		return -EINVAL;
++
++	return tps65912_vsel_to_uv_ldo(selector);
++}
++
++/* Operations permitted on DCDCx */
++static struct regulator_ops tps65912_ops_dcdc = {
++	.is_enabled = tps65912_reg_is_enabled,
++	.enable = tps65912_reg_enable,
++	.disable = tps65912_reg_disable,
++	.set_mode = tps65912_set_mode,
++	.get_mode = tps65912_get_mode,
++	.get_voltage = tps65912_get_voltage_dcdc,
++	.set_voltage_sel = tps65912_set_voltage_dcdc,
++	.list_voltage = tps65912_list_voltage_dcdc,
 +};
 +
-+static int __init tps65912_gpio_init(void)
-+{
-+	return platform_driver_register(&tps65912_gpio_driver);
-+}
-+subsys_initcall(tps65912_gpio_init);
++/* Operations permitted on LDOx */
++static struct regulator_ops tps65912_ops_ldo = {
++	.is_enabled = tps65912_reg_is_enabled,
++	.enable = tps65912_reg_enable,
++	.disable = tps65912_reg_disable,
++	.get_voltage = tps65912_get_voltage_ldo,
++	.set_voltage_sel = tps65912_set_voltage_ldo,
++	.list_voltage = tps65912_list_voltage_ldo,
++};
 +
-+static void __exit tps65912_gpio_exit(void)
++static __devinit int tps65912_probe(struct platform_device *pdev)
 +{
-+	platform_driver_unregister(&tps65912_gpio_driver);
++	struct tps65912 *tps65912 = dev_get_drvdata(pdev->dev.parent);
++	struct tps_info *info;
++	struct regulator_init_data *reg_data;
++	struct regulator_dev *rdev;
++	struct tps65912_reg *pmic;
++	struct tps65912_board *pmic_plat_data;
++	int i, err;
++
++	pmic_plat_data = dev_get_platdata(tps65912->dev);
++	if (!pmic_plat_data)
++		return -EINVAL;
++
++	reg_data = pmic_plat_data->tps65912_pmic_init_data;
++
++	pmic = kzalloc(sizeof(*pmic), GFP_KERNEL);
++	if (!pmic)
++		return -ENOMEM;
++
++	mutex_init(&pmic->io_lock);
++	pmic->mfd = tps65912;
++	platform_set_drvdata(pdev, pmic);
++
++	pmic->get_ctrl_reg = &tps65912_get_ctrl_register;
++	info = tps65912_regs;
++
++	for (i = 0; i < TPS65912_NUM_REGULATOR; i++, info++, reg_data++) {
++		int range = 0;
++		/* Register the regulators */
++		pmic->info[i] = info;
++
++		pmic->desc[i].name = info->name;
++		pmic->desc[i].id = i;
++		pmic->desc[i].n_voltages = 64;
++		pmic->desc[i].ops = (i > TPS65912_REG_DCDC4 ?
++			&tps65912_ops_ldo : &tps65912_ops_dcdc);
++		pmic->desc[i].type = REGULATOR_VOLTAGE;
++		pmic->desc[i].owner = THIS_MODULE;
++		range = tps65912_get_range(pmic, i);
++		rdev = regulator_register(&pmic->desc[i],
++					tps65912->dev, reg_data, pmic);
++		if (IS_ERR(rdev)) {
++			dev_err(tps65912->dev,
++				"failed to register %s regulator\n",
++				pdev->name);
++			err = PTR_ERR(rdev);
++			goto err;
++		}
++
++		/* Save regulator for cleanup */
++		pmic->rdev[i] = rdev;
++	}
++	return 0;
++
++err:
++	while (--i >= 0)
++		regulator_unregister(pmic->rdev[i]);
++
++	kfree(pmic);
++	return err;
 +}
-+module_exit(tps65912_gpio_exit);
++
++static int __devexit tps65912_remove(struct platform_device *pdev)
++{
++	struct tps65912_reg *tps65912_reg = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < TPS65912_NUM_REGULATOR; i++)
++		regulator_unregister(tps65912_reg->rdev[i]);
++
++	kfree(tps65912_reg);
++	return 0;
++}
++
++static struct platform_driver tps65912_driver = {
++	.driver = {
++		.name = "tps65912-pmic",
++		.owner = THIS_MODULE,
++	},
++	.probe = tps65912_probe,
++	.remove = __devexit_p(tps65912_remove),
++};
++
++/**
++ * tps65912_init
++ *
++ * Module init function
++ */
++static int __init tps65912_init(void)
++{
++	return platform_driver_register(&tps65912_driver);
++}
++subsys_initcall(tps65912_init);
++
++/**
++ * tps65912_cleanup
++ *
++ * Module exit function
++ */
++static void __exit tps65912_cleanup(void)
++{
++	platform_driver_unregister(&tps65912_driver);
++}
++module_exit(tps65912_cleanup);
 +
 +MODULE_AUTHOR("Margarita Olaya Cabrera <magi@slimlogic.co.uk>");
-+MODULE_DESCRIPTION("GPIO interface for TPS65912 PMICs");
++MODULE_DESCRIPTION("TPS65912 voltage regulator driver");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:tps65912-gpio");
-diff --git a/include/linux/mfd/tps65912.h b/include/linux/mfd/tps65912.h
-index be60fb2..aaceab4 100644
---- a/include/linux/mfd/tps65912.h
-+++ b/include/linux/mfd/tps65912.h
-@@ -275,6 +275,7 @@ struct tps65912_board {
- 	int is_dcdc4_avs;
- 	int irq;
- 	int irq_base;
-+	int gpio_base;
- 	struct regulator_init_data *tps65912_pmic_init_data;
- };
-
++MODULE_ALIAS("platform:tps65912-pmic");
 -- 
 1.7.0.4
