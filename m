@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab1EPMNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:13:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab1EPMM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:12:59 -0400
-Date: Mon, 16 May 2011 14:11:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
+	id S1753809Ab1EPMRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:17:30 -0400
+Received: from vps.jankratochvil.net ([46.28.109.124]:33147 "EHLO
+	host1.jankratochvil.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752295Ab1EPMR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 08:17:29 -0400
+Date: Mon, 16 May 2011 14:17:11 +0200
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH UPDATED 8/9] ptrace: move JOBCTL_TRAPPING wait to
-	wait(2) and ptrace_check_attach()
-Message-ID: <20110516121142.GC4898@redhat.com>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org> <1305301580-9924-9-git-send-email-tj@kernel.org> <20110514142230.GD23665@htj.dyndns.org>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re: [PATCH
+ 11/11] ptrace: implement group stop notification for ptracer]
+Message-ID: <20110516121711.GC10469@host1.jankratochvil.net>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-12-git-send-email-tj@kernel.org>
+ <20110515140232.GB31855@host1.jankratochvil.net>
+ <20110515142827.GF23665@htj.dyndns.org>
+ <20110515171748.GA25216@host1.jankratochvil.net>
+ <20110515172811.GM23665@htj.dyndns.org>
+ <20110515200654.GA32659@host1.jankratochvil.net>
+ <20110516084350.GO23665@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110514142230.GD23665@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110516084350.GO23665@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14, Tejun Heo wrote:
->
-> @@ -1409,15 +1409,29 @@ static int wait_task_stopped(struct wait
->  	if (!ptrace && !(wo->wo_flags & WUNTRACED))
->  		return 0;
->
-> -	if (!task_stopped_code(p, ptrace))
-> +	/*
-> +	 * For ptrace waits, we can't reliably check whether wait condition
-> +	 * exists without grabbing siglock due to JOBCTL_TRAPPING
-> +	 * transitions.  A task might be temporarily in TASK_RUNNING while
-> +	 * trapping which should be transparent to the ptracer.
-> +	 *
-> +	 * Note that we can avoid unconditionally grabbing siglock by
-> +	 * wrapping TRAPPING test with two rmb's; however, let's stick with
-> +	 * simpler implementation for now.
-> +	 */
-> +	if (!ptrace && !(p->signal->flags & SIGNAL_STOP_STOPPED))
->  		return 0;
->
->  	exit_code = 0;
->  	spin_lock_irq(&p->sighand->siglock);
->
->  	p_code = task_stopped_code(p, ptrace);
-> -	if (unlikely(!p_code))
-> +	if (unlikely(!p_code)) {
-> +		/* if trapping, wait for it and restart the whole process */
-> +		if (ptrace && ptrace_wait_trapping(p))
-> +			return restart_syscall();
+Hi Tejun,
 
-Hmm. I didn't even know we have restart_syscall()... It is a bit fragile,
-it assumes recalc_sigpending() is not possible during return from syscall.
-In particular this means recalc_sigpending() must not be called in irq.
-OK, this seems to be true.
+On Mon, 16 May 2011 10:43:50 +0200, Tejun Heo wrote:
+> There's distinction between "broken" and "ugly".  If it's ugly but
+> functional, you don't need to "fix" it.
 
-Anyway, restart_syscall() is not right for do_wait(), especially with the
-next patch. If the caller was woken by the real signal which has a handler,
-we should not restart without SA_RESTART.
+The final goal is the user experience (such as the users of GDB), nothing else
+matters.  If it is so "ugly" the userland developers fail to use it the
+project as a whole still broken.
 
 
-It is very hard to review this series. Without the further changes, it is
-not clear why do we need these preparations. IIUC, ptrace_wait_trapping()
-is only needed because we are going to re-trap. Otherwise we could always
-wait in ptrace_attach() afaics.
+> Frankly, I think the biggest disease was this obsession with
+> perfection.
 
-I am still worried we are loosing the tight control over JOBCTL_TRAPPING.
-6/9 contributes to this too.
+I try to suggest fixes which seem to be easier on the kernel side than trying
+to workaround them in all the debugger-like applications.  After various
+strace fixes and for years gdb linux-nat fixes there is a need to move to
+gdbserver which will mean to reimplement all the ptrace workarounds again.
 
-Oleg.
 
+> So, I'm gonna push back quite a bit unless it actually compromises
+> functionality or correctness.
+
+With your position "if it is workaroundable in userland let's make the new
+kernel API broken again" it no longer makes sense to comment on it.  Yes,
+everything is workaroundable but that is usually not the goal of new APIs.
+
+
+Thanks,
+Jan
