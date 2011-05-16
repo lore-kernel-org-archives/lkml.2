@@ -1,94 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab1EPXmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 19:42:00 -0400
-Received: from eastrmfepi107.cox.net ([68.230.241.203]:51356 "EHLO
-	eastrmfepi107.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859Ab1EPXl6 (ORCPT
+	id S1756430Ab1EPXca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:32:30 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38661 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab1EPXc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 19:41:58 -0400
-X-Greylist: delayed 715 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 May 2011 19:41:57 EDT
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020206.4DD1B379.013C,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=QBJLiq5gro4Mpqd/bvx7LXNxeYJi9t0SEue4EfcrmdY=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=Z6WwYdEpHsUA:10
- a=IkcTkHD0fZMA:10 a=CA97L4c2R2SWvNNgQse4rQ==:17 a=rykLL9nUegV6zHp_Qu8A:9
- a=JrNJPXrXWxag32GPcMMA:7 a=QEXdDO2ut3YA:10 a=zZIqlBkmxoazK6SG:21
- a=qW-A1qPplwJujTSv:21 a=CA97L4c2R2SWvNNgQse4rQ==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110516193003.DDUM8.463702.imail@eastrmwml37>
-Date: Mon, 16 May 2011 19:30:03 -0400
-From: Greg Moore <ddh45@cox.net>
-Reply-To: ruliangrop@aol.com
-Subject: 
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 16 May 2011 19:32:28 -0400
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110516211459.GE18148@redhat.com>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+	 <1305574518.2885.25.camel@bwh-desktop>
+	 <1305574680.3456.33.camel@localhost.localdomain>
+	 <1305575253.2885.28.camel@bwh-desktop>  <20110516211459.GE18148@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 16:32:18 -0700
+Message-ID: <1305588738.3456.65.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
+Hello Michael,
 
+Looks like to use a new flag requires more time/work. I am thinking
+whether we can just use HIGHDMA flag to enable zero-copy in macvtap to
+avoid the new flag for now since mavctap uses real NICs as lower device?
 
+Thanks
+Shirley
 
-
-
-
-
-
-
-
-
-
-
-
-I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
-
-
-
-
-
-I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
-
-
-
-
-
-
-
-
-
-
-
-
-
-I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
-
-
-
-
-
-
-
-I Am   Greg Moore. A legitimate & accredited Loan lender. We give out loan of all kinds in a very fast and easy way, Personal Loan, Car Loan, Home Loan, Student Loan, Business Loan, Inventor loan, Debt Consolidation. get back to us if interested
