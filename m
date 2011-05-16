@@ -1,114 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab1EPQne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:43:34 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:39372 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751216Ab1EPQnd (ORCPT
+	id S1752211Ab1EPQoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:44:38 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48392 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1EPQog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:43:33 -0400
-Message-ID: <4DD15427.7080506@ti.com>
-Date: Mon, 16 May 2011 22:13:19 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Mon, 16 May 2011 12:44:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RveYAhOCjQqZ48EXZSPpRCWckU6STfPYQD8WyfhrjzdQl+Z99U/R/kT2fdjLWcTisw
+         qXJKf0NLc2TT7tGftqygFS1Mj9zgLwWoYo7TFk70j5YYz/0zZmmn2Ns2jm2d1IY6kPU4
+         kiMs4pv99dJgONcHNrOhKqqfEPNbxvESuyEo4=
+Date: Mon, 16 May 2011 09:44:27 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [RFC PATCH] input: Add wiichuck driver
+Message-ID: <20110516164427.GA21232@core.coreip.homeip.net>
+References: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        martin persson <martin.persson@stericsson.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency withcpufreqnotifiers
-References: <1290060899-9786-1-git-send-email-ccross@android.com>	<AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com>	<4D70BE9D.4000507@stericsson.com>	<AANLkTin7ZXYALOy_jk1uR3SbZA51nSnU-ncSjG+n_RPn@mail.gmail.com>	<4D714C17.7080102@gmail.com>	<AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com>	<eea425c066cc69c30f118fb102fff43e@mail.gmail.com>	<AANLkTi=KcmqmghVxhwGvv79heRU3C+TC-v2VnWSWt7bU@mail.gmail.com>	<7e9fafa016bfe536ccc373fc2cc7ba61@mail.gmail.com>	<AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com>	<AANLkTikkcYw66MiJO9Bpm+De=XD2-1MFxm-CUPp6sMqL@mail.gmail.com>	<BANLkTi=-T6P0KrsQ8+Ot_inq1JabY62LvA@mail.gmail.com>	<alpine.LFD.2.02.1105131138460.2831@ionos>	<BANLkTimxkY4MvQ+-qiOwdwbo7jPUAQ1vxw@mail.gmail.com>	<alpine.LFD.2.02.1105141749510.3078@ionos>	<4DD10814.1010103@ti.com>	<alpine.LFD.2.02.1105161642250.3078@ionos> <BANLkTimMSPmqD+kyz1EJUrH9sS=qWRZymw@mail.gmail.com>
-In-Reply-To: <BANLkTimMSPmqD+kyz1EJUrH9sS=qWRZymw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110512042218.12859.66600.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/16/2011 9:59 PM, Colin Cross wrote:
-> On Mon, May 16, 2011 at 7:44 AM, Thomas Gleixner<tglx@linutronix.de>  wrote:
->> On Mon, 16 May 2011, Santosh Shilimkar wrote:
->>> On 5/14/2011 9:21 PM, Thomas Gleixner wrote:
->>> Just for my understanding, the clockevents_reconfigure() needs to
->>> be called with interrupts disabled on that CPU as part of
->>> the CPUFREQ notifiers. I assume the right place is do it
->>> in POST notifier after the CPU clock and hence TWD clock is
->>> updated. Is that right ?
->>
->> Yes.
->
-> Is it safe to only call it in POST?  If the frequency is increasing,
-> and the TWD is not updated until after the CPU frequency has changed,
-> it is possible for a clockevent to fire too early.  Will that cause
-> problems, or does the clockevent code check against a clocksource to
-> ensure the desired time has been reached?  If that is OK, it
-> drastically simplifies the code, because the driver only needs to know
-> the current TWD frequency, not predict a future TWD frequency.
->
-This was the exact reason I asked this question. As discussed
-earlier on this thread, we observed drift in ticks especially
-at lowest and highest clock-points. But they way I understood
-is clockevents_reconfigure() will block those additional
-ticks at least during the reconfiguration of the clock-event.
+Hi Grant,
 
+On Thu, May 12, 2011 at 06:29:44AM +0200, Grant Likely wrote:
+> This patch adds a driver for the Nintendo Nunchuck (wiimote accessory)
+> attached to an i2c bus via something like a wiichuck adapter board
+> from Sparkfun.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> 
+> This is RFC because the driver doesn't completely work yet.  The
+> joystick and buttons work fine.  There is a bug with the accelerometer
+> reporting though (nothing gets reported), and I'm not even sure I'm
+> using the right input type for reporting accelerometer values.
 
->>> Since there is need to call this API in interrupt
->>> disable context, does it make sense to take care of it
->>> inside the API itself instead of relying on caller fn ?
->>
->> Hmm, no strong opinion
->
-> For SMP TWD, the caller will always be in interrupt disabled mode,
-> because the cpufreq notifier will get called on a random cpu, so
-> smp_call_function_single will be used to transition to the correct
-> cpu, which disables interrupts.
->
-Ok. So it's indirectly taken care then.
+Looks quite reasonable and I think that ABS_Rx is reasonable events for
+accelerometer in this particular case.
 
->>> The arch's where the per CPU TWD's share clock, per-cpu
->>> clock-events should be reconfigured on all CPUs, whenever
->>> the parent(CPU) clock has changed using some thing like
->>> smp_call_function_any() etc. Is that right understanding?
->>
->> Yes. If that's a common requirement we should move that to core code.
->
-> Santosh, are you suggesting the TWD be updated from the clock
-> framework instead of the cpufreq notifier?
->
-That's where I was kind of leaning to. Basically doing this in common
-core code at one place and possibly outside the ARM TWD library. You
-might get same requirement on other arch's in future.
+A few more comments below.
 
-> I believe ARMv7 requires all CPUs to run at the same frequency, so it
-> would be possible to do this in the core code somewhere, but A15 has
-> fixed frequency counters, and all SMP Cortex-A9s I've seen use the SMP
-> TWD driver, so in practice this may end up being the only user.
->
-Yes but the code managing the architectural timer(A15) and TWD(A9) is
-different. But I understand your point about the usage and it
-might be limited to CA9 at this point of time.
+> Comments welcome.
+> 
+>  drivers/input/joystick/Kconfig    |    8 +
+>  drivers/input/joystick/Makefile   |    1 
+>  drivers/input/joystick/wiichuck.c |  225 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 234 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/joystick/wiichuck.c
+> 
+> diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+> index 56eb471..79f18db 100644
+> --- a/drivers/input/joystick/Kconfig
+> +++ b/drivers/input/joystick/Kconfig
+> @@ -193,6 +193,14 @@ config JOYSTICK_TWIDJOY
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called twidjoy.
+>  
+> +config JOYSTICK_WIICHUCK
+> +	tristate "Nintendo Nunchuck on i2c bus"
+> +	depends on I2C
+> +	select INPUT_POLLDEV
+> +	help
+> +	  Say Y here if you have a Nintendo Nunchuck directly attached to
+> +	  the machine's i2c bus.
+> +
 
-> It would be possible for the clockevent to have a flag
-> CLOCKEVENT_EVT_FEAT_SCALES_WITH_CPU, which registers a cpufreq
-> notifier, if there were any other users.
- >
-Something like this is better to get better clarity on the
-hardware behavior. O.w we will have piece of code in TWD
-library which needs proper documentation about the
-usage of likes of smp_call_function_single().
+	To compile this driver as a module, ...
 
-Regards
-Santosh
+>  config JOYSTICK_ZHENHUA
+>  	tristate "5-byte Zhenhua RC transmitter"
+>  	select SERIO
+> diff --git a/drivers/input/joystick/Makefile b/drivers/input/joystick/Makefile
+> index 92dc0de..78466d6 100644
+> --- a/drivers/input/joystick/Makefile
+> +++ b/drivers/input/joystick/Makefile
+> @@ -29,6 +29,7 @@ obj-$(CONFIG_JOYSTICK_TMDC)		+= tmdc.o
+>  obj-$(CONFIG_JOYSTICK_TURBOGRAFX)	+= turbografx.o
+>  obj-$(CONFIG_JOYSTICK_TWIDJOY)		+= twidjoy.o
+>  obj-$(CONFIG_JOYSTICK_WARRIOR)		+= warrior.o
+> +obj-$(CONFIG_JOYSTICK_WIICHUCK)		+= wiichuck.o
+>  obj-$(CONFIG_JOYSTICK_XPAD)		+= xpad.o
+>  obj-$(CONFIG_JOYSTICK_ZHENHUA)		+= zhenhua.o
+>  obj-$(CONFIG_JOYSTICK_WALKERA0701)	+= walkera0701.o
+> diff --git a/drivers/input/joystick/wiichuck.c b/drivers/input/joystick/wiichuck.c
+> new file mode 100644
+> index 0000000..2afc274
+> --- /dev/null
+> +++ b/drivers/input/joystick/wiichuck.c
+> @@ -0,0 +1,225 @@
+> +/*
+> + * Nintendo Nunchuck driver for i2c connection.
+> + *
+> + * Copyright (c) 2011 Secret Lab Technologies Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+> + *
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/i2c.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/input.h>
+> +#include <linux/input-polldev.h>
+> +#include <linux/mod_devicetable.h>
+> +#include <linux/slab.h>
+> +
+> +MODULE_AUTHOR("Grant Likely <grant.likely@secretlab.ca>");
+> +MODULE_DESCRIPTION("Nintendo Nunchuck driver");
+> +MODULE_LICENSE("GPL");
+> +
+> +#define WIICHUCK_JOY_MAX_AXIS	220
+> +#define WIICHUCK_JOY_MIN_AXIS	30
+> +#define WIICHUCK_JOY_FUZZ	4
+> +#define WIICHUCK_JOY_FLAT	8
+> +
+> +struct wiichuck_device {
+> +	struct input_polled_dev *poll_dev;
+> +	struct i2c_client *i2c_client;
+> +	int state;
+> +};
+> +
+> +static void wiichuck_poll(struct input_polled_dev *poll_dev)
+> +{
+> +	struct wiichuck_device *wiichuck = poll_dev->private;
+> +	struct i2c_client *i2c = wiichuck->i2c_client;
+> +	static uint8_t cmd_byte = 0;
+> +	struct i2c_msg cmd_msg =
+> +		{ .addr = i2c->addr, .len = 1, .buf = &cmd_byte };
+> +	uint8_t b[6];
 
+As mentioned by others these buffers should not be on stack.
 
+> +	struct i2c_msg data_msg =
+> +		{ .addr = i2c->addr, .flags = I2C_M_RD, .len = 6, .buf = b };
+> +	int jx, jy, ax, ay, az;
+> +	bool c, z;
+> +
+> +	switch (wiichuck->state) {
+> +	case 0:
+> +		i2c_transfer(i2c->adapter, &cmd_msg, 1);
+> +		wiichuck->state = 1;
 
+Do you really need to have a state machine here? Why not do both
+transfers in one poll invocation?
 
+> +		break;
+> +
+> +	case 1:
+> +		i2c_transfer(i2c->adapter, &data_msg, 1);
+> +
+> +		jx = b[0];
+> +		jy = b[1];
+> +		ax = (b[2] << 2) & ((b[5] >> 2) & 0x3);
+> +		ay = (b[3] << 2) & ((b[5] >> 4) & 0x3);
+> +		az = (b[4] << 2) & ((b[5] >> 6) & 0x3);
+> +		z = !(b[5] & 1);
+> +		c = !(b[5] & 2);
+> +
+> +		input_report_abs(poll_dev->input, ABS_X, jx);
+> +		input_report_abs(poll_dev->input, ABS_Y, jy);
+> +		input_report_abs(poll_dev->input, ABS_RX, ax);
+> +		input_report_abs(poll_dev->input, ABS_RY, ax);
+> +		input_report_abs(poll_dev->input, ABS_RZ, ay);
+> +		input_report_key(poll_dev->input, BTN_C, c);
+> +		input_report_key(poll_dev->input, BTN_Z, z);
+> +		input_sync(poll_dev->input);
+> +
+> +		wiichuck->state = 0;
+> +		dev_dbg(&i2c->dev, "wiichuck: j=%.3i,%.3i a=%.3x,%.3x,%.3x %c%c\n",
+> +			jx,jy, ax,ay,az, c ? 'C' : 'c', z ? 'Z' : 'z');
+> +		break;
+> +
+> +	default:
+> +		wiichuck->state = 0;
+> +	}
+> +}
+> +
+> +static void wiichuck_open(struct input_polled_dev *poll_dev)
+> +{
+> +	struct wiichuck_device *wiichuck = poll_dev->private;
+> +	struct i2c_client *i2c = wiichuck->i2c_client;
+> +	static uint8_t data1[2] = { 0xf0, 0x55 };
+> +	static uint8_t data2[2] = { 0xfb, 0x00 };
+> +	struct i2c_msg msg1 = { .addr = i2c->addr, .len = 2, .buf = data1 };
+> +	struct i2c_msg msg2 = { .addr = i2c->addr, .len = 2, .buf = data2 };
+> +
+> +	i2c_transfer(i2c->adapter, &msg1, 1);
+> +	i2c_transfer(i2c->adapter, &msg2, 1);
+> +	wiichuck->state = 0;
+> +
+> +	dev_dbg(&i2c->dev, "wiichuck open()\n");
+> +}
+> +
+> +static int __devinit wiichuck_probe(struct i2c_client *client,
+> +				const struct i2c_device_id *id)
+> +{
+> +	struct wiichuck_device *wiichuck;
+> +	struct input_polled_dev *poll_dev;
+> +	struct input_dev *input_dev;
+> +	int rc;
+> +
+> +	wiichuck = kzalloc(sizeof(*wiichuck), GFP_KERNEL);
+> +	if (!wiichuck)
+> +		return -ENOMEM;
+> +
+> +	poll_dev = input_allocate_polled_device();
+> +	if (!poll_dev) {
+> +		rc = -ENOMEM;
+> +		goto err_alloc;
+> +	}
+> +
+> +	wiichuck->i2c_client = client;
+> +	wiichuck->poll_dev = poll_dev;
+> +
+> +	poll_dev->private = wiichuck;
+> +	poll_dev->poll = wiichuck_poll;
+> +	poll_dev->poll_interval = 50; /* Poll every 50ms */
+> +	poll_dev->open = wiichuck_open;
+> +
+> +	input_dev = poll_dev->input;
+> +	input_dev->name = "Nintendo Nunchuck";
+> +	input_dev->id.bustype = BUS_I2C;
+> +	input_dev->dev.parent = &client->dev;
+> +
+> +	/* Declare the events generated by this driver */
+> +	set_bit(EV_ABS, input_dev->evbit);
+> +	set_bit(ABS_X, input_dev->absbit); /* joystick */
+> +	set_bit(ABS_Y, input_dev->absbit);
+> +	set_bit(ABS_RX, input_dev->absbit); /* accelerometer */
+> +	set_bit(ABS_RY, input_dev->absbit);
+> +	set_bit(ABS_RZ, input_dev->absbit);
+> +
+> +	set_bit(EV_KEY, input_dev->evbit);
+> +	set_bit(BTN_C, input_dev->keybit); /* buttons */
+> +	set_bit(BTN_Z, input_dev->keybit);
 
+I prefer __set_bit() here since there is no concurrency.
+
+> +
+> +	input_set_abs_params(input_dev, ABS_X, 30, 220, 4, 8);
+> +	input_set_abs_params(input_dev, ABS_Y, 40, 200, 4, 8);
+> +	input_set_abs_params(input_dev, ABS_RX, 0, 0x3ff, 4, 8);
+> +	input_set_abs_params(input_dev, ABS_RY, 0, 0x3ff, 4, 8);
+> +	input_set_abs_params(input_dev, ABS_RZ, 0, 0x3ff, 4, 8);
+> +
+> +	rc = input_register_polled_device(wiichuck->poll_dev);
+> +	if (rc) {
+> +		dev_err(&client->dev, "Failed to register input device\n");
+> +		goto err_register;
+> +	}
+> +
+> +	i2c_set_clientdata(client, wiichuck);
+> +
+> +	return 0;
+> +
+> + err_register:
+> +	input_free_polled_device(poll_dev);
+> + err_alloc:
+> +	kfree(wiichuck);
+> +
+> +	return rc;
+> +}
+> +
+> +static int __devexit wiichuck_remove(struct i2c_client *client)
+> +{
+> +	struct wiichuck_device *wiichuck = i2c_get_clientdata(client);
+> +
+> +	i2c_set_clientdata(client, NULL);
+> +	input_unregister_polled_device(wiichuck->poll_dev);
+> +	input_free_polled_device(wiichuck->poll_dev);
+> +	kfree(wiichuck);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id wiichuck_id[] = {
+> +	{ "nunchuck", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, wiichuck_id);
+> +
+> +#ifdef CONFIG_OF
+> +static struct of_device_id wiichuck_match_table[] __devinitdata = {
+> +	{ .compatible = "nintendo,nunchuck", },
+> +	{ }
+> +};
+> +#else
+> +#define wiichuck_match_table NULL
+> +#endif
+> +
+> +static struct i2c_driver wiichuck_driver = {
+> +	.driver = {
+> +		.name = "nunchuck",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = wiichuck_match_table,
+> +	},
+> +	.probe		= wiichuck_probe,
+> +	.remove		= __devexit_p(wiichuck_remove),
+> +	.id_table	= wiichuck_id,
+> +};
+> +
+> +static int __init wiichuck_init(void)
+> +{
+> +	return i2c_add_driver(&wiichuck_driver);
+> +}
+> +module_init(wiichuck_init);
+> +
+> +static void __exit wiichuck_exit(void)
+> +{
+> +	i2c_del_driver(&wiichuck_driver);
+> +}
+> +module_exit(wiichuck_exit);
+> 
+
+Thanks.
+
+-- 
+Dmitry
