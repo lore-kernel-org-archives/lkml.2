@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab1EPV2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756194Ab1EPV2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:28:06 -0400
-Date: Tue, 17 May 2011 00:27:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-Message-ID: <20110516212754.GG18148@redhat.com>
-References: <1305574484.3456.30.camel@localhost.localdomain>
- <20110516204540.GD18148@redhat.com>
- <1305579414.3456.49.camel@localhost.localdomain>
+	id S1756512Ab1EPV2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:28:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57923 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756402Ab1EPV2p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:28:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=qj/eSmK/+T2twlGo4zleoO0KbjtsvUKFlGJa/dg5pkyMKn1kB5DJUVbCiTTw6zSqVo
+         2sFfdFvnJCoxSeU0oOVfihZYdaSTENw9eAftMdZR1Z+Gp7VKCh93OJ2uQXeugKTkVC+v
+         wp/YwWqAzSZ3m2OQXW0YrW5jOqqWW54dhmCKw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305579414.3456.49.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m2fwoeo0pf.fsf@firstfloor.org>
+References: <cover.1305560561.git.luto@mit.edu> <20110516160943.GC25898@one.firstfloor.org>
+ <alpine.LFD.2.02.1105161817120.3078@ionos> <20110516164939.GD25898@one.firstfloor.org>
+ <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com> <m2fwoeo0pf.fsf@firstfloor.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 16 May 2011 17:28:24 -0400
+X-Google-Sender-Auth: DyW953HuIzlpHxizQLBW8_s3wh8
+Message-ID: <BANLkTi=oMB+92dOAtJtiAXJH9g1=VmnSgQ@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@amd64.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
-> On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
-> > > +/* Since we need to keep the order of used_idx as avail_idx, it's
-> > possible that
-> > > + * DMA done not in order in lower device driver for some reason. To
-> > prevent
-> > > + * used_idx out of order, upend_idx is used to track avail_idx
-> > order, done_idx
-> > > + * is used to track used_idx order. Once lower device DMA done,
-> > then upend_idx
-> > > + * can move to done_idx.
-> > 
-> > Could you clarify this please? virtio explicitly allows out of order
-> > completion of requests. Does it simplify code that we try to keep
-> > used index updates in-order? Because if not, this is not
-> > really a requirement.
-> 
-> Hello Mike,
-> 
-> Based on my testing, vhost_add_used() must be in order from
-> vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
-> freed. I didn't spend time on debugging this.
-> 
-> in virtqueue_get_buf
-> 
->         if (unlikely(!vq->data[i])) {
->                 BAD_RING(vq, "id %u is not a head!\n", i);
->                 return NULL;
->         }
-> 
-> That's the reason I created the upend_idx and done_idx.
-> 
-> Thanks
-> Shirley
+On Mon, May 16, 2011 at 4:22 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Andrew Lutomirski <luto@mit.edu> writes:
+>
+>> On Mon, May 16, 2011 at 12:49 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>>>> And unless you or someone else changes the primitive state of the
+>>>> kernel, framepointers are going to stay simply because removing them
+>>>> breaks profiling backtraces when the hit is inside vread().
+>>>
+>>> This doesn't work anyways because the glibc stub code calling vgettimeofday
+>>> normally doesn't set up a frame pointer frame.
+>>>
+>>> The only way to unwind there is dwarf2.
+>>
+>> For code in the vsyscall page, I think using CFI data is a lost cause.
+>>  How is any user code supposed to find the CFI data?
+>
+> It only works for the vDSO. vsyscall is legacy.
 
-One thing of note: it's possible that this actually works
-better than trying to complete out of order, as the
-ring just keeps going which should be good for cache
-utilization. OTOH, this might explain why
-you are over-running the TX ring much more with this patch.
+Except that vread_tsc (i.e. the code in question) is in the vsyscall
+page.  (That's on my list of less low-hanging fruit to attack if I
+decide to go for another 3 ns or so for 2.6.41.)
 
-So I don't say this should block merging the patch,
-but I very much would like to understand the issue,
-and it's interesting to experiment with fixing it
-and seeing what it does to performance and to code size.
+>
+>> For the vDSO, we could be nice to userspace and install the debugging
+>> symbols somewhere sensible.  Currently we generate a buildid but we
+>> don't install the symbols anywhere by default.
+>
+> Actually we include the dwarf2 tables and signal unwinding works
+> (for the vDSO)
 
--- 
-MST
+That particular comment was more about debugging than stack traces.
+Things like perf annotate would like the full symbols.
+
+>
+>> Longer term, it would be nice to mark the vsyscall page NX.  That
+>> involves a few things:
+>
+> Why NX? What would make sense is to call the VDSO from it.
+> The problem is that the vDSO is randomized and there's no good memory
+> location to store the pointer to it.
+>
+> The real reason for all this dance is to have some less non randomized
+> code around. What I implemented back then was instead code to patch out
+> the SYSCALL in there if not needed to lower the attack surface (not sure
+> if that still works though, but that was the idea). For most cases
+> (TSC/HPET read) it's not needed.
+
+Nothing sensible calls the vsyscall page.  (I'm defining code that
+statically links against current glibc as insensible.  But that could
+be fixed.  I think it's mainly an artifact of some odd glibc
+internals.)  So if we make the vsyscall page NX then we have no
+non-randomized code at all.
+
+How do we tell that a program really wants to call the vsyscall page
+and isn't being exploited to call the vsyscall page?
+
+There are excactly four entry-points into the vsyscall page that are
+part of the ABI.  One of them is venosys (maybe it used to do
+something) and the other three are archaic duplicates of vDSO
+functions.  It seems less complicated to emulate them than to patch
+them in.
+
+--Andy
