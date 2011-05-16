@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab1EPOoP (ORCPT <rfc822;w@1wt.eu>);
+	id S1755702Ab1EPOoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:44:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55767 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755525Ab1EPOoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 May 2011 10:44:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46505 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab1EPOoO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:44:14 -0400
-Date: Mon, 16 May 2011 16:44:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-cc: Colin Cross <ccross@android.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        martin persson <martin.persson@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency
- withcpufreqnotifiers
-In-Reply-To: <4DD10814.1010103@ti.com>
-Message-ID: <alpine.LFD.2.02.1105161642250.3078@ionos>
-References: <1290060899-9786-1-git-send-email-ccross@android.com> <AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com> <4D70BE9D.4000507@stericsson.com> <AANLkTin7ZXYALOy_jk1uR3SbZA51nSnU-ncSjG+n_RPn@mail.gmail.com> <4D714C17.7080102@gmail.com>
- <AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com> <eea425c066cc69c30f118fb102fff43e@mail.gmail.com> <AANLkTi=KcmqmghVxhwGvv79heRU3C+TC-v2VnWSWt7bU@mail.gmail.com> <7e9fafa016bfe536ccc373fc2cc7ba61@mail.gmail.com>
- <AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com> <AANLkTikkcYw66MiJO9Bpm+De=XD2-1MFxm-CUPp6sMqL@mail.gmail.com> <BANLkTi=-T6P0KrsQ8+Ot_inq1JabY62LvA@mail.gmail.com> <alpine.LFD.2.02.1105131138460.2831@ionos> <BANLkTimxkY4MvQ+-qiOwdwbo7jPUAQ1vxw@mail.gmail.com>
- <alpine.LFD.2.02.1105141749510.3078@ionos> <4DD10814.1010103@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Date: Mon, 16 May 2011 16:44:13 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: make KBUILD_NOCMDDEP=1 handle empty built-in.o
+Message-ID: <20110516144413.GN13293@sepie.suse.cz>
+References: <1303837564-18062-1-git-send-email-rabin@rab.in>
+ <BANLkTimLre+UY1fY6+HXEsJicyh_oMnWdA@mail.gmail.com>
+ <20110512133356.GI13293@sepie.suse.cz>
+ <BANLkTiktdW3N35YYDB6dmUOMG1ZbQpYrow@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTiktdW3N35YYDB6dmUOMG1ZbQpYrow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 May 2011, Santosh Shilimkar wrote:
-> On 5/14/2011 9:21 PM, Thomas Gleixner wrote:
-> Just for my understanding, the clockevents_reconfigure() needs to
-> be called with interrupts disabled on that CPU as part of
-> the CPUFREQ notifiers. I assume the right place is do it
-> in POST notifier after the CPU clock and hence TWD clock is
-> updated. Is that right ?
+On Sun, May 15, 2011 at 11:07:19PM +0530, Rabin Vincent wrote:
+> On Thu, May 12, 2011 at 19:03, Michal Marek <mmarek@suse.cz> wrote:
+> > I'm not sure if this is the rigt way to fix it. Kbuild.include should
+> > not care about obj-*. The problem is that arg-check is always empty with
+> > KBUILD_NOCMDDEP and if there are no other dependencies, the target will
+> > not be created, right? IMO we only need to make sure that during the
+> > first make run, arg-check always expands to non-empty, even with
+> > KBUILD_NOCMDDEP. So we can drop the $(obj-y) test and do it like this
+> > (untested), can't we?
+> >
+> > diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+> > index c034dd7..be39cd1 100644
+> > --- a/scripts/Kbuild.include
+> > +++ b/scripts/Kbuild.include
+> > @@ -197,6 +197,8 @@ ifneq ($(KBUILD_NOCMDDEP),1)
+> >  # User may override this check using make KBUILD_NOCMDDEP=1
+> >  arg-check = $(strip $(filter-out $(cmd_$(1)), $(cmd_$@)) \
+> >                     $(filter-out $(cmd_$@),   $(cmd_$(1))) )
+> > +else
+> > +arg-check = $(if $(strip $(cmd_$@)),,1)
+> >  endif
+> >
+> >  # >'< substitution is for echo to work,
+> 
+> This works for me, thanks.
+> 
+> Tested-by: Rabin Vincent <rabin@rab.in>
 
-Yes.
- 
-> Since there is need to call this API in interrupt
-> disable context, does it make sense to take care of it
-> inside the API itself instead of relying on caller fn ?
+Thanks, pushed to kbuild-2.6.git#kbuild.
 
-Hmm, no strong opinion
- 
-> The arch's where the per CPU TWD's share clock, per-cpu
-> clock-events should be reconfigured on all CPUs, whenever
-> the parent(CPU) clock has changed using some thing like
-> smp_call_function_any() etc. Is that right understanding?
-
-Yes. If that's a common requirement we should move that to core code.
- 
-Thanks,
-
-	tglx
+Michal
