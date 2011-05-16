@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1EPRj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 13:39:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:52315 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab1EPRj6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 13:39:58 -0400
-Date: Mon, 16 May 2011 19:39:56 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Steve Munroe <sjmunroe@us.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        libc-alpha@sourceware.org, linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: [PATCH 4/5] Add a sysconf syscall
-Message-ID: <20110516173956.GE25898@one.firstfloor.org>
-References: <1305329059-2017-1-git-send-email-andi@firstfloor.org> <1305329059-2017-5-git-send-email-andi@firstfloor.org> <BANLkTikP==HkDSG1oKcfSKAhrWOXRqGF5w@mail.gmail.com> <20110516160114.GA25898@one.firstfloor.org> <OF30360F87.5C6D6DCF-ON86257892.005D7E68-86257892.005E0059@us.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF30360F87.5C6D6DCF-ON86257892.005D7E68-86257892.005E0059@us.ibm.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1754125Ab1EPRnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 13:43:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48202 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753742Ab1EPRnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 13:43:32 -0400
+Message-ID: <4DD16221.1090000@zytor.com>
+Date: Mon, 16 May 2011 10:42:57 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Greg KH <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>,
+        Randy Dunlap <rdunlap@xenotime.net>, Frank Arnold <farnold@amd64.org>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Hagen Paul Pfeifer <hagen@jauu.net>
+Subject: Re: [PATCH 1/3] x86, AMD, cacheinfo: Fix fallout caused by max3 conversion
+References: <1305553188-21061-1-git-send-email-bp@amd64.org> <1305553188-21061-2-git-send-email-bp@amd64.org> <20110516173128.GC13011@kroah.com> <20110516173816.GE22383@aftab>
+In-Reply-To: <20110516173816.GE22383@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 12:06:40PM -0500, Steve Munroe wrote:
-d  Seems like the Aux Vector would do job. Simple, in memory, LIBC already
+On 05/16/2011 10:38 AM, Borislav Petkov wrote:
+> On Mon, May 16, 2011 at 01:31:28PM -0400, Greg KH wrote:
+>> On Mon, May 16, 2011 at 03:39:46PM +0200, Borislav Petkov wrote:
+>>> From: Borislav Petkov <borislav.petkov@amd.com>
+>>>
+>>> 732eacc0542d0aa48797f675888b85d6065af837 converted code around the
+>>> kernel using nested max() macros to use the new max3 macro but forgot to
+>>> remove the old line in intel_cacheinfo.c. Fix it.
+>>>
+>>> Cc: Hagen Paul Pfeifer <hagen@jauu.net>
+>>> Cc: Frank Arnold <farnold@amd64.org>
+>>> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+>>
+>> Please also add:
+>>
+>> Cc: Stable <stable@kernel.org>
+>>
+>> here to resolve the regression found in the last .38 release.
+> 
+> I think you mean this regression:
+> 
+> http://marc.info/?l=linux-kernel&m=130541471818831
+> 
+> If so, we're working on that too. The patch above is just a small fixlet
+> which shouldn't go to stable.
+> 
 
+So are you asking for this patchset to go into .39 or .40?
 
-
-It's difficult to update the aux vector dynamically after the program has
-started.  Applications in theory could reuse it for something else, so it 
-wouldn't be safe to poke in there (and quite complex too)
-
-One of the main motivations for the new call was _SC_NPROCESSORS_ONLN,
-which can change dynamically.
-
-So if we put that into the aux vector the program would only ever know about
-the CPUs online at startup time. Not good.
-
-> fills in some sysconf values from the auxv and has infrastructure for that.
-> And the perform conscious hacker can access the auxv directly if they want.
-
-rlimits are not static and the they don't map to clone semantics (see all the
-other mails on this) Various values are based on rlimits.
-
-vsyscalls would work for the online CPUs, but not for a lot of other things.
-
-I suppose if this was just to solve the online cpu case it may be a suitable 
-solution, but I tried to be a bit more general.
-
-Here's a handy reference table:
-
-                            vdso            aux            syscall
-constant values               x               x                x         
-rlimit based values           -*              -                x 
-runtime values like cpus      x               -                x
-portable to all archs         -               x                x
-performance                  best            best            good enough
-coding complexity            high            low               low
-
-
-* unless you break clone and add a writable page to each program and be complex
-
-So you can see the aux vector is not doing very well overall.
-The vdso is somewhat better, but only if you sacrify the rlimits
-and accept high complexity.
-
-The syscall is imho still the sweet spot overall. It's excellent 
-everywhere, except it doesn't have the best performance. But it seems
-good enough.
-
--Andi
+	-hpa
