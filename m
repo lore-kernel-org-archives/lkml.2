@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab1EPInz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:43:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33298 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab1EPIny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:43:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NVsvIEo6HAi6FFRRfyLcbTnp10wI6apZDOlGk2XZ22piEVQeC9sVS/tJpauRbBE09w
-         oflDUa1oOnfQLkZM7cmJ5oRVCYdMWmyd2CQBL9/ZE1kfhkJz2QOERfBGlmYJKvT+/tbh
-         WBRM/nokYloii7YmRBIcyYuhbs+3nTxOwUwbM=
-Date: Mon, 16 May 2011 10:43:50 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re:
- [PATCH 11/11] ptrace: implement group stop notification for ptracer]
-Message-ID: <20110516084350.GO23665@htj.dyndns.org>
-References: <1304869745-1073-1-git-send-email-tj@kernel.org>
- <1304869745-1073-12-git-send-email-tj@kernel.org>
- <20110515140232.GB31855@host1.jankratochvil.net>
- <20110515142827.GF23665@htj.dyndns.org>
- <20110515171748.GA25216@host1.jankratochvil.net>
- <20110515172811.GM23665@htj.dyndns.org>
- <20110515200654.GA32659@host1.jankratochvil.net>
+	id S1753005Ab1EPIpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:45:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50568 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752835Ab1EPIpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:45:19 -0400
+Date: Mon, 16 May 2011 09:45:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
+        colin.king@canonical.com, raghu.prabhu13@gmail.com, jack@suse.cz,
+        chris.mason@oracle.com, cl@linux.com, penberg@kernel.org,
+        riel@redhat.com, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+Message-ID: <20110516084514.GD5279@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+ <1305295404-12129-5-git-send-email-mgorman@suse.de>
+ <4DCFAA80.7040109@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110515200654.GA32659@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DCFAA80.7040109@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, May 15, 2011 at 07:27:12PM +0900, KOSAKI Motohiro wrote:
+> (2011/05/13 23:03), Mel Gorman wrote:
+> > Under constant allocation pressure, kswapd can be in the situation where
+> > sleeping_prematurely() will always return true even if kswapd has been
+> > running a long time. Check if kswapd needs to be scheduled.
+> > 
+> > Signed-off-by: Mel Gorman<mgorman@suse.de>
+> > ---
+> >   mm/vmscan.c |    4 ++++
+> >   1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index af24d1e..4d24828 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+> >   	unsigned long balanced = 0;
+> >   	bool all_zones_ok = true;
+> > 
+> > +	/* If kswapd has been running too long, just sleep */
+> > +	if (need_resched())
+> > +		return false;
+> > +
+> 
+> Hmm... I don't like this patch so much. because this code does
+> 
+> - don't sleep if kswapd got context switch at shrink_inactive_list
+> - sleep if kswapd didn't
+> 
+> It seems to be semi random behavior.
+> 
 
-On Sun, May 15, 2011 at 10:06:54PM +0200, Jan Kratochvil wrote:
-> You are introducing new API which requires new codepaths in every
-> debugger-like program using it.  I do not find the "not deviating" reason as
-> valid for making the _new_ API parts needlessly imperfect.  Otherwise in the
-> next step we will want to fix the new imperfect parts and - there will be
-> three APIs that time to be supported in each debugger-like program depending
-> on how old kernel versions the debugger wants to support.
-
-There's distinction between "broken" and "ugly".  If it's ugly but
-functional, you don't need to "fix" it.  What we have is a broken ugly
-one and my primary goal is fixing the broken part.  I don't
-necessarily object to making it pretty but that's not my primary goal.
-
-> Sure the changes should be still small - I do not ask for making unrelated new
-> changes; just making the already needed changes perfect in their scope.
-
-Perfect is enemy of good.  I'll listen to your and other's suggestions
-but given the rather subpar history of ptrace and its development am
-not too convinced that the existing ideas or directions were
-especially effective.
-
-Frankly, I think the biggest disease was this obsession with
-perfection.  Whether ptrace is slightly prettier or not, or whether it
-can do the obscure feature three enterprise customers requested
-doesn't matter all that much.  Let's leave them alone and concentrate
-on fixing mainstream use cases.
-
-So, I'm gonna push back quite a bit unless it actually compromises
-functionality or correctness.
-
-Thank you.
+It's possible to keep kswapd awake simply by allocating fast enough that
+the watermarks are never balanced making kswapd appear to consume 100%
+of CPU. This check causes kswapd to sleep in this case. The processes
+doing the allocations will enter direct reclaim and probably stall while
+processes that are not allocating will get some CPU time.
 
 -- 
-tejun
+Mel Gorman
+SUSE Labs
