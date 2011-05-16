@@ -1,124 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab1EPIES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:04:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37108 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab1EPIEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:04:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,373,1301900400"; 
-   d="scan'208";a="2169695"
-Subject: Re: Perfromance drop on SCSI hard disk
-From: Shaohua Li <shaohua.li@intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "Shi, Alex" <alex.shi@intel.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1305255717.2373.38.camel@sli10-conroe>
-References: <1305009600.21534.587.camel@debian>
-	 <4DCC4340.6000407@fusionio.com>  <1305247704.2373.32.camel@sli10-conroe>
-	 <1305255717.2373.38.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 16:04:14 +0800
-Message-ID: <1305533054.2375.45.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752605Ab1EPIFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:05:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37686 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab1EPIFb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:05:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=rUZ/m8gAmUaXPAezsvvsSyLdIywpdgCVmmvOgsyzX0EZvAmCqvchwLXrui4lb5ig8F
+         yjS0yHb/Vt4QOlLLJ/x/b3vU8WohVSGARn7jdJe6V9zEuCmO5M7wZHFgA0yUBHulB+ne
+         p7pMQCljRVOAwOq+vrhZm7LLr6cYSolT9saus=
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <25864346.87131305530134778.JavaMail.weblogic@epml26>
+References: <25864346.87131305530134778.JavaMail.weblogic@epml26>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 16 May 2011 16:05:11 +0800
+Message-ID: <BANLkTinkMFeZVJmifEj6_H+ov8HMk_MAzA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS
+ macros
+To: myungjoo.ham@samsung.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-13 at 11:01 +0800, Shaohua Li wrote:
-> On Fri, 2011-05-13 at 08:48 +0800, Shaohua Li wrote:
-> > On Fri, 2011-05-13 at 04:29 +0800, Jens Axboe wrote:
-> > > On 2011-05-10 08:40, Alex,Shi wrote:
-> > > > commit c21e6beba8835d09bb80e34961 removed the REENTER flag and changed
-> > > > scsi_run_queue() to punt all requests on starved_list devices to
-> > > > kblockd. Yes, like Jens mentioned, the performance on slow SCSI disk was
-> > > > hurt here.  :) (Intel SSD isn't effected here)
-> > > > 
-> > > > In our testing on 12 SAS disk JBD, the fio write with sync ioengine drop
-> > > > about 30~40% throughput, fio randread/randwrite with aio ioengine drop
-> > > > about 20%/50% throughput. and fio mmap testing was hurt also. 
-> > > > 
-> > > > With the following debug patch, the performance can be totally recovered
-> > > > in our testing. But without REENTER flag here, in some corner case, like
-> > > > a device is keeping blocked and then unblocked repeatedly,
-> > > > __blk_run_queue() may recursively call scsi_run_queue() and then cause
-> > > > kernel stack overflow. 
-> > > > I don't know details of block device driver, just wondering why on scsi
-> > > > need the REENTER flag here. :) 
-> > > 
-> > > This is a problem and we should do something about it for 2.6.39. I knew
-> > > that there would be cases where the async offload would cause a
-> > > performance degredation, but not to the extent that you are reporting.
-> > > Must be hitting the pathological case.
-> > async offload is expected to increase context switch. But the real root
-> > cause of the issue is fairness issue. Please see my previous email.
-> > 
-> > > I can think of two scenarios where it could potentially recurse:
-> > > 
-> > > - request_fn enter, end up requeuing IO. Run queue at the end. Rinse,
-> > >   repeat.
-> > > - Running starved list from request_fn, two (or more) devices could
-> > >   alternately recurse.
-> > > 
-> > > The first case should be fairly easy to handle. The second one is
-> > > already handled by the local list splice.
-> > this isn't true to me. if you unlock host_lock in scsi_run_queue, other
-> > cpus can add sdev to the starved device list again. In the recursive
-> > call of scsi_run_queue, the starved device list might not be empty. So
-> > the local list_splice doesn't help.
-> > 
-> > > 
-> > > Looking at the code, is this a real scenario? Only potential recurse I
-> > > see is:
-> > > 
-> > > scsi_request_fn()
-> > >         scsi_dispatch_cmd()
-> > >                 scsi_queue_insert()
-> > >                         __scsi_queue_insert()
-> > >                                 scsi_run_queue()
-> > > 
-> > > Why are we even re-running the queue immediately on a BUSY condition?
-> > > Should only be needed if we have zero pending commands from this
-> > > particular queue, and for that particular case async run is just fine
-> > > since it's a rare condition (or performance would suck already).
-> > > 
-> > > And it should only really be needed for the 'q' being passed in, not the
-> > > others. Something like the below.
-> > > 
-> > > diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> > > index 0bac91e..0b01c1f 100644
-> > > --- a/drivers/scsi/scsi_lib.c
-> > > +++ b/drivers/scsi/scsi_lib.c
-> > > @@ -74,7 +74,7 @@ struct kmem_cache *scsi_sdb_cache;
-> > >   */
-> > >  #define SCSI_QUEUE_DELAY	3
-> > >  
-> > > -static void scsi_run_queue(struct request_queue *q);
-> > > +static void scsi_run_queue_async(struct request_queue *q);
-> > >  
-> > >  /*
-> > >   * Function:	scsi_unprep_request()
-> > > @@ -161,7 +161,7 @@ static int __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
-> > >  	blk_requeue_request(q, cmd->request);
-> > >  	spin_unlock_irqrestore(q->queue_lock, flags);
-> > >  
-> > > -	scsi_run_queue(q);
-> > > +	scsi_run_queue_async(q);
-> > so you could still recursivly run into starved list. Do you want to put
-> > the whole __scsi_run_queue into workqueue?
-> what I mean is current sdev (other devices too) can still be added into
-> starved list, so only does async execute for current q isn't enough,
-> we'd better put whole __scsi_run_queue into workqueue. something like
-> below on top of yours, untested. Not sure if there are other recursive
-> cases.
-verified the regression can be fully fixed by your patch (with my
-suggested fix to avoid race). Can we put a formal patch upstream?
+Hi MyungJoo,
 
-Thanks,
-Shaohua
+2011/5/16 함명주 <myungjoo.ham@samsung.com>:
+> Hello,
+>
+>> Sender : Axel Lin<axel.lin@gmail.com>
+>> Date : 2011-05-16 15:52 (GMT+09:00)
+>> Title : [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
+>>
+>> Looks like the original macro implementation assumes the caller pass the
+>> parameter starting from 1.
+>> Since now we have +1 operation from all the caller, it would be easier to
+>> assume the caller pass the parameter starting from 0.
+>> Then we can simplify the +1 operation from the caller and then -1 operation
+>> in the macro implementation.
+>>
+>> I think this change also improves readability.
+>>
+>> Signed-off-by: Axel Lin
+>
+> Well, I'd rather just change the for loop statement for your purpose, which I also agree.
+>
+> The reason I've used BUCKxDVS1 as the starting point is because of the register names; register names of BUCKxDVS starts from 1, not from 0.
 
+Ok. I got your point for the implementation.
+
+> Thus, in order to maintain the consistency between the code and the chip manual, I'd rather not change that part, but change like this:
+>
+> ---
+> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+> index b1c1444..aad85e4 100644
+> --- a/drivers/regulator/max8997.c
+> +++ b/drivers/regulator/max8997.c
+> @@ -1031,12 +1031,12 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
+>        }
+>
+>        /* For the safety, set max voltage before setting up */
+> -       for (i = 0; i < 8; i++) {
+> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
+> +       for (i = 1; i <= 8; i++) {
+> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i),
+>                                max_buck1, 0x3f);
+> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
+> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i),
+>                                max_buck2, 0x3f);
+> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
+> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i),
+>                                max_buck5, 0x3f);
+>        }
+>
+> --
+> 1.7.4.1
+>
+> How about this one?
+>
+But it doesn't apply for below case because max8997->buck1_vol[i] is
+start from 0.
+
+
+        for (i = 0; i < 8; i++) {
+                max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i),
+                                max8997->buck1_vol[i],
+                                0x3f);
+
+Maybe consider to remove the macro may make things simpler.
+If you agree, I'll send a v2.
+
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index b1c1444..10d5a1d 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -1032,11 +1032,11 @@ static __devinit int max8997_pmic_probe(struct
+platform_device *pdev)
+
+ 	/* For the safety, set max voltage before setting up */
+ 	for (i = 0; i < 8; i++) {
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
+ 				max_buck1, 0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
+ 				max_buck2, 0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
+ 				max_buck5, 0x3f);
+ 	}
+
+@@ -1113,13 +1113,13 @@ static __devinit int max8997_pmic_probe(struct
+platform_device *pdev)
+
+ 	/* Initialize all the DVS related BUCK registers */
+ 	for (i = 0; i < 8; i++) {
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
+ 				max8997->buck1_vol[i],
+ 				0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
+ 				max8997->buck2_vol[i],
+ 				0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
+ 				max8997->buck5_vol[i],
+ 				0x3f);
+ 	}
+diff --git a/include/linux/mfd/max8997-private.h
+b/include/linux/mfd/max8997-private.h
+index 69d1010..5ff2400 100644
+--- a/include/linux/mfd/max8997-private.h
++++ b/include/linux/mfd/max8997-private.h
+@@ -311,10 +311,6 @@ enum max8997_irq {
+ 	MAX8997_IRQ_NR,
+ };
+
+-#define MAX8997_REG_BUCK1DVS(x)	(MAX8997_REG_BUCK1DVS1 + (x) - 1)
+-#define MAX8997_REG_BUCK2DVS(x)	(MAX8997_REG_BUCK2DVS1 + (x) - 1)
+-#define MAX8997_REG_BUCK5DVS(x)	(MAX8997_REG_BUCK5DVS1 + (x) - 1)
+-
+ #define MAX8997_NUM_GPIO	12
+ struct max8997_dev {
+ 	struct device *dev;
+
+
+Regards,
+Axel
