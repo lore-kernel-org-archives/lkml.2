@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1EPNkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:40:41 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58875 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318Ab1EPNki (ORCPT
+	id S1755467Ab1EPNpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:45:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60831 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab1EPNpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:40:38 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Frank Arnold <farnold@amd64.org>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/3] Documentation, ABI: Update L3 cache index disable text
-Date: Mon, 16 May 2011 15:39:48 +0200
-Message-Id: <1305553188-21061-4-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1305553188-21061-1-git-send-email-bp@amd64.org>
-References: <1305553188-21061-1-git-send-email-bp@amd64.org>
+	Mon, 16 May 2011 09:45:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qJGBt/KtsWhYxLxKxDR/udyAQtUuj77Ov1VsF3wlaOgATR+X922SW6CivwQmdugYgy
+         klZJr+HJk42hHvbKGrbXpHwLzvDnbOcbUsI9+2pZFQ+mA+Is3usikmpOoM7VB8mbXY7Y
+         rWu+QW5FEykMMO1XUXb8Kecs1Ns4+I6PxRvzM=
+Date: Mon, 16 May 2011 15:45:10 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: PTRACE_SEIZE should not stop  [Re: [PATCH 02/11] ptrace:
+ implement PTRACE_SEIZE]
+Message-ID: <20110516134510.GA23665@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-3-git-send-email-tj@kernel.org>
+ <20110515155602.GD31855@host1.jankratochvil.net>
+ <20110515162630.GG23665@htj.dyndns.org>
+ <20110515171512.GA24047@host1.jankratochvil.net>
+ <20110515172505.GL23665@htj.dyndns.org>
+ <20110515194829.GA27023@host1.jankratochvil.net>
+ <20110516083113.GN23665@htj.dyndns.org>
+ <20110516132123.GA13544@host1.jankratochvil.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516132123.GA13544@host1.jankratochvil.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Hello, Jan.
 
-Change contact person to AMD kernel mailing list, update text and
-external references, drop "Users:" tag.
+On Mon, May 16, 2011 at 03:21:23PM +0200, Jan Kratochvil wrote:
+> Currently that waitpid will report SIGUSR1 first and then the INTERRUPT trap.
 
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- Documentation/ABI/testing/sysfs-devices-system-cpu |   34 ++++++++++----------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+Yes, it would.
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-index 7564e88..e7be75b 100644
---- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-+++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-@@ -183,21 +183,21 @@ Description:	Discover and change clock speed of CPUs
- 		to learn how to control the knobs.
- 
- 
--What:      /sys/devices/system/cpu/cpu*/cache/index*/cache_disable_X
--Date:      August 2008
-+What:		/sys/devices/system/cpu/cpu*/cache/index3/cache_disable_{0,1}
-+Date:		August 2008
- KernelVersion:	2.6.27
--Contact:	mark.langsdorf@amd.com
--Description:	These files exist in every cpu's cache index directories.
--		There are currently 2 cache_disable_# files in each
--		directory.  Reading from these files on a supported
--		processor will return that cache disable index value
--		for that processor and node.  Writing to one of these
--		files will cause the specificed cache index to be disabled.
--
--		Currently, only AMD Family 10h Processors support cache index
--		disable, and only for their L3 caches.  See the BIOS and
--		Kernel Developer's Guide at
--		http://support.amd.com/us/Embedded_TechDocs/31116-Public-GH-BKDG_3-28_5-28-09.pdf	
--		for formatting information and other details on the
--		cache index disable.
--Users:    joachim.deguara@amd.com
-+Contact:	discuss@x86-64.org
-+Description:	Disable L3 cache indices
-+
-+		These files exist in every CPU's cache/index3 directory. Each
-+		cache_disable_{0,1} file corresponds to one disable slot which
-+		can be used to disable a cache index. Reading from these files
-+		on a processor with this functionality will return the currently
-+		disabled index for that node. There is one L3 structure per
-+		node, or per internal node on MCM machines. Writing a valid
-+		index to one of these files will cause the specificed cache
-+		index to be disabled.
-+
-+		All AMD processors with L3 caches provide this functionality.
-+		For details, see BKDGs at
-+		http://developer.amd.com/documentation/guides/Pages/default.aspx
+> I suggest - if possible - that tracer will get that INTERRUPT trap first.
+> 
+> But you made the optimization that the INTERRUPT gets suppressed in such case.
+> Which improves performance for the cost of more complicated debuggers.
+
+INTERRUPT is suppressed if group stop is pending not signal.  That was
+more about duplicity between INTERRUPT trap and group stop, which made
+the whole thing uglier.  I merged the two together so there's no such
+distinction anymore.
+
+> I guess after PTRACE_SEIZE if the first signal/event is not INTERRUPT there
+> will not be any INTERRUPT later, as you said.
+
+I replied in another message too but now SEIZE and INTERRUPT behave
+identically.  Any trap clears the condition.
+
+I don't think INTERRUPT can be prioritized like that above existing
+trap conditions.  Traps are taken sometimes deep in the kernel
+(e.g. fork/exec) and often after modifying states irrevocably
+(e.g. signal is already dequeued on signal trap).  I don't think how
+it would be possible to rewind the state changes and replay it later.
+
+FWIW, if INTERRUPT exists while signal is pending, INTERRUPT will be
+taken first but that doesn't mean all that much as we can't roll back
+from traps which already have happened and tracee might be in any trap
+by the time PTRACE_INTERRUPT is issued.
+
+Thank you.
+
 -- 
-1.7.4.rc2
-
+tejun
