@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab1EPVya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:54:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51844 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab1EPVy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:54:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=h1wPQkhLVm/e7HZoTfFvXXEIJp7OtnoZKmrBxzrV1eF53FFLshazhTZAedj7BMtk10
-         cFw+IA6CUSfcZ8gA494+8BFJv5sjRKKSu13kL48SygJiWy/Zr9fzCgQXAE2+loRvXQhr
-         xYioMJ8rRK29MqlQR9+aqbAMKKIBA8iwgM2+s=
-Message-ID: <4DD19D10.3000201@gmail.com>
-Date: Mon, 16 May 2011 23:54:24 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1756809Ab1EPVyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:54:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43979 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756422Ab1EPVym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:54:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,221,1304319600"; 
+   d="scan'208";a="643473787"
+Message-ID: <4DD19D1F.3070506@linux.intel.com>
+Date: Mon, 16 May 2011 14:54:39 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org> <1305580757-13175-3-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1305580757-13175-3-git-send-email-john.stultz@linaro.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: Xen MMU's requirement to pin pages RO and initial_memory_mapping.
+References: <20110513153010.GB16519@dumpdata.com> <alpine.DEB.2.00.1105131650550.8972@kaball-desktop> <20110516154132.GA12486@dumpdata.com>
+In-Reply-To: <20110516154132.GA12486@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2011 11:19 PM, John Stultz wrote:
-> Accessing task->comm requires proper locking. However in the past
-> access to current->comm could be done without locking. This
-> is no longer the case, so all comm access needs to be done
-> while holding the comm_lock.
+On 05/16/2011 08:41 AM, Konrad Rzeszutek Wilk wrote:
+>> They become pagetable pages when:
+>>
+>> - they are explicitly pinned by pin_pagetable_pfn
+>>
+>> - they are hooked into the current pagetable
 > 
-> In my attempt to clean up unprotected comm access, I've noticed
-> most comm access is done for printk output. To simplify correct
-> locking in these cases, I've introduced a new %ptc format,
-> which will print the corresponding task's comm.
+> Ok, so could we use those two calls to trigger the pagetable walk
+> and mark them RO as appropiate? Which call sites are those? The
+> xen_set_pgd/xen_set_pud/xen_set_pmd ? Presumarily we don't have
+> to do that for the PTE's that are already mapped (as
+> xen_setup_kernel_pagetable, and xen_map_identity_early do this
+> already).
 > 
-> Example use:
-> printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
+>> Like you wrote, considering that the x86_64 version of
+>> kernel_physical_mapping_init hooks the pagetable pages into the
+>> currently used pagetable, it wouldn't be possible to mark the pagetable
+>> pages RO after init_memory_mapping.
 > 
-> CC: Ted Ts'o <tytso@mit.edu>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: David Rientjes <rientjes@google.com>
-> CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: linux-mm@kvack.org
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  lib/vsprintf.c |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index bc0ac6b..b7a9953 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -797,6 +797,23 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
->  	return string(buf, end, uuid, spec);
->  }
->  
-> +static noinline_for_stack
 
-Actually, why noinline? Did your previous version have there some
-TASK_COMM_LEN buffer or anything on stack which is not there anymore?
+Doesn't Xen have some kind of compatibility mode which could be used
+during setup?
 
-> +char *task_comm_string(char *buf, char *end, void *addr,
-> +			 struct printf_spec spec, const char *fmt)
-> +{
-> +	struct task_struct *tsk = addr;
-> +	char *ret;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&tsk->comm_lock, flags);
-> +	ret = string(buf, end, tsk->comm, spec);
-> +	spin_unlock_irqrestore(&tsk->comm_lock, flags);
-> +
-> +	return ret;
-> +}
-> +
-> +
-> +
->  int kptr_restrict = 1;
->  
->  /*
+	-hpa
 
-thanks,
--- 
-js
