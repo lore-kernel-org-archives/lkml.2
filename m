@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab1EPXKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 19:10:45 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60020 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab1EPXKn (ORCPT
+	id S1756644Ab1EPXLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:11:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56121 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab1EPXLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 19:10:43 -0400
-Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-From: John Stultz <john.stultz@linaro.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-In-Reply-To: <4DD19D10.3000201@gmail.com>
+	Mon, 16 May 2011 19:11:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=P7RHhe+zl8cWsUk7S7v+zxeIdJqav4B7kuvNiYUUo6otja19CTOcwbjAa/1QQhsycU
+         nF8eQZP5NSPT/y+35brXus9sRc0/wJsPWyZ2SGFOD97XqvQFst6hcQvj2XN3c3rPZ5QK
+         eh7dxUvtfmxcv905Hxze97fdeU+zO1lihfzh4=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "David Rientjes" <rientjes@google.com>,
+        "Andy Whitcroft" <apw@canonical.com>, "Joe Perches" <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "John Stultz" <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
+        "Jiri Slaby" <jirislaby@gmail.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] checkpatch.pl: Add check for task comm references
 References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org>
-	 <1305580757-13175-3-git-send-email-john.stultz@linaro.org>
-	 <4DD19D10.3000201@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 16:10:32 -0700
-Message-ID: <1305587432.2915.57.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+ <1305580757-13175-4-git-send-email-john.stultz@linaro.org>
+ <op.vvlfaobx3l0zgt@mnazarewicz-glaptop>
+ <alpine.DEB.2.00.1105161431550.4353@chino.kir.corp.google.com>
+ <1305587090.2503.42.camel@Joe-Laptop>
+Date: Tue, 17 May 2011 01:11:45 +0200
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vvlj1vad3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1305587090.2503.42.camel@Joe-Laptop>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 23:54 +0200, Jiri Slaby wrote:
-> On 05/16/2011 11:19 PM, John Stultz wrote:
-> > Accessing task->comm requires proper locking. However in the past
-> > access to current->comm could be done without locking. This
-> > is no longer the case, so all comm access needs to be done
-> > while holding the comm_lock.
-> > 
-> > In my attempt to clean up unprotected comm access, I've noticed
-> > most comm access is done for printk output. To simplify correct
-> > locking in these cases, I've introduced a new %ptc format,
-> > which will print the corresponding task's comm.
-> > 
-> > Example use:
-> > printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
-> > 
-> > CC: Ted Ts'o <tytso@mit.edu>
-> > CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > CC: David Rientjes <rientjes@google.com>
-> > CC: Dave Hansen <dave@linux.vnet.ibm.com>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
-> > CC: linux-mm@kvack.org
-> > Signed-off-by: John Stultz <john.stultz@linaro.org>
-> > ---
-> >  lib/vsprintf.c |   24 ++++++++++++++++++++++++
-> >  1 files changed, 24 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> > index bc0ac6b..b7a9953 100644
-> > --- a/lib/vsprintf.c
-> > +++ b/lib/vsprintf.c
-> > @@ -797,6 +797,23 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
-> >  	return string(buf, end, uuid, spec);
-> >  }
-> >  
-> > +static noinline_for_stack
-> 
-> Actually, why noinline? Did your previous version have there some
-> TASK_COMM_LEN buffer or anything on stack which is not there anymore?
+On Tue, 17 May 2011 01:04:50 +0200, Joe Perches <joe@perches.com> wrote:
 
-No, I was just following how almost all of the pointer() called
-functions were declared.
+> On Mon, 2011-05-16 at 14:34 -0700, David Rientjes wrote:
+>> On Mon, 16 May 2011, Michal Nazarewicz wrote:
+>> > > Now that accessing current->comm needs to be protected,
+>> > > +# check for current->comm usage
+>> > > +		if ($line =~ /\b(?:current|task|tsk|t)\s*->\s*comm\b/) {
+>> > Not a checkpatch.pl expert but as far as I'm concerned, that looks  
+>> reasonable.
+>
+> I think the only checkpatch expert is Andy Whitcroft.
+>
+> You don't need (?: just (
 
-But with two pointers and a long, I add more then ip6_string() has on
-the stack, which uses the same notation.
+Yep, it's a micro-optimisation though.
 
-But I can drop that bit if there's really no need for it.
-
-thanks
--john
-
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
