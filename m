@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab1EPIpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:45:41 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64141 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab1EPIpk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:45:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=bf4yAXP1x6tWIq3KiA97dkGNo3Iqytmi5NaoxGguA3Rd3OfQWZ42i4q0xwJbImAjsr
-         bviw/tnoItrWDQXmvbUILSkoe7V3QE76YyH3yJ92ZHSqoq5CZ64jhYolCarxh4134MNr
-         KqqGbtks/voSj2sqTqh66wMgkwklwLd9qkis0=
+	id S1753128Ab1EPIqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:46:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50619 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab1EPIqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:46:02 -0400
+Date: Mon, 16 May 2011 09:45:58 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        akpm@linux-foundation.org, colin.king@canonical.com,
+        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
+        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
+ allow it to sleep
+Message-ID: <20110516084558.GE5279@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+ <1305295404-12129-5-git-send-email-mgorman@suse.de>
+ <4DCFAA80.7040109@jp.fujitsu.com>
+ <1305519711.4806.7.camel@mulgrave.site>
+ <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110516080844.GC27635@elte.hu>
-References: <20110513180449.562138524@sbsiddha-MOBL3.sc.intel.com>
-	<20110513181008.859892593@sbsiddha-MOBL3.sc.intel.com>
-	<20110516080844.GC27635@elte.hu>
-Date: Mon, 16 May 2011 12:45:39 +0400
-X-Google-Sender-Auth: TGYpnNIKGh5cY2ETPvupco7fFIU
-Message-ID: <BANLkTimAYf1BBAqDpVbc9jRWtfHcg2SbNQ@mail.gmail.com>
-Subject: Re: [patch 1/5] x84_64, apic: Use probe routines to simplify apic selection
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, tglx@linutronix.de,
-        hpa@zytor.com, steiner@sgi.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 12:08 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
->
->> From: Suresh Siddha <suresh.b.siddha@intel.com>
->> Subject: x84_64, apic: Use probe routines to simplify apic selection
->>
->> Use the unused probe routine in the apic driver to finalize the apic model
->> selection. This cleans up the default_setup_apic_routing() and this probe
->> routine in future can also be used for doing any apic model specific
->> initialization.
->>
->> Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
->> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
->> ---
->>  arch/x86/kernel/apic/apic_flat_64.c   |   10 +++++++++-
->>  arch/x86/kernel/apic/probe_64.c       |   22 +++++++---------------
->>  arch/x86/kernel/apic/x2apic_cluster.c |    7 ++++++-
->>  arch/x86/kernel/apic/x2apic_phys.c    |   10 +++++++++-
->>  arch/x86/kernel/apic/x2apic_uv_x.c    |    7 ++++++-
->>  5 files changed, 37 insertions(+), 19 deletions(-)
->
-> Ok, looks like a step forward in the right direction.
->
-> Wouldnt it be more self-contained if the probe function returned an apic driver
-> pointer?
->
-> We could add an __apicdriver section trick to 'know' about all APIC probing
-> functions - and we'd call them one by one and use the first one that returns a
-> non-NULL result.
->
-> Then we'd have the generic fallback APIC drivers as well - not marked
-> __apicdriver but used by the probe function directly.
->
-> Or we could have them as __apicdriver as well, but then the .o link ordering
-> matters to probing order.
->
-> Thanks,
->
->        Ingo
->
+On Mon, May 16, 2011 at 02:04:00PM +0900, Minchan Kim wrote:
+> On Mon, May 16, 2011 at 1:21 PM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> > On Sun, 2011-05-15 at 19:27 +0900, KOSAKI Motohiro wrote:
+> >> (2011/05/13 23:03), Mel Gorman wrote:
+> >> > Under constant allocation pressure, kswapd can be in the situation where
+> >> > sleeping_prematurely() will always return true even if kswapd has been
+> >> > running a long time. Check if kswapd needs to be scheduled.
+> >> >
+> >> > Signed-off-by: Mel Gorman<mgorman@suse.de>
+> >> > ---
+> >> >   mm/vmscan.c |    4 ++++
+> >> >   1 files changed, 4 insertions(+), 0 deletions(-)
+> >> >
+> >> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >> > index af24d1e..4d24828 100644
+> >> > --- a/mm/vmscan.c
+> >> > +++ b/mm/vmscan.c
+> >> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+> >> >     unsigned long balanced = 0;
+> >> >     bool all_zones_ok = true;
+> >> >
+> >> > +   /* If kswapd has been running too long, just sleep */
+> >> > +   if (need_resched())
+> >> > +           return false;
+> >> > +
+> >>
+> >> Hmm... I don't like this patch so much. because this code does
+> >>
+> >> - don't sleep if kswapd got context switch at shrink_inactive_list
+> >
+> > This isn't entirely true:  need_resched() will be false, so we'll follow
+> > the normal path for determining whether to sleep or not, in effect
+> > leaving the current behaviour unchanged.
+> >
+> >> - sleep if kswapd didn't
+> >
+> > This also isn't entirely true: whether need_resched() is true at this
+> > point depends on a whole lot more that whether we did a context switch
+> > in shrink_inactive. It mostly depends on how long we've been running
+> > without giving up the CPU.  Generally that will mean we've been round
+> > the shrinker loop hundreds to thousands of times without sleeping.
+> >
+> >> It seems to be semi random behavior.
+> >
+> > Well, we have to do something.  Chris Mason first suspected the hang was
+> > a kswapd rescheduling problem a while ago.  We tried putting
+> > cond_rescheds() in several places in the vmscan code, but to no avail.
+> 
+> Is it a result of  test with patch of Hannes(ie, !pgdat_balanced)?
+> 
+> If it isn't, it would be nop regardless of putting cond_reshed at vmscan.c.
+> Because, although we complete zone balancing, kswapd doesn't sleep as
+> pgdat_balance returns wrong result. And at last VM calls
+> balance_pgdat. In this case, balance_pgdat returns without any work as
+> kswap couldn't find zones which have not enough free pages and goto
+> out. kswapd could repeat this work infinitely. So you don't have a
+> chance to call cond_resched.
+> 
+> But if your test was with Hanne's patch, I am very curious how come
+> kswapd consumes CPU a lot.
+> 
+> > The need_resched() in sleeping_prematurely() seems to be about the best
+> > option.  The other option might be just to put a cond_resched() in
+> > kswapd_try_to_sleep(), but that will really have about the same effect.
+> 
+> I don't oppose it but before that, I think we have to know why kswapd
+> consumes CPU a lot although we applied Hannes' patch.
+> 
 
-  Yes,  this should be a cleaner step but it requires some more code churn that
-is why I think Suresh' approach is pretty well done! Ingo, probably we could
-do so on *top* of this changes as only time permits? The problem is that I
-personally can't guarantee I continue working on the task this week, if Suresh
-is able to -- this would be great, if not -- probably even such
-minimal disturbing
-patch worth merging, it definitley makes code better I think ;)
+Because it's still possible for processes to allocate pages at the same
+rate kswapd is freeing them leading to a situation where kswapd does not
+consider the zone balanced for prolonged periods of time.
+
+-- 
+Mel Gorman
+SUSE Labs
