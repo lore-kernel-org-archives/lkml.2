@@ -1,208 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1EPNhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:37:15 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:32891 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755225Ab1EPNhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:37:13 -0400
-Date: Mon, 16 May 2011 15:36:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/5] Add a sysconf syscall
-Message-ID: <20110516133655.GG7128@elte.hu>
-References: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
- <1305329059-2017-5-git-send-email-andi@firstfloor.org>
- <20110514065752.GA8827@elte.hu>
- <20110514163424.GU6008@one.firstfloor.org>
+	id S1755425Ab1EPNiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:38:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35664 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab1EPNh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 09:37:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Fn0NUx2KqutBraHr+l3qAVCbf83kkp9bAZA/E7KLaGTckr/rbYjyyQE9YxyQDMqFup
+         DRSjktMHhntR1RGTqz/kiLG8SCfP7E7Pnxx+YmK25uEg/tQvYU8+yxZdu6sO22I7kaxU
+         XhpfWGkKg07SRXNkqiW8LAk8f8cz5AlOdoSqY=
+Date: Mon, 16 May 2011 21:37:48 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
+ update tsk->rt.nr_cpus_allowed
+Message-ID: <20110516133748.GB2058@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110428161149.GA15658@redhat.com>
+ <20110502194416.2D61.A69D9226@jp.fujitsu.com>
+ <20110502195657.2D68.A69D9226@jp.fujitsu.com>
+ <1305129929.2914.247.camel@laptop>
+ <4DCCC61F.80408@jp.fujitsu.com>
+ <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
+ <1305306135.2466.173.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110514163424.GU6008@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1305306135.2466.173.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> > What glibc does (opening /proc/stat) is rather stupid, but i think your 
-> > syscall
-> 
-> I don't think it has any other choice today. [...]
-
-Sure it has a choice: most of the sysconf values are global so creating a 
-permanent mmap()-able data in /tmp or elsewhere and mapping it unless it's 
-inaccessible isnt that particularly hard to cache most of the system-wide 
-constants, now is it?
-
-The CPU count could be updated from CPU hotplug events.
-
-rlimits can be queried using getrlimit().
-
-If at that point glibc said to us: "hey, lets work in making it even faster" 
-then there would be no reason for us to criticise glibc. Right now gibc does 
-not even *try* to be smart about it.
-
-> [...] So if anything is "stupid" it is the kernel for not providing efficient 
-> interfaces for this.
-> 
-> > Note that these are mostly constant or semi-constant values that are 
-> > updated very rarely:
-> 
-> That's not true. Most of them are dynamic. Take a look at the patch.
-> Also several of those have changed recently.
-
-As i said they are mostly constant or semi-constant values that are updated 
-very rarely.
-
-If you think that i am wrong then do me the basic courtesy of mentioning the 
-examples that you think disprove my claim, instead of broadly pointing me to 
-your patch ...
-
-> > If glibc is stupid and reads /proc/stat to receive something it could cache 
-> > or mmap() itself then hey, did you consider fixing glibc or creating a sane 
-> > libc?
->
-> Caching doesn't help when you have a workload that exec()s a lot. Also some 
-> of these values can change at runtime.
-
-Here you modify your claim. Now it's not 'dynamic' anymore but 'can change'?
-
-Which one is it now, "mostly constant or semi-constant values that are updated 
-very rarely" as i claim, "dynamic" as you first claimed or "can change" as you 
-claim here (which is also pretty ambiguous)?
-
-> > If we *really* want to offer kernel help for these values even then your 
-> > solution is still wrong: then the proper solution would be to define a 
-> > standard *data* structure and map it as a vsyscall *data* page - 
-> > essentially a kernel-guaranteed data mmap(), with no extra syscall needed!
-> 
-> That's quite complicted because several of those are dynamically computed 
-> based on other values. Sometimes they are also not tied to the mm_struct -- 
-> like the vsyscall is. For example some of the rlimits are per task, not VM. 
-> Basically your proposal doesn't interact well with clone().
-
-Threads with different rlimits but shared VM are extreme rarities.
-
-Could we please concentrate on the common case? A '-1' in the data page can let 
-the code fall back to some slow path.
-
-Also note that rlimit itself already has an interface to query them: 
-getrlimit(). So if you do not want the complexity of caching rlimits in the 
-data page you do not have to start with that complexity.
-
-[ But it can be done: modifying the rlimit (which predominantly only happens in 
-  the login process) is rare and happens in a parent task. ]
-
-> Even if we ignored that semantic problem it would need another writable page 
-> per task because the values cannot be shared.
-
-Sure most of the values can be shared.
-
-Most of them are exactly one of a low number of variants for all tasks in the 
-system, for typical Linux bootups. I suspect if the data page was COW-ed but 
-inherited across exec() it would behave exactly the way it should be: inherited 
-by all tasks but privatized if a task modifies it for itself and all children.
-
-Also, the first step could be simplified by not exposing rlimits - as rlimits 
-are already exposed via other channels.
-
-> Also I never liked the idea of having more writable pages per task, [...]
-
-If you limit it to your own faulty implementation then i'm not surprised that 
-you do not like it.
-
-> [...] It increases the memory footprint of a single process more. Given a 4K 
-> page is not a lot, but lots of 4K pages add up. Some workloads like to have 
-> lots of small processes and I think that's a valuable use case Linux should 
-> stay lean and efficient at.
-> 
-> [OK in theory one could do COW for the page and share it but that would get 
-> really complicated]
-
-Why would it get complicated? It's not writable to user-space, that's all that 
-is special about it.
-
-> I also don't think it's THAT performance critical to justify the vsyscall.
-
-You apparently did not understand the gist of my point: it's the CONCEPT of 
-adding a crappy catch-all sysconf() interface that sucks IMHO. It's simply bad 
-taste.
-
-If you want to expose data then expose the data intelligently, not some poor 
-system call interface that is also slower.
-
-> The simple syscall is already orders of magnitude faster than /proc, and 
-> seems to solve the performance problems we've seen completely.
-
-A handful of horse manure is less stinky than a big pile of it, still i wouldnt 
-want to eat either.
-
-> It's also simple and straight forward and simple to userstand and maintain. I 
-> doubt any of that would apply to a vsyscall solution.
-
-Note: i did not suggest a vsyscall, but a vsyscall *data area*. There's a big 
-difference between the two!
-
-It could be passed down to user-space using a new auxiliary entry (see 
-fs/binfmt_elf.c), as it's really part of a task's environment conceptually.
-
-> I don't think the additional effort for a vsyscall would be worth it at this 
-> point, unless there's some concrete example that would justify it. Even then 
-> it wouldn't work for some of the values.
-> 
-> Also a vsyscall doesn't help on non x86 anyways.
-
-There's nothing x86 about aux entries.
-
-> As for efficiency: I thought about doing a batched interface where
-> the user could pass in an array of values to fill in. But at least for the 
-> workloads I looked at the application usually calls sysconf() where
-> the array size would be always 1. And that's the standard interface.
-> This might be still worth doing, but I would like to see a concrete
-> use case first.
-> 
-> > That could have other uses as well in the future.
-> 
-> Hmm for what?
-
-*Iff* the concensus is that we are fine with a new page per task/thread then we 
-could use it for all sorts of nifty things like the current CPU id for example.
-
-> Note we already have a fast mechanism to pass some thing to glibc in the aux 
-> vector.
-
-So when you got so far in your reply why did you not delete your above (false) 
-outrage about the vsyscall, which i never suggested and which you thus forced 
-me to reply to?
-
-> > That way it would much faster than your current code btw.
+On Fri, May 13, 2011 at 07:02:15PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-05-13 at 14:42 +0800, Yong Zhang wrote:
+> > > - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
+> > > periodically.
+> > >  then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
+> > >  my debug print obseve following cpumask change occur at boot time.
+> > >     1) kthread_bind: bind cpu1
+> > >     2) cpuset_cpus_allowed_fallback: bind possible cpu
+> > >     3) rcu_cpu_kthread_should_stop: rebind cpu1
+> > > - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
 > > 
-> > So unless there are some compelling arguments in favor of sys_sysconf() 
-> > that i missed, i have to NAK this:
+> > Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
+> > which is under hotplug event CPU_UP_PREPARE. Maybe it should be
+> > under CPU_ONLINE. 
 > 
-> Well see above for lots of reasons you missed. They are understandable 
-> mistakes for someone who first looks at the problem though. I'll attempt to 
-> improve the documentation next time.
+> IIRC I talked to Paul about this a while back and ONLINE is too late,
+> however STARTING should work. At the time he couldn't quite get that to
+> work, but the above situation is indeed the root cause of our problems.
+> 
+> We shouldn't try to run a cpu affine thread before the cpu in question
+> is actually able to run stuff.
 
-I don't think your condescending tone towards me is warranted or fair, i 
-offered a fair technical criticism of your patch series. Why are you
-attacking me like this?
+But I'm afraid this patch still doesn't help. 
+If I understand your patch correctly, you just put the wake up to CPU_STARTING,
+but it's still before CPU_ONLINE.
+Please check my mail to Paul's in this thread group.
 
 Thanks,
+Yong
 
-	Ingo
+> 
+> I did me a little hackery and with the below patch my kernel still
+> boots...
+> 
+> Would that sort your issue?
+> 
+> ---
+>  kernel/rcutree.c        |   44 ++++++++++++++++++++++++++++++++++++++------
+>  kernel/rcutree_plugin.h |    1 -
+>  2 files changed, 38 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 5616b17..e0218ed 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1656,7 +1656,6 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+>  	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+>  	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
+>  	per_cpu(rcu_cpu_kthread_task, cpu) = t;
+> -	wake_up_process(t);
+>  	sp.sched_priority = RCU_KTHREAD_PRIO;
+>  	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+>  	return 0;
+> @@ -1764,13 +1763,33 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
+>  		raw_spin_lock_irqsave(&rnp->lock, flags);
+>  		rnp->node_kthread_task = t;
+>  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -		wake_up_process(t);
+>  		sp.sched_priority = 99;
+>  		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+>  	}
+>  	return rcu_spawn_one_boost_kthread(rsp, rnp, rnp_index);
+>  }
+>  
+> +static void __cpuinit rcu_wake_cpu_kthread(int cpu)
+> +{
+> +	struct task_struct *p = per_cpu(rcu_cpu_kthread_task, cpu);
+> +
+> +	if (p)
+> +		wake_up_process(p);
+> +}
+> +
+> +static void __cpuinit rcu_wake_node_kthread(struct rcu_node *rnp)
+> +{
+> +	if (!rnp)
+> +		return;
+> +
+> +	if (rnp->node_kthread_task)
+> +		wake_up_process(rnp->node_kthread_task);
+> +#ifdef CONFIG_RCU_BOOST
+> +	if (rnp->boost_kthread_task)
+> +		wake_up_process(rnp->boost_kthread_task);
+> +#endif
+> +}
+> +
+>  /*
+>   * Spawn all kthreads -- called as soon as the scheduler is running.
+>   */
+> @@ -1783,19 +1802,24 @@ static int __init rcu_spawn_kthreads(void)
+>  	for_each_possible_cpu(cpu) {
+>  		init_waitqueue_head(&per_cpu(rcu_cpu_wq, cpu));
+>  		per_cpu(rcu_cpu_has_work, cpu) = 0;
+> -		if (cpu_online(cpu))
+> +		if (cpu_online(cpu)) {
+>  			(void)rcu_spawn_one_cpu_kthread(cpu);
+> +			rcu_wake_cpu_kthread(cpu);
+> +		}
+>  	}
+>  	rnp = rcu_get_root(rcu_state);
+>  	init_waitqueue_head(&rnp->node_wq);
+>  	rcu_init_boost_waitqueue(rnp);
+>  	(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
+> -	if (NUM_RCU_NODES > 1)
+> +	rcu_wake_node_kthread(rnp);
+> +	if (NUM_RCU_NODES > 1) {
+>  		rcu_for_each_leaf_node(rcu_state, rnp) {
+>  			init_waitqueue_head(&rnp->node_wq);
+>  			rcu_init_boost_waitqueue(rnp);
+>  			(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
+> +			rcu_wake_node_kthread(rnp);
+>  		}
+> +	}
+>  	return 0;
+>  }
+>  early_initcall(rcu_spawn_kthreads);
+> @@ -2206,7 +2230,7 @@ static void __cpuinit rcu_online_cpu(int cpu)
+>  	rcu_preempt_init_percpu_data(cpu);
+>  }
+>  
+> -static void __cpuinit rcu_online_kthreads(int cpu)
+> +static void __cpuinit rcu_prepare_kthreads(int cpu)
+>  {
+>  	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
+>  	struct rcu_node *rnp = rdp->mynode;
+> @@ -2233,7 +2257,15 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+>  	case CPU_UP_PREPARE:
+>  	case CPU_UP_PREPARE_FROZEN:
+>  		rcu_online_cpu(cpu);
+> -		rcu_online_kthreads(cpu);
+> +		rcu_prepare_kthreads(cpu);
+> +		break;
+> +	case CPU_STARTING:
+> +		rcu_wake_cpu_kthread(cpu);
+> +		do {
+> +			struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
+> +		       	if (rdp)
+> +				rcu_wake_node_kthread(rdp->mynode);
+> +		} while (0);
+>  		break;
+>  	case CPU_ONLINE:
+>  	case CPU_DOWN_FAILED:
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index ed339702..961a316 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -1306,7 +1306,6 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+>  	raw_spin_lock_irqsave(&rnp->lock, flags);
+>  	rnp->boost_kthread_task = t;
+>  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -	wake_up_process(t);
+>  	sp.sched_priority = RCU_KTHREAD_PRIO;
+>  	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+>  	return 0;
