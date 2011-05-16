@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab1EPVWr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:22:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37243 "EHLO hera.kernel.org"
+	id S1756038Ab1EPVWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:22:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37238 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756054Ab1EPVWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:22:45 -0400
-Date: Mon, 16 May 2011 21:22:03 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-50e7534427283afd997d58481778c07bea79eb63@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hagen@jauu.net, hpa@zytor.com,
-        mingo@redhat.com, farnold@amd64.org, tglx@linutronix.de,
-        hpa@linux.intel.com, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, hagen@jauu.net,
-        linux-kernel@vger.kernel.org, farnold@amd64.org, tglx@linutronix.de,
-        hpa@linux.intel.com, borislav.petkov@amd.com
-In-Reply-To: <1305553188-21061-2-git-send-email-bp@amd64.org>
-References: <1305553188-21061-2-git-send-email-bp@amd64.org>
+	id S1754698Ab1EPVWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:22:41 -0400
+Date: Mon, 16 May 2011 21:22:31 GMT
+From: tip-bot for Frank Arnold <frank.arnold@amd.com>
+Message-ID: <tip-42be450565b0fc4607fae3e3a7da038d367a23ed@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        frank.arnold@amd.com, tglx@linutronix.de, hpa@linux.intel.com,
+        borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        frank.arnold@amd.com, tglx@linutronix.de, hpa@linux.intel.com,
+        borislav.petkov@amd.com
+In-Reply-To: <1305553188-21061-3-git-send-email-bp@amd64.org>
+References: <1305553188-21061-3-git-send-email-bp@amd64.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, AMD, cacheinfo: Fix fallout caused by max3 conversion
-Git-Commit-ID: 50e7534427283afd997d58481778c07bea79eb63
+Subject: [tip:x86/cpu] x86, AMD, cacheinfo: Fix L3 cache index disable checks
+Git-Commit-ID: 42be450565b0fc4607fae3e3a7da038d367a23ed
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 May 2011 21:22:04 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 May 2011 21:22:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  50e7534427283afd997d58481778c07bea79eb63
-Gitweb:     http://git.kernel.org/tip/50e7534427283afd997d58481778c07bea79eb63
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Mon, 16 May 2011 15:39:46 +0200
+Commit-ID:  42be450565b0fc4607fae3e3a7da038d367a23ed
+Gitweb:     http://git.kernel.org/tip/42be450565b0fc4607fae3e3a7da038d367a23ed
+Author:     Frank Arnold <frank.arnold@amd.com>
+AuthorDate: Mon, 16 May 2011 15:39:47 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 16 May 2011 11:24:23 -0700
+CommitDate: Mon, 16 May 2011 11:24:27 -0700
 
-x86, AMD, cacheinfo: Fix fallout caused by max3 conversion
+x86, AMD, cacheinfo: Fix L3 cache index disable checks
 
-732eacc0542d0aa48797f675888b85d6065af837 converted code around the
-kernel using nested max() macros to use the new max3 macro but forgot to
-remove the old line in intel_cacheinfo.c. Fix it.
+We provide two slots to disable cache indices, and have a check to
+prevent both slots to be used for the same index.
 
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Frank Arnold <farnold@amd64.org>
+If the user disables the same index on different subcaches, both slots
+will hold the same index, e.g.
+
+  $ echo 2047 > /sys/devices/system/cpu/cpu0/cache/index3/cache_disable_0
+  $ cat /sys/devices/system/cpu/cpu0/cache/index3/cache_disable_0
+  2047
+  $ echo 1050623 > /sys/devices/system/cpu/cpu0/cache/index3/cache_disable_1
+  $ cat /sys/devices/system/cpu/cpu0/cache/index3/cache_disable_1
+  2047
+
+due to the fact that the check was looking only at index bits [11:0]
+and was ignoring writes to bits outside that range. The more correct
+fix is to simply check whether the index is within the bounds of
+[0..l3->indices].
+
+While at it, cleanup comments and drop now-unused local macros.
+
+Signed-off-by: Frank Arnold <frank.arnold@amd.com>
+Link: http://lkml.kernel.org/r/1305553188-21061-3-git-send-email-bp@amd64.org
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1305553188-21061-2-git-send-email-bp@amd64.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 1ce1af2..31590a0 100644
+index 31590a0..c105c53 100644
 --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
 +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -327,7 +327,6 @@ static void __cpuinit amd_calc_l3_indices(struct amd_l3_cache *l3)
- 	l3->subcaches[2] = sc2 = !(val & BIT(8))  + !(val & BIT(9));
- 	l3->subcaches[3] = sc3 = !(val & BIT(12)) + !(val & BIT(13));
+@@ -453,27 +453,16 @@ int amd_set_l3_disable_slot(struct amd_l3_cache *l3, int cpu, unsigned slot,
+ {
+ 	int ret = 0;
  
--	l3->indices = (max(max(max(sc0, sc1), sc2), sc3) << 10) - 1;
- 	l3->indices = (max(max3(sc0, sc1, sc2), sc3) << 10) - 1;
- }
+-#define SUBCACHE_MASK	(3UL << 20)
+-#define SUBCACHE_INDEX	0xfff
+-
+-	/*
+-	 * check whether this slot is already used or
+-	 * the index is already disabled
+-	 */
++	/*  check if @slot is already used or the index is already disabled */
+ 	ret = amd_get_l3_disable_slot(l3, slot);
+ 	if (ret >= 0)
+ 		return -EINVAL;
  
+-	/*
+-	 * check whether the other slot has disabled the
+-	 * same index already
+-	 */
+-	if (index == amd_get_l3_disable_slot(l3, !slot))
++	if (index > l3->indices)
+ 		return -EINVAL;
+ 
+-	/* do not allow writes outside of allowed bits */
+-	if ((index & ~(SUBCACHE_MASK | SUBCACHE_INDEX)) ||
+-	    ((index & SUBCACHE_INDEX) > l3->indices))
++	/* check whether the other slot has disabled the same index already */
++	if (index == amd_get_l3_disable_slot(l3, !slot))
+ 		return -EINVAL;
+ 
+ 	amd_l3_disable_index(l3, cpu, slot, index);
