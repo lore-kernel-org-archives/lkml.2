@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab1EPTAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:00:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37436 "EHLO mx1.suse.de"
+	id S1753347Ab1EPTDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:03:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59958 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab1EPTAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:00:15 -0400
-Date: Mon, 16 May 2011 20:59:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
- writeback for various fses
-Message-ID: <20110516185947.GK5344@quack.suse.cz>
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com>
- <20110510125124.GD4402@quack.suse.cz>
- <20110511181901.GK20579@tux1.beaverton.ibm.com>
- <20110512094255.GA4690@quack.suse.cz>
- <20110516184927.GM20579@tux1.beaverton.ibm.com>
+	id S1751013Ab1EPTDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:03:39 -0400
+Date: Mon, 16 May 2011 15:03:10 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+Message-ID: <20110516190310.GH31888@redhat.com>
+References: <1305275018-20596-1-git-send-email-ying.huang@intel.com>
+ <4DCD4B85.3040702@gmail.com>
+ <BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com>
+ <4DCE3493.4090404@gmail.com>
+ <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com>
+ <4DCF7413.4070704@gmail.com>
+ <4DD07959.4030608@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110516184927.GM20579@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DD07959.4030608@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-05-11 11:49:27, Darrick J. Wong wrote:
-> On Thu, May 12, 2011 at 11:42:55AM +0200, Jan Kara wrote:
-> > On Wed 11-05-11 11:19:01, Darrick J. Wong wrote:
-> > > On Tue, May 10, 2011 at 02:51:24PM +0200, Jan Kara wrote:
-> > > > On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
-> > > > > I am still chasing down what exactly is broken in ext3.  data=writeback mode
-> > > > > passes with no failures.  data=ordered, however, does not pass; my current
-> > > > > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
-> > > > > page_mkclean to kick the userspace programs off the page before writing it.
-> > > >   Yes, ext3 in data=ordered mode writes pages from
-> > > > journal_commit_transaction() via submit_bh() without clearing page dirty
-> > > > bits thus page_mkclean() is not called for these pages. Frankly, do you
-> > > > really want to bother with adding support for ext2 and ext3? People can use
-> > > > ext4 as a fs driver when they want to start using blk-integrity support.
-> > > > Especially ext2 patch looks really painful and just from a quick look I can
-> > > > see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
-> > > 
-> > > Yeah, I agree that ext2 is ugly and ext3/jbd might be more painful.  Are there
-> > > any other code that wants stable pages that's already running with ext3?  In
-> > > this months-long discussion I've heard that encryption and raid also like
-> > > stable pages during writes.  Have those users been broken this whole time, or
-> > > have they been stabilizing pages themselves?
-> >   I believe part of them has been broken (e.g. raid) and part of them do
-> > copy-out so they were OK.
+On Mon, May 16, 2011 at 09:09:45AM +0800, Huang Ying wrote:
+> >   Ying, the concern is rather related to the code scheme in general. Since
+> > we have notifiers I think the better way to be consistent here and use
+> > hwerr notifier too. But it's IMHO ;)
 > 
-> A future step might be to undo all these homegrown copy-outs?
-  Sure but I'm not the right one to tell you where these are ;).
-
-> > > I suppose we can cross the "ext3 fails horribly on DIF" bridge when someone
-> > > complains about it.  Possibly we could try to steer them to btrfs.
-> >   Well, btrfs might be a bit too advantageous for production servers but
-> > ext4 would be definitely viable for them.
+> As for go notifiers or not.  IMHO, a rule can be:
 > 
-> Are there any distros that are going straight from ext3 to btrfs?
-  Most distros currently offer users a choice of xfs, ext3, ext4, btrfs
-with ext4 being the default. I'm not sure if that's what you are asking
-about...
+> - If it is something like a driver, than it should go notifier
+> - If it is architectural/PC defacto standard, it can sit outside of
+> notifier.
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Hmm, then what do you do about perf?  That is architectural and a defacto
+standard, but I am not sure hardcoding that would be appropriate.
+
+> 
+> I think that seeing unknown NMI as hardware error should be part of PC
+> defacto standard.  Do you think so?
+
+Well after thinking about it, I would say no.  And my reason is, if
+vendors are really serious about using NMIs as an indicator for hardware
+errors, shouldn't they be setting a bit in the memory controller/north
+bridge or south bridge/IOHC for an NMI handler to read?  I mean hardware
+devices don't just get wired directly to the NMI pin on the cpu, right?
+They generally have to go through some hub that acts as a multiplexer.
+
+In those cases, why can't those hubs set a bit saying it detected an error
+(don't PCIe bridges already do that?) and let the NMI handler read it to
+confirm.  This way we can leave 'unknown NMIs' as a way to say an
+unclaimed NMI entered the system and we can have users set policy about
+what to do, panic, printk, whatever.
+
+But for the HEST stuff, it should be smart enough by now to trap any
+hardware error, no?  How does a machine that supports HEST let a hardware
+error get through without detecting it?  Isn't that the point?  Detect a
+hardware error, grab as much info about it as possible, save the error
+record and then panic?
+
+Otherwise if you just panic, then you have no idea why the machine errored
+in the first place.  It might be the safe thing to do in some
+circumstances, but then you have to wonder why the fancy HEST enabled
+server didn't catch it.  Isn't that what people are spending extra money
+for those Intel servers with RAS features?
+
+Cheers,
+Don
