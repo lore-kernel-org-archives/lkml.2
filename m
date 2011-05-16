@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab1EPQJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:09:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32893 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756589Ab1EPQJw (ORCPT
+	id S1756786Ab1EPQOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:14:22 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:51413 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756688Ab1EPQOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:09:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uYI+IPbBVjYitBjUDZTmmA3JXrZSfbfMT/szCL8NDs2gr7JE3IS08zqsURBd5J9ZIP
-         RWjF5PK9PtOyia5AuW0noSADvYbIsc86d8Lh+MoTwnW2T70nsjy9hfomExCsLaRkxwTc
-         ZqjzB9niCRQTVqFxzaJYL3WRSU6hpyYslcBFs=
-Date: Mon, 16 May 2011 18:09:47 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 6/9] job control: make task_clear_jobctl_pending()
- clear TRAPPING automatically
-Message-ID: <20110516160947.GC20624@htj.dyndns.org>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org>
- <1305301580-9924-7-git-send-email-tj@kernel.org>
- <20110516122535.GD4898@redhat.com>
- <20110516132400.GY23665@htj.dyndns.org>
- <20110516160019.GB15918@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516160019.GB15918@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 16 May 2011 12:14:21 -0400
+Subject: Re: [BUG] perf: bogus correlation of kernel symbols
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, kees.cook@canonical.com,
+        davem@davemloft.net, eranian@google.com, torvalds@linux-foundation.org,
+        adobriyan@gmail.com, penberg@kernel.org
+In-Reply-To: <20110516153527.GC21107@elte.hu>
+References: <1305292059.1949.0.camel@dan> <1305293345.1949.22.camel@dan>
+	 <20110516153527.GC21107@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 12:14:12 -0400
+Message-ID: <1305562452.1818.10.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 2011-05-16 at 17:35 +0200, Ingo Molnar wrote:
 
-On Mon, May 16, 2011 at 06:00:19PM +0200, Oleg Nesterov wrote:
-> > It's a safety mechanism.  We shouldn't have TRAPPING set when no
-> > stop/trap is pending and the above establishes that invariant
+> Agreed, it would be a very useful feature.
 > 
-> Hmm. I thought that SIGCONT should add the new TRAPPING... My head spins.
+> I'd suggest to implement it along the lines of:
+> 
+>  - First check whether grsecurity or PAX has this implemented already via the
+>    relocation facility - they are pretty good at being paranoid so i'd be 
+>    surprised if they didnt think of this already! :-)
+> 
+>  - If not then have a look at CONFIG_RELOCATABLE and to relocate the kernel 
+>    binary intentionally via a hardcoded parameter. Just see whether you can do 
+>    it and whether it works as you expect it. Check /proc/kallsyms changing 
+>    after your patch. Enjoy the kernel still working ;-)
+> 
+>  - Then promote it to a boot parameter - this way you'll be able to tell 
+>    whether there's any hidden build-time assumptions about relocation position. 
+>    (there really shouldnt be any given that kexec works just fine - but i'd 
+>     suggest this step just in case.)
+> 
+>  - Then promote that hack to be a randomized parameter. Marvel at a different,
+>    randomized /proc/kallsyms output at every bootup and enjoy the still working 
+>    kernel!
+> 
+>  - Then look at all RIP outputs (thanks to your prior efforts they are now 
+>    mostly concentrated in the vprints code!) and reverse apply the random 
+>    offset before it's exported into user-space. wchan, etc. Marvel at the 
+>    constant /proc/kallsyms output, fully knowing that the *real* addresses
+>    are randomized.
+> 
+>  - Please do not forget to transfer perf RIPs and callchains and marvel at the
+>    well working 'perf top' output.
+> 
+> At that point the feature will be highly useful already IMO. Remaining work 
+> will be to think through and close down all remaining avenues of RIP leakage. 
+> 
+> At this point kptr_restrict will be a lot less relevant - the symbols will 
+> expose offsets (so it's not totally unhelpful to attackers) but not the real 
+> absolute addresses.
+> 
+> Unless i'm missing some particularly difficult roadblock, which is possible.
+> 
+> If you try this then please keep us posted at every step above, even if your 
+> patches are not fully working and useful yet. Maybe some other 
+> details/ideas/suggestions will arise at that point.
+> 
 
-So, it's two-fold, but we better talk about this with actual patches.
+Thanks for the detailed response.  I will attempt to go down this road,
+and will keep people posted with my progress.
 
-* SIGCONT always clears pending group stop - ie. JOBCTL_STOP_PENDING.
-  If clearing of that flag leaves no group stop / trap condition
-  pending (group stop pending was the only condition), it
-  automatically clears TRAPPING.
+-Dan
 
-* SIGCONT schedules JOBCTL_TRAP_STOP (STOP trap site for ptracer) and
-  schedules TRAPPING, if tracee is already in TRAP_STOP for
-  notification.  Note that this condition doesn't interact with the
-  above action.
+> Thanks,
+> 
+> 	Ingo
 
-> My only point, I still think that it is better to not apply these
-> preparations right now, without the next SEIZE/etc changes.
 
-Sure thing.  As long as you don't see anything obviously wrong in the
-prep patches, the rest of the series should be easier to review.
-
-Anyways, will post soon.
-
-Thanks.
-
--- 
-tejun
