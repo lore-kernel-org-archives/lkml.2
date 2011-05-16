@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab1EPO5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 10:57:06 -0400
-Received: from emh07.mail.saunalahti.fi ([62.142.5.117]:51580 "EHLO
-	emh07.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab1EPO45 (ORCPT
+	id S1756107Ab1EPOy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:54:29 -0400
+Received: from emh01.mail.saunalahti.fi ([62.142.5.107]:56172 "EHLO
+	emh01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab1EPOy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:56:57 -0400
-Subject: [PATCH v3 0/2] Fix uevent race in register_netdevice()
+	Mon, 16 May 2011 10:54:28 -0400
+X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 May 2011 10:54:28 EDT
+Subject: [PATCH v3 1/2] driver core: add device_add_noevent() and
+	device_uevent()
 To: netdev@vger.kernel.org
 From: Kalle Valo <kvalo@adurom.com>
 Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 16 May 2011 17:46:30 +0300
-Message-ID: <20110516143913.13838.85357.stgit@localhost6.localdomain6>
+Date: Mon, 16 May 2011 17:46:39 +0300
+Message-ID: <20110516144638.13838.28971.stgit@localhost6.localdomain6>
+In-Reply-To: <20110516143913.13838.85357.stgit@localhost6.localdomain6>
+References: <20110516143913.13838.85357.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,30 +26,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to fix a race in register_netdevice(). The problem is that
-there's a uevent to userspace before the netdevice is ready for use. The
-problem is described here:
+From: Kalle Valo <kalle.valo@atheros.com>
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15606
+To make it possible to postpone uevent after the device is registered
+create the two new functions: device_add_noevent() and device_uevent().
+This is needed by register_netdevice() to fix a race where the netdevice
+is not ready until the initialisation has finished.
 
-I have sent few different ways to fix this, but none of them have been
-really usable. Now I came up with a way which changes the driver core
-to make it possible send the uevent in a separate call. This is a clean
-and safe way to fix the race. Downside is that two new functions are
-added to the driver core interface.
-
-Please comment.
-
+Signed-off-by: Kalle Valo <kalle.valo@atheros.com>
 ---
-
-Kalle Valo (2):
-      driver core: add device_add_noevent() and device_uevent()
-      net: postpone net device uevent to fix a race
-
-
  drivers/base/core.c    |   76 +++++++++++++++++++++++++++++++++++++-----------
  include/linux/device.h |    2 +
- net/core/dev.c         |    3 ++
- net/core/net-sysfs.c   |    2 +
- 4 files changed, 65 insertions(+), 18 deletions(-)
+ 2 files changed, 61 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 81b78ed..54208e0 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -872,22 +872,7 @@ int device_private_init(struct device *dev)
+ 	return 0;
+ }
+ 
+-/**
+- * device_add - add device to device hierarchy.
+- * @dev: device.
+- *
+- * This is part 2 of device_register(), though may be called
+- * separately _iff_ device_initialize() has been called separately.
+- *
+- * This adds @dev to the kobject hierarchy via kobject_add(), adds it
+- * to the global and sibling lists for the device, then
+- * adds it to the other relevant subsystems of the driver model.
+- *
+- * NOTE: _Never_ directly free @dev after calling this function, even
+- * if it returned an error! Always use put_device() to give up your
+- * reference instead.
+- */
+-int device_add(struct device *dev)
++static int __device_add(struct device *dev, bool event)
+ {
+ 	struct device *parent = NULL;
+ 	struct class_interface *class_intf;
+@@ -974,7 +959,9 @@ int device_add(struct device *dev)
+ 		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+ 					     BUS_NOTIFY_ADD_DEVICE, dev);
+ 
+-	kobject_uevent(&dev->kobj, KOBJ_ADD);
++	if (event)
++		kobject_uevent(&dev->kobj, KOBJ_ADD);
++
+ 	bus_probe_device(dev);
+ 	if (parent)
+ 		klist_add_tail(&dev->p->knode_parent,
+@@ -1026,6 +1013,61 @@ name_error:
+ }
+ 
+ /**
++ * device_add - add device to device hierarchy.
++ * @dev: device.
++ *
++ * This is part 2 of device_register(), though may be called
++ * separately _iff_ device_initialize() has been called separately.
++ *
++ * This adds @dev to the kobject hierarchy via kobject_add(), adds it
++ * to the global and sibling lists for the device, then
++ * adds it to the other relevant subsystems of the driver model.
++ *
++ * NOTE: _Never_ directly free @dev after calling this function, even
++ * if it returned an error! Always use put_device() to give up your
++ * reference instead.
++ */
++int device_add(struct device *dev)
++{
++	return __device_add(dev, true);
++}
++
++/**
++ * device_add - add device to device hierarchy but omit uevent
++ * @dev: device.
++ *
++ * This is part 2 of device_register(), though may be called
++ * separately _iff_ device_initialize() has been called separately.
++ *
++ * This adds @dev to the kobject hierarchy via kobject_add(), adds it
++ * to the global and sibling lists for the device, then
++ * adds it to the other relevant subsystems of the driver model.
++ *
++ * This version differs from device_add() so that it does not emit uevent.
++ * Instead call device_uevent() separately.
++ *
++ * NOTE: _Never_ directly free @dev after calling this function, even
++ * if it returned an error! Always use put_device() to give up your
++ * reference instead.
++ */
++int device_add_noevent(struct device *dev)
++{
++	return __device_add(dev, false);
++}
++
++/**
++ * device_uevent - emit uevent for device addition
++ * @dev: device.
++ *
++ * This is part 2 of device_add_noevent(). It emits the signal which was
++ * not sent when device_add_noevent() was called.
++ */
++void device_uevent(struct device *dev)
++{
++	kobject_uevent(&dev->kobj, KOBJ_ADD);
++}
++
++/**
+  * device_register - register a device with the system.
+  * @dev: pointer to the device structure
+  *
+diff --git a/include/linux/device.h b/include/linux/device.h
+index ab8dfc0..408d4f0 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -546,6 +546,8 @@ extern int __must_check device_register(struct device *dev);
+ extern void device_unregister(struct device *dev);
+ extern void device_initialize(struct device *dev);
+ extern int __must_check device_add(struct device *dev);
++extern int __must_check device_add_noevent(struct device *dev);
++extern void device_uevent(struct device *dev);
+ extern void device_del(struct device *dev);
+ extern int device_for_each_child(struct device *dev, void *data,
+ 		     int (*fn)(struct device *dev, void *data));
 
