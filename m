@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab1EPJXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:23:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48053 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab1EPJXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:23:19 -0400
-Date: Mon, 16 May 2011 11:23:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
-        Jean Pihet <j-pihet@ti.com>, linux-omap@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] perf: export power_start and power_end tracepoints
-Message-ID: <20110516092309.GD12325@elte.hu>
-References: <1305297838-4015-1-git-send-email-j-pihet@ti.com>
- <20110513144830.GB32688@elte.hu>
- <BANLkTikkd9bNRLF1iDAz9Jwrnon3A=j44g@mail.gmail.com>
+	id S1754147Ab1EPJmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:42:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37737 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab1EPJmQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:42:16 -0400
+Date: Mon, 16 May 2011 11:24:29 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Daniel Drake <dsd@laptop.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, dilinger@queued.net
+Subject: Re: [PATCH 11/11] x86, olpc: Add XO-1.5 SCI driver
+Message-ID: <20110516092429.GC26487@linutronix.de>
+References: <1304166750-31125-1-git-send-email-dsd@laptop.org>
+ <1304166750-31125-12-git-send-email-dsd@laptop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <BANLkTikkd9bNRLF1iDAz9Jwrnon3A=j44g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1304166750-31125-12-git-send-email-dsd@laptop.org>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Daniel Drake | 2011-04-30 13:32:30 [+0100]:
 
-* Jean Pihet <jean.pihet@newoldbits.com> wrote:
+>+static DECLARE_WORK(sci_work, process_sci_queue_work);
+>+
+>+static u32 xo15_sci_gpe_handler(acpi_handle gpe_device, u32 gpe, void *context)
+>+{
+>+	schedule_work(&sci_work);
+>+	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
+>+}
 
-> Adding l-o and linux-pm MLs. The original post is at
-> http://www.spinics.net/lists/kernel/msg1186554.html
-> 
-> On Fri, May 13, 2011 at 4:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * jean.pihet@newoldbits.com <jean.pihet@newoldbits.com> wrote:
-> >
-> >> From: Jean Pihet <j-pihet@ti.com>
-> >>
-> >> If used in a module both tracepoints need to be exported by the
-> >> kernel.
-> >
-> > but it's not used by any module in the kernel AFAICS, so why is this needed?
-> Not currently, that is why the error went unnoticed. I think it is
-> better to fix it now than later.
-> 
-> I am working on a plan to clean-up and isolate the OMAP PM code from
-> the core code and to provide the PM functionality as a module. This
-> effort is part of the 'remove the crazy ARM churn' from the kernel.
+I know this is too much to ask but acpi_install_gpe_handler() looks like
+a custom irq demultiplexor which lacks the support for threaded irqs.
 
-Feel free to keep this patch with those modifications/cleanups:
-
-Acked-by: Ingo Molnar <mingo@elte.hu>
-
-but please make sure you push it together, i.e. never export something 
-(knowingly) without having in-tree use for it.
-
-Thanks,
-
-	Ingo
+Sebastian
