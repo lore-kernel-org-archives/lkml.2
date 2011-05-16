@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab1EPPmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:42:21 -0400
-Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:44765 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756126Ab1EPPmU (ORCPT
+	id S1756360Ab1EPPnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:43:14 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36743 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756188Ab1EPPnN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:42:20 -0400
-X-AuditID: 1209190e-b7c39ae000000a8c-d7-4dd145dbe731
-Message-ID: <4DD145D6.2020505@mit.edu>
-Date: Mon, 16 May 2011 11:42:14 -0400
-From: Andy Lutomirski <luto@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Mon, 16 May 2011 11:43:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=j9GKWh+RS9jQj33IYQnMRObkwpPOJNJ96vFeAenhG7GGBwO0OwWcNT4CwNWeZzvDVG
+         N7YhsVqEMmZLHA0gvYeheCPJpOTSuv2myJhWEEO+eFe4Ycz67Kcgw9vyqDXvDrDww3Yh
+         jjfc21axR2WfW25NvsjUcorydcRecifRdNVo0=
 MIME-Version: 1.0
-To: Ben Greear <greearb@candelatech.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Fedora 14 not always going to run-level 3?
-References: <4DC98489.2060902@candelatech.com>
-In-Reply-To: <4DC98489.2060902@candelatech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsUixG6nrnvb9aKvwb6TUhYLHnQwW1zeNYfN
-	gcnjzOMZbB6fN8kFMEVx2aSk5mSWpRbp2yVwZTxunM9ecIul4s/Cp0wNjDeYuxg5OSQETCQ2
-	fOxkhbDFJC7cW8/WxcjFISSwj1Fi86TlzBDOBkaJq/9vMEE4b5kkdqzczQjSwiugJtG+7j8b
-	iM0ioCrx8cs5sLFsAioSHUsfMIHYogKVEpN+7mCFqBeUODnzCQuILSKgIXH0xCIwm1nARuJM
-	+zcgm4NDWMBcouciD0hYSEBPYtOSRWDjOQX0JTY1dzKDlDALWEt8210E0Skvsf3tHOYJjIKz
-	kCyYhVA1C0nVAkbmVYyyKblVurmJmTnFqcm6xcmJeXmpRbrGermZJXqpKaWbGEGhyynJt4Px
-	60GlQ4wCHIxKPLwMzhd9hVgTy4orcw8xSnIwKYnyGgADX4gvKT+lMiOxOCO+qDQntfgQowQH
-	s5II75n6C75CvCmJlVWpRfkwKWkOFiVx3pmS6r5CAumJJanZqakFqUUwWRkODiUJXguQoYJF
-	qempFWmZOSUIaSYOTpDhPEDD5UBqeIsLEnOLM9Mh8qcYFaXEeRVBEgIgiYzSPLheWGp5xSgO
-	9IowryRIFQ8wLcF1vwIazAQ0eNUpkKuLSxIRUlINjFEHHF+bTb15YundfXfVf4T4uhW+WPmo
-	9FGJv0eYWeiH0PuOTDF5nrzTvkSsDMlcxjVL/Oa8zNSjxRaP0tbv3Co2dXK8sPP2zJK43l/p
-	on6hHvEHt/YXf7p8S0DluspdwyfrvNPd5n/dPz826ZH8IneeelbxxexPVX4GrKmUK/r5uzBA
-	8T3DPCWW4oxEQy3mouJEAH3KQdoIAwAA
+In-Reply-To: <1305329059-2017-5-git-send-email-andi@firstfloor.org>
+References: <1305329059-2017-1-git-send-email-andi@firstfloor.org> <1305329059-2017-5-git-send-email-andi@firstfloor.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 16 May 2011 17:42:52 +0200
+Message-ID: <BANLkTikP==HkDSG1oKcfSKAhrWOXRqGF5w@mail.gmail.com>
+Subject: Re: [PATCH 4/5] Add a sysconf syscall
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2011 02:31 PM, Ben Greear wrote:
-> Has anyone else noticed problems with 39-rc1+ sometimes not booting
-> into run-level 3? It seems to just go directly to root console prompt
-> sometimes. Seems it was easier to reproduce on -rc1 and early more
-> buggy kernels, for what that's worth..
+On Sat, May 14, 2011 at 1:24 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> +/*
+> + * POSIX sysconf subset. Some programs need this in relatively fast paths
+> + * and /proc is too slow for them.
+> + *
+> + * Note this is only a subset of the values supported by POSIX.
+> + * We assume the C library handles the others.
+> + */
+> +SYSCALL_DEFINE1(sysconf, int, name)
+> +{
+> +       switch (name) {
+> +       case _SC_ARG_MAX:
+> +               return rlimit_or(RLIMIT_STACK, ARG_MAX*ARG_MAX_FACTOR) /
+> +                               ARG_MAX_FACTOR;
+> +
+> +       case _SC_CHILD_MAX:
+> +               return rlimit_or(RLIMIT_NPROC, max_threads);
+> +
+> +       case _SC_CLK_TCK:
+> +               return HZ;
+> +
+> +       case _SC_SEM_NSEMS_MAX:
+> +               return current->nsproxy->ipc_ns->sem_ctls[1];
+> +
+> +       case _SC_OPEN_MAX:
+> +               return rlimit_or(RLIMIT_NOFILE, sysctl_nr_open);
+> +
+> +       case _SC_SIGQUEUE_MAX:
+> +               /* or fallback based on memory? */
+> +               return rlimit_or(RLIMIT_SIGPENDING, INT_MAX);
+> +
+> +       case _SC_UIO_MAXIOV:
+> +               return UIO_MAXIOV;
+> +
+> +       case _SC_PAGESIZE:
+> +               return PAGE_SIZE;
+> +
+> +       case _SC_SYMLOOP_MAX:
+> +               return SYMLOOP_MAX;
+> +
+> +       case _SC_PHYS_PAGES:
+> +               return totalram_pages;
+> +
+> +       case _SC_AVPHYS_PAGES:
+> +               return nr_free_pages();
+> +
+> +       case _SC_NPROCESSORS_CONF:
+> +               return num_possible_cpus();
+> +
+> +       case _SC_NPROCESSORS_ONLN:
+> +               return num_online_cpus();
+> +
+> +       case _SC_NGROUPS_MAX:
+> +               return NGROUPS_MAX;
+> +
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +}
 
-I don't know exactly which version it was, but when I was bisecting some 
-unrelated breakage in 2.6.39-rc7, some of the test kernels got stuck in 
-some early systemd stage (F15 beta) and failed to make progress.  But 
-I've never seen this on new kernels or on 2.6.38.y.
+...and libc will start making many such calls in a row in order to retrieve
+a dozen of such values.
 
---Andy
+It's rather inefficient to return just one word.
+Try to return more data per call.
 
->
-> Ben
->
+Pass a pointer to the result struct and its length.
+Future-proof API, such as using generously wide data types,
+passing "version of struct" input parameter to facilitate incompatible
+future changes, etc.
 
+Pass a bit flag variable which says what data you want to have:
+all-zeros means "give me only the cheap stuff which needs no calculations",
+such as NGROUPS_MAX.
+If SYSCONF_NPROCESSORS_ONLN bit is set, also return num_online_cpus().
+If SYSCONF_AVPHYS_PAGES bit is set, return nr_free_pages().
+Etc.
+
+Maybe it makes sense to pass bits in the struct rather than in a parameter,
+to not get caught by "we ran out of bits in the word!" problem later.
+
+-- 
+vda
