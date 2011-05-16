@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab1EPS7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:59:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29647 "EHLO mga14.intel.com"
+	id S1753412Ab1EPS7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 14:59:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23512 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab1EPS7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751204Ab1EPS7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 May 2011 14:59:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,220,1304319600"; 
-   d="scan'208";a="437018384"
-Message-Id: <20110516185646.282418545@sbsiddha-MOBL3.sc.intel.com>
+   d="scan'208";a="643404676"
+Message-Id: <20110516185646.360872956@sbsiddha-MOBL3.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Mon, 16 May 2011 11:56:04 -0700
+Date: Mon, 16 May 2011 11:56:05 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com
 Cc: linux-kernel@vger.kernel.org, daniel.blueman@gmail.com,
-        suresh.b.siddha@intel.com, stable@kernel.org
-Subject: [patch 1/4] x86, ioapic: fix potential resume deadlock
-Content-Disposition: inline; filename=fix_gfp_kernel_alloc_with_irqs_disabled.patch
+        suresh.b.siddha@intel.com
+Subject: [patch 2/4] x86, ioapic: allocate ioapic_saved_data early
+References: <20110516185646.282418545@sbsiddha-MOBL3.sc.intel.com>
+Content-Disposition: inline; filename=allocate_ioapic_saved_data_early.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: x86, ioapic: fix potential resume deadlock
+This allows re-using this buffer for enabling interrupt-remapping during
+boot and resume. And thus allow for conslidating the code between
+ioapic suspend/resume and interrupt-remapping.
 
-Fix a potential deadlock when resuming; here the calling function
-has disabled interrupts, so we cannot sleep.
-
-Change the memory allocation flag from GFP_KERNEL to GFP_ATOMIC.
-
-TODO: We can do away with this memory allocation during resume by
-reusing the ioapic suspend/resume code that uses boot time allocated
-buffers.
-
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: stable@kernel.org	[v2.6.39]
 ---
- arch/x86/kernel/apic/io_apic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
 Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
 ===================================================================
 --- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
 +++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -621,14 +621,14 @@ struct IO_APIC_route_entry **alloc_ioapi
- 	struct IO_APIC_route_entry **ioapic_entries;
+@@ -100,6 +100,11 @@ int mp_irq_entries;
+ /* GSI interrupts */
+ static int nr_irqs_gsi = NR_IRQS_LEGACY;
  
- 	ioapic_entries = kzalloc(sizeof(*ioapic_entries) * nr_ioapics,
--				GFP_KERNEL);
-+				GFP_ATOMIC);
- 	if (!ioapic_entries)
- 		return 0;
- 
- 	for (apic = 0; apic < nr_ioapics; apic++) {
- 		ioapic_entries[apic] =
- 			kzalloc(sizeof(struct IO_APIC_route_entry) *
--				nr_ioapic_registers[apic], GFP_KERNEL);
-+				nr_ioapic_registers[apic], GFP_ATOMIC);
- 		if (!ioapic_entries[apic])
- 			goto nomem;
++/*
++ * Saved I/O APIC state during suspend/resume.
++*/
++static struct IO_APIC_route_entry *ioapic_saved_data[MAX_IO_APICS];
++
+ #if defined (CONFIG_MCA) || defined (CONFIG_EISA)
+ int mp_bus_id_to_type[MAX_MP_BUSSES];
+ #endif
+@@ -179,6 +184,14 @@ int __init arch_early_irq_init(void)
+ 		io_apic_irqs = ~0UL;
  	}
+ 
++	for (i = 0; i < nr_ioapics; i++) {
++		ioapic_saved_data[i] =
++			kzalloc(sizeof(struct IO_APIC_route_entry) *
++				nr_ioapic_registers[i], GFP_KERNEL);
++		if (!ioapic_saved_data[i])
++			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
++	}
++
+ 	cfg = irq_cfgx;
+ 	count = ARRAY_SIZE(irq_cfgx);
+ 	node = cpu_to_node(0);
+@@ -2918,8 +2931,6 @@ static int __init io_apic_bug_finalize(v
+ 
+ late_initcall(io_apic_bug_finalize);
+ 
+-static struct IO_APIC_route_entry *ioapic_saved_data[MAX_IO_APICS];
+-
+ static void suspend_ioapic(int ioapic_id)
+ {
+ 	struct IO_APIC_route_entry *saved_data = ioapic_saved_data[ioapic_id];
+@@ -2978,18 +2989,6 @@ static struct syscore_ops ioapic_syscore
+ 
+ static int __init ioapic_init_ops(void)
+ {
+-	int i;
+-
+-	for (i = 0; i < nr_ioapics; i++) {
+-		unsigned int size;
+-
+-		size = nr_ioapic_registers[i]
+-			* sizeof(struct IO_APIC_route_entry);
+-		ioapic_saved_data[i] = kzalloc(size, GFP_KERNEL);
+-		if (!ioapic_saved_data[i])
+-			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+-	}
+-
+ 	register_syscore_ops(&ioapic_syscore_ops);
+ 
+ 	return 0;
 
 
