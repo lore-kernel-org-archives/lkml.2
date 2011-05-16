@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1EPJzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:55:06 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35119 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894Ab1EPJzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:55:05 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: kernel-janitors@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/gpu/drm/i915/i915_gem.c: Add missing error handling code
-Date: Mon, 16 May 2011 11:54:59 +0200
-Message-Id: <1305539699-14096-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1754234Ab1EPJ60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:58:26 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63172 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab1EPJ6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:58:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=BIkPeEEyXh5yohPwfn853+ZYnD5iGB7cF79e/VqdiKaQEZasYrhW7EWHm5uNir2lWf
+         XJQ882ea3VbsINQQhbM/FkNTqPsG1JPMVsoQ+SnwInF4hljgILX4mlWJ6wQWxPuzJxko
+         heTMXbMc34ppu+upAYRyppsU7iYcSOmdB0g8U=
+From: Sasha Levin <levinsasha928@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Documentation: Update augmented rbtree documentation
+Date: Mon, 16 May 2011 12:56:42 +0300
+Message-Id: <1305539802-12509-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.5.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Current documentation referred to the old method
+of handling augmented trees. Update documentation
+to correspond with the changes done in commit
+b945d6b2554d550fe95caadc61e521c0ad71fb9c.
 
-The cleanup code at the end of the function should also be carried out when
-the function only partly completes its work.
-
-A simplified version of the semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r exists@
-local idexpression struct page ** x;
-expression ra,rr;
-position p1,p2;
-@@
-
-x = drm_malloc_ab@p1(...)
-...  when != x = rr
-     when != drm_free_large(x,...)
-     when != if (...) { ... drm_free_large(x,...) ...}
-if(...) { ... when != x = ra
-     when forall
-     when != drm_free_large(x,...)
- \(return <+...x...+>; \| return@p2...; \) }
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-cocci.print_main("drm_malloc_ab",p1)
-cocci.print_secs("return",p2)
-
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Woodhouse <David.Woodhouse@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
-This is only compile-tested.  It may be that processing all of the pages is
-not correct when they have been partially treated.
+ Documentation/rbtree.txt |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
 
- drivers/gpu/drm/i915/i915_gem.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 7ce3f35..ef000e6 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -467,8 +467,10 @@ i915_gem_shmem_pread_slow(struct drm_device *dev,
+diff --git a/Documentation/rbtree.txt b/Documentation/rbtree.txt
+index 19f8278..b847598 100644
+--- a/Documentation/rbtree.txt
++++ b/Documentation/rbtree.txt
+@@ -196,15 +196,20 @@ Support for Augmented rbtrees
+ Augmented rbtree is an rbtree with "some" additional data stored in each node.
+ This data can be used to augment some new functionality to rbtree.
+ Augmented rbtree is an optional feature built on top of basic rbtree
+-infrastructure. rbtree user who wants this feature will have an augment
+-callback function in rb_root initialized.
+-
+-This callback function will be called from rbtree core routines whenever
+-a node has a change in one or both of its children. It is the responsibility
+-of the callback function to recalculate the additional data that is in the
+-rb node using new children information. Note that if this new additional
+-data affects the parent node's additional data, then callback function has
+-to handle it and do the recursive updates.
++infrastructure. rbtree user who wants this feature will have to call the
++augmentation functions with the user provided augmentation callback
++when inserting and erasing nodes.
++
++On insertion, The user must call rb_augment_insert() once the new node is in
++place. This will cause the augmentation function callback to be called for
++each node between the new node and the root which have been affected by the
++insertion.
++
++When erasing a node, The user must call rb_augment_erase_begin() first to
++retrieve the deepest node on the rebalance path. Then, After erasing the
++original node, the user must call rb_augment_erase_end() with the deepest
++node found earlier. This will cause the augmentation function to be called
++for each affected node between the deepest node and the root.
  
- 		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
- 					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
--		if (IS_ERR(page))
--			return PTR_ERR(page);
-+		if (IS_ERR(page)) {
-+			ret = PTR_ERR(page);
-+			goto out;
-+		}
  
- 		if (do_bit17_swizzling) {
- 			slow_shmem_bit17_copy(page,
+ Interval tree is an example of augmented rb tree. Reference -
+-- 
+1.7.5.rc3
 
