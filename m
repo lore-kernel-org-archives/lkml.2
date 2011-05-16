@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab1EPSth (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:49:37 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:32902 "EHLO e2.ny.us.ibm.com"
+	id S1751531Ab1EPSuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 14:50:09 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:48928 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab1EPStf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:49:35 -0400
-Date: Mon, 16 May 2011 11:49:27 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
-	writeback for various fses
-Message-ID: <20110516184927.GM20579@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com> <20110510125124.GD4402@quack.suse.cz> <20110511181901.GK20579@tux1.beaverton.ibm.com> <20110512094255.GA4690@quack.suse.cz>
-MIME-Version: 1.0
+	id S1751013Ab1EPSuI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 14:50:08 -0400
+From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110512094255.GA4690@quack.suse.cz>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCHv3 0/5] Add TPS65911 device
+Date: Mon, 16 May 2011 13:49:59 -0500
+Message-Id: <378C5676-1C8A-4689-9F3E-23D73D90F6D2@slimlogic.co.uk>
+Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        grant.likely@secretlab.ca
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 12, 2011 at 11:42:55AM +0200, Jan Kara wrote:
-> On Wed 11-05-11 11:19:01, Darrick J. Wong wrote:
-> > On Tue, May 10, 2011 at 02:51:24PM +0200, Jan Kara wrote:
-> > > On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
-> > > > I am still chasing down what exactly is broken in ext3.  data=writeback mode
-> > > > passes with no failures.  data=ordered, however, does not pass; my current
-> > > > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
-> > > > page_mkclean to kick the userspace programs off the page before writing it.
-> > >   Yes, ext3 in data=ordered mode writes pages from
-> > > journal_commit_transaction() via submit_bh() without clearing page dirty
-> > > bits thus page_mkclean() is not called for these pages. Frankly, do you
-> > > really want to bother with adding support for ext2 and ext3? People can use
-> > > ext4 as a fs driver when they want to start using blk-integrity support.
-> > > Especially ext2 patch looks really painful and just from a quick look I can
-> > > see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
-> > 
-> > Yeah, I agree that ext2 is ugly and ext3/jbd might be more painful.  Are there
-> > any other code that wants stable pages that's already running with ext3?  In
-> > this months-long discussion I've heard that encryption and raid also like
-> > stable pages during writes.  Have those users been broken this whole time, or
-> > have they been stabilizing pages themselves?
->   I believe part of them has been broken (e.g. raid) and part of them do
-> copy-out so they were OK.
+This is the initial version of the TPS65911 PMIC. This is a power management IC
+for multimedia products.
 
-A future step might be to undo all these homegrown copy-outs?
+The driver is depends on the TPS65910 PMIC and provides the same functionality:
+Regulators, GPIO controller, RTC, etc. It also adds new functionality that was
+not present in TPS65910 chip.
 
-> > I suppose we can cross the "ext3 fails horribly on DIF" bridge when someone
-> > complains about it.  Possibly we could try to steer them to btrfs.
->   Well, btrfs might be a bit too advantageous for production servers but
-> ext4 would be definitely viable for them.
+Support for subsequent versions of this PMIC can be easily added after this set
+of patches.
 
-Are there any distros that are going straight from ext3 to btrfs?
+Changes from v2:
+- Moved GPIO driver to drivers/gpio.
+- Determine the chip's number of gpios using a switch statement instead of if-else.
+- Remove Kconfig entry for comparator driver.
 
---D
+GIT: [PATCHv3 1/5] MFD: TPS65910: Add support for TPS65911 device
+GIT: [PATCHv3 2/5] regulator: tps65911: Add new chip version
+GIT: [PATCHv3 3/5] TPS65911: Add new irq definitions
+GIT: [PATCHv3 4/5] TPS65911: Add support for added GPIO lines
+GIT: [PATCHv3 5/5] TPS65911: Comparator: Add comparator driver
