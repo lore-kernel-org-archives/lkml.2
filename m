@@ -1,186 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab1EPJnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:43:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39589 "EHLO comal.ext.ti.com"
+	id S1753803Ab1EPJj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:39:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905Ab1EPJnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:43:22 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [RESEND][PATCH 5/5] arm: omap: usb: global Suspend and resume support of ehci and ohci
-Date: Mon, 16 May 2011 15:09:15 +0530
-Message-ID: <1305538755-21112-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1753545Ab1EPJj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:39:56 -0400
+Date: Mon, 16 May 2011 11:39:50 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Vivek Haldar <haldar@google.com>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext4: do not normalize block requests from fallocate.
+In-Reply-To: <1305321545-17214-1-git-send-email-haldar@google.com>
+Message-ID: <alpine.LFD.2.00.1105161135260.3670@dhcp-27-109.brq.redhat.com>
+References: <1305321545-17214-1-git-send-email-haldar@google.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Fri, 13 May 2011, Vivek Haldar wrote:
 
-The global suspend and resume functions for usbhs core driver
-are implemented.These routine are called when the global suspend
-and resume occurs. Before calling these functions, the
-bus suspend and resume of ehci and ohci drivers are called
-from runtime pm.
+> Currently, an fallocate request of size slightly larger than a power of
+> 2 is turned into two block requests, each a power of 2, with the extra
+> blocks pre-allocated for future use. When an application calls
+> fallocate, it already has an idea about how large the file may grow so
+> there is usually little benefit to reserve extra blocks on the
+> preallocation list. This reduces disk fragmentation.
+> 
+> Tested: fsstress. Also verified manually that fallocat'ed files are
+> contiguously laid out with this change (whereas without it they begin at
+> power-of-2 boundaries, leaving blocks in between). CPU usage of
+> fallocate is not appreciably higher. In a tight fallocate loop, CPU
+> usage hovers between 5%-8% with this change, and 5%-7% without it.
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
----
- drivers/mfd/omap-usb-host.c |  103 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 103 insertions(+), 0 deletions(-)
+Hi Vivek,
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index bd63429..e1bc3b5 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -146,6 +146,10 @@
- #define is_ehci_hsic_mode(x)	(x == OMAP_EHCI_PORT_MODE_HSIC)
- 
- 
-+/* USBHS state bits */
-+#define OMAP_USBHS_INIT		0
-+#define OMAP_USBHS_SUSPEND	4
-+
- struct usbhs_hcd_omap {
- 	struct clk			*xclk60mhsp1_ck;
- 	struct clk			*xclk60mhsp2_ck;
-@@ -165,6 +169,7 @@ struct usbhs_hcd_omap {
- 	u32				usbhs_rev;
- 	spinlock_t			lock;
- 	int				count;
-+	unsigned long			state;
- };
- /*-------------------------------------------------------------------------*/
- 
-@@ -807,6 +812,8 @@ static int usbhs_enable(struct device *dev)
- 				(pdata->ehci_data->reset_gpio_port[1], 1);
- 	}
- 
-+	set_bit(OMAP_USBHS_INIT, &omap->state);
-+
- end_count:
- 	omap->count++;
- 	spin_unlock_irqrestore(&omap->lock, flags);
-@@ -895,6 +902,7 @@ static void usbhs_disable(struct device *dev)
- 	}
- 
- 	pm_runtime_put_sync(dev);
-+	clear_bit(OMAP_USBHS_INIT, &omap->state);
- 
- 	/* The gpio_free migh sleep; so unlock the spinlock */
- 	spin_unlock_irqrestore(&omap->lock, flags);
-@@ -924,10 +932,105 @@ void omap_usbhs_disable(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(omap_usbhs_disable);
- 
-+#ifdef	CONFIG_PM
-+
-+static int usbhs_resume(struct device *dev)
-+{
-+	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
-+	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
-+	unsigned long			flags = 0;
-+
-+	dev_dbg(dev, "Resuming TI HSUSB Controller\n");
-+
-+	if (!pdata) {
-+		dev_dbg(dev, "missing platform_data\n");
-+		return  -ENODEV;
-+	}
-+
-+	spin_lock_irqsave(&omap->lock, flags);
-+
-+	if (!test_bit(OMAP_USBHS_INIT, &omap->state) ||
-+		!test_bit(OMAP_USBHS_SUSPEND, &omap->state))
-+			goto end_resume;
-+
-+	pm_runtime_get_sync(dev);
-+
-+	if (is_omap_usbhs_rev2(omap)) {
-+		if (is_ehci_tll_mode(pdata->port_mode[0])) {
-+			clk_enable(omap->usbhost_p1_fck);
-+			clk_enable(omap->usbtll_p1_fck);
-+		}
-+		if (is_ehci_tll_mode(pdata->port_mode[1])) {
-+			clk_enable(omap->usbhost_p2_fck);
-+			clk_enable(omap->usbtll_p2_fck);
-+		}
-+		clk_enable(omap->utmi_p1_fck);
-+		clk_enable(omap->utmi_p2_fck);
-+	}
-+	clear_bit(OMAP_USBHS_SUSPEND, &omap->state);
-+
-+end_resume:
-+	spin_unlock_irqrestore(&omap->lock, flags);
-+	return 0;
-+}
-+
-+
-+static int usbhs_suspend(struct device *dev)
-+{
-+	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
-+	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
-+	unsigned long			flags = 0;
-+
-+	dev_dbg(dev, "Suspending TI HSUSB Controller\n");
-+
-+	if (!pdata) {
-+		dev_dbg(dev, "missing platform_data\n");
-+		return  -ENODEV;
-+	}
-+
-+	spin_lock_irqsave(&omap->lock, flags);
-+
-+	if (!test_bit(OMAP_USBHS_INIT, &omap->state) ||
-+		test_bit(OMAP_USBHS_SUSPEND, &omap->state))
-+			goto end_suspend;
-+
-+	if (is_omap_usbhs_rev2(omap)) {
-+		if (is_ehci_tll_mode(pdata->port_mode[0])) {
-+			clk_disable(omap->usbhost_p1_fck);
-+			clk_disable(omap->usbtll_p1_fck);
-+		}
-+		if (is_ehci_tll_mode(pdata->port_mode[1])) {
-+			clk_disable(omap->usbhost_p2_fck);
-+			clk_disable(omap->usbtll_p2_fck);
-+		}
-+		clk_disable(omap->utmi_p2_fck);
-+		clk_disable(omap->utmi_p1_fck);
-+	}
-+
-+	set_bit(OMAP_USBHS_SUSPEND, &omap->state);
-+	pm_runtime_put_sync(dev);
-+
-+end_suspend:
-+	spin_unlock_irqrestore(&omap->lock, flags);
-+	return 0;
-+}
-+
-+
-+static const struct dev_pm_ops usbhsomap_dev_pm_ops = {
-+	.suspend	= usbhs_suspend,
-+	.resume		= usbhs_resume,
-+};
-+
-+#define USBHS_OMAP_DEV_PM_OPS (&usbhsomap_dev_pm_ops)
-+#else
-+#define	USBHS_OMAP_DEV_PM_OPS	NULL
-+#endif
-+
- static struct platform_driver usbhs_omap_driver = {
- 	.driver = {
- 		.name		= (char *)usbhs_driver_name,
- 		.owner		= THIS_MODULE,
-+		.pm		= USBHS_OMAP_DEV_PM_OPS,
- 	},
- 	.remove		= __exit_p(usbhs_omap_remove),
- };
+the patch looks good, but I do not understand why you are introducing
+new #define when you can simply use EXT4_MB_HINT_NOPREALLOC and then in
+the ext4_ext_map_blocks() just do :
+
+ar.flags |= (flags & EXT4_MB_HINT_NOPREALLOC)
+
+and you do not need to introduce new condition. Am I missing something ?
+
+Thanks!
+-Lukas
+
+> 
+> Signed-off-by: Vivek Haldar <haldar@google.com>
+> ---
+>  fs/ext4/ext4.h    |    2 ++
+>  fs/ext4/extents.c |    5 ++++-
+>  2 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 076c5d2..e606d34 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -512,6 +512,8 @@ struct ext4_new_group_data {
+>  	/* Convert extent to initialized after IO complete */
+>  #define EXT4_GET_BLOCKS_IO_CONVERT_EXT		(EXT4_GET_BLOCKS_CONVERT|\
+>  					 EXT4_GET_BLOCKS_CREATE_UNINIT_EXT)
+> +	/* Don't normalize when fallocat'ing */
+> +#define EXT4_GET_BLOCKS_NO_NORMALIZE		0x0020
+>  
+>  /*
+>   * Flags used by ext4_free_blocks
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index e363f21..f02dd52 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -3304,6 +3304,8 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
+>  	else
+>  		/* disable in-core preallocation for non-regular files */
+>  		ar.flags = 0;
+> +	if (flags & EXT4_GET_BLOCKS_NO_NORMALIZE)
+> +		ar.flags |= EXT4_MB_HINT_NOPREALLOC;
+>  	newblock = ext4_mb_new_blocks(handle, &ar, &err);
+>  	if (!newblock)
+>  		goto out2;
+> @@ -3549,7 +3551,8 @@ retry:
+>  			break;
+>  		}
+>  		ret = ext4_map_blocks(handle, inode, &map,
+> -				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT);
+> +				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT |
+> +				      EXT4_GET_BLOCKS_NO_NORMALIZE);
+>  		if (ret <= 0) {
+>  #ifdef EXT4FS_DEBUG
+>  			WARN_ON(ret <= 0);
+> 
+
 -- 
-1.6.0.4
-
