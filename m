@@ -1,128 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1EPTIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:08:32 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:49484 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753798Ab1EPTIb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:08:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FXXpymQEfjhluesb09pXq3dZZxhzx37wm3PvwUjPfCXHfNNa53fxujQoMpRMOP6JDW
-         QYSIYMOuuZuC6jjYr2xQVHLYFFBWusHpgcj02xqogkADvrzMk2mA6Mf1UWRw/E5NdTm7
-         Rfo5dJLNnH5hFb/SWxE3uIh2dH2ALOM90Pa+I=
+	id S1754102Ab1EPTKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:10:12 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57148 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab1EPTKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:10:10 -0400
+Date: Mon, 16 May 2011 12:09:20 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Theodore Tso <tytso@mit.edu>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during
+	writeback for various fses
+Message-ID: <20110516190920.GO20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com> <20110510125124.GD4402@quack.suse.cz> <20110511181901.GK20579@tux1.beaverton.ibm.com> <20110512094255.GA4690@quack.suse.cz> <20110516184927.GM20579@tux1.beaverton.ibm.com> <20110516185947.GK5344@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C0082E3@dbde02.ent.ti.com>
-References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com>
-	<B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
-	<886E26C48DE446C3937D89ECF86030B2@subhasishg>
-	<B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
-	<25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
-	<B85A65D85D7EB246BE421B3FB0FBB593024C0082E3@dbde02.ent.ti.com>
-Date: Mon, 16 May 2011 15:08:21 -0400
-Message-ID: <BANLkTimDw3T2CFAw6te-smj2q07F=+_wbA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: "Nori, Sekhar" <nsekhar@ti.com>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>
-Cc: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516185947.GK5344@quack.suse.cz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Subhasish and Sekhar,
+On Mon, May 16, 2011 at 08:59:47PM +0200, Jan Kara wrote:
+> On Mon 16-05-11 11:49:27, Darrick J. Wong wrote:
+> > On Thu, May 12, 2011 at 11:42:55AM +0200, Jan Kara wrote:
+> > > On Wed 11-05-11 11:19:01, Darrick J. Wong wrote:
+> > > > On Tue, May 10, 2011 at 02:51:24PM +0200, Jan Kara wrote:
+> > > > > On Mon 09-05-11 16:03:18, Darrick J. Wong wrote:
+> > > > > > I am still chasing down what exactly is broken in ext3.  data=writeback mode
+> > > > > > passes with no failures.  data=ordered, however, does not pass; my current
+> > > > > > suspicion is that jbd is calling submit_bh on data buffers but doesn't call
+> > > > > > page_mkclean to kick the userspace programs off the page before writing it.
+> > > > >   Yes, ext3 in data=ordered mode writes pages from
+> > > > > journal_commit_transaction() via submit_bh() without clearing page dirty
+> > > > > bits thus page_mkclean() is not called for these pages. Frankly, do you
+> > > > > really want to bother with adding support for ext2 and ext3? People can use
+> > > > > ext4 as a fs driver when they want to start using blk-integrity support.
+> > > > > Especially ext2 patch looks really painful and just from a quick look I can
+> > > > > see code e.g. in fs/ext2/namei.c which isn't handled by your patch yet.
+> > > > 
+> > > > Yeah, I agree that ext2 is ugly and ext3/jbd might be more painful.  Are there
+> > > > any other code that wants stable pages that's already running with ext3?  In
+> > > > this months-long discussion I've heard that encryption and raid also like
+> > > > stable pages during writes.  Have those users been broken this whole time, or
+> > > > have they been stabilizing pages themselves?
+> > >   I believe part of them has been broken (e.g. raid) and part of them do
+> > > copy-out so they were OK.
+> > 
+> > A future step might be to undo all these homegrown copy-outs?
+>   Sure but I'm not the right one to tell you where these are ;).
 
-Subhashish, I was testing your patch here while investigating
-davinci-pcm ping-pong buffers on da850.
+Yes, I've found a couple just by digging through the source tree.  But maybe
+I'll get this small set upstream before writing more patches.
 
-On Fri, Feb 11, 2011 at 9:21 AM, Subhasish Ghosh
-<subhasish@mistralsolutions.com> wrote:
-> This patch modifies the sram allocator to allocate memory
-> from the DA8XX shared RAM.
->
-> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
-> ---
->  arch/arm/mach-davinci/da850.c              |    6 +++---
->  arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
+> > > > I suppose we can cross the "ext3 fails horribly on DIF" bridge when someone
+> > > > complains about it.  Possibly we could try to steer them to btrfs.
+> > >   Well, btrfs might be a bit too advantageous for production servers but
+> > > ext4 would be definitely viable for them.
+> > 
+> > Are there any distros that are going straight from ext3 to btrfs?
+>   Most distros currently offer users a choice of xfs, ext3, ext4, btrfs
+> with ext4 being the default. I'm not sure if that's what you are asking
+> about...
 
-Since this changes only the da850 behaviour, a subject prefix of da850
-might be more appropriate than 'davinci'.
+Yep.  I was primarily concerned that there might be some customer that would be
+ok with deploying DIF hardware and rolling forward to ext4, but not to btrfs,
+only to find that some distro refused to ship ext4.  Looks like SLES/RHEL both
+do, however. :)
 
->  2 files changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-> index 3443d97..8a4de97 100644
-> --- a/arch/arm/mach-davinci/da850.c
-> +++ b/arch/arm/mach-davinci/da850.c
-> @@ -711,7 +711,7 @@ static struct map_desc da850_io_desc[] = {
->        },
->        {
->                .virtual        = SRAM_VIRT,
-> -               .pfn            = __phys_to_pfn(DA8XX_ARM_RAM_BASE),
-> +               .pfn            = __phys_to_pfn(DA8XX_SHARED_RAM_BASE),
->                .length         = SZ_8K,
-
-Assigning only 8K to this iomap will result in a fault for the first
-victim to access SRAM_VIRT+0x2000. This will happen for example with
-mcasp ping-pong buffers totalling more than 8K on the da850.
-
-Unfortunately SZ_128K cannot be used here since it will cause a panic
-on boot. SZ_64K works though.
-
->                .type           = MT_DEVICE
->        },
-> @@ -1083,8 +1083,8 @@ static struct davinci_soc_info davinci_soc_info_da850 = {
->        .gpio_irq               = IRQ_DA8XX_GPIO0,
->        .serial_dev             = &da8xx_serial_device,
->        .emac_pdata             = &da8xx_emac_pdata,
-> -       .sram_dma               = DA8XX_ARM_RAM_BASE,
-> -       .sram_len               = SZ_8K,
-> +       .sram_dma               = DA8XX_SHARED_RAM_BASE,
-> +       .sram_len               = SZ_128K,
-
-This should probably be set to match whatever is reported in the map
-entry above -- or an ioremap could be issued later but before the sram
-init?
-
-On Wed, Mar 2, 2011 at 12:12 PM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> [...]
->> root@arago:~# rtcwake -d /dev/rtc0 -s 20 -m mem
->> wakeup from "mem" at Tue Apr 21 14:31:13 2009
->> PM: Syncing filesystems ... done.
->> Freezing user space processes ... (elapsed 0.01 seconds) done.
->> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
->> Suspending console(s) (use no_console_suspend to debug)
->>
->> From the Kconfig I had enabled RTC_DRV_OMAP, CONFIG_PM, CONFIG_SUSPEND.
->
-> Nothing stands out from these logs. One thing to
-> verify is if the RTC Alarm interrupt is really
-> working by using the test program present in the
-> Documentation/ folder.
->
-> Anyway, the easiest way for you to move quickly is
-> to use ramdisk so you can bypass all driver specific
-> issues.
-
-I tested suspend here with the patch applied on top of 2.6.39-rc7
-using "rtcwake -d /dev/rtc0 -s 20 -m mem" and it works.
-
-Best Regards,
-Ben Gardiner
-
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+--D
