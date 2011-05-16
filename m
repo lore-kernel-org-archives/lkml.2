@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1EPL66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 07:58:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329Ab1EPL65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 07:58:57 -0400
-Date: Mon, 16 May 2011 13:57:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 4/9] ptrace: relocate set_current_state(TASK_TRACED) in
-	ptrace_stop()
-Message-ID: <20110516115711.GB4898@redhat.com>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org> <1305301580-9924-5-git-send-email-tj@kernel.org>
+	id S1751774Ab1EPMEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:04:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63657 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab1EPMEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 08:04:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305301580-9924-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <BANLkTincpt8ojK8icvXz4XfkWL9z87VmUA@mail.gmail.com>
+References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
+	<AANLkTimTfOyhDR6BsHD_1VvzOPGbYqo6L784wPkQMi_8@mail.gmail.com>
+	<1300787404.8008.116.camel@groo>
+	<BANLkTincpt8ojK8icvXz4XfkWL9z87VmUA@mail.gmail.com>
+Date: Mon, 16 May 2011 14:04:09 +0200
+Message-ID: <BANLkTikrXb7h_iG+xOvFPozT6w5Nj8nJKw@mail.gmail.com>
+Subject: Re: [RFC PATCHv4 0/7] HSI framework and drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: Govindraj <govindraj.ti@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        pawel.szyszuk@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13, Tejun Heo wrote:
+On Thu, May 12, 2011 at 2:17 PM, Govindraj <govindraj.ti@gmail.com> wrote:
+> On Tue, Mar 22, 2011 at 3:20 PM, Carlos Chinea <carlos.chinea@nokia.com> wrote:
+>> Hi,
+>>
+>> On Mon, 2011-03-21 at 09:16 +0100, ext Linus Walleij wrote:
+>>> 2010/12/14 Carlos Chinea <carlos.chinea@nokia.com>:
+>>>
+>>> > Here you have the fourth round of the HSI framework patches.
+>>>
+>>> I'd like to notify that this out-of-tree framework is also in use for
+>>> the ST-Ericsson
+>>> Ux500s, and we've had great success with it. You can add my:
+>>>
+>>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>>
+>>
 >
-> In ptrace_stop(), after arch hook is done, the task state and jobctl
-> bits are updated while holding siglock.  The ordering requirement
-> there is that TASK_TRACED is set before JOBCTL_TRAPPING is cleared to
-> prevent ptracer waiting on TRAPPING doesn't end up waking up TRACED is
-> actually set and sees TASK_RUNNING in wait(2).
+> Hi Carlos,
 >
-> Move set_current_state(TASK_TRACED) to the top of the block and
-> reorganize comments.  This makes the ordering more obvious
-> (TASK_TRACED before other updates)
-
-I am ab bit confused... please see below.
-
-> and helps future updates to group
-> stop participation.
-
-OK, so I assume we need this change.
-
-> This patch doesn't cause any functional change.
-
-Agreed, so the patch looks fine.
-
-
-But the comment looks a bit confusing to me. This is fine, I almost never
-read them ;) Just I'd like to ensure I din't miss something.
-
-> @@ -1733,6 +1733,18 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
->  	}
+> Will you posting a next version of HSI framework.
 >
->  	/*
-> +	 * We're committing to trapping.  TRACED should be visible before
-> +	 * TRAPPING is cleared
+> I am planning to adapt omap-hsi driver to this framework.
 
-This looks as if you explain the barrier in set_current_state(). And,
-btw, why can't we use __set_current_state() here ?
+I was sort of asking the same thing.
 
-And. not only TRACED, at least ->exit_code should be visible as well.
+I expected this to be queued up for 2.6.40 so we don't proliferate
+out-of-tree drivers :-(
 
-IOW. It is not that TRACED should be visible before jobctl &= ~JOBCTL_TRAPPING,
-we should correctly update the tracee before __wake_up_sync_key(), and I assume
-this is what the comment says.
+If Nokia will not pursue this patch set then tell me and Govindraj
+and we can surely take it over.
 
-Correct?
-
-Oleg.
-
+Linus Walleij
