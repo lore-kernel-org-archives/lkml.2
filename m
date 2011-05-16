@@ -1,78 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab1EPQgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:36:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18724 "EHLO mx1.redhat.com"
+	id S1751993Ab1EPQgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:36:25 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52810 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab1EPQgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:36:15 -0400
-Date: Mon, 16 May 2011 18:34:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 4/9] ptrace: relocate set_current_state(TASK_TRACED) in
-	ptrace_stop()
-Message-ID: <20110516163454.GA17928@redhat.com>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org> <1305301580-9924-5-git-send-email-tj@kernel.org> <20110516115711.GB4898@redhat.com> <20110516131608.GX23665@htj.dyndns.org> <20110516155158.GA15918@redhat.com> <20110516155935.GB20624@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516155935.GB20624@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751593Ab1EPQgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 12:36:22 -0400
+Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-security-module@vger.kernel.org, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <1305562469.2855.26.camel@menhir>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1305559822.2855.14.camel@menhir>
+	 <1305561051.2669.10.camel@localhost.localdomain>
+	 <1305562469.2855.26.camel@menhir>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 12:35:58 -0400
+Message-ID: <1305563758.2669.26.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16, Tejun Heo wrote:
->
-> Hello,
->
-> On Mon, May 16, 2011 at 05:51:58PM +0200, Oleg Nesterov wrote:
-> > > The racy part was task_is_stopped_or_traced() in task_stopped_code()
-> > > and the value of exit_code doesn't matter at that point.
-> >
-> > Why exit_code doesn't matter? task_stopped_code() needs
-> > task_is_stopped_or_traced() && exit_code != 0. Both changes should be
-> > visible.
->
-> Because the actual exit_code is checked only after grabbing siglock.
+On Mon, 2011-05-16 at 17:14 +0100, Steven Whitehouse wrote:
+> Hi,
+> 
+> On Mon, 2011-05-16 at 11:50 -0400, Mimi Zohar wrote:
+> > On Mon, 2011-05-16 at 16:30 +0100, Steven Whitehouse wrote:
+> > > Hi,
+> > > 
+> > > On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
+> > > > After creating the initial LSM security extended attribute, call
+> > > > evm_inode_post_init_security() to create the 'security.evm'
+> > > > extended attribute.
+> > > > 
+> > > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> > > > ---
+> > > >  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
+> > > >  1 files changed, 19 insertions(+), 9 deletions(-)
+> > > > 
+> > > [snip]
+> > > > +	struct xattr lsm_xattr;
+> > > > +	struct xattr evm_xattr;
+> > > >  
+> > > >  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
+> > > > -					   &name, &value, &len);
+> > > > +					   &lsm_xattr.name, &lsm_xattr.value,
+> > > > +					   &lsm_xattr.value_len);
+> > > >  
+> > > >  	if (err) {
+> > > >  		if (err == -EOPNOTSUPP)
+> > > > @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
+> > > >  		return err;
+> > > >  	}
+> > > >  
+> > > > -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
+> > > > -			       GFS2_EATYPE_SECURITY);
+> > > > -	kfree(value);
+> > > > -	kfree(name);
+> > > > -
+> > > > +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
+> > > > +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
+> > > > +	if (err < 0)
+> > > > +		goto out;
+> > > > +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
+> > > > +					   &evm_xattr);
+> > > > +	if (err)
+> > > > +		goto out;
+> > > > +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
+> > > > +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
+> > > > +	kfree(evm_xattr.value);
+> > > > +out:
+> > > > +	kfree(lsm_xattr.name);
+> > > > +	kfree(lsm_xattr.value);
+> > > >  	return err;
+> > > >  }
+> > > >  
+> > > 
+> > > Just wondering whether we could have a single call to the security
+> > > subsystem which returns a vector of xattrs rather than having to call
+> > > two different functions?
+> > > 
+> > > Steve.
+> > 
+> > There are a number of places that the LSM function is called immediately
+> > followed by either EVM/IMA.  In each of those places it is hidden from
+> > the caller by calling the security_inode_XXX_security().  In this case
+> > each fs has it's own method of creating an extended attribute.  If that
+> > method could be passed to security_inode_init_security, then
+> > security_inode_init_security() could call both the LSM and EVM functions
+> > directly.
+> > 
+> > Mimi
+> > 
+> 
+> I'm still not quite sure I understand... from a (very brief) look at the
+> paper, it seems that what you are trying to do is add a new xattr to
+> inodes which has some hash of some of the inode metadata (presumably
+> including the selinux xattr and some other fields).
 
-OK, this is true after the next 8/9 patch.
+Yes, for the time being the other metadata is i_ino, i_generation,
+i_uid, i_gid, and i_mode.  The IMA-appriasal extension would store the
+file hash as an extended attribute. The digital-signature extension
+would store a digitial signature instead of the hash.
 
-> As long as task_is_stopped_or_traced() is true, ptracer will grab
-> siglock
+> I'm not sure why it matters whether the selinux data has been written to
+> the buffers before the xattr containing the hash? The data will not
+> change (I hope!) and if it does presumably the hash will pick that up
+> when it is checked at a later date?
 
-Hmm. No? task_is_stopped_or_traced() is also checked under ->siglock?
+In this case it doesn't matter, as there aren't any other xattrs at this
+point.  When the file closes, the file hash would be written out as
+security.ima, causing security.evm to be updated to reflect the change.
 
-Confused.
+> The reason I'm asking is that currently the creation of GFS2 inodes is
+> broken down into a number of transactions, carefully designed to ensure
+> that the correct clean up occurs if there is an error. I would like to
+> try and reduce the number of transactions during the create process
+> where possible. That means I would like to move to a model which looks
+> like this:
+> 
+> 1. Calculate number of blocks required, based on inode + xattrs (if any)
+> 2. Allocate blocks
+> 3. Populate with data (i.e. set xattrs)
+> 
+> I'm trying to work out whether there is some reason why we have to use
+> your proposed:
+> 
+> 1. Get selinux xattr
+> 2. Set selinux xattr
+> 3. Get EVM xattr
+> 4. Set EVM xattr
+> 
+> as opposed to getting all the xattrs in a single call and then being
+> able to set them all in a single operation, if that makes sense?
+> 
+> Steve.
 
-> > > All we need to update on the tracee is tracee->state and
-> > > ~JOBCTL_TRAPPING and __wake_up_sync_key() can be considered single
-> > > operation.
-> >
-> > Yes! IOW, it safe to reorder the memory operations which change ->state,
-> > ->exit_code, and ->jobctl. This only important thing is that we should not
-> > wake up the tracer before we change them.
-> >
-> > And if I remember correctly this was the problem, the early patches did
-> > something like
-> >
-> > 	task_clear_jobctl_trapping();
-> > 	set_current_state(TASK_TRACED);
->
-> Right, try_to_wake_up() already contains smp_wmb().
+Yes, it makes sense.
 
-Well, I do not think try_to_wake_up()->smp_wmb() is needed in this case,
-wait_queue_head_t->lock helps. This wmb() is needed to ensure we do not
-change (or even read) task->state before the preceding LOAD's completes.
-It is not needed for wait_event-like code.
+thanks,
 
-> We'll be fine
-> with __set_current_state().  Can we do it in a later patch?
-
-Sure, this is minor and needs a separate patch anyway.
-
-Oleg.
+Mimi
 
