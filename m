@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab1EPJj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:39:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60645 "EHLO mx1.redhat.com"
+	id S1754023Ab1EPJlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:41:31 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49996 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753545Ab1EPJj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:39:56 -0400
-Date: Mon, 16 May 2011 11:39:50 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Vivek Haldar <haldar@google.com>
-cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: do not normalize block requests from fallocate.
-In-Reply-To: <1305321545-17214-1-git-send-email-haldar@google.com>
-Message-ID: <alpine.LFD.2.00.1105161135260.3670@dhcp-27-109.brq.redhat.com>
-References: <1305321545-17214-1-git-send-email-haldar@google.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753933Ab1EPJl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:41:29 -0400
+Date: Mon, 16 May 2011 11:40:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jacob Pan <jacob.jun.pan@intel.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris McDermott <lcm@us.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the tip tree with the arm tree
+Message-ID: <20110516094056.GA25039@elte.hu>
+References: <20110513131437.8999e8eb.sfr@canb.auug.org.au>
+ <20110513080634.GA13647@elte.hu>
+ <20110513083738.GA19733@n2100.arm.linux.org.uk>
+ <20110513092646.GK13647@elte.hu>
+ <20110513213640.GB30539@n2100.arm.linux.org.uk>
+ <20110516073144.GF24836@elte.hu>
+ <20110516074230.GI30539@n2100.arm.linux.org.uk>
+ <20110516091744.GB12325@elte.hu>
+ <20110516091927.GK30539@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110516091927.GK30539@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 May 2011, Vivek Haldar wrote:
 
-> Currently, an fallocate request of size slightly larger than a power of
-> 2 is turned into two block requests, each a power of 2, with the extra
-> blocks pre-allocated for future use. When an application calls
-> fallocate, it already has an idea about how large the file may grow so
-> there is usually little benefit to reserve extra blocks on the
-> preallocation list. This reduces disk fragmentation.
+* Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+> On Mon, May 16, 2011 at 11:17:44AM +0200, Ingo Molnar wrote:
+> > Since in the sentence you quote i only repeated what you said above (that you 
+> > keep commits in Git from before when they are posted: i do that too for 
+> > development) i have trouble following your line of thought of how you could 
+> > possibly have concluded that i'm "not listening".
 > 
-> Tested: fsstress. Also verified manually that fallocat'ed files are
-> contiguously laid out with this change (whereas without it they begin at
-> power-of-2 boundaries, leaving blocks in between). CPU usage of
-> fallocate is not appreciably higher. In a tight fallocate loop, CPU
-> usage hovers between 5%-8% with this change, and 5%-7% without it.
+> I'm saying you're not listening because I've described the workflow, [...]
 
-Hi Vivek,
+And i've said that your workflow is broken for this particular case and you 
+have not reacted to my various descriptions of how your workflow is broken in 
+this particular case.
 
-the patch looks good, but I do not understand why you are introducing
-new #define when you can simply use EXT4_MB_HINT_NOPREALLOC and then in
-the ext4_ext_map_blocks() just do :
+> [...] I've told you that what appeared in linux-next was still subject to 
+> change, [...]
 
-ar.flags |= (flags & EXT4_MB_HINT_NOPREALLOC)
+That's not a proper Git workflow: linux-next is *not* a playing ground to break 
+arbitrarily in an *intentional* fashion like that.
 
-and you do not need to introduce new condition. Am I missing something ?
+linux-next has enough trouble sorting out the *unintentional* breakages and 
+spurious conflicts!
 
-Thanks!
--Lukas
+Consider linux-next conflicts as a canary for workflow problems. It works very 
+well in that regard.
 
-> 
-> Signed-off-by: Vivek Haldar <haldar@google.com>
-> ---
->  fs/ext4/ext4.h    |    2 ++
->  fs/ext4/extents.c |    5 ++++-
->  2 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index 076c5d2..e606d34 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -512,6 +512,8 @@ struct ext4_new_group_data {
->  	/* Convert extent to initialized after IO complete */
->  #define EXT4_GET_BLOCKS_IO_CONVERT_EXT		(EXT4_GET_BLOCKS_CONVERT|\
->  					 EXT4_GET_BLOCKS_CREATE_UNINIT_EXT)
-> +	/* Don't normalize when fallocat'ing */
-> +#define EXT4_GET_BLOCKS_NO_NORMALIZE		0x0020
->  
->  /*
->   * Flags used by ext4_free_blocks
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index e363f21..f02dd52 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -3304,6 +3304,8 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
->  	else
->  		/* disable in-core preallocation for non-regular files */
->  		ar.flags = 0;
-> +	if (flags & EXT4_GET_BLOCKS_NO_NORMALIZE)
-> +		ar.flags |= EXT4_MB_HINT_NOPREALLOC;
->  	newblock = ext4_mb_new_blocks(handle, &ar, &err);
->  	if (!newblock)
->  		goto out2;
-> @@ -3549,7 +3551,8 @@ retry:
->  			break;
->  		}
->  		ret = ext4_map_blocks(handle, inode, &map,
-> -				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT);
-> +				      EXT4_GET_BLOCKS_CREATE_UNINIT_EXT |
-> +				      EXT4_GET_BLOCKS_NO_NORMALIZE);
->  		if (ret <= 0) {
->  #ifdef EXT4FS_DEBUG
->  			WARN_ON(ret <= 0);
-> 
+The thing is, if sfr has trouble sorting out the conflict we caused here, while 
+he does a dozen conflict resolutions a week 365 days a year, consider the 
+workflow problematic by definition ...
 
--- 
+So please get your workflow in shape as i suggested:
+
+ - When you seriously modify or move files that other maintainers maintain in
+   their trees then you first need to wait for the opinion of those 
+   maintainers (and not assume lack of ack after 24 hours means acceptance), or 
+   at least you need to *check* linux-next/master whether those files are truly
+   quiet in this particular cycle ...
+
+It's only common-sense and not hard to do at all!
+
+That way you can avoid most breakages and conflicts both of technical and 
+social nature *before* pushing things to linux-next. As you are doing things 
+now you are driving blind in essence, that way you are *asking* for trouble and 
+conflicts down the road, and that is sad and i cannot just accept it silently.
+
+I think you are too used to being able to do anything within the ARM Git space 
+and getting away with it if you mess up?
+
+If you have a workflow that seriously modifies other trees without realizing 
+that those trees have in-flight changes then you have a broken workflow, simple 
+as that. And yes, i myself messed up such things in the past as well and 
+modified my workflow to handle such things better.
+
+> [...] and yet _you) persist in telling me that what I put in there was the 
+> "final" commit. [...]
+
+Yes, because you pushed it out for others to see and it showed up in 
+linux-next?
+
+Thanks,
+
+	Ingo
