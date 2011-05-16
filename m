@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab1EPKWr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 06:22:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33790 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab1EPKWq convert rfc822-to-8bit (ORCPT
+	id S1754434Ab1EPKVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 06:21:39 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:30662 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab1EPKVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 06:22:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DPWvU6gN7wG9KKJhpij1WKquiSLBOnfn0LSQ1nIDvrtzmPbVuKieaiLvKw0GWgpmjB
-         TI69DKClMWglCv+Vs1AWbGRG4e0LWBqOTxe4NgnO4kdK0yHEhGCiLogsBFonwx3s+R/R
-         agE4uCiYV7iwKq7XiWa3gVgH5eo5G2+l7MXAk=
+	Mon, 16 May 2011 06:21:38 -0400
+X-IronPort-AV: E=Sophos;i="4.64,373,1301875200"; 
+   d="scan'208";a="5772764"
+Date: Mon, 16 May 2011 11:23:14 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "yinghai@kernel.org" <yinghai@kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: Xen MMU's requirement to pin pages RO and
+ initial_memory_mapping.
+In-Reply-To: <20110513153010.GB16519@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1105131650550.8972@kaball-desktop>
+References: <20110513153010.GB16519@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1305541234.3006.5.camel@phoenix>
-References: <1305541234.3006.5.camel@phoenix>
-Date: Mon, 16 May 2011 19:22:45 +0900
-X-Google-Sender-Auth: -nVi8KygG9qRPVuYvnRXs9VA6lA
-Message-ID: <BANLkTimuyKWANZ-_3JKG+R_o96HpsG7PhQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] regulator: Remove MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS
- macros
-From: Kyungmin Park <kmpark@infradead.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+On Fri, 13 May 2011, Konrad Rzeszutek Wilk wrote:
+> aka, remove the hack added by git commit 609cfda586c7fe3e5d1a02c51edb587506294167
+> (Merge branch 'stable/bug-fixes-for-rc5' of git://git.kernel.org/../xen)
+> 
+> One idea that is on the table was proposed by Yinghai:
+> "Xen should set RAM for page-table to RO after init_memory mapping."
+> 
+> In other words, don't do the magic 'mask_rw_pte' when set_pte is called.
+> (and don't do the calls to make_lowmem_page_readonly when allocating
+> the PTE table, nor PMD, nor PUD) - I think?
+> 
+> But instead do:
+>  a). when we load the cr3? We could go through the whole pagetable and
+>      set the RO as we need?
+>  b). when we are finished with the creation of a page table? So similary 
+>      to the point above - don't set the RO on the pages until we have completed
+>      the full creation of the page.
+>  c). when post_allocator_start is called?
 
-On Mon, May 16, 2011 at 7:20 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> In current implementation, the original macro implementation assumes the caller
-> pass the parameter starting from 1 (to match the register names in datasheet).
-> Thus we have unneeded plus one then minus one operations
-> when using MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros.
->
-> This patch removes these macros to avoid unneeded plus one then minus one operations
-> without reducing readability.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> The (V1) original patch title was
-> [PATCH] regulator: Simplify MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
-> I change the patch title to meet the change.
->
-> Regards,
-> Axel
->
->  drivers/regulator/max8997.c         |   12 ++++++------
->  include/linux/mfd/max8997-private.h |    4 ----
->  2 files changed, 6 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-> index b1c1444..10d5a1d 100644
-> --- a/drivers/regulator/max8997.c
-> +++ b/drivers/regulator/max8997.c
-> @@ -1032,11 +1032,11 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
->
->        /* For the safety, set max voltage before setting up */
->        for (i = 0; i < 8; i++) {
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
->                                max_buck1, 0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
->                                max_buck2, 0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
->                                max_buck5, 0x3f);
->        }
->
-> @@ -1113,13 +1113,13 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
->
->        /* Initialize all the DVS related BUCK registers */
->        for (i = 0; i < 8; i++) {
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
->                                max8997->buck1_vol[i],
->                                0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
->                                max8997->buck2_vol[i],
->                                0x3f);
-> -               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-> +               max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
->                                max8997->buck5_vol[i],
->                                0x3f);
->        }
-> diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-> index 69d1010..5ff2400 100644
-> --- a/include/linux/mfd/max8997-private.h
-> +++ b/include/linux/mfd/max8997-private.h
-> @@ -311,10 +311,6 @@ enum max8997_irq {
->        MAX8997_IRQ_NR,
->  };
->
-> -#define MAX8997_REG_BUCK1DVS(x)        (MAX8997_REG_BUCK1DVS1 + (x) - 1)
-> -#define MAX8997_REG_BUCK2DVS(x)        (MAX8997_REG_BUCK2DVS1 + (x) - 1)
-> -#define MAX8997_REG_BUCK5DVS(x)        (MAX8997_REG_BUCK5DVS1 + (x) - 1)
-> -
->  #define MAX8997_NUM_GPIO       12
->  struct max8997_dev {
->        struct device *dev;
-> --
-> 1.7.1
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I think c) is too late because there might be allocations or at least
+memblock allocations after init_memory_mapping and before
+post_allocator_start.
+
+
+>  d). other ideas?
+> 
+> But I vaguelly recall that we are using the page table as we are adding in the
+> entries. And that we are pinning them as well. Perhaps the trigger to scan the
+> pagetable and set them to RO should be done .. at what point? When the PUD/PMD
+> allocations are done? And when PUD/PMD are set?
+> 
+
+Setting the pagetable pages RO after init_memory_mapping is difficult
+because pagetable pages have to be set RO before becoming pagetable
+pages.
+They become pagetable pages when:
+
+- they are explicitly pinned by pin_pagetable_pfn
+
+- they are hooked into the current pagetable
+
+Like you wrote, considering that the x86_64 version of
+kernel_physical_mapping_init hooks the pagetable pages into the
+currently used pagetable, it wouldn't be possible to mark the pagetable
+pages RO after init_memory_mapping.
