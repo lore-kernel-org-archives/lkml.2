@@ -1,112 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab1EPAJW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 May 2011 20:09:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33290 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab1EPAJV convert rfc822-to-8bit (ORCPT
+	id S1752977Ab1EPAMR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 May 2011 20:12:17 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:23626 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751396Ab1EPAMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 May 2011 20:09:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=KazM1qhgfDfOTh2CLvWdy1zyqNvuK+spq1H9b3opT7RJdaZYv+BxOWO9zVLPzyG8y+
-         8KGbGH5ZPoe4Sr6Kz1bFEVQ4G8iHQLd5tqayh24jpuHX7EDuAU9u2Wywwkcvq3N6msme
-         PPk4Ld2tbfUuEUNVXqjHMYvFwDVq7A3cOqZf0=
+	Sun, 15 May 2011 20:12:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoQDACxp0E15LCoegWdsb2JhbACmEBUBARYmJYhwvEQOgwkBgwEElzyHXA
+Date: Mon, 16 May 2011 10:12:11 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/17] writeback: make writeback_control.nr_to_write
+ straight
+Message-ID: <20110516001210.GR19446@dastard>
+References: <20110512135706.937596128@intel.com>
+ <20110512140032.418803138@intel.com>
+ <20110512231759.GM19446@dastard>
+ <20110513052806.GE8016@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20110510235853.GM26703@pulham.picochip.com>
-References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
-	<20110510235853.GM26703@pulham.picochip.com>
-Date: Mon, 16 May 2011 02:09:20 +0200
-X-Google-Sender-Auth: KMh1lWIqgTeDPgTGrFX5RyJcCFo
-Message-ID: <BANLkTim5wurV7aFSm4ae6+HBpGZO1z_=XA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: create a pinmux subsystem v2
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110513052806.GE8016@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/11 Jamie Iles <jamie@jamieiles.com>:
-> [...]
->> +static struct foo_pmx_func myfuncs[] = {
->> +     {
->> +             .name = "spi0-0",
->> +             .pins = spi0_0_pins,
->> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
->> +     },
->> +     {
->> +             .name = "i2c0",
->> +             .pins = i2c0_pins,
->> +             .num_pins = ARRAY_SIZE(i2c0_pins),
->> +     },
->> +     {
->> +             .name = "spi0-1",
->> +             .pins = spi0_1_pins,
->> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
->> +     },
->> +};
->
-> So I can see how this works well for these examples, but on our devices,
-> we have some interfaces for connecting to radios and these have a pair
-> of 8-bit RX and TX busses.  However, depending on what radio you
-> connect, you may not need all 8 bits of each and this is dependent on
-> the board.  What would be the best way to deal with that in this scheme
-> where say we only wanted 4 bits of each, saving the others for GPIO?
-> Would this need to be a function for each configuration?
+On Fri, May 13, 2011 at 01:28:06PM +0800, Wu Fengguang wrote:
+> On Fri, May 13, 2011 at 07:18:00AM +0800, Dave Chinner wrote:
+> > On Thu, May 12, 2011 at 09:57:20PM +0800, Wu Fengguang wrote:
+> > > Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
+> > > and initialize the struct writeback_control there.
+> > > 
+> > > struct writeback_control is basically designed to control writeback of a
+> > > single file, but we keep abuse it for writing multiple files in
+> > > writeback_sb_inodes() and its callers.
+> > > 
+> > > It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
+> > > work->nr_pages starts to make sense, and instead of saving and restoring
+> > > pages_skipped in writeback_sb_inodes it can always start with a clean
+> > > zero value.
+> > > 
+> > > It also makes a neat IO pattern change: large dirty files are now
+> > > written in the full 4MB writeback chunk size, rather than whatever
+> > > remained quota in wbc->nr_to_write.
+> > > 
+> > > Proposed-by: Christoph Hellwig <hch@infradead.org>
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > ---
+> > .....
+> > > @@ -543,34 +588,44 @@ static int writeback_sb_inodes(struct su
+> > >  			requeue_io(inode, wb);
+> > >  			continue;
+> > >  		}
+> > > -
+> > >  		__iget(inode);
+> > > +		write_chunk = writeback_chunk_size(work);
+> > > +		wbc.nr_to_write = write_chunk;
+> > > +		wbc.pages_skipped = 0;
+> > > +
+> > > +		writeback_single_inode(inode, wb, &wbc);
+> > >  
+> > > -		pages_skipped = wbc->pages_skipped;
+> > > -		writeback_single_inode(inode, wb, wbc);
+> > > -		if (wbc->pages_skipped != pages_skipped) {
+> > > +		work->nr_pages -= write_chunk - wbc.nr_to_write;
+> > > +		wrote += write_chunk - wbc.nr_to_write;
+> > > +		if (wbc.pages_skipped) {
+> > >  			/*
+> > >  			 * writeback is not making progress due to locked
+> > >  			 * buffers.  Skip this inode for now.
+> > >  			 */
+> > >  			redirty_tail(inode, wb);
+> > > -		}
+> > > +		} else if (!(inode->i_state & I_DIRTY))
+> > > +			wrote++;
+> > 
+> > Oh, that's just ugly. Do that accounting via nr_to_write in
+> > writeback_single_inode() as I suggested earlier, please.
+> 
+> This is the more simple and reliable test "whether the inode is
+> cleaned" that does not rely on the return value of ->write_inode(),
+> as replied in the earlier email.
+> 
+> > >  		spin_unlock(&inode->i_lock);
+> > >  		spin_unlock(&wb->list_lock);
+> > >  		iput(inode);
+> > >  		cond_resched();
+> > >  		spin_lock(&wb->list_lock);
+> > > -		if (wbc->nr_to_write <= 0)
+> > > -			return 1;
+> > > +		/*
+> > > +		 * bail out to wb_writeback() often enough to check
+> > > +		 * background threshold and other termination conditions.
+> > > +		 */
+> > > +		if (wrote >= MAX_WRITEBACK_PAGES)
+> > > +			break;
+> > 
+> > Why do this so often? If you are writing large files, it will be
+> > once every writeback_single_inode() call that you bail. Seems rather
+> > inefficient to me to go back to the top level loop just to check for
+> > more work when we already know we have more work to do because
+> > there's still inodes on b_io....
+> 
+> (answering the below comments together)
+> 
+> For large files, it's exactly the same behavior as in the old
+> wb_writeback(), which sets .nr_to_write = MAX_WRITEBACK_PAGES.
+> 
+> So it's not "more inefficient" than the original code.
 
-Yes. Define a function containing the pins you need, then when that
-function is muxed in by pinmux_get() the remaining pins are still
-available for GPIO.
+I didn't say that. I said it "seems rather inefficient" as a direct
+comment on the restructured code. We don't need to check the high
+level loop until we've finished processing b_io - the existing code
+did that to get nr_to_write updated, but now we've changed it so we
+don't refill b_io until it is empty, so any tim ewe loop back to the
+top, we're just going to start from the same point that we were at
+deep in the loop itself.
 
-The framework only deals with functions as groups of pins and
-individual GPIO pins, defining the groups is currently up to each
-platform.
+That is the current code does:
 
-> [...]
->> +/**
->> + * pinmux_request_gpio() - request a single pin to be muxed in to be used
->> + *   as a GPIO pin
->> + * @pin: the pin to mux in as GPIO
->> + * @gpio: the corresponding GPIO pin number
->> + */
->> +int pinmux_request_gpio(int pin, unsigned gpio)
->> +{
->> +     char gpiostr[16];
->> +
->> +     snprintf(gpiostr, 15, "gpio%d", gpio);
->> +     return pin_request(pin, gpiostr, true);
->> +}
->> +EXPORT_SYMBOL_GPL(pinmux_request_gpio);
->
-> Our devices have two different GPIO controllers, which can be muxed to
-> the same pad (they're slightly different - one is a bit slower but can
-> do sigma-delta output) and our pinmux driver would need to know what
-> GPIO controller it should route to the pad.  Could gpio_request_enable()
-> be passed the GPIO number or is there a better way to do this?
 
-Hmmmm that was really new!
+	wb_writeback {
+		wbc->nr_to_write = MAX_WRITEBACK_PAGES
+		writeback_inodes_wb {
+			queue_io(expired)
+			writeback_inodes {
+				writeback_single_inode
+			} until (wbc->nr_to_write <= 0)
+		}
+	}
 
-But like we have the more complex config function for pinmux groups:
-extern int pinmux_config(struct pinmux *pmx, u16 param, unsigned long *data);
+The new code does:
 
-I believe your case could be handled with a similar more complex
-per-pin config function like this:
-extern int pinmux_config_gpio(int pin, unsigned gpio, u16 param,
-unsigned long *data);
+	wb_writeback {
+		writeback_inodes_wb {
+			if (b_io empty)
+				queue_io(expired)
+			writeback_sb_inodes {
+				wbc->nr_to_write = MAX_WRITEBACK_PAGES
+				wrote = writeback_single_inode
+				if (wrote >= MAX_WRITEBACK_PAGES)
+					break;
+			} until (b_io empty)
+		}
+	}
 
-Would that work?
+Which is a very different inner loop structure because now small
+inodes that write less than MAX_WRITEBACK_PAGES will not cause the
+inner loop to exit until b_io empties. However, one large file will
+cause the inner loop to exit, go all the way back up to
+wb_writeback(), which will immeidately come back down into
+writeback_inodes() and start working on an _unchanged b_io list_.
+My point is that breaking out of the inner loop like this is
+pointless. Especially if all we have is inodes with >1024 dirty
+pages because of all the unnecessary extra work breaking out of the
+inner loop entails.
 
-Not that I like to sprinkle the ioctl()-like config functions all over the place
-but these two would likely cover all special cases.
+> For balance_dirty_pages(), it may change behavior by splitting one
+> 16MB write to four 4MB writes.
 
-Linus Walleij
+balance_dirty_pages() typically askes for 1536 pages to be written
+back, so I'm not sure where your numbers are coming from.
+
+> However the good side could be less
+> throttle latency.
+> 
+> The fix is to do IO-less balance_dirty_pages() and do larger write
+> chunk size (around half write bandwidth). Then we get reasonable good
+> bail frequent as well as IO efficiency.
+
+We're not getting that with this patch set, though, and so the
+change as proposed needs to work correctly without them.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
