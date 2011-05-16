@@ -1,115 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab1EPIeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:34:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27884 "EHLO mga14.intel.com"
+	id S1752857Ab1EPIh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:37:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41969 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752376Ab1EPIeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:34:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.64,373,1301900400"; 
-   d="scan'208";a="436703613"
-Subject: Re: [patch V3] percpu_counter: scalability works
-From: Shaohua Li <shaohua.li@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cl@linux.com" <cl@linux.com>, "npiggin@kernel.dk" <npiggin@kernel.dk>
-In-Reply-To: <1305531877.3120.230.camel@edumazet-laptop>
-References: <20110511081012.903869567@sli10-conroe.sh.intel.com>
-	 <20110511092848.GE1661@htj.dyndns.org>
-	 <1305168493.2373.15.camel@sli10-conroe>
-	 <20110512082159.GB1030@htj.dyndns.org>
-	 <1305190520.2373.18.camel@sli10-conroe>
-	 <20110512085922.GD1030@htj.dyndns.org>
-	 <1305190936.3795.1.camel@edumazet-laptop>
-	 <20110512090534.GE1030@htj.dyndns.org>
-	 <1305261477.2373.45.camel@sli10-conroe>
-	 <1305264007.2831.14.camel@edumazet-laptop>
-	 <20110513052859.GA11088@sli10-conroe.sh.intel.com>
-	 <1305268456.2831.38.camel@edumazet-laptop>
-	 <1305298300.3866.22.camel@edumazet-laptop>
-	 <1305301151.3866.39.camel@edumazet-laptop>
-	 <1305304532.3866.54.camel@edumazet-laptop>
-	 <1305305190.3866.57.camel@edumazet-laptop>
-	 <1305324187.3120.30.camel@edumazet-laptop>
-	 <1305507517.2375.10.camel@sli10-conroe>
-	 <1305526296.3120.204.camel@edumazet-laptop>
-	 <1305527828.2375.28.camel@sli10-conroe>
-	 <1305528912.3120.213.camel@edumazet-laptop>
-	 <1305530143.2375.42.camel@sli10-conroe>
-	 <1305531877.3120.230.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 16:34:17 +0800
-Message-ID: <1305534857.2375.55.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752376Ab1EPIh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:37:26 -0400
+Date: Mon, 16 May 2011 09:37:21 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Colin Ian King <colin.king@ubuntu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Reduce impact to overall system of SLUB using
+ high-order allocations V2
+Message-ID: <20110516083721.GB5279@suse.de>
+References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
+ <1305362073.1969.4.camel@hpmini>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1305362073.1969.4.camel@hpmini>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 15:44 +0800, Eric Dumazet wrote:
-> Le lundi 16 mai 2011 à 15:15 +0800, Shaohua Li a écrit :
-> 
-> > I can, but you can't prevent me to optimize percpu_counter.
+On Sat, May 14, 2011 at 10:34:33AM +0200, Colin Ian King wrote:
+> On Fri, 2011-05-13 at 15:03 +0100, Mel Gorman wrote:
+> > Changelog since V1
+> >   o kswapd should sleep if need_resched
+> >   o Remove __GFP_REPEAT from GFP flags when speculatively using high
+> >     orders so direct/compaction exits earlier
+> >   o Remove __GFP_NORETRY for correctness
+> >   o Correct logic in sleeping_prematurely
+> >   o Leave SLUB using the default slub_max_order
 > > 
+> > There are a few reports of people experiencing hangs when copying
+> > large amounts of data with kswapd using a large amount of CPU which
+> > appear to be due to recent reclaim changes.
+> > 
+> > SLUB using high orders is the trigger but not the root cause as SLUB
+> > has been using high orders for a while. The following four patches
+> > aim to fix the problems in reclaim while reducing the cost for SLUB
+> > using those high orders.
+> > 
+> > Patch 1 corrects logic introduced by commit [1741c877: mm:
+> > 	kswapd: keep kswapd awake for high-order allocations until
+> > 	a percentage of the node is balanced] to allow kswapd to
+> > 	go to sleep when balanced for high orders.
+> > 
+> > Patch 2 prevents kswapd waking up in response to SLUBs speculative
+> > 	use of high orders.
+> > 
+> > Patch 3 further reduces the cost by prevent SLUB entering direct
+> > 	compaction or reclaim paths on the grounds that falling
+> > 	back to order-0 should be cheaper.
+> > 
+> > Patch 4 notes that even when kswapd is failing to keep up with
+> > 	allocation requests, it should still go to sleep when its
+> > 	quota has expired to prevent it spinning.
+> > 
+> > My own data on this is not great. I haven't really been able to
+> > reproduce the same problem locally.
+> > 
+> > The test case is simple. "download tar" wgets a large tar file and
+> > stores it locally. "unpack" is expanding it (15 times physical RAM
+> > in this case) and "delete source dirs" is the tarfile being deleted
+> > again. I also experimented with having the tar copied numerous times
+> > and into deeper directories to increase the size but the results were
+> > not particularly interesting so I left it as one tar.
+> > 
+> > In the background, applications are being launched to time to vaguely
+> > simulate activity on the desktop and to measure how long it takes
+> > applications to start.
+> > 
+> > Test server, 4 CPU threads, x86_64, 2G of RAM, no PREEMPT, no COMPACTION, X running
+> > LARGE COPY AND UNTAR
+> >                       vanilla       fixprematurely  kswapd-nowwake slub-noexstep  kswapdsleep
+> > download tar           95 ( 0.00%)   94 ( 1.06%)   94 ( 1.06%)   94 ( 1.06%)   94 ( 1.06%)
+> > unpack tar            654 ( 0.00%)  649 ( 0.77%)  655 (-0.15%)  589 (11.04%)  598 ( 9.36%)
+> > copy source files       0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)    0 ( 0.00%)
+> > delete source dirs    327 ( 0.00%)  334 (-2.10%)  318 ( 2.83%)  325 ( 0.62%)  320 ( 2.19%)
+> > MMTests Statistics: duration
+> > User/Sys Time Running Test (seconds)        1139.7   1142.55   1149.78   1109.32   1113.26
+> > Total Elapsed Time (seconds)               1341.59   1342.45   1324.90   1271.02   1247.35
+> > 
+> > MMTests Statistics: application launch
+> > evolution-wait30     mean     34.92   34.96   34.92   34.92   35.08
+> > gnome-terminal-find  mean      7.96    7.96    8.76    7.80    7.96
+> > iceweasel-table      mean      7.93    7.81    7.73    7.65    7.88
+> > 
+> > evolution-wait30     stddev    0.96    1.22    1.27    1.20    1.15
+> > gnome-terminal-find  stddev    3.02    3.09    3.51    2.99    3.02
+> > iceweasel-table      stddev    1.05    0.90    1.09    1.11    1.11
+> > 
+> > Having SLUB avoid expensive steps in reclaim improves performance
+> > by quite a bit with the overall test completing 1.5 minutes
+> > faster. Application launch times were not really affected but it's
+> > not something my test machine was suffering from in the first place
+> > so it's not really conclusive. The kswapd patches also did not appear
+> > to help but again, the test machine wasn't suffering that problem.
+> > 
+> > These patches are against 2.6.39-rc7. Again, testing would be
+> > appreciated.
 > 
-> Well, I have the right to say you're wrong.
-sure, but please give a reason.
-
-> Your last patch is not good, sorry. 
-> Please take the time to read it
-> again and fix obvious problems.
-what kind of obvious problems?
-
-> And also give us numbers if one process
-> does the mmap()/munmap() loop, before and after your patch.
-I did a stress test with one thread
-
-while {
-__percpu_counter_add(+count)
-__percpu_counter_add(-count)
-}
-the loop do 10000000 times.
-in _add fast path (no locking hold):
-before my patch:
-real    0m0.133s
-user    0m0.000s
-sys     0m0.124s
-after:
-real    0m0.129s
-user    0m0.000s
-sys     0m0.120s
-the difference is variation.
-
-in _add slow path (locking hold):
-before my patch:
-real    0m0.374s
-user    0m0.000s
-sys     0m0.372s
-after:
-real    0m0.245s
-user    0m0.000s
-sys     0m0.020s
-
-My patch actually makes _add faster, because we removed spin_lock.
-
-> A percpu_counter is already a beast as is, you're suggesting to double
-> its size, for a pathological case.
+> These patches solve the problem for me.  I've been soak testing the file
+> copy test
+> for 3.5 hours with nearly 400 test cycles and observed no lockups at all
+> - rock solid. From my observations from the output from vmstat the
+> system is behaving sanely.
+> Thanks for finding a solution - much appreciated!
 > 
-> Its absolutely not clear to me why vm_committed_as is using the default
-> percpu_counter_batch. 
-> 
-> By the way could you make sure percpu_counter_batch has the right value
-> on your 24 cpus machine ?
-> 
-> Your 128Mbyte mmap threshold sounds like percpu_counter_batch=32 instead
-> of 48
-let's not argue the batch size anymore. If we can make percpu_counter
-faster, why we don't (even your patch mentioned this).
 
-Thanks,
-Shaohua
+Can you tell me if just patches 1 and 4 fix the problem please? It'd be good
+to know if this was only a reclaim-related problem. Thanks.
 
+-- 
+Mel Gorman
+SUSE Labs
