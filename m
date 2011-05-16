@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1EPWxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 18:53:52 -0400
-Received: from mailout08.t-online.de ([194.25.134.20]:57564 "EHLO
-	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab1EPWxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 18:53:51 -0400
-Message-ID: <4DD1AAF2.7030502@t-online.de>
-Date: Tue, 17 May 2011 00:53:38 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1755697Ab1EPXCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:02:48 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:34995 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755255Ab1EPXCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 19:02:47 -0400
 MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] [BUG][2.6.39-rc7]
-References: <4DD0D4CC.9070401@t-online.de> <yunei3y1g9u.fsf@aiko.keithp.com>
-In-Reply-To: <yunei3y1g9u.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-ID: rq7mzmZZwh6atNhHrLR4B2Ze1VOxHe8l6Ef7oDpt5PCl5keoP4Io9HGycwje4kBw8a
-X-TOI-MSGID: 9c71ce13-e6a5-44b4-b9c2-36af869fa7c3
+Date: Mon, 16 May 2011 18:02:45 -0500
+Message-ID: <BANLkTi=5MY7Lr4KU4vtOFSQiOedKGXxZLw@mail.gmail.com>
+Subject: [PATCHv4 0/4] Initial support for TPS65912 PMIC
+From: Margarita Olaya <magi@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-> The fix for this bug is still under review and was not ready in time for
-> 2.6.39. It is planned for merging in the 2.6.40 time frame, and should
-> be suitable for a stable backport when merged to master.
->
+This is the initial version of the TPS65912 PMIC, a power management IC
+for multimedia products.
 
-Nice to know that .39 will have the feature to lock screen and all input devices
-on exotic hardware like i915GM.
+The tps65912 consists of 4 DCDCs and 10 LDOs, that are able to supply
+voltage to main processor and other components. The chip includes a
+GPIO module.
 
-Well, .31 and Xorg 1.6.5 are still around and good enough for months of uptime.
+Changes from V3:
+- split core driver into tps65912-spi and tps65912-i2c
+- create new function in regulator with common code in set/get mode
 
-cu,
- Knut
+Margarita Olaya Cabrera (4):
+  mfd: tps65912: Add new mfd device
+  tps65912: irq: add interrupt controller
+  tps65912: gpio: add gpio driver
+  tps65912: add regulator driver
+
+ drivers/gpio/Kconfig                   |    6 +
+ drivers/gpio/Makefile                  |    1 +
+ drivers/gpio/tps65912-gpio.c           |  159 +++++++
+ drivers/mfd/Kconfig                    |   22 +
+ drivers/mfd/Makefile                   |    4 +
+ drivers/mfd/tps65912-core.c            |  177 +++++++
+ drivers/mfd/tps65912-i2c.c             |  139 ++++++
+ drivers/mfd/tps65912-irq.c             |  225 +++++++++
+ drivers/mfd/tps65912-spi.c             |  142 ++++++
+ drivers/regulator/Kconfig              |    6 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps65912-regulator.c |  800 ++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65912.h           |  327 +++++++++++++
+ 13 files changed, 2009 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/tps65912-gpio.c
+ create mode 100644 drivers/mfd/tps65912-core.c
+ create mode 100644 drivers/mfd/tps65912-i2c.c
+ create mode 100644 drivers/mfd/tps65912-irq.c
+ create mode 100644 drivers/mfd/tps65912-spi.c
+ create mode 100644 drivers/regulator/tps65912-regulator.c
+ create mode 100644 include/linux/mfd/tps65912.h
