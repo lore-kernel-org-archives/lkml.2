@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab1EPKRz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 06:17:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59294 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab1EPKRy (ORCPT
+	id S1754445Ab1EPKS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 06:18:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42838 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab1EPKS0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 06:17:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=lF6co0zGbrxbUm3FJ5XNRHoUtmG0lAB+rPgThutfFt/6efIneMDSWdxCVRxecNUVeC
-         5nCZxg2/nAzf0HVf1VQEvzBTbwOBjSq0Pv8hFoxZOSMpPYpE7gjRFvamivFGqZlNxTfe
-         iuEbwyYrgfk9tBApS1PXSn1OORsDasTxp81gA=
-Subject: [PATCH] regulator: Remove
- MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
+	Mon, 16 May 2011 06:18:26 -0400
+Subject: Re: [patch 05/15] sched: add a timer to handle CFS bandwidth
+ refresh
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+In-Reply-To: <20110503092904.895444153@google.com>
+References: <20110503092846.022272244@google.com>
+	 <20110503092904.895444153@google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 18:17:47 +0800
-Message-ID: <1305541067.3006.3.camel@phoenix>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 16 May 2011 12:18:08 +0200
+Message-ID: <1305541088.2466.4102.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4a240fc9dece6c03e87a7d20c7c468285891853f Mon Sep 17 00:00:00 2001
-In current implementation, the original macro implementation assumes the caller
-pass the parameter starting from 1 (to match the register names in datasheet).
-Thus we have unneeded plus one then minus one operations
-when using MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros.
+On Tue, 2011-05-03 at 02:28 -0700, Paul Turner wrote:
+> @@ -1003,6 +1003,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>  
+>         if (cfs_rq->nr_running == 1)
+>                 list_add_leaf_cfs_rq(cfs_rq);
+> +
+> +       start_cfs_bandwidth(cfs_rq);
+>  }
+>  
+>  static void __clear_buddies_last(struct sched_entity *se)
+> @@ -1220,6 +1222,8 @@ static void put_prev_entity(struct cfs_r
+>                 update_stats_wait_start(cfs_rq, prev);
+>                 /* Put 'current' back into the tree. */
+>                 __enqueue_entity(cfs_rq, prev);
+> +
+> +               start_cfs_bandwidth(cfs_rq);
+>         }
+>         cfs_rq->curr = NULL;
+>  } 
 
-This patch removes these macros to avoid unneeded plus one then minus one operations
-without reducing readability.
+OK, so while the first made sense the second had me go wtf?!, now I
+_think_ you do that because do_sched_cfs_period_timer() can return idle
+and stop the timer when no bandwidth consumption is seen for a while,
+and thus we need to re-start the timer when we put the entity to sleep,
+since that could have been a throttle.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8997.c         |   12 ++++++------
- include/linux/mfd/max8997-private.h |    4 ----
- 2 files changed, 6 insertions(+), 10 deletions(-)
+If that's so then neither really do make sense and a big fat comment is
+missing.
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index b1c1444..10d5a1d 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -1032,11 +1032,11 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
- 
- 	/* For the safety, set max voltage before setting up */
- 	for (i = 0; i < 8; i++) {
--		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
- 				max_buck1, 0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
- 				max_buck2, 0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
- 				max_buck5, 0x3f);
- 	}
- 
-@@ -1113,13 +1113,13 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
- 
- 	/* Initialize all the DVS related BUCK registers */
- 	for (i = 0; i < 8; i++) {
--		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
- 				max8997->buck1_vol[i],
- 				0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
- 				max8997->buck2_vol[i],
- 				0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
-+		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
- 				max8997->buck5_vol[i],
- 				0x3f);
- 	}
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index 69d1010..5ff2400 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -311,10 +311,6 @@ enum max8997_irq {
- 	MAX8997_IRQ_NR,
- };
- 
--#define MAX8997_REG_BUCK1DVS(x)	(MAX8997_REG_BUCK1DVS1 + (x) - 1)
--#define MAX8997_REG_BUCK2DVS(x)	(MAX8997_REG_BUCK2DVS1 + (x) - 1)
--#define MAX8997_REG_BUCK5DVS(x)	(MAX8997_REG_BUCK5DVS1 + (x) - 1)
--
- #define MAX8997_NUM_GPIO	12
- struct max8997_dev {
- 	struct device *dev;
--- 
-1.7.1
-
-
-
+So why not start on the same (but inverse) condition that makes it stop?
