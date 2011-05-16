@@ -1,217 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab1EPSXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:23:39 -0400
-Received: from smtp103.prem.mail.sp1.yahoo.com ([98.136.44.58]:42959 "HELO
-	smtp103.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750787Ab1EPSXh (ORCPT
+	id S933407Ab1ERSIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 May 2011 14:08:30 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:26559 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933345Ab1ERSHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:23:37 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: w8UOfpwVM1m6A4SGC6kcIBjzhy4vsQfpF4YAOTDQa6G2.3.
- .5l6UhtoiCUrqvEKjg.4T6I2wT7K8tMxlgnxwQOofywy88oHZfX7SWnqqCGf
- 98VU1LKzb9Q2pBxs0hVYr3rOYzew9p1sk2SqdSh_Eck76mYYhVm.3M3lHx4b
- pHEHy25u2SFsuMLQ3kKNlJ.9WlnF8AsMq9e1RhuWTyL7j4E0ANTegx.cT_26
- BAzAy8FJeD.R5znWnTjwukvHi0FGZqufd3KB_RI19ev.EcaQYB3QmTx2D.u3
- DseAEaGMr70RVRpXMjFJ.3IWCB6QZ47NXztzEsOQB2ukcPaEdi2OvXgol_ou
- tqxtLNaPX3l3mw5jIk_yKWqg23UN4xIabWivvi7A9_UMp63oBkfxdlp9QKM.
- EpUL7OpLsKuPWHMJCXID6bTZkkTkgCEKr.vjAo2L.8Rgeess3VpLIwYSY8Zz
- 231BKfEojT19rbW5SplFLJN.X0w--
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4DD16B96.7020907@schaufler-ca.com>
-Date: Mon, 16 May 2011 11:23:18 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Steven Whitehouse <swhiteho@redhat.com>
-CC: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernl.org, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Mimi Zohar <zohar@us.ibm.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@redhat.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH v5 13/21] evm: add evm_inode_post_init call in gfs2
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>	 <1305557115-15652-14-git-send-email-zohar@linux.vnet.ibm.com>	 <1305559822.2855.14.camel@menhir>	 <1305561051.2669.10.camel@localhost.localdomain>	 <1305562469.2855.26.camel@menhir>	 <1305563758.2669.26.camel@localhost.localdomain>	 <1305568250.2669.47.camel@localhost.localdomain> <1305568671.2855.31.camel@menhir>
-In-Reply-To: <1305568671.2855.31.camel@menhir>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 18 May 2011 14:07:13 -0400
+Message-Id: <201105181807.p4II7AYE015221@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 16 May 2011 14:23:44 -0400
+Subject: [PATCH] arch/tile: support signal "exception-trace" hook
+In-Reply-To: <201005252345.15685.arnd@arndb.de>
+To: linux-kernel@vger.kernel.org, Andi Kleen <ak@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>
+X-OriginalArrivalTime: 18 May 2011 18:07:11.0555 (UTC) FILETIME=[68D5E130:01CC1586]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/16/2011 10:57 AM, Steven Whitehouse wrote:
-> Hi,
->
-> On Mon, 2011-05-16 at 13:50 -0400, Mimi Zohar wrote:
->> On Mon, 2011-05-16 at 12:35 -0400, Mimi Zohar wrote:
->>> On Mon, 2011-05-16 at 17:14 +0100, Steven Whitehouse wrote:
->>>> Hi,
->>>>
->>>> On Mon, 2011-05-16 at 11:50 -0400, Mimi Zohar wrote:
->>>>> On Mon, 2011-05-16 at 16:30 +0100, Steven Whitehouse wrote:
->>>>>> Hi,
->>>>>>
->>>>>> On Mon, 2011-05-16 at 10:45 -0400, Mimi Zohar wrote:
->>>>>>> After creating the initial LSM security extended attribute, call
->>>>>>> evm_inode_post_init_security() to create the 'security.evm'
->>>>>>> extended attribute.
->>>>>>>
->>>>>>> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
->>>>>>> ---
->>>>>>>  fs/gfs2/inode.c |   28 +++++++++++++++++++---------
->>>>>>>  1 files changed, 19 insertions(+), 9 deletions(-)
->>>>>>>
->>>>>> [snip]
->>>>>>> +	struct xattr lsm_xattr;
->>>>>>> +	struct xattr evm_xattr;
->>>>>>>  
->>>>>>>  	err = security_inode_init_security(&ip->i_inode, &dip->i_inode, qstr,
->>>>>>> -					   &name, &value, &len);
->>>>>>> +					   &lsm_xattr.name, &lsm_xattr.value,
->>>>>>> +					   &lsm_xattr.value_len);
->>>>>>>  
->>>>>>>  	if (err) {
->>>>>>>  		if (err == -EOPNOTSUPP)
->>>>>>> @@ -780,11 +781,20 @@ static int gfs2_security_init(struct gfs2_inode *dip, struct gfs2_inode *ip,
->>>>>>>  		return err;
->>>>>>>  	}
->>>>>>>  
->>>>>>> -	err = __gfs2_xattr_set(&ip->i_inode, name, value, len, 0,
->>>>>>> -			       GFS2_EATYPE_SECURITY);
->>>>>>> -	kfree(value);
->>>>>>> -	kfree(name);
->>>>>>> -
->>>>>>> +	err = __gfs2_xattr_set(&ip->i_inode, lsm_xattr.name, lsm_xattr.value,
->>>>>>> +			       lsm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
->>>>>>> +	if (err < 0)
->>>>>>> +		goto out;
->>>>>>> +	err = evm_inode_post_init_security(&ip->i_inode, &lsm_xattr,
->>>>>>> +					   &evm_xattr);
->>>>>>> +	if (err)
->>>>>>> +		goto out;
->>>>>>> +	err = __gfs2_xattr_set(&ip->i_inode, evm_xattr.name, evm_xattr.value,
->>>>>>> +			       evm_xattr.value_len, 0, GFS2_EATYPE_SECURITY);
->>>>>>> +	kfree(evm_xattr.value);
->>>>>>> +out:
->>>>>>> +	kfree(lsm_xattr.name);
->>>>>>> +	kfree(lsm_xattr.value);
->>>>>>>  	return err;
->>>>>>>  }
->>>>>>>  
->>>>>> Just wondering whether we could have a single call to the security
->>>>>> subsystem which returns a vector of xattrs rather than having to call
->>>>>> two different functions?
->>>>>>
->>>>>> Steve.
->>>>> There are a number of places that the LSM function is called immediately
->>>>> followed by either EVM/IMA.  In each of those places it is hidden from
->>>>> the caller by calling the security_inode_XXX_security().  In this case
->>>>> each fs has it's own method of creating an extended attribute.  If that
->>>>> method could be passed to security_inode_init_security, then
->>>>> security_inode_init_security() could call both the LSM and EVM functions
->>>>> directly.
->>>>>
->>>>> Mimi
->>>>>
->>>> I'm still not quite sure I understand... from a (very brief) look at the
->>>> paper, it seems that what you are trying to do is add a new xattr to
->>>> inodes which has some hash of some of the inode metadata (presumably
->>>> including the selinux xattr and some other fields).
->>> Yes, for the time being the other metadata is i_ino, i_generation,
->>> i_uid, i_gid, and i_mode.  The IMA-appriasal extension would store the
->>> file hash as an extended attribute. The digital-signature extension
->>> would store a digitial signature instead of the hash.
->>>
->>>> I'm not sure why it matters whether the selinux data has been written to
->>>> the buffers before the xattr containing the hash? The data will not
->>>> change (I hope!) and if it does presumably the hash will pick that up
->>>> when it is checked at a later date?
->>> In this case it doesn't matter, as there aren't any other xattrs at this
->>> point.  When the file closes, the file hash would be written out as
->>> security.ima, causing security.evm to be updated to reflect the change.
->>>
->>>> The reason I'm asking is that currently the creation of GFS2 inodes is
->>>> broken down into a number of transactions, carefully designed to ensure
->>>> that the correct clean up occurs if there is an error. I would like to
->>>> try and reduce the number of transactions during the create process
->>>> where possible. That means I would like to move to a model which looks
->>>> like this:
->>>>
->>>> 1. Calculate number of blocks required, based on inode + xattrs (if any)
->>>> 2. Allocate blocks
->>>> 3. Populate with data (i.e. set xattrs)
->>>>
->>>> I'm trying to work out whether there is some reason why we have to use
->>>> your proposed:
->>>>
->>>> 1. Get selinux xattr
->>>> 2. Set selinux xattr
->>>> 3. Get EVM xattr
->>>> 4. Set EVM xattr
->>>>
->>>> as opposed to getting all the xattrs in a single call and then being
->>>> able to set them all in a single operation, if that makes sense?
->>>>
->>>> Steve.
->>> Yes, it makes sense.
->> Just to clarify (and am cc'ing Stephen, Eric, and Casey).
->>
->> Instead of:
->>
->> int security_inode_init_security(struct inode *inode, struct inode *dir,
->>                                  const struct qstr *qstr, char **name,
->>                                  void **value, size_t *len);
->>
->> You're suggesting changing the interface to something like:
->>
->> int security_inode_init_security(struct inode *inode, struct inode *dir,
->>                                  const struct qstr *qstr, struct xattr **xattrs);
->>
->> where 'struct xattr' is defined as (9th patch):
->>
->> --- a/include/linux/xattr.h
->> +++ b/include/linux/xattr.h
->> @@ -70,6 +70,12 @@ struct xattr_handler {
->>                    size_t size, int flags, int handler_flags);
->>  };
->>
->> +struct xattr {
->> +       char *name;
->> +       void *value;
->> +       size_t value_len;
->> +};
->> +
->>  ssize_t xattr_getsecurity(struct inode *, const char *, void *, size_t);
->>  ssize_t vfs_getxattr(struct dentry *, const char *, void *, size_t);
->>  ssize_t vfs_listxattr(struct dentry *d, char *list, size_t size);
->>
->> xattrs would be null terminated. The fs would be responsible for freeing the xattrs?
->>
->> thanks,
->>
->> Mimi
->>
-> Yes, if that makes sense... I got the impression from the paper that
-> there is the possibility of more xattrs being added in future and this
-> way the fs end of things wouldn't have to change again when that
-> happens. I'm still trying to get my head around it all, but it seems a
-> cleaner solution to me - though I may well be missing something still,
+This change adds support for /proc/sys/debug/exception-trace to tile.
+Like x86 and sparc, by default it is set to "1", generating a one-line
+printk whenever a user process crashes.  By setting it to "2", we get
+a much more complete userspace diagnostic at crash time, including
+a user-space backtrace, register dump, and memory dump around the
+address of the crash.
 
-There is a very real possibility that multiple concurrent LSMs will
-be supported before too long. Smack already uses multiple attributes
-(SMACK64, SMACK64EXEC) on a file. Getting all the attributes in a
-single call could result in an interface that requires parsing a
-string argument, and we all know how popular those are. Introducing
-an interface that we know isn't going to accommodate this upcoming
-direction does not seem prudent.
+Some vestiges of the Tilera-internal version of this support are
+removed with this patch (the show_crashinfo variable and the
+arch_coredump_signal function).  We retain a "crashinfo" boot parameter
+which allows you to set the boot-time value of exception-trace.
 
-> Steve.
->
->
->
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+Arnd Bergmann originally requested this (see parent email in thread)
+in code review of an early batch of arch/tile code.
+
+ arch/tile/include/asm/processor.h |    7 --
+ arch/tile/include/asm/signal.h    |    4 +
+ arch/tile/kernel/compat_signal.c  |    4 +-
+ arch/tile/kernel/signal.c         |  128 +++++++++++++++++++++++++++++++++++-
+ arch/tile/kernel/single_step.c    |    4 +
+ arch/tile/kernel/traps.c          |    1 +
+ arch/tile/mm/fault.c              |   24 ++++---
+ kernel/sysctl.c                   |    2 +-
+ 8 files changed, 151 insertions(+), 23 deletions(-)
+
+diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
+index d6b43dd..34c1e01 100644
+--- a/arch/tile/include/asm/processor.h
++++ b/arch/tile/include/asm/processor.h
+@@ -257,10 +257,6 @@ static inline void cpu_relax(void)
+ 	barrier();
+ }
+ 
+-struct siginfo;
+-extern void arch_coredump_signal(struct siginfo *, struct pt_regs *);
+-#define arch_coredump_signal arch_coredump_signal
+-
+ /* Info on this processor (see fs/proc/cpuinfo.c) */
+ struct seq_operations;
+ extern const struct seq_operations cpuinfo_op;
+@@ -271,9 +267,6 @@ extern char chip_model[64];
+ /* Data on which physical memory controller corresponds to which NUMA node. */
+ extern int node_controller[];
+ 
+-/* Do we dump information to the console when a user application crashes? */
+-extern int show_crashinfo;
+-
+ #if CHIP_HAS_CBOX_HOME_MAP()
+ /* Does the heap allocator return hash-for-home pages by default? */
+ extern int hash_default;
+diff --git a/arch/tile/include/asm/signal.h b/arch/tile/include/asm/signal.h
+index 81d92a4..1e1e616 100644
+--- a/arch/tile/include/asm/signal.h
++++ b/arch/tile/include/asm/signal.h
+@@ -28,6 +28,10 @@ struct pt_regs;
+ int restore_sigcontext(struct pt_regs *, struct sigcontext __user *);
+ int setup_sigcontext(struct sigcontext __user *, struct pt_regs *);
+ void do_signal(struct pt_regs *regs);
++void signal_fault(const char *type, struct pt_regs *,
++		  void __user *frame, int sig);
++void trace_unhandled_signal(const char *type, struct pt_regs *regs,
++			    unsigned long address, int signo);
+ #endif
+ 
+ #endif /* _ASM_TILE_SIGNAL_H */
+diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
+index dbb0dfc..a7869ad 100644
+--- a/arch/tile/kernel/compat_signal.c
++++ b/arch/tile/kernel/compat_signal.c
+@@ -317,7 +317,7 @@ long compat_sys_rt_sigreturn(struct pt_regs *regs)
+ 	return 0;
+ 
+ badframe:
+-	force_sig(SIGSEGV, current);
++	signal_fault("bad sigreturn frame", regs, frame, 0);
+ 	return 0;
+ }
+ 
+@@ -431,6 +431,6 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	return 0;
+ 
+ give_sigsegv:
+-	force_sigsegv(sig, current);
++	signal_fault("bad setup frame", regs, frame, sig);
+ 	return -EFAULT;
+ }
+diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
+index 1260321..bedaf4e 100644
+--- a/arch/tile/kernel/signal.c
++++ b/arch/tile/kernel/signal.c
+@@ -39,7 +39,6 @@
+ 
+ #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
+ 
+-
+ SYSCALL_DEFINE3(sigaltstack, const stack_t __user *, uss,
+ 		stack_t __user *, uoss, struct pt_regs *, regs)
+ {
+@@ -78,6 +77,13 @@ int restore_sigcontext(struct pt_regs *regs,
+ 	return err;
+ }
+ 
++void signal_fault(const char *type, struct pt_regs *regs,
++		  void __user *frame, int sig)
++{
++	trace_unhandled_signal(type, regs, (unsigned long)frame, SIGSEGV);
++	force_sigsegv(sig, current);
++}
++
+ /* The assembly shim for this function arranges to ignore the return value. */
+ SYSCALL_DEFINE1(rt_sigreturn, struct pt_regs *, regs)
+ {
+@@ -105,7 +111,7 @@ SYSCALL_DEFINE1(rt_sigreturn, struct pt_regs *, regs)
+ 	return 0;
+ 
+ badframe:
+-	force_sig(SIGSEGV, current);
++	signal_fault("bad sigreturn frame", regs, frame, 0);
+ 	return 0;
+ }
+ 
+@@ -231,7 +237,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	return 0;
+ 
+ give_sigsegv:
+-	force_sigsegv(sig, current);
++	signal_fault("bad setup frame", regs, frame, sig);
+ 	return -EFAULT;
+ }
+ 
+@@ -245,7 +251,6 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
+ {
+ 	int ret;
+ 
+-
+ 	/* Are we from a system call? */
+ 	if (regs->faultnum == INT_SWINT_1) {
+ 		/* If so, check system call restarting.. */
+@@ -363,3 +368,118 @@ done:
+ 	/* Avoid double syscall restart if there are nested signals. */
+ 	regs->faultnum = INT_SWINT_1_SIGRETURN;
+ }
++
++int show_unhandled_signals = 1;
++
++static int __init crashinfo(char *str)
++{
++	unsigned long val;
++	const char *word;
++
++	if (*str == '\0')
++		val = 2;
++	else if (*str != '=' || strict_strtoul(++str, 0, &val) != 0)
++		return 0;
++	show_unhandled_signals = val;
++	switch (show_unhandled_signals) {
++	case 0:
++		word = "No";
++		break;
++	case 1:
++		word = "One-line";
++		break;
++	default:
++		word = "Detailed";
++		break;
++	}
++	pr_info("%s crash reports will be generated on the console\n", word);
++	return 1;
++}
++__setup("crashinfo", crashinfo);
++
++static void dump_mem(void __user *address)
++{
++	void __user *addr;
++	enum { region_size = 256, bytes_per_line = 16 };
++	int i, j, k;
++	int found_readable_mem = 0;
++
++	pr_err("\n");
++	if (!access_ok(VERIFY_READ, address, 1)) {
++		pr_err("Not dumping at address 0x%lx (kernel address)\n",
++		       (unsigned long)address);
++		return;
++	}
++
++	addr = (void __user *)
++		(((unsigned long)address & -bytes_per_line) - region_size/2);
++	if (addr > address)
++		addr = NULL;
++	for (i = 0; i < region_size;
++	     addr += bytes_per_line, i += bytes_per_line) {
++		unsigned char buf[bytes_per_line];
++		char line[100];
++		if (copy_from_user(buf, addr, bytes_per_line))
++			continue;
++		if (!found_readable_mem) {
++			pr_err("Dumping memory around address 0x%lx:\n",
++			       (unsigned long)address);
++			found_readable_mem = 1;
++		}
++		j = sprintf(line, REGFMT":", (unsigned long)addr);
++		for (k = 0; k < bytes_per_line; ++k)
++			j += sprintf(&line[j], " %02x", buf[k]);
++		pr_err("%s\n", line);
++	}
++	if (!found_readable_mem)
++		pr_err("No readable memory around address 0x%lx\n",
++		       (unsigned long)address);
++}
++
++void trace_unhandled_signal(const char *type, struct pt_regs *regs,
++			    unsigned long address, int sig)
++{
++	struct task_struct *tsk = current;
++
++	if (show_unhandled_signals == 0)
++		return;
++
++	/* If the signal is handled, don't show it here. */
++	if (!is_global_init(tsk)) {
++		void __user *handler =
++			tsk->sighand->action[sig-1].sa.sa_handler;
++		if (handler != SIG_IGN && handler != SIG_DFL)
++			return;
++	}
++
++	/* Rate-limit the one-line output, not the detailed output. */
++	if (show_unhandled_signals <= 1 && !printk_ratelimit())
++		return;
++
++	printk("%s%s[%d]: %s at %lx pc "REGFMT" signal %d",
++	       task_pid_nr(tsk) > 1 ? KERN_INFO : KERN_EMERG,
++	       tsk->comm, task_pid_nr(tsk), type, address, regs->pc, sig);
++
++	print_vma_addr(KERN_CONT " in ", regs->pc);
++
++	printk(KERN_CONT "\n");
++
++	if (show_unhandled_signals > 1) {
++		switch (sig) {
++		case SIGILL:
++		case SIGFPE:
++		case SIGSEGV:
++		case SIGBUS:
++			pr_err("User crash: signal %d,"
++			       " trap %ld, address 0x%lx\n",
++			       sig, regs->faultnum, address);
++			show_regs(regs);
++			dump_mem((void __user *)address);
++			break;
++		default:
++			pr_err("User crash: signal %d, trap %ld\n",
++			       sig, regs->faultnum);
++			break;
++		}
++	}
++}
+diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
+index 86df5a2..4032ca8 100644
+--- a/arch/tile/kernel/single_step.c
++++ b/arch/tile/kernel/single_step.c
+@@ -186,6 +186,8 @@ static tile_bundle_bits rewrite_load_store_unaligned(
+ 			.si_code = SEGV_MAPERR,
+ 			.si_addr = addr
+ 		};
++		trace_unhandled_signal("segfault", regs,
++				       (unsigned long)addr, SIGSEGV);
+ 		force_sig_info(info.si_signo, &info, current);
+ 		return (tile_bundle_bits) 0;
+ 	}
+@@ -196,6 +198,8 @@ static tile_bundle_bits rewrite_load_store_unaligned(
+ 			.si_code = BUS_ADRALN,
+ 			.si_addr = addr
+ 		};
++		trace_unhandled_signal("unaligned trap", regs,
++				       (unsigned long)addr, SIGBUS);
+ 		force_sig_info(info.si_signo, &info, current);
+ 		return (tile_bundle_bits) 0;
+ 	}
+diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
+index 5474fc2..f9803df 100644
+--- a/arch/tile/kernel/traps.c
++++ b/arch/tile/kernel/traps.c
+@@ -308,6 +308,7 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 	info.si_addr = (void __user *)address;
+ 	if (signo == SIGILL)
+ 		info.si_trapno = fault_num;
++	trace_unhandled_signal("trap", regs, address, signo);
+ 	force_sig_info(signo, &info, current);
+ }
+ 
+diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+index 24ca54a..25b7b90 100644
+--- a/arch/tile/mm/fault.c
++++ b/arch/tile/mm/fault.c
+@@ -43,8 +43,11 @@
+ 
+ #include <arch/interrupts.h>
+ 
+-static noinline void force_sig_info_fault(int si_signo, int si_code,
+-	unsigned long address, int fault_num, struct task_struct *tsk)
++static noinline void force_sig_info_fault(const char *type, int si_signo,
++					  int si_code, unsigned long address,
++					  int fault_num,
++					  struct task_struct *tsk,
++					  struct pt_regs *regs)
+ {
+ 	siginfo_t info;
+ 
+@@ -59,6 +62,7 @@ static noinline void force_sig_info_fault(int si_signo, int si_code,
+ 	info.si_code = si_code;
+ 	info.si_addr = (void __user *)address;
+ 	info.si_trapno = fault_num;
++	trace_unhandled_signal(type, regs, address, si_signo);
+ 	force_sig_info(si_signo, &info, tsk);
+ }
+ 
+@@ -71,11 +75,12 @@ SYSCALL_DEFINE2(cmpxchg_badaddr, unsigned long, address,
+ 		struct pt_regs *, regs)
+ {
+ 	if (address >= PAGE_OFFSET)
+-		force_sig_info_fault(SIGSEGV, SEGV_MAPERR, address,
+-				     INT_DTLB_MISS, current);
++		force_sig_info_fault("atomic segfault", SIGSEGV, SEGV_MAPERR,
++				     address, INT_DTLB_MISS, current, regs);
+ 	else
+-		force_sig_info_fault(SIGBUS, BUS_ADRALN, address,
+-				     INT_UNALIGN_DATA, current);
++		force_sig_info_fault("atomic alignment fault", SIGBUS,
++				     BUS_ADRALN, address,
++				     INT_UNALIGN_DATA, current, regs);
+ 
+ 	/*
+ 	 * Adjust pc to point at the actual instruction, which is unusual
+@@ -471,8 +476,8 @@ bad_area_nosemaphore:
+ 		 */
+ 		local_irq_enable();
+ 
+-		force_sig_info_fault(SIGSEGV, si_code, address,
+-				     fault_num, tsk);
++		force_sig_info_fault("segfault", SIGSEGV, si_code, address,
++				     fault_num, tsk, regs);
+ 		return 0;
+ 	}
+ 
+@@ -547,7 +552,8 @@ do_sigbus:
+ 	if (is_kernel_mode)
+ 		goto no_context;
+ 
+-	force_sig_info_fault(SIGBUS, BUS_ADRERR, address, fault_num, tsk);
++	force_sig_info_fault("bus error", SIGBUS, BUS_ADRERR, address,
++			     fault_num, tsk, regs);
+ 	return 0;
+ }
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c0bb324..aaec934 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1496,7 +1496,7 @@ static struct ctl_table fs_table[] = {
+ 
+ static struct ctl_table debug_table[] = {
+ #if defined(CONFIG_X86) || defined(CONFIG_PPC) || defined(CONFIG_SPARC) || \
+-    defined(CONFIG_S390)
++    defined(CONFIG_S390) || defined(CONFIG_TILE)
+ 	{
+ 		.procname	= "exception-trace",
+ 		.data		= &show_unhandled_signals,
+-- 
+1.6.5.2
 
