@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1EPPnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 11:43:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36743 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756188Ab1EPPnN convert rfc822-to-8bit (ORCPT
+	id S1756437Ab1EPPrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 11:47:43 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:49462 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab1EPPrl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 11:43:13 -0400
+	Mon, 16 May 2011 11:47:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=j9GKWh+RS9jQj33IYQnMRObkwpPOJNJ96vFeAenhG7GGBwO0OwWcNT4CwNWeZzvDVG
-         N7YhsVqEMmZLHA0gvYeheCPJpOTSuv2myJhWEEO+eFe4Ycz67Kcgw9vyqDXvDrDww3Yh
-         jjfc21axR2WfW25NvsjUcorydcRecifRdNVo0=
+        b=p4E8RwLoyhlZrJtK34RVdY8T1SzD9Gnsm4EEhHL28a+aOKt8pD6vvJzjk82TY+VPgl
+         TYKbEEugL+hn5s13AU4WvYgr2Hv/v9LHvu3WF/aiIBUWtVuN+E3UiYsYBL8Sm1WfRfra
+         GVB4JfbNTu3faTJSPcudXiD4d2fnvIt0q8XKk=
 MIME-Version: 1.0
-In-Reply-To: <1305329059-2017-5-git-send-email-andi@firstfloor.org>
-References: <1305329059-2017-1-git-send-email-andi@firstfloor.org> <1305329059-2017-5-git-send-email-andi@firstfloor.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Mon, 16 May 2011 17:42:52 +0200
-Message-ID: <BANLkTikP==HkDSG1oKcfSKAhrWOXRqGF5w@mail.gmail.com>
-Subject: Re: [PATCH 4/5] Add a sysconf syscall
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org,
-        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <4DD14424.8000003@lockie.ca>
+References: <4DD14424.8000003@lockie.ca>
+Date: Mon, 16 May 2011 18:47:40 +0300
+Message-ID: <BANLkTikF3ntwWjV3iuwwCnJhZKJMVHHygQ@mail.gmail.com>
+Subject: Re: kernel bug relating to networking
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: James <bjlockie@lockie.ca>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 14, 2011 at 1:24 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> +/*
-> + * POSIX sysconf subset. Some programs need this in relatively fast paths
-> + * and /proc is too slow for them.
-> + *
-> + * Note this is only a subset of the values supported by POSIX.
-> + * We assume the C library handles the others.
-> + */
-> +SYSCALL_DEFINE1(sysconf, int, name)
-> +{
-> +       switch (name) {
-> +       case _SC_ARG_MAX:
-> +               return rlimit_or(RLIMIT_STACK, ARG_MAX*ARG_MAX_FACTOR) /
-> +                               ARG_MAX_FACTOR;
-> +
-> +       case _SC_CHILD_MAX:
-> +               return rlimit_or(RLIMIT_NPROC, max_threads);
-> +
-> +       case _SC_CLK_TCK:
-> +               return HZ;
-> +
-> +       case _SC_SEM_NSEMS_MAX:
-> +               return current->nsproxy->ipc_ns->sem_ctls[1];
-> +
-> +       case _SC_OPEN_MAX:
-> +               return rlimit_or(RLIMIT_NOFILE, sysctl_nr_open);
-> +
-> +       case _SC_SIGQUEUE_MAX:
-> +               /* or fallback based on memory? */
-> +               return rlimit_or(RLIMIT_SIGPENDING, INT_MAX);
-> +
-> +       case _SC_UIO_MAXIOV:
-> +               return UIO_MAXIOV;
-> +
-> +       case _SC_PAGESIZE:
-> +               return PAGE_SIZE;
-> +
-> +       case _SC_SYMLOOP_MAX:
-> +               return SYMLOOP_MAX;
-> +
-> +       case _SC_PHYS_PAGES:
-> +               return totalram_pages;
-> +
-> +       case _SC_AVPHYS_PAGES:
-> +               return nr_free_pages();
-> +
-> +       case _SC_NPROCESSORS_CONF:
-> +               return num_possible_cpus();
-> +
-> +       case _SC_NPROCESSORS_ONLN:
-> +               return num_online_cpus();
-> +
-> +       case _SC_NGROUPS_MAX:
-> +               return NGROUPS_MAX;
-> +
-> +       default:
-> +               return -EINVAL;
-> +       }
-> +}
+On Mon, May 16, 2011 at 6:35 PM, James <bjlockie@lockie.ca> wrote:
+> I originally posted to linux-net@vger.kernel.org but all that list
 
-...and libc will start making many such calls in a row in order to retrieve
-a dozen of such values.
+This should be netdev@vger.kernel.org.
 
-It's rather inefficient to return just one word.
-Try to return more data per call.
-
-Pass a pointer to the result struct and its length.
-Future-proof API, such as using generously wide data types,
-passing "version of struct" input parameter to facilitate incompatible
-future changes, etc.
-
-Pass a bit flag variable which says what data you want to have:
-all-zeros means "give me only the cheap stuff which needs no calculations",
-such as NGROUPS_MAX.
-If SYSCONF_NPROCESSORS_ONLN bit is set, also return num_online_cpus().
-If SYSCONF_AVPHYS_PAGES bit is set, return nr_free_pages().
-Etc.
-
-Maybe it makes sense to pass bits in the struct rather than in a parameter,
-to not get caught by "we ran out of bits in the word!" problem later.
-
--- 
-vda
+> received in the last day was 3 Russian (spam?) messages.
+> I'm hoping here will be less spam.
+>
+> I'm having a wireless problem that I think is kernel issue.
+> kernel-2.6.36.4 is good but recent kernels are bad.
+> CompatWireless (recent wireless code) works on kernel-2.6.36.4 so I
+> don't think it is the wireless subsystem..
+>
+> I have a Network controller: Atheros Communications Inc. AR5008 Wireless
+> Network Adapter (rev 01).
+>
+> "iwlist wlan0 scan | grep SSID" under kernel-2.6.36.4 returns  ~15 APs
+> and associates to my AP.
+> Recent kernels are bad and return ~0-3 APs and do not associate to my AP.
+>
+> I need help to debug this.
+>
+> I think the scans fail whenever dmesg shows this:
+>> ath: Failed to stop TX DMA in 100 msec after killing last frame
+>> ath: Failed to stop TX DMA!
+> It seems to be 100% if I boot a kernel and that message is there, it'll
+> be a bad kernel.
+>
+> I tried:
+> $ git clone
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.37.y.git
+> $ cd linux-2.6.37.y
+> # git tag
+> What tag is 2.6.36.4?
+>
+> v2.6.36
+> v2.6.36-rc1
+> v2.6.36-rc2
+> v2.6.36-rc3
+> v2.6.36-rc4
+> v2.6.36-rc5
+> v2.6.36-rc6
+> v2.6.36-rc7
+> v2.6.36-rc8
+> v2.6.37
+> v2.6.37-rc1
+> v2.6.37-rc2
+> v2.6.37-rc3
+> v2.6.37-rc4
+> v2.6.37-rc5
+> v2.6.37-rc6
+> v2.6.37-rc7
+> v2.6.37-rc8
+> v2.6.37.1
+> v2.6.37.2
+> v2.6.37.3
+> v2.6.37.4
+> v2.6.37.5
+> v2.6.37.6
+>
+> Is the next step to do:
+> $ git bisect start
+> $ git bisect good v2.6.36.4
+> $ git bisect bad v2.6.37.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
