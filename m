@@ -1,121 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1EPSRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:17:36 -0400
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:37249 "EHLO
+	id S1752954Ab1EPSTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 14:19:33 -0400
+Received: from mail-bw0-f52.google.com ([209.85.214.52]:60031 "EHLO
 	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab1EPSRe (ORCPT
+	with ESMTP id S1751476Ab1EPSRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:17:34 -0400
+	Mon, 16 May 2011 14:17:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=g2lmkYdrAUNUZccdLfQ1gc3KfjUXdxYbmGxUUKIjFZz9oPX0sYCdFioCO2ENbupJkQ
-         RyoIALZLS3Cr/Tmdmt93Ae/xGqNqEyKLCbhD+znz6CIeyqETmA6AVW6XuMZPkC/Avo/T
-         HD+LdAK8PGYyT8La8p16XZ/EfDc+6jLDQF4aw=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=Hd/bHmIIhDNuZBom83t+XKAAZ9UUiZx4nyHcD9HOm1wZyfp/WtpwU7tvWgNKTKHg/Q
+         Ip2P8na9HP70j+vVCgEIYZ8BpPHfDCUwXHz1qI70cgI8tlWXRS6yARlhDS5bGSKKocpu
+         Fsho0brzgp5Mr9bmzi7f5y0JXpzL18CyoAU4I=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification, take#2
-Date: Mon, 16 May 2011 20:17:19 +0200
-Message-Id: <1305569849-10448-1-git-send-email-tj@kernel.org>
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/10] signal: remove three noop tracehooks
+Date: Mon, 16 May 2011 20:17:20 +0200
+Message-Id: <1305569849-10448-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1305569849-10448-1-git-send-email-tj@kernel.org>
+References: <1305569849-10448-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Remove the following three noop tracehooks in signals.c.
 
-This is the second try at implementing PTRACE_SEIZE/INTERRUPT and
-group stop notification.  Notable changes from the first take[1] are,
+* tracehook_force_sigpending()
+* tracehook_get_signal()
+* tracehook_finish_jctl()
 
-* Prep patches moved to a separate patchset[2].
+The code area is about to be updated and these hooks don't do anything
+other than obfuscating the logic.
 
-* JOBCTL_EVENT_INTERRUPT renamed to JOBCTL_EVENT_STOP and now also
-  used for group stop.  This means that PTRACE_GETSIGINFO will always
-  return a valid siginfo.  For signal delivery traps, it will contain
-  the siginfo for the signal being delivered.  For all other traps, it
-  will contain the trap information which includes group stop info.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/tracehook.h |   52 ---------------------------------------------
+ kernel/signal.c           |   44 ++++++++++++--------------------------
+ 2 files changed, 14 insertions(+), 82 deletions(-)
 
-* JOBCTL_TRAP_STOP trap doesn't carry signo in si_code and the signal
-  which initiated the group stop currently in effect can be obtained
-  from siginfo.si_signo.
+diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
+index b073f3c..85dae19 100644
+--- a/include/linux/tracehook.h
++++ b/include/linux/tracehook.h
+@@ -425,58 +425,6 @@ static inline int tracehook_consider_fatal_signal(struct task_struct *task,
+ 	return (task_ptrace(task) & PT_PTRACED) != 0;
+ }
+ 
+-/**
+- * tracehook_force_sigpending - let tracing force signal_pending(current) on
+- *
+- * Called when recomputing our signal_pending() flag.  Return nonzero
+- * to force the signal_pending() flag on, so that tracehook_get_signal()
+- * will be called before the next return to user mode.
+- *
+- * Called with @current->sighand->siglock held.
+- */
+-static inline int tracehook_force_sigpending(void)
+-{
+-	return 0;
+-}
+-
+-/**
+- * tracehook_get_signal - deliver synthetic signal to traced task
+- * @task:		@current
+- * @regs:		task_pt_regs(@current)
+- * @info:		details of synthetic signal
+- * @return_ka:		sigaction for synthetic signal
+- *
+- * Return zero to check for a real pending signal normally.
+- * Return -1 after releasing the siglock to repeat the check.
+- * Return a signal number to induce an artifical signal delivery,
+- * setting *@info and *@return_ka to specify its details and behavior.
+- *
+- * The @return_ka->sa_handler value controls the disposition of the
+- * signal, no matter the signal number.  For %SIG_DFL, the return value
+- * is a representative signal to indicate the behavior (e.g. %SIGTERM
+- * for death, %SIGQUIT for core dump, %SIGSTOP for job control stop,
+- * %SIGTSTP for stop unless in an orphaned pgrp), but the signal number
+- * reported will be @info->si_signo instead.
+- *
+- * Called with @task->sighand->siglock held, before dequeuing pending signals.
+- */
+-static inline int tracehook_get_signal(struct task_struct *task,
+-				       struct pt_regs *regs,
+-				       siginfo_t *info,
+-				       struct k_sigaction *return_ka)
+-{
+-	return 0;
+-}
+-
+-/**
+- * tracehook_finish_jctl - report about return from job control stop
+- *
+- * This is called by do_signal_stop() after wakeup.
+- */
+-static inline void tracehook_finish_jctl(void)
+-{
+-}
+-
+ #define DEATH_REAP			-1
+ #define DEATH_DELAYED_GROUP_LEADER	-2
+ 
+diff --git a/kernel/signal.c b/kernel/signal.c
+index fff3036..bb63c25 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -150,9 +150,7 @@ void recalc_sigpending_and_wake(struct task_struct *t)
+ 
+ void recalc_sigpending(void)
+ {
+-	if (unlikely(tracehook_force_sigpending()))
+-		set_thread_flag(TIF_SIGPENDING);
+-	else if (!recalc_sigpending_tsk(current) && !freezing(current))
++	if (!recalc_sigpending_tsk(current) && !freezing(current))
+ 		clear_thread_flag(TIF_SIGPENDING);
+ 
+ }
+@@ -1971,8 +1969,6 @@ retry:
+ 
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 
+-	tracehook_finish_jctl();
+-
+ 	return 1;
+ }
+ 
+@@ -2075,37 +2071,25 @@ relock:
+ 
+ 	for (;;) {
+ 		struct k_sigaction *ka;
+-		/*
+-		 * Tracing can induce an artifical signal and choose sigaction.
+-		 * The return value in @signr determines the default action,
+-		 * but @info->si_signo is the signal number we will report.
+-		 */
+-		signr = tracehook_get_signal(current, regs, info, return_ka);
+-		if (unlikely(signr < 0))
++
++		if (unlikely(current->jobctl & JOBCTL_STOP_PENDING) &&
++		    do_signal_stop(0))
+ 			goto relock;
+-		if (unlikely(signr != 0))
+-			ka = return_ka;
+-		else {
+-			if (unlikely(current->jobctl & JOBCTL_STOP_PENDING) &&
+-			    do_signal_stop(0))
+-				goto relock;
+ 
+-			signr = dequeue_signal(current, &current->blocked,
+-					       info);
++		signr = dequeue_signal(current, &current->blocked, info);
+ 
+-			if (!signr)
+-				break; /* will return 0 */
++		if (!signr)
++			break; /* will return 0 */
+ 
+-			if (signr != SIGKILL) {
+-				signr = ptrace_signal(signr, info,
+-						      regs, cookie);
+-				if (!signr)
+-					continue;
+-			}
+-
+-			ka = &sighand->action[signr-1];
++		if (signr != SIGKILL) {
++			signr = ptrace_signal(signr, info,
++					      regs, cookie);
++			if (!signr)
++				continue;
+ 		}
+ 
++		ka = &sighand->action[signr-1];
++
+ 		/* Trace actually delivered signals. */
+ 		trace_signal_deliver(signr, info, ka);
+ 
+-- 
+1.7.1
 
-* JOBCTL_INTERRUPT triggers JOBCTL_EVENT_STOP and gets cleared on any
-  trap, so the initial trap by JOBCTL_SEIZE is identical to
-  JOBCTL_INTERRUPT.
-
-* PTRACE_SETSIGINFO disallows overriding __SI_TRAP siginfo.
-
-* Re-trap delay mechanism added to avoid re-trapping while ptrace
-  request is in progress.
-
-So, PTRACE_INTERRUPT simply puts the tracee into the same state as
-group stop and this simplifies things a lot.  Trap siginfo is also
-accessible during group stop and group stop notification happening
-during PTRACE_EVENT_STOP makes sense and there's no awkward careful
-sequencing of traps to avoid unnecessary traps.  I think it makes
-whole lot more sense this way.
-
-This patchset contains the following ten patches.
-
-  0001-signal-remove-three-noop-tracehooks.patch
-  0002-job-control-introduce-JOBCTL_TRAP_STOP-and-use-it-fo.patch
-  0003-ptrace-implement-PTRACE_SEIZE.patch
-  0004-ptrace-implement-PTRACE_INTERRUPT.patch
-  0005-ptrace-restructure-ptrace_getsiginfo.patch
-  0006-ptrace-add-siginfo.si_pt_flags.patch
-  0007-ptrace-make-group-stop-state-visible-via-PTRACE_GETS.patch
-  0008-ptrace-don-t-let-PTRACE_SETSIGINFO-override-__SI_TRA.patch
-  0009-ptrace-add-JOBCTL_BLOCK_NOTIFY.patch
-  0010-ptrace-implement-group-stop-notification-for-ptracer.patch
-
-0001 removes three signal tracehooks.  Will be moved to the prep
-patchset on the next round.
-
-0002 introduces TRAP_STOP and 0003-0004 implement SEIZE and INTERRUPT.
-
-0005-0008 expose group stop info via GETSIGINFO.
-
-0009-0010 implement group stop notification.
-
-This patchset is on top of Oleg's ptrace branch[3] + prep patchset[2]
-and available in the following git branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ptrace-seize
-
-The HEAD is 8026ce454dd46dc3c8cf6bbc57bcd30f5efa4e55.  If you see
-older branch, please retry after a while (korg is still syncing).
-
-diffstat follows.
-
- arch/ia64/include/asm/siginfo.h       |    7 +
- arch/ia64/kernel/signal.c             |    5 
- arch/mips/include/asm/compat-signal.h |    7 +
- arch/mips/include/asm/siginfo.h       |    7 +
- arch/mips/kernel/signal32.c           |    5 
- arch/parisc/kernel/signal32.c         |    5 
- arch/parisc/kernel/signal32.h         |    7 +
- arch/powerpc/kernel/ppc32.h           |    7 +
- arch/powerpc/kernel/signal_32.c       |    5 
- arch/s390/kernel/compat_linux.h       |    7 +
- arch/s390/kernel/compat_signal.c      |    5 
- arch/sparc/kernel/signal32.c          |   12 +
- arch/tile/kernel/compat_signal.c      |   11 +
- arch/x86/ia32/ia32_signal.c           |    4 
- arch/x86/include/asm/ia32.h           |    7 +
- include/asm-generic/siginfo.h         |   10 +
- include/linux/ptrace.h                |   13 ++
- include/linux/sched.h                 |    6 
- include/linux/tracehook.h             |   52 --------
- kernel/ptrace.c                       |  202 +++++++++++++++++++++++++++----
- kernel/signal.c                       |  215 +++++++++++++++++++++++-----------
- 21 files changed, 452 insertions(+), 147 deletions(-)
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1136930
-[2] http://thread.gmane.org/gmane.linux.kernel/1139751
-[3] git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git
