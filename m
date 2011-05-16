@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1EPT3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:29:09 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:52531 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425Ab1EPT3I (ORCPT
+	id S1754711Ab1EPTby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:31:54 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:54059 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab1EPTbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:29:08 -0400
-Subject: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
- netdevice
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 12:28:48 -0700
-Message-ID: <1305574128.3456.23.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Mon, 16 May 2011 15:31:52 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: djwong@us.ibm.com
+Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
+References: <87tyd31fkc.fsf@devron.myhome.or.jp>
+	<20110510123819.GB4402@quack.suse.cz>
+	<87hb924s2x.fsf@devron.myhome.or.jp>
+	<20110510132953.GE4402@quack.suse.cz>
+	<878vue4qjb.fsf@devron.myhome.or.jp>
+	<87zkmu3b2i.fsf@devron.myhome.or.jp>
+	<20110510145421.GJ4402@quack.suse.cz>
+	<87zkmupmaq.fsf@devron.myhome.or.jp>
+	<20110510162237.GM4402@quack.suse.cz>
+	<87vcxipljj.fsf@devron.myhome.or.jp>
+	<20110516184736.GL20579@tux1.beaverton.ibm.com>
+Date: Tue, 17 May 2011 04:31:37 +0900
+In-Reply-To: <20110516184736.GL20579@tux1.beaverton.ibm.com> (Darrick
+	J. Wong's message of "Mon, 16 May 2011 11:47:36 -0700")
+Message-ID: <87oc3230iu.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+"Darrick J. Wong" <djwong@us.ibm.com> writes:
 
- include/linux/netdevice.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+>> OK. E.g. usual workload on desktop, but FS like ext2/fat.
+>
+> In the frequent rewrite case, here's what you get:
+>
+> Regular disk: (possibly garbage) write, followed by a second write to make the
+> disk reflect memory contents.
+>
+> RAID w/ shadow pages: two writes, both consistent.  Higher memory consumption.
+>
+> T10 DIF disk: disk error any time the CPU modifies a page that the disk
+> controller is DMA'ing out of memory.  I suppose one could simply retry the
+> operation if the page is dirty, but supposing memory writes are happening fast
+> enough that the retries also produce disk errors, _nothing_ ever gets written.
+>
+> With the new stable-page-writes patchset, the garbage write/disk error symptoms
+> go away since the processes block instead of creating this window where it's
+> not clear whether the disk's copy of the data is consistent.  I could turn the
+> wait_on_page_writeback calls into some sort of page migration if the
+> performance turns out to be terrible, though I'm still working on quantifying
+> the impact.  Some people pointed out that sqlite tends to write the same blocks
+> frequently, though I wonder if sqlite actually tries to write memory pages
+> while syncing them?
+>
+> One use case where I could see a serious performance hit happening is the case
+> where some app writes a bunch of memory pages, calls sync to force the dirty
+> pages to disk, and /must/ resume writing those memory pages before the sync
+> completes.  The page migration would of course help there, provided a memory
+> page can be found in less time than an I/O operation.
+>
+> Someone commented on the LWN article about this topic, claiming that he had a
+> program that couldn't afford to block on writes to mlock()'d memory.  I'm not
+> sure how to fix that program, because if memory writes never coordinate with
+> disk writes and the other threads are always writing memory, I wonder how the
+> copy on disk isn't always indeterminate.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index a134d80..2646251 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1066,6 +1066,16 @@ struct net_device {
- #define NETIF_F_NOCACHE_COPY	(1 << 30) /* Use no-cache copyfromuser */
- #define NETIF_F_LOOPBACK	(1 << 31) /* Enable loopback */
- 
-+/*
-+ * Bit 31 is for device to map userspace buffers -- zerocopy
-+ * Device can set this flag when it supports HIGHDMA.
-+ * Device can't recycle this kind of skb buffers.
-+ * There are 256 bytes copied, the rest of buffers are mapped.
-+ * The userspace callback should only be called when last reference to this skb
-+ * is gone.
-+ */
-+#define NETIF_F_ZEROCOPY	(1 << 31)
-+
- 	/* Segmentation offload features */
- #define NETIF_F_GSO_SHIFT	16
- #define NETIF_F_GSO_MASK	0x00ff0000
+I'm not thinking data page is special operation for doing this (at least
+logically). In other word, if you are talking about only data page, you
+shouldn't send patches for metadata with it.
 
-
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
