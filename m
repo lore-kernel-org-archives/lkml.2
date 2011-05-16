@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab1EPObv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 10:31:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605Ab1EPObt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:31:49 -0400
-Message-ID: <4DD1350D.9080302@redhat.com>
-Date: Mon, 16 May 2011 10:30:37 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.9
+	id S1755654Ab1EPOoP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:44:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46505 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab1EPOoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 10:44:14 -0400
+Date: Mon, 16 May 2011 16:44:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+cc: Colin Cross <ccross@android.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
+        martin persson <martin.persson@stericsson.com>,
+        Varun Swara <Varun.Swara@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency
+ withcpufreqnotifiers
+In-Reply-To: <4DD10814.1010103@ti.com>
+Message-ID: <alpine.LFD.2.02.1105161642250.3078@ionos>
+References: <1290060899-9786-1-git-send-email-ccross@android.com> <AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com> <4D70BE9D.4000507@stericsson.com> <AANLkTin7ZXYALOy_jk1uR3SbZA51nSnU-ncSjG+n_RPn@mail.gmail.com> <4D714C17.7080102@gmail.com>
+ <AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com> <eea425c066cc69c30f118fb102fff43e@mail.gmail.com> <AANLkTi=KcmqmghVxhwGvv79heRU3C+TC-v2VnWSWt7bU@mail.gmail.com> <7e9fafa016bfe536ccc373fc2cc7ba61@mail.gmail.com>
+ <AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com> <AANLkTikkcYw66MiJO9Bpm+De=XD2-1MFxm-CUPp6sMqL@mail.gmail.com> <BANLkTi=-T6P0KrsQ8+Ot_inq1JabY62LvA@mail.gmail.com> <alpine.LFD.2.02.1105131138460.2831@ionos> <BANLkTimxkY4MvQ+-qiOwdwbo7jPUAQ1vxw@mail.gmail.com>
+ <alpine.LFD.2.02.1105141749510.3078@ionos> <4DD10814.1010103@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de> <1305295404-12129-5-git-send-email-mgorman@suse.de>
-In-Reply-To: <1305295404-12129-5-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2011 10:03 AM, Mel Gorman wrote:
-> Under constant allocation pressure, kswapd can be in the situation where
-> sleeping_prematurely() will always return true even if kswapd has been
-> running a long time. Check if kswapd needs to be scheduled.
->
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+On Mon, 16 May 2011, Santosh Shilimkar wrote:
+> On 5/14/2011 9:21 PM, Thomas Gleixner wrote:
+> Just for my understanding, the clockevents_reconfigure() needs to
+> be called with interrupts disabled on that CPU as part of
+> the CPUFREQ notifiers. I assume the right place is do it
+> in POST notifier after the CPU clock and hence TWD clock is
+> updated. Is that right ?
 
-Acked-by: Rik van Riel<riel@redhat.com>
+Yes.
+ 
+> Since there is need to call this API in interrupt
+> disable context, does it make sense to take care of it
+> inside the API itself instead of relying on caller fn ?
 
--- 
-All rights reversed
+Hmm, no strong opinion
+ 
+> The arch's where the per CPU TWD's share clock, per-cpu
+> clock-events should be reconfigured on all CPUs, whenever
+> the parent(CPU) clock has changed using some thing like
+> smp_call_function_any() etc. Is that right understanding?
+
+Yes. If that's a common requirement we should move that to core code.
+ 
+Thanks,
+
+	tglx
