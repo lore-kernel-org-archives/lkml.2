@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab1EPHKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 03:10:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52684 "EHLO mx3.mail.elte.hu"
+	id S1753367Ab1EQCtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 22:49:33 -0400
+Received: from ozlabs.org ([203.10.76.45]:35228 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576Ab1EPHK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 03:10:29 -0400
-Date: Mon, 16 May 2011 09:10:19 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.40
-Message-ID: <20110516071019.GD24836@elte.hu>
-References: <4DCB8F7A.90603@kernel.org>
- <20110512092013.GJ2258@linux.vnet.ibm.com>
- <4DCC52FB.6030500@kernel.org>
- <4DCC894D.3070204@kernel.org>
- <20110513084253.GE13647@elte.hu>
- <20110513121906.GA3676@elte.hu>
- <20110513130414.GA6863@elte.hu>
- <20110513131218.GA7669@elte.hu>
- <20110513144059.GA32554@elte.hu>
- <20110513163801.GX2258@linux.vnet.ibm.com>
+	id S1751157Ab1EQCt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 22:49:26 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH 09/18] virtio: use avail_event index
+In-Reply-To: <20110515135541.GF24932@redhat.com>
+References: <cover.1304541918.git.mst@redhat.com> <8bba6a0a8eee17e741c5155b04ff1b1c9f34bf94.1304541919.git.mst@redhat.com> <874o54h4rt.fsf@rustcorp.com.au> <20110515135541.GF24932@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 16 May 2011 16:42:21 +0930
+Message-ID: <87ei3zdsq2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513163801.GX2258@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 15 May 2011 16:55:41 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Mon, May 09, 2011 at 02:03:26PM +0930, Rusty Russell wrote:
+> > On Wed, 4 May 2011 23:51:47 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > Use the new avail_event feature to reduce the number
+> > > of exits from the guest.
+> > 
+> > Figures here would be nice :)
+> 
+> You mean ASCII art in comments?
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+I mean benchmarks of some kind.
 
-> Are you guys seeing NMIs at about the time the slowdown occurs?
+> 
+> > > @@ -228,6 +237,12 @@ add_head:
+> > >  	 * new available array entries. */
+> > >  	virtio_wmb();
+> > >  	vq->vring.avail->idx++;
+> > > +	/* If the driver never bothers to kick in a very long while,
+> > > +	 * avail index might wrap around. If that happens, invalidate
+> > > +	 * kicked_avail index we stored. TODO: make sure all drivers
+> > > +	 * kick at least once in 2^16 and remove this. */
+> > > +	if (unlikely(vq->vring.avail->idx == vq->kicked_avail))
+> > > +		vq->kicked_avail_valid = true;
+> > 
+> > If they don't, they're already buggy.  Simply do:
+> >         WARN_ON(vq->vring.avail->idx == vq->kicked_avail);
+> 
+> Hmm, but does it say that somewhere?
 
-None that produces a kernel message.
+AFAICT it's a corollary of:
+1) You have a finite ring of size <= 2^16.
+2) You need to kick the other side once you've done some work.
 
-Also, the kernel config has:
+> > > @@ -482,6 +517,8 @@ void vring_transport_features(struct virtio_device *vdev)
+> > >  			break;
+> > >  		case VIRTIO_RING_F_USED_EVENT_IDX:
+> > >  			break;
+> > > +		case VIRTIO_RING_F_AVAIL_EVENT_IDX:
+> > > +			break;
+> > >  		default:
+> > >  			/* We don't understand this bit. */
+> > >  			clear_bit(i, vdev->features);
+> > 
+> > Does this belong in a prior patch?
+> > 
+> > Thanks,
+> > Rusty.
+> 
+> Well if we don't support the feature in the ring we should not
+> ack the feature, right?
 
- # CONFIG_LOCKUP_DETECTOR is not set
- # CONFIG_HARDLOCKUP_DETECTOR is not set
- # CONFIG_DETECT_HUNG_TASK is not set
-
-So the NMI watchdog ought to be off. This system isnt producing spurious NMIs.
+Ah, you're right.
 
 Thanks,
-
-	Ingo
+Rusty.
