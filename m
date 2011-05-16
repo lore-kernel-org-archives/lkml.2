@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1EPK6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 06:58:06 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52936 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753976Ab1EPK6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 06:58:04 -0400
-Date: Mon, 16 May 2011 12:57:29 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch 0/6] mm: memcg naturalization
-Message-ID: <20110516105729.GR16531@cmpxchg.org>
-References: <1305212038-15445-1-git-send-email-hannes@cmpxchg.org>
- <20110516103034.GI22412@balbir.in.ibm.com>
+	id S1754607Ab1EPLAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 07:00:19 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.181]:34012
+	"EHLO CH1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754075Ab1EPLAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 07:00:17 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLABWA-01-19T-02
+X-M-MSG: 
+Date: Mon, 16 May 2011 13:00:29 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v2] dma-debug: print some unfreed allocations
+Message-ID: <20110516110029.GC31309@amd.com>
+References: <1305052944.3544.8.camel@jlt3.sipsolutions.net>
+ <1305118077.3416.5.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110516103034.GI22412@balbir.in.ibm.com>
+In-Reply-To: <1305118077.3416.5.camel@jlt3.sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 04:00:34PM +0530, Balbir Singh wrote:
-> * Johannes Weiner <hannes@cmpxchg.org> [2011-05-12 16:53:52]:
-> 
-> > Hi!
-> > 
-> > Here is a patch series that is a result of the memcg discussions on
-> > LSF (memcg-aware global reclaim, global lru removal, struct
-> > page_cgroup reduction, soft limit implementation) and the recent
-> > feature discussions on linux-mm.
-> > 
-> > The long-term idea is to have memcgs no longer bolted to the side of
-> > the mm code, but integrate it as much as possible such that there is a
-> > native understanding of containers, and that the traditional !memcg
-> > setup is just a singular group.  This series is an approach in that
-> > direction.
-> > 
-> > It is a rather early snapshot, WIP, barely tested etc., but I wanted
-> > to get your opinions before further pursuing it.  It is also part of
-> > my counter-argument to the proposals of adding memcg-reclaim-related
-> > user interfaces at this point in time, so I wanted to push this out
-> > the door before things are merged into .40.
-> > 
-> > The patches are quite big, I am still looking for things to factor and
-> > split out, sorry for this.  Documentation is on its way as well ;)
-> > 
-> > #1 and #2 are boring preparational work.  #3 makes traditional reclaim
-> > in vmscan.c memcg-aware, which is a prerequisite for both removal of
-> > the global lru in #5 and the way I reimplemented soft limit reclaim in
-> > #6.
-> 
-> A large part of the acceptance would be based on what the test results
-> for common mm benchmarks show.
+On Wed, May 11, 2011 at 08:47:57AM -0400, Johannes Berg wrote:
+> From: Johannes Berg <johannes.berg@intel.com>
 
-I will try to ensure the following things:
+> +#ifdef CONFIG_STACKTRACE
+> +		count = 0;
+> +		/*
+> +		 * If we have, print out some stack traces for the allocations.
+> +		 * In case of module unload, the stack traces will be useless,
+> +		 * but instead of unloading the module you can manually unbind
+> +		 * the driver instead and get useful traces.
+> +		 */
+> +		printk(KERN_WARNING "Showing traces for %d allocations:\n",
+> +		       DMA_DEBUG_NUM_PRINT_UNFREED);
+> +
+> +		for (i = 0; i < HASH_SIZE; ++i) {
+> +			spin_lock(&dma_entry_hash[i].lock);
+> +			list_for_each_entry(entry, &dma_entry_hash[i].list,
+> +					    list) {
+> +				if (entry->dev != dev)
+> +					continue;
+> +				count += 1;
+> +				if (count > DMA_DEBUG_NUM_PRINT_UNFREED)
+> +					break;
+> +				dump_entry_trace(entry);
+> +			}
+> +			spin_unlock(&dma_entry_hash[i].lock);
+>  
+> -	return count;
+> +			if (count > DMA_DEBUG_NUM_PRINT_UNFREED)
+> +				break;
+> +		}
+> +#endif
+> +	}
+> +
+> +	local_irq_restore(flags);
+>  }
 
-1. will not degrade performance on !CONFIG_MEMCG kernels
+This is surely useful to developers, but can trash the dmesg if done
+unconditionally. I would prefer this verbose output to be configurable
+and off by default.
 
-2. will not degrade performance on CONFIG_MEMCG kernels without
-configured memcgs.  This might be the most important one as most
-desktop/server distributions enable the memory controller per default
+	Joerg
 
-3. will not degrade overall performance of workloads running
-concurrently in separate memory control groups.  I expect some shifts,
-however, that even out performance differences.
 
-Please let me know what you consider common mm benchmarks.
-
-Thanks!
-
-	Hannes
