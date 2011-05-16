@@ -1,256 +1,441 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab1EPXgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 19:36:40 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:34399 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756173Ab1EPXf7 convert rfc822-to-8bit (ORCPT
+	id S1752680Ab1EPXlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:41:19 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:56686 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052Ab1EPXlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 19:35:59 -0400
-From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv4 6/6] TPS65911: Comparator: Add comparator driver
-Date: Mon, 16 May 2011 18:35:48 -0500
-Message-Id: <C1398964-6021-4782-B41D-416B2CB45CDA@slimlogic.co.uk>
-Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
-        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        grant.likely@secretlab.ca
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Mon, 16 May 2011 19:41:18 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [RESEND/PATCH 0/2] trivial patches
+Date: Tue, 17 May 2011 02:41:08 +0300
+Message-Id: <1305589270-5389-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.4.1.343.ga91df
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds functionality to the tps65911 chip driver.
+Hi all,
 
-Two of the comparators are configurable by software and measures
-VCCS voltage to detect high or low voltage scenarios.
+following patches avoid double semicolons at the end
+of module_init/module_exit calls.
 
-Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
----
- drivers/mfd/tps65911-comparator.c |  188 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65910.h      |    4 +
- 2 files changed, 192 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/tps65911-comparator.c
+Felipe Balbi (2):
+  trivial: add missing ; at the end of module_init/module_exit
+  init: drop trailing semicolon from module_init/module_exit
 
-diff --git a/drivers/mfd/tps65911-comparator.c b/drivers/mfd/tps65911-comparator.c
-new file mode 100644
-index 0000000..b8b985b
---- /dev/null
-+++ b/drivers/mfd/tps65911-comparator.c
-@@ -0,0 +1,188 @@
-+/*
-+ * tps65910.c  --  TI TPS6591x
-+ *
-+ * Copyright 2010 Texas Instruments Inc.
-+ *
-+ * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/debugfs.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/tps65910.h>
-+
-+#define COMP					0
-+#define COMP1					1
-+#define COMP2					2
-+
-+/* Comparator 1 voltage selection table in milivolts */
-+static const u16 COMP_VSEL_TABLE[] = {
-+	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
-+	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
-+	3100, 3150, 3200, 3250, 3300, 3350, 3400, 3450,
-+	3500,
-+};
-+
-+struct comparator {
-+	const char *name;
-+	int reg;
-+	int uV_max;
-+	const u16 *vsel_table;
-+};
-+
-+static struct comparator tps_comparators[] = {
-+	{
-+		.name = "COMP1",
-+		.reg = TPS65911_VMBCH,
-+		.uV_max = 3500,
-+		.vsel_table = COMP_VSEL_TABLE,
-+	},
-+	{
-+		.name = "COMP2",
-+		.reg = TPS65911_VMBCH2,
-+		.uV_max = 3500,
-+		.vsel_table = COMP_VSEL_TABLE,
-+	},
-+};
-+
-+static int comp_threshold_set(struct tps65910 *tps65910, int id, int voltage)
-+{
-+	struct comparator tps_comp = tps_comparators[id];
-+	int curr_voltage = 0;
-+	int ret;
-+	u8 index = 0, val;
-+
-+	if (id == COMP)
-+		return 0;
-+
-+	while (curr_voltage < tps_comp.uV_max) {
-+		curr_voltage = tps_comp.vsel_table[index];
-+		if (curr_voltage >= voltage)
-+			break;
-+		else if (curr_voltage < voltage)
-+			index ++;
-+	}
-+
-+	if (curr_voltage > tps_comp.uV_max)
-+		return -EINVAL;
-+	
-+	val = index << 1;
-+	ret = tps65910->write(tps65910, tps_comp.reg, 1, &val);
-+
-+	return ret;
-+}
-+
-+static int comp_threshold_get(struct tps65910 *tps65910, int id)
-+{
-+	struct comparator tps_comp = tps_comparators[id];
-+	int ret;
-+	u8 val;
-+
-+	if (id == COMP)
-+		return 0;
-+
-+	ret = tps65910->read(tps65910, tps_comp.reg, 1, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	val >>= 1;
-+	return tps_comp.vsel_table[val];
-+}
-+
-+static ssize_t comp_threshold_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct tps65910 *tps65910 = dev_get_drvdata(dev->parent);
-+	struct attribute comp_attr = attr->attr;
-+	int id, uVolt;
-+
-+	if (!strcmp(comp_attr.name, "comp1_threshold"))
-+		id = COMP1;
-+	else if (!strcmp(comp_attr.name, "comp2_threshold"))
-+		id = COMP2;
-+	else
-+		return -EINVAL;
-+
-+	uVolt = comp_threshold_get(tps65910, id);
-+
-+	return sprintf(buf, "%d\n", uVolt);
-+}
-+
-+static DEVICE_ATTR(comp1_threshold, S_IRUGO, comp_threshold_show, NULL);
-+static DEVICE_ATTR(comp2_threshold, S_IRUGO, comp_threshold_show, NULL);
-+
-+static __devinit int tps65911_comparator_probe(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
-+	struct tps65910_platform_data *pdata = dev_get_platdata(tps65910->dev);
-+	int ret;
-+
-+	ret = comp_threshold_set(tps65910, COMP1,  pdata->vmbch_threshold);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot set COMP1 threshold\n");
-+		return ret;
-+	}
-+
-+	ret = comp_threshold_set(tps65910, COMP2, pdata->vmbch2_threshold);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot set COMP2 theshold\n");
-+		return ret;
-+	}
-+
-+	/* Create sysfs entry */
-+	ret = device_create_file(&pdev->dev, &dev_attr_comp1_threshold);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add COMP1 sysfs file\n");
-+
-+	ret = device_create_file(&pdev->dev, &dev_attr_comp2_threshold);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add COMP2 sysfs file\n");
-+
-+	return ret;
-+}
-+
-+static __devexit int tps65911_comparator_remove(struct platform_device *pdev)
-+{
-+	struct tps65910 *tps65910;
-+
-+	tps65910 = dev_get_drvdata(pdev->dev.parent);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tps65911_comparator_driver = {
-+	.driver = {
-+		.name = "tps65911-comparator",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = tps65911_comparator_probe,
-+	.remove = __devexit_p(tps65911_comparator_remove),
-+};
-+
-+static int __init tps65911_comparator_init(void)
-+{
-+	return platform_driver_register(&tps65911_comparator_driver);
-+}
-+subsys_initcall(tps65911_comparator_init);
-+
-+static void __exit tps65911_comparator_exit(void)
-+{
-+	platform_driver_unregister(&tps65911_comparator_driver);
-+}
-+module_exit(tps65911_comparator_exit);
-+
-+MODULE_AUTHOR("Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>");
-+MODULE_DESCRIPTION("TPS65911 comparator driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:tps65911-comparator");
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 5f77006..8bb85b9 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -121,6 +121,8 @@
- #define TPS65911_LDO6					0x35
- #define TPS65911_LDO4					0x36
- #define TPS65911_LDO3					0x37
-+#define TPS65911_VMBCH					0x6A
-+#define TPS65911_VMBCH2					0x6B
- 
- /*
-  * List of register bitfields for component TPS65910
-@@ -746,6 +748,8 @@ struct tps65910_board {
- 	int gpio_base;
- 	int irq;
- 	int irq_base;
-+	int vmbch_threshold;
-+	int vmbch2_threshold;
- 	struct regulator_init_data *tps65910_pmic_init_data;
- };
- 
+ Documentation/DocBook/writing-an-alsa-driver.tmpl  |    8 ++++----
+ arch/arm/plat-omap/iommu-debug.c                   |    4 ++--
+ arch/ia64/kvm/vmm.c                                |    4 ++--
+ arch/ia64/sn/kernel/mca.c                          |    2 +-
+ arch/s390/hypfs/inode.c                            |    4 ++--
+ arch/x86/kernel/msr.c                              |    2 +-
+ arch/x86/kvm/svm.c                                 |    4 ++--
+ arch/x86/kvm/vmx.c                                 |    4 ++--
+ drivers/block/ataflop.c                            |    4 ++--
+ drivers/block/cpqarray.c                           |    4 ++--
+ drivers/block/drbd/drbd_main.c                     |    4 ++--
+ drivers/block/floppy.c                             |    2 +-
+ drivers/block/paride/aten.c                        |    4 ++--
+ drivers/block/paride/bpck.c                        |    4 ++--
+ drivers/block/paride/bpck6.c                       |    4 ++--
+ drivers/block/paride/comm.c                        |    4 ++--
+ drivers/block/paride/dstr.c                        |    4 ++--
+ drivers/block/paride/epat.c                        |    4 ++--
+ drivers/block/paride/epia.c                        |    4 ++--
+ drivers/block/paride/fit2.c                        |    4 ++--
+ drivers/block/paride/fit3.c                        |    4 ++--
+ drivers/block/paride/friq.c                        |    4 ++--
+ drivers/block/paride/frpw.c                        |    4 ++--
+ drivers/block/paride/kbic.c                        |    4 ++--
+ drivers/block/paride/ktti.c                        |    4 ++--
+ drivers/block/paride/on20.c                        |    4 ++--
+ drivers/block/paride/on26.c                        |    4 ++--
+ drivers/block/paride/pcd.c                         |    4 ++--
+ drivers/block/paride/pd.c                          |    4 ++--
+ drivers/block/paride/pf.c                          |    4 ++--
+ drivers/block/paride/pg.c                          |    4 ++--
+ drivers/block/paride/pt.c                          |    4 ++--
+ drivers/block/swim3.c                              |    2 +-
+ drivers/gpio/bt8xxgpio.c                           |    4 ++--
+ drivers/hwmon/adm1021.c                            |    4 ++--
+ drivers/hwmon/adt7411.c                            |    4 ++--
+ drivers/hwmon/coretemp.c                           |    4 ++--
+ drivers/hwmon/k10temp.c                            |    4 ++--
+ drivers/hwmon/k8temp.c                             |    4 ++--
+ drivers/hwmon/pkgtemp.c                            |    4 ++--
+ drivers/hwmon/via-cputemp.c                        |    4 ++--
+ drivers/i2c/busses/i2c-amd756.c                    |    4 ++--
+ drivers/md/dm-zero.c                               |    4 ++--
+ drivers/md/md.c                                    |    2 +-
+ drivers/media/media-devnode.c                      |    4 ++--
+ drivers/media/rc/keymaps/rc-adstech-dvb-t-pci.c    |    4 ++--
+ drivers/media/rc/keymaps/rc-alink-dtu-m.c          |    4 ++--
+ drivers/media/rc/keymaps/rc-anysee.c               |    4 ++--
+ drivers/media/rc/keymaps/rc-apac-viewcomp.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-asus-pc39.c            |    4 ++--
+ drivers/media/rc/keymaps/rc-ati-tv-wonder-hd-600.c |    4 ++--
+ drivers/media/rc/keymaps/rc-avermedia-a16d.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-avermedia-cardbus.c    |    4 ++--
+ drivers/media/rc/keymaps/rc-avermedia-dvbt.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-avermedia-m135a.c      |    4 ++--
+ .../media/rc/keymaps/rc-avermedia-m733a-rm-k6.c    |    4 ++--
+ drivers/media/rc/keymaps/rc-avermedia-rm-ks.c      |    4 ++--
+ drivers/media/rc/keymaps/rc-avermedia.c            |    4 ++--
+ drivers/media/rc/keymaps/rc-avertv-303.c           |    4 ++--
+ drivers/media/rc/keymaps/rc-azurewave-ad-tu700.c   |    4 ++--
+ drivers/media/rc/keymaps/rc-behold-columbus.c      |    4 ++--
+ drivers/media/rc/keymaps/rc-behold.c               |    4 ++--
+ drivers/media/rc/keymaps/rc-budget-ci-old.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-cinergy-1400.c         |    4 ++--
+ drivers/media/rc/keymaps/rc-cinergy.c              |    4 ++--
+ drivers/media/rc/keymaps/rc-dib0700-nec.c          |    4 ++--
+ drivers/media/rc/keymaps/rc-dib0700-rc5.c          |    4 ++--
+ drivers/media/rc/keymaps/rc-digitalnow-tinytwin.c  |    4 ++--
+ drivers/media/rc/keymaps/rc-digittrade.c           |    4 ++--
+ drivers/media/rc/keymaps/rc-dm1105-nec.c           |    4 ++--
+ drivers/media/rc/keymaps/rc-dntv-live-dvb-t.c      |    4 ++--
+ drivers/media/rc/keymaps/rc-dntv-live-dvbt-pro.c   |    4 ++--
+ drivers/media/rc/keymaps/rc-em-terratec.c          |    4 ++--
+ drivers/media/rc/keymaps/rc-encore-enltv-fm53.c    |    4 ++--
+ drivers/media/rc/keymaps/rc-encore-enltv.c         |    4 ++--
+ drivers/media/rc/keymaps/rc-encore-enltv2.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-evga-indtube.c         |    4 ++--
+ drivers/media/rc/keymaps/rc-eztv.c                 |    4 ++--
+ drivers/media/rc/keymaps/rc-flydvb.c               |    4 ++--
+ drivers/media/rc/keymaps/rc-flyvideo.c             |    4 ++--
+ drivers/media/rc/keymaps/rc-fusionhdtv-mce.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-gadmei-rm008z.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-genius-tvgo-a11mce.c   |    4 ++--
+ drivers/media/rc/keymaps/rc-gotview7135.c          |    4 ++--
+ drivers/media/rc/keymaps/rc-hauppauge.c            |    4 ++--
+ drivers/media/rc/keymaps/rc-imon-mce.c             |    4 ++--
+ drivers/media/rc/keymaps/rc-imon-pad.c             |    4 ++--
+ drivers/media/rc/keymaps/rc-iodata-bctv7e.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-kaiomy.c               |    4 ++--
+ drivers/media/rc/keymaps/rc-kworld-315u.c          |    4 ++--
+ .../media/rc/keymaps/rc-kworld-plus-tv-analog.c    |    4 ++--
+ drivers/media/rc/keymaps/rc-leadtek-y04g0051.c     |    4 ++--
+ drivers/media/rc/keymaps/rc-lirc.c                 |    4 ++--
+ drivers/media/rc/keymaps/rc-lme2510.c              |    4 ++--
+ drivers/media/rc/keymaps/rc-manli.c                |    4 ++--
+ drivers/media/rc/keymaps/rc-msi-digivox-ii.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-msi-digivox-iii.c      |    4 ++--
+ drivers/media/rc/keymaps/rc-msi-tvanywhere-plus.c  |    4 ++--
+ drivers/media/rc/keymaps/rc-msi-tvanywhere.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-nebula.c               |    4 ++--
+ .../media/rc/keymaps/rc-nec-terratec-cinergy-xs.c  |    4 ++--
+ drivers/media/rc/keymaps/rc-norwood.c              |    4 ++--
+ drivers/media/rc/keymaps/rc-npgtech.c              |    4 ++--
+ drivers/media/rc/keymaps/rc-pctv-sedna.c           |    4 ++--
+ drivers/media/rc/keymaps/rc-pinnacle-color.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-pinnacle-grey.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-pinnacle-pctv-hd.c     |    4 ++--
+ drivers/media/rc/keymaps/rc-pixelview-002t.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-pixelview-mk12.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-pixelview-new.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-pixelview.c            |    4 ++--
+ .../media/rc/keymaps/rc-powercolor-real-angel.c    |    4 ++--
+ drivers/media/rc/keymaps/rc-proteus-2309.c         |    4 ++--
+ drivers/media/rc/keymaps/rc-purpletv.c             |    4 ++--
+ drivers/media/rc/keymaps/rc-pv951.c                |    4 ++--
+ drivers/media/rc/keymaps/rc-rc6-mce.c              |    4 ++--
+ .../media/rc/keymaps/rc-real-audio-220-32-keys.c   |    4 ++--
+ drivers/media/rc/keymaps/rc-streamzap.c            |    4 ++--
+ drivers/media/rc/keymaps/rc-tbs-nec.c              |    4 ++--
+ drivers/media/rc/keymaps/rc-technisat-usb2.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-terratec-cinergy-xs.c  |    4 ++--
+ drivers/media/rc/keymaps/rc-terratec-slim-2.c      |    4 ++--
+ drivers/media/rc/keymaps/rc-terratec-slim.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-tevii-nec.c            |    4 ++--
+ drivers/media/rc/keymaps/rc-total-media-in-hand.c  |    4 ++--
+ drivers/media/rc/keymaps/rc-trekstor.c             |    4 ++--
+ drivers/media/rc/keymaps/rc-tt-1500.c              |    4 ++--
+ drivers/media/rc/keymaps/rc-twinhan1027.c          |    4 ++--
+ drivers/media/rc/keymaps/rc-videomate-m1f.c        |    4 ++--
+ drivers/media/rc/keymaps/rc-videomate-s350.c       |    4 ++--
+ drivers/media/rc/keymaps/rc-videomate-tv-pvr.c     |    4 ++--
+ drivers/media/rc/keymaps/rc-winfast-usbii-deluxe.c |    4 ++--
+ drivers/media/rc/keymaps/rc-winfast.c              |    4 ++--
+ drivers/media/video/v4l2-dev.c                     |    4 ++--
+ drivers/mfd/htc-egpio.c                            |    2 +-
+ drivers/misc/bh1780gli.c                           |    4 ++--
+ drivers/net/arcnet/arc-rimi.c                      |    4 ++--
+ drivers/net/arcnet/com20020-isa.c                  |    4 ++--
+ drivers/net/arcnet/com20020-pci.c                  |    4 ++--
+ drivers/net/arcnet/com90io.c                       |    4 ++--
+ drivers/net/arm/at91_ether.c                       |    4 ++--
+ drivers/net/hp100.c                                |    4 ++--
+ drivers/net/tulip/xircom_cb.c                      |    4 ++--
+ drivers/net/wireless/b43/main.c                    |    4 ++--
+ drivers/net/wireless/b43legacy/main.c              |    4 ++--
+ drivers/parisc/led.c                               |    2 +-
+ drivers/parport/parport_atari.c                    |    4 ++--
+ drivers/parport/parport_ax88796.c                  |    4 ++--
+ drivers/parport/parport_mfc3.c                     |    4 ++--
+ drivers/parport/parport_pc.c                       |    4 ++--
+ drivers/parport/parport_sunbpp.c                   |    4 ++--
+ drivers/parport/procfs.c                           |    4 ++--
+ drivers/regulator/twl-regulator.c                  |    2 +-
+ drivers/scsi/pcmcia/nsp_cs.c                       |    4 ++--
+ drivers/ssb/main.c                                 |    2 +-
+ drivers/staging/intel_sst/intelmid.c               |    4 ++--
+ drivers/staging/rts_pstor/rtsx.c                   |    4 ++--
+ drivers/staging/zcache/zcache.c                    |    2 +-
+ drivers/uio/uio.c                                  |    4 ++--
+ fs/9p/v9fs.c                                       |    4 ++--
+ fs/adfs/super.c                                    |    4 ++--
+ fs/affs/super.c                                    |    4 ++--
+ fs/autofs4/init.c                                  |    2 +-
+ fs/befs/linuxvfs.c                                 |    4 ++--
+ fs/bfs/inode.c                                     |    4 ++--
+ fs/btrfs/super.c                                   |    4 ++--
+ fs/cifs/cifsfs.c                                   |    4 ++--
+ fs/cramfs/inode.c                                  |    4 ++--
+ fs/devpts/inode.c                                  |    2 +-
+ fs/ecryptfs/main.c                                 |    4 ++--
+ fs/efs/super.c                                     |    4 ++--
+ fs/exofs/super.c                                   |    4 ++--
+ fs/ext2/super.c                                    |    4 ++--
+ fs/ext3/super.c                                    |    4 ++--
+ fs/ext4/super.c                                    |    4 ++--
+ fs/fat/inode.c                                     |    4 ++--
+ fs/fat/namei_msdos.c                               |    4 ++--
+ fs/fat/namei_vfat.c                                |    4 ++--
+ fs/fcntl.c                                         |    2 +-
+ fs/hfs/super.c                                     |    4 ++--
+ fs/hfsplus/super.c                                 |    4 ++--
+ fs/hostfs/hostfs_kern.c                            |    4 ++--
+ fs/hpfs/super.c                                    |    4 ++--
+ fs/hppfs/hppfs.c                                   |    4 ++--
+ fs/hugetlbfs/inode.c                               |    4 ++--
+ fs/isofs/inode.c                                   |    4 ++--
+ fs/jfs/super.c                                     |    4 ++--
+ fs/mbcache.c                                       |    4 ++--
+ fs/minix/inode.c                                   |    4 ++--
+ fs/ncpfs/inode.c                                   |    4 ++--
+ fs/nfs/inode.c                                     |    4 ++--
+ fs/nfsd/nfsctl.c                                   |    4 ++--
+ fs/nilfs2/super.c                                  |    4 ++--
+ fs/nls/nls_ascii.c                                 |    4 ++--
+ fs/nls/nls_cp1250.c                                |    4 ++--
+ fs/nls/nls_cp1251.c                                |    4 ++--
+ fs/nls/nls_cp1255.c                                |    4 ++--
+ fs/nls/nls_cp437.c                                 |    4 ++--
+ fs/nls/nls_cp737.c                                 |    4 ++--
+ fs/nls/nls_cp775.c                                 |    4 ++--
+ fs/nls/nls_cp850.c                                 |    4 ++--
+ fs/nls/nls_cp852.c                                 |    4 ++--
+ fs/nls/nls_cp855.c                                 |    4 ++--
+ fs/nls/nls_cp857.c                                 |    4 ++--
+ fs/nls/nls_cp860.c                                 |    4 ++--
+ fs/nls/nls_cp861.c                                 |    4 ++--
+ fs/nls/nls_cp862.c                                 |    4 ++--
+ fs/nls/nls_cp863.c                                 |    4 ++--
+ fs/nls/nls_cp864.c                                 |    4 ++--
+ fs/nls/nls_cp865.c                                 |    4 ++--
+ fs/nls/nls_cp866.c                                 |    4 ++--
+ fs/nls/nls_cp869.c                                 |    4 ++--
+ fs/nls/nls_cp874.c                                 |    4 ++--
+ fs/nls/nls_cp932.c                                 |    4 ++--
+ fs/nls/nls_cp936.c                                 |    4 ++--
+ fs/nls/nls_cp949.c                                 |    4 ++--
+ fs/nls/nls_cp950.c                                 |    4 ++--
+ fs/nls/nls_euc-jp.c                                |    4 ++--
+ fs/nls/nls_iso8859-1.c                             |    4 ++--
+ fs/nls/nls_iso8859-13.c                            |    4 ++--
+ fs/nls/nls_iso8859-14.c                            |    4 ++--
+ fs/nls/nls_iso8859-15.c                            |    4 ++--
+ fs/nls/nls_iso8859-2.c                             |    4 ++--
+ fs/nls/nls_iso8859-3.c                             |    4 ++--
+ fs/nls/nls_iso8859-4.c                             |    4 ++--
+ fs/nls/nls_iso8859-5.c                             |    4 ++--
+ fs/nls/nls_iso8859-6.c                             |    4 ++--
+ fs/nls/nls_iso8859-7.c                             |    4 ++--
+ fs/nls/nls_iso8859-9.c                             |    4 ++--
+ fs/nls/nls_koi8-r.c                                |    4 ++--
+ fs/nls/nls_koi8-ru.c                               |    4 ++--
+ fs/nls/nls_koi8-u.c                                |    4 ++--
+ fs/nls/nls_utf8.c                                  |    4 ++--
+ fs/notify/dnotify/dnotify.c                        |    2 +-
+ fs/ntfs/super.c                                    |    4 ++--
+ fs/ocfs2/cluster/nodemanager.c                     |    4 ++--
+ fs/ocfs2/dlmfs/dlmfs.c                             |    4 ++--
+ fs/openpromfs/inode.c                              |    4 ++--
+ fs/proc/vmcore.c                                   |    2 +-
+ fs/pstore/inode.c                                  |    2 +-
+ fs/qnx4/inode.c                                    |    4 ++--
+ fs/ramfs/inode.c                                   |    4 ++--
+ fs/sysv/super.c                                    |    4 ++--
+ fs/udf/super.c                                     |    4 ++--
+ fs/ufs/super.c                                     |    4 ++--
+ include/linux/init.h                               |    4 ++--
+ kernel/kexec.c                                     |    4 ++--
+ mm/huge_memory.c                                   |    2 +-
+ mm/ksm.c                                           |    2 +-
+ mm/page_alloc.c                                    |    2 +-
+ mm/vmscan.c                                        |    2 +-
+ mm/vmstat.c                                        |    2 +-
+ net/9p/mod.c                                       |    4 ++--
+ net/bridge/br.c                                    |    4 ++--
+ net/dns_resolver/dns_key.c                         |    4 ++--
+ net/sched/cls_basic.c                              |    4 ++--
+ net/sched/cls_fw.c                                 |    4 ++--
+ net/sched/cls_route.c                              |    4 ++--
+ net/sched/cls_rsvp.h                               |    4 ++--
+ net/sched/cls_tcindex.c                            |    4 ++--
+ net/sched/cls_u32.c                                |    4 ++--
+ net/sched/sch_atm.c                                |    4 ++--
+ net/sched/sch_blackhole.c                          |    4 ++--
+ net/sched/sch_cbq.c                                |    4 ++--
+ net/sched/sch_choke.c                              |    4 ++--
+ net/sched/sch_dsmark.c                             |    4 ++--
+ net/sched/sch_gred.c                               |    4 ++--
+ net/sched/sch_htb.c                                |    4 ++--
+ net/sched/sch_ingress.c                            |    4 ++--
+ net/sched/sch_multiq.c                             |    4 ++--
+ net/sched/sch_netem.c                              |    4 ++--
+ net/sched/sch_prio.c                               |    4 ++--
+ net/sched/sch_red.c                                |    4 ++--
+ net/sched/sch_sfb.c                                |    4 ++--
+ net/sched/sch_sfq.c                                |    4 ++--
+ net/sched/sch_tbf.c                                |    4 ++--
+ net/sunrpc/auth_gss/auth_gss.c                     |    4 ++--
+ samples/kprobes/jprobe_example.c                   |    4 ++--
+ samples/kprobes/kprobe_example.c                   |    4 ++--
+ samples/kprobes/kretprobe_example.c                |    4 ++--
+ samples/tracepoints/tracepoint-sample.c            |    4 ++--
+ sound/core/hwdep.c                                 |    4 ++--
+ sound/core/memalloc.c                              |    4 ++--
+ sound/core/oss/mixer_oss.c                         |    4 ++--
+ sound/core/oss/pcm_oss.c                           |    4 ++--
+ sound/core/pcm.c                                   |    4 ++--
+ sound/core/rawmidi.c                               |    4 ++--
+ sound/core/rtctimer.c                              |    4 ++--
+ sound/core/seq/oss/seq_oss.c                       |    4 ++--
+ sound/core/seq/seq.c                               |    4 ++--
+ sound/core/seq/seq_device.c                        |    4 ++--
+ sound/core/seq/seq_dummy.c                         |    4 ++--
+ sound/core/seq/seq_midi.c                          |    4 ++--
+ sound/core/seq/seq_midi_emul.c                     |    4 ++--
+ sound/core/seq/seq_midi_event.c                    |    4 ++--
+ sound/core/seq/seq_virmidi.c                       |    4 ++--
+ sound/core/timer.c                                 |    4 ++--
+ sound/drivers/aloop.c                              |    4 ++--
+ sound/drivers/dummy.c                              |    4 ++--
+ sound/drivers/ml403-ac97cr.c                       |    4 ++--
+ sound/drivers/mpu401/mpu401.c                      |    4 ++--
+ sound/drivers/mpu401/mpu401_uart.c                 |    4 ++--
+ sound/drivers/mtpav.c                              |    4 ++--
+ sound/drivers/opl3/opl3_lib.c                      |    4 ++--
+ sound/drivers/opl3/opl3_seq.c                      |    4 ++--
+ sound/drivers/opl4/opl4_lib.c                      |    4 ++--
+ sound/drivers/opl4/opl4_seq.c                      |    4 ++--
+ sound/drivers/serial-u16550.c                      |    4 ++--
+ sound/drivers/virmidi.c                            |    4 ++--
+ sound/drivers/vx/vx_core.c                         |    4 ++--
+ sound/i2c/cs8427.c                                 |    4 ++--
+ sound/i2c/i2c.c                                    |    4 ++--
+ sound/i2c/other/ak4xxx-adda.c                      |    4 ++--
+ sound/i2c/other/tea575x-tuner.c                    |    4 ++--
+ sound/i2c/tea6330t.c                               |    4 ++--
+ sound/isa/ad1816a/ad1816a.c                        |    4 ++--
+ sound/isa/als100.c                                 |    4 ++--
+ sound/isa/azt2320.c                                |    4 ++--
+ sound/isa/cmi8330.c                                |    4 ++--
+ sound/isa/cs423x/cs4236.c                          |    4 ++--
+ sound/isa/es1688/es1688_lib.c                      |    4 ++--
+ sound/isa/es18xx.c                                 |    4 ++--
+ sound/isa/gus/gus_main.c                           |    4 ++--
+ sound/isa/gus/gusmax.c                             |    4 ++--
+ sound/isa/gus/interwave.c                          |    4 ++--
+ sound/isa/opl3sa2.c                                |    4 ++--
+ sound/isa/opti9xx/miro.c                           |    4 ++--
+ sound/isa/opti9xx/opti92x-ad1848.c                 |    4 ++--
+ sound/isa/sb/emu8000_synth.c                       |    4 ++--
+ sound/isa/sb/jazz16.c                              |    4 ++--
+ sound/isa/sb/sb16.c                                |    4 ++--
+ sound/isa/sb/sb16_csp.c                            |    4 ++--
+ sound/isa/sb/sb16_main.c                           |    4 ++--
+ sound/isa/sb/sb8.c                                 |    4 ++--
+ sound/isa/sb/sb8_main.c                            |    4 ++--
+ sound/isa/sb/sb_common.c                           |    4 ++--
+ sound/isa/sc6000.c                                 |    4 ++--
+ sound/isa/wavefront/wavefront.c                    |    4 ++--
+ sound/mips/sgio2audio.c                            |    4 ++--
+ sound/pci/ac97/ac97_codec.c                        |    4 ++--
+ sound/pci/ali5451/ali5451.c                        |    4 ++--
+ sound/pci/als300.c                                 |    4 ++--
+ sound/pci/als4000.c                                |    4 ++--
+ sound/pci/asihpi/asihpi.c                          |    4 ++--
+ sound/pci/atiixp.c                                 |    4 ++--
+ sound/pci/atiixp_modem.c                           |    4 ++--
+ sound/pci/au88x0/au88x0.c                          |    4 ++--
+ sound/pci/azt3328.c                                |    4 ++--
+ sound/pci/bt87x.c                                  |    4 ++--
+ sound/pci/ca0106/ca0106_main.c                     |    4 ++--
+ sound/pci/cmipci.c                                 |    4 ++--
+ sound/pci/cs4281.c                                 |    4 ++--
+ sound/pci/cs46xx/cs46xx.c                          |    4 ++--
+ sound/pci/cs5530.c                                 |    4 ++--
+ sound/pci/cs5535audio/cs5535audio.c                |    4 ++--
+ sound/pci/ctxfi/xfi.c                              |    4 ++--
+ sound/pci/echoaudio/echoaudio.c                    |    4 ++--
+ sound/pci/emu10k1/emu10k1.c                        |    4 ++--
+ sound/pci/emu10k1/emu10k1_synth.c                  |    4 ++--
+ sound/pci/emu10k1/emu10k1x.c                       |    4 ++--
+ sound/pci/ens1370.c                                |    4 ++--
+ sound/pci/es1938.c                                 |    4 ++--
+ sound/pci/es1968.c                                 |    4 ++--
+ sound/pci/fm801.c                                  |    4 ++--
+ sound/pci/hda/hda_intel.c                          |    4 ++--
+ sound/pci/hda/patch_analog.c                       |    4 ++--
+ sound/pci/hda/patch_ca0110.c                       |    4 ++--
+ sound/pci/hda/patch_cirrus.c                       |    4 ++--
+ sound/pci/hda/patch_cmedia.c                       |    4 ++--
+ sound/pci/hda/patch_conexant.c                     |    4 ++--
+ sound/pci/hda/patch_hdmi.c                         |    4 ++--
+ sound/pci/hda/patch_realtek.c                      |    4 ++--
+ sound/pci/hda/patch_si3054.c                       |    4 ++--
+ sound/pci/hda/patch_sigmatel.c                     |    4 ++--
+ sound/pci/hda/patch_via.c                          |    4 ++--
+ sound/pci/ice1712/ak4xxx.c                         |    4 ++--
+ sound/pci/ice1712/ice1712.c                        |    4 ++--
+ sound/pci/ice1712/ice1724.c                        |    4 ++--
+ sound/pci/intel8x0.c                               |    4 ++--
+ sound/pci/intel8x0m.c                              |    4 ++--
+ sound/pci/korg1212/korg1212.c                      |    4 ++--
+ sound/pci/maestro3.c                               |    4 ++--
+ sound/pci/mixart/mixart.c                          |    4 ++--
+ sound/pci/nm256/nm256.c                            |    4 ++--
+ sound/pci/oxygen/oxygen.c                          |    4 ++--
+ sound/pci/oxygen/virtuoso.c                        |    4 ++--
+ sound/pci/pcxhr/pcxhr.c                            |    4 ++--
+ sound/pci/rme32.c                                  |    4 ++--
+ sound/pci/rme96.c                                  |    4 ++--
+ sound/pci/rme9652/hdsp.c                           |    4 ++--
+ sound/pci/rme9652/hdspm.c                          |    4 ++--
+ sound/pci/rme9652/rme9652.c                        |    4 ++--
+ sound/pci/sonicvibes.c                             |    4 ++--
+ sound/pci/trident/trident.c                        |    4 ++--
+ sound/pci/via82xx.c                                |    4 ++--
+ sound/pci/via82xx_modem.c                          |    4 ++--
+ sound/pci/vx222/vx222.c                            |    4 ++--
+ sound/pci/ymfpci/ymfpci.c                          |    4 ++--
+ sound/ppc/powermac.c                               |    4 ++--
+ sound/soc/sh/siu_dai.c                             |    4 ++--
+ sound/synth/emux/emux.c                            |    4 ++--
+ sound/synth/util_mem.c                             |    4 ++--
+ sound/usb/caiaq/device.c                           |    4 ++--
+ sound/usb/usx2y/us122l.c                           |    4 ++--
+ sound/usb/usx2y/usbusx2y.c                         |    4 ++--
+ 405 files changed, 791 insertions(+), 791 deletions(-)
+
 -- 
-1.7.1
+1.7.4.1.343.ga91df
 
