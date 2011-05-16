@@ -1,46 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab1EPKQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 06:16:30 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:52198 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753481Ab1EPKQ2 (ORCPT
+	id S1754287Ab1EPKRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 06:17:55 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59294 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab1EPKRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 06:16:28 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH 8/9] OMAP1 / PM: Use generic clock manipulation routines for runtime PM
-Organization: Texas Instruments, Inc.
-References: <201104130205.26988.rjw@sisk.pl> <201104170135.19388.rjw@sisk.pl>
-	<201104242330.13607.rjw@sisk.pl> <201104242343.41456.rjw@sisk.pl>
-Date: Mon, 16 May 2011 12:16:13 +0200
-In-Reply-To: <201104242343.41456.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Sun, 24 Apr 2011 23:43:41 +0200")
-Message-ID: <87mxindk7m.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 16 May 2011 06:17:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=lF6co0zGbrxbUm3FJ5XNRHoUtmG0lAB+rPgThutfFt/6efIneMDSWdxCVRxecNUVeC
+         5nCZxg2/nAzf0HVf1VQEvzBTbwOBjSq0Pv8hFoxZOSMpPYpE7gjRFvamivFGqZlNxTfe
+         iuEbwyYrgfk9tBApS1PXSn1OORsDasTxp81gA=
+Subject: [PATCH] regulator: Remove
+ MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 18:17:47 +0800
+Message-ID: <1305541067.3006.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+>From 4a240fc9dece6c03e87a7d20c7c468285891853f Mon Sep 17 00:00:00 2001
+In current implementation, the original macro implementation assumes the caller
+pass the parameter starting from 1 (to match the register names in datasheet).
+Thus we have unneeded plus one then minus one operations
+when using MAX8997_REG_BUCK1DVS/MAX8997_REG_BUCK2DVS/MAX8997_REG_BUCK5DVS macros.
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Convert OMAP1 to using the new generic clock manipulation routines
-> and a device power domain for runtime PM instead of overriding the
-> platform bus type's runtime PM callbacks.  This allows us to simplify
-> OMAP1-specific code and to share some code with other platforms
-> (shmobile in particular).
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+This patch removes these macros to avoid unneeded plus one then minus one operations
+without reducing readability.
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8997.c         |   12 ++++++------
+ include/linux/mfd/max8997-private.h |    4 ----
+ 2 files changed, 6 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index b1c1444..10d5a1d 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -1032,11 +1032,11 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
+ 
+ 	/* For the safety, set max voltage before setting up */
+ 	for (i = 0; i < 8; i++) {
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
+ 				max_buck1, 0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
+ 				max_buck2, 0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
+ 				max_buck5, 0x3f);
+ 	}
+ 
+@@ -1113,13 +1113,13 @@ static __devinit int max8997_pmic_probe(struct platform_device *pdev)
+ 
+ 	/* Initialize all the DVS related BUCK registers */
+ 	for (i = 0; i < 8; i++) {
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
+ 				max8997->buck1_vol[i],
+ 				0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
+ 				max8997->buck2_vol[i],
+ 				0x3f);
+-		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
+ 				max8997->buck5_vol[i],
+ 				0x3f);
+ 	}
+diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
+index 69d1010..5ff2400 100644
+--- a/include/linux/mfd/max8997-private.h
++++ b/include/linux/mfd/max8997-private.h
+@@ -311,10 +311,6 @@ enum max8997_irq {
+ 	MAX8997_IRQ_NR,
+ };
+ 
+-#define MAX8997_REG_BUCK1DVS(x)	(MAX8997_REG_BUCK1DVS1 + (x) - 1)
+-#define MAX8997_REG_BUCK2DVS(x)	(MAX8997_REG_BUCK2DVS1 + (x) - 1)
+-#define MAX8997_REG_BUCK5DVS(x)	(MAX8997_REG_BUCK5DVS1 + (x) - 1)
+-
+ #define MAX8997_NUM_GPIO	12
+ struct max8997_dev {
+ 	struct device *dev;
+-- 
+1.7.1
+
+
 
