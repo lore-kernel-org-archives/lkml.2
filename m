@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1EPOTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 10:19:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39691 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422Ab1EPOTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 10:19:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=D/JuN0d7Zt8ip/2KxV9dBjq/80C0K6hNsfSX2rtU7XlZePVDAIGYy3l/qk5qUgk1Xm
-         hcFf14k6KCtlo7AKsCl0mhbqGwaoBNs3BfZWyrt9Q12+NrZY5vCcbR9AxOu7LY/Y9r0A
-         tZkA24pk5/fa1FHqv4zJLbPlNMLjiQlx7G/qg=
-Subject: [PATCH RESEND] mfd: Fix off-by-one value range checking for
- tps65910_i2c_write
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Graeme Gregory <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 22:19:01 +0800
-Message-ID: <1305555542.2337.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755577Ab1EPOVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 10:21:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55103 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755500Ab1EPOVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 10:21:21 -0400
+Date: Mon, 16 May 2011 16:21:18 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Arun Sharma <asharma@fb.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kbuild@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add $KERNELRELEASE to firmware install path
+Message-ID: <20110516142118.GM13293@sepie.suse.cz>
+References: <20110505173939.GA20575@dev1756.snc6.facebook.com>
+ <4DC3CA39.30806@suse.cz>
+ <1304677113.20656.2.camel@i7.infradead.org>
+ <20110506184438.GA30417@dev1756.snc6.facebook.com>
+ <1304708557.20656.49.camel@i7.infradead.org>
+ <20110506223727.GA29011@dev1756.snc6.facebook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110506223727.GA29011@dev1756.snc6.facebook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If bytes == (TPS65910_MAX_REGISTER + 1), we have a buffer overflow when
-doing memcpy(&msg[1], src, bytes).
+On Fri, May 06, 2011 at 03:37:27PM -0700, Arun Sharma wrote:
+> On Fri, May 06, 2011 at 08:02:36PM +0100, David Woodhouse wrote:
+> > On Fri, 2011-05-06 at 11:44 -0700, Arun Sharma wrote:
+> > > 
+> > > Without this change, if you have two kernel rpms/debs from different
+> > > kernel versions installed, they'll result in a namespace conflict
+> > > (rpm/deb install will fail), which gets resolved by this patch. 
+> > 
+> > The packages are broken then. They shouldn't include *any* files
+> > in /lib/firmware.
+> > 
+> > Fix *that*, and the problem goes away.
+> 
+> Sounds good.
+> 
+> Michal: Should I send you a patch that drops /lib/firmware?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
----
- drivers/mfd/tps65910.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+make deb-pkg generates a separate package with the firmware files. I
+would suggest we do the same for rpm.
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index bf649cf..e318248 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -71,7 +71,7 @@ static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
- 	u8 msg[TPS65910_MAX_REGISTER + 1];
- 	int ret;
- 
--	if (bytes > (TPS65910_MAX_REGISTER + 1))
-+	if (bytes > TPS65910_MAX_REGISTER)
- 		return -EINVAL;
- 
- 	msg[0] = reg;
--- 
-1.7.1
-
-
-
+Michal
