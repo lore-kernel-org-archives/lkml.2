@@ -1,110 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1EPQpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 12:45:15 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49728 "EHLO mx3.mail.elte.hu"
+	id S1752234Ab1EPQt1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 12:49:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39773 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab1EPQpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 12:45:14 -0400
-Date: Mon, 16 May 2011 18:44:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Documentation: Update augmented rbtree documentation
-Message-ID: <20110516164449.GA10929@elte.hu>
-References: <1305539802-12509-1-git-send-email-levinsasha928@gmail.com>
- <20110516075652.4ae904ce.rdunlap@xenotime.net>
+	id S1750876Ab1EPQt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 12:49:26 -0400
+Date: Mon, 16 May 2011 16:49:13 GMT
+From: tip-bot for Youquan Song <youquan.song@intel.com>
+Message-ID: <tip-e503f9e4b092e2349a9477a333543de8f3c7f5d9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yong.y.wang@intel.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        youquan.song@intel.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, yong.y.wang@intel.com, tglx@linutronix.de,
+        youquan.song@intel.com, mingo@elte.hu
+In-Reply-To: <1303402963-17738-1-git-send-email-youquan.song@intel.com>
+References: <1303402963-17738-1-git-send-email-youquan.song@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, apic: Fix spurious error interrupts triggering on all non-boot APs
+Git-Commit-ID: e503f9e4b092e2349a9477a333543de8f3c7f5d9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110516075652.4ae904ce.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 May 2011 16:49:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  e503f9e4b092e2349a9477a333543de8f3c7f5d9
+Gitweb:     http://git.kernel.org/tip/e503f9e4b092e2349a9477a333543de8f3c7f5d9
+Author:     Youquan Song <youquan.song@intel.com>
+AuthorDate: Fri, 22 Apr 2011 00:22:43 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 16 May 2011 13:48:25 +0200
 
-* Randy Dunlap <rdunlap@xenotime.net> wrote:
+x86, apic: Fix spurious error interrupts triggering on all non-boot APs
 
-> On Mon, 16 May 2011 12:56:42 +0300 Sasha Levin wrote:
-> 
-> > Current documentation referred to the old method
-> > of handling augmented trees. Update documentation
-> > to correspond with the changes done in commit
-> > b945d6b2554d550fe95caadc61e521c0ad71fb9c.
-> > 
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: David Woodhouse <David.Woodhouse@intel.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > ---
-> >  Documentation/rbtree.txt |   23 ++++++++++++++---------
-> >  1 files changed, 14 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/Documentation/rbtree.txt b/Documentation/rbtree.txt
-> > index 19f8278..b847598 100644
-> > --- a/Documentation/rbtree.txt
-> > +++ b/Documentation/rbtree.txt
-> > @@ -196,15 +196,20 @@ Support for Augmented rbtrees
-> >  Augmented rbtree is an rbtree with "some" additional data stored in each node.
-> >  This data can be used to augment some new functionality to rbtree.
-> >  Augmented rbtree is an optional feature built on top of basic rbtree
-> > -infrastructure. rbtree user who wants this feature will have an augment
-> > -callback function in rb_root initialized.
-> > -
-> > -This callback function will be called from rbtree core routines whenever
-> > -a node has a change in one or both of its children. It is the responsibility
-> > -of the callback function to recalculate the additional data that is in the
-> > -rb node using new children information. Note that if this new additional
-> > -data affects the parent node's additional data, then callback function has
-> > -to handle it and do the recursive updates.
-> > +infrastructure. rbtree user who wants this feature will have to call the
-> > +augmentation functions with the user provided augmentation callback
-> > +when inserting and erasing nodes.
-> > +
-> > +On insertion, The user must call rb_augment_insert() once the new node is in
-> 
->                  the user
-> 
-> > +place. This will cause the augmentation function callback to be called for
-> > +each node between the new node and the root which have been affected by the
-> 
->                                                which has been
-> 
-> > +insertion.
-> > +
-> > +When erasing a node, The user must call rb_augment_erase_begin() first to
-> 
->                         the user
-> 
-> > +retrieve the deepest node on the rebalance path. Then, After erasing the
-> 
->                                                           after
-> 
-> > +original node, the user must call rb_augment_erase_end() with the deepest
-> > +node found earlier. This will cause the augmentation function to be called
-> > +for each affected node between the deepest node and the root.
+This patch fixes a bug reported by a customer, who found
+that many unreasonable error interrupts reported on all
+non-boot CPUs (APs) during the system boot stage.
 
-Heh, you really rock at reviewing documentation!
+According to Chapter 10 of Intel Software Developer Manual
+Volume 3A, Local APIC may signal an illegal vector error when
+an LVT entry is set as an illegal vector value (0~15) under
+FIXED delivery mode (bits 8-11 is 0), regardless of whether
+the mask bit is set or an interrupt actually happen. These
+errors are seen as error interrupts.
 
-I went through the text and could have sworn that beyond the small detail i 
-pointed out it's otherwise perfect ;-)
+The initial value of thermal LVT entries on all APs always reads
+0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+sequence to them and LVT registers are reset to 0s except for
+the mask bits which are set to 1s when APs receive INIT IPI.
 
-Thanks,
+When the BIOS takes over the thermal throttling interrupt,
+the LVT thermal deliver mode should be SMI and it is required
+from the kernel to keep AP's LVT thermal monitoring register
+programmed as such as well.
 
-	Ingo
+This issue happens when BIOS does not take over thermal throttling
+interrupt, AP's LVT thermal monitor register will be restored to
+0x10000 which means vector 0 and fixed deliver mode, so all APs will
+signal illegal vector error interrupts.
+
+This patch check if interrupt delivery mode is not fixed mode before
+restoring AP's LVT thermal monitor register.
+
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Yong Wang <yong.y.wang@intel.com>
+Cc: hpa@linux.intel.com
+Cc: joe@perches.com
+Cc: jbaron@redhat.com
+Cc: trenn@suse.de
+Cc: kent.liu@intel.com
+Cc: chaohong.guo@intel.com
+Cc: <stable@kernel.org> # As far back as possible
+Link: http://lkml.kernel.org/r/1303402963-17738-1-git-send-email-youquan.song@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/apicdef.h           |    1 +
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index d87988b..34595d5 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -78,6 +78,7 @@
+ #define		APIC_DEST_LOGICAL	0x00800
+ #define		APIC_DEST_PHYSICAL	0x00000
+ #define		APIC_DM_FIXED		0x00000
++#define		APIC_DM_FIXED_MASK	0x00700
+ #define		APIC_DM_LOWEST		0x00100
+ #define		APIC_DM_SMI		0x00200
+ #define		APIC_DM_REMRD		0x00300
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 6f8c5e9..0f03446 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -446,18 +446,20 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
+ 	 */
+ 	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
+ 
++	h = lvtthmr_init;
+ 	/*
+ 	 * The initial value of thermal LVT entries on all APs always reads
+ 	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+ 	 * sequence to them and LVT registers are reset to 0s except for
+ 	 * the mask bits which are set to 1s when APs receive INIT IPI.
+-	 * Always restore the value that BIOS has programmed on AP based on
+-	 * BSP's info we saved since BIOS is always setting the same value
+-	 * for all threads/cores
++	 * If BIOS takes over the thermal interrupt and sets its interrupt
++	 * delivery mode to SMI (not fixed), it restores the value that the
++	 * BIOS has programmed on AP based on BSP's info we saved since BIOS
++	 * is always setting the same value for all threads/cores.
+ 	 */
+-	apic_write(APIC_LVTTHMR, lvtthmr_init);
++	if ((h & APIC_DM_FIXED_MASK) != APIC_DM_FIXED)
++		apic_write(APIC_LVTTHMR, lvtthmr_init);
+ 
+-	h = lvtthmr_init;
+ 
+ 	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
+ 		printk(KERN_DEBUG
