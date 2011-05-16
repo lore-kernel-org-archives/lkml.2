@@ -1,114 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab1EPJgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:36:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43773 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1EPJgL (ORCPT
+	id S1753755Ab1EPJkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:40:20 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42907 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab1EPJkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:36:11 -0400
-Date: Mon, 16 May 2011 10:36:02 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, Stephen Warren <swarren@nvidia.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] drivers: create a pinmux subsystem v2
-Message-ID: <20110516093602.GC17104@pulham.picochip.com>
-References: <1305070783-23193-1-git-send-email-linus.walleij@linaro.org>
- <20110510235853.GM26703@pulham.picochip.com>
- <BANLkTim5wurV7aFSm4ae6+HBpGZO1z_=XA@mail.gmail.com>
+	Mon, 16 May 2011 05:40:17 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>
+Subject: [RESEND][PATCH 1/5] arm: omap: usb: ehci and ohci hwmod structures for omap3 and omap4
+Date: Mon, 16 May 2011 15:06:10 +0530
+Message-ID: <1305538570-21006-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTim5wurV7aFSm4ae6+HBpGZO1z_=XA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 02:09:20AM +0200, Linus Walleij wrote:
-> 2011/5/11 Jamie Iles <jamie@jamieiles.com>:
-> > [...]
-> >> +static struct foo_pmx_func myfuncs[] = {
-> >> +     {
-> >> +             .name = "spi0-0",
-> >> +             .pins = spi0_0_pins,
-> >> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
-> >> +     },
-> >> +     {
-> >> +             .name = "i2c0",
-> >> +             .pins = i2c0_pins,
-> >> +             .num_pins = ARRAY_SIZE(i2c0_pins),
-> >> +     },
-> >> +     {
-> >> +             .name = "spi0-1",
-> >> +             .pins = spi0_1_pins,
-> >> +             .num_pins = ARRAY_SIZE(spi0_1_pins),
-> >> +     },
-> >> +};
-> >
-> > So I can see how this works well for these examples, but on our devices,
-> > we have some interfaces for connecting to radios and these have a pair
-> > of 8-bit RX and TX busses.  However, depending on what radio you
-> > connect, you may not need all 8 bits of each and this is dependent on
-> > the board.  What would be the best way to deal with that in this scheme
-> > where say we only wanted 4 bits of each, saving the others for GPIO?
-> > Would this need to be a function for each configuration?
-> 
-> Yes. Define a function containing the pins you need, then when that
-> function is muxed in by pinmux_get() the remaining pins are still
-> available for GPIO.
-> 
-> The framework only deals with functions as groups of pins and
-> individual GPIO pins, defining the groups is currently up to each
-> platform.
+Following 2 hwmod strcuture are added:
+UHH hwmod of usbhs with uhh base address and
+EHCI , OHCI irq and base addresses.
+TLL hwmod of usbhs with the TLL base address and irq.
 
-OK, from this and your other emails I think I understand this now.  So 
-for this (using the current, non-device-tree method) case I guess we 
-could leave the registration of these pins to the board code rather than 
-the chip specific stuff.
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  184 ++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  153 +++++++++++++++++++++++
+ 2 files changed, 337 insertions(+), 0 deletions(-)
 
-> > [...]
-> >> +/**
-> >> + * pinmux_request_gpio() - request a single pin to be muxed in to be used
-> >> + *   as a GPIO pin
-> >> + * @pin: the pin to mux in as GPIO
-> >> + * @gpio: the corresponding GPIO pin number
-> >> + */
-> >> +int pinmux_request_gpio(int pin, unsigned gpio)
-> >> +{
-> >> +     char gpiostr[16];
-> >> +
-> >> +     snprintf(gpiostr, 15, "gpio%d", gpio);
-> >> +     return pin_request(pin, gpiostr, true);
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(pinmux_request_gpio);
-> >
-> > Our devices have two different GPIO controllers, which can be muxed to
-> > the same pad (they're slightly different - one is a bit slower but can
-> > do sigma-delta output) and our pinmux driver would need to know what
-> > GPIO controller it should route to the pad.  Could gpio_request_enable()
-> > be passed the GPIO number or is there a better way to do this?
-> 
-> Hmmmm that was really new!
-> 
-> But like we have the more complex config function for pinmux groups:
-> extern int pinmux_config(struct pinmux *pmx, u16 param, unsigned long *data);
-> 
-> I believe your case could be handled with a similar more complex
-> per-pin config function like this:
-> extern int pinmux_config_gpio(int pin, unsigned gpio, u16 param,
-> unsigned long *data);
-> 
-> Would that work?
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 909a84d..fe9a176 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
++static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
++static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
+ 
+ /* L3 -> L4_CORE interface */
+ static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
+@@ -3574,6 +3576,185 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+ };
+ 
++/*
++ * 'usb_host_hs' class
++ * high-speed multi-port usb host controller
++ */
++static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
++	.master		= &omap34xx_usb_host_hs_hwmod,
++	.slave		= &omap3xxx_l3_main_hwmod,
++	.clk		= "core_l3_ick",
++	.user		= OCP_USER_MPU,
++};
++
++static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
++	.name = "usbhs_uhh",
++	.sysc = &omap34xx_usb_host_hs_sysc,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
++	&omap34xx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod_irq_info omap34xx_usb_host_hs_irqs[] = {
++	{ .name = "ohci-irq", .irq = 76 },
++	{ .name = "ehci-irq", .irq = 77 },
++};
++
++static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
++	{
++		.name		= "uhh",
++		.pa_start	= 0x48064000,
++		.pa_end		= 0x480643ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.name		= "ohci",
++		.pa_start	= 0x48064400,
++		.pa_end		= 0x480647FF,
++		.flags		= ADDR_MAP_ON_INIT
++	},
++	{
++		.name		= "ehci",
++		.pa_start	= 0x48064800,
++		.pa_end		= 0x48064CFF,
++		.flags		= ADDR_MAP_ON_INIT
++	}
++};
++
++static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_usb_host_hs_hwmod,
++	.clk		= "l4_ick",
++	.addr		= omap34xx_usb_host_hs_addrs,
++	.addr_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_addrs),
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
++	.clk		= "usbhost_120m_fck",
++	.user		= OCP_USER_MPU,
++	.flags		= OCPIF_SWSUP_IDLE,
++};
++
++static struct omap_hwmod_ocp_if omap34xx_f48m_cfg__usb_host_hs = {
++	.clk		= "usbhost_48m_fck",
++	.user		= OCP_USER_MPU,
++	.flags		= OCPIF_SWSUP_IDLE,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_slaves[] = {
++	&omap34xx_l4_cfg__usb_host_hs,
++	&omap34xx_f128m_cfg__usb_host_hs,
++	&omap34xx_f48m_cfg__usb_host_hs,
++};
++
++static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
++	.name		= "usbhs_uhh",
++	.class		= &omap34xx_usb_host_hs_hwmod_class,
++	.mpu_irqs	= omap34xx_usb_host_hs_irqs,
++	.mpu_irqs_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_irqs),
++	.main_clk	= "usbhost_ick",
++	.prcm = {
++		.omap2 = {
++			.module_offs = OMAP3430ES2_USBHOST_MOD,
++			.prcm_reg_id = 1,
++			.module_bit = 0,
++			.idlest_reg_id = 1,
++			.idlest_idle_bit = 1,
++			.idlest_stdby_bit = 0,
++		},
++	},
++	.slaves		= omap34xx_usb_host_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_slaves),
++	.masters	= omap34xx_usb_host_hs_masters,
++	.masters_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_masters),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++};
++
++/*
++ * 'usb_tll_hs' class
++ * usb_tll_hs module is the adapter on the usb_host_hs ports
++ */
++static struct omap_hwmod_class_sysconfig omap34xx_usb_tll_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap34xx_usb_tll_hs_hwmod_class = {
++	.name = "usbhs_tll",
++	.sysc = &omap34xx_usb_tll_hs_sysc,
++};
++
++static struct omap_hwmod_irq_info omap34xx_usb_tll_hs_irqs[] = {
++	{ .name = "tll-irq", .irq = 78 },
++};
++
++static struct omap_hwmod_addr_space omap34xx_usb_tll_hs_addrs[] = {
++	{
++		.name		= "tll",
++		.pa_start	= 0x48062000,
++		.pa_end		= 0x48062fff,
++		.flags		= ADDR_TYPE_RT
++	},
++};
++
++static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
++	.clk		= "usbtll_fck",
++	.user		= OCP_USER_MPU,
++	.flags		= OCPIF_SWSUP_IDLE,
++};
++
++static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_tll_hs = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_usb_tll_hs_hwmod,
++	.clk		= "l4_ick",
++	.addr		= omap34xx_usb_tll_hs_addrs,
++	.addr_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_addrs),
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_slaves[] = {
++	&omap34xx_l4_cfg__usb_tll_hs,
++	&omap34xx_f_cfg__usb_tll_hs,
++};
++
++static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
++	.name		= "usbhs_tll",
++	.class		= &omap34xx_usb_tll_hs_hwmod_class,
++	.mpu_irqs	= omap34xx_usb_tll_hs_irqs,
++	.mpu_irqs_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_irqs),
++	.main_clk	= "usbtll_ick",
++	.prcm = {
++		.omap2 = {
++			.module_offs = CORE_MOD,
++			.prcm_reg_id = 3,
++			.module_bit = 2,
++			.idlest_reg_id = 3,
++			.idlest_idle_bit = 2,
++		},
++	},
++	.slaves		= omap34xx_usb_tll_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_slaves),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++};
++
+ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	&omap3xxx_l3_main_hwmod,
+ 	&omap3xxx_l4_core_hwmod,
+@@ -3656,6 +3837,9 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	/* usbotg for am35x */
+ 	&am35xx_usbhsotg_hwmod,
+ 
++	&omap34xx_usb_host_hs_hwmod,
++	&omap34xx_usb_tll_hs_hwmod,
++
+ 	NULL,
+ };
+ 
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index abc548a..d7112b0 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -66,6 +66,8 @@ static struct omap_hwmod omap44xx_mmc2_hwmod;
+ static struct omap_hwmod omap44xx_mpu_hwmod;
+ static struct omap_hwmod omap44xx_mpu_private_hwmod;
+ static struct omap_hwmod omap44xx_usb_otg_hs_hwmod;
++static struct omap_hwmod omap44xx_usb_host_hs_hwmod;
++static struct omap_hwmod omap44xx_usb_tll_hs_hwmod;
+ 
+ /*
+  * Interconnects omap_hwmod structures
+@@ -5027,6 +5029,155 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+ };
+ 
++/*
++ * 'usb_host_hs' class
++ * high-speed multi-port usb host controller
++ */
++static struct omap_hwmod_ocp_if omap44xx_usb_host_hs__l3_main_2 = {
++	.master		= &omap44xx_usb_host_hs_hwmod,
++	.slave		= &omap44xx_l3_main_2_hwmod,
++	.clk		= "l3_div_ck",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class omap44xx_usb_host_hs_hwmod_class = {
++	.name = "usbhs_uhh",
++	.sysc = &omap44xx_usb_host_hs_sysc,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_masters[] = {
++	&omap44xx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod_irq_info omap44xx_usb_host_hs_irqs[] = {
++	{ .name = "ohci-irq", .irq = 76 + OMAP44XX_IRQ_GIC_START },
++	{ .name = "ehci-irq", .irq = 77 + OMAP44XX_IRQ_GIC_START },
++};
++
++static struct omap_hwmod_addr_space omap44xx_usb_host_hs_addrs[] = {
++	{
++		.name		= "uhh",
++		.pa_start	= 0x4a064000,
++		.pa_end		= 0x4a0647ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.name		= "ohci",
++		.pa_start	= 0x4A064800,
++		.pa_end		= 0x4A064BFF,
++		.flags		= ADDR_MAP_ON_INIT
++	},
++	{
++		.name		= "ehci",
++		.pa_start	= 0x4A064C00,
++		.pa_end		= 0x4A064FFF,
++		.flags		= ADDR_MAP_ON_INIT
++	}
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_host_hs = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usb_host_hs_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usb_host_hs_addrs,
++	.addr_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_addrs),
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_slaves[] = {
++	&omap44xx_l4_cfg__usb_host_hs,
++};
++
++static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
++	.name		= "usbhs_uhh",
++	.class		= &omap44xx_usb_host_hs_hwmod_class,
++	.mpu_irqs	= omap44xx_usb_host_hs_irqs,
++	.mpu_irqs_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_irqs),
++	.main_clk	= "usb_host_hs_fck",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_reg = OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
++		},
++	},
++	.slaves		= omap44xx_usb_host_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_slaves),
++	.masters	= omap44xx_usb_host_hs_masters,
++	.masters_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_masters),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++};
++
++/*
++ * 'usb_tll_hs' class
++ * usb_tll_hs module is the adapter on the usb_host_hs ports
++ */
++static struct omap_hwmod_class_sysconfig omap44xx_usb_tll_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap44xx_usb_tll_hs_hwmod_class = {
++	.name = "usbhs_tll",
++	.sysc = &omap44xx_usb_tll_hs_sysc,
++};
++
++static struct omap_hwmod_irq_info omap44xx_usb_tll_hs_irqs[] = {
++	{ .name = "tll-irq", .irq = 78 + OMAP44XX_IRQ_GIC_START },
++};
++
++static struct omap_hwmod_addr_space omap44xx_usb_tll_hs_addrs[] = {
++	{
++		.name		= "tll",
++		.pa_start	= 0x4a062000,
++		.pa_end		= 0x4a063fff,
++		.flags		= ADDR_TYPE_RT
++	},
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_tll_hs = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usb_tll_hs_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usb_tll_hs_addrs,
++	.addr_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_addrs),
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_tll_hs_slaves[] = {
++	&omap44xx_l4_cfg__usb_tll_hs,
++};
++
++static struct omap_hwmod omap44xx_usb_tll_hs_hwmod = {
++	.name		= "usbhs_tll",
++	.class		= &omap44xx_usb_tll_hs_hwmod_class,
++	.mpu_irqs	= omap44xx_usb_tll_hs_irqs,
++	.mpu_irqs_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_irqs),
++	.main_clk	= "usb_tll_hs_ick",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_reg = OMAP4430_CM_L3INIT_USB_TLL_CLKCTRL,
++		},
++	},
++	.slaves		= omap44xx_usb_tll_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_slaves),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++};
++
+ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 
+ 	/* dmm class */
+@@ -5173,6 +5324,8 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	&omap44xx_wd_timer2_hwmod,
+ 	&omap44xx_wd_timer3_hwmod,
+ 
++	&omap44xx_usb_host_hs_hwmod,
++	&omap44xx_usb_tll_hs_hwmod,
+ 	NULL,
+ };
+ 
+-- 
+1.6.0.4
 
-Yes, I think it probably would.  I'm travelling for a bit now so won't 
-get chance to try this for a week or two but I'll try porting our 
-platform over to this system; it would be great to have a standardized 
-way of handling pin muxing.
-
-Jamie
