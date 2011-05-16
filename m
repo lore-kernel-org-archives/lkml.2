@@ -1,136 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1EPI7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:59:03 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60636 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab1EPI7A convert rfc822-to-8bit (ORCPT
+	id S1753159Ab1EPJBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:01:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab1EPJBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:59:00 -0400
+	Mon, 16 May 2011 05:01:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wdB6DsGnvoBFgjSd9TCruvfZDPFf1dmFUKwhf+NfORcszMk4TMRSTzOMtIixaS7crJ
-         GV3EjPvYOG/NNtDOzeWxexxm1fABbwm2YTKhFAcWQjgtHHz78PlLNXXO4TM9r7Rm58hS
-         poXfLHlxIYxPvHIy1zC9dvhS7mNtThXIUJGAE=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=g1+rLIeCmJB7GZHuWbLDLCT1qmSoQcJ6dV0vYZAsfJ+l3K8pZXZ9Y4TMd3N0WXl0uh
+         IehneNXbZ0aDS+znqMY0JEt3zZ9qXOCtes8/p4J1zOkybIz2FbN1bWTrkAXH4gauJ9VO
+         N+6NRkEhJuQpJxFTJJRUl+rAVHNAVhr3Rzo38=
+Date: Mon, 16 May 2011 11:01:25 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: PTRACE_DETACH without stop  [Re: [PATCH 04/11] ptrace:
+ implement PTRACE_INTERRUPT]
+Message-ID: <20110516090125.GP23665@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <20110510095022.GR1661@htj.dyndns.org>
+ <20110510140620.GB21834@redhat.com>
+ <201105102359.58900.vda.linux@googlemail.com>
+ <20110511091955.GD1661@htj.dyndns.org>
+ <20110515161000.GE31855@host1.jankratochvil.net>
+ <20110515163523.GH23665@htj.dyndns.org>
+ <20110515173940.GA26241@host1.jankratochvil.net>
 MIME-Version: 1.0
-In-Reply-To: <20110516084558.GE5279@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
-	<1305295404-12129-5-git-send-email-mgorman@suse.de>
-	<4DCFAA80.7040109@jp.fujitsu.com>
-	<1305519711.4806.7.camel@mulgrave.site>
-	<BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
-	<20110516084558.GE5279@suse.de>
-Date: Mon, 16 May 2011 17:58:59 +0900
-Message-ID: <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        akpm@linux-foundation.org, colin.king@canonical.com,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110515173940.GA26241@host1.jankratochvil.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 5:45 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Mon, May 16, 2011 at 02:04:00PM +0900, Minchan Kim wrote:
->> On Mon, May 16, 2011 at 1:21 PM, James Bottomley
->> <James.Bottomley@hansenpartnership.com> wrote:
->> > On Sun, 2011-05-15 at 19:27 +0900, KOSAKI Motohiro wrote:
->> >> (2011/05/13 23:03), Mel Gorman wrote:
->> >> > Under constant allocation pressure, kswapd can be in the situation where
->> >> > sleeping_prematurely() will always return true even if kswapd has been
->> >> > running a long time. Check if kswapd needs to be scheduled.
->> >> >
->> >> > Signed-off-by: Mel Gorman<mgorman@suse.de>
->> >> > ---
->> >> >   mm/vmscan.c |    4 ++++
->> >> >   1 files changed, 4 insertions(+), 0 deletions(-)
->> >> >
->> >> > diff --git a/mm/vmscan.c b/mm/vmscan.c
->> >> > index af24d1e..4d24828 100644
->> >> > --- a/mm/vmscan.c
->> >> > +++ b/mm/vmscan.c
->> >> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
->> >> >     unsigned long balanced = 0;
->> >> >     bool all_zones_ok = true;
->> >> >
->> >> > +   /* If kswapd has been running too long, just sleep */
->> >> > +   if (need_resched())
->> >> > +           return false;
->> >> > +
->> >>
->> >> Hmm... I don't like this patch so much. because this code does
->> >>
->> >> - don't sleep if kswapd got context switch at shrink_inactive_list
->> >
->> > This isn't entirely true:  need_resched() will be false, so we'll follow
->> > the normal path for determining whether to sleep or not, in effect
->> > leaving the current behaviour unchanged.
->> >
->> >> - sleep if kswapd didn't
->> >
->> > This also isn't entirely true: whether need_resched() is true at this
->> > point depends on a whole lot more that whether we did a context switch
->> > in shrink_inactive. It mostly depends on how long we've been running
->> > without giving up the CPU.  Generally that will mean we've been round
->> > the shrinker loop hundreds to thousands of times without sleeping.
->> >
->> >> It seems to be semi random behavior.
->> >
->> > Well, we have to do something.  Chris Mason first suspected the hang was
->> > a kswapd rescheduling problem a while ago.  We tried putting
->> > cond_rescheds() in several places in the vmscan code, but to no avail.
->>
->> Is it a result of  test with patch of Hannes(ie, !pgdat_balanced)?
->>
->> If it isn't, it would be nop regardless of putting cond_reshed at vmscan.c.
->> Because, although we complete zone balancing, kswapd doesn't sleep as
->> pgdat_balance returns wrong result. And at last VM calls
->> balance_pgdat. In this case, balance_pgdat returns without any work as
->> kswap couldn't find zones which have not enough free pages and goto
->> out. kswapd could repeat this work infinitely. So you don't have a
->> chance to call cond_resched.
->>
->> But if your test was with Hanne's patch, I am very curious how come
->> kswapd consumes CPU a lot.
->>
->> > The need_resched() in sleeping_prematurely() seems to be about the best
->> > option.  The other option might be just to put a cond_resched() in
->> > kswapd_try_to_sleep(), but that will really have about the same effect.
->>
->> I don't oppose it but before that, I think we have to know why kswapd
->> consumes CPU a lot although we applied Hannes' patch.
->>
->
-> Because it's still possible for processes to allocate pages at the same
-> rate kswapd is freeing them leading to a situation where kswapd does not
-> consider the zone balanced for prolonged periods of time.
+Hey,
 
-We have cond_resched in shrink_page_list, shrink_slab and balance_pgdat.
-So I think kswapd can be scheduled out although it's scheduled in
-after a short time as task scheduled also need page reclaim. Although
-all task in system need reclaim, kswapd cpu 99% consumption is a
-natural result, I think.
-Do I miss something?
+On Sun, May 15, 2011 at 07:39:40PM +0200, Jan Kratochvil wrote:
+> #include <unistd.h>
+> #include <sys/wait.h>
+> #include <sys/ptrace.h>
+> #include <stdio.h>
+> #include <stdlib.h>
+> static int status;
+> static pid_t child;
+> void
+> handler (int signo)
+> {
+>   puts ("PASS");
+>   exit (0);
+> }
+> /* Ensure CHILD is stopped even if it is running now - for PTRACE_DETACH.  */
+> void
+> stop_child_for_detach (void)
+> {
+>   kill (child, SIGCONT);	/* To be PTRACE_INTERRUPT in the future.  */
+>   /* The problem - here a signal may get lost.  */
+>   wait (&status);
+> }
+> int
+> main (void)
+> {
+>   child = fork ();
+>   switch (child)
+>     {
+>     case 0:
+>       signal (SIGUSR2, handler);
+>       ptrace (PTRACE_TRACEME, 0, NULL, NULL);
+>       raise (SIGUSR1);
+>       puts ("FAIL");
+>       exit (1);
+>     default:
+>       wait (&status);
+>       /* Sent by arbitrary external program.  */
+>       kill (child, SIGUSR2);
+>       /* Comment out for PTRACE_DETACH not requiring stopped tracee.  */
+> #if 1
+>       ptrace (PTRACE_CONT, child, NULL, NULL);
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
->
-> --
-> Mel Gorman
-> SUSE Labs
->
+You can lose signal here.  You must check which trap happened why and
+then take action accordingly.  Argh... we really need better
+documentation of ptrace behaviors and traps.  Anyways, sans the
+confusion between debugger sent signals and signals from other sources
+and the side effects caused by debugger sent ones, the current ptrace
+interface isn't broken to the point where you just lose signal.
 
+>       stop_child_for_detach ();
+> #endif
+>       ptrace (PTRACE_DETACH, child, NULL, NULL);
+>     }
+>   return 0;
+> }
+> 
+> 
+> > The reason why I'm reluctant to drop trapped requirement from both
+> > SEIZE and DETACH is that removing those synchronization points opens
+> > up a lot of corner cases.
+> 
+> They are either (currently) in the userland or they would be in the kernel.
 
+Nope.  What userland is currently dealing with isn't that type of
+conditions.  It's dealing with nasty side effects of implied and
+required signals, which will be removed with the new interface.  Those
+attach/detach sync points are currently in the kernel and wouldn't
+change with the proposed updates.  You're suggesting to remove them.
+
+So, it's not about moving them, at all.  It's about removing them.
+
+That said, it might not be such a bad idea.  Let's see how difficult
+or easy it actually is.
+
+Thanks.
 
 -- 
-Kind regards,
-Minchan Kim
+tejun
