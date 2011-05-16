@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab1EPV1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:27:13 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:34768 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756194Ab1EPV1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:27:12 -0400
-Date: Mon, 16 May 2011 17:27:06 -0400 (EDT)
-Message-Id: <20110516.172706.1131408659567904196.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: bjlockie@lockie.ca, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: kernel bug relating to networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1305580825.2885.49.camel@bwh-desktop>
-References: <BANLkTikF3ntwWjV3iuwwCnJhZKJMVHHygQ@mail.gmail.com>
-	<4DD18D52.9070302@lockie.ca>
-	<1305580825.2885.49.camel@bwh-desktop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 16 May 2011 14:27:09 -0700 (PDT)
+	id S1756448Ab1EPV2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756194Ab1EPV2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:28:06 -0400
+Date: Tue, 17 May 2011 00:27:54 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
+Message-ID: <20110516212754.GG18148@redhat.com>
+References: <1305574484.3456.30.camel@localhost.localdomain>
+ <20110516204540.GD18148@redhat.com>
+ <1305579414.3456.49.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305579414.3456.49.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Mon, 16 May 2011 22:20:25 +0100
-
-> On Mon, 2011-05-16 at 16:47 -0400, James wrote:
->> On 05/16/11 11:47, Daniel Baluta wrote:
->> > On Mon, May 16, 2011 at 6:35 PM, James <bjlockie@lockie.ca> wrote:
->> >> I originally posted to linux-net@vger.kernel.org but all that list
->> > This should be netdev@vger.kernel.org.
->> That is confusing since the welcome message said: "welcome message for
->> linux-net@vger.kernel.org".
->> 
->> Both lists are listed at http://vger.kernel.org/vger-lists.html but it
->> doesn't say the difference.
+On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
+> On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
+> > > +/* Since we need to keep the order of used_idx as avail_idx, it's
+> > possible that
+> > > + * DMA done not in order in lower device driver for some reason. To
+> > prevent
+> > > + * used_idx out of order, upend_idx is used to track avail_idx
+> > order, done_idx
+> > > + * is used to track used_idx order. Once lower device DMA done,
+> > then upend_idx
+> > > + * can move to done_idx.
+> > 
+> > Could you clarify this please? virtio explicitly allows out of order
+> > completion of requests. Does it simplify code that we try to keep
+> > used index updates in-order? Because if not, this is not
+> > really a requirement.
 > 
-> linux-net: spam and unanswered questions
-> netdev: actual discussions
+> Hello Mike,
 > 
-> David, is it not time to stop the confusion by shutting down linux-net?
+> Based on my testing, vhost_add_used() must be in order from
+> vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
+> freed. I didn't spend time on debugging this.
+> 
+> in virtqueue_get_buf
+> 
+>         if (unlikely(!vq->data[i])) {
+>                 BAD_RING(vq, "id %u is not a head!\n", i);
+>                 return NULL;
+>         }
+> 
+> That's the reason I created the upend_idx and done_idx.
+> 
+> Thanks
+> Shirley
 
-Agreed, linux-net has been deleted.
+One thing of note: it's possible that this actually works
+better than trying to complete out of order, as the
+ring just keeps going which should be good for cache
+utilization. OTOH, this might explain why
+you are over-running the TX ring much more with this patch.
+
+So I don't say this should block merging the patch,
+but I very much would like to understand the issue,
+and it's interesting to experiment with fixing it
+and seeing what it does to performance and to code size.
+
+-- 
+MST
