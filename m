@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1EPImh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 04:42:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42180 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752634Ab1EPImf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 04:42:35 -0400
-Date: Mon, 16 May 2011 09:42:30 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
-Message-ID: <20110516084230.GC5279@suse.de>
-References: <20110512154649.GB4559@redhat.com>
- <1305216023.2575.54.camel@mulgrave.site>
- <alpine.DEB.2.00.1105121121120.26013@router.home>
- <1305217843.2575.57.camel@mulgrave.site>
- <BANLkTi=MD+voG1i7uDyueV22_daGHPRdqw@mail.gmail.com>
- <BANLkTimDsJDht76Vm7auNqT2gncjpEKZQw@mail.gmail.com>
- <alpine.DEB.2.00.1105121232110.28493@router.home>
- <20110512180018.GN11579@random.random>
- <20110513094958.GA3569@suse.de>
- <20110515163906.GB25981@random.random>
+	id S1752962Ab1EPInz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 04:43:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33298 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab1EPIny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 04:43:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NVsvIEo6HAi6FFRRfyLcbTnp10wI6apZDOlGk2XZ22piEVQeC9sVS/tJpauRbBE09w
+         oflDUa1oOnfQLkZM7cmJ5oRVCYdMWmyd2CQBL9/ZE1kfhkJz2QOERfBGlmYJKvT+/tbh
+         WBRM/nokYloii7YmRBIcyYuhbs+3nTxOwUwbM=
+Date: Mon, 16 May 2011 10:43:50 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: getter PTRACE_GETSIGINFO should not modify anything  [Re:
+ [PATCH 11/11] ptrace: implement group stop notification for ptracer]
+Message-ID: <20110516084350.GO23665@htj.dyndns.org>
+References: <1304869745-1073-1-git-send-email-tj@kernel.org>
+ <1304869745-1073-12-git-send-email-tj@kernel.org>
+ <20110515140232.GB31855@host1.jankratochvil.net>
+ <20110515142827.GF23665@htj.dyndns.org>
+ <20110515171748.GA25216@host1.jankratochvil.net>
+ <20110515172811.GM23665@htj.dyndns.org>
+ <20110515200654.GA32659@host1.jankratochvil.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110515163906.GB25981@random.random>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110515200654.GA32659@host1.jankratochvil.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 15, 2011 at 06:39:06PM +0200, Andrea Arcangeli wrote:
-> On Fri, May 13, 2011 at 10:49:58AM +0100, Mel Gorman wrote:
-> > On Thu, May 12, 2011 at 08:00:18PM +0200, Andrea Arcangeli wrote:
-> > > <SNIP>
-> > >
-> > > BTW, it comes to mind in patch 2, SLUB should clear __GFP_REPEAT too
-> > > (not only __GFP_NOFAIL). Clearing __GFP_WAIT may be worth it or not
-> > > with COMPACTION=y, definitely good idea to clear __GFP_WAIT unless
-> > > lumpy is restricted to __GFP_REPEAT|__GFP_NOFAIL.
-> > 
-> > This is in V2 (unreleased, testing in progress and was running
-> > overnight). I noticed that clearing __GFP_REPEAT is required for
-> > reclaim/compaction if direct reclaimers from SLUB are to return false in
-> > should_continue_reclaim() and bail out from high-order allocation
-> > properly. As it is, there is a possibility for slub high-order direct
-> > reclaimers to loop in reclaim/compaction for a long time. This is
-> > only important when CONFIG_COMPACTION=y.
-> 
-> Agreed. However I don't expect anyone to allocate from slub(/slab)
-> with __GFP_REPEAT so it's probably only theoretical but more correct
-> indeed ;).
+Hello,
 
-Networking layer does specify __GFP_REPEAT.
+On Sun, May 15, 2011 at 10:06:54PM +0200, Jan Kratochvil wrote:
+> You are introducing new API which requires new codepaths in every
+> debugger-like program using it.  I do not find the "not deviating" reason as
+> valid for making the _new_ API parts needlessly imperfect.  Otherwise in the
+> next step we will want to fix the new imperfect parts and - there will be
+> three APIs that time to be supported in each debugger-like program depending
+> on how old kernel versions the debugger wants to support.
+
+There's distinction between "broken" and "ugly".  If it's ugly but
+functional, you don't need to "fix" it.  What we have is a broken ugly
+one and my primary goal is fixing the broken part.  I don't
+necessarily object to making it pretty but that's not my primary goal.
+
+> Sure the changes should be still small - I do not ask for making unrelated new
+> changes; just making the already needed changes perfect in their scope.
+
+Perfect is enemy of good.  I'll listen to your and other's suggestions
+but given the rather subpar history of ptrace and its development am
+not too convinced that the existing ideas or directions were
+especially effective.
+
+Frankly, I think the biggest disease was this obsession with
+perfection.  Whether ptrace is slightly prettier or not, or whether it
+can do the obscure feature three enterprise customers requested
+doesn't matter all that much.  Let's leave them alone and concentrate
+on fixing mainstream use cases.
+
+So, I'm gonna push back quite a bit unless it actually compromises
+functionality or correctness.
+
+Thank you.
 
 -- 
-Mel Gorman
-SUSE Labs
+tejun
