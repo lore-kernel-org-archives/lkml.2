@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab1EPJow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 05:44:52 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:52221 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753907Ab1EPJou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 05:44:50 -0400
-Date: Mon, 16 May 2011 12:44:43 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com
-Subject: Re: your mail
-Message-ID: <20110516094440.GQ11339@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1305538460-20980-1-git-send-email-keshava_mgowda@ti.com>
+	id S1754019Ab1EPJp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 05:45:57 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:44426 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753202Ab1EPJpz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 05:45:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f4HxWLVbzokH9yio"
-Content-Disposition: inline
-In-Reply-To: <1305538460-20980-1-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110516092309.GD12325@elte.hu>
+References: <1305297838-4015-1-git-send-email-j-pihet@ti.com>
+	<20110513144830.GB32688@elte.hu>
+	<BANLkTikkd9bNRLF1iDAz9Jwrnon3A=j44g@mail.gmail.com>
+	<20110516092309.GD12325@elte.hu>
+Date: Mon, 16 May 2011 11:45:50 +0200
+Message-ID: <BANLkTin6-TZHkw5iSb034Ur5xLfQoGRtLw@mail.gmail.com>
+Subject: Re: [PATCH] perf: export power_start and power_end tracepoints
+From: "Pihet-XID, Jean" <j-pihet@ti.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jean Pihet <jean.pihet@newoldbits.com>, linux-kernel@vger.kernel.org,
+        Thomas Renninger <trenn@suse.de>, linux-omap@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 16, 2011 at 11:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Jean Pihet <jean.pihet@newoldbits.com> wrote:
+>
+>> Adding l-o and linux-pm MLs. The original post is at
+>> http://www.spinics.net/lists/kernel/msg1186554.html
+>>
+>> On Fri, May 13, 2011 at 4:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> > * jean.pihet@newoldbits.com <jean.pihet@newoldbits.com> wrote:
+>> >
+>> >> From: Jean Pihet <j-pihet@ti.com>
+>> >>
+>> >> If used in a module both tracepoints need to be exported by the
+>> >> kernel.
+>> >
+>> > but it's not used by any module in the kernel AFAICS, so why is this needed?
+>> Not currently, that is why the error went unnoticed. I think it is
+>> better to fix it now than later.
+>>
+>> I am working on a plan to clean-up and isolate the OMAP PM code from
+>> the core code and to provide the PM functionality as a module. This
+>> effort is part of the 'remove the crazy ARM churn' from the kernel.
+>
+> Feel free to keep this patch with those modifications/cleanups:
+>
+> Acked-by: Ingo Molnar <mingo@elte.hu>
+>
+> but please make sure you push it together, i.e. never export something
+> (knowingly) without having in-tree use for it.
+Ok will push the changes together when they are ready.
 
---f4HxWLVbzokH9yio
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>
+> Thanks,
+>
+>        Ingo
+>
 
-Hi,
-
-On Mon, May 16, 2011 at 03:04:20PM +0530, Keshava Munegowda wrote:
-> Following 2 hwmod strcuture are added:
-> UHH hwmod of usbhs with uhh base address and
-> EHCI , OHCI irq and base addresses.
-> TLL hwmod of usbhs with the TLL base address and irq.
->=20
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-
-missing subject line.
-
---=20
-balbi
-
---f4HxWLVbzokH9yio
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN0PIIAAoJEAv8Txj19kN14ncIAIqNrkBw2eTEpLCnWPfGg/nI
-ggzit3BXecgH8YaGz7/r4biI17Qqds7M4LPw0kifNd4EmxUGyxM8z6MYQTZKGmBC
-z5ELV+fvYIE21IO2giVAZNefJt3KxjHzkY0H7KD5tAn3Bgw67b3AD9i4cu12H0nr
-OtcyiZIbC4RQAFjD9Bp9KeGBEYQ/8wwvbylbGZFTtlwCQXFbDSSP6A2n28k0nJcR
-4UDjkbHeGKJAHi8Tc8PQPB2Vg6B0/EZrzHcMR8BK7twXy1+DS0i9g3Buqx63coy2
-7Xkv0ItSEccjf3oYyjbT4cmoxN0BJhwJRtJWF10TmXMvcRNSBFpNsjqtLihG0UU=
-=WCrh
------END PGP SIGNATURE-----
-
---f4HxWLVbzokH9yio--
+Thanks,
+Jean
