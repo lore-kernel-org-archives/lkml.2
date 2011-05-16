@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab1EPVYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:24:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37290 "EHLO hera.kernel.org"
+	id S1756244Ab1EPVX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:23:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51672 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1EPVX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754522Ab1EPVX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 May 2011 17:23:57 -0400
-Date: Mon, 16 May 2011 21:23:22 GMT
-From: tip-bot for Ondrej Zary <linux@rainbow-software.org>
-Message-ID: <tip-865be7a81071a77014c83cd01536c989eed362b4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux@rainbow-software.org, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux@rainbow-software.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <201105162138.15416.linux@rainbow-software.org>
-References: <201105162138.15416.linux@rainbow-software.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpu: Fix detection of Celeron Covington stepping A1 and B0
-Git-Commit-ID: 865be7a81071a77014c83cd01536c989eed362b4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+Date: Tue, 17 May 2011 00:24:01 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
+Message-ID: <20110516212401.GF18148@redhat.com>
+References: <1305574484.3456.30.camel@localhost.localdomain>
+ <20110516204540.GD18148@redhat.com>
+ <1305579414.3456.49.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 May 2011 21:23:24 +0000 (UTC)
+In-Reply-To: <1305579414.3456.49.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  865be7a81071a77014c83cd01536c989eed362b4
-Gitweb:     http://git.kernel.org/tip/865be7a81071a77014c83cd01536c989eed362b4
-Author:     Ondrej Zary <linux@rainbow-software.org>
-AuthorDate: Mon, 16 May 2011 21:38:08 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 16 May 2011 13:24:21 -0700
+On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
+> On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
+> > > +/* Since we need to keep the order of used_idx as avail_idx, it's
+> > possible that
+> > > + * DMA done not in order in lower device driver for some reason. To
+> > prevent
+> > > + * used_idx out of order, upend_idx is used to track avail_idx
+> > order, done_idx
+> > > + * is used to track used_idx order. Once lower device DMA done,
+> > then upend_idx
+> > > + * can move to done_idx.
+> > 
+> > Could you clarify this please? virtio explicitly allows out of order
+> > completion of requests. Does it simplify code that we try to keep
+> > used index updates in-order? Because if not, this is not
+> > really a requirement.
+> 
+> Hello Mike,
+> 
+> Based on my testing, vhost_add_used() must be in order from
+> vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
+> freed.
 
-x86, cpu: Fix detection of Celeron Covington stepping A1 and B0
+Double-freed or you get NULL below?
 
-Steppings A1 and B0 of Celeron Covington are currently misdetected as
-Pentium II (Dixon). Fix it by removing the stepping check.
+> I didn't spend time on debugging this.
+> 
+> in virtqueue_get_buf
+> 
+>         if (unlikely(!vq->data[i])) {
+>                 BAD_RING(vq, "id %u is not a head!\n", i);
+>                 return NULL;
+>         }
 
-[ hpa: this fixes this specific bug... the CPUID documentation
-  specifies that the L2 cache size can disambiguate additional CPUs;
-  this patch does not fix that. ]
+Yes but i used here is the head that we read from the
+ring, not the ring index itself.
+	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id
+we must complete any id only once, but in any order.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Link: http://lkml.kernel.org/r/201105162138.15416.linux@rainbow-software.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/intel.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+> That's the reason I created the upend_idx and done_idx.
+> 
+> Thanks
+> Shirley
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index df86bc8..32e86aa 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -400,12 +400,10 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- 
- 		switch (c->x86_model) {
- 		case 5:
--			if (c->x86_mask == 0) {
--				if (l2 == 0)
--					p = "Celeron (Covington)";
--				else if (l2 == 256)
--					p = "Mobile Pentium II (Dixon)";
--			}
-+			if (l2 == 0)
-+				p = "Celeron (Covington)";
-+			else if (l2 == 256)
-+				p = "Mobile Pentium II (Dixon)";
- 			break;
- 
- 		case 6:
+Very strange, it sounds like a bug, but I can't tell where: in
+host or in guest. If it's in the guest, we must fix it.
+If in host, we should only fix it if it makes life simpler for us.
+Could you try to nail it down pls?  Another question: will code get
+simpler or more complex if that restriction's removed?
+
+-- 
+MST
