@@ -1,182 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab1EPVgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:36:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34482 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498Ab1EPVgT convert rfc822-to-8bit (ORCPT
+	id S1756666Ab1EPVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:42:58 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4063 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab1EPVm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:36:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=PBUybFND+eHkzn3ZLIE05OQWPNnxjNwSr1yEVHHWmaHE437AsVZWmrljS7LWkz/UsD
-         y13xdd+5TgXUNjZiwGj7Yt7JQcQb0mYhZ+LsgWV2UqeDn41zfb5YfKsZcxULhOiRV+bz
-         rB6YUyF35bKVBr38MmwpJ/zbPNzaG9OQzLnHo=
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: =?iso-8859-1?q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-Subject: Re: [RFC v2] lis3lv02d: avoid divide by zero due to unchecked register read
-Date: Mon, 16 May 2011 23:36:04 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc7-wl+; KDE/4.4.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201105160046.31019.chunkeey@googlemail.com> <4DD1079E.6000209@tremplin-utc.net>
-In-Reply-To: <4DD1079E.6000209@tremplin-utc.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105162336.05306.chunkeey@googlemail.com>
+	Mon, 16 May 2011 17:42:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 16 May 2011 14:42:57 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH v3] net: rfkill: add generic gpio rfkill driver
+Date: Mon, 16 May 2011 14:41:48 -0700
+Message-Id: <1305582108-23267-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 May 2011 13:16:46 Éric Piel wrote:
-> Op 16-05-11 00:46, Christian Lamparter schreef:
-> > From my POV, it looks like the hardware is not working as expected
-> > and returns a bogus data rate. The driver doesn't check the result
-> > and directly uses it as some sort of divisor in some places:
-> >
-> > msleep(lis3->pwron_delay / lis3lv02d_get_odr());
-> >
-> > Under this circumstances, this could very well cause the
-> > "divide by zero" exception from above.
-> >
-> However, I'd fix it a bit differently: let lis3lv02d_get_odr() return 
-> the raw data, and create a special function 
-> lis3lv02d_get_pwron_delay_ms() which does the "lis3->pwron_delay / 
-> lis3lv02d_get_odr()" with special handling for 0 (returning a large 
-> value and also sending a printk_once() ).
-Do you know how "volatile" this data rate is? If it never changes 
-[at least it doesn't here?] then why not read it once in init_device
-and store it in the device context?
+This adds a new generic gpio rfkill driver to support rfkill switches
+which are controlled by gpios. The driver also supports passing in
+data about the clock for the radio, so that when rfkill is blocking,
+it can disable the clock.
 
-Anyway, I updated the code... But instead of returning a "large value"
-I went for the -ENXIO to bail-out early, so now we won't continue if
-something went bad [after resume for instance?].
+This driver assumes platform data is passed from the board files to
+configure it for specific devices.
 
-> As you have noted, we might want to check other parts of the driver to 
-> validate the data from the device. So far, all the code considers that 
-> the device is flawless :-S
-well:
-  CHECK   drivers/misc/lis3lv02d/lis3lv02d.c
-drivers/misc/lis3lv02d/lis3lv02d.c:170:52: warning: cast to restricted __le16
-
-but this is a tiny tiny niggle (on x86 at least).
+Original-patch-by: Anantha Idapalapati <aidapalapati@nvidia.com>
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
-v1 -> v2
-   - Eric's comments
----
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
-index b928bc1..60539c8 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -206,6 +206,18 @@ static int lis3lv02d_get_odr(void)
- 	return lis3_dev.odrs[(ctrl >> shift)];
- }
+v2: 
+	- Moved to dynamic allocation for gpio names
+	- added state of clock enabled to prevent double disabling/enabling
+	- fixed Kconfig description
+	- removed setting initial state, as rfkill-core will do it
+	- enabled using this driver as a module
+
+v3:
+	- modified Kconfig to depend on HAVE_CLK 
+	- modified Kconfig to default to N
+	- change From line to Original-patch-by
+
+ include/linux/rfkill-gpio.h |   43 ++++++++
+ net/rfkill/Kconfig          |    9 ++
+ net/rfkill/Makefile         |    1 +
+ net/rfkill/rfkill-gpio.c    |  227 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 280 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/rfkill-gpio.h
+ create mode 100644 net/rfkill/rfkill-gpio.c
+
+diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
+new file mode 100644
+index 0000000..a175d05
+--- /dev/null
++++ b/include/linux/rfkill-gpio.h
+@@ -0,0 +1,43 @@
++/*
++ * Copyright (c) 2011, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
++
++
++#ifndef __RFKILL_GPIO_H
++#define __RFKILL_GPIO_H
++
++#include <linux/types.h>
++#include <linux/rfkill.h>
++
++/**
++ * struct rfkill_gpio_platform_data - platform data for rfkill gpio device.
++ * for unused gpio's, the expected value is -1.
++ * @name:		name for the gpio rf kill instance
++ * @reset_gpio:		GPIO which is used for reseting rfkill switch
++ * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
++ * @power_clk_name:	[optional] name of clk to turn off while blocked
++ */
++
++struct rfkill_gpio_platform_data {
++	char			*name;
++	int			reset_gpio;
++	int			shutdown_gpio;
++	const char		*power_clk_name;
++	enum rfkill_type	type;
++};
++
++#endif /* __RFKILL_GPIO_H */
+diff --git a/net/rfkill/Kconfig b/net/rfkill/Kconfig
+index 48464ca..78efe89 100644
+--- a/net/rfkill/Kconfig
++++ b/net/rfkill/Kconfig
+@@ -33,3 +33,12 @@ config RFKILL_REGULATOR
  
-+static int lis3lv02d_get_pwron_wait(struct lis3lv02d *lis3)
+           To compile this driver as a module, choose M here: the module will
+           be called rfkill-regulator.
++
++config RFKILL_GPIO
++	tristate "GPIO RFKILL driver"
++	depends on RFKILL && GPIOLIB && HAVE_CLK
++	default n
++	help
++	  If you say yes here you get support of a generic gpio RFKILL
++	  driver. The platform should fill in the appropriate fields in the
++	  rfkill_gpio_platform_data structure and pass that to the driver.
+diff --git a/net/rfkill/Makefile b/net/rfkill/Makefile
+index d9a5a58..3117687 100644
+--- a/net/rfkill/Makefile
++++ b/net/rfkill/Makefile
+@@ -6,3 +6,4 @@ rfkill-y			+= core.o
+ rfkill-$(CONFIG_RFKILL_INPUT)	+= input.o
+ obj-$(CONFIG_RFKILL)		+= rfkill.o
+ obj-$(CONFIG_RFKILL_REGULATOR)	+= rfkill-regulator.o
++obj-$(CONFIG_RFKILL_GPIO)	+= rfkill-gpio.o
+diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+new file mode 100644
+index 0000000..256c5dd
+--- /dev/null
++++ b/net/rfkill/rfkill-gpio.c
+@@ -0,0 +1,227 @@
++/*
++ * Copyright (c) 2011, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
++
++#include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/rfkill.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/slab.h>
++
++#include <linux/rfkill-gpio.h>
++
++enum rfkill_gpio_clk_state {
++	UNSPECIFIED = 0,
++	PWR_ENABLED,
++	PWR_DISABLED
++};
++
++#define PWR_CLK_SET(_RF, _EN) \
++	((_RF)->pwr_clk_enabled = (!(_EN) ? PWR_ENABLED : PWR_DISABLED))
++#define PWR_CLK_ENABLED(_RF) ((_RF)->pwr_clk_enabled == PWR_ENABLED)
++#define PWR_CLK_DISABLED(_RF) ((_RF)->pwr_clk_enabled != PWR_ENABLED)
++
++struct rfkill_gpio_data {
++	struct rfkill_gpio_platform_data	*pdata;
++	struct rfkill				*rfkill_dev;
++	char					*reset_name;
++	char					*shutdown_name;
++	enum rfkill_gpio_clk_state		pwr_clk_enabled;
++	struct clk				*pwr_clk;
++};
++
++static int rfkill_gpio_set_power(void *data, bool blocked)
 +{
-+	int div = lis3lv02d_get_odr();
++	struct rfkill_gpio_data *rfkill = data;
 +
-+	if (WARN_ONCE(div == 0, "device returned spurious data"))
-+		return -ENXIO;
++	if (blocked) {
++		if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
++			gpio_direction_output(rfkill->pdata->shutdown_gpio, 0);
++		if (gpio_is_valid(rfkill->pdata->reset_gpio))
++			gpio_direction_output(rfkill->pdata->reset_gpio, 0);
++		if (rfkill->pwr_clk && PWR_CLK_ENABLED(rfkill))
++			clk_disable(rfkill->pwr_clk);
++	} else {
++		if (rfkill->pwr_clk && PWR_CLK_DISABLED(rfkill))
++			clk_enable(rfkill->pwr_clk);
++		if (gpio_is_valid(rfkill->pdata->reset_gpio))
++			gpio_direction_output(rfkill->pdata->reset_gpio, 1);
++		if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
++			gpio_direction_output(rfkill->pdata->shutdown_gpio, 1);
++	}
 +
-+	/* LIS3 power on delay is quite long */
-+	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
++	if (rfkill->pwr_clk)
++		PWR_CLK_SET(rfkill, blocked);
++
 +	return 0;
 +}
 +
- static int lis3lv02d_set_odr(int rate)
- {
- 	u8 ctrl;
-@@ -266,7 +278,9 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
- 
- 	lis3->read(lis3, ctlreg, &reg);
- 	lis3->write(lis3, ctlreg, (reg | selftest));
--	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
-+	ret = lis3lv02d_get_pwron_wait(lis3);
-+	if (ret)
-+		goto fail;
- 
- 	/* Read directly to avoid axis remap */
- 	x = lis3->read_data(lis3, OUTX);
-@@ -275,7 +289,9 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
- 
- 	/* back to normal settings */
- 	lis3->write(lis3, ctlreg, reg);
--	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
-+	ret = lis3lv02d_get_pwron_wait(lis3);
-+	if (ret)
-+		goto fail;
- 
- 	results[0] = x - lis3->read_data(lis3, OUTX);
- 	results[1] = y - lis3->read_data(lis3, OUTY);
-@@ -363,8 +379,9 @@ void lis3lv02d_poweroff(struct lis3lv02d *lis3)
- }
- EXPORT_SYMBOL_GPL(lis3lv02d_poweroff);
- 
--void lis3lv02d_poweron(struct lis3lv02d *lis3)
-+int lis3lv02d_poweron(struct lis3lv02d *lis3)
- {
-+	int err;
- 	u8 reg;
- 
- 	lis3->init(lis3);
-@@ -382,11 +399,14 @@ void lis3lv02d_poweron(struct lis3lv02d *lis3)
- 		reg |= CTRL2_BOOT_8B;
- 	lis3->write(lis3, CTRL_REG2, reg);
- 
--	/* LIS3 power on delay is quite long */
--	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
-+	err = lis3lv02d_get_pwron_wait(lis3);
-+	if (err)
-+		return err;
- 
- 	if (lis3->reg_ctrl)
- 		lis3_context_restore(lis3);
++static const struct rfkill_ops rfkill_gpio_ops = {
++	.set_block = rfkill_gpio_set_power,
++};
++
++static int rfkill_gpio_probe(struct platform_device *pdev)
++{
++	struct rfkill_gpio_data *rfkill;
++	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
++	int ret = 0;
++	int len = 0;
++
++	if (!pdata) {
++		pr_warn("%s: No platform data specified\n", __func__);
++		return -EINVAL;
++	}
++
++	/* make sure at-least one of the GPIO is defined and that
++	 * a name is specified for this instance */
++	if (!pdata->name || (!gpio_is_valid(pdata->reset_gpio) &&
++		!gpio_is_valid(pdata->shutdown_gpio))) {
++		pr_warn("%s: invalid platform data\n", __func__);
++		return -EINVAL;
++	}
++
++	rfkill = kzalloc(sizeof(*rfkill), GFP_KERNEL);
++	if (!rfkill)
++		return -ENOMEM;
++
++	rfkill->pdata = pdata;
++
++	len = strlen(pdata->name);
++	rfkill->reset_name = kzalloc(len + 7, GFP_KERNEL);
++	if (!rfkill->reset_name) {
++		ret = -ENOMEM;
++		goto fail_alloc;
++	}
++
++	rfkill->shutdown_name = kzalloc(len + 10, GFP_KERNEL);
++	if (!rfkill->shutdown_name) {
++		ret = -ENOMEM;
++		goto fail_reset_name;
++	}
++
++	snprintf(rfkill->reset_name, len + 6 , "%s_reset", pdata->name);
++	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", pdata->name);
++
++	if (pdata->power_clk_name) {
++		rfkill->pwr_clk = clk_get(&pdev->dev, pdata->power_clk_name);
++		if (IS_ERR(rfkill->pwr_clk)) {
++			pr_warn("%s: can't find pwr_clk.\n", __func__);
++			goto fail_shutdown_name;
++		}
++	}
++
++	if (gpio_is_valid(pdata->reset_gpio)) {
++		ret = gpio_request(pdata->reset_gpio, rfkill->reset_name);
++		if (ret) {
++			pr_warn("%s: failed to get reset gpio.\n", __func__);
++			goto fail_clock;
++		}
++	}
++
++	if (gpio_is_valid(pdata->shutdown_gpio)) {
++		ret = gpio_request(pdata->shutdown_gpio, rfkill->shutdown_name);
++		if (ret) {
++			pr_warn("%s: failed to get shutdown gpio.\n", __func__);
++			goto fail_reset;
++		}
++	}
++
++	rfkill->rfkill_dev = rfkill_alloc(pdata->name, &pdev->dev, pdata->type,
++				&rfkill_gpio_ops, rfkill);
++	if (!rfkill->rfkill_dev)
++		goto fail_shutdown;
++
++	ret = rfkill_register(rfkill->rfkill_dev);
++	if (ret < 0)
++		goto fail_rfkill;
++
++	platform_set_drvdata(pdev, rfkill);
++
++	dev_info(&pdev->dev, "%s device registered.\n", pdata->name);
 +
 +	return 0;
- }
- EXPORT_SYMBOL_GPL(lis3lv02d_poweron);
- 
-@@ -926,7 +946,11 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
- 	atomic_set(&dev->wake_thread, 0);
- 
- 	lis3lv02d_add_fs(dev);
--	lis3lv02d_poweron(dev);
-+	err = lis3lv02d_poweron(dev);
-+	if (err) {
-+		lis3lv02d_remove_fs(dev);
-+		return err;
-+	}
- 
- 	if (dev->pm_dev) {
- 		pm_runtime_set_active(dev->pm_dev);
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
-index a193958..57c64bb 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.h
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.h
-@@ -285,7 +285,7 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3);
- int lis3lv02d_joystick_enable(void);
- void lis3lv02d_joystick_disable(void);
- void lis3lv02d_poweroff(struct lis3lv02d *lis3);
--void lis3lv02d_poweron(struct lis3lv02d *lis3);
-+int lis3lv02d_poweron(struct lis3lv02d *lis3);
- int lis3lv02d_remove_fs(struct lis3lv02d *lis3);
- 
- extern struct lis3lv02d lis3_dev;
-diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-index 1b52d00..891e71f 100644
---- a/drivers/platform/x86/hp_accel.c
-+++ b/drivers/platform/x86/hp_accel.c
-@@ -354,8 +354,7 @@ static int lis3lv02d_suspend(struct acpi_device *device, pm_message_t state)
- 
- static int lis3lv02d_resume(struct acpi_device *device)
- {
--	lis3lv02d_poweron(&lis3_dev);
--	return 0;
-+	return lis3lv02d_poweron(&lis3_dev);
- }
- #else
- #define lis3lv02d_suspend NULL
++
++fail_rfkill:
++	rfkill_destroy(rfkill->rfkill_dev);
++fail_shutdown:
++	if (gpio_is_valid(pdata->shutdown_gpio))
++		gpio_free(pdata->shutdown_gpio);
++fail_reset:
++	if (gpio_is_valid(pdata->reset_gpio))
++		gpio_free(pdata->reset_gpio);
++fail_clock:
++	if (rfkill->pwr_clk)
++		clk_put(rfkill->pwr_clk);
++fail_shutdown_name:
++	kfree(rfkill->shutdown_name);
++fail_reset_name:
++	kfree(rfkill->reset_name);
++fail_alloc:
++	kfree(rfkill);
++
++	return ret;
++}
++
++static int rfkill_gpio_remove(struct platform_device *pdev)
++{
++	struct rfkill_gpio_data *rfkill = platform_get_drvdata(pdev);
++
++	rfkill_unregister(rfkill->rfkill_dev);
++	rfkill_destroy(rfkill->rfkill_dev);
++	if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
++		gpio_free(rfkill->pdata->shutdown_gpio);
++	if (gpio_is_valid(rfkill->pdata->reset_gpio))
++		gpio_free(rfkill->pdata->reset_gpio);
++	if (rfkill->pwr_clk && PWR_CLK_ENABLED(rfkill))
++		clk_disable(rfkill->pwr_clk);
++	if (rfkill->pwr_clk)
++		clk_put(rfkill->pwr_clk);
++	kfree(rfkill->shutdown_name);
++	kfree(rfkill->reset_name);
++	kfree(rfkill);
++
++	return 0;
++}
++
++static struct platform_driver rfkill_gpio_driver = {
++	.probe = rfkill_gpio_probe,
++	.remove = __devexit_p(rfkill_gpio_remove),
++	.driver = {
++		   .name = "rfkill_gpio",
++		   .owner = THIS_MODULE,
++	},
++};
++
++static int __init rfkill_gpio_init(void)
++{
++	return platform_driver_register(&rfkill_gpio_driver);
++}
++
++static void __exit rfkill_gpio_exit(void)
++{
++	platform_driver_unregister(&rfkill_gpio_driver);
++}
++
++module_init(rfkill_gpio_init);
++module_exit(rfkill_gpio_exit);
++
++MODULE_DESCRIPTION("gpio rfkill");
++MODULE_AUTHOR("NVIDIA");
++MODULE_LICENSE("GPL");
+-- 
+1.7.5.1
+
