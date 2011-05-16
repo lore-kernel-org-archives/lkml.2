@@ -1,72 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab1EPMqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:46:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49877 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab1EPMq3 (ORCPT
+	id S1755172Ab1EPMsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:48:20 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:52702 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755116Ab1EPMsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:46:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E7VJmlKjHvzYQq8SiQpt4A8ItDErJI6EtnlQKcLIz3rrxm8HDE7cbOHZ3Am5xw7Qsl
-         KGbMZA8ctvnuLmGbf6s/n48A4zk0qKeVA7VG8faZEiiMn1Q6an92IaPhQbdrP7PkXdrm
-         +n6MzKpanmPhyqWJ0rfGWncQ5tPLRSyXqngc0=
-Date: Mon, 16 May 2011 14:46:25 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: waitpid(WNOHANG) should report SIGCHLD-notified signals  [Re:
- [PATCH 09/11] job control: reorganize wait_task_stopped()]
-Message-ID: <20110516124625.GV23665@htj.dyndns.org>
-References: <20110512160253.GK1030@htj.dyndns.org>
- <20110512172506.GA23033@redhat.com>
- <20110512173228.GO1030@htj.dyndns.org>
- <20110515144017.GC31855@host1.jankratochvil.net>
- <20110515164705.GI23665@htj.dyndns.org>
- <20110515174722.GA26361@host1.jankratochvil.net>
- <20110516091318.GQ23665@htj.dyndns.org>
- <20110516121116.GB10469@host1.jankratochvil.net>
- <20110516122756.GT23665@htj.dyndns.org>
- <20110516123930.GA11933@host1.jankratochvil.net>
+	Mon, 16 May 2011 08:48:19 -0400
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linus.walleij@stericsson.com>
+Cc: <richard.purdie@linuxfoundation.org>, <rpurdie@rpsys.net>,
+        <lee.jones@linaro.org>, <akpm@linux-foundation.org>,
+        <shreshthakumar.sahu@stericsson.com>
+Subject: [PATCH] leds: add regulator to lm3530 driver
+Date: Mon, 16 May 2011 18:17:58 +0530
+Message-ID: <1305550078-28389-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110516123930.GA11933@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
 
-On Mon, May 16, 2011 at 02:39:30PM +0200, Jan Kratochvil wrote:
-> > The above wouldn't be linux kernel's top design concerns, right?
-> 
-> They are - as without threads one needs reliable WNOHANG - while which you say
-> it is not reliable.
+Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+---
+ drivers/leds/leds-lm3530.c |   73 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 65 insertions(+), 8 deletions(-)
 
-As I wrote before, I think it's reliable for ptrace.  The problematic
-ones are transitions between continued and stopped and running and I
-don't think it would affect ptrace.
-
-> > It's not like new interface is gonna break that, but I think it's gonna be
-> > more fragile.  Well, it shouldn't be worse than now.
-> 
-> BTW I really do not think this WNOHANG issue is anyhow related to this whole
-> discussion.
-
-Probably not but I've seen gdb going out of sync with the expected
-state of the tracee.  Dunno whether it was kernel bug or gdb bug but
-it seemed pretty fragile and adding group stop notifications might
-make it a bit more difficult.  I don't know.  It was just my five
-cents.  Feel free to ignore.
-
-Thanks.
-
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index e7089a1..6cf9925 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -17,6 +17,7 @@
+ #include <linux/input.h>
+ #include <linux/led-lm3530.h>
+ #include <linux/types.h>
++#include <linux/regulator/consumer.h>
+ 
+ #define LM3530_LED_DEV "lcd-backlight"
+ #define LM3530_NAME "lm3530-led"
+@@ -96,12 +97,18 @@ static struct lm3530_mode_map mode_map[] = {
+  * @client: i2c client
+  * @pdata: LM3530 platform data
+  * @mode: mode of operation - manual, ALS, PWM
++ * @regulator: regulator
++ * @brighness: previous brightness value
++ * @enable: regulator is enabled
+  */
+ struct lm3530_data {
+ 	struct led_classdev led_dev;
+ 	struct i2c_client *client;
+ 	struct lm3530_platform_data *pdata;
+ 	enum lm3530_mode mode;
++	struct regulator *regulator;
++	enum led_brightness brightness;
++	bool enable;
+ };
+ 
+ static const u8 lm3530_reg[LM3530_REG_MAX] = {
+@@ -172,7 +179,10 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 	brt_ramp = (pltfm->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
+ 			(pltfm->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
+ 
+-	brightness = pltfm->brt_val;
++	if (drvdata->brightness)
++		brightness = drvdata->brightness;
++	else
++		brightness = drvdata->brightness = pltfm->brt_val;
+ 
+ 	reg_val[0] = gen_config;	/* LM3530_GEN_CONFIG */
+ 	reg_val[1] = als_config;	/* LM3530_ALS_CONFIG */
+@@ -190,6 +200,16 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 	reg_val[13] = LM3530_DEF_ZT_3;	/* LM3530_ALS_Z3T_REG */
+ 	reg_val[14] = LM3530_DEF_ZT_4;	/* LM3530_ALS_Z4T_REG */
+ 
++	if (!drvdata->enable) {
++		ret = regulator_enable(drvdata->regulator);
++		if (ret) {
++			dev_err(&drvdata->client->dev,
++					"Enable regulator failed\n");
++			return ret;
++		}
++		drvdata->enable = true;
++	}
++	
+ 	for (i = 0; i < LM3530_REG_MAX; i++) {
+ 		ret = i2c_smbus_write_byte_data(client,
+ 				lm3530_reg[i], reg_val[i]);
+@@ -210,12 +230,31 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
+ 	switch (drvdata->mode) {
+ 	case LM3530_BL_MODE_MANUAL:
+ 
++		if (!drvdata->enable) {
++			err = lm3530_init_registers(drvdata);
++			if (err) {
++				dev_err(&drvdata->client->dev,
++					"Register Init failed: %d\n", err);
++				break;
++			}
++		}
++
+ 		/* set the brightness in brightness control register*/
+ 		err = i2c_smbus_write_byte_data(drvdata->client,
+ 				LM3530_BRT_CTRL_REG, brt_val / 2);
+ 		if (err)
+ 			dev_err(&drvdata->client->dev,
+ 				"Unable to set brightness: %d\n", err);
++		else
++			drvdata->brightness = brt_val / 2;
++
++		if (brt_val == 0) {
++			err = regulator_disable(drvdata->regulator);
++			if (err)
++				dev_err(&drvdata->client->dev,
++					"Disable regulator failed\n");
++			drvdata->enable = false;
++		}
+ 		break;
+ 	case LM3530_BL_MODE_ALS:
+ 		break;
+@@ -297,20 +336,31 @@ static int __devinit lm3530_probe(struct i2c_client *client,
+ 	drvdata->mode = pdata->mode;
+ 	drvdata->client = client;
+ 	drvdata->pdata = pdata;
++	drvdata->brightness = LED_OFF;
++	drvdata->enable = false;
+ 	drvdata->led_dev.name = LM3530_LED_DEV;
+ 	drvdata->led_dev.brightness_set = lm3530_brightness_set;
+ 
+ 	i2c_set_clientdata(client, drvdata);
+ 
+-	err = lm3530_init_registers(drvdata);
+-	if (err < 0) {
+-		dev_err(&client->dev, "Register Init failed: %d\n", err);
+-		err = -ENODEV;
+-		goto err_reg_init;
++	drvdata->regulator = regulator_get(&client->dev, "vin");
++	if (IS_ERR(drvdata->regulator)) {
++		dev_err(&client->dev, "regulator get failed\n");
++		err = PTR_ERR(drvdata->regulator);
++		drvdata->regulator = NULL;
++		goto err_regulator_get;
+ 	}
+ 
+-	err = led_classdev_register((struct device *)
+-				      &client->dev, &drvdata->led_dev);
++	if (drvdata->pdata->brt_val) {
++		err = lm3530_init_registers(drvdata);
++		if (err < 0) {
++			dev_err(&client->dev,
++				"Register Init failed: %d\n", err);
++			err = -ENODEV;
++			goto err_reg_init;
++		}
++	}
++	err = led_classdev_register(&client->dev, &drvdata->led_dev);
+ 	if (err < 0) {
+ 		dev_err(&client->dev, "Register led class failed: %d\n", err);
+ 		err = -ENODEV;
+@@ -330,6 +380,9 @@ err_create_file:
+ 	led_classdev_unregister(&drvdata->led_dev);
+ err_class_register:
+ err_reg_init:
++	regulator_put(drvdata->regulator);
++err_regulator_get:
++	i2c_set_clientdata(client, NULL);
+ 	kfree(drvdata);
+ err_out:
+ 	return err;
+@@ -340,6 +393,10 @@ static int __devexit lm3530_remove(struct i2c_client *client)
+ 	struct lm3530_data *drvdata = i2c_get_clientdata(client);
+ 
+ 	device_remove_file(drvdata->led_dev.dev, &dev_attr_mode);
++
++	if (drvdata->enable)
++		regulator_disable(drvdata->regulator);
++	regulator_put(drvdata->regulator);
+ 	led_classdev_unregister(&drvdata->led_dev);
+ 	kfree(drvdata);
+ 	return 0;
 -- 
-tejun
+1.7.2.dirty
+
