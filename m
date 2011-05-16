@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab1EPVDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 17:03:36 -0400
-Received: from smtp16.mail.ru ([94.100.176.153]:42309 "EHLO smtp16.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab1EPVDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 17:03:34 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Harald Welte <laforge@gnumonks.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Eric Miao <eric.y.miao@gmail.com>, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3] pxa/hx4700: add I2C board info for AK4641 codec
-Date: Tue, 17 May 2011 01:03:25 +0400
-Message-Id: <1305579805-15617-4-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.4.rc3
-In-Reply-To: <1305579805-15617-1-git-send-email-mad_soft@inbox.ru>
-References: <1305579805-15617-1-git-send-email-mad_soft@inbox.ru>
-X-Spam: Not detected
-X-Mras: Ok
+	id S1753853Ab1EPVET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 17:04:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37308 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab1EPVDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 17:03:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=nMHCAuM17VHACnntBw7bc+ASUj0V3wAeG6kvTYSVcggXgIQN+SYn+/StG06fVw4Yi1
+         etybYt2oW6qmjOoyJ2dg==
+Date: Mon, 16 May 2011 14:03:33 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: slub: Default slub_max_order to 0
+In-Reply-To: <20110512173628.GJ11579@random.random>
+Message-ID: <alpine.DEB.2.00.1105161356140.4353@chino.kir.corp.google.com>
+References: <1305127773-10570-1-git-send-email-mgorman@suse.de> <1305127773-10570-4-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1105111314310.9346@chino.kir.corp.google.com> <20110512173628.GJ11579@random.random>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philipp Zabel <philipp.zabel@gmail.com>
+On Thu, 12 May 2011, Andrea Arcangeli wrote:
 
-From: Philipp Zabel <philipp.zabel@gmail.com>
+> On Wed, May 11, 2011 at 01:38:47PM -0700, David Rientjes wrote:
+> > kswapd and doing compaction for the higher order allocs before falling 
+> 
+> Note that patch 2 disabled compaction by clearing __GFP_WAIT.
+> 
+> What you describe here would be patch 2 without the ~__GFP_WAIT
+> addition (so keeping only ~GFP_NOFAIL).
+> 
 
-Also rename AK4641 power GPIOs to document the codec chip.
+It's out of context, my sentence was:
 
-Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
----
- arch/arm/mach-pxa/hx4700.c              |   18 ++++++++++++++++++
- arch/arm/mach-pxa/include/mach/hx4700.h |    4 ++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+"With the previous changes in this patchset, specifically avoiding waking 
+kswapd and doing compaction for the higher order allocs before falling 
+back to the min order..."
 
-diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
-index 9cdcca5..71c9e80 100644
---- a/arch/arm/mach-pxa/hx4700.c
-+++ b/arch/arm/mach-pxa/hx4700.c
-@@ -45,6 +45,7 @@
- #include <mach/hx4700.h>
- #include <mach/irda.h>
- 
-+#include <sound/ak4641.h>
- #include <video/platform_lcd.h>
- #include <video/w100fb.h>
- 
-@@ -801,6 +802,22 @@ static struct i2c_board_info __initdata pi2c_board_info[] = {
- };
- 
- /*
-+ * Asahi Kasei AK4641 on I2C
-+ */
-+
-+static struct ak4641_platform_data ak4641_info = {
-+	.gpio_power = GPIO27_HX4700_AK4641_POWER,
-+	.gpio_npdn  = GPIO109_HX4700_AK4641_nPDN,
-+};
-+
-+static struct i2c_board_info i2c_board_info[] __initdata = {
-+	{
-+		I2C_BOARD_INFO("ak4641", 0x12),
-+		.platform_data = &ak4641_info,
-+	},
-+};
-+
-+/*
-  * PCMCIA
-  */
- 
-@@ -859,6 +876,7 @@ static void __init hx4700_init(void)
- 	pxa_set_ficp_info(&ficp_info);
- 	pxa27x_set_i2c_power_info(NULL);
- 	pxa_set_i2c_info(NULL);
-+	i2c_register_board_info(0, ARRAY_AND_SIZE(i2c_board_info));
- 	i2c_register_board_info(1, ARRAY_AND_SIZE(pi2c_board_info));
- 	pxa2xx_set_spi_info(2, &pxa_ssp2_master_info);
- 	spi_register_board_info(ARRAY_AND_SIZE(tsc2046_board_info));
-diff --git a/arch/arm/mach-pxa/include/mach/hx4700.h b/arch/arm/mach-pxa/include/mach/hx4700.h
-index 3740844..73cd586 100644
---- a/arch/arm/mach-pxa/include/mach/hx4700.h
-+++ b/arch/arm/mach-pxa/include/mach/hx4700.h
-@@ -29,7 +29,7 @@
- #define GPIO14_HX4700_nWLAN_IRQ			14
- #define GPIO18_HX4700_RDY			18
- #define GPIO22_HX4700_LCD_RL			22
--#define GPIO27_HX4700_CODEC_ON			27
-+#define GPIO27_HX4700_AK4641_POWER		27
- #define GPIO32_HX4700_RS232_ON			32
- #define GPIO52_HX4700_CPU_nBATT_FAULT		52
- #define GPIO58_HX4700_TSC2046_nPENIRQ		58
-@@ -67,7 +67,7 @@
- #define GPIO105_HX4700_nIR_ON			105
- #define GPIO106_HX4700_CPU_BT_nRESET		106
- #define GPIO107_HX4700_SPK_nSD			107
--#define GPIO109_HX4700_CODEC_nPDN		109
-+#define GPIO109_HX4700_AK4641_nPDN		109
- #define GPIO110_HX4700_LCD_LVDD_3V3_ON		110
- #define GPIO111_HX4700_LCD_AVDD_3V3_ON		111
- #define GPIO112_HX4700_LCD_N2V7_7V3_ON		112
--- 
-1.7.4.rc1
+meaning this patchset avoids waking kswapd and avoids doing compaction.
 
+> Not clearing __GFP_WAIT when compaction is enabled is possible and
+> shouldn't result in bad behavior (if compaction is not enabled with
+> current SLUB it's hard to imagine how it could perform decently if
+> there's fragmentation). You should try to benchmark to see if it's
+> worth it on the large NUMA systems with heavy network traffic (for
+> normal systems I doubt compaction is worth it but I'm not against
+> trying to keep it enabled just in case).
+> 
+
+The fragmentation isn't the only issue with the netperf TCP_RR benchmark, 
+the problem is that the slub slowpath is being used >95% of the time on 
+every allocation and free for the very large number of kmalloc-256 and 
+kmalloc-2K caches.  Those caches are order 1 and 3, respectively, on my 
+system by default, but the page allocator seldomly gets invoked for such a 
+benchmark after the partial lists are populated: the overhead is from the 
+per-node locking required in the slowpath to traverse the partial lists.  
+See the data I presented two years ago: http://lkml.org/lkml/2009/3/30/15.
