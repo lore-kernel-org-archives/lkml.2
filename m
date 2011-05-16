@@ -1,57 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1EPXfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 19:35:50 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:62392 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab1EPXfs (ORCPT
+	id S1752452Ab1EPXfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:35:06 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:34363 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200Ab1EPXfD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 19:35:48 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
+	Mon, 16 May 2011 19:35:03 -0400
+From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCHv4 1/6] MFD: TPS65910: Add support for TPS65911 device
+Date: Mon, 16 May 2011 18:34:59 -0500
+Message-Id: <8F86032C-177F-4FD3-9B70-D0D0966466B8@slimlogic.co.uk>
+Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        grant.likely@secretlab.ca
 To: linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 1/4] watchdog: fix rounding issues in get_sample_period()
-Date: Mon, 16 May 2011 16:34:58 -0700
-Message-Id: <1305588901-8141-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In get_sample_period(), softlockup_thresh is integer divided by 5 before
-the multiplication by NSEC_PER_SEC. This results in softlockup_thresh
-being rounded down to the nearest integer multiple of 5.
+The TPS65911 is the next generation of the TPS65910 family of
+PMIC chips. It adds a few features:
 
-For example, a softlockup_thresh of 4 rounds down to 0.
+- Watchdog Timer
+- PWM & LED generators
+- Comparators for system control status
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+It also adds a set of Interrupts and GPIOs, among other things.
+
+The driver exports a function to identify between different
+versions of the tps65910 family, allowing other modules to
+identify the capabilities of the current chip.
+
+Signed-off-by: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 ---
- kernel/watchdog.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/tps65910.c       |    5 +++-
+ include/linux/mfd/tps65910.h |   46 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 14733d4..a06972d 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -110,7 +110,7 @@ static unsigned long get_sample_period(void)
- 	 * increment before the hardlockup detector generates
- 	 * a warning
- 	 */
--	return softlockup_thresh / 5 * NSEC_PER_SEC;
-+	return softlockup_thresh * (NSEC_PER_SEC / 5);
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index e318248..0c93d9f 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -139,6 +139,8 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	struct tps65910_platform_data *init_data;
+ 	int ret = 0;
+ 
++	tps65910->id = id->driver_data;
++
+ 	pmic_plat_data = dev_get_platdata(&i2c->dev);
+ 	if (!pmic_plat_data)
+ 		return -EINVAL;
+@@ -192,7 +194,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
  }
  
- /* Commands for resetting the watchdog */
+ static const struct i2c_device_id tps65910_i2c_id[] = {
+-       { "tps65910", 0 },
++       { "tps65910", TPS65910 },
++       { "tps65911", TPS65911 },
+        { }
+ };
+ MODULE_DEVICE_TABLE(i2c, tps65910_i2c_id);
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index be08a0c..6ceea0d 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -17,6 +17,14 @@
+ #ifndef __LINUX_MFD_TPS65910_H
+ #define __LINUX_MFD_TPS65910_H
+ 
++/* TPS chip id list */
++#define TPS65910			0
++#define TPS65911			1
++
++/* TPS regulator type list */
++#define REGULATOR_LDO			0
++#define REGULATOR_DCDC			1
++
+ /*
+  * List of registers for component TPS65910
+  *
+@@ -97,6 +105,21 @@
+ #define TPS65910_MAX_REGISTER				0x80
+ 
+ /*
++ * List of registers specific to TPS65911
++ */
++#define TPS65911_VDDCTRL				0x27
++#define TPS65911_VDDCTRL_OP				0x28
++#define TPS65911_VDDCTRL_SR				0x29
++#define TPS65911_LDO1					0x30
++#define TPS65911_LDO2					0x31
++#define TPS65911_LDO5					0x32
++#define TPS65911_LDO8					0x33
++#define TPS65911_LDO7					0x34
++#define TPS65911_LDO6					0x35
++#define TPS65911_LDO4					0x36
++#define TPS65911_LDO3					0x37
++
++/*
+  * List of register bitfields for component TPS65910
+  *
+  */
+@@ -702,6 +725,23 @@
+ #define JTAGVERNUM_VERNUM_SHIFT				0
+ 
+ 
++/* Register VDDCTRL (0x27) bit definitions */
++#define VDDCTRL_ST_MASK                                  0x03
++#define VDDCTRL_ST_SHIFT                                 0
++
++
++/*Register VDDCTRL_OP  (0x28) bit definitios */
++#define VDDCTRL_OP_CMD_MASK                              0x80
++#define VDDCTRL_OP_CMD_SHIFT                             7
++#define VDDCTRL_OP_SEL_MASK                              0x7F
++#define VDDCTRL_OP_SEL_SHIFT                             0
++
++
++/*Register VDDCTRL_SR  (0x29) bit definitions */
++#define VDDCTRL_SR_SEL_MASK                              0x7F
++#define VDDCTRL_SR_SEL_SHIFT                             0
++
++
+ /* IRQ Definitions */
+ #define TPS65910_IRQ_VBAT_VMBDCH			0
+ #define TPS65910_IRQ_VBAT_VMHI				1
+@@ -742,6 +782,7 @@ struct tps65910 {
+ 	struct device *dev;
+ 	struct i2c_client *i2c_client;
+ 	struct mutex io_mutex;
++	unsigned int id;
+ 	int (*read)(struct tps65910 *tps65910, u8 reg, int size, void *dest);
+ 	int (*write)(struct tps65910 *tps65910, u8 reg, int size, void *src);
+ 
+@@ -771,4 +812,9 @@ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
+ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 		struct tps65910_platform_data *pdata);
+ 
++static inline int tps65910_chip_id(struct tps65910 *tps65910)
++{
++	return tps65910->id;
++}
++
+ #endif /*  __LINUX_MFD_TPS65910_H */
 -- 
-1.7.3.1
+1.7.1
 
