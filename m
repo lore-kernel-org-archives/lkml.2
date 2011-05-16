@@ -1,89 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab1EPTby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 15:31:54 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:54059 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1EPTbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 15:31:52 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: djwong@us.ibm.com
-Cc: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback for various fses
-References: <87tyd31fkc.fsf@devron.myhome.or.jp>
-	<20110510123819.GB4402@quack.suse.cz>
-	<87hb924s2x.fsf@devron.myhome.or.jp>
-	<20110510132953.GE4402@quack.suse.cz>
-	<878vue4qjb.fsf@devron.myhome.or.jp>
-	<87zkmu3b2i.fsf@devron.myhome.or.jp>
-	<20110510145421.GJ4402@quack.suse.cz>
-	<87zkmupmaq.fsf@devron.myhome.or.jp>
-	<20110510162237.GM4402@quack.suse.cz>
-	<87vcxipljj.fsf@devron.myhome.or.jp>
-	<20110516184736.GL20579@tux1.beaverton.ibm.com>
-Date: Tue, 17 May 2011 04:31:37 +0900
-In-Reply-To: <20110516184736.GL20579@tux1.beaverton.ibm.com> (Darrick
-	J. Wong's message of "Mon, 16 May 2011 11:47:36 -0700")
-Message-ID: <87oc3230iu.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754879Ab1EPTcA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 15:32:00 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52158 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754020Ab1EPTb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 15:31:58 -0400
+Subject: [PATCH V5 3/6 net-next] skbuff: Add userspace zero-copy buffers in
+ skb
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 May 2011 12:31:54 -0700
+Message-ID: <1305574314.3456.27.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Darrick J. Wong" <djwong@us.ibm.com> writes:
+This patch adds userspace buffers support in skb shared info. A new 
+struct skb_ubuf_info is needed to maintain the userspace buffers
+argument and index, a callback is used to notify userspace to release
+the buffers once lower device has done DMA (Last reference to that skb
+has gone).
 
->> OK. E.g. usual workload on desktop, but FS like ext2/fat.
->
-> In the frequent rewrite case, here's what you get:
->
-> Regular disk: (possibly garbage) write, followed by a second write to make the
-> disk reflect memory contents.
->
-> RAID w/ shadow pages: two writes, both consistent.  Higher memory consumption.
->
-> T10 DIF disk: disk error any time the CPU modifies a page that the disk
-> controller is DMA'ing out of memory.  I suppose one could simply retry the
-> operation if the page is dirty, but supposing memory writes are happening fast
-> enough that the retries also produce disk errors, _nothing_ ever gets written.
->
-> With the new stable-page-writes patchset, the garbage write/disk error symptoms
-> go away since the processes block instead of creating this window where it's
-> not clear whether the disk's copy of the data is consistent.  I could turn the
-> wait_on_page_writeback calls into some sort of page migration if the
-> performance turns out to be terrible, though I'm still working on quantifying
-> the impact.  Some people pointed out that sqlite tends to write the same blocks
-> frequently, though I wonder if sqlite actually tries to write memory pages
-> while syncing them?
->
-> One use case where I could see a serious performance hit happening is the case
-> where some app writes a bunch of memory pages, calls sync to force the dirty
-> pages to disk, and /must/ resume writing those memory pages before the sync
-> completes.  The page migration would of course help there, provided a memory
-> page can be found in less time than an I/O operation.
->
-> Someone commented on the LWN article about this topic, claiming that he had a
-> program that couldn't afford to block on writes to mlock()'d memory.  I'm not
-> sure how to fix that program, because if memory writes never coordinate with
-> disk writes and the other threads are always writing memory, I wonder how the
-> copy on disk isn't always indeterminate.
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
+---
 
-I'm not thinking data page is special operation for doing this (at least
-logically). In other word, if you are talking about only data page, you
-shouldn't send patches for metadata with it.
+ include/linux/skbuff.h |   26 ++++++++++++++++++++++++++
+ net/core/skbuff.c      |   13 +++++++++++++
+ 2 files changed, 39 insertions(+), 0 deletions(-)
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 79aafbb..40faffe 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -189,6 +189,18 @@ enum {
+ 	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
+ };
+ 
++/*
++ * The callback notifies userspace to release buffers when skb DMA is
+done in
++ * lower device, the skb last reference should be 0 when calling this.
++ * The desc is used to track userspace buffer index.
++ */
++struct skb_ubuf_info {
++	/* support buffers allocation from userspace */
++	void		(*callback)(struct sk_buff *);
++	void		*arg;
++	size_t		desc;
++};
++
+ /* This data is invariant across clones and lives at
+  * the end of the header data, ie. at skb->end.
+  */
+@@ -211,6 +223,10 @@ struct skb_shared_info {
+ 	/* Intermediate layers must ensure that destructor_arg
+ 	 * remains valid until skb destructor */
+ 	void *		destructor_arg;
++
++	/* DMA mapping from/to userspace buffers */
++	struct skb_ubuf_info ubuf;
++
+ 	/* must be last field, see pskb_expand_head() */
+ 	skb_frag_t	frags[MAX_SKB_FRAGS];
+ };
+@@ -2261,5 +2277,15 @@ static inline void
+skb_checksum_none_assert(struct sk_buff *skb)
+ }
+ 
+ bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
++
++/*
++ *	skb_ubuf - is the buffer from userspace
++ *	@skb: buffer to check
++ */
++static inline int skb_ubuf(const struct sk_buff *skb)
++{
++	return (skb_shinfo(skb)->ubuf.callback != NULL);
++}
++
+ #endif	/* __KERNEL__ */
+ #endif	/* _LINUX_SKBUFF_H */
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 7ebeed0..9cbd3fc 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -210,6 +210,8 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t
+gfp_mask,
+ 	shinfo = skb_shinfo(skb);
+ 	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
+ 	atomic_set(&shinfo->dataref, 1);
++	shinfo->ubuf.callback = NULL;
++	shinfo->ubuf.arg = NULL;
+ 	kmemcheck_annotate_variable(shinfo->destructor_arg);
+ 
+ 	if (fclone) {
+@@ -328,6 +330,14 @@ static void skb_release_data(struct sk_buff *skb)
+ 				put_page(skb_shinfo(skb)->frags[i].page);
+ 		}
+ 
++		/*
++		 * if skb buf is from userspace, we need to notify the caller
++		 * the lower device DMA has done;
++		 */
++		if (skb_shinfo(skb)->ubuf.callback) {
++			skb_shinfo(skb)->ubuf.callback(skb);
++			skb_shinfo(skb)->ubuf.callback = NULL;
++		}
+ 		if (skb_has_frag_list(skb))
+ 			skb_drop_fraglist(skb);
+ 
+@@ -480,6 +490,9 @@ bool skb_recycle_check(struct sk_buff *skb, int
+skb_size)
+ 	if (irqs_disabled())
+ 		return false;
+ 
++	if (skb_ubuf(skb))
++		return false;
++
+ 	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
+ 		return false;
+ 
+
+
