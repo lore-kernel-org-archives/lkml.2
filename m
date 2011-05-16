@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab1EPXe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 19:34:59 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:34358 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab1EPXe6 convert rfc822-to-8bit (ORCPT
+	id S1755728Ab1EPXfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 19:35:50 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:62392 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab1EPXfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 19:34:58 -0400
-From: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: PATCHv4 0/5] Add TPS65911 device
-Date: Mon, 16 May 2011 18:34:49 -0500
-Message-Id: <6713982D-EB98-4808-A03F-7E0C323B2531@slimlogic.co.uk>
-Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
-        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        grant.likely@secretlab.ca
+	Mon, 16 May 2011 19:35:48 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
 To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 1/4] watchdog: fix rounding issues in get_sample_period()
+Date: Mon, 16 May 2011 16:34:58 -0700
+Message-Id: <1305588901-8141-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the initial version of the TPS65911 PMIC. This is a power management IC
-for multimedia products.
+In get_sample_period(), softlockup_thresh is integer divided by 5 before
+the multiplication by NSEC_PER_SEC. This results in softlockup_thresh
+being rounded down to the nearest integer multiple of 5.
 
-The driver is depends on the TPS65910 PMIC and provides the same functionality:
-Regulators, GPIO controller, RTC, etc. It also adds new functionality that was
-not present in TPS65910 chip.
+For example, a softlockup_thresh of 4 rounds down to 0.
 
-Support for subsequent versions of this PMIC can be easily added after this set
-of patches.
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/watchdog.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Changes from v2:
-- Moved GPIO driver to drivers/gpio.
-- Determine the chip's number of gpios using a switch statement instead of if-else.
-- Remove Kconfig entry for comparator driver.
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 14733d4..a06972d 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -110,7 +110,7 @@ static unsigned long get_sample_period(void)
+ 	 * increment before the hardlockup detector generates
+ 	 * a warning
+ 	 */
+-	return softlockup_thresh / 5 * NSEC_PER_SEC;
++	return softlockup_thresh * (NSEC_PER_SEC / 5);
+ }
+ 
+ /* Commands for resetting the watchdog */
+-- 
+1.7.3.1
 
-Changes from v3:
-- Separated GPIO changes in 2 patches:
-   - Move gpio driver to drivers/gpio
-   - Add support for tps65911
-
-GIT: [PATCHv4 1/5] MFD: TPS65910: Add support for TPS65911 device
-GIT: [PATCHv4 2/5] regulator: tps65911: Add new chip version
-GIT: [PATCHv4 3/5] TPS65911: Add new irq definitions
-GIT: [PATCHv4 4/5] TPS65911: Add support for added GPIO lines
-GIT: [PATCHv4 5/5] TPS65911: Comparator: Add comparator driver
