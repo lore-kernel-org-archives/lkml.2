@@ -1,196 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab1EPNiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 09:38:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35664 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab1EPNh6 (ORCPT
+	id S1755418Ab1EPNnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 09:43:16 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:27903 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab1EPNnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 09:37:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Fn0NUx2KqutBraHr+l3qAVCbf83kkp9bAZA/E7KLaGTckr/rbYjyyQE9YxyQDMqFup
-         DRSjktMHhntR1RGTqz/kiLG8SCfP7E7Pnxx+YmK25uEg/tQvYU8+yxZdu6sO22I7kaxU
-         XhpfWGkKg07SRXNkqiW8LAk8f8cz5AlOdoSqY=
-Date: Mon, 16 May 2011 21:37:48 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] cpuset: fix cpuset_cpus_allowed_fallback() don't
- update tsk->rt.nr_cpus_allowed
-Message-ID: <20110516133748.GB2058@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20110428161149.GA15658@redhat.com>
- <20110502194416.2D61.A69D9226@jp.fujitsu.com>
- <20110502195657.2D68.A69D9226@jp.fujitsu.com>
- <1305129929.2914.247.camel@laptop>
- <4DCCC61F.80408@jp.fujitsu.com>
- <BANLkTik_weiOC82uRKRamFan4QMi1u3s7g@mail.gmail.com>
- <1305306135.2466.173.camel@twins>
+	Mon, 16 May 2011 09:43:15 -0400
+X-SpamScore: -23
+X-BigFish: VPS-23(zzbb2dK1433M9371O1432N98dKzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LLAJFX-02-13U-02
+X-M-MSG: 
+Message-ID: <4DD128ED.2080502@amd.com>
+Date: Mon, 16 May 2011 09:38:53 -0400
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1305306135.2466.173.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chuck Ebbert <cebbert@redhat.com>
+CC: "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: [PATCH] cpu, AMD: Fix another bug in the new errata checking
+ code
+References: <20110512195938.1728ab52@katamari>	<20110513102154.GB9270@escobedo.osrc.amd.com>	<4DCD2C3F.9070905@amd.com>	<20110513105928.6216ddc8@katamari>	<20110513151921.GA878@escobedo.osrc.amd.com> <20110516084351.003bb214@katamari>
+In-Reply-To: <20110516084351.003bb214@katamari>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 13, 2011 at 07:02:15PM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-05-13 at 14:42 +0800, Yong Zhang wrote:
-> > > - rcu_cpu_kthread_should_stop() call set_cpus_allowed_ptr() again
-> > > periodically.
-> > >  then, it can reset cpumask if cpuset_cpus_allowed_fallback() change it.
-> > >  my debug print obseve following cpumask change occur at boot time.
-> > >     1) kthread_bind: bind cpu1
-> > >     2) cpuset_cpus_allowed_fallback: bind possible cpu
-> > >     3) rcu_cpu_kthread_should_stop: rebind cpu1
-> > > - while tsk->rt.nr_cpus_allowed == 1, sched load balancer never be crash.
-> > 
-> > Seems rcu_spawn_one_cpu_kthread() call wake_up_process() directly,
-> > which is under hotplug event CPU_UP_PREPARE. Maybe it should be
-> > under CPU_ONLINE. 
-> 
-> IIRC I talked to Paul about this a while back and ONLINE is too late,
-> however STARTING should work. At the time he couldn't quite get that to
-> work, but the above situation is indeed the root cause of our problems.
-> 
-> We shouldn't try to run a cpu affine thread before the cpu in question
-> is actually able to run stuff.
+On 05/16/2011 08:43 AM, Chuck Ebbert wrote:
+> On Fri, 13 May 2011 17:19:23 +0200
+> Hans Rosenfeld<hans.rosenfeld@amd.com>  wrote:
+>>>>> Could you send me the contents of MSRs 0xc0010140, 0xc0010141 and
+>>>>> 0xc0010055?
+>>>>
+>>>> Knowing whether any C state above C1 is declared could be useful too.
+>>>>
+>>> rdmsr 0xc0010140 gives 2
+>>
+>> This means that E400 is known ...
+>>
+>>> rdmsr 0xc0010141 gives 0
+>>
+>> ... and no workaround is necessary ...
+>>
+>>> rdmsr 0xc0010055 gives 0
+>>
+>> ... because C1E is not enabled.
+>>
+>>> And ARAT is definitely set where it wasn't before these updates.
+>>
+>> I don't see how that could possibly make a difference if C1E is not even
+>> enabled. This is all very strange.
+>>
+>
+> Looking at commit e20a2d205c05cef6b5783df339a7d54adeb50962 ("x86, AMD: Fix
+> APIC timer erratum 400 affecting K8 Rev.A-E processors") I see that it
+> extended the E400 workaround to cover a whole range of processors that
+> have never supported C1E. Isn't this just more of the same problem, only
+> happening with processors that support C1E but have it disabled?
 
-But I'm afraid this patch still doesn't help. 
-If I understand your patch correctly, you just put the wake up to CPU_STARTING,
-but it's still before CPU_ONLINE.
-Please check my mail to Paul's in this thread group.
+Erratum 400 covers not just C1E but also C3 and the latter is not 
+covered by OSVW so we may need to update cpu_has_amd_erratum(). 
+Fortunately, only a few processors in family 10h support C3. I think, in 
+fact, it's only the part that you have (model 6 stepping 2) but we need 
+to confirm it. If you know of other FMSs please let us know.
 
-Thanks,
-Yong
+As for expansion of ranges covering this erratum in that commit, it only 
+affected family fh.
 
-> 
-> I did me a little hackery and with the below patch my kernel still
-> boots...
-> 
-> Would that sort your issue?
-> 
-> ---
->  kernel/rcutree.c        |   44 ++++++++++++++++++++++++++++++++++++++------
->  kernel/rcutree_plugin.h |    1 -
->  2 files changed, 38 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 5616b17..e0218ed 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1656,7 +1656,6 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
->  	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
->  	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
->  	per_cpu(rcu_cpu_kthread_task, cpu) = t;
-> -	wake_up_process(t);
->  	sp.sched_priority = RCU_KTHREAD_PRIO;
->  	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->  	return 0;
-> @@ -1764,13 +1763,33 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
->  		raw_spin_lock_irqsave(&rnp->lock, flags);
->  		rnp->node_kthread_task = t;
->  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> -		wake_up_process(t);
->  		sp.sched_priority = 99;
->  		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->  	}
->  	return rcu_spawn_one_boost_kthread(rsp, rnp, rnp_index);
->  }
->  
-> +static void __cpuinit rcu_wake_cpu_kthread(int cpu)
-> +{
-> +	struct task_struct *p = per_cpu(rcu_cpu_kthread_task, cpu);
-> +
-> +	if (p)
-> +		wake_up_process(p);
-> +}
-> +
-> +static void __cpuinit rcu_wake_node_kthread(struct rcu_node *rnp)
-> +{
-> +	if (!rnp)
-> +		return;
-> +
-> +	if (rnp->node_kthread_task)
-> +		wake_up_process(rnp->node_kthread_task);
-> +#ifdef CONFIG_RCU_BOOST
-> +	if (rnp->boost_kthread_task)
-> +		wake_up_process(rnp->boost_kthread_task);
-> +#endif
-> +}
-> +
->  /*
->   * Spawn all kthreads -- called as soon as the scheduler is running.
->   */
-> @@ -1783,19 +1802,24 @@ static int __init rcu_spawn_kthreads(void)
->  	for_each_possible_cpu(cpu) {
->  		init_waitqueue_head(&per_cpu(rcu_cpu_wq, cpu));
->  		per_cpu(rcu_cpu_has_work, cpu) = 0;
-> -		if (cpu_online(cpu))
-> +		if (cpu_online(cpu)) {
->  			(void)rcu_spawn_one_cpu_kthread(cpu);
-> +			rcu_wake_cpu_kthread(cpu);
-> +		}
->  	}
->  	rnp = rcu_get_root(rcu_state);
->  	init_waitqueue_head(&rnp->node_wq);
->  	rcu_init_boost_waitqueue(rnp);
->  	(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-> -	if (NUM_RCU_NODES > 1)
-> +	rcu_wake_node_kthread(rnp);
-> +	if (NUM_RCU_NODES > 1) {
->  		rcu_for_each_leaf_node(rcu_state, rnp) {
->  			init_waitqueue_head(&rnp->node_wq);
->  			rcu_init_boost_waitqueue(rnp);
->  			(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-> +			rcu_wake_node_kthread(rnp);
->  		}
-> +	}
->  	return 0;
->  }
->  early_initcall(rcu_spawn_kthreads);
-> @@ -2206,7 +2230,7 @@ static void __cpuinit rcu_online_cpu(int cpu)
->  	rcu_preempt_init_percpu_data(cpu);
->  }
->  
-> -static void __cpuinit rcu_online_kthreads(int cpu)
-> +static void __cpuinit rcu_prepare_kthreads(int cpu)
->  {
->  	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
->  	struct rcu_node *rnp = rdp->mynode;
-> @@ -2233,7 +2257,15 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
->  	case CPU_UP_PREPARE:
->  	case CPU_UP_PREPARE_FROZEN:
->  		rcu_online_cpu(cpu);
-> -		rcu_online_kthreads(cpu);
-> +		rcu_prepare_kthreads(cpu);
-> +		break;
-> +	case CPU_STARTING:
-> +		rcu_wake_cpu_kthread(cpu);
-> +		do {
-> +			struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
-> +		       	if (rdp)
-> +				rcu_wake_node_kthread(rdp->mynode);
-> +		} while (0);
->  		break;
->  	case CPU_ONLINE:
->  	case CPU_DOWN_FAILED:
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index ed339702..961a316 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -1306,7 +1306,6 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
->  	raw_spin_lock_irqsave(&rnp->lock, flags);
->  	rnp->boost_kthread_task = t;
->  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> -	wake_up_process(t);
->  	sp.sched_priority = RCU_KTHREAD_PRIO;
->  	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->  	return 0;
+>
+> They are using C3 for idle states, I can confirm that now.
+
+Thanks.
+
+-boris
+
+
