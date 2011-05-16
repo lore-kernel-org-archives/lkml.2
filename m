@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab1EPM0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 08:26:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44635 "EHLO mx1.redhat.com"
+	id S1754760Ab1EPM0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 08:26:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47625 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754031Ab1EPM0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 08:26:53 -0400
-Date: Mon, 16 May 2011 14:25:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 6/9] job control: make task_clear_jobctl_pending()
-	clear TRAPPING automatically
-Message-ID: <20110516122535.GD4898@redhat.com>
-References: <1305301580-9924-1-git-send-email-tj@kernel.org> <1305301580-9924-7-git-send-email-tj@kernel.org>
+	id S1752689Ab1EPM0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 May 2011 08:26:09 -0400
+Message-ID: <4DD117DB.4070204@ti.com>
+Date: Mon, 16 May 2011 13:26:03 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305301580-9924-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Axel Lin <axel.lin@gmail.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Subject: Re: [PATCH] mfd: Fix off-by-one value range checking for tps65910_i2c_write
+References: <1305278037.2713.1.camel@phoenix> <20110513174606.GV8970@sortiz-mobl>
+In-Reply-To: <20110513174606.GV8970@sortiz-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13, Tejun Heo wrote:
->
-> @@ -264,6 +267,9 @@ void task_clear_jobctl_pending(struct task_struct *task, unsigned int mask)
->  		mask |= JOBCTL_STOP_CONSUME | JOBCTL_STOP_DEQUEUED;
->
->  	task->jobctl &= ~mask;
-> +
-> +	if (!(task->jobctl & JOBCTL_PENDING_MASK))
-> +		task_clear_jobctl_trapping(task);
->  }
+On 13/05/11 18:46, Samuel Ortiz wrote:
+> Hi Axel,
+> 
+> On Fri, May 13, 2011 at 05:13:57PM +0800, Axel Lin wrote:
+>> If bytes == (TPS65910_MAX_REGISTER + 1), we have a buffer overflow when
+>> doing memcpy(&msg[1], src, bytes).
+> This code is going through Liam's tree, I'm adding him to this thread.
+> Liam, please add my Acked-by to this patch, if you think it's needed.
+> 
 
-So, SIGCONT clears JOBCTL_TRAPPING and wakes up the tracer.
+Axel, could you resend to me with Samuels Ack and I'll apply.
 
-I can't really understand this without seeing the next changes, but
-it seems this makes some things worse, although I am not sure.
+Thanks
 
-For example. PTRACE_SEIZE should guarantee the tracee will trap and
-report. However, if the tracee is stopped during attach, we can race
-with SIGCONT. The previous version had the similar problem afaics, but
-it was easy (I think) to fix. Now that SIGCONT clears JOBCTL_TRAPPING
-we need more complications.
-
-Oleg.
-
+Liam
