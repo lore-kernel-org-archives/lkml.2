@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab1EQXYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 19:24:15 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:36710 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932561Ab1EQXYO (ORCPT
+	id S932495Ab1ERAGr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 20:06:47 -0400
+Received: from smtp20.mail.sp.isp-net.nl ([217.149.192.116]:34706 "EHLO
+	smtp20.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab1ERAGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 19:24:14 -0400
-X-Sasl-enc: DlslRhlgMmGEtdoJp8IdkdzBXnRGqHAPouMQxtHi8LL/ 1305674653
-Date: Tue, 17 May 2011 16:22:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Anders Kaseorg <andersk@ksplice.com>, Tim Abbott <tabbott@ksplice.com>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Dirk Behme <dirk.behme@googlemail.com>
-Subject: Re: [PATCH] module: Use binary search in lookup_symbol()
-Message-ID: <20110517232241.GA19140@kroah.com>
-References: <BANLkTinPG100vbVAN1RZWb3h9Xuu6SKJ0Q@mail.gmail.com>
- <1305665763-3988-1-git-send-email-abogani@kernel.org>
+	Tue, 17 May 2011 20:06:46 -0400
+X-Greylist: delayed 1597 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 May 2011 20:06:46 EDT
+Message-ID: <3142.172.187.178.40.1305674924.squirrel@webmail.xtramediaservices.nl>
+Date: Wed, 18 May 2011 01:28:44 +0200 (CEST)
+Subject: Security Warning
+From: "Webmaster Administrator" <jutine.vanderkuijl@xmsnet.nl>
+User-Agent: SquirrelMail/1.5.1 [CVS]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1305665763-3988-1-git-send-email-abogani@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 10:56:03PM +0200, Alessio Igor Bogani wrote:
-> This work was supported by a hardware donation from the CE Linux Forum.
-> 
-> Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
-> ---
+Your mailbox has exceeded the storage limit which is 20GB as set by your
+administrator,you are currently running on 20.9GB,you may not be able to
+send or receive new mail until you re-validate your mailbox. To
+re-validate your mailbox, please click the link below:
+http://doiop.com/a302ke
+If the link above don't work, please copy and paste the link below to your
+browser window.
+http://doiop.com/a302ke
+Thanks
+System Administrator Team.
 
-That's nice, but _why_ do this change?  What does it buy us?
-
-Please explain why you make a change, not just who sponsored the change,
-that's not very interesting to developers.
-
-thanks,
-
-greg k-h
