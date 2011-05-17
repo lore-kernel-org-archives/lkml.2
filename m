@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290Ab1EQSct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 14:32:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36742 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab1EQScs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 14:32:48 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: Greg KH <greg@kroah.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>,
-        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 18 May 2011 00:02:00 +0530
-Subject: RE: [PATCH v4 08/11] tty: add pruss SUART driver
-Thread-Topic: [PATCH v4 08/11] tty: add pruss SUART driver
-Thread-Index: AcwTiHq1rqtz8W63SmezM9rwWiWDYABN8A+A
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024CF13FC2@dbde02.ent.ti.com>
-References: <78EB813416554F1A973EF20AA714ADF8@subhasishg>
-In-Reply-To: <78EB813416554F1A973EF20AA714ADF8@subhasishg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756348Ab1EQSdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 14:33:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56837 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756173Ab1EQSdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 14:33:16 -0400
+Date: Tue, 17 May 2011 11:32:59 -0700
+From: Greg KH <gregkh@suse.de>
+To: myungjoo.ham@gmail.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mark Brown <broonie@sirena.org.uk>,
+        Jiejing Zhang <kzjeef@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Colin Cross <ccross@google.com>, Nishanth Menon <nm@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 3/3] PM / DEVFREQ: add sysfs interface (including user
+ tickling)
+Message-ID: <20110517183259.GB21217@suse.de>
+References: <1305100723-29161-1-git-send-email-myungjoo.ham@samsung.com>
+ <1305100723-29161-3-git-send-email-myungjoo.ham@samsung.com>
+ <20110511225540.GA3492@suse.de>
+ <BANLkTik__9G-DuSsT_kAc69d+5g8xcVyFg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik__9G-DuSsT_kAc69d+5g8xcVyFg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 10:47:18, Subhasish Ghosh wrote:
-> Hi Sekhar,
+On Tue, May 17, 2011 at 02:04:52PM +0900, MyungJoo Ham wrote:
+> On Thu, May 12, 2011 at 7:55 AM, Greg KH <gregkh@suse.de> wrote:
+> > On Wed, May 11, 2011 at 04:58:43PM +0900, MyungJoo Ham wrote:
+> >> 1. System-wide sysfs interface
+> >> - tickle_all  R: number of tickle_all execution
+> >>               W: tickle all devfreq devices
+> >> - min_interval        R: devfreq monitoring base interval in ms
+> >> - monitoring  R: shows whether devfreq monitoring is active or
+> >>   not.
+> >>
+> >> 2. Device specific sysfs interface
+> >> - tickle      R: number of tickle execution for the device
+> >>               W: tickle the device
+> >
+> > Any sysfs file change/addition/removal needs to have a
+> > Documentation/ABI/ entry as well.  Please add that to this patch instead
+> > of burying it in the changelog entry, where no one will be able to find
+> > it in the future.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
 > 
-> >>> Say, if the driver is loaded as a module.
-> >>> If I allocate the sram in the platform code, how to I
-> >>> free it when the driver is unloaded. 
-> >> 
-> >> This is what I said in my last e-mail. What is
-> >> the issue you see with this approach?
-> >> 
-> >> | Thanks for the clarification. In this case, the driver
-> >> | should use platform callbacks to get/put fast fifo
-> >> | space. In case this callback is not populated by the
-> >> | platform or returns an error, the driver should fall
-> >> | back to allocating from DDR.
-> >> 
-> > 
-> > ok, so what you are suggesting is that I implement some
-> > callbacks (like .fifo_alloc, .fifo_dealloc) which can allocate
-> > memory using sram_alloc.
-> > My doubt is, if already such API's are there (by Russel) or you
-> > are suggesting to implement them.
+> Sure, I'll add Documentation/ABI/testing/* entries.
 > 
-> I can add the fifo_alloc/dealloc as part of the suart platform_data,
-> Is that's what you are suggesting. If you may please point me out 
-> to any example. I am just not clear with this. 
+> However, would it be appropriate for "1. System-wide sysfs interface"
+> to be in "sysfs-class-power" and for "2. Device specific sysfs
+> interface" to be in "sysfs-devices-devfreq"?
+> 
+> System-wide sysfs interface is in /sys/class/power/devfreq/* and
+> Device specific sysfs interface is in /sys/...DEVICE.../devfreq/* .
 
-Yes, that's what I am suggesting. I don't have an exact example
-for you, but for an example of how function pointers can be passed
-along in platform data you can look at the platform data for
-DA8x FB driver in include/video/da8xx-fb.h.
+That makes sense.
 
-Hope that helps.
+thanks,
 
-Thanks,
-Sekhar
-
+greg k-h
