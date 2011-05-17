@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab1EQRwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 13:52:23 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:28865 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756041Ab1EQRwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 13:52:19 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: pLmYH24VM1nJss40U5eXItTNnGHQ2AcglZnTLVAIeWxo_Hi
- ssMgfQhjGAZDnterWtoQHhQNkNuljLavMrHmk1J.w8uDOV6Q1Sk9ipBi6Qm1
- uK7tIt_6Nw8fw_2S5DcuNvcGRX4fzJxLR1TRV37WKkJHbgix8256gBRkR8vp
- vgCvyU.UbzgRv4nuAYO8iFsAAO63_7o7Nh_cXV7qkzIq.sY3xn1HAbSQmJvC
- v1uj1q70DN13n44vv3MNPgKtQuhL5YcCDHEkfcTY3oY0la5H.adIXNVJxtMS
- a9PPU3er71iUYyoFjpfhBuwo1zaXrYn3UZn3esLix.6sXhyLebYxcr2OUugZ
- Jm3j0uBDqKd4158iJaeImW9zT
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 17 May 2011 12:52:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>,
-        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: slub: Do not take expensive steps for SLUBs
- speculative high-order allocations
-In-Reply-To: <20110517162256.GO5279@suse.de>
-Message-ID: <alpine.DEB.2.00.1105171251450.15604@router.home>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de> <1305295404-12129-4-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1105161411440.4353@chino.kir.corp.google.com> <20110517084227.GI5279@suse.de> <alpine.DEB.2.00.1105170847550.11187@router.home>
- <20110517162256.GO5279@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756104Ab1EQR50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 13:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755745Ab1EQR5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 13:57:25 -0400
+Date: Tue, 17 May 2011 13:57:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Huang Ying <ying.huang@intel.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+Message-ID: <20110517175707.GP31888@redhat.com>
+References: <4DCD4B85.3040702@gmail.com>
+ <BANLkTin7LNo0dDLs-Rz6WqCQ9RvS=MLXcw@mail.gmail.com>
+ <4DCE3493.4090404@gmail.com>
+ <BANLkTin1pvdnXtw53MhwfCsEQpsu0TUUmg@mail.gmail.com>
+ <4DCF7413.4070704@gmail.com>
+ <4DD07959.4030608@intel.com>
+ <20110516190310.GH31888@redhat.com>
+ <4DD20A2F.604@intel.com>
+ <20110517142427.GL31888@redhat.com>
+ <20110517163847.GF24805@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110517163847.GF24805@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 May 2011, Mel Gorman wrote:
+On Tue, May 17, 2011 at 09:38:47AM -0700, Andi Kleen wrote:
+> > Can we agree on this, that if an OEM implemented HEST properly such that a
+> > hardware error happens it will generate a GHES record.  The subsequent NMI
+> 
+> Apparently there are some (rare) corner cases where it's hard/impossible
+> to do. So in those cases you will see an NMI without record.
 
-> > That is not what I meant. I would like more higher order allocations to
-> > succeed. That does not mean that slubs allocation methods and flags passed
-> > have to stay the same. You can change the slub behavior if it helps.
-> >
->
-> In this particular patch, the success rate for high order allocations
-> would likely decrease in low memory conditions albeit the latency when
-> calling the page allocator will be lower and the disruption to the
-> system will be less (no copying or reclaim of pages). My expectation
-> would be that it's cheaper for SLUB to fall back than compact memory
-> or reclaim pages even if this means a slab page is smaller until more
-> memory is free. However, if the "goodness" criteria is high order
-> allocation success rate, the patch shouldn't be merged.
+Hmm, I would be interested to know what kind, but it doesn't matter I
+guess.
 
-The criteria is certainly overall system performance and not a high order
-allocation rate.
+> 
+> In the "normal" error case you will a GHES record on NMI.
+
+Random thought, in the Firmware first mode of HEST (which is the only way
+GHES records get produced??), does an SCI happen first to jump into the
+firmware for processing, then an NMI?
+
+Cheers,
+Don
