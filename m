@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab1EQIti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 04:49:38 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:43785 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab1EQIth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 04:49:37 -0400
-Date: Tue, 17 May 2011 10:46:06 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: David Rientjes <rientjes@google.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] mm: Remove dependency on CONFIG_FLATMEM from online_page()
-Message-ID: <20110517084606.GA21622@router-fw-old.local.net-space.pl>
-References: <20110502211915.GB4623@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105111547160.24003@chino.kir.corp.google.com> <20110512102515.GA27851@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105121223500.2407@chino.kir.corp.google.com> <20110516075849.GB6393@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1105161330570.4353@chino.kir.corp.google.com>
-Mime-Version: 1.0
+	id S1753304Ab1EQIqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 04:46:45 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44464 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752142Ab1EQIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 04:46:43 -0400
+Date: Tue, 17 May 2011 10:46:22 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 5/9] HWPoison: add memory_failure_queue()
+Message-ID: <20110517084622.GE22093@elte.hu>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+ <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105161330570.4353@chino.kir.corp.google.com>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <1305619719-7480-6-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 01:32:19PM -0700, David Rientjes wrote:
-> On Mon, 16 May 2011, Daniel Kiper wrote:
->
-> > > No, I would just reply to the email notification you received when the
-> > > patch went into -mm saying that the changelog should be adjusted to read
-> > > something like
-> > >
-> > > 	online_pages() is only compiled for CONFIG_MEMORY_HOTPLUG_SPARSE,
-> > > 	so there is no need to support CONFIG_FLATMEM code within it.
-> > >
-> > > 	This patch removes code that is never used.
-> >
-> > Please look into attachments.
-> >
-> > If you have any questions please drop me a line.
->
-> Not sure why you've attached the emails from the mm-commits mailing list.
 
-I attached emails from the mm-commits mailing list because
-I understood that you need them to correct changelogs.
+* Huang Ying <ying.huang@intel.com> wrote:
 
-> I'll respond to the commits with with my suggestions for how the changelog
-> should be fixed.
+> memory_failure() is the entry point for HWPoison memory error
+> recovery.  It must be called in process context.  But commonly
+> hardware memory errors are notified via MCE or NMI, so some delayed
+> execution mechanism must be used.  In MCE handler, a work queue + ring
+> buffer mechanism is used.
+> 
+> In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
+> (Generic Hardware Error Source) can be used to report memory errors
+> too.  To add support to APEI GHES memory recovery, a mechanism similar
+> to that of MCE is implemented.  memory_failure_queue() is the new
+> entry point that can be called in IRQ context.  The next step is to
+> make MCE handler uses this interface too.
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/linux/mm.h  |    1 
+>  mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 93 insertions(+)
 
-I saw your replies. Thank you for your help.
+I have to say i disagree with how this is designed and how this is exposed to 
+user-space - and i pointed this out before.
 
-Daniel
+It's up to Len whether you muck up drivers/acpi/ but here you are patching mm/ 
+again ...
+
+I just had a quick look into the current affairs of mm/memory-inject.c and it 
+has become an *even* nastier collection of hacks since the last time i 
+commented on its uglies.
+
+Special hack upon special hack, totally disorganized code, special-purpose, 
+partly ioctl driven opaque information extraction to user-space using the 
+erst-dbg device interface. We have all the maintenance overhead and little of 
+the gains from hw error event features...
+
+In this patch you add:
+
++struct memory_failure_entry {
++       unsigned long pfn;
++       int trapno;
++       int flags;
++};
+
+Instead of exposing this event to other users who might be interested in these 
+events - such as the RAS daemon under development by Boris.
+
+We have a proper framework (ring-buffer, NMI execution, etc.) for reporting 
+events, why are you not using (and extending) it instead of creating this nasty 
+looking, isolated, ACPI specific low level feature?
+
+Thanks,
+
+	Ingo
