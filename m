@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab1EQSuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 14:50:11 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:33442 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756226Ab1EQSuJ (ORCPT
+	id S1756458Ab1EQSut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 14:50:49 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54718 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756372Ab1EQSur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 14:50:09 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/lzeNLCg7lWSKuRMWpDlWNDGW9Y5/ys10/JdtvnE
-	8E6isW4/RBr/un
-Subject: Re: [PATCH] sched: avoid overpull when pulling RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <BANLkTi=0pe8U6TZsQcXssV3iK_5Y+jRWCA@mail.gmail.com>
-References: <BANLkTi=_gfo4bZjkoBsxspLxxWSPy=7J+Q@mail.gmail.com>
-	 <1305441316.7460.40.camel@marge.simson.net>
-	 <BANLkTino730kar=fEDJGCy8bCSVUe52aOw@mail.gmail.com>
-	 <1305555077.12285.63.camel@marge.simson.net>
-	 <BANLkTi=0pe8U6TZsQcXssV3iK_5Y+jRWCA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 20:50:05 +0200
-Message-ID: <1305658205.6238.53.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Tue, 17 May 2011 14:50:47 -0400
+Date: Tue, 17 May 2011 13:50:32 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Nick Kossifidis <mickflemm@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ath5k regression associating with APs in 2.6.38
+Message-ID: <20110517185032.GC9258@thinkpad-t410>
+Mail-Followup-To: Nick Kossifidis <mickflemm@gmail.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Jiri Slaby <jirislaby@gmail.com>,
+	"Luis R. Rodriguez" <lrodriguez@atheros.com>,
+	Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
+	ath5k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110504153819.GA4551@thinkpad-t410>
+ <20110504172716.GC18541@tuxdriver.com>
+ <20110504192639.GB4551@thinkpad-t410>
+ <BANLkTimEmBRyxbZgffJMrH4TTc4f6peuTg@mail.gmail.com>
+ <20110505135207.GA13727@thinkpad-t410>
+ <BANLkTinkiTQU2k7vBEc0JPGa01AUVCvp2Q@mail.gmail.com>
+ <20110509070230.GA20458@thinkpad-t410>
+ <20110517165720.GB9258@thinkpad-t410>
+ <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=8ZRUVWn3FLAMtPh=4yY1F0k6i9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 22:25 +0800, Hillf Danton wrote:
-> On Mon, May 16, 2011 at 10:11 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > On Mon, 2011-05-16 at 21:14 +0800, Hillf Danton wrote:
-> >
-> >> In the following patch, pulling is played in two rounds. In the first round,
-> >> the highest priority task is determined with no pull operation. Pulling is
-> >> carried out in the second round, and if the highest priority task is pulled,
-> >> pulling could be stopped when overload detected, to relieve overpull.
+On Tue, May 17, 2011 at 08:14:34PM +0300, Nick Kossifidis wrote:
+> 2011/5/17 Seth Forshee <seth.forshee@canonical.com>:
+> > On Mon, May 09, 2011 at 09:02:30AM +0200, Seth Forshee wrote:
+> >> On Thu, May 05, 2011 at 05:30:42PM +0300, Nick Kossifidis wrote:
+> >> > Hmm I don't see any errors from reset/phy code, can you disable
+> >> > Network Manager/wpa-supplicant and test connection on an open network
+> >> > using iw ? It 'll give us a better picture...
+> >> >
+> >> > If iw doesn't return any scan results we are probably hitting a PHY/RF
+> >> > error specific to your device (not all vendors follow the reference
+> >> > design). Maybe we should follow a blacklist/whitelist approach for
+> >> > this feature.
 > >>
-> >> Please review again, thanks.
+> >> I got the results back from my tester. He was able to get scan results,
+> >> but it took multiple tries and the direct probe failures appear in the
+> >> log. He didn't enable ATH5K_DEBUG_RESET this time; let me know if you
+> >> need that and I'll request he retest with the extra debug logs enabled.
 > >
-> > Traversing runqueues twice to avoid some potential task bouncing during
-> > overload situation seems like a really bad trade.  Not to mention that
-> > between pass one and pass two, the world turns under your feet.
+> > I got some more feedback. Most of the time iw does not get scan results,
+> > but even when it does connecting to the AP isn't always successful. The
+> > tester did note that he doesn't seem to have any trouble if his machine
+> > is within a few feet of his AP. Let me know if you'd like something else
+> > tested.
 > >
-> > You could do it in one pass by leaving the victim's runqueue locked
-> > unless you find a better victim I suppose.  Dunno, guess it all depends
-> > on how much benefit the is to pulling only highest, which I can't answer
-> > (my gut says "none, only more pain to be had here").
+> > I noticed that bugzilla #31922 (ath5k: Decreased throughput in IBSS or
+> > 802.11n mode) is also fixed by reverting 8aec7af9. It seems like the
+> > synth-only channel changes are resulting in poor connection quality.
+> > Maybe that patch needs to be reverted?
 > >
-> Hi Mike
+> > Thanks,
+> > Seth
+> >
+> >
 > 
-> Efforts are put on the puller's side, but bad result is reached:(
+> http://www.kernel.org/pub/linux/kernel/people/mickflemm/01-fast-chan-switch-modparm
 
-Don't be discouraged by bad results, they're unavoidable.  Keep on
-looking, thinking and poking.
-
-> Another patch is prepared, in which pusher is asked to do the hard works,
-> say pushees and tasks are selected.
-> 
-> Unlike puller who only concerns one runqueue that accepts the pulled tasks,
-> pusher delivers tasks to more runqueues, so the overpull could get bigger.
-> 
-> Please review again, thanks.
-
-Sorry, but I don't have any free time atm, my cup runneth over bigtime.
-Best suggestion I can offer is measure, and measure again.  No theory
-can compete with cold hard numbers.
-
-	-Mike
+That looks like it should do the trick. I'll request some testing with
+it and let you know how it goes. Thanks!
 
