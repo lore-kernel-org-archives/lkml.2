@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab1EQRsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 13:48:22 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:50543 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab1EQRsU convert rfc822-to-8bit (ORCPT
+	id S1756058Ab1EQRs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 13:48:57 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:50769 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab1EQRs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 13:48:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mENI6W8W2zmYFvZm2akkrR+oWIFoIWj0Mw1M7Z2D8IopwSvKOwg+DWDl7kkJJlpzw+
-         iqWzOOHMOFPngpMTek2y3lWVMybVRDmLb6OXJZm9hdi1iMpD1Zf4guYCC0kIwm7vZuhR
-         Vl+hv03D2NsOJGRQFD7XpnEpZkTv3/uiOHfFc=
+	Tue, 17 May 2011 13:48:56 -0400
+X-IronPort-AV: E=Sophos;i="4.65,226,1304294400"; 
+   d="scan'208";a="5807625"
+Date: Tue, 17 May 2011 18:50:55 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: Xen MMU's requirement to pin pages RO and
+ initial_memory_mapping.
+In-Reply-To: <20110516154132.GA12486@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1105171745300.12963@kaball-desktop>
+References: <20110513153010.GB16519@dumpdata.com> <alpine.DEB.2.00.1105131650550.8972@kaball-desktop> <20110516154132.GA12486@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4DD2B178.3050907@broadcom.com>
-References: <1304960206-8832-1-git-send-email-zajec5@gmail.com>
-	<4DD2B178.3050907@broadcom.com>
-Date: Tue, 17 May 2011 19:48:18 +0200
-Message-ID: <BANLkTin7woaT5Uaxvh4x2jp-J10jnzSdmA@mail.gmail.com>
-Subject: Re: [PATCH V7] bcma: add Broadcom specific AMBA bus driver
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        Greg KH <greg@kroah.com>,
-        =?UTF-8?Q?Michael_B=C3=BCsch?= <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        George Kashperko <george@znau.edu.ua>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Botting <andy@andybotting.com>,
-        linuxdriverproject <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/17 Arend van Spriel <arend@broadcom.com>:
-> On 05/09/2011 06:56 PM, Rafał Miłecki wrote:
->>
->> Broadcom has released cards based on a new AMBA-based bus type. From a
->> programming point of view, this new bus type differs from AMBA and does
->> not use AMBA common registers. It also differs enough from SSB. We
->> decided that a new bus driver is needed to keep the code clean.
->>
->> In its current form, the driver detects devices present on the bus and
->> registers them in the system. It allows registering BCMA drivers for
->> specified bus devices and provides them basic operations. The bus driver
->> itself includes two important bus managing drivers: ChipCommon core
->> driver and PCI(c) core driver. They are early used to allow correct
->> initialization.
->>
->> Currently code is limited to supporting buses on PCI(e) devices, however
->> the driver is designed to be used also on other hosts. The host
->> abstraction layer is implemented and already used for PCI(e).
->>
->> Support for PCI(e) hosts is working and seems to be stable (access to
->> 80211 core was tested successfully on a few devices). We can still
->> optimize it by using some fixed windows, but this can be done later
->> without affecting any external code. Windows are just ranges in MMIO
->> used for accessing cores on the bus.
->
-> Hi Rafał,
->
-> Just some minor feedback on coding style. I wanted to make a change in
-> host_pci.c to avoid changing the PCI BAR window and noticed following:
+On Mon, 16 May 2011, Konrad Rzeszutek Wilk wrote:
+> > They become pagetable pages when:
+> > 
+> > - they are explicitly pinned by pin_pagetable_pfn
+> > 
+> > - they are hooked into the current pagetable
+> 
+> Ok, so could we use those two calls to trigger the pagetable walk
+> and mark them RO as appropiate? Which call sites are those? The
+> xen_set_pgd/xen_set_pud/xen_set_pmd ?
 
-Sorry?
+xen_alloc_pte_init and xen_alloc_pmd_init are the ones that mark the
+pagetable pages RO and pin them, calling make_lowmem_page_readonly and
+pin_pagetable_pfn.
 
+alloc_pte/pmd are called right before hooking them into the pagetable;
+unfortunately that means that they fail at marking the pagetable pages
+RO: make_lowmem_page_readonly uses lookup_address to find the pte
+corresponding to a page, however at this point the pagetable pages are
+not mapped yet (usually they are not hooked but when they are hooked, the
+upper level pagetable page is not hooked), so lookup_address fails.
 
-> 1. indentation is all spaces.
+In order to catch these errors Xen has a parachute: xen_set_pte_init,
+the function that takes care of writing a pte to memory and that on xen
+converts pfns to mfns, also marks pagetable pages RO trying to
+understand when that is appropriate.
 
-You can find spaces only for aligning text in newline after breaking
-more-than-80-chars lines.
+This is all very ugly and delicate.
 
+I think alloc_pte/pmd were always thought to be used to mark and pin
+pagetable pages but they currently fail during the initial pagetable
+setup. If we could fix alloc_pte/pmd most of the problems and the hacks
+would go away.
+Ideally we could remove both mask_rw_pte (currently responsible for
+marking pagetable pages RO, called from xen_set_pte_init) and
+x86_init.mapping.pagetable_reserve.
 
-> 2. initial indent is 7 spaces, and subsequent indents are 8 spaces.
-
-$ grep "        " ./*c | wc -l
-0
+More thinking (and caffeine) needed...
 
 
-> 3. pointer assignment: ptr =&var;
-
-$ grep "=&" ./*c | wc -l
-0
 
 
-> 4. output parameter: foo(bar,&yabar);
+> Presumarily we don't have
+> to do that for the PTE's that are already mapped (as
+> xen_setup_kernel_pagetable, and xen_map_identity_early do this
+> already).
 
-$ grep ",&" ./*c | wc -l
-0
-
--- 
-Rafał
+No, we don't.
+We do need to make sure they stay RO on x86_32 where we write the
+pagetable pages in two steps and we switch pagetable to swapper_pg_dir.
