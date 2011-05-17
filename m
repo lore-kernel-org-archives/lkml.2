@@ -1,248 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1EQKis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 06:38:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60219 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab1EQKiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 06:38:46 -0400
-Date: Tue, 17 May 2011 11:38:40 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        akpm@linux-foundation.org, colin.king@canonical.com,
-        raghu.prabhu13@gmail.com, jack@suse.cz, chris.mason@oracle.com,
-        cl@linux.com, penberg@kernel.org, riel@redhat.com, hannes@cmpxchg.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] mm: vmscan: If kswapd has been running too long,
- allow it to sleep
-Message-ID: <20110517103840.GL5279@suse.de>
-References: <1305295404-12129-1-git-send-email-mgorman@suse.de>
- <1305295404-12129-5-git-send-email-mgorman@suse.de>
- <4DCFAA80.7040109@jp.fujitsu.com>
- <1305519711.4806.7.camel@mulgrave.site>
- <BANLkTi=oe4Ties6awwhHFPf42EXCn2U4MQ@mail.gmail.com>
- <20110516084558.GE5279@suse.de>
- <BANLkTinW4s6aT2bZ79sHNgdh5j8VYyJz2w@mail.gmail.com>
- <20110516102753.GF5279@suse.de>
- <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
+	id S1753344Ab1EQKoT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 06:44:19 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:53209 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752232Ab1EQKoS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 06:44:18 -0400
+Date: Tue, 17 May 2011 06:44:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip ] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to
+	support stack trace
+Message-ID: <20110517104414.GA961@Krystal>
+References: <20110512102255.2540.88867.stgit@ltc-x64-VirtualBox> <4DD23590.4020200@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=5ON_ttuwFFhFObfoP8EBKPdFgAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DD23590.4020200@hitachi.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 06:40:19 up 174 days, 15:43,  1 user,  load average: 1.02, 1.03,
+	0.67
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 08:50:44AM +0900, Minchan Kim wrote:
-> On Mon, May 16, 2011 at 7:27 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > On Mon, May 16, 2011 at 05:58:59PM +0900, Minchan Kim wrote:
-> >> On Mon, May 16, 2011 at 5:45 PM, Mel Gorman <mgorman@suse.de> wrote:
-> >> > On Mon, May 16, 2011 at 02:04:00PM +0900, Minchan Kim wrote:
-> >> >> On Mon, May 16, 2011 at 1:21 PM, James Bottomley
-> >> >> <James.Bottomley@hansenpartnership.com> wrote:
-> >> >> > On Sun, 2011-05-15 at 19:27 +0900, KOSAKI Motohiro wrote:
-> >> >> >> (2011/05/13 23:03), Mel Gorman wrote:
-> >> >> >> > Under constant allocation pressure, kswapd can be in the situation where
-> >> >> >> > sleeping_prematurely() will always return true even if kswapd has been
-> >> >> >> > running a long time. Check if kswapd needs to be scheduled.
-> >> >> >> >
-> >> >> >> > Signed-off-by: Mel Gorman<mgorman@suse.de>
-> >> >> >> > ---
-> >> >> >> >   mm/vmscan.c |    4 ++++
-> >> >> >> >   1 files changed, 4 insertions(+), 0 deletions(-)
-> >> >> >> >
-> >> >> >> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >> >> >> > index af24d1e..4d24828 100644
-> >> >> >> > --- a/mm/vmscan.c
-> >> >> >> > +++ b/mm/vmscan.c
-> >> >> >> > @@ -2251,6 +2251,10 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
-> >> >> >> >     unsigned long balanced = 0;
-> >> >> >> >     bool all_zones_ok = true;
-> >> >> >> >
-> >> >> >> > +   /* If kswapd has been running too long, just sleep */
-> >> >> >> > +   if (need_resched())
-> >> >> >> > +           return false;
-> >> >> >> > +
-> >> >> >>
-> >> >> >> Hmm... I don't like this patch so much. because this code does
-> >> >> >>
-> >> >> >> - don't sleep if kswapd got context switch at shrink_inactive_list
-> >> >> >
-> >> >> > This isn't entirely true:  need_resched() will be false, so we'll follow
-> >> >> > the normal path for determining whether to sleep or not, in effect
-> >> >> > leaving the current behaviour unchanged.
-> >> >> >
-> >> >> >> - sleep if kswapd didn't
-> >> >> >
-> >> >> > This also isn't entirely true: whether need_resched() is true at this
-> >> >> > point depends on a whole lot more that whether we did a context switch
-> >> >> > in shrink_inactive. It mostly depends on how long we've been running
-> >> >> > without giving up the CPU.  Generally that will mean we've been round
-> >> >> > the shrinker loop hundreds to thousands of times without sleeping.
-> >> >> >
-> >> >> >> It seems to be semi random behavior.
-> >> >> >
-> >> >> > Well, we have to do something.  Chris Mason first suspected the hang was
-> >> >> > a kswapd rescheduling problem a while ago.  We tried putting
-> >> >> > cond_rescheds() in several places in the vmscan code, but to no avail.
-> >> >>
-> >> >> Is it a result of  test with patch of Hannes(ie, !pgdat_balanced)?
-> >> >>
-> >> >> If it isn't, it would be nop regardless of putting cond_reshed at vmscan.c.
-> >> >> Because, although we complete zone balancing, kswapd doesn't sleep as
-> >> >> pgdat_balance returns wrong result. And at last VM calls
-> >> >> balance_pgdat. In this case, balance_pgdat returns without any work as
-> >> >> kswap couldn't find zones which have not enough free pages and goto
-> >> >> out. kswapd could repeat this work infinitely. So you don't have a
-> >> >> chance to call cond_resched.
-> >> >>
-> >> >> But if your test was with Hanne's patch, I am very curious how come
-> >> >> kswapd consumes CPU a lot.
-> >> >>
-> >> >> > The need_resched() in sleeping_prematurely() seems to be about the best
-> >> >> > option.  The other option might be just to put a cond_resched() in
-> >> >> > kswapd_try_to_sleep(), but that will really have about the same effect.
-> >> >>
-> >> >> I don't oppose it but before that, I think we have to know why kswapd
-> >> >> consumes CPU a lot although we applied Hannes' patch.
-> >> >>
-> >> >
-> >> > Because it's still possible for processes to allocate pages at the same
-> >> > rate kswapd is freeing them leading to a situation where kswapd does not
-> >> > consider the zone balanced for prolonged periods of time.
-> >>
-> >> We have cond_resched in shrink_page_list, shrink_slab and balance_pgdat.
-> >> So I think kswapd can be scheduled out although it's scheduled in
-> >> after a short time as task scheduled also need page reclaim. Although
-> >> all task in system need reclaim, kswapd cpu 99% consumption is a
-> >> natural result, I think.
-> >> Do I miss something?
-> >>
-> >
-> > Lets see;
-> >
-> > shrink_page_list() only applies if inactive pages were isolated
-> >        which in turn may not happen if all_unreclaimable is set in
-> >        shrink_zones(). If for whatver reason, all_unreclaimable is
-> >        set on all zones, we can miss calling cond_resched().
-> >
-> > shrink_slab only applies if we are reclaiming slab pages. If the first
-> >        shrinker returns -1, we do not call cond_resched(). If that
-> >        first shrinker is dcache and __GFP_FS is not set, direct
-> >        reclaimers will not shrink at all. However, if there are
-> >        enough of them running or if one of the other shrinkers
-> >        is running for a very long time, kswapd could be starved
-> >        acquiring the shrinker_rwsem and never reaching the
-> >        cond_resched().
+* Masami Hiramatsu (masami.hiramatsu.pt@hitachi.com) wrote:
+> (2011/05/12 19:22), Masami Hiramatsu wrote:
+> > Fix to support kernel stack trace correctly on kprobe-tracer.
+> > Since the execution path of kprobe-based dynamic events is different
+> > from other tracepoint-based events, normal ftrace_trace_stack() doesn't
+> > work correctly. To fix that, this introduces ftrace_trace_stack_regs()
+> > which traces stack via pt_regs instead of current stack register.
 > 
-> Don't we have to move cond_resched?
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 292582c..633e761 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -231,8 +231,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->         if (scanned == 0)
->                 scanned = SWAP_CLUSTER_MAX;
-> 
-> -       if (!down_read_trylock(&shrinker_rwsem))
-> -               return 1;       /* Assume we'll be able to shrink next time */
-> +       if (!down_read_trylock(&shrinker_rwsem)) {
-> +               ret = 1;
-> +               goto out; /* Assume we'll be able to shrink next time */
-> +       }
-> 
->         list_for_each_entry(shrinker, &shrinker_list, list) {
->                 unsigned long long delta;
-> @@ -280,12 +282,14 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->                         count_vm_events(SLABS_SCANNED, this_scan);
->                         total_scan -= this_scan;
-> 
-> -                       cond_resched();
->                 }
-> 
->                 shrinker->nr += total_scan;
-> +               cond_resched();
->         }
->         up_read(&shrinker_rwsem);
-> +out:
-> +       cond_resched();
->         return ret;
->  }
-> 
+> Hmm, any comments?
 
-This makes some sense for the exit path but if one or more of the
-shrinkers takes a very long time without sleeping (extremely long
-list searches for example) then kswapd will not call cond_resched()
-between shrinkers and still consume a lot of CPU.
+What you are adding makes sense. I'm not saying that I agree on the
+general approach taken by the existing code to save the stack trace in a
+record that is separate from the actual event that the tracer claims it
+belongs to: it leads to situations where an interrupt handler can come
+in and you get two events followed by two stack traces (in reversed
+order), but this code was already there to start with, so you are just
+making it work with kprobes, which is a sensible thing to do.
 
-> >
-> > balance_pgdat() only calls cond_resched if the zones are not
-> >        balanced. For a high-order allocation that is balanced, it
-> >        checks order-0 again. During that window, order-0 might have
-> >        become unbalanced so it loops again for order-0 and returns
-> >        that was reclaiming for order-0 to kswapd(). It can then find
-> >        that a caller has rewoken kswapd for a high-order and re-enters
-> >        balance_pgdat() without ever have called cond_resched().
-> 
-> If kswapd reclaims order-o followed by high order, it would have a
-> chance to call cond_resched in shrink_page_list. But if all zones are
-> all_unreclaimable is set, balance_pgdat could return any work. Okay.
-> It does make sense.
-> By your scenario, someone wakes up kswapd with higher order, again.
-> So re-enters balance_pgdat without ever have called cond_resched.
-> But if someone wakes up higher order again, we can't have a chance to
-> call kswapd_try_to_sleep. So your patch effect would be nop, too.
-> 
-> It would be better to put cond_resched after balance_pgdat?
-> 
+Thanks!
 
-Which will leave kswapd runnable instead of going to sleep but
-guarantees a scheduling point. Lets see if the problem is that
-cond_resched is being missed although if this was the case then patch
-4 would truly be a no-op but Colin has already reported that patch 1 on
-its own didn't fix his problem. If the problem is sandybridge-specific
-where kswapd remains runnable and consuming large amounts of CPU in
-turbo mode then we know that there are other cond_resched() decisions
-that will need to be revisited.
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-Colin or James, would you be willing to test with patch 1 from this
-series and Minchan's patch below? Thanks.
-
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 292582c..61c45d0 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2753,6 +2753,7 @@ static int kswapd(void *p)
->                 if (!ret) {
->                         trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
->                         order = balance_pgdat(pgdat, order, &classzone_idx);
-> +                       cond_resched();
->                 }
->         }
->         return 0;
 > 
-> >
-> > While it appears unlikely, there are bad conditions which can result
-> > in cond_resched() being avoided.
-> 
-> >
-> > --
-> > Mel Gorman
-> > SUSE Labs
-> >
-> 
+> > 
+> > e.g.
+> > 
+> >  # echo p schedule > /sys/kernel/debug/tracing/kprobe_events
+> >  # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
+> >  # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+> >  # head -n 20 /sys/kernel/debug/tracing/trace
+> > # tracer: nop
+> > #
+> > #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> > #              | |       |          |         |
+> >             sshd-1549  [001]   857.326335: p_schedule_0: (schedule+0x0/0x900)
+> >             sshd-1549  [001]   857.326337: <stack trace>
+> >  => schedule_hrtimeout_range
+> >  => poll_schedule_timeout
+> >  => do_select
+> >  => core_sys_select
+> >  => sys_select
+> >  => system_call_fastpath
+> >              tee-1751  [000]   857.326394: p_schedule_0: (schedule+0x0/0x900)
+> >              tee-1751  [000]   857.326395: <stack trace>
+> >  => do_group_exit
+> >  => sys_exit_group
+> >  => system_call_fastpath
+> >           <idle>-0     [001]   857.326406: p_schedule_0: (schedule+0x0/0x900)
+> >           <idle>-0     [001]   857.326407: <stack trace>
+> >  => start_secondary
+> > 
+> > Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  include/linux/ftrace_event.h |    4 ++++
+> >  kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
+> >  kernel/trace/trace.h         |    9 +++++++++
+> >  kernel/trace/trace_kprobe.c  |    6 ++++--
+> >  4 files changed, 47 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> > index b5a550a..bca2499 100644
+> > --- a/include/linux/ftrace_event.h
+> > +++ b/include/linux/ftrace_event.h
+> > @@ -117,6 +117,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
+> >  void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+> >  				       struct ring_buffer_event *event,
+> >  					unsigned long flags, int pc);
+> > +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+> > +					    struct ring_buffer_event *event,
+> > +					    unsigned long flags, int pc,
+> > +					    struct pt_regs *regs);
+> >  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+> >  					 struct ring_buffer_event *event);
+> >  
+> > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> > index ee9c921..bf12209 100644
+> > --- a/kernel/trace/trace.c
+> > +++ b/kernel/trace/trace.c
+> > @@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+> >  }
+> >  EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
+> >  
+> > +void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
+> > +					    struct ring_buffer_event *event,
+> > +					    unsigned long flags, int pc,
+> > +					    struct pt_regs *regs)
+> > +{
+> > +	ring_buffer_unlock_commit(buffer, event);
+> > +
+> > +	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
+> > +	ftrace_trace_userstack(buffer, flags, pc);
+> > +}
+> > +EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
+> > +
+> >  void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+> >  					 struct ring_buffer_event *event)
+> >  {
+> > @@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
+> >  #ifdef CONFIG_STACKTRACE
+> >  static void __ftrace_trace_stack(struct ring_buffer *buffer,
+> >  				 unsigned long flags,
+> > -				 int skip, int pc)
+> > +				 int skip, int pc, struct pt_regs *regs)
+> >  {
+> >  	struct ftrace_event_call *call = &event_kernel_stack;
+> >  	struct ring_buffer_event *event;
+> > @@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
+> >  	trace.skip		= skip;
+> >  	trace.entries		= entry->caller;
+> >  
+> > -	save_stack_trace(&trace);
+> > +	if (regs)
+> > +		save_stack_trace_regs(&trace, regs);
+> > +	else
+> > +		save_stack_trace(&trace);
+> >  	if (!filter_check_discard(call, entry, buffer, event))
+> >  		ring_buffer_unlock_commit(buffer, event);
+> >  }
+> >  
+> > +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
+> > +			     int skip, int pc, struct pt_regs *regs)
+> > +{
+> > +	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+> > +		return;
+> > +
+> > +	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
+> > +}
+> > +
+> >  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+> >  			int skip, int pc)
+> >  {
+> >  	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+> >  		return;
+> >  
+> > -	__ftrace_trace_stack(buffer, flags, skip, pc);
+> > +	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
+> >  }
+> >  
+> >  void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
+> >  		   int pc)
+> >  {
+> > -	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
+> > +	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
+> >  }
+> >  
+> >  /**
+> > @@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
+> >  	local_save_flags(flags);
+> >  
+> >  	/* skipping 3 traces, seems to get us at the caller of this function */
+> > -	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
+> > +	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
+> > +			     NULL);
+> >  }
+> >  
+> >  static DEFINE_PER_CPU(int, user_stack_count);
+> > diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> > index 5e9dfc6..cbce5e4 100644
+> > --- a/kernel/trace/trace.h
+> > +++ b/kernel/trace/trace.h
+> > @@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
+> >  void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+> >  			int skip, int pc);
+> >  
+> > +void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
+> > +			     int skip, int pc, struct pt_regs *regs);
+> > +
+> >  void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
+> >  			    int pc);
+> >  
+> > @@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
+> >  {
+> >  }
+> >  
+> > +static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
+> > +					   unsigned long flags, int skip,
+> > +					   int pc, struct pt_regs *regs)
+> > +{
+> > +}
+> > +
+> >  static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
+> >  					  unsigned long flags, int pc)
+> >  {
+> > diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> > index f925c45..7053ef3 100644
+> > --- a/kernel/trace/trace_kprobe.c
+> > +++ b/kernel/trace/trace_kprobe.c
+> > @@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+> >  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+> >  
+> >  	if (!filter_current_check_discard(buffer, call, entry, event))
+> > -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+> > +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
+> > +						       irq_flags, pc, regs);
+> >  }
+> >  
+> >  /* Kretprobe handler */
+> > @@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+> >  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+> >  
+> >  	if (!filter_current_check_discard(buffer, call, entry, event))
+> > -		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+> > +		trace_nowake_buffer_unlock_commit_regs(buffer, event,
+> > +						       irq_flags, pc, regs);
+> >  }
+> >  
+> >  /* Event entry printers */
+> > 
 > 
 > 
 > -- 
-> Kind regards,
-> Minchan Kim
+> Masami HIRAMATSU
+> Software Platform Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
 
 -- 
-Mel Gorman
-SUSE Labs
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
