@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1EQUFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 16:05:41 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45373 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932217Ab1EQUFk (ORCPT
+	id S932267Ab1EQUHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 16:07:33 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:22037 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932217Ab1EQUHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 16:05:40 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH RFC v2] radio-sf16fmr2: convert to generic TEA575x interface
-Date: Tue, 17 May 2011 22:05:26 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-References: <201105140017.26968.linux@rainbow-software.org> <201105152326.33925.hverkuil@xs4all.nl> <201105172133.14835.hverkuil@xs4all.nl>
-In-Reply-To: <201105172133.14835.hverkuil@xs4all.nl>
+	Tue, 17 May 2011 16:07:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=JW3XOVyMvGGOENax1qUF9NKyHeGIT3MBkYDgCBQcndbLSdhVea6VUrrdqmfmO5TadT
+         B/seP7nRrzz32okvJrCw==
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105172205.28899.linux@rainbow-software.org>
+In-Reply-To: <1305655283.5456.753.camel@gandalf.stny.rr.com>
+References: <1304467520-31530-1-git-send-email-vnagarnaik@google.com>
+ <1305059241-7629-1-git-send-email-vnagarnaik@google.com> <1305655283.5456.753.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Tue, 17 May 2011 13:06:59 -0700
+Message-ID: <BANLkTi=dXC=e6v7Zm5K9Gb=155XHDZpxyw@mail.gmail.com>
+Subject: Re: [PATCH v2] trace: Schedule a delayed work to call wakeup()
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 May 2011 21:33:14 Hans Verkuil wrote:
-> Hi Ondrej!
+On Tue, May 17, 2011 at 11:01 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2011-05-10 at 13:27 -0700, Vaibhav Nagarnaik wrote:
+>> The patch schedules a delayed work after 2 ms once an event commit calls
+>> to wake up the trace wait_queue. This removes the delay caused by
+>> contention on spin lock in wakeup() and amortizes the wakeup() calls
+>> scheduled over the 2 ms period.
+>>
+>> In the following example, the script enables the sys_enter_getuid and
+>> sys_exit_getuid tracepoints and runs the getuid_microbench in parallel
+>> with the given number of processes. The output clearly shows the latency
+>> increase caused by contentions.
+>>
 >
-> On Sunday, May 15, 2011 23:26:33 Hans Verkuil wrote:
-> > On Sunday, May 15, 2011 22:18:21 Ondrej Zary wrote:
-> > > Thanks, it's much simpler with the new control framework.
-> > > Do the negative volume control values make sense? The TC9154A chip can
-> > > attenuate the volume from 0 to -68dB in 2dB steps.
-> >
-> > It does make sense, but I think I would offset the values so they start
-> > at 0. Mostly because there might be some old apps that set the volume to
-> > 0 when they want to mute, which in this case is full volume.
-> >
-> > I am not aware of any driver where a volume of 0 isn't the same as the
-> > lowest volume possible, so in this particular case I would apply an
-> > offset.
-> >
-> > I will have to do a closer review tomorrow or the day after. I think
-> > there are a few subtleties that I need to look at. Ping me if you haven't
-> > heard from me by Wednesday. I would really like to get these drivers up
-> > to spec now that I have someone who can test them, and once that's done I
-> > hope that I never have to look at them again :-) (Unlikely, but one can
-> > dream...)
+> Have you taken a look at irq_work() instead of delayed work? This would
+> probably allow us to call the wakeup version for all events.
 >
-> OK, I looked at it a bit more and it needs to be changed a little bit. The
-> problem is that the VOLUME control is added after snd_tea575x_init, i.e.
-> after the video_register_device call. The video_register_device call should
-> be the last thing done before the init sequence returns. There may be
-> applications (dbus/hal) that open devices as soon as they appear, so doing
-> more initialization after the video node is registered is not a good idea
-> (many older V4L drivers make this mistake).
+> See kernel/perf_events.c for details.
 >
-> Perhaps creating a snd_tea575x_register function doing just the
-> registration may be a good idea. Or a callback before doing the
-> video_register_device.
-
-OK, I'll reorder the lines in snd_tea575x_init function and add a callback 
-that radio-sf16fmr2 can use.
-
-Also upgraded my card with TC9154AP chip so I can actually test the volume 
-control code (and it was broken in my previous patch...). The left and right 
-channels can be separately controlled - is there a way to provide separate 
-left and right volume controls? Or do I need to fake up a balance control?
-
-> Another thing: the tea->mute field shouldn't be needed anymore. And the
-> 'mute on init' bit in snd_tea575x_init can be removed as well since that
-> is automatically performed by v4l2_ctrl_handler_setup.
-
-Thought about this too but the snd_tea575x_write() and snd_tea575x_read() 
-functions need to know the mute status. And these functions are also used to 
-detect the tuner presence before initializing the controls. I don't see any 
-elegant solution.
-
-> In addition, the .ioctl field in tea575x_fops can be replaced by
-> .unlocked_ioctl. The whole exclusive open stuff and the in_use field can be
-> removed. The only thing needed is a struct mutex in struct snd_tea575x,
-> initialize it and set tea575x_radio_inst->lock to the mutex. This will
-> serialize all access safely.
-
-I'll do this as a separate patch later.
-
-> To do this really right you should add struct v4l2_device to struct
-> snd_tea575x (the radio-sf16fmr2 driver has one, so you can use that as an
-> example). With that in place you can also add support for 'priority'
-> handling. I'd say see what you can do, and if it takes too much time then
-> mail me the tea575x code and the radio-sf16frm2 code and I'll finish it.
+> -- Steve
 >
-> Regards,
->
-> 	Hans
+
+I looked at irq_work() as used in perf_event.c and changed the ftrace
+wakeup logic to that. I found that the latencies are still bad and don't
+scale very well. Mostly because the contention moved to irq_work_queue
+and in the irq work handler.
+
+The reason to have delayed work is to have the wakeups amortize over
+different calls and it is easier because all the events have a common
+wakeup logic.
+
+Also, when you talk about having a wakeup version for events, do you see
+different wakeup handlers depending on the event? I can see that perf
+has struct irq_work as part of the event structure, but every event has
+the same wakeup handler.
 
 
-
--- 
-Ondrej Zary
+Vaibhav Nagarnaik
