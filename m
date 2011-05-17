@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1EQMd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:33:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:53607 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab1EQMd2 (ORCPT
+	id S1754532Ab1EQMhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:37:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33028 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab1EQMhV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:33:28 -0400
+	Tue, 17 May 2011 08:37:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=VEIctTGqvYG4AUXhEph9m4btsQOurPstEatI3u2TfSQ0/5HdRctN1CIjxlUK8V4s8Y
-         GoNK9S5nscFPUdYKfJiNCiVDatYp++e1JaFifF07QlXFlgvd0gzBn4CwaFivVB5fiXLE
-         cEkCn5W+gBI/ja74wKQw4P4GzKq3eCPpIN9Mo=
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=mLS7jxpe4xW1uvWRkHYlRfgB5C8Rn6gVryWmHrOdSTIEHKGcdLRPzKU/2mL3ez+MPR
+         QINrMKn7RHl4YIpY5kahbiK069bQhrhagph81oeinIMHeqqWfLaA6G2amGmnIcDGIRfY
+         gdx49WGQ1qI32wJnDTVtPknu3h3XJOYLW47QU=
 MIME-Version: 1.0
-In-Reply-To: <20110516160114.GA25898@one.firstfloor.org>
-References: <1305329059-2017-1-git-send-email-andi@firstfloor.org>
- <1305329059-2017-5-git-send-email-andi@firstfloor.org> <BANLkTikP==HkDSG1oKcfSKAhrWOXRqGF5w@mail.gmail.com>
- <20110516160114.GA25898@one.firstfloor.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 17 May 2011 14:33:07 +0200
-Message-ID: <BANLkTinscUoVpW1vuk4XQRTbcCoHb5oLXA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] Add a sysconf syscall
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org,
-        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+Date: Tue, 17 May 2011 13:37:19 +0100
+X-Google-Sender-Auth: L1pjnCBWT-suD177BkWfB8jQXOo
+Message-ID: <BANLkTikPxfq4hcSLB+xkk-oJAtouNxEoyA@mail.gmail.com>
+Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic
+ Systems TS-5xxx detection
+From: Sean Young <sean@mess.org>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: linux-kernel@vger.kernel.org,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        platform-driver-x86@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 6:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> ...and libc will start making many such calls in a row in order to retrieve
->> a dozen of such values.
+On 29 April 2011 23:21, Vivien Didelot
+<vivien.didelot@savoirfairelinux.com> wrote:
+> From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
 >
-> It doesn't because the user interface is sysconf(). So the user program
-> just asks for it piece by piece.
-
-Not if libc is caching known-to-be-constant-until-reboot data on the first call.
-
->> It's rather inefficient to return just one word.
->> Try to return more data per call.
 >
-> I considered that, but is there a concrete use case?
-> I didn't want to code it up without concrete use case.
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> ---
+>  Documentation/ts5xxx-sbcinfo.txt      |   47 ++++++
+>  MAINTAINERS                           |    6 +
+>  drivers/platform/x86/Kconfig          |   11 ++
+>  drivers/platform/x86/Makefile         |    1 +
+>  drivers/platform/x86/ts5xxx-sbcinfo.c |  254 +++++++++++++++++++++++++++++++++
+>  include/linux/ts5xxx-sbcinfo.h        |   42 ++++++
+>  6 files changed, 361 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ts5xxx-sbcinfo.txt
+>  create mode 100644 drivers/platform/x86/ts5xxx-sbcinfo.c
+>  create mode 100644 include/linux/ts5xxx-sbcinfo.h
 
-Look at recent history of having to add more syscalls
-(such as signalfd/signalfd4) only because we didn't think through
-how they will need to be extended.
+Please note that the 2MiB on board flash is not supported by your
+platform driver, which is handled by drivers/mtd/maps/ts5500_flash.c. I
+guess it would be best to either merge that file into
+drivers/platform/x86/ts5xxx-sbcinfo.c or select CONFIG_MTD_TS5500 in the
+Kconfig.
 
-It's likely you will need to return more than one long word
-for some data, eventually. Therefore, better add struct now
-than needing to add horrible hacks later in order to be able
-to return an uint64_t value.
+In addition, the flash is used by the BIOS as RFD FTL, so possibly
+CONFIG_RFD_FTL should be selected too.
 
--- 
-vda
+Thanks,
+Sean
