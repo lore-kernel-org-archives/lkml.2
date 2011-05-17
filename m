@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1EQW1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:27:22 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55445 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756632Ab1EQW1U (ORCPT
+	id S1756765Ab1EQW2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:28:49 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:34305 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647Ab1EQW2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:27:20 -0400
-Subject: Re: [PATCH 1/3] comm: Introduce comm_lock spinlock to protect
- task->comm access
-From: John Stultz <john.stultz@linaro.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andy Whitcroft <apw@canonical.com>, Jiri Slaby <jirislaby@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20110517212734.GB28054@elte.hu>
-References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org>
-	 <1305665263-20933-2-git-send-email-john.stultz@linaro.org>
-	 <20110517212734.GB28054@elte.hu>
+	Tue, 17 May 2011 18:28:48 -0400
+Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in
+ netdevice
+From: Shirley Ma <mashirle@us.ibm.com>
+To: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirqus@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
+References: <1305574128.3456.23.camel@localhost.localdomain>
+	 <1305574518.2885.25.camel@bwh-desktop>
+	 <1305574680.3456.33.camel@localhost.localdomain>
+	 <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com>
+	 <1305588738.3456.65.camel@localhost.localdomain>
+	 <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 15:27:05 -0700
-Message-ID: <1305671225.2915.133.camel@work-vm>
+Date: Tue, 17 May 2011 15:28:38 -0700
+Message-ID: <1305671318.10756.49.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 23:27 +0200, Ingo Molnar wrote:
-> * John Stultz <john.stultz@linaro.org> wrote:
+On Tue, 2011-05-17 at 23:48 +0200, Michał Mirosław wrote:
+> 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
+> > Hello Michael,
+> >
+> > Looks like to use a new flag requires more time/work. I am thinking
+> > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
+> to
+> > avoid the new flag for now since mavctap uses real NICs as lower
+> device?
 > 
-> > The implicit rules for current->comm access being safe without locking are no 
-> > longer true. Accessing current->comm without holding the task lock may result 
-> > in null or incomplete strings (however, access won't run off the end of the 
-> > string).
-> 
-> This is rather unfortunate - task->comm is used in a number of performance 
-> critical codepaths such as tracing.
-> 
-> Why does this matter so much? A NULL string is not a big deal.
+> Is there any other restriction besides requiring driver to not recycle
+> the skb? Are there any drivers that recycle TX skbs? 
 
-I'll defer to KOSAKI Motohiro and David on this bit. :)
+Not more other restrictions, skb clone is OK. pskb_expand_head() looks
+OK to me from code review.
 
-> Note, since task->comm is 16 bytes there's the CMPXCHG16B instruction on x86 
-> which could be used to update it atomically, should atomicity really be 
-> desired.
+Currently there is no drivers recycle TX skbs.
 
-Could we use this where cmpxchg16b is available and fall back to locking
-if not? Or does that put too much of a penalty on arches that don't have
-cmpxchg16b support?
-
-Alternatively, we can have locked accessors that are safe in the
-majority of slow-path warning printks, and provide unlocked accessors
-for cases where the performance is critical and the code can properly
-handle possibly incomplete comms.
-
-thanks
--john
-
-
+Thanks
+Shirley
 
