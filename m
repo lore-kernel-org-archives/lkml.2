@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab1EQFyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 01:54:39 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58904 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751625Ab1EQFyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 01:54:36 -0400
-Message-ID: <4DD20D89.9020402@st.com>
-Date: Tue, 17 May 2011 11:24:17 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1752535Ab1EQFzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 01:55:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751944Ab1EQFzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 01:55:11 -0400
+Date: Tue, 17 May 2011 08:55:03 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
+Message-ID: <20110517055503.GA26989@redhat.com>
+References: <1305574484.3456.30.camel@localhost.localdomain>
+ <20110516204540.GD18148@redhat.com>
+ <1305579414.3456.49.camel@localhost.localdomain>
+ <20110516212401.GF18148@redhat.com>
+ <1305606683.10756.3.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dw_dmac: Replace subsys_init() with arch_initcall()
-References: <f06f05e982c6182565a7fee1f7d6396cae895133.1305521318.git.viresh.kumar@st.com>	 <1305561993.28926.73.camel@vkoul-udesk3>  <4DD1F443.1040205@st.com> <1305603818.28926.82.camel@vkoul-udesk3>
-In-Reply-To: <1305603818.28926.82.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305606683.10756.3.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 09:13 AM, Koul, Vinod wrote:
-> On Tue, 2011-05-17 at 09:36 +0530, viresh kumar wrote:
->> On 05/16/2011 09:36 PM, Koul, Vinod wrote:
->>> On Mon, 2011-05-16 at 10:20 +0530, Viresh Kumar wrote:
->>>> In some cases users of dw_dmac, amba-pl022, are initialized before dw_dmac, and
->>>> if they try to use dw_dmac, they simply fail. So its better we register init()
->>>> routine of driver using arch_initcall() instead of subsys_init(), so that dma
->>>> driver is available at the earliest possible.
->>>>
->>>> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
->>>> ---
->>>>  drivers/dma/dw_dmac.c |    2 +-
->>>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
->>>> index 54d72a8..4b580e7 100644
->>>> --- a/drivers/dma/dw_dmac.c
->>>> +++ b/drivers/dma/dw_dmac.c
->>>> @@ -1566,7 +1566,7 @@ static int __init dw_init(void)
->>>>  {
->>>>  	return platform_driver_probe(&dw_driver, dw_probe);
->>>>  }
->>>> -subsys_initcall(dw_init);
->>>> +arch_initcall(dw_init);
->>> arch_init is usually kept for subystem initialization.
->>> Why cant you move the amba-pl022 init to module_init, that should take
->>> care of this.
->>>
->>
->> Actually, amba-pl022 init was moved to subsys_initcall earlier with
->> following patch:
->>
->> And so i moved dma's init to arch_initcall. Also the similar approach is
->> taken by drivers/dma/ste_dma40.c
->>
->> Also, maybe it makes more sense for dma to be up at the earliest.
->> Isn't it?
+On Mon, May 16, 2011 at 09:31:23PM -0700, Shirley Ma wrote:
+> On Tue, 2011-05-17 at 00:24 +0300, Michael S. Tsirkin wrote:
+> > On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
+> > > On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
+> > > > > +/* Since we need to keep the order of used_idx as avail_idx,
+> > it's
+> > > > possible that
+> > > > > + * DMA done not in order in lower device driver for some
+> > reason. To
+> > > > prevent
+> > > > > + * used_idx out of order, upend_idx is used to track avail_idx
+> > > > order, done_idx
+> > > > > + * is used to track used_idx order. Once lower device DMA done,
+> > > > then upend_idx
+> > > > > + * can move to done_idx.
+> > > > 
+> > > > Could you clarify this please? virtio explicitly allows out of
+> > order
+> > > > completion of requests. Does it simplify code that we try to keep
+> > > > used index updates in-order? Because if not, this is not
+> > > > really a requirement.
+> > > 
+> > > Hello Mike,
+> > > 
+> > > Based on my testing, vhost_add_used() must be in order from
+> > > vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
+> > > freed.
+> > 
+> > Double-freed or you get NULL below?
 > 
-> As I said before arch init is supposed to used for initialization of the
-> subsystems not for a driver init.
-> You need to ensure that with given init levels and makefile order your
-> dependencies are properly resolved, rather than this approach.
+> More likely is NULL.
 > 
-> Like move whatever dependent on amba to late_init and amba to module
-> init, that would be advisable approach rather than above.
+> > > I didn't spend time on debugging this.
+> > > 
+> > > in virtqueue_get_buf
+> > > 
+> > >         if (unlikely(!vq->data[i])) {
+> > >                 BAD_RING(vq, "id %u is not a head!\n", i);
+> > >                 return NULL;
+> > >         }
+> > 
+> > Yes but i used here is the head that we read from the
+> > ring, not the ring index itself.
+> >         i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id
+> > we must complete any id only once, but in any order.
 > 
+> It is in any order of ring id, but must be in the order of "head"
+> returns  from  vhost_get_vq_desc(), any clue?
+> 
+> 
+> Thanks
+> Shirley
 
-As i said earlier, with following patch from Linus:
 
-commit 25c8e03bdb769dfe2381f8b7942f05b0eb4bdf31
-Author: Linus Walleij <linus.walleij@stericsson.com>
-Date:   Mon Sep 6 11:02:12 2010 +0200
+Something in your patch that overwrites the id in vhost
+and makes it put the wrong id in the used ring?
 
-    spi/pl022: move probe call to subsys_initcall()
-    
-    The PL022 SPI bus is sometimes used for early stuff like
-    regulators that need to be present at module_init() time, so
-    we move this to a subsys_initcall().
-    
-    Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/spi/amba-pl022.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-SPI bus is required for regulators and so probably he can't have
-module_init() for amba-pl022. And so, DMA has nothing more than
-arch_initcall().
-
-@Linus: What do you say? Can we get back to module_init() for amba-pl022?
-And subsys_initcall() for DMA.
+By the way, need to keep in mind that a guest can
+give us the same head twice, need to make sure this
+at least does not corrupt host memory.
 
 -- 
-viresh
+MST
