@@ -1,94 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab1EQFzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 01:55:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23575 "EHLO mx1.redhat.com"
+	id S1752418Ab1EQGAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 02:00:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56015 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab1EQFzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 01:55:11 -0400
-Date: Tue, 17 May 2011 08:55:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 4/6 net-next] vhost: vhost TX zero-copy support
-Message-ID: <20110517055503.GA26989@redhat.com>
-References: <1305574484.3456.30.camel@localhost.localdomain>
- <20110516204540.GD18148@redhat.com>
- <1305579414.3456.49.camel@localhost.localdomain>
- <20110516212401.GF18148@redhat.com>
- <1305606683.10756.3.camel@localhost.localdomain>
+	id S1752067Ab1EQGAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 02:00:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,223,1304319600"; 
+   d="scan'208";a="437291494"
+Date: Tue, 17 May 2011 14:00:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel falls apart under light memory pressure (i.e. linking
+ vmlinux)
+Message-ID: <20110517060001.GC24069@localhost>
+References: <BANLkTikhj1C7+HXP_4T-VnJzPefU2d7b3A@mail.gmail.com>
+ <20110512054631.GI6008@one.firstfloor.org>
+ <BANLkTi=fk3DUT9cYd2gAzC98c69F6HXX7g@mail.gmail.com>
+ <BANLkTikofp5rHRdW5dXfqJXb8VCAqPQ_7A@mail.gmail.com>
+ <20110514165346.GV6008@one.firstfloor.org>
+ <BANLkTik6SS9NH7XVSRBoCR16_5veY0MKBw@mail.gmail.com>
+ <20110514174333.GW6008@one.firstfloor.org>
+ <BANLkTinst+Ryox9VZ-s7gdXKa574XXqt5w@mail.gmail.com>
+ <20110515152747.GA25905@localhost>
+ <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1305606683.10756.3.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTim-AnEeL=z1sYm=iN7sMnG0+m0SHw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 16, 2011 at 09:31:23PM -0700, Shirley Ma wrote:
-> On Tue, 2011-05-17 at 00:24 +0300, Michael S. Tsirkin wrote:
-> > On Mon, May 16, 2011 at 01:56:54PM -0700, Shirley Ma wrote:
-> > > On Mon, 2011-05-16 at 23:45 +0300, Michael S. Tsirkin wrote:
-> > > > > +/* Since we need to keep the order of used_idx as avail_idx,
-> > it's
-> > > > possible that
-> > > > > + * DMA done not in order in lower device driver for some
-> > reason. To
-> > > > prevent
-> > > > > + * used_idx out of order, upend_idx is used to track avail_idx
-> > > > order, done_idx
-> > > > > + * is used to track used_idx order. Once lower device DMA done,
-> > > > then upend_idx
-> > > > > + * can move to done_idx.
-> > > > 
-> > > > Could you clarify this please? virtio explicitly allows out of
-> > order
-> > > > completion of requests. Does it simplify code that we try to keep
-> > > > used index updates in-order? Because if not, this is not
-> > > > really a requirement.
-> > > 
-> > > Hello Mike,
-> > > 
-> > > Based on my testing, vhost_add_used() must be in order from
-> > > vhost_get_vq_desc(). Otherwise, virtio_net ring seems get double
-> > > freed.
-> > 
-> > Double-freed or you get NULL below?
+On Sun, May 15, 2011 at 12:12:36PM -0400, Andrew Lutomirski wrote:
+> On Sun, May 15, 2011 at 11:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > On Sun, May 15, 2011 at 09:37:58AM +0800, Minchan Kim wrote:
+> >> On Sun, May 15, 2011 at 2:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> > Copying back linux-mm.
+> >> >
+> >> >> Recently, we added following patch.
+> >> >> https://lkml.org/lkml/2011/4/26/129
+> >> >> If it's a culprit, the patch should solve the problem.
+> >> >
+> >> > It would be probably better to not do the allocations at all under
+> >> > memory pressure.  Even if the RA allocation doesn't go into reclaim
+> >>
+> >> Fair enough.
+> >> I think we can do it easily now.
+> >> If page_cache_alloc_readahead(ie, GFP_NORETRY) is fail, we can adjust
+> >> RA window size or turn off a while. The point is that we can use the
+> >> fail of __do_page_cache_readahead as sign of memory pressure.
+> >> Wu, What do you think?
+> >
+> > No, disabling readahead can hardly help.
+> >
+> > The sequential readahead memory consumption can be estimated by
+> >
+> >                2 * (number of concurrent read streams) * (readahead window size)
+> >
+> > And you can double that when there are two level of readaheads.
+> >
+> > Since there are hardly any concurrent read streams in Andy's case,
+> > the readahead memory consumption will be ignorable.
+> >
+> > Typically readahead thrashing will happen long before excessive
+> > GFP_NORETRY failures, so the reasonable solutions are to
+> >
+> > - shrink readahead window on readahead thrashing
+> >  (current readahead heuristic can somehow do this, and I have patches
+> >  to further improve it)
+> >
+> > - prevent abnormal GFP_NORETRY failures
+> >  (when there are many reclaimable pages)
+> >
+> >
+> > Andy's OOM memory dump (incorrect_oom_kill.txt.xz) shows that there are
+> >
+> > - 8MB   active+inactive file pages
+> > - 160MB active+inactive anon pages
+> > - 1GB   shmem pages
+> > - 1.4GB unevictable pages
+> >
+> > Hmm, why are there so many unevictable pages?  How come the shmem
+> > pages become unevictable when there are plenty of swap space?
 > 
-> More likely is NULL.
-> 
-> > > I didn't spend time on debugging this.
-> > > 
-> > > in virtqueue_get_buf
-> > > 
-> > >         if (unlikely(!vq->data[i])) {
-> > >                 BAD_RING(vq, "id %u is not a head!\n", i);
-> > >                 return NULL;
-> > >         }
-> > 
-> > Yes but i used here is the head that we read from the
-> > ring, not the ring index itself.
-> >         i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id
-> > we must complete any id only once, but in any order.
-> 
-> It is in any order of ring id, but must be in the order of "head"
-> returns  from  vhost_get_vq_desc(), any clue?
-> 
-> 
-> Thanks
-> Shirley
+> That was probably because one of my testcases creates a 1.4GB file on
+> ramfs.  (I can provoke the problem without doing evil things like
+> that, but the test script is rather reliable at killing my system and
+> it works fine on my other machines.)
 
+Ah I didn't read your first email.. I'm now running
 
-Something in your patch that overwrites the id in vhost
-and makes it put the wrong id in the used ring?
+./test_mempressure.sh 1500 1400 1
 
-By the way, need to keep in mind that a guest can
-give us the same head twice, need to make sure this
-at least does not corrupt host memory.
+with mem=2G and no swap, but cannot reproduce OOM.
 
--- 
-MST
+What's your kconfig?
+
+> If you want, I can try to generate a trace that isn't polluted with
+> the evil ramfs file.
+
+No, thanks. However it would be valuable if you can retry with this
+patch _alone_ (without the "if (need_resched()) return false;" change,
+as I don't see how it helps your case).
+
+@@ -2286,7 +2290,7 @@ static bool sleeping_prematurely(pg_data_t
+*pgdat, int order, long remaining,
+        * must be balanced
+        */
+       if (order)
+-               return pgdat_balanced(pgdat, balanced, classzone_idx);
++               return !pgdat_balanced(pgdat, balanced, classzone_idx);
+       else
+               return !all_zones_ok;
+ }
+
+Thanks,
+Fengguang
