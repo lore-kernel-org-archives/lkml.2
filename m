@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab1EQW6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:58:22 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50371 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932485Ab1EQW6V convert rfc822-to-8bit (ORCPT
+	id S932573Ab1EQXAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 19:00:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55071 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932485Ab1EQXAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:58:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=QtHW4sXgj6cDWMcawkzBxA0EUHUkaiJJOExJVPMJeYMOZdVidAGQajmWAiBNlvtdd7
-         WNGkkl+1gEAez+OeFOkSGieGgGR2b5SgzQavIy/4FXHQmzs+ddI6CzGm0vhY7E92b2D5
-         UftXCX7pvLfLLetRoMpUewsy8EBQPvgDvrOXU=
+	Tue, 17 May 2011 19:00:13 -0400
+Date: Wed, 18 May 2011 00:59:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Andy Lutomirski <luto@MIT.EDU>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
+In-Reply-To: <m2hb8typxt.fsf@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1105172354040.3078@ionos>
+References: <20110516160943.GC25898@one.firstfloor.org> <alpine.LFD.2.02.1105161817120.3078@ionos> <20110516164939.GD25898@one.firstfloor.org> <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com> <m2fwoeo0pf.fsf@firstfloor.org> <alpine.LFD.2.02.1105162345110.3078@ionos>
+ <BANLkTinVnr1ZM2wOxuH-rHZGh+_SBWT-+g@mail.gmail.com> <alpine.LFD.2.02.1105170022430.3078@ionos> <20110517080029.GB22093@elte.hu> <BANLkTimpEfb3P9FWgrCDwSSVr6RA8nXb5w@mail.gmail.com> <20110517113634.GC13475@elte.hu> <4DD2BEFB.6070609@mit.edu>
+ <m2hb8typxt.fsf@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1305671318.10756.49.camel@localhost.localdomain>
-References: <1305574128.3456.23.camel@localhost.localdomain>
- <1305574518.2885.25.camel@bwh-desktop> <1305574680.3456.33.camel@localhost.localdomain>
- <1305575253.2885.28.camel@bwh-desktop> <20110516211459.GE18148@redhat.com>
- <1305588738.3456.65.camel@localhost.localdomain> <BANLkTimvOK3tyo6+L5AD=so5DjiDPV-AAA@mail.gmail.com>
- <1305671318.10756.49.camel@localhost.localdomain>
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-Date: Wed, 18 May 2011 00:58:00 +0200
-Message-ID: <BANLkTik6aqP5BVrQNFKrnU3v=KA9ip1RoA@mail.gmail.com>
-Subject: Re: [PATCH V5 2/6 net-next] netdevice.h: Add zero-copy flag in netdevice
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 18 maja 2011 00:28 u¿ytkownik Shirley Ma <mashirle@us.ibm.com> napisa³:
-> On Tue, 2011-05-17 at 23:48 +0200, Micha³ Miros³aw wrote:
->> 2011/5/17 Shirley Ma <mashirle@us.ibm.com>:
->> > Looks like to use a new flag requires more time/work. I am thinking
->> > whether we can just use HIGHDMA flag to enable zero-copy in macvtap
->> to
->> > avoid the new flag for now since mavctap uses real NICs as lower
->> device?
->>
->> Is there any other restriction besides requiring driver to not recycle
->> the skb? Are there any drivers that recycle TX skbs?
-> Not more other restrictions, skb clone is OK. pskb_expand_head() looks
-> OK to me from code review.
+On Tue, 17 May 2011, Andi Kleen wrote:
+> Andy Lutomirski <luto@MIT.EDU> writes:
+> >
+> > On KVM on Sandy Bridge, I can emulate a vsyscall that does nothing in 400ns or so.  I'll try to make this code emulate real vsyscalls over the weekend.  This was much easier than I expected.
+> 
+> How about the performance of all the statically linked programs? I guess
 
-> Currently there is no drivers recycle TX skbs.
+_ALL_ the statically linked programs? Point out a single one which
+matters and _IS_ performance critical.
 
-So why do you require the target device to have some flags at all?
+> you just declared they don't matter? gettimeofday is quite critical
+> and adding a exception into it is just a performance desaster.
+> 
+> Also it's always a dangerous assumption to think that all
+> programs on Linux use glibc ("all world is a Vax")
+> 
+> In fact more and more of Linux users are using different libcs these
+> days (like Android or embedded systems or languages with special runtime
+> systems) Who knows if all those other libraries use vDSO?
 
-Do I understand correctly, that this zero-copy feature is about
-packets received from VMs?
+Which is completely irrelevant to x86_64. Point to a single relevant
+x86_64 embedded system to which one of the above handwaving applies.
 
-Best Regards,
-Micha³ Miros³aw
+> And then there are of course the old glibcs. A lot of people
+> (including me) use new kernels with old userland.
+
+And how is your use case performance critical ?
+
+Furthermore any halfways up to date deployemnt is using VDSO for
+obvious reasons and the archaic stuff which might be affected is not
+using a recent kernel at all (except for akpm on his retro laptop, but
+that "performance penalty" is probably the least of his worries).
+
+> For me this seems like a very risky move -- breaking performance of
+> previously perfectly good set ups for very little reason.
+> 
+> Given the old vsyscall code is somewhat ugly -- I wouldn't argue that --
+
+It's not somewhat ugly. It's a design failure and more important it's
+a risk - and you very well know that.
+
+> but compatibility (including performance compatibility) has always
+> been importand in Linux and we have far uglier code around in the
+> name of compatibility..
+
+We have ugly code around, but it has always been more important to fix
+security risks than keeping them around for performance sake.
+ 
+> And the "security problem" you keep talking about can be fixed much
+> easier and more compatible as I pointed out.
+
+Unless you come forth with a patch which addresses _ALL_ reasons which
+caused me to remove your superior "Make the vsyscall less risky"
+approach, just admit that it's fcked up by design and be done with it.
+
+Stop your "as I pointed out" handwaving please. That code was broken
+and even exploitable and I removed it for more than one very good
+reason. Stop claiming that your "design" is in any way fixable. It's
+not.
+
+> As far as I'm concered the change is a bad idea.
+
+As far as I'm concerned you seem to regain your old habits of
+defending your proven to be wrong "design" decisions no matter what.
+
+And as long as you can't come up with documented proof that a single
+application is affected by such a change, STFU!
+
+Even if you are not able to proof it, it's a total nobrainer to revert
+such a change and make it CONFIG_KEEP_FCKUP=y dependent in the very
+unliklely case that we get a proper and reasonable regression report.
+
+Thanks,
+
+	tglx
