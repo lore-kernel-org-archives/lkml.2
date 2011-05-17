@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1EQMuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:50:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754129Ab1EQMup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:50:45 -0400
-Subject: Re: [PATCH v2] x86, vt-d: enable x2apic opt out
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: "Song, Youquan" <youquan.song@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "Kay, Allen M" <allen.m.kay@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Liu, Kent" <kent.liu@intel.com>,
-        Youquan Song <youquan.song@linux.intel.com>
-In-Reply-To: <1305625748.8008.98.camel@i7.infradead.org>
-References: <1302764783-24491-1-git-send-email-youquan.song@intel.com>
-	 <1305126431.30435.163.camel@i7.infradead.org>
-	 <1305577977.3146.112.camel@x201>
-	 <1305625748.8008.98.camel@i7.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 May 2011 06:50:25 -0600
-Message-ID: <1305636625.3146.119.camel@x201>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754633Ab1EQM4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:56:04 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36722 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327Ab1EQM4D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 08:56:03 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Nick Bowler <nbowler@elliptictech.com>,
+        =?UTF-8?q?J=C3=B6rg-Volker=20Peetz?= <jvpeetz@web.de>
+Cc: Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: =?UTF-8?q?=5BPATCH=200/2=5D=20AMD=20ARAT=20fixes?=
+Date: Tue, 17 May 2011 14:55:17 +0200
+Message-Id: <1305636919-31165-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-17 at 10:49 +0100, Woodhouse, David wrote:
-> On Mon, 2011-05-16 at 21:32 +0100, Alex Williamson wrote:
-> > Just a guess, but the OEM probably hasn't updated their SMI handlers to
-> > understand x2apic yet and won't before the product ships because some
-> > other OS doesn't bother to use x2apic. 
-> 
-> Yay, crappy closed-source BIOS holds back the platform yet again.
-> 
-> >  We can still enable interrupt remapping w/o x2apic though, so I'm
-> > curious what other irq injection tricks you're referring to.  Thanks,
-> 
-> http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Yep, I just read that, and while x2apic guarantees that we must turn on
-the interrupt remapper and block compatibility format, lack of x2apic
-doesn't preclude us from doing the same.  Right?  Thanks,
+Hi all,
 
-Alex
+the following 2 patches address the fallout caused by
+b87cf80af3ba4b4c008b4face3c68d604e1715c6. They enable ARAT only on
+Fam10h and later, and leaves out K8 due to multiple problems there.
 
+Although the patches look almost trivial, I'd like to ask Nick and
+Jörg-Volker to test them, please, so that we can have a confirmation,
+just in case.
+
+Then, if we're lucky and Linus hasn't released .39 yet, we might sneak
+them in, if we ask people politely :).
+
+Thanks.
