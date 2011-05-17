@@ -1,66 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab1EQMhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 08:37:22 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33028 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab1EQMhV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 08:37:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=mLS7jxpe4xW1uvWRkHYlRfgB5C8Rn6gVryWmHrOdSTIEHKGcdLRPzKU/2mL3ez+MPR
-         QINrMKn7RHl4YIpY5kahbiK069bQhrhagph81oeinIMHeqqWfLaA6G2amGmnIcDGIRfY
-         gdx49WGQ1qI32wJnDTVtPknu3h3XJOYLW47QU=
+	id S1754617Ab1EQMiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 08:38:07 -0400
+Received: from powered.by.root24.eu ([91.121.20.142]:34754 "EHLO Root24.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754236Ab1EQMiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 08:38:06 -0400
+Message-ID: <4DD26C17.4@ionic.de>
+Date: Tue, 17 May 2011 14:37:43 +0200
+From: Mihai Moldovan <ionic@ionic.de>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1304115712-5299-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1304115712-5299-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-Date: Tue, 17 May 2011 13:37:19 +0100
-X-Google-Sender-Auth: L1pjnCBWT-suD177BkWfB8jQXOo
-Message-ID: <BANLkTikPxfq4hcSLB+xkk-oJAtouNxEoyA@mail.gmail.com>
-Subject: Re: [RFC 1/5] platform-drivers-x86: add support for Technologic
- Systems TS-5xxx detection
-From: Sean Young <sean@mess.org>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: Kernel BUG with i915 in intel_sdvo_ddc_proxy_func
+References: <4DD2648C.6020309@ionic.de>
+In-Reply-To: <4DD2648C.6020309@ionic.de>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms030009050809020402070304"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 April 2011 23:21, Vivien Didelot
-<vivien.didelot@savoirfairelinux.com> wrote:
-> From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+This is a cryptographically signed message in MIME format.
+
+--------------ms030009050809020402070304
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
+
+* On 17.05.2011 02:05 PM, Mihai Moldovan wrote:
+> PCI:IDs for those devices:
+> 00:00.0 0600: 8086:2e10 (rev 03)
+> Subsystem: 8086:1003
 >
+> 00:02.0 0300: 8086:2e12 (rev 03) (prog-if 00 [VGA controller])
+> Subsystem: 8086:1003
 >
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> ---
->  Documentation/ts5xxx-sbcinfo.txt      |   47 ++++++
->  MAINTAINERS                           |    6 +
->  drivers/platform/x86/Kconfig          |   11 ++
->  drivers/platform/x86/Makefile         |    1 +
->  drivers/platform/x86/ts5xxx-sbcinfo.c |  254 +++++++++++++++++++++++++++++++++
->  include/linux/ts5xxx-sbcinfo.h        |   42 ++++++
->  6 files changed, 361 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ts5xxx-sbcinfo.txt
->  create mode 100644 drivers/platform/x86/ts5xxx-sbcinfo.c
->  create mode 100644 include/linux/ts5xxx-sbcinfo.h
+> 00:02.1 0380: 8086:2e13 (rev 03)
+> Subsystem: 8086:1003
 
-Please note that the 2MiB on board flash is not supported by your
-platform driver, which is handled by drivers/mtd/maps/ts5500_flash.c. I
-guess it would be best to either merge that file into
-drivers/platform/x86/ts5xxx-sbcinfo.c or select CONFIG_MTD_TS5500 in the
-Kconfig.
+I forgot to add: this is the integrated GPU on an Intel DQ45CB board.
 
-In addition, the flash is used by the BIOS as RFD FTL, so possibly
-CONFIG_RFD_FTL should be selected too.
+Also, I'm CCing the Intel DRM maintainer, I hope that's OK?
 
-Thanks,
-Sean
+Best regards,
+
+
+Mihai
+
+
+--------------ms030009050809020402070304
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIT1DCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGyjCCBbKgAwIBAgICBnIwDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMDAzMjMxNjI2NTZa
+Fw0xMjAzMjQwNTQ2MjJaMIHHMSAwHgYDVQQNExcxNjg2MTctOUo5elVlMUVuNHg5b3ZiTzEL
+MAkGA1UEBhMCREUxGzAZBgNVBAgTEkJhZGVuLVd1ZXJ0dGVtYmVyZzESMBAGA1UEBxMJS2Fy
+bHNydWhlMS0wKwYDVQQLEyRTdGFydENvbSBWZXJpZmllZCBDZXJ0aWZpY2F0ZSBNZW1iZXIx
+FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMssU6wPYwJJAxY07er/P6ANPXgz
+yCczuA+7q/eql1St56r91yQ534A4oeXEqRZvpMsDuvczNG1Yz80nLpM+lO3Wg8csxaGReewe
+RBIS3abf40HCIBVlOl7oTcmzZuzqz2KE70CHZ7p3k0WAEUfUb7AS8qrqxuoj0dtUkrdMwjoD
+rPWs3zJ+vHo5FU3sTvj2ksiStjG3NMERBT+1Gzf2pVx2cKJRBmqACbKZfwE9QufRqrZT8bWY
+i5DCV34RL7eVLnejLL+MvtarZv2K8Acojq9t7zO9Z+0rnlr6o46c2egVB+s/ol28q3DEce6f
+p1KrCiujqRqQwVQ8O/2ogg4l5h0CAwEAAaOCAvcwggLzMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU3JbCyOa+BBzV
+nBAKycZGQAzit2wwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
+EIEOaW9uaWNAaW9uaWMuZGUwggFCBgNVHSAEggE5MIIBNTCCATEGCysGAQQBgbU3AQIBMIIB
+IDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
+BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCBtwYI
+KwYBBQUHAgIwgaowFBYNU3RhcnRDb20gTHRkLjADAgEBGoGRTGltaXRlZCBMaWFiaWxpdHks
+IHNlZSBzZWN0aW9uICpMZWdhbCBMaW1pdGF0aW9ucyogb2YgdGhlIFN0YXJ0Q29tIENlcnRp
+ZmljYXRpb24gQXV0aG9yaXR5IFBvbGljeSBhdmFpbGFibGUgYXQgaHR0cDovL3d3dy5zdGFy
+dHNzbC5jb20vcG9saWN5LnBkZjBjBgNVHR8EXDBaMCugKaAnhiVodHRwOi8vd3d3LnN0YXJ0
+c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
+cnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
+cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNV
+HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBACle
+v1JwhVI4Pu8GzKRJzJdcYdsT7fJ9R5OzNnec4CADsb9Xu7HDyRa5qABBXihHvmo+fxGVe6Hy
+8TxPvZYCGaeUi2t6aodIFOTQDWcdEP9o7SynBOXHqsN2lZ08Q4MBuoGfquJi0XjpCNnLY9KS
+OZTHTwAIqGVH7lf99egY1Atfl+y/Lc0e6Sw/0qvcnaQSzwCZ/OkqVWSTGDZXwCDFuy6Cbwjy
+Kn9qshZzeMqvSKHmHPihzJQ6eVXImZgrgWk5FrBpO8d59xoqO32PbSyM0cZhqvkbG/nlWPbz
+Xn13+cgG7ajAGCg8XueMeh3m03sIIHinvgaeHOAqeO3TvVVv6WQwggbKMIIFsqADAgECAgIG
+cjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNV
+BAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4X
+DTEwMDMyMzE2MjY1NloXDTEyMDMyNDA1NDYyMlowgccxIDAeBgNVBA0TFzE2ODYxNy05Sjl6
+VWUxRW40eDlvdmJPMQswCQYDVQQGEwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJn
+MRIwEAYDVQQHEwlLYXJsc3J1aGUxLTArBgNVBAsTJFN0YXJ0Q29tIFZlcmlmaWVkIENlcnRp
+ZmljYXRlIE1lbWJlcjEXMBUGA1UEAxMOTWloYWkgTW9sZG92YW4xHTAbBgkqhkiG9w0BCQEW
+DmlvbmljQGlvbmljLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyyxTrA9j
+AkkDFjTt6v8/oA09eDPIJzO4D7ur96qXVK3nqv3XJDnfgDih5cSpFm+kywO69zM0bVjPzScu
+kz6U7daDxyzFoZF57B5EEhLdpt/jQcIgFWU6XuhNybNm7OrPYoTvQIdnuneTRYARR9RvsBLy
+qurG6iPR21SSt0zCOgOs9azfMn68ejkVTexO+PaSyJK2Mbc0wREFP7UbN/alXHZwolEGaoAJ
+spl/AT1C59GqtlPxtZiLkMJXfhEvt5Uud6Msv4y+1qtm/YrwByiOr23vM71n7SueWvqjjpzZ
+6BUH6z+iXbyrcMRx7p+nUqsKK6OpGpDBVDw7/aiCDiXmHQIDAQABo4IC9zCCAvMwCQYDVR0T
+BAIwADALBgNVHQ8EBAMCBLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1Ud
+DgQWBBTclsLI5r4EHNWcEArJxkZADOK3bDAfBgNVHSMEGDAWgBSuVYNv7DHKufcd+q9rMfPI
+HeOsuzAZBgNVHREEEjAQgQ5pb25pY0Bpb25pYy5kZTCCAUIGA1UdIASCATkwggE1MIIBMQYL
+KwYBBAGBtTcBAgEwggEgMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9w
+b2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1l
+ZGlhdGUucGRmMIG3BggrBgEFBQcCAjCBqjAUFg1TdGFydENvbSBMdGQuMAMCAQEagZFMaW1p
+dGVkIExpYWJpbGl0eSwgc2VlIHNlY3Rpb24gKkxlZ2FsIExpbWl0YXRpb25zKiBvZiB0aGUg
+U3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkgUG9saWN5IGF2YWlsYWJsZSBhdCBo
+dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMGMGA1UdHwRcMFowK6ApoCeGJWh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwK6ApoCeGJWh0dHA6Ly9jcmwu
+c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
+MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
+BgEFBQcwAoY2aHR0cDovL3d3dy5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
+bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
+9w0BAQUFAAOCAQEAKV6/UnCFUjg+7wbMpEnMl1xh2xPt8n1Hk7M2d5zgIAOxv1e7scPJFrmo
+AEFeKEe+aj5/EZV7ofLxPE+9lgIZp5SLa3pqh0gU5NANZx0Q/2jtLKcE5ceqw3aVnTxDgwG6
+gZ+q4mLReOkI2ctj0pI5lMdPAAioZUfuV/316BjUC1+X7L8tzR7pLD/Sq9ydpBLPAJn86SpV
+ZJMYNlfAIMW7LoJvCPIqf2qyFnN4yq9IoeYc+KHMlDp5VciZmCuBaTkWsGk7x3n3Gio7fY9t
+LIzRxmGq+Rsb+eVY9vNefXf5yAbtqMAYKDxe54x6HebTewggeKe+Bp4c4Cp47dO9VW/pZDGC
+A80wggPJAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
+U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAgZyMAkG
+BSsOAwIaBQCgggIOMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
+DTExMDUxNzEyMzc0M1owIwYJKoZIhvcNAQkEMRYEFG6nF/LfqRgKDYZXiXBLckOtEIr2MF8G
+CSqGSIb3DQEJDzFSMFAwCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
+gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpAYJKwYBBAGCNxAE
+MYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
+CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
+b20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAgZyMIGmBgsqhkiG
+9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
+KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjAN
+BgkqhkiG9w0BAQEFAASCAQAanfYcvfmSOKCIV36zoXu3yS2btXt/ZS1/Jn4EV5zfHB5jmOM7
+LXJ2ayyZgMdMStUBfyxN9PWSRtIkh9IahfQHhIzjwi8/037YDBfDZBZsrfIP6FrS7cew+src
+lZyQo+TOqLd2n0vbNGMFBkSNAb030OETNyleYe3ORejReJIMEKJ33PqZrse9k+vSKRLVxfj3
+CPWyn2gFvp88wzr7vaCQsYyoLs2q5SQtGqlGsD66ifXM5RsxQpCiBm70okad3LUz/Ou8Ei9x
+x8D3BbP4egulDuxmZ1lul9tUiTJo8EenmUY94P2sgL/+pqpgNHgNovte6FYi1+3rCfI67sJ/
+7bk5AAAAAAAA
+--------------ms030009050809020402070304--
