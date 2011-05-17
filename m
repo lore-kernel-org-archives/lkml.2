@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab1EQWPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 18:15:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41722 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1EQWPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 18:15:42 -0400
-Date: Tue, 17 May 2011 15:15:19 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>, mcgrof@gmail.com,
-        Joe Perches <joe@perches.com>, Naveen Singh <nsingh@atheros.com>
-Subject: [PATCH -next] staging: fix ath6kl build when CFG80211 is not
- enabled
-Message-Id: <20110517151519.e9238e33.randy.dunlap@oracle.com>
-In-Reply-To: <20110517142749.8927b65b.sfr@canb.auug.org.au>
-References: <20110517142749.8927b65b.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1756688Ab1EQWRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 18:17:37 -0400
+Received: from mail.perches.com ([173.55.12.10]:1752 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756583Ab1EQWRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 18:17:36 -0400
+Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
+From: Joe Perches <joe@perches.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+In-Reply-To: <4DD2F0E2.10100@gmail.com>
+References: <1305665263-20933-1-git-send-email-john.stultz@linaro.org>
+	 <1305665263-20933-3-git-send-email-john.stultz@linaro.org>
+	 <4DD2EBAB.5080004@gmail.com> <1305669150.1722.83.camel@Joe-Laptop>
+	 <4DD2F0E2.10100@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 May 2011 15:17:34 -0700
+Message-ID: <1305670654.1722.94.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DD2F383.0054:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 2011-05-18 at 00:04 +0200, Jiri Slaby wrote:
+> On 05/17/2011 11:52 PM, Joe Perches wrote:
+> > On Tue, 2011-05-17 at 23:42 +0200, Jiri Slaby wrote:
+> >> On 05/17/2011 10:47 PM, John Stultz wrote:
+> >>> Accessing task->comm requires proper locking. However in the past
+> >>> access to current->comm could be done without locking. This
+> >>> is no longer the case, so all comm access needs to be done
+> >>> while holding the comm_lock.
+> >>> +static noinline_for_stack
+> >> With my setup, the code below inlined will use 32 bytes of stack. The
+> >> same as %pK case. Uninlined it obviously eats "only" 8 bytes for IP.
+> > The idea is to avoid excess stack consumption for things like:
+> > 	struct va_format vaf;
+> > 	const char *fmt = "some format with %ptc";
+> > 	vaf.fmt = fmt;
+> > 	vaf.va = &va_list;
+> > 	printk("some format with %pV\n", &vaf);
+> There is no way how can noinline_for_stack for task_comm_string lower
+> the stack usage here, right? Note that it adds no more requirements to
+> the stack than there were before. Simply because there are no buffers on
+> the stack in task_comm_string.
 
-Fix build errors when CONFIG_CFG80211 is not enabled:
+Isn't flags always on stack in function pointer
+if task_comm_string were inlined?
 
-drivers/built-in.o: In function `ar6k_cfg80211_deinit':
-(.text+0x189b71): undefined reference to `cfg80211_scan_done'
-drivers/built-in.o: In function `ar6k_cfg80211_deinit':
-(.text+0x189b86): undefined reference to `wiphy_unregister'
-drivers/built-in.o: In function `ar6k_cfg80211_deinit':
-(.text+0x189b8d): undefined reference to `wiphy_free'
-drivers/built-in.o: In function `ar6k_cfg80211_init':
-(.text+0x18add7): undefined reference to `wiphy_new'
-drivers/built-in.o: In function `ar6k_cfg80211_init':
-(.text+0x18ae48): undefined reference to `wiphy_register'
-drivers/built-in.o: In function `ar6k_cfg80211_tkip_micerr_event':
-(.text+0x18ae95): undefined reference to `cfg80211_michael_mic_failure'
-drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
-(.text+0x18afb5): undefined reference to `__ieee80211_get_channel'
-drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
-(.text+0x18afd2): undefined reference to `cfg80211_inform_bss_frame'
-drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
-(.text+0x18b046): undefined reference to `cfg80211_ibss_joined'
-drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
-(.text+0x18b176): undefined reference to `cfg80211_connect_result'
-drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
-(.text+0x18b190): undefined reference to `cfg80211_disconnected'
-drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
-(.text+0x18b291): undefined reference to `cfg80211_get_bss'
-drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
-(.text+0x18b457): undefined reference to `cfg80211_put_bss'
-drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
-(.text+0x18b4fa): undefined reference to `cfg80211_roamed'
+I believe gcc isn't too good about reusing stack for blocks
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Luis R. Rodriguez <mcgrof@gmail.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Naveen Singh <nsingh@atheros.com>
----
- drivers/staging/ath6kl/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+void foo(args)
+{
+	if (bar) {
+		long baz;
+		...
+	} else
+		int baz;
+		...
+}
 
---- linux-next-20110517.orig/drivers/staging/ath6kl/Kconfig
-+++ linux-next-20110517/drivers/staging/ath6kl/Kconfig
-@@ -1,6 +1,7 @@
- config ATH6K_LEGACY
- 	tristate "Atheros AR6003 support (non mac80211)"
-         depends on MMC && WLAN
-+	depends on CFG80211
-         select WIRELESS_EXT
-         select WEXT_PRIV
- 	help
+I believe gcc still creates 2 separate baz vars on 
+foo's stack.
+
+> If nothing, it saves 100 bytes of .text.
+
+Submit patches to vsprintf for all the cases you think
+appropriate.
+
+> thanks,
+
+cheers, Joe
+
