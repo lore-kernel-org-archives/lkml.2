@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1EQLL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 07:11:27 -0400
-Received: from mail-px0-f173.google.com ([209.85.212.173]:54711 "EHLO
-	mail-px0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab1EQLL0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 07:11:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=SPEIjrgGE6mUW5t5/O1kdo/GgJLvtEojLpdpmSVBQQ1BeG0O+3gZ+2VfCrrvrufCah
-         gOicxidiy35pLRR7I7CM7dNGdjCX/gHsjYrJtduUp8wOyTbWievb5JE7N+lyZRUovw/O
-         AUGBc5/eJiaXzVMuv0+y2ZCnBzY+f00d6hpWA=
+	id S1754215Ab1EQLhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 07:37:13 -0400
+Received: from spaceboyz.net ([87.106.131.203]:47967 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754137Ab1EQLhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 07:37:10 -0400
+X-Greylist: delayed 1509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 May 2011 07:37:09 EDT
+Date: Tue, 17 May 2011 13:11:48 +0200
+From: David Lamparter <equinox@diac24.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alex Bligh <alex@alex.org.uk>, linux-arch@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/7] Network namespace manipulation with file descriptors
+Message-ID: <20110517111148.GA3762520@jupiter.n2.diac24.net>
+References: <m1tyd7p7tq.fsf@fess.ebiederm.org>
+ <3A54AB469A0294933EAC2257@nimrod.local>
+ <m1fwoqoapn.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <20110517080029.GB22093@elte.hu>
-References: <cover.1305560561.git.luto@mit.edu> <20110516160943.GC25898@one.firstfloor.org>
- <alpine.LFD.2.02.1105161817120.3078@ionos> <20110516164939.GD25898@one.firstfloor.org>
- <BANLkTintkmnkN3kW06oa+TjT7W0Q1yQQGA@mail.gmail.com> <m2fwoeo0pf.fsf@firstfloor.org>
- <alpine.LFD.2.02.1105162345110.3078@ionos> <BANLkTinVnr1ZM2wOxuH-rHZGh+_SBWT-+g@mail.gmail.com>
- <alpine.LFD.2.02.1105170022430.3078@ionos> <20110517080029.GB22093@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 17 May 2011 07:11:06 -0400
-X-Google-Sender-Auth: dyyOzZ5vifJCdMZgEzIt6a7vsOE
-Message-ID: <BANLkTimpEfb3P9FWgrCDwSSVr6RA8nXb5w@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] Micro-optimize vclock_gettime
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1fwoqoapn.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 4:00 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Thomas Gleixner <tglx@linutronix.de> wrote:
->
->> > see if I can persuade Uli to take accept a glibc patch to stop calling it
->> > in future static glibc versions.
->>
->> How wide spread is this in reality on 64bit systems ?
->>
->> IOW, what's the damage if we take a trap and emulate it in the most painful
->> way we can come up with ?
+On Sat, May 07, 2011 at 07:18:44AM -0700, Eric W. Biederman wrote:
+> You can read the processes network namespace by opening
+> /proc/<pid>/ns/net.  Unfortunately comparing the network
+> namespaces for identity is another matter.  You will probably
+> be better off simply forcing the routing daemon to start
+> in the desired network namespace in it's initscript.
+> 
+> For purposes of clarity please have a look at my work in
+> progress patch for iproute2.  This demonstrates how I expect
+> userspace to work in a multi-network namespace world.
+> 
+[...]
+> Subject: [PATCH] iproute2:  Add processless netnwork namespace support.
+[...]
+> Configuration specific to a network namespace that
+> would ordinarily be stored under /etc/ is stored under
+> /etc/netns/<name>.  For example if the dns server
+> configuration is different for your vpn you would
+> create a file /etc/netns/myvpn/resolv.conf.
+> 
+> File descriptors that can be used to manipulate a
+> network namespace can be created by opening
+> /var/run/netns/<NAME>.
+> 
+> This adds the following commands to iproute.
+> ip netns add NAME
+> ip netns delete NAME
+> ip netns monitor
+> ip netns list
+> ip netns exec NAME cmd ....
+> ip link set DEV netns NAME
 
-I dunno.  I'll measure it.
+funny, this is almost exactly what my code does - though you're probably
+doing it better and have more features ;)
+http://git.spaceboyz.net/equinox/vrf-tools.git/
+git://spaceboyz.net/equinox/vrf-tools.git
 
->
-> Well, how does that differ from having the real syscall instruction there? How
-> are we going to filter real (old-)glibc calls from exploits?
+It currently forks off a daemon to keep the namespace open; attaching is
+not possible yet, but opening a socket in a different namespace is.
 
-Because there are only four vsyscalls: vgettimeofday, vtime, vgetcpu,
-and venosys.  None of them have side-effects, so they only allow an
-attacker to write something to user memory somewhere.  The
-implementation of vgettimeofday needs a syscall instruction internally
-for its fallback, which means that an attack could jump there instead
-of to the start of the vsyscall implementation.
+Most of the actual management (mounting things & co.) I offloaded to
+some shell scripts; I use it together with GNU screen (which makes it
+very nice to grab one of the namespaces and start/stop/manage/...
+things).
 
->
-> If it can be filtered in a meaningful way then we should just do that and
-> perhaps offer a (default enabled) .config COMPAT_VDSO_EMU=y switch to turn the
-> emulation off.
->
-> That way we keep the ABI and also have a way out for users who *really* need
-> this to work in a performant way.
+I also have patches for OpenVPN and pptpd floating around that make it
+possible to 'cross' namespace boundaries, i.e. the VPN servers listen in
+one namespace and have their devices in another.
 
-Yeah, that probably makes more sense.  It'll make for an uglier
-diffstat, though -- there's a lot of ugly duplicate code around to
-make vgettimeofday and vgetcpu work.
 
---Andy
+-David
 
->
-> Thanks,
->
->        Ingo
->
