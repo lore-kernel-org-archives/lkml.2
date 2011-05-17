@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab1EQAL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 20:11:57 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53663 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab1EQAL4 (ORCPT
+	id S1752235Ab1EQAja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 May 2011 20:39:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59435 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab1EQAj2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 20:11:56 -0400
-Subject: Re: [PATCH 2/3] printk: Add %ptc to safely print a task's comm
-From: John Stultz <john.stultz@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-In-Reply-To: <1305590200.2503.48.camel@Joe-Laptop>
-References: <1305580757-13175-1-git-send-email-john.stultz@linaro.org>
-	 <1305580757-13175-3-git-send-email-john.stultz@linaro.org>
-	 <4DD19D10.3000201@gmail.com>  <1305587432.2915.57.camel@work-vm>
-	 <1305590200.2503.48.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 May 2011 17:11:43 -0700
-Message-ID: <1305591103.2915.70.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 16 May 2011 20:39:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=U/n0SBc0jesQNfMJJLV0GTTThT5MiNDKCYsa8hHaV7QGTXpb1qxU4m7SDkFO9D9MLL
+         m8GqEsQPkRmHYRHpjgbkbVQCZnrCO8CvuQXIuFlaZiflfj8GAY67t8RCxSbWKhbeaybP
+         KLRFmmzEhR+AWWj3N9AbtcioEJnCWdlw1kQUc=
+MIME-Version: 1.0
+In-Reply-To: <1305324962.2781.5.camel@pasglop>
+References: <1305317680.21099.83.camel@dwillia2-linux>
+	<BANLkTim3igaB8XXQkDY6GEutWfbK-o840A@mail.gmail.com>
+	<4DCDA663.2040202@intel.com>
+	<1305324962.2781.5.camel@pasglop>
+Date: Mon, 16 May 2011 17:39:26 -0700
+X-Google-Sender-Auth: O1rQKre-f_akfpjvzqWDWLaVwNc
+Message-ID: <BANLkTimYfjz=vhF=cGXNqRD1RTzKTGhv9w@mail.gmail.com>
+Subject: Re: [GIT PULL] isci merge candidate
+From: Dan Williams <dan.j.williams@intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        Christoph Hellwig <hch@lst.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        David Milburn <dmilburn@redhat.com>,
+        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        "Danecki, Jacek" <jacek.danecki@intel.com>,
+        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>,
+        Jeff Garzik <jeff@garzik.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-16 at 16:56 -0700, Joe Perches wrote:
-> On Mon, 2011-05-16 at 16:10 -0700, John Stultz wrote:
-> > On Mon, 2011-05-16 at 23:54 +0200, Jiri Slaby wrote:
-> > > > In my attempt to clean up unprotected comm access, I've noticed
-> > > > most comm access is done for printk output. To simplify correct
-> > > > locking in these cases, I've introduced a new %ptc format,
-> > > > which will print the corresponding task's comm.
-> > > > Example use:
-> > > > printk("%ptc: unaligned epc - sending SIGBUS.\n", current);
-> > > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> []
-> > > > +static noinline_for_stack
-> > > Actually, why noinline? Did your previous version have there some
-> > > TASK_COMM_LEN buffer or anything on stack which is not there anymore?
-> > No, I was just following how almost all of the pointer() called
-> > functions were declared.
-> > But with two pointers and a long, I add more then ip6_string() has on
-> > the stack, which uses the same notation.
-> > But I can drop that bit if there's really no need for it.
-> 
-> vsprintf can be recursive, I think you should keep it.
+On Fri, May 13, 2011 at 3:16 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+>> It's a SAS (serial-attached-scsi) driver so it ties in to libsas rather
+>> than libata (libsas itself ties in to libata for tunnelling SATA
+>> protocol over SAS).  The size is attributable to the fact that all
+>> protocol handling for non-fast path i/o is handled by software.  There
+>> are still cleanups that can be made, but likely not on the on the same
+>> order of what we have already done.
+>
+> How much of that non-fast-path could/should be in generic code vs. in
+> the driver specific code ? IE. If somebody comes up with another "dumb"
 
-Ok. I'll keep it then. Thanks!
--john
+I prefer the word "thin" :-), where "fat" refers to controllers that
+hide this logic in offload cpu's, firmware, and or custom asics.
 
+> SAS adapter tomorrow that doesn't do all that magic in an offload CPU,
+> is any of that code re-usable ?
 
+At a minimum It would require a more verbose interface to
+libsas/libata (or new libframe?) to allow us to deliver raw
+unsolicited frames into common protocol handlers.  The concern would
+be wrangling different sets of protocol states and exception
+conditions that individual vendors would choose to/not to offload.  To
+date no other libsas based controller has taken this approach.
+
+--
+Dan
