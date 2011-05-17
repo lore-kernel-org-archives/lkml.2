@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1EQPNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 May 2011 11:13:31 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:61957 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab1EQPNa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 May 2011 11:13:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=crcACzKwzYHrCQeNtRAfwejfueVQO/cMNfisCpG4e9ioRHtAEPeMPFH160odM//B5s
-         pmoQhKxGaK9rnUcqrnDm3fRsfGIcIQcunEuEJ46ei74Vedblf8vsR4nLpu7cRvrFIaUe
-         XnTG/GAG2QJpYl7n5dR03ZksMaIt00KxD3DaQ=
+	id S1755520Ab1EQPQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 May 2011 11:16:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43031 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754367Ab1EQPQf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 May 2011 11:16:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1305635452-14835-1-git-send-email-miklos@szeredi.hu>
-References: <1305635452-14835-1-git-send-email-miklos@szeredi.hu>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Tue, 17 May 2011 17:13:09 +0200
-X-Google-Sender-Auth: nayg3ORN9VuXdSk3u5hYmzusjLo
-Message-ID: <BANLkTi=2Q5K+_PRqDrgG7DO_uBF=m7ejKA@mail.gmail.com>
-Subject: Re: [PATCH 0/7] overlay filesystem v9
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de,
-        jordipujolp@gmail.com, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110517151107.GQ20624@htj.dyndns.org>
+References: <20110517102713.GJ20624@htj.dyndns.org> <20110517102824.GK20624@htj.dyndns.org>
+ <20110517102853.GL20624@htj.dyndns.org> <BANLkTimj2guK6kw7QSijYZyvoRY+JKgbTg@mail.gmail.com>
+ <20110517151107.GQ20624@htj.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 May 2011 08:15:38 -0700
+Message-ID: <BANLkTikpwk-hJs+TF7TJB38JsvOvHk2UMQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND 2/3 v2.6.39-rc7] block: make disk_block_events()
+ properly wait for work cancellation
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Borislav Petkov <bp@alien8.de>, Meelis Roos <mroos@linux.ee>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Tue, May 17, 2011 at 8:11 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Heh, okay.  It's not a lock tho.  It's multiple waiter waiting for a
+> single event - so either explicit waitqueue or completion.  I was
+> doing a waitqueue but bit waitqueue didn't seem to add too much
+> complexity, so...
 
-On 17 May 2011 14:30, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Here's an updated version of the overlay filesystem.
->
-> Git tree is here:
->
-> Â git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v9
->
->
-> Changes from v8 to v9
->
-> - support xattr on tmpfs
->
-> - fix build after split-up
->
-> - fix remove after rename (reported by Jordi Pujol)
->
-> - fix rename failure case
->
+No.
 
-I built a live CD with v9 and it works for me.
+Semantically what it is is a LOCK.
 
-As I understand it v9 only folds in the extra v8 patches so I expected
-no less ;-)
+Turning it into something else just screws up everything.  It just
+means you have to have ANOTHER lock to protect the things that the
+completion/waitqueue would use.
 
-Thanks
+Don't f*&^ around. Just make it a lock, and don't do a
+"lock+completion " or something crazy.
 
-Michal
+If you can do it with a completion but with no locking, go ahead. I
+doubt you can. You want the locking for the whole "do I need to wait
+for the completion" thing anyway, so why mess things up?
+
+                   Linus
